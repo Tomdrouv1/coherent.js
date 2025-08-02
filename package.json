@@ -1,0 +1,63 @@
+{
+  "name": "coherent-framework",
+  "version": "0.1.0",
+  "description": "Server-side rendering with pure JavaScript objects",
+  "main": "src/coherent.js",
+  "type": "module",
+  "packageManager": "pnpm@8.15.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "scripts": {
+    "test": "node --test tests/",
+    "dev": "node examples/express-server.js",
+    "example:basic": "node examples/basic-usage.js",
+    "example:performance": "node examples/performance-test.js",
+    "lint": "eslint src/ tests/ examples/",
+    "format": "prettier --write src/ tests/ examples/",
+    "typecheck": "tsc --noEmit",
+    "prepare": "husky"
+  },
+  "keywords": [
+    "ssr",
+    "server-side-rendering",
+    "html",
+    "javascript",
+    "objects",
+    "express",
+    "framework",
+    "pnpm"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.32.0",
+    "prettier": "^3.6.2",
+    "@types/node": "^24.1.0",
+    "typescript": "^5.9.2",
+    "husky": "^9.1.7"
+  },
+  "files": [
+    "src/",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "import": "./src/coherent.js",
+      "require": "./src/coherent.js"
+    },
+    "./express": {
+      "import": "./src/express/index.js"
+    }
+  },
+  "pnpm": {
+    "peerDependencyRules": {
+      "ignoreMissing": ["@types/react"]
+    }
+  }
+}
