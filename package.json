@@ -17,6 +17,7 @@
     "lint": "eslint src/ tests/ examples/",
     "format": "prettier --write src/ tests/ examples/",
     "typecheck": "tsc --noEmit",
+    "typecheck:strict": "tsc --noEmit --strict",
     "prepare": "husky"
   },
   "keywords": [

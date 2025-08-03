@@ -78,7 +78,7 @@ const withLoading = (WrappedComponent) =>
   });
 
 // Example component that uses loading state
-const DataDisplay = withLoading(({ data, setLoading, setError, setData }) => {
+const DataDisplay = withLoading(({ data, setLoading, setData }) => {
   const mockData = [1, 2, 3];
 
   const loadData = async () => {
@@ -86,8 +86,8 @@ const DataDisplay = withLoading(({ data, setLoading, setError, setData }) => {
       setLoading(true);
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      setData(mockData);
       setLoading(false);
+      setData(mockData);
     }
   };
 
@@ -96,7 +96,7 @@ const DataDisplay = withLoading(({ data, setLoading, setError, setData }) => {
       className: 'data-display',
       children: [
         { h2: { text: 'Data Display with Loading State' } },
-        { p: { text: `Items: ${data.length}` } },
+        { p: { text: `Items: ${data?.length || 0}` } },
         {
           button: {
             text: 'Load Data',
@@ -225,13 +225,14 @@ const ContactForm = withState({
           children: [
             { label: { text: 'Message' } },
             {
-              input: {
-                type: 'textarea',
-                value: state.message,
-                placeholder: 'Your message here...',
-                oninput: typeof window !== 'undefined' ? (e) => setState({ message: e.target.value }) : null,
-              }
-            }
+             textarea: {
+               value: state.message,
+               placeholder: 'Your message here...',
+               oninput: typeof window !== 'undefined'
+                 ? (e) => setState({ message: e.target.value })
+                 : null,
+             }
+           }
           ]
         }
       },

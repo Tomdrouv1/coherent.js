@@ -48,7 +48,12 @@ export function formatAttributes(props) {
                 try {
                     value = value();
                 } catch (error) {
-                    console.warn(`Error executing function for attribute ${key}:`, error);
+                    console.warn(`Error executing function for attribute '${key}':`, {
+                        error: error.message,
+                        stack: error.stack,
+                        attributeKey: key
+                    });
+                    // Consider different fallback strategies based on attribute type
                     value = '';
                 }
             }

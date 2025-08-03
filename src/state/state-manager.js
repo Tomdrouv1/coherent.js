@@ -110,11 +110,16 @@ export function provideContext(key, value, children) {
  */
 export function createContextProvider(key, value, children) {
     return () => {
-        // Provide context
-        provideContext(key, value, children);
-        
-        // Return children to be rendered
-        return children;
+        try {
+            // Provide context
+            provideContext(key, value, children);
+            
+            // Return children to be rendered
+            return children;
+        } finally {
+            // Always restore context when done
+            restoreContext(key);
+        }
     };
 }
 
