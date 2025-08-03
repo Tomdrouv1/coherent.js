@@ -526,7 +526,7 @@ if (typeof process !== 'undefined' && process.versions && process.versions.node)
     // Graceful cleanup on exit
     process.on('exit', () => {
         if (coherent.cache) {
-            coherent.cache.clear();
+            coherent.cache.destroy();
         }
     });
 

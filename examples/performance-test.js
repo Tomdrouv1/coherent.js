@@ -1,61 +1,88 @@
+/**
+ * Performance Testing Examples
+ * Demonstrates performance monitoring, caching, and optimization features
+ */
+
 import { renderToString } from '../src/coherent.js';
 import { performanceMonitor } from '../src/performance/monitor.js';
 import { globalCache } from '../src/performance/cache-manager.js';
-import { bundleOptimizer } from '../src/performance/bundle-optimizer.js';
 
-// Start monitoring
-performanceMonitor.start();
-
-// Test components for performance
-const HeavyComponent = ({ depth = 0, maxDepth = 5 }) => {
+// Recursive component for performance testing
+const HeavyComponent = ({ depth = 0, maxDepth = 3, label = 'Node' }) => {
     if (depth >= maxDepth) {
-        return { span: { text: `Leaf ${depth}` } };
+        return { 
+            span: { 
+                text: `${label} ${depth}`,
+                class: 'leaf-node'
+            } 
+        };
     }
 
     return {
         div: {
-            className: `level-${depth}`,
-            children: Array.from({ length: 3 }, (_, i) =>
-                HeavyComponent({ depth: depth + 1, maxDepth })
-            )
+            class: `level-${depth} heavy-component`,
+            children: [
+                { h5: { text: `Level ${depth}` } },
+                ...Array.from({ length: 2 }, (_, i) =>
+                    HeavyComponent({ depth: depth + 1, maxDepth, label: `${label}-${i}` })
+                )
+            ]
         }
     };
 };
 
-const DataTable = ({ rows = [] }) => ({
-    table: {
-        className: 'data-table',
+// Data table component for performance testing
+const PerformanceDataTable = ({ rows = [], showMetrics = false }) => ({
+    div: {
+        class: 'data-table-container',
         children: [
-            {
-                thead: {
-                    children: [{
-                        tr: {
-                            children: [
-                                { th: { text: 'ID' } },
-                                { th: { text: 'Name' } },
-                                { th: { text: 'Email' } },
-                                { th: { text: 'Status' } }
-                            ]
-                        }
-                    }]
+            showMetrics && {
+                div: {
+                    class: 'table-metrics',
+                    children: [
+                        { p: { text: `Rendering ${rows.length} rows` } },
+                        { small: { text: `Memory usage: ~${(rows.length * 0.1).toFixed(1)}KB` } }
+                    ]
                 }
             },
             {
-                tbody: {
-                    children: rows.map(row => ({
-                        tr: {
-                            key: row.id,
-                            children: [
-                                { td: { text: row.id } },
-                                { td: { text: row.name } },
-                                { td: { text: row.email } },
-                                { td: { text: row.status, className: `status-${row.status}` } }
-                            ]
+                table: {
+                    class: 'performance-table',
+                    children: [
+                        {
+                            thead: {
+                                children: [{
+                                    tr: {
+                                        children: [
+                                            { th: { text: 'ID' } },
+                                            { th: { text: 'Name' } },
+                                            { th: { text: 'Score' } },
+                                            { th: { text: 'Status' } }
+                                        ]
+                                    }
+                                }]
+                            }
+                        },
+                        {
+                            tbody: {
+                                children: rows.map(row => ({
+                                    tr: {
+                                        key: row.id,
+                                        class: row.status === 'active' ? 'active-row' : '',
+                                        children: [
+                                            { td: { text: row.id } },
+                                            { td: { text: row.name } },
+                                            { td: { text: row.score } },
+                                            { td: { text: row.status, class: `status-${row.status}` } }
+                                        ]
+                                    }
+                                }))
+                            }
                         }
-                    }))
+                    ]
                 }
             }
-        ]
+        ].filter(Boolean)
     }
 });
 
@@ -91,14 +118,16 @@ async function runPerformanceTests() {
     // Test 2: Cache efficiency
     console.log('💾 Test 2: Cache Performance');
 
-    const tableData = Array.from({ length: 1000 }, (_, i) => ({
-        id: i,
-        name: `User ${i}`,
-        email: `user${i}@example.com`,
-        status: i % 3 === 0 ? 'active' : i % 3 === 1 ? 'pending' : 'inactive'
+    const generateLargeDataset = (size) => Array.from({ length: size }, (_, _index) => ({
+        id: _index + 1,
+        name: `User ${_index}`,
+        email: `user${_index}@example.com`,
+        status: _index % 3 === 0 ? 'active' : _index % 3 === 1 ? 'pending' : 'inactive'
     }));
 
-    const tableComponent = DataTable({ rows: tableData });
+    const tableData = generateLargeDataset(1000);
+
+    const tableComponent = PerformanceDataTable({ rows: tableData });
 
     // First render (cold cache)
     const coldStart = process.hrtime.bigint();
@@ -125,7 +154,7 @@ async function runPerformanceTests() {
     const memBefore = process.memoryUsage();
 
     // Create many components to test memory usage
-    const components = Array.from({ length: 1000 }, (_, i) =>
+    const components = Array.from({ length: 1000 }, () =>
         HeavyComponent({ depth: 0, maxDepth: 3 })
     );
 
@@ -183,3 +212,178 @@ async function runPerformanceTests() {
 
 // Run the tests
 runPerformanceTests().catch(console.error);
+
+// Create a performance test demo component for live preview
+const PerformanceTestDemo = {
+  div: {
+    className: 'performance-test-demo',
+    children: [
+      {
+        div: {
+          className: 'header',
+          children: [
+            { h1: { text: 'Coherent.js Performance Test Demo' } },
+            { p: { text: 'This demo showcases performance monitoring, caching, and optimization features.' } }
+          ]
+        }
+      },
+      
+      {
+        div: {
+          className: 'section',
+          children: [
+            { h2: { text: '🚀 Performance Monitoring' } },
+            {
+              div: {
+                className: 'performance-demo',
+                children: [
+                  { p: { text: 'Coherent.js includes built-in performance monitoring and optimization tools.' } },
+                  {
+                    div: {
+                      className: 'performance-stats',
+                      style: 'background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;',
+                      children: [
+                        { h4: { text: 'Performance Features:' } },
+                        {
+                          ul: {
+                            children: [
+                              { li: { text: 'Real-time render time tracking' } },
+                              { li: { text: 'Automatic component caching' } },
+                              { li: { text: 'Memory usage optimization' } },
+                              { li: { text: 'Bundle size analysis' } }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      
+      {
+        div: {
+          className: 'section',
+          children: [
+            { h2: { text: '📊 Heavy Component Test' } },
+            {
+              div: {
+                className: 'heavy-component-demo',
+                children: [
+                  { p: { text: 'Testing performance with nested components:' } },
+                  {
+                    div: {
+                      className: 'level-0',
+                      style: 'border: 1px solid #ddd; padding: 10px; margin: 5px;',
+                      children: [
+                        { span: { text: 'Level 0' } },
+                        {
+                          div: {
+                            className: 'level-1',
+                            style: 'border: 1px solid #ccc; padding: 8px; margin: 3px;',
+                            children: [
+                              { span: { text: 'Level 1' } },
+                              {
+                                div: {
+                                  className: 'level-2',
+                                  style: 'border: 1px solid #bbb; padding: 6px; margin: 2px;',
+                                  children: [
+                                    { span: { text: 'Leaf 2' } }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      
+      {
+        div: {
+          className: 'section',
+          children: [
+            { h2: { text: '📈 Data Table Performance' } },
+            {
+              div: {
+                className: 'data-table-demo',
+                children: [
+                  { p: { text: 'Performance testing with large data tables:' } },
+                  {
+                    table: {
+                      className: 'data-table',
+                      style: 'width: 100%; border-collapse: collapse; margin: 10px 0;',
+                      children: [
+                        {
+                          thead: {
+                            children: [
+                              {
+                                tr: {
+                                  children: [
+                                    { th: { text: 'ID', style: 'border: 1px solid #ddd; padding: 8px; background: #f5f5f5;' } },
+                                    { th: { text: 'Name', style: 'border: 1px solid #ddd; padding: 8px; background: #f5f5f5;' } },
+                                    { th: { text: 'Value', style: 'border: 1px solid #ddd; padding: 8px; background: #f5f5f5;' } },
+                                    { th: { text: 'Status', style: 'border: 1px solid #ddd; padding: 8px; background: #f5f5f5;' } }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          tbody: {
+                            children: Array.from({ length: 5 }, (_, _index) => ({
+                              tr: {
+                                children: [
+                                  { td: { text: `${_index + 1}`, style: 'border: 1px solid #ddd; padding: 8px;' } },
+                                  { td: { text: `Item ${_index + 1}`, style: 'border: 1px solid #ddd; padding: 8px;' } },
+                                  { td: { text: `${(Math.random() * 1000).toFixed(2)}`, style: 'border: 1px solid #ddd; padding: 8px;' } },
+                                  { td: { text: _index % 2 === 0 ? 'Active' : 'Pending', style: 'border: 1px solid #ddd; padding: 8px;' } }
+                                ]
+                              }
+                            }))
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      
+      {
+        div: {
+          className: 'footer',
+          style: 'margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;',
+          children: [
+            { h3: { text: '⚡ Performance Benefits' } },
+            {
+              ul: {
+                children: [
+                  { li: { text: 'Automatic performance monitoring and reporting' } },
+                  { li: { text: 'Intelligent component caching and memoization' } },
+                  { li: { text: 'Memory usage optimization and leak detection' } },
+                  { li: { text: 'Bundle size analysis and optimization recommendations' } }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+};
+
+export default PerformanceTestDemo;

@@ -1,43 +1,50 @@
 /**
- * Example demonstrating enhanced Express.js integration with Coherent.js
+ * Express.js Integration Example
+ * Demonstrates Coherent.js components with Express middleware and routing
  */
 
 import express from 'express';
-import { coherentMiddleware, createCoherentHandler, setupCoherentExpress } from '../src/express/coherent-express.js';
+import { createCoherentHandler, setupCoherentExpress } from '../src/express/coherent-express.js';
 
-// Create Express app
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Setup Coherent.js with Express
 setupCoherentExpress(app, {
   useMiddleware: true,
-  useEngine: false, // We'll use middleware instead of engine
+  useEngine: false,
   enablePerformanceMonitoring: true
 });
 
-// Alternative: Use middleware directly
-// app.use(coherentMiddleware({ enablePerformanceMonitoring: true }));
+// Express integration home page component
+function ExpressHomePage({ name = 'Express Developer' }) {
+  const styles = `
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 900px; margin: 0 auto; padding: 40px 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh; color: white;
+    }
+    .container { background: rgba(255,255,255,0.1); border-radius: 20px; padding: 40px; backdrop-filter: blur(10px); }
+    .header { text-align: center; margin-bottom: 40px; }
+    .header h1 { font-size: 3em; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+    .header p { font-size: 1.2em; margin: 10px 0; opacity: 0.9; }
+    .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin: 30px 0; }
+    .feature { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; }
+    .feature h3 { margin: 0 0 10px 0; color: #ffd700; }
+    .links { text-align: center; margin-top: 30px; }
+    .links a { color: #ffd700; text-decoration: none; margin: 0 15px; font-weight: bold; }
+    .links a:hover { text-decoration: underline; }
+  `;
 
-// A simple Coherent.js component
-function HomePage({ name = 'World' }) {
   return {
     html: {
       children: [
         {
           head: {
             children: [
-              { title: { text: 'Coherent.js Express Example' } },
-              {
-                style: {
-                  text: `
-                    body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-                    .header { text-align: center; color: #333; }
-                    .content { margin-top: 30px; }
-                    .footer { margin-top: 40px; text-align: center; color: #666; font-size: 0.9em; }
-                  `
-                }
-              }
+              { title: { text: 'Coherent.js + Express Integration' } },
+              { style: { text: styles } }
             ]
           }
         },
@@ -46,41 +53,70 @@ function HomePage({ name = 'World' }) {
             children: [
               {
                 div: {
-                  className: 'header',
+                  class: 'container',
                   children: [
-                    { h1: { text: 'Welcome to Coherent.js!' } },
-                    { p: { text: `Hello, ${name}!` } }
-                  ]
-                }
-              },
-              {
-                div: {
-                  className: 'content',
-                  children: [
-                    { h2: { text: 'Features' } },
                     {
-                      ul: {
+                      div: {
+                        class: 'header',
                         children: [
-                          { li: { text: '✅ Server-side rendering with Coherent.js' } },
-                          { li: { text: '✅ Automatic performance monitoring' } },
-                          { li: { text: '✅ Express.js middleware integration' } },
-                          { li: { text: '✅ Zero-configuration setup' } }
+                          { h1: { text: '🚀 Express + Coherent.js' } },
+                          { p: { text: `Welcome, ${name}!` } },
+                          { p: { text: 'Server-side rendering made simple' } }
                         ]
                       }
                     },
                     {
-                      p: {
-                        text: 'This page was rendered with Coherent.js and served by Express.js!'
+                      div: {
+                        class: 'features',
+                        children: [
+                          {
+                            div: {
+                              class: 'feature',
+                              children: [
+                                { h3: { text: '⚡ Fast Rendering' } },
+                                { p: { text: 'Server-side rendering with automatic optimization' } }
+                              ]
+                            }
+                          },
+                          {
+                            div: {
+                              class: 'feature',
+                              children: [
+                                { h3: { text: '🔧 Easy Integration' } },
+                                { p: { text: 'Drop-in middleware for existing Express apps' } }
+                              ]
+                            }
+                          },
+                          {
+                            div: {
+                              class: 'feature',
+                              children: [
+                                { h3: { text: '📊 Performance Monitoring' } },
+                                { p: { text: 'Built-in performance tracking and metrics' } }
+                              ]
+                            }
+                          },
+                          {
+                            div: {
+                              class: 'feature',
+                              children: [
+                                { h3: { text: '🛡️ Type Safety' } },
+                                { p: { text: 'Full TypeScript support and type safety' } }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      div: {
+                        class: 'links',
+                        children: [
+                          { a: { href: '/user/demo', text: '👤 User Profile Demo' } },
+                          { a: { href: '/api/status', text: '📡 API Status' } }
+                        ]
                       }
                     }
-                  ]
-                }
-              },
-              {
-                div: {
-                  className: 'footer',
-                  children: [
-                    { p: { text: 'Built with Coherent.js and Express.js' } }
                   ]
                 }
               }
@@ -92,25 +128,72 @@ function HomePage({ name = 'World' }) {
   };
 }
 
-// A component that uses request data
-function UserPage(req) {
+// User profile component using Express request data
+function ExpressUserPage(req) {
+  const { username } = req.params;
+  const userAgent = req.get('User-Agent') || 'Unknown';
+  const timestamp = new Date().toLocaleString();
+  
+  const styles = `
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px; margin: 0 auto; padding: 40px 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh; color: white;
+    }
+    .profile { background: rgba(255,255,255,0.1); border-radius: 20px; padding: 40px; backdrop-filter: blur(10px); }
+    .profile h1 { text-align: center; margin-bottom: 30px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+    .info { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; margin: 20px 0; }
+    .info h3 { margin: 0 0 10px 0; color: #ffd700; }
+    .info p { margin: 5px 0; opacity: 0.9; }
+    .back-link { display: inline-block; margin-top: 20px; color: #ffd700; text-decoration: none; font-weight: bold; }
+    .back-link:hover { text-decoration: underline; }
+  `;
+
   return {
     html: {
       children: [
         {
           head: {
             children: [
-              { title: { text: `User: ${req.params.username}` } }
+              { title: { text: `User Profile - ${username}` } },
+              { style: { text: styles } }
             ]
           }
         },
         {
           body: {
             children: [
-              { h1: { text: `User Profile: ${req.params.username}` } },
-              { p: { text: `Path: ${req.path}` } },
-              { p: { text: `User Agent: ${req.get('User-Agent')}` } },
-              { a: { href: '/', text: '← Back to Home' } }
+              {
+                div: {
+                  class: 'profile',
+                  children: [
+                    { h1: { text: `👤 ${username}` } },
+                    {
+                      div: {
+                        class: 'info',
+                        children: [
+                          { h3: { text: '🔗 Request Info' } },
+                          { p: { text: `Path: ${req.path}` } },
+                          { p: { text: `Method: ${req.method}` } },
+                          { p: { text: `Timestamp: ${timestamp}` } }
+                        ]
+                      }
+                    },
+                    {
+                      div: {
+                        class: 'info',
+                        children: [
+                          { h3: { text: '🌐 Browser Info' } },
+                          { p: { text: `User Agent: ${userAgent.substring(0, 80)}${userAgent.length > 80 ? '...' : ''}` } },
+                          { p: { text: `IP: ${req.ip || 'Unknown'}` } }
+                        ]
+                      }
+                    },
+                    { a: { href: '/', text: '← Back to Home', class: 'back-link' } }
+                  ]
+                }
+              }
             ]
           }
         }
@@ -120,43 +203,130 @@ function UserPage(req) {
 }
 
 // Routes
-
-// Home page using middleware
 app.get('/', (req, res) => {
-  // Just send a Coherent.js component - middleware will handle rendering
-  res.send(HomePage({ name: 'Express Developer' }));
+  res.send(ExpressHomePage({ name: 'Express Developer' }));
 });
 
-// User page using custom handler
 app.get('/user/:username', createCoherentHandler((req) => {
-  return UserPage(req);
+  return ExpressUserPage(req);
 }));
 
-// API route (not using Coherent.js)
 app.get('/api/status', (req, res) => {
   res.json({
     status: 'ok',
     framework: 'Coherent.js with Express',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
   });
 });
 
 // Error handling
-app.use((err, req, res, next) => {
-  console.error('Error:', err);
+app.use((err, req, res) => {
   res.status(500).send({
     error: 'Internal Server Error',
     message: err.message
   });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Express server with Coherent.js running at http://localhost:${PORT}`);
-  console.log(`📖 Examples:`);
-  console.log(`   Home: http://localhost:${PORT}/`);
-  console.log(`   User: http://localhost:${PORT}/user/john`);
-  console.log(`   API:  http://localhost:${PORT}/api/status`);
+// Start server only if not imported as module
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`Express + Coherent.js server: http://localhost:${PORT}`);
+    }
+  });
+}
+
+// Demo component for live preview
+const ExpressIntegrationDemo = () => {
+  const styles = `
+    .demo { max-width: 800px; margin: 0 auto; padding: 20px; font-family: system-ui, sans-serif; }
+    .demo h2 { color: #333; border-bottom: 2px solid #667eea; padding-bottom: 10px; }
+    .demo .section { margin: 30px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; }
+    .demo pre { background: #2d3748; color: #e2e8f0; padding: 15px; border-radius: 5px; overflow-x: auto; }
+    .demo .highlight { background: #ffd700; padding: 2px 4px; border-radius: 3px; }
+  `;
+
+  return {
+    html: {
+      children: [
+        {
+          head: {
+            children: [
+              { title: { text: 'Express.js Integration Demo' } },
+              { style: { text: styles } }
+            ]
+          }
+        },
+        {
+          body: {
+            children: [
+              {
+                div: {
+                  class: 'demo',
+                  children: [
+                    { h2: { text: '🚀 Express.js Integration with Coherent.js' } },
+                    {
+                      div: {
+                        class: 'section',
+                        children: [
+                          { h3: { text: 'Setup' } },
+                          { p: { text: 'Install the Express integration:' } },
+                          { pre: { text: 'npm install @coherent/express' } },
+                          { p: { text: 'Configure your Express app:' } },
+                          { pre: { text: `import { setupCoherentExpress } from '@coherent/express';
+
+setupCoherentExpress(app, {
+  useMiddleware: true,
+  enablePerformanceMonitoring: true
+});` } }
+                        ]
+                      }
+                    },
+                    {
+                      div: {
+                        class: 'section',
+                        children: [
+                          { h3: { text: 'Features' } },
+                          {
+                            ul: {
+                              children: [
+                                { li: { text: 'Automatic component rendering with Express middleware' } },
+                                { li: { text: 'Request data injection into components' } },
+                                { li: { text: 'Performance monitoring and metrics' } },
+                                { li: { text: 'Error handling and debugging support' } }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      div: {
+                        class: 'section',
+                        children: [
+                          { h3: { text: 'Usage Example' } },
+                          { p: { text: 'Create routes that return Coherent.js components:' } },
+                          { pre: { text: `app.get('/', (req, res) => {
+  res.send(HomePage({ user: req.user }));
 });
 
-export default app;
+app.get('/user/:id', createCoherentHandler((req) => {
+  return UserProfile(req.params.id);
+}));` } }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  };
+};
+
+export default ExpressIntegrationDemo;
+export { app };

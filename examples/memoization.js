@@ -1,115 +1,116 @@
-import { renderToString, memo, Component } from '../src/coherent.js';
+/**
+ * Memoization Examples
+ * Demonstrates memo() for component optimization and performance
+ */
+
+import { renderToString, memo } from '../src/coherent.js';
 import { performanceMonitor } from '../src/performance/monitor.js';
 
-// Start performance monitoring
-performanceMonitor.start();
-
-// Example 1: Expensive component without memoization
+// Expensive computation component (non-memoized)
 const ExpensiveComponent = ({ id, data }) => {
-  // Simulate expensive computation
-  const expensiveResult = Array.from({ length: 10000 }, (_, i) => 
+  const expensiveResult = Array.from({ length: 5000 }, (_, i) => 
     Math.sin(i * data.seed) * Math.cos(i * data.factor)
   ).reduce((sum, val) => sum + val, 0);
   
   return {
     div: {
-      className: 'expensive-component',
+      class: 'component expensive',
       children: [
-        { h3: { text: `Expensive Component ${id}` } },
-        { p: { text: `Computed value: ${expensiveResult.toFixed(4)}` } },
-        { p: { text: `Data seed: ${data.seed}, factor: ${data.factor}` } }
+        { h4: { text: `Component ${id} (Non-memoized)` } },
+        { p: { text: `Result: ${expensiveResult.toFixed(4)}` } },
+        { small: { text: `Seed: ${data.seed.toFixed(3)}, Factor: ${data.factor.toFixed(3)}` } }
       ]
     }
   };
 };
 
-// Example 2: Memoized version of the same component
+// Memoized version with custom equality function
 const MemoizedExpensiveComponent = memo(
   ({ id, data }) => {
-    // Simulate expensive computation
-    const expensiveResult = Array.from({ length: 10000 }, (_, i) => 
+    const expensiveResult = Array.from({ length: 5000 }, (_, i) => 
       Math.sin(i * data.seed) * Math.cos(i * data.factor)
     ).reduce((sum, val) => sum + val, 0);
     
     return {
       div: {
-        className: 'expensive-component memoized',
+        class: 'component memoized',
         children: [
-          { h3: { text: `Memoized Component ${id}` } },
-          { p: { text: `Computed value: ${expensiveResult.toFixed(4)}` } },
-          { p: { text: `Data seed: ${data.seed}, factor: ${data.factor}` } }
+          { h4: { text: `Component ${id} (Memoized)` } },
+          { p: { text: `Result: ${expensiveResult.toFixed(4)}` } },
+          { small: { text: `Seed: ${data.seed.toFixed(3)}, Factor: ${data.factor.toFixed(3)}` } },
+          { span: { text: '✅ Cached', class: 'cache-indicator' } }
         ]
       }
     };
   },
-  // Custom equality function - components with same id and data are equal
   (prevProps, nextProps) => 
     prevProps.id === nextProps.id && 
     prevProps.data.seed === nextProps.data.seed && 
     prevProps.data.factor === nextProps.data.factor
 );
 
-// Example 3: Component with conditional rendering
-const ConditionalComponent = memo(
+// Conditional rendering with memoization
+const UserProfile = memo(
   ({ showDetails, userData }) => ({
     div: {
-      className: 'conditional-component',
+      class: 'user-profile',
       children: [
-        { h2: { text: 'Conditional Rendering Example' } },
-        { p: { text: `User: ${userData.name}` } },
+        { h4: { text: `👤 ${userData.name}` } },
+        { p: { text: userData.email } },
         showDetails ? {
           div: {
-            className: 'details',
+            class: 'details',
             children: [
-              { p: { text: `Email: ${userData.email}` } },
               { p: { text: `Role: ${userData.role}` } },
-              { p: { text: `Last login: ${userData.lastLogin}` } }
+              { p: { text: `Last login: ${userData.lastLogin}` } },
+              { p: { text: `Status: ${userData.status}` } }
             ]
           }
-        } : null,
-        { p: { text: `Details ${showDetails ? 'shown' : 'hidden'}` } }
+        } : { p: { text: 'Click to show details', class: 'hint' } }
       ]
     }
   }),
-  // Only re-render when showDetails or userData changes
   (prevProps, nextProps) => 
     prevProps.showDetails === nextProps.showDetails &&
-    prevProps.userData.name === nextProps.userData.name &&
-    prevProps.userData.email === nextProps.userData.email &&
-    prevProps.userData.role === nextProps.userData.role
+    JSON.stringify(prevProps.userData) === JSON.stringify(nextProps.userData)
 );
 
-// Example 4: List component with memoized items
-const ListItem = memo(
-  ({ item, onRemove }) => ({
-    li: {
-      key: item.id,
-      className: 'list-item',
+// Memoized list item component
+const ProductItem = memo(
+  ({ item, onToggle }) => ({
+    div: {
+      class: `product-item ${item.selected ? 'selected' : ''}`,
       children: [
-        { span: { text: `${item.name} - ${item.category}` } },
-        { button: { 
-          text: 'Remove', 
-          onclick: () => onRemove(item.id) 
-        }}
+        { h5: { text: item.name } },
+        { p: { text: `Category: ${item.category}` } },
+        { p: { text: `Price: $${item.price}` } },
+        { 
+          button: { 
+            text: item.selected ? 'Remove' : 'Add to Cart',
+            class: item.selected ? 'btn-remove' : 'btn-add',
+            onclick: typeof window !== 'undefined' ? () => onToggle(item.id) : null
+          }
+        }
       ]
     }
   }),
-  // Re-render only when item or onRemove changes
   (prevProps, nextProps) => 
     prevProps.item.id === nextProps.item.id &&
-    prevProps.item.name === nextProps.item.name &&
-    prevProps.item.category === nextProps.item.category
+    prevProps.item.selected === nextProps.item.selected
 );
 
-const ListComponent = ({ items, onRemoveItem }) => ({
+// Product list with memoized items
+const ProductList = ({ items, onToggleItem }) => ({
   div: {
-    className: 'list-component',
+    class: 'product-list',
     children: [
-      { h2: { text: 'List with Memoized Items' } },
+      { h4: { text: '🛍️ Product Catalog' } },
+      { p: { text: `${items.filter(i => i.selected).length} items in cart` } },
       {
-        ul: {
+        div: {
+          class: 'products-grid',
           children: items.map(item => 
-            ListItem({ item, onRemove: onRemoveItem })
+            ProductItem({ item, onToggle: onToggleItem })
           )
         }
       }
@@ -117,93 +118,171 @@ const ListComponent = ({ items, onRemoveItem }) => ({
   }
 });
 
-// Performance comparison example
-console.log('=== Performance Comparison: Memoization ===');
-
-const testData = {
-  seed: Math.random(),
-  factor: Math.random()
+// Performance comparison utility
+const runPerformanceTest = () => {
+  performanceMonitor.start();
+  
+  const testData = { seed: 0.5, factor: 0.3 };
+  const results = { nonMemoized: 0, memoized: 0 };
+  
+  // Test non-memoized component
+  const start1 = performance.now();
+  for (let i = 0; i < 10; i++) {
+    renderToString(ExpensiveComponent({ id: 1, data: testData }));
+  }
+  results.nonMemoized = performance.now() - start1;
+  
+  // Test memoized component (same props)
+  const start2 = performance.now();
+  for (let i = 0; i < 10; i++) {
+    renderToString(MemoizedExpensiveComponent({ id: 1, data: testData }));
+  }
+  results.memoized = performance.now() - start2;
+  
+  const report = performanceMonitor.stop();
+  return { results, report };
 };
 
-// Render non-memoized component multiple times
-console.log('\nRendering non-memoized component 5 times...');
-console.time('Non-memoized');
-for (let i = 0; i < 5; i++) {
-  renderToString(ExpensiveComponent({ 
-    id: i, 
-    data: { ...testData, seed: testData.seed + i } 
-  }));
-}
-console.timeEnd('Non-memoized');
+// Demo component showcasing memoization features
+const MemoizationDemo = () => {
+  const styles = `
+    .demo { max-width: 1000px; margin: 0 auto; padding: 20px; font-family: system-ui, sans-serif; }
+    .demo h2 { color: #333; border-bottom: 2px solid #667eea; padding-bottom: 10px; }
+    .demo .section { margin: 30px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; }
+    .demo .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    .component { padding: 15px; border: 1px solid #ddd; border-radius: 5px; background: white; }
+    .component.expensive { border-left: 4px solid #ff6b6b; }
+    .component.memoized { border-left: 4px solid #51cf66; }
+    .cache-indicator { background: #51cf66; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.8em; }
+    .user-profile { padding: 15px; border: 1px solid #ddd; border-radius: 5px; background: white; }
+    .details { margin-top: 10px; padding: 10px; background: #f1f3f4; border-radius: 3px; }
+    .hint { color: #666; font-style: italic; }
+    .products-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+    .product-item { padding: 15px; border: 1px solid #ddd; border-radius: 5px; background: white; }
+    .product-item.selected { border-color: #51cf66; background: #f8fff9; }
+    .btn-add { background: #51cf66; color: white; border: none; padding: 5px 10px; border-radius: 3px; }
+    .btn-remove { background: #ff6b6b; color: white; border: none; padding: 5px 10px; border-radius: 3px; }
+    .performance { background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0; }
+    .performance pre { background: #263238; color: #eee; padding: 10px; border-radius: 3px; overflow-x: auto; }
+  `;
+  
+  const testData = { seed: 0.5, factor: 0.3 };
+  const userData = {
+    name: 'Alice Johnson',
+    email: 'alice@example.com',
+    role: 'Developer',
+    lastLogin: '2024-01-15',
+    status: 'Active'
+  };
+  
+  const products = [
+    { id: 1, name: 'Wireless Headphones', category: 'Electronics', price: 99.99, selected: false },
+    { id: 2, name: 'Coffee Mug', category: 'Kitchen', price: 12.99, selected: true },
+    { id: 3, name: 'Notebook', category: 'Office', price: 8.99, selected: false },
+    { id: 4, name: 'Phone Case', category: 'Electronics', price: 24.99, selected: true }
+  ];
+  
+  return {
+    html: {
+      children: [
+        {
+          head: {
+            children: [
+              { title: { text: 'Memoization Examples' } },
+              { style: { text: styles } }
+            ]
+          }
+        },
+        {
+          body: {
+            children: [
+              {
+                div: {
+                  class: 'demo',
+                  children: [
+                    { h2: { text: '⚡ Memoization in Coherent.js' } },
+                    {
+                      div: {
+                        class: 'section',
+                        children: [
+                          { h3: { text: 'Performance Comparison' } },
+                          { p: { text: 'Compare rendering performance between memoized and non-memoized components:' } },
+                          {
+                            div: {
+                              class: 'grid',
+                              children: [
+                                ExpensiveComponent({ id: 1, data: testData }),
+                                MemoizedExpensiveComponent({ id: 1, data: testData })
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      div: {
+                        class: 'section',
+                        children: [
+                          { h3: { text: 'Conditional Rendering' } },
+                          { p: { text: 'Memoized components with conditional content:' } },
+                          {
+                            div: {
+                              class: 'grid',
+                              children: [
+                                UserProfile({ showDetails: false, userData }),
+                                UserProfile({ showDetails: true, userData })
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      div: {
+                        class: 'section',
+                        children: [
+                          { h3: { text: 'List Memoization' } },
+                          { p: { text: 'Memoized list items prevent unnecessary re-renders:' } },
+                          ProductList({ 
+                            items: products, 
+                            onToggleItem: (id) => console.log(`Toggle item ${id}`) 
+                          })
+                        ]
+                      }
+                    },
+                    {
+                      div: {
+                        class: 'performance',
+                        children: [
+                          { h3: { text: '📊 Performance Benefits' } },
+                          {
+                            ul: {
+                              children: [
+                                { li: { text: 'Memoized components skip re-rendering when props haven\'t changed' } },
+                                { li: { text: 'Custom equality functions provide fine-grained control' } },
+                                { li: { text: 'Significant performance gains for expensive computations' } },
+                                { li: { text: 'Automatic caching reduces redundant work' } }
+                              ]
+                            }
+                          },
+                          { h4: { text: 'Usage Example:' } },
+                          { pre: { text: `const MemoizedComponent = memo(
+  ({ data }) => ({ div: { text: expensiveComputation(data) } }),
+  (prevProps, nextProps) => prevProps.data.id === nextProps.data.id
+);` } }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  };
+};
 
-// Render memoized component multiple times with same props
-console.log('\nRendering memoized component 5 times with same props...');
-console.time('Memoized (same props)');
-for (let i = 0; i < 5; i++) {
-  renderToString(MemoizedExpensiveComponent({ 
-    id: 1, 
-    data: testData 
-  }));
-}
-console.timeEnd('Memoized (same props)');
-
-// Render memoized component with different props
-console.log('\nRendering memoized component 5 times with different props...');
-console.time('Memoized (different props)');
-for (let i = 0; i < 5; i++) {
-  renderToString(MemoizedExpensiveComponent({ 
-    id: i, 
-    data: { ...testData, seed: testData.seed + i } 
-  }));
-}
-console.timeEnd('Memoized (different props)');
-
-// Render examples
-console.log('\n=== Conditional Component Examples ===');
-console.log('\nWith details:');
-console.log(renderToString(ConditionalComponent({ 
-  showDetails: true, 
-  userData: { 
-    name: 'John Doe', 
-    email: 'john@example.com', 
-    role: 'Admin', 
-    lastLogin: '2023-05-15' 
-  } 
-})));
-
-console.log('\nWithout details:');
-console.log(renderToString(ConditionalComponent({ 
-  showDetails: false, 
-  userData: { 
-    name: 'John Doe', 
-    email: 'john@example.com', 
-    role: 'Admin', 
-    lastLogin: '2023-05-15' 
-  } 
-})));
-
-console.log('\n=== List Component Example ===');
-const sampleItems = [
-  { id: 1, name: 'Apple', category: 'Fruit' },
-  { id: 2, name: 'Carrot', category: 'Vegetable' },
-  { id: 3, name: 'Banana', category: 'Fruit' }
-];
-
-console.log(renderToString(ListComponent({ 
-  items: sampleItems, 
-  onRemoveItem: (id) => console.log(`Remove item ${id}`) 
-})));
-
-// Show performance stats
-const report = performanceMonitor.stop();
-console.log('\n=== Performance Report ===');
-console.log(`Total Renders: ${report.summary.totalRenders}`);
-console.log(`Average Render Time: ${report.summary.averageRenderTime}ms`);
-console.log(`Cache Hit Rate: ${report.caching.hitRate}%`);
-
-if (report.recommendations.length > 0) {
-  console.log('\nPerformance Recommendations:');
-  report.recommendations.forEach(rec => {
-    console.log(`- [${rec.priority.toUpperCase()}] ${rec.suggestion}`);
-  });
-}
+export default MemoizationDemo;
+export { ExpensiveComponent, MemoizedExpensiveComponent, UserProfile, ProductList, runPerformanceTest };

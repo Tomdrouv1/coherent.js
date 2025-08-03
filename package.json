@@ -16,7 +16,15 @@
     "test": "node --test tests/*.test.js",
     "dev": "coherent-dev",
     "example:basic": "node examples/basic-usage.js",
+    "example:components": "node examples/components-test.js",
     "example:performance": "node examples/performance-test.js",
+    "example:advanced": "node examples/advanced-features.js",
+    "example:streaming": "node examples/streaming-renderer.js",
+    "example:security": "node examples/security-test.js",
+    "example:hydration": "node examples/hydration-test.js",
+    "example:state": "node examples/state-management.js",
+    "example:memoization": "node examples/memoization-test.js",
+    "example:composition": "node examples/component-composition.js",
     "lint": "eslint src/ tests/ examples/",
     "format": "prettier --write src/ tests/ examples/",
     "typecheck": "tsc --noEmit",
@@ -50,11 +58,14 @@
   },
   "homepage": "https://github.com/Tomdrouv1/coherent.js#readme",
   "dependencies": {
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "koa": "3.0.1",
+    "node-fetch": "3.3.2"
   },
   "devDependencies": {
     "@types/node": "^24.1.0",
     "chokidar": "4.0.3",
+    "esbuild": "0.25.8",
     "eslint": "^9.32.0",
     "fastify": "5.4.0",
     "husky": "^9.1.7",

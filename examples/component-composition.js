@@ -1,7 +1,7 @@
-import { renderToString, withState } from '../src/coherent.js';
+import { withState } from '../src/coherent.js';
 
 // Example 1: Basic component composition
-const Header = ({ title, subtitle }) => ({
+export const Header = ({ title, subtitle }) => ({
   header: {
     className: 'app-header',
     children: [
@@ -11,16 +11,16 @@ const Header = ({ title, subtitle }) => ({
   }
 });
 
-const Footer = ({ copyright }) => ({
+export const Footer = ({ copyright }) => ({
   footer: {
     className: 'app-footer',
     children: [
-      { p: { text: `© ${new Date().getFullYear()} ${copyright}` } }
+      { p: { text: ` ${new Date().getFullYear()} ${copyright}` } }
     ]
   }
 });
 
-const Layout = ({ header, footer, children }) => ({
+export const Layout = ({ header, footer, children }) => ({
   div: {
     className: 'app-layout',
     children: [
@@ -37,7 +37,7 @@ const Layout = ({ header, footer, children }) => ({
 });
 
 // Example 2: Higher-order component for loading states
-const withLoading = (WrappedComponent) => 
+export const withLoading = (WrappedComponent) => 
   withState({ loading: false, error: null })(({ state, setState, ...props }) => {
     if (state.loading) {
       return {
@@ -45,7 +45,7 @@ const withLoading = (WrappedComponent) =>
           className: 'loading-container',
           children: [
             { h3: { text: 'Loading...' } },
-            { div: { className: 'spinner' } }
+            { div: { className: 'spinner', text: '' } }
           ]
         }
       };
@@ -77,40 +77,8 @@ const withLoading = (WrappedComponent) =>
     return WrappedComponent(propsWithLoading);
   });
 
-// Example component that uses loading state
-const DataDisplay = withLoading(({ data, setLoading, setData }) => {
-  const mockData = [1, 2, 3];
-
-  const loadData = async () => {
-    if (typeof window !== 'undefined') {
-      setLoading(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setLoading(false);
-      setData(mockData);
-    }
-  };
-
-  return {
-    div: {
-      className: 'data-display',
-      children: [
-        { h2: { text: 'Data Display with Loading State' } },
-        { p: { text: `Items: ${data?.length || 0}` } },
-        {
-          button: {
-            text: 'Load Data',
-            // In SSR context, event handlers won't work, so we provide a safe fallback
-            onclick: typeof window !== 'undefined' ? loadData : null
-          }
-        }
-      ]
-    }
-  };
-});
-
 // Example 3: Component composition with mixins
-const withTimestamp = (Component) => (props) => ({
+export const withTimestamp = (Component) => (props) => ({
   div: {
     className: 'timestamp-wrapper',
     children: [
@@ -123,15 +91,15 @@ const withTimestamp = (Component) => (props) => ({
   }
 });
 
-const withBorder = (Component) => (props) => ({
+export const withBorder = (Component) => (props) => ({
   div: {
     className: 'border-wrapper',
-    style: 'border: 2px solid #ccc; padding: 10px; margin: 10px 0;',
+    style: 'border: 2px solid #ccc; padding: 10px; margin: 10px 0; border-radius: 4px;',
     children: [Component(props)]
   }
 });
 
-const SimpleCard = ({ title, content }) => ({
+export const SimpleCard = ({ title, content }) => ({
   div: {
     className: 'simple-card',
     children: [
@@ -142,43 +110,10 @@ const SimpleCard = ({ title, content }) => ({
 });
 
 // Compose multiple HOCs
-const EnhancedCard = withBorder(withTimestamp(SimpleCard));
+export const EnhancedCard = withBorder(withTimestamp(SimpleCard));
 
-// Example 4: Component composition using compose utility
-const Notification = ({ type, message, onClose }) => ({
-  div: {
-    className: `notification notification--${type}`,
-    children: [
-      { span: { text: message } },
-      { button: { 
-        text: '×', 
-        className: 'close-btn',
-        onclick: onClose 
-      }}
-    ]
-  }
-});
-
-const Button = ({ text, onClick, variant = 'primary' }) => ({
-  button: {
-    className: `btn btn--${variant}`,
-    text: text,
-    onclick: onClick
-  }
-});
-
-const FormField = ({ label, type = 'text', value, onChange, placeholder }) => ({
-  div: {
-    className: 'form-field',
-    children: [
-      { label: { text: label } },
-      { input: { type, value, placeholder, oninput: (e) => onChange(e.target.value) } }
-    ]
-  }
-});
-
-// Compose multiple components into a form
-const ContactForm = withState({
+// Example 4: Form component with state management
+export const ContactForm = withState({
   name: '',
   email: '',
   message: ''
@@ -242,7 +177,6 @@ const ContactForm = withState({
           text: 'Send Message',
           onclick: typeof window !== 'undefined' ? () => {
             console.log('Form submitted:', state);
-            // Reset form
             setState({ name: '', email: '', message: '' });
           } : null,
         }
@@ -251,54 +185,120 @@ const ContactForm = withState({
   }
 }));
 
-// Example 5: Conditional composition
-const ConditionalWrapper = ({ condition, wrapper, children }) => 
-  condition ? wrapper(children) : children;
-
-const Card = ({ title, children, elevated = false }) => ({
-  div: {
-    className: `card ${elevated ? 'card--elevated' : ''}`,
+// Complete page demonstrating all composition patterns
+export const demoPage = {
+  html: {
     children: [
-      title ? { h3: { text: title } } : null,
-      { div: { className: 'card-content', children: [children] } }
-    ].filter(Boolean)
+      {
+        head: {
+          children: [
+            { title: { text: 'Component Composition Demo' } },
+            {
+              style: {
+                text: `
+                body { 
+                  font-family: Arial, sans-serif; 
+                  max-width: 900px; 
+                  margin: 0 auto; 
+                  padding: 20px; 
+                  line-height: 1.6;
+                }
+                .app-header { 
+                  background: #f8f9fa; 
+                  padding: 20px; 
+                  border-radius: 8px; 
+                  margin-bottom: 20px; 
+                }
+                .app-footer { 
+                  background: #f8f9fa; 
+                  padding: 15px; 
+                  border-radius: 8px; 
+                  margin-top: 20px; 
+                  text-align: center; 
+                }
+                .app-main { 
+                  min-height: 400px; 
+                }
+                .simple-card { 
+                  background: white; 
+                  padding: 15px; 
+                  margin: 10px 0; 
+                }
+                .timestamp { 
+                  color: #666; 
+                  font-style: italic; 
+                  margin-top: 10px; 
+                  display: block; 
+                }
+                .contact-form { 
+                  background: #f8f9fa; 
+                  padding: 20px; 
+                  border-radius: 8px; 
+                  margin: 20px 0; 
+                }
+                .form-field { 
+                  margin-bottom: 15px; 
+                }
+                .form-field label { 
+                  display: block; 
+                  margin-bottom: 5px; 
+                  font-weight: bold; 
+                }
+                .form-field input, .form-field textarea { 
+                  width: 100%; 
+                  padding: 8px; 
+                  border: 1px solid #ddd; 
+                  border-radius: 4px; 
+                  font-size: 14px; 
+                }
+                .btn { 
+                  padding: 10px 20px; 
+                  border: none; 
+                  border-radius: 4px; 
+                  cursor: pointer; 
+                  font-size: 14px; 
+                }
+                .btn--primary { 
+                  background: #007bff; 
+                  color: white; 
+                }
+                .btn--primary:hover { 
+                  background: #0056b3; 
+                }
+                `
+              }
+            }
+          ]
+        }
+      },
+      {
+        body: {
+          children: [
+            Layout({
+              header: Header({ 
+                title: 'Component Composition Demo', 
+                subtitle: 'Exploring different composition patterns in Coherent.js' 
+              }),
+              footer: Footer({ copyright: 'Coherent.js Examples' }),
+              children: [
+                { h2: { text: 'Enhanced Card with Multiple HOCs' } },
+                { p: { text: 'This card demonstrates composition using withBorder and withTimestamp HOCs:' } },
+                EnhancedCard({ 
+                  title: 'Enhanced Card Example', 
+                  content: 'This card has a border and timestamp automatically added through composition.' 
+                }),
+                
+                { h2: { text: 'Interactive Form with State' } },
+                { p: { text: 'This form demonstrates state management and event handling:' } },
+                ContactForm()
+              ]
+            })
+          ]
+        }
+      }
+    ]
   }
-});
+};
 
-// Render examples
-console.log('=== Component Composition Examples ===\n');
-
-console.log('1. Basic Layout Composition:');
-const page = Layout({
-  header: Header({ title: 'My App', subtitle: 'Built with Coherent.js' }),
-  footer: Footer({ copyright: 'Coherent.js Examples' }),
-  children: [
-    { h2: { text: 'Welcome to the App' } },
-    { p: { text: 'This page demonstrates component composition.' } }
-  ]
-});
-
-console.log(renderToString(Notification({ type: 'info', message: 'This is a notification message', onClose: () => {} })));
-
-console.log(renderToString(page));
-
-console.log('\n2. Higher-Order Component with Loading State:');
-console.log(renderToString(DataDisplay({ data: [1, 2, 3] })));
-
-console.log('\n3. Multiple HOC Composition:');
-console.log(renderToString(EnhancedCard({ 
-  title: 'Enhanced Card', 
-  content: 'This card has a border and timestamp.' 
-})));
-
-console.log('\n4. Form Component Composition:');
-console.log(renderToString(ContactForm()));
-
-console.log('\n5. Conditional Composition:');
-const conditionalCard = ConditionalWrapper({
-  condition: true,
-  wrapper: (children) => Card({ title: 'Wrapped Content', elevated: true, children }),
-  children: { p: { text: 'This content may or may not be wrapped.' } }
-});
-
-console.log(renderToString(conditionalCard));
+// Export the demo page as default for live preview
+export default demoPage;

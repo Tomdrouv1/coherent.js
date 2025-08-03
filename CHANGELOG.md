@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Memoization and composition utilities
 - Express.js integration
 - Comprehensive examples and documentation
+- API Framework with Router, Validation, Error Handling, and Serialization
+- OpenAPI 3.0 documentation generation with Swagger UI
+- Extensible Middleware System for Auth, Logging, CORS, etc.
+- API Adapters for REST, RPC, and GraphQL patterns
+- Fastify and Next.js integration for API routes
+- Comprehensive API documentation and examples
 
 ### Fixed
 - TagName extraction bug in renderComponent

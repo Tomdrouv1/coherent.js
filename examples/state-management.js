@@ -1,30 +1,40 @@
-import { renderToString, withState, Component } from '../src/coherent.js';
+import { withState } from '../src/coherent.js';
 
 // Example 1: Basic counter component with state
-const Counter = withState({ count: 0 })(({ state, setState }) => ({
+export const Counter = withState({ count: 0 })(({ state, setState }) => ({
   div: {
     className: 'counter',
     children: [
-      { h2: { text: 'Counter Example' } },
-      { p: { text: `Count: ${state.count}` } },
-      { button: { 
-        text: 'Increment', 
-        onclick: () => setState({ count: state.count + 1 }) 
-      }},
-      { button: { 
-        text: 'Decrement', 
-        onclick: () => setState({ count: state.count - 1 }) 
-      }},
-      { button: { 
-        text: 'Reset', 
-        onclick: () => setState({ count: 0 }) 
-      }}
+      { h3: { text: 'Counter Example' } },
+      { p: { text: `Count: ${state.count}`, className: 'count-display' } },
+      {
+        div: {
+          className: 'button-group',
+          children: [
+            { button: { 
+              text: 'Increment', 
+              className: 'btn btn--primary',
+              onclick: typeof window !== 'undefined' ? () => setState({ count: state.count + 1 }) : null
+            }},
+            { button: { 
+              text: 'Decrement', 
+              className: 'btn btn--secondary',
+              onclick: typeof window !== 'undefined' ? () => setState({ count: state.count - 1 }) : null
+            }},
+            { button: { 
+              text: 'Reset', 
+              className: 'btn btn--outline',
+              onclick: typeof window !== 'undefined' ? () => setState({ count: 0 }) : null
+            }}
+          ]
+        }
+      }
     ]
   }
 }));
 
 // Example 2: Todo list with state
-const TodoList = withState({ 
+export const TodoList = withState({ 
   todos: [
     { id: 1, text: 'Learn Coherent.js', completed: false },
     { id: 2, text: 'Build an app', completed: false }
@@ -64,57 +74,69 @@ const TodoList = withState({
     div: {
       className: 'todo-app',
       children: [
-        { h2: { text: 'Todo List Example' } },
+        { h3: { text: 'Todo List Example' } },
         {
           div: {
+            className: 'todo-input',
             children: [
               { input: { 
                 type: 'text', 
                 value: state.newTodo,
                 placeholder: 'Add a new todo...',
-                oninput: (e) => setState({ newTodo: e.target.value })
+                className: 'todo-input-field',
+                oninput: typeof window !== 'undefined' ? (e) => setState({ newTodo: e.target.value }) : null
               }},
               { button: { 
                 text: 'Add', 
-                onclick: addTodo 
+                className: 'btn btn--primary',
+                onclick: typeof window !== 'undefined' ? addTodo : null
               }}
             ]
           }
         },
         {
           ul: {
+            className: 'todo-list',
             children: state.todos.map(todo => ({
               li: {
                 key: todo.id,
-                className: todo.completed ? 'completed' : '',
+                className: `todo-item ${todo.completed ? 'completed' : ''}`,
                 children: [
                   { input: {
                     type: 'checkbox',
                     checked: todo.completed,
-                    onchange: () => toggleTodo(todo.id)
+                    onchange: typeof window !== 'undefined' ? () => toggleTodo(todo.id) : null
                   }},
                   { span: { 
                     text: todo.text,
-                    style: todo.completed ? 'text-decoration: line-through;' : ''
+                    className: 'todo-text'
                   }},
                   { button: { 
-                    text: 'Remove', 
-                    onclick: () => removeTodo(todo.id) 
+                    text: '×', 
+                    className: 'btn btn--danger btn--small',
+                    onclick: typeof window !== 'undefined' ? () => removeTodo(todo.id) : null
                   }}
                 ]
               }
             }))
           }
         },
-        { p: { text: `Total: ${state.todos.length} todos` } },
-        { p: { text: `Completed: ${state.todos.filter(t => t.completed).length}` } }
+        { 
+          div: {
+            className: 'todo-stats',
+            children: [
+              { p: { text: `Total: ${state.todos.length} todos` } },
+              { p: { text: `Completed: ${state.todos.filter(t => t.completed).length}` } }
+            ]
+          }
+        }
       ]
     }
   };
 });
 
 // Example 3: Component with computed properties
-const UserProfile = withState({
+export const UserProfile = withState({
   firstName: 'John',
   lastName: 'Doe',
   age: 30,
@@ -128,28 +150,42 @@ const UserProfile = withState({
   div: {
     className: 'user-profile',
     children: [
-      { h2: { text: 'User Profile with Computed Properties' } },
-      { p: { text: `Name: ${state.fullName}` } },
-      { p: { text: `Age: ${state.age}` } },
-      { p: { text: `Email: ${state.email}` } },
-      { p: { 
-        text: `Status: ${state.isAdult ? 'Adult' : 'Minor'}`,
-        style: `color: ${state.isAdult ? 'green' : 'red'}`
-      }},
+      { h3: { text: 'User Profile with Computed Properties' } },
       {
         div: {
+          className: 'profile-display',
+          children: [
+            { p: { text: `Name: ${state.fullName}` } },
+            { p: { text: `Age: ${state.age}` } },
+            { p: { text: `Email: ${state.email}` } },
+            { p: { 
+              text: `Status: ${state.isAdult ? 'Adult' : 'Minor'}`,
+              className: `status ${state.isAdult ? 'adult' : 'minor'}`
+            }}
+          ]
+        }
+      },
+      {
+        div: {
+          className: 'profile-form',
           children: [
             { input: {
               type: 'text',
               placeholder: 'First Name',
               value: state.firstName,
-              oninput: (e) => setState({ firstName: e.target.value })
+              oninput: typeof window !== 'undefined' ? (e) => setState({ firstName: e.target.value }) : null
+            }},
+            { input: {
+              type: 'text',
+              placeholder: 'Last Name',
+              value: state.lastName,
+              oninput: typeof window !== 'undefined' ? (e) => setState({ lastName: e.target.value }) : null
             }},
             { input: {
               type: 'number',
               placeholder: 'Age',
               value: state.age,
-              oninput: (e) => setState({ age: parseInt(e.target.value) || 0 })
+              oninput: typeof window !== 'undefined' ? (e) => setState({ age: parseInt(e.target.value) || 0 }) : null
             }}
           ]
         }
@@ -158,93 +194,181 @@ const UserProfile = withState({
   }
 }));
 
-// Example 4: Component with actions
-const ShoppingCart = withState({
-  items: [
-    { id: 1, name: 'Apple', price: 1.20, quantity: 3 },
-    { id: 2, name: 'Banana', price: 0.80, quantity: 2 }
-  ]
-}, {
-  actions: {
-    addItem: (state, setState, { args: [item] }) => {
-      const existing = state.items.find(i => i.id === item.id);
-      if (existing) {
-        setState({
-          items: state.items.map(i => 
-            i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
-          )
-        });
-      } else {
-        setState({ items: [...state.items, { ...item, quantity: 1 }] });
-      }
-    },
-    removeItem: (state, setState, { args: [id] }) => {
-      setState({
-        items: state.items.filter(item => item.id !== id)
-      });
-    },
-    updateQuantity: (state, setState, { args: [id, quantity] }) => {
-      if (quantity <= 0) {
-        return ShoppingCart.actions.removeItem(state, setState, { args: [id] });
-      }
-      setState({
-        items: state.items.map(item => 
-          item.id === id ? { ...item, quantity } : item
-        )
-      });
-    }
-  }
-})(({ state, actions }) => {
-  const total = state.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  
-  return {
-    div: {
-      className: 'shopping-cart',
-      children: [
-        { h2: { text: 'Shopping Cart Example' } },
-        {
-          ul: {
-            children: state.items.map(item => ({
-              li: {
-                key: item.id,
-                children: [
-                  { span: { text: `${item.name} - $${item.price.toFixed(2)} x ${item.quantity}` } },
-                  { button: { 
-                    text: '+', 
-                    onclick: () => actions.updateQuantity(item.id, item.quantity + 1) 
-                  }},
-                  { button: { 
-                    text: '-', 
-                    onclick: () => actions.updateQuantity(item.id, item.quantity - 1) 
-                  }},
-                  { button: { 
-                    text: 'Remove', 
-                    onclick: () => actions.removeItem(item.id) 
-                  }}
-                ]
+// Complete demo page showcasing all state management patterns
+export const stateManagementDemo = {
+  html: {
+    children: [
+      {
+        head: {
+          children: [
+            { title: { text: 'State Management Demo - Coherent.js' } },
+            {
+              style: {
+                text: `
+                body { 
+                  font-family: Arial, sans-serif; 
+                  max-width: 1000px; 
+                  margin: 0 auto; 
+                  padding: 20px; 
+                  line-height: 1.6;
+                  background: #f5f5f5;
+                }
+                .demo-section {
+                  background: white;
+                  padding: 20px;
+                  margin: 20px 0;
+                  border-radius: 8px;
+                  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }
+                .counter { text-align: center; }
+                .count-display { 
+                  font-size: 2em; 
+                  font-weight: bold; 
+                  color: #007bff; 
+                  margin: 20px 0; 
+                }
+                .button-group { 
+                  display: flex; 
+                  gap: 10px; 
+                  justify-content: center; 
+                  flex-wrap: wrap; 
+                }
+                .btn { 
+                  padding: 10px 20px; 
+                  border: none; 
+                  border-radius: 4px; 
+                  cursor: pointer; 
+                  font-size: 14px; 
+                  transition: background-color 0.2s;
+                }
+                .btn--primary { background: #007bff; color: white; }
+                .btn--primary:hover { background: #0056b3; }
+                .btn--secondary { background: #6c757d; color: white; }
+                .btn--secondary:hover { background: #545b62; }
+                .btn--outline { background: transparent; color: #007bff; border: 1px solid #007bff; }
+                .btn--outline:hover { background: #007bff; color: white; }
+                .btn--danger { background: #dc3545; color: white; }
+                .btn--danger:hover { background: #c82333; }
+                .btn--small { padding: 5px 10px; font-size: 12px; }
+                
+                .todo-input { 
+                  display: flex; 
+                  gap: 10px; 
+                  margin-bottom: 20px; 
+                  align-items: center;
+                }
+                .todo-input-field { 
+                  flex: 1; 
+                  padding: 8px; 
+                  border: 1px solid #ddd; 
+                  border-radius: 4px; 
+                }
+                .todo-list { 
+                  list-style: none; 
+                  padding: 0; 
+                  margin: 0; 
+                }
+                .todo-item { 
+                  display: flex; 
+                  align-items: center; 
+                  gap: 10px; 
+                  padding: 10px; 
+                  border: 1px solid #eee; 
+                  border-radius: 4px; 
+                  margin-bottom: 5px; 
+                  background: #fafafa;
+                }
+                .todo-item.completed { 
+                  opacity: 0.6; 
+                  background: #f0f0f0; 
+                }
+                .todo-item.completed .todo-text { 
+                  text-decoration: line-through; 
+                }
+                .todo-text { 
+                  flex: 1; 
+                }
+                .todo-stats { 
+                  margin-top: 15px; 
+                  padding-top: 15px; 
+                  border-top: 1px solid #eee; 
+                  display: flex; 
+                  gap: 20px; 
+                }
+                .todo-stats p { 
+                  margin: 0; 
+                  font-weight: bold; 
+                }
+                
+                .profile-display { 
+                  background: #f8f9fa; 
+                  padding: 15px; 
+                  border-radius: 4px; 
+                  margin-bottom: 20px; 
+                }
+                .profile-form { 
+                  display: flex; 
+                  gap: 10px; 
+                  flex-wrap: wrap; 
+                }
+                .profile-form input { 
+                  padding: 8px; 
+                  border: 1px solid #ddd; 
+                  border-radius: 4px; 
+                  flex: 1; 
+                  min-width: 150px; 
+                }
+                .status.adult { color: green; font-weight: bold; }
+                .status.minor { color: orange; font-weight: bold; }
+                
+                h1 { 
+                  text-align: center; 
+                  color: #333; 
+                  margin-bottom: 30px; 
+                }
+                h3 { 
+                  color: #007bff; 
+                  border-bottom: 2px solid #007bff; 
+                  padding-bottom: 5px; 
+                  margin-bottom: 20px; 
+                }
+                `
               }
-            }))
-          }
-        },
-        { p: { text: `Total: $${total.toFixed(2)}` } },
-        { button: { 
-          text: 'Add Apple', 
-          onclick: () => actions.addItem({ id: 3, name: 'Orange', price: 1.50 }) 
-        }}
-      ]
-    }
-  };
-});
+            }
+          ]
+        }
+      },
+      {
+        body: {
+          children: [
+            { h1: { text: 'State Management Patterns in Coherent.js' } },
+            
+            {
+              div: {
+                className: 'demo-section',
+                children: [Counter()]
+              }
+            },
+            
+            {
+              div: {
+                className: 'demo-section',
+                children: [TodoList()]
+              }
+            },
+            
+            {
+              div: {
+                className: 'demo-section',
+                children: [UserProfile()]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+};
 
-// Render examples
-console.log('=== Counter Example ===');
-console.log(renderToString(Counter()));
-
-console.log('\n=== Todo List Example ===');
-console.log(renderToString(TodoList()));
-
-console.log('\n=== User Profile Example ===');
-console.log(renderToString(UserProfile()));
-
-console.log('\n=== Shopping Cart Example ===');
-console.log(renderToString(ShoppingCart()));
+// Export the demo page as default for live preview
+export default stateManagementDemo;

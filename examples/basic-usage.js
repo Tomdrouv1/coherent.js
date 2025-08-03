@@ -1,7 +1,5 @@
-import { renderToString } from '../src/coherent.js';
-
 // Basic component example - Greeting component with conditional rendering
-const Greeting = ({ name = 'World', mood = 'happy' }) => ({
+export const Greeting = ({ name = 'World', mood = 'happy' }) => ({
     div: {
         className: `greeting greeting--${mood}`,
         children: [
@@ -11,10 +9,7 @@ const Greeting = ({ name = 'World', mood = 'happy' }) => ({
                 div: {
                     className: 'celebration',
                     children: [
-                        // Celebration message with emojis
-                        { span: { text: '🎉' } },
-                        { span: { text: ' Amazing!' } },
-                        { span: { text: ' 🎉' } }
+                        { span: { text: '🎉 Amazing! 🎉' } }
                     ]
                 }
             } : null
@@ -23,7 +18,7 @@ const Greeting = ({ name = 'World', mood = 'happy' }) => ({
 });
 
 // User profile component with styling
-const UserCard = ({ user }) => ({
+export const UserCard = ({ user }) => ({
     div: {
         className: 'user-card',
         style: 'border: 1px solid #ccc; padding: 10px; margin: 10px;',
@@ -36,7 +31,7 @@ const UserCard = ({ user }) => ({
 });
 
 // List component rendering multiple user cards
-const UserList = ({ users = [] }) => ({
+export const UserList = ({ users = [] }) => ({
     div: {
         className: 'user-list',
         children: [
@@ -57,21 +52,15 @@ const UserList = ({ users = [] }) => ({
     }
 });
 
-// Test data
-const users = [
+// Sample data for demonstration
+const sampleUsers = [
     { id: 1, name: 'Alice', email: 'alice@example.com', role: 'Admin' },
     { id: 2, name: 'Bob', email: 'bob@example.com', role: 'User' },
     { id: 3, name: 'Charlie', email: 'charlie@example.com', role: 'User' }
 ];
 
-console.log('=== Basic Greeting ===');
-console.log(renderToString(Greeting({ name: 'World', mood: 'fantastic' })));
-
-console.log('\n=== User List ===');
-console.log(renderToString(UserList({ users })));
-
-console.log('\n=== Complete HTML Page ===');
-const completePage = {
+// Complete page example with embedded styles
+export const completePage = {
     html: {
         children: [
             {
@@ -81,13 +70,36 @@ const completePage = {
                         {
                             style: {
                                 text: `
-                  .greeting { padding: 20px; margin: 10px; border: 1px solid #ddd; }
-                  .greeting--happy { border-color: #4CAF50; }
-                  .greeting--fantastic { border-color: #FF5722; background: #fff3e0; }
-                  .user-list { margin: 20px 0; }
-                  .user-list ul { list-style-type: none; padding: 0; }
-                  .user-list li { padding: 8px; margin: 4px 0; background: #f5f5f5; }
-                `
+                                .greeting { 
+                                    padding: 20px; 
+                                    margin: 10px; 
+                                    border: 1px solid #ddd; 
+                                    border-radius: 4px;
+                                }
+                                .greeting--happy { border-color: #4CAF50; }
+                                .greeting--fantastic { 
+                                    border-color: #FF5722; 
+                                    background: #fff3e0; 
+                                }
+                                .celebration { 
+                                    margin-top: 10px; 
+                                    font-size: 1.2em; 
+                                    text-align: center; 
+                                }
+                                .user-list { margin: 20px 0; }
+                                .user-list ul { list-style-type: none; padding: 0; }
+                                .user-list li { padding: 8px; margin: 4px 0; background: #f5f5f5; }
+                                .user-card { 
+                                    border-radius: 4px; 
+                                    background: white; 
+                                }
+                                body { 
+                                    font-family: Arial, sans-serif; 
+                                    max-width: 800px; 
+                                    margin: 0 auto; 
+                                    padding: 20px; 
+                                }
+                                `
                             }
                         }
                     ]
@@ -97,8 +109,9 @@ const completePage = {
                 body: {
                     children: [
                         { h1: { text: 'Coherent Framework Demo' } },
+                        { p: { text: 'This page demonstrates basic component usage, composition, and styling.' } },
                         Greeting({ name: 'Coherent User', mood: 'fantastic' }),
-                        UserList({ users })
+                        UserList({ users: sampleUsers })
                     ]
                 }
             }
@@ -106,4 +119,5 @@ const completePage = {
     }
 };
 
-console.log(renderToString(completePage));
+// Export the complete page as default for live preview
+export default completePage;

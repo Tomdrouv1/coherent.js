@@ -1,88 +1,54 @@
 # 🚀 Coherent.js
 
-Pure object-based rendering framework for server-side HTML generation. No JSX, no templates - just JavaScript objects that render to clean, performant HTML.
+A modern, lightweight JavaScript framework for building fast, scalable web applications and APIs with a focus on performance and developer experience.
 
-## ✨ Features
+## Features
 
-- **Pure JavaScript Objects**: No special syntax or compilation required
-- **Server-Side Optimized**: Built specifically for SSR performance
-- **Component System**: Function-based components with context passing
-- **Performance Monitoring**: Built-in performance tracking and optimization
-- **Streaming Support**: Render large documents efficiently with streaming
-- **Memory Efficient**: Smart caching and object pooling
-- **Type-Safe**: Full TypeScript support (coming soon)
-- **Zero Dependencies**: Lightweight core with no external dependencies
+### Core Framework
 
-## 🚀 Quick Start
+- **Component-Based Architecture**: Build reusable UI components with a simple, intuitive API
+- **Server-Side Rendering (SSR)**: Render components on the server for faster initial page loads and better SEO
+- **Streaming SSR**: Stream HTML content for even faster perceived performance
+- **Client-Side Hydration**: Seamlessly transition from server-rendered HTML to interactive client-side components
+- **Performance Monitoring**: Built-in performance tracking and optimization tools
+- **Caching**: Automatic caching with flexible cache management
+- **Memoization**: Smart component memoization to prevent unnecessary re-renders
+- **State Management**: Built-in state management for components
+- **Context API**: Share data across component trees without prop drilling
+- **Express Integration**: First-class support for Express.js applications
+- **Fastify Integration**: Seamless integration with Fastify web framework
+- **Next.js Integration**: Works with Next.js API routes and pages
 
-### Installation
+### API Framework
+
+Coherent.js now includes a comprehensive API framework for building REST, RPC, and GraphQL APIs:
+
+- **API Router**: Lightweight routing system with all HTTP methods
+- **Validation**: Schema-based request validation with JSON Schema
+- **Error Handling**: Standardized error classes and global error handling
+- **Serialization**: Automatic serialization of complex data types (Date, Map, Set)
+- **OpenAPI**: Automatic OpenAPI 3.0 documentation generation with Swagger UI
+- **Middleware**: Extensible middleware system for authentication, logging, CORS, etc.
+- **Adapters**: Pre-built adapters for REST, RPC, and GraphQL patterns
+
+## Installation
 
 ```bash
-npm install coherent-framework
+npm install coherent-js
 ```
 
-### Basic Usage
+## Quick Start
+
+### UI Components
 
 ```javascript
-import { renderToString } from 'coherent-framework';
+import { createComponent, renderToString } from 'coherent-js';
 
-const MyComponent = () => ({
-  div: {
-    className: 'my-component',
-    children: [
-      { h1: { text: 'Hello Coherent.js!' } },
-      { p: { text: 'This is a simple component.' } }
-    ]
-  }
-});
-
-console.log(renderToString(MyComponent()));
-```
-
-For more examples, see the [examples directory](examples/).
-
-### Function Components
-
-```javascript
-const Greeting = (context) => ({
-  div: {
-    className: 'greeting',
-    children: [
-      { h1: { text: `Hello, ${context.name}!` } },
-      { p: { text: `You have ${context.notifications} notifications` } }
-    ]
-  }
-});
-
-const html = renderToString(Greeting, { name: 'Alice', notifications: 3 });
-```
-
-### State Management
-
-```javascript
-import { withState } from 'coherent-framework';
-
-const Counter = withState({ count: 0 })(({ state, setState }) => ({
-  div: {
-    children: [
-      { p: { text: `Count: ${state.count}` } },
-      { 
-        button: { 
-          text: 'Increment', 
-          onclick: () => setState({ count: state.count + 1 })
-        }
-      }
-    ]
-  }
-}));
-```
-
-### List Rendering
-
-```javascript
-import { forEach } from 'coherent-framework';
-
-const TodoList = (context) => ({
+const HelloWorld = createComponent(() => {
+  return h('div', { className: 'hello' }, [
+    h('h1', {}, 'Hello, World!'),
+    h('p', {}, 'Welcome to Coherent.js')
+  ]);
   ul: {
     children: forEach(context.todos, (todo) => ({
       li: { 
@@ -306,11 +272,6 @@ Coherent.js includes built-in security features:
 // This is automatically escaped
 { p: { text: '<script>alert("xss")</script>' } }
 // → <p>&lt;script&gt;alert("xss")&lt;/script&gt;</p>
-
-// Only use 'html' property for trusted content
-{ div: { html: trustedHtmlString } }
-```
-
 ## 🚀 Performance Benchmarks
 
 Coherent.js is designed for speed:
@@ -319,6 +280,16 @@ Coherent.js is designed for speed:
 - **Sub-millisecond** rendering for cached components
 - **Memory efficient** with automatic garbage collection
 - **Streaming support** for large documents without memory issues
+
+### Benchmark Results (1000 requests)
+
+| Server Configuration | Requests per Second | Comparison to Fastest |
+|---------------------|-------------------:|---------------------:|
+| Coherent.js API Server (HTTP/1.1) | 9,627.87 req/s | 100.0% (baseline) |
+| Node.js HTTP Server | 8,837.48 req/s | 91.8% (slower) |
+| Coherent.js API Server (HTTP/2) | 8,745.49 req/s | 90.8% (slower) |
+| Coherent.js API Server (Pure Node.js) | 7,997.86 req/s | 83.1% (slower) |
+| Express.js Server | 7,553.39 req/s | 78.5% (slower) |
 
 ```javascript
 // Example performance monitoring output
@@ -399,7 +370,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - **Documentation**: This README and code examples
 - **GitHub Issues**: Bug reports and feature requests
 - **GitHub Discussions**: Questions and community support
-- **Email**: your-email@example.com (for security issues)
+- **Email**: thomas.drouvin@gmail.com (for security issues)
 
 ---
 
