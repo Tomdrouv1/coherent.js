@@ -1,23 +1,27 @@
 {
   "name": "coherent-framework",
   "version": "0.1.0",
-  "description": "Server-side rendering with pure JavaScript objects",
+  "description": "A lightweight, high-performance server-side rendering framework using pure JavaScript objects. Features include streaming renderer, performance monitoring, component composition, memoization, and integrations with Express.js, Fastify, and Next.js.",
   "main": "src/coherent.js",
   "type": "module",
+  "bin": {
+    "coherent-dev": "scripts/dev-server.js"
+  },
   "packageManager": "pnpm@8.15.0",
   "engines": {
     "node": ">=20.0.0",
     "pnpm": ">=8.0.0"
   },
   "scripts": {
-    "test": "node --test tests/",
-    "dev": "node examples/express-server.js",
+    "test": "node --test tests/*.test.js",
+    "dev": "coherent-dev",
     "example:basic": "node examples/basic-usage.js",
     "example:performance": "node examples/performance-test.js",
     "lint": "eslint src/ tests/ examples/",
     "format": "prettier --write src/ tests/ examples/",
     "typecheck": "tsc --noEmit",
     "typecheck:strict": "tsc --noEmit --strict",
+    "build": "tsc && node scripts/build.js",
     "prepare": "husky"
   },
   "keywords": [
@@ -27,8 +31,13 @@
     "javascript",
     "objects",
     "express",
+    "fastify",
+    "nextjs",
     "framework",
-    "pnpm"
+    "performance",
+    "streaming",
+    "components",
+    "hydration"
   ],
   "author": "Thomas Drouvin <thomas.drouvin@example.com>",
   "license": "MIT",
@@ -44,11 +53,17 @@
     "express": "^5.1.0"
   },
   "devDependencies": {
-    "eslint": "^9.32.0",
-    "prettier": "^3.6.2",
     "@types/node": "^24.1.0",
+    "chokidar": "4.0.3",
+    "eslint": "^9.32.0",
+    "fastify": "5.4.0",
+    "husky": "^9.1.7",
+    "next": "15.4.5",
+    "prettier": "^3.6.2",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
     "typescript": "^5.9.2",
-    "husky": "^9.1.7"
+    "ws": "8.18.3"
   },
   "files": [
     "src/",
@@ -66,7 +81,9 @@
   },
   "pnpm": {
     "peerDependencyRules": {
-      "ignoreMissing": ["@types/react"]
+      "ignoreMissing": [
+        "@types/react"
+      ]
     }
   }
 }

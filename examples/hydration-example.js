@@ -5,40 +5,42 @@
  * client-side interactivity to server-rendered components.
  */
 
-import { renderToString } from '../src/coherent.js';
-import { hydrate, hydrateBySelector, makeHydratable } from '../src/client/hydration.js';
+import { renderToString } from '../src/rendering/html-renderer.js';
+import { hydrate, hydrateAll, makeHydratable } from '../src/client/hydration.js';
 
-// A simple counter component
-function Counter({ initialCount = 0 }) {
+// Simple counter component with state
+function Counter(props = {}) {
   return {
     div: {
       className: 'counter',
-      'data-coherent-component': 'Counter', // Marker for hydration
+      'data-coherent-component': 'Counter',
       children: [
         {
+          h3: {
+            text: 'Counter Component'
+          }
+        },
+        {
           span: {
-            text: `Count: ${initialCount}`,
-            className: 'counter-value'
+            text: `Count: ${props.count || 0}`
           }
         },
         {
           button: {
-            text: 'Increment',
-            className: 'increment-btn',
-            // In SSR, we can't attach real event handlers
-            // In hydration, these will be replaced with real handlers
-            onclick: typeof window !== 'undefined' ? 
-              () => console.log('Increment clicked') : 
-              null
+            'data-action': 'increment',
+            text: 'Increment'
           }
         },
         {
           button: {
-            text: 'Decrement',
-            className: 'decrement-btn',
-            onclick: typeof window !== 'undefined' ? 
-              () => console.log('Decrement clicked') : 
-              null
+            'data-action': 'decrement',
+            text: 'Decrement'
+          }
+        },
+        {
+          button: {
+            'data-action': 'reset',
+            text: 'Reset'
           }
         }
       ]
@@ -46,77 +48,24 @@ function Counter({ initialCount = 0 }) {
   };
 }
 
-// Make the component hydratable
-const HydratableCounter = makeHydratable(Counter);
-
-// Server-side rendering
-const serverHtml = renderToString(HydratableCounter({ initialCount: 5 }));
-
-console.log('=== Server-Side Rendered HTML ===');
-console.log(serverHtml);
-
-// Client-side hydration (this would run in the browser)
-if (typeof window !== 'undefined') {
-  console.log('\n=== Client-Side Hydration ===');
-  
-  // In a real browser environment, we would:
-  // 1. Find the server-rendered element
-  // 2. Hydrate it with the component
-  
-  // Simulate finding the element
-  const mockElement = {
-    tagName: 'DIV',
-    className: 'counter',
-    querySelector: (selector) => ({
-      textContent: 'Count: 5',
-      addEventListener: (event, handler) => {
-        console.log(`Added ${event} listener`);
-      }
-    }),
-    querySelectorAll: (selector) => []
-  };
-  
-  // Hydrate the component
-  const hydratedInstance = hydrate(mockElement, HydratableCounter, { initialCount: 5 });
-  
-  if (hydratedInstance) {
-    console.log('Component successfully hydrated!');
-    
-    // Simulate updating the component
-    hydratedInstance.update({ initialCount: 10 });
-    
-    // Simulate destroying the component
-    // hydratedInstance.destroy();
-  }
-  
-  // Alternative: Hydrate by selector
-  console.log('\n--- Hydrating by selector ---');
-  const instances = hydrateBySelector('.counter', HydratableCounter, { initialCount: 5 });
-  console.log(`Hydrated ${instances.length} components`);
-  
-  // Enable client events
-  console.log('\n--- Enabling client events ---');
-  // enableClientEvents(); // This would be called in a real browser environment
-}
-
-// Example of hydrating multiple components
-function TodoItem({ text, completed = false }) {
+// Todo item component with interactivity
+function TodoItem(props = {}) {
   return {
-    div: {
-      className: `todo-item ${completed ? 'completed' : ''}`,
+    li: {
+      className: props.completed ? 'completed' : '',
       'data-coherent-component': 'TodoItem',
       children: [
         {
           input: {
             type: 'checkbox',
-            checked: completed,
-            className: 'todo-checkbox'
+            checked: props.completed || false,
+            'data-action': 'toggle',
+            'data-todo-index': props.index || 0
           }
         },
         {
           span: {
-            text: text,
-            className: 'todo-text'
+            text: props.text || ''
           }
         }
       ]
@@ -124,25 +73,142 @@ function TodoItem({ text, completed = false }) {
   };
 }
 
+// Todo list component
+function TodoList(props = {}) {
+  const todos = props.todos || [];
+  return {
+    div: {
+      className: 'todo-list',
+      'data-coherent-component': 'TodoList',
+      children: [
+        {
+          h3: {
+            text: 'Todo List'
+          }
+        },
+        {
+          ul: {
+            children: todos.map((todo, index) => 
+              TodoItem({ ...todo, index })
+            )
+          }
+        },
+        {
+          div: {
+            children: [
+              {
+                input: {
+                  id: 'new-todo-input',
+                  type: 'text',
+                  placeholder: 'Add new todo...'
+                }
+              },
+              {
+                button: {
+                  'data-action': 'add',
+                  'data-target': 'todo',
+                  text: 'Add Todo'
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  };
+}
+
+// Make components hydratable
+const HydratableCounter = makeHydratable(Counter);
 const HydratableTodoItem = makeHydratable(TodoItem);
+const HydratableTodoList = makeHydratable(TodoList);
 
-// Server-side rendering of multiple components
-const todoItems = [
-  TodoItem({ text: 'Learn Coherent.js', completed: true }),
-  TodoItem({ text: 'Implement hydration', completed: false }),
-  TodoItem({ text: 'Build awesome apps', completed: false })
-];
+// Server-side rendering example
+function renderServerSide() {
+  const counterHTML = renderToString(HydratableCounter, { count: 5 });
+  const todos = [
+    { text: 'Learn Coherent.js', completed: false },
+    { text: 'Build awesome apps', completed: true }
+  ];
+  const todoListHTML = renderToString(HydratableTodoList, { todos });
+  
+  return {
+    counterHTML,
+    todoListHTML
+  };
+}
 
-const todoListHtml = renderToString({
-  div: {
+// Client-side hydration example
+function hydrateClientSide() {
+  // Mock DOM elements for demonstration (enhanced to work with new hydration)
+  const mockCounterElement = {
+    tagName: 'DIV',
+    className: 'counter',
+    querySelectorAll: () => [],
+    addEventListener: () => {},
+    removeEventListener: () => {}
+  };
+  
+  const mockTodoListElement = {
+    tagName: 'DIV',
     className: 'todo-list',
-    children: todoItems
+    querySelectorAll: () => [],
+    addEventListener: () => {},
+    removeEventListener: () => {}
+  };
+  
+  // Basic hydration
+  const counterInstance = hydrate(mockCounterElement, HydratableCounter, { count: 5 });
+  
+  // Hydrate multiple elements
+  const instances = hydrateAll(
+    [mockCounterElement, mockTodoListElement],
+    [HydratableCounter, HydratableTodoList],
+    [
+      { count: 5 },
+      { 
+        todos: [
+          { text: 'Learn Coherent.js', completed: false },
+          { text: 'Build awesome apps', completed: true }
+        ] 
+      }
+    ]
+  );
+  
+  // Demonstrate instance methods
+  if (counterInstance) {
+    // Update the component
+    counterInstance.update({ count: 10 });
+    
+    // Set state (new feature)
+    if (counterInstance.setState) {
+      counterInstance.setState({ count: 15 });
+    }
   }
-});
+  
+  // Hydrate by selector (would work in a real browser environment)
+  // hydrateBySelector('.counter', HydratableCounter, { count: 0 });
+  
+  return {
+    counterInstance,
+    instances
+  };
+}
 
-console.log('\n=== Todo List HTML ===');
-console.log(todoListHtml);
+// Example usage
+console.log('=== Server-side Rendering ===');
+const serverRendered = renderServerSide();
+console.log('Counter HTML:', serverRendered.counterHTML);
+console.log('Todo List HTML:', serverRendered.todoListHTML);
 
-console.log('\n=== Hydration Example Complete ===');
-console.log('In a real browser environment, the server-rendered HTML would be hydrated');
-console.log('with client-side interactivity, enabling event handlers and state updates.');
+console.log('\n=== Client-side Hydration ===');
+const hydrated = hydrateClientSide();
+console.log('Hydrated instances:', hydrated.instances.length);
+
+// Demonstrate component destruction
+if (hydrated.counterInstance) {
+  hydrated.counterInstance.destroy();
+  console.log('Counter component destroyed');
+}
+
+export { renderServerSide, hydrateClientSide };

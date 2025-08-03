@@ -101,19 +101,38 @@ function renderComponent(component, options, depth = 0) {
     }
 
     if (typeof component === 'function') {
-        // Execute the function component
-        const result = component();
-        
-        // Handle case where function returns another function
-        if (typeof result === 'function') {
-            // Prevent infinite recursion by limiting depth
-            if (depth + 1 > options.maxDepth) {
-                throw new Error(`Maximum render depth (${options.maxDepth}) exceeded`);
+        // Check if this is a context provider (takes a render function as parameter)
+        try {
+            // Try to call it with a render function
+            const result = component((children) => {
+                // This is a context provider, render the children within the context
+                return renderComponent(children, options, depth + 1);
+            });
+            
+            // If the result is not a function, it means the component was not a context provider
+            // or the context provider has already rendered the children
+            if (typeof result !== 'function') {
+                return result;
             }
+            
+            // If result is a function, it's a context provider that wants to render its children
+            // The context provider has already rendered the children, so we just return the result
+            return result;
+        } catch (error) {
+            // If calling with a render function fails, it's a regular function component
+            const result = component();
+            
+            // Handle case where function returns another function
+            if (typeof result === 'function') {
+                // Prevent infinite recursion by limiting depth
+                if (depth + 1 > options.maxDepth) {
+                    throw new Error(`Maximum render depth (${options.maxDepth}) exceeded`);
+                }
+                return renderComponent(result, options, depth + 1);
+            }
+            
             return renderComponent(result, options, depth + 1);
         }
-        
-        return renderComponent(result, options, depth + 1);
     }
 
     if (Array.isArray(component)) {

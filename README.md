@@ -18,28 +18,28 @@ Pure object-based rendering framework for server-side HTML generation. No JSX, n
 ### Installation
 
 ```bash
-npm install coherent-js
+npm install coherent-framework
 ```
 
 ### Basic Usage
 
 ```javascript
-import { renderToHTML } from 'coherent-js';
+import { renderToString } from 'coherent-framework';
 
-const component = {
+const MyComponent = () => ({
   div: {
-    className: 'greeting',
+    className: 'my-component',
     children: [
-      { h1: { text: 'Hello, World!' } },
-      { p: { text: 'Welcome to Coherent.js' } }
+      { h1: { text: 'Hello Coherent.js!' } },
+      { p: { text: 'This is a simple component.' } }
     ]
   }
-};
+});
 
-const html = renderToHTML(component);
-console.log(html);
-// Output: <div class="greeting"><h1>Hello, World!</h1><p>Welcome to Coherent.js</p></div>
+console.log(renderToString(MyComponent()));
 ```
+
+For more examples, see the [examples directory](examples/).
 
 ### Function Components
 
@@ -54,13 +54,13 @@ const Greeting = (context) => ({
   }
 });
 
-const html = renderToHTML(Greeting, { name: 'Alice', notifications: 3 });
+const html = renderToString(Greeting, { name: 'Alice', notifications: 3 });
 ```
 
 ### State Management
 
 ```javascript
-import { withState } from 'coherent-js';
+import { withState } from 'coherent-framework';
 
 const Counter = withState({ count: 0 })(({ state, setState }) => ({
   div: {
@@ -80,7 +80,7 @@ const Counter = withState({ count: 0 })(({ state, setState }) => ({
 ### List Rendering
 
 ```javascript
-import { forEach } from 'coherent-js';
+import { forEach } from 'coherent-framework';
 
 const TodoList = (context) => ({
   ul: {
@@ -97,7 +97,7 @@ const TodoList = (context) => ({
 ### Conditional Rendering
 
 ```javascript
-import { when } from 'coherent-js';
+import { when } from 'coherent-framework';
 
 const UserProfile = (context) => ({
   div: {
@@ -116,20 +116,20 @@ const UserProfile = (context) => ({
 ### Built-in Monitoring
 
 ```javascript
-import { startHTMLPerformanceMonitoring, stopHTMLPerformanceMonitoring } from 'coherent-js';
+import { performanceMonitor } from 'coherent-framework';
 
-startHTMLPerformanceMonitoring();
+performanceMonitor.start();
 
 // Your rendering code here
 
-const stats = stopHTMLPerformanceMonitoring();
+const stats = performanceMonitor.generateReport();
 console.log(stats);
 ```
 
 ### Memoization
 
 ```javascript
-import { memo } from 'coherent-js';
+import { memo } from 'coherent-framework';
 
 const ExpensiveComponent = memo(
   (context) => {
@@ -143,7 +143,7 @@ const ExpensiveComponent = memo(
 ### Streaming for Large Documents
 
 ```javascript
-import { renderToStream } from 'coherent-js';
+import { renderToStream } from 'coherent-framework';
 
 const stream = renderToStream(largeComponent, context);
 
@@ -156,30 +156,11 @@ stream.on('end', () => {
 });
 ```
 
-## 📚 API Reference
+## 📚 Documentation
 
-### Core Functions
-
-- `renderToHTML(component, context)` - Render component to HTML string
-- `renderToStream(component, context)` - Render component to readable stream
-
-### Higher-Order Functions
-
-- `withState(initialState)` - Add state management to components
-- `memo(component, keyFunction)` - Memoize expensive components
-- `compose(...components)` - Compose multiple components
-
-### Utility Functions
-
-- `when(condition, trueComponent, falseComponent)` - Conditional rendering
-- `forEach(array, renderFunction)` - List rendering
-- `escapeHtml(text)` - HTML escape utility
-
-### Performance Monitoring
-
-- `startHTMLPerformanceMonitoring()` - Start performance tracking
-- `stopHTMLPerformanceMonitoring()` - Stop and get performance report
-- `performanceMonitor.getStats()` - Get current performance statistics
+- [API Reference](docs/api-reference.md) - Complete documentation of all Coherent.js APIs
+- [Migration Guide](docs/migration-guide.md) - Instructions for migrating from React, template engines, and string-based frameworks
+- [Examples](examples/) - Practical examples demonstrating various features
 
 ## 🏗️ Object Structure
 
@@ -248,19 +229,48 @@ npm run demo
 ### Project Structure
 
 ```
-coherent-js/
+coherent-framework/
 ├── src/
-│   ├── core/
-│   │   ├── object-utils.js      # Higher-order functions and utilities
-│   │   └── performance-monitor.js # Performance tracking system
-│   └── renderers/
-│       ├── utils.js             # HTML rendering utilities
-│       ├── html-renderer.js     # Main HTML string renderer
-│       └── streaming-renderer.js # Streaming HTML renderer
-├── examples/
-│   └── demo.js                  # Comprehensive examples and demos
+│   ├── coherent.js              # Main entry point
+│   ├── core/                    # Core utilities and helpers
+│   │   ├── object-utils.js
+│   │   ├── html-utils.js
+│   │   └── validation.js
+│   ├── rendering/               # Rendering engines
+│   │   ├── html-renderer.js
+│   │   └── streaming-renderer.js
+│   ├── performance/             # Performance monitoring
+│   │   └── monitor.js
+│   ├── components/              # Component system
+│   │   └── component-system.js
+│   ├── client/                  # Client-side hydration
+│   │   └── client.js
+│   ├── express/                 # Express.js integration
+│   │   └── index.js
+│   ├── fastify/                 # Fastify integration
+│   │   └── index.js
+│   └── nextjs/                  # Next.js integration
+│       └── index.js
+├── examples/                    # Example applications
+│   ├── basic-usage.js
+│   ├── advanced-features.js
+│   ├── express-integration.js
+│   ├── fastify-integration.js
+│   ├── nextjs-integration.js
+│   ├── performance-test.js
+│   └── streaming-test.js
+├── docs/                        # Documentation
+│   ├── api-reference.md
+│   └── migration-guide.md
+├── tests/                       # Test suite
+│   └── rendering.test.js
+├── scripts/                     # Development scripts
+│   └── dev-server.js
 ├── package.json
-└── README.md
+├── README.md
+├── LICENSE
+├── CONTRIBUTING.md
+└── CHANGELOG.md
 ```
 
 ## 🎯 Why Choose Coherent.js?
@@ -329,17 +339,27 @@ Coherent.js is designed for speed:
 
 ## 🗺️ Roadmap
 
-### Phase 1 (Current)
+### Phase 1 (Completed)
 - [x] Core object-to-HTML rendering
 - [x] Performance monitoring system
 - [x] Streaming support
 - [x] Component utilities (memo, compose, etc.)
 
-### Phase 2 (Next Quarter)
-- [ ] **TypeScript definitions** - Full type safety
-- [ ] **Client-side hydration** - Progressive enhancement
-- [ ] **Hot reload development server** - Faster development
-- [ ] **Framework integrations** - Express, Fastify, Next.js adapters
+### Phase 2 (Current Focus)
+- [x] TypeScript definitions - Full type safety
+- [x] Client-side hydration - Progressive enhancement
+- [x] Hot reload development server - Faster development
+- [x] Framework integrations - Express, Fastify, Next.js adapters
+- [x] Comprehensive API documentation
+- [x] Migration guides and examples
+- [ ] Prepare for npm publication
+- [ ] Collect early user/developer feedback
+
+### Phase 3 (Future)
+- [ ] IDE plugins - Syntax highlighting and autocomplete
+- [ ] Component library ecosystem - Reusable UI components
+- [ ] Advanced optimizations - Tree shaking, code splitting
+- [ ] Testing utilities - Component testing framework
 
 ### Phase 3 (Future)
 - [ ] **IDE plugins** - Syntax highlighting and autocomplete
@@ -387,6 +407,6 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 **Coherent.js** - Pure objects, pure performance, pure simplicity. 🚀
 
-[Get Started](#-quick-start) • [API Reference](#-api-reference) • [Examples](examples/demo.js) • [Contribute](#-contributing)
+[Get Started](#-quick-start) • [API Reference](docs/api-reference.md) • [Examples](examples/) • [Contribute](#-contributing)
 
 </div>

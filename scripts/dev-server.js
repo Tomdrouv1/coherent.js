@@ -1,29 +1,40 @@
-// scripts/dev-server.js
-import express from 'express';
-import { watch } from 'chokidar';
-import { build } from 'esbuild';
+#!/usr/bin/env node
 
-const app = express();
+/**
+ * Coherent.js Development Server CLI
+ * Run with: node scripts/dev-server.js
+ */
 
-// Rebuild on changes
-const watcher = watch('src/**/*.js');
-watcher.on('change', async () => {
-    console.log('🔄 Rebuilding...');
-    await build({
-        entryPoints: ['src/server/coherent.js'],
-        format: 'esm',
-        outfile: 'dist/coherent.js',
-        platform: 'node',
-        target: 'node16',
-        bundle: true,
-    });
-    console.log('✅ Rebuilt');
+import { DevServer } from '../src/dev/dev-server.js';
+
+// Default configuration
+const config = {
+  port: parseInt(process.env.PORT) || 3000,
+  host: process.env.HOST || 'localhost',
+  watchPaths: ['src/**/*', 'examples/**/*'],
+  staticPaths: ['examples', 'public']
+};
+
+// Create and start the development server
+const server = new DevServer(config);
+
+// Handle graceful shutdown
+process.on('SIGINT', () => {
+  console.log('\n🛑 Shutting down development server...');
+  server.stop();
+  process.exit(0);
 });
 
-// Serve examples
-app.use(express.static('examples'));
-
-app.listen(3000, () => {
-    console.log('🚀 Development server running at http://localhost:3000');
-    console.log('👀 Watching for changes...');
+process.on('SIGTERM', () => {
+  console.log('\n🛑 Shutting down development server...');
+  server.stop();
+  process.exit(0);
 });
+
+// Start the server
+server.start();
+
+console.log(`\n🚀 Coherent.js Development Server`);
+console.log(`📡 http://${config.host}:${config.port}`);
+console.log(`🔄 Hot reload enabled`);
+console.log(`📁 Watching: ${config.watchPaths.join(', ')}`);

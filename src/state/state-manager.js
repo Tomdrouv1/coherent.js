@@ -83,7 +83,7 @@ const contextStacks = new Map();
  * @param {Object} children - Children to render with context
  * @returns {Object} Children with context available
  */
-export function provideContext(key, value, children) {
+export function provideContext(key, value) {
     // Initialize context stack if it doesn't exist
     if (!contextStacks.has(key)) {
         contextStacks.set(key, []);
@@ -97,8 +97,6 @@ export function provideContext(key, value, children) {
     // Push previous value to stack and set new value
     stack.push(previousValue);
     globalState.set(key, value);
-
-    return children;
 }
 
 /**
@@ -109,13 +107,19 @@ export function provideContext(key, value, children) {
  * @returns {Function} Component function that provides context
  */
 export function createContextProvider(key, value, children) {
-    return () => {
+    // Return a function that will render the children within the context
+    return (renderFunction) => {
         try {
             // Provide context
-            provideContext(key, value, children);
+            provideContext(key, value);
             
-            // Return children to be rendered
-            return children;
+            // If a render function is provided, use it to render children
+            // Otherwise return children to be rendered by the caller
+            if (renderFunction && typeof renderFunction === 'function') {
+                return renderFunction(children);
+            } else {
+                return children;
+            }
         } finally {
             // Always restore context when done
             restoreContext(key);
