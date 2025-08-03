@@ -29,8 +29,16 @@
     "framework",
     "pnpm"
   ],
-  "author": "Your Name",
+  "author": "Thomas Drouvin <thomas.drouvin@example.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tomdrouv1/coherent.js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Tomdrouv1/coherent.js/issues"
+  },
+  "homepage": "https://github.com/Tomdrouv1/coherent.js#readme",
   "dependencies": {
     "express": "^5.1.0"
   },

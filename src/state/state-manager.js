@@ -72,6 +72,11 @@ export const globalStateManager = {
 };
 
 /**
+ * Context stack for managing nested context providers
+ */
+const contextStacks = new Map();
+
+/**
  * Context provider for passing data down the component tree
  * @param {string} key - Context key
  * @param {*} value - Context value
@@ -79,14 +84,74 @@ export const globalStateManager = {
  * @returns {Object} Children with context available
  */
 export function provideContext(key, value, children) {
-    // Store context in global state temporarily
+    // Initialize context stack if it doesn't exist
+    if (!contextStacks.has(key)) {
+        contextStacks.set(key, []);
+    }
+    
+    const stack = contextStacks.get(key);
+    
+    // Store previous value
     const previousValue = globalState.get(key);
+    
+    // Push previous value to stack and set new value
+    stack.push(previousValue);
     globalState.set(key, value);
 
-    // In a real implementation, we'd need to restore after rendering
-    // This is a simplified version for demonstration
-
     return children;
+}
+
+/**
+ * Create a context provider component that works with the rendering system
+ * @param {string} key - Context key
+ * @param {*} value - Context value
+ * @param {Object} children - Children to render with context
+ * @returns {Function} Component function that provides context
+ */
+export function createContextProvider(key, value, children) {
+    return () => {
+        // Provide context
+        provideContext(key, value, children);
+        
+        // Return children to be rendered
+        return children;
+    };
+}
+
+/**
+ * Restore context to previous value
+ * @param {string} key - Context key
+ */
+export function restoreContext(key) {
+    if (!contextStacks.has(key)) return;
+    
+    const stack = contextStacks.get(key);
+    
+    // Restore previous value from stack
+    const previousValue = stack.pop();
+    
+    if (stack.length === 0) {
+        // No more providers, delete the key if it was undefined before
+        if (previousValue === undefined) {
+            globalState.delete(key);
+        } else {
+            globalState.set(key, previousValue);
+        }
+        
+        // Clean up empty stack
+        contextStacks.delete(key);
+    } else {
+        // Restore previous value
+        globalState.set(key, previousValue);
+    }
+}
+
+/**
+ * Clear all context stacks (useful for cleanup after rendering)
+ */
+export function clearAllContexts() {
+    contextStacks.clear();
+    // Note: This doesn't clear globalState as it might contain other data
 }
 
 /**

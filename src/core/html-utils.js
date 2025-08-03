@@ -41,7 +41,18 @@ export function formatAttributes(props) {
     let formatted = '';
     for (const key in props) {
         if (props.hasOwnProperty(key)) {
-            const value = props[key];
+            let value = props[key];
+            
+            // Handle function values by calling them
+            if (typeof value === 'function') {
+                try {
+                    value = value();
+                } catch (error) {
+                    console.warn(`Error executing function for attribute ${key}:`, error);
+                    value = '';
+                }
+            }
+            
             if (value === true) {
                 formatted += ` ${key}`;
             } else if (value !== false && value !== null && value !== undefined) {

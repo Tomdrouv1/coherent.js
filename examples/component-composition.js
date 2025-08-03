@@ -78,27 +78,32 @@ const withLoading = (WrappedComponent) =>
   });
 
 // Example component that uses loading state
-const DataDisplay = withLoading(({ data, setLoading, setError }) => {
+const DataDisplay = withLoading(({ data, setLoading, setError, setData }) => {
+  const mockData = [1, 2, 3];
+
   const loadData = async () => {
-    setLoading(true);
-    try {
+    if (typeof window !== 'undefined') {
+      setLoading(true);
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      // In a real app, this would be actual data fetching
-    } catch (error) {
-      setError(error);
-    } finally {
+      setData(mockData);
       setLoading(false);
     }
   };
-  
+
   return {
     div: {
       className: 'data-display',
       children: [
         { h2: { text: 'Data Display with Loading State' } },
-        { p: { text: `Items: ${data?.length || 0}` } },
-        { button: { text: 'Load Data', onclick: loadData } }
+        { p: { text: `Items: ${data.length}` } },
+        {
+          button: {
+            text: 'Load Data',
+            // In SSR context, event handlers won't work, so we provide a safe fallback
+            onclick: typeof window !== 'undefined' ? loadData : null
+          }
+        }
       ]
     }
   };
@@ -182,35 +187,65 @@ const ContactForm = withState({
     className: 'contact-form',
     children: [
       { h2: { text: 'Contact Us' } },
-      FormField({
-        label: 'Name',
-        value: state.name,
-        onChange: (value) => setState({ name: value }),
-        placeholder: 'Your name'
-      }),
-      FormField({
-        label: 'Email',
-        type: 'email',
-        value: state.email,
-        onChange: (value) => setState({ email: value }),
-        placeholder: 'your@email.com'
-      }),
-      FormField({
-        label: 'Message',
-        type: 'textarea',
-        value: state.message,
-        onChange: (value) => setState({ message: value }),
-        placeholder: 'Your message here...'
-      }),
-      Button({
-        text: 'Send Message',
-        variant: 'primary',
-        onClick: () => {
-          console.log('Form submitted:', state);
-          // Reset form
-          setState({ name: '', email: '', message: '' });
+      {
+        div: {
+          className: 'form-field',
+          children: [
+            { label: { text: 'Name' } },
+            {
+              input: {
+                type: 'text',
+                value: state.name,
+                placeholder: 'Your name',
+                oninput: typeof window !== 'undefined' ? (e) => setState({ name: e.target.value }) : null,
+              }
+            }
+          ]
         }
-      })
+      },
+      {
+        div: {
+          className: 'form-field',
+          children: [
+            { label: { text: 'Email' } },
+            {
+              input: {
+                type: 'email',
+                value: state.email,
+                placeholder: 'your@email.com',
+                oninput: typeof window !== 'undefined' ? (e) => setState({ email: e.target.value }) : null,
+              }
+            }
+          ]
+        }
+      },
+      {
+        div: {
+          className: 'form-field',
+          children: [
+            { label: { text: 'Message' } },
+            {
+              input: {
+                type: 'textarea',
+                value: state.message,
+                placeholder: 'Your message here...',
+                oninput: typeof window !== 'undefined' ? (e) => setState({ message: e.target.value }) : null,
+              }
+            }
+          ]
+        }
+      },
+      {
+        button: {
+          className: 'btn btn--primary',
+          text: 'Send Message',
+          onclick: typeof window !== 'undefined' ? () => {
+            console.log('Form submitted:', state);
+            // Reset form
+            setState({ name: '', email: '', message: '' });
+          } : null,
+        }
+      }
     ]
   }
 }));
