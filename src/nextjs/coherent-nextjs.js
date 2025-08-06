@@ -5,6 +5,7 @@
 
 import { renderToString } from '../rendering/html-renderer.js';
 import { performanceMonitor } from '../performance/monitor.js';
+import { importPeerDependency } from '../utils/dependency-utils.js';
 
 /**
  * Create a Next.js API route handler for Coherent.js components
@@ -129,13 +130,14 @@ export async function createCoherentServerComponent(componentFactory, options = 
     enablePerformanceMonitoring = false
   } = options;
   
-  // Import React dynamically to avoid issues in non-React environments
+  // Import React using dependency utilities
   let React;
   try {
-    React = await import('react');
+    React = await importPeerDependency('react', 'React');
   } catch (error) {
-    console.warn('React not available, returning plain component');
-    return componentFactory;
+    throw new Error(
+      'Next.js Server Component integration requires React. ' + error.message
+    );
   }
   
   return async function CoherentServerComponent(props) {
@@ -182,15 +184,14 @@ export async function createCoherentClientComponent(componentFactory, options = 
     enablePerformanceMonitoring = false
   } = options;
   
-  // Import React and useEffect dynamically
-  let React, useEffect;
+  // Import React using dependency utilities
+  let React;
   try {
-    const reactModule = await import('react');
-    React = reactModule.default || reactModule;
-    useEffect = reactModule.useEffect;
+    React = await importPeerDependency('react', 'React');
   } catch (error) {
-    console.warn('React not available, returning plain component');
-    return componentFactory;
+    throw new Error(
+      'Next.js Client Component integration requires React. ' + error.message
+    );
   }
   
   return function CoherentClientComponent(props) {
@@ -235,10 +236,39 @@ export async function createCoherentClientComponent(componentFactory, options = 
   };
 }
 
+/**
+ * Create Next.js integration with dependency checking
+ * This function ensures Next.js and React are available before setting up the integration
+ * 
+ * @param {Object} options - Setup options
+ * @returns {Promise<Object>} - Object with Next.js integration utilities
+ */
+export async function createNextIntegration(options = {}) {
+  try {
+    // Verify Next.js and React are available
+    await importPeerDependency('next', 'Next.js');
+    await importPeerDependency('react', 'React');
+    
+    return {
+      createCoherentNextHandler: (componentFactory, handlerOptions = {}) => 
+        createCoherentNextHandler(componentFactory, { ...options, ...handlerOptions }),
+      createCoherentAppRouterHandler: (componentFactory, handlerOptions = {}) => 
+        createCoherentAppRouterHandler(componentFactory, { ...options, ...handlerOptions }),
+      createCoherentServerComponent: (componentFactory, componentOptions = {}) => 
+        createCoherentServerComponent(componentFactory, { ...options, ...componentOptions }),
+      createCoherentClientComponent: (componentFactory, componentOptions = {}) => 
+        createCoherentClientComponent(componentFactory, { ...options, ...componentOptions })
+    };
+  } catch (error) {
+    throw error;
+  }
+}
+
 // Export all utilities
 export default {
   createCoherentNextHandler,
   createCoherentAppRouterHandler,
   createCoherentServerComponent,
-  createCoherentClientComponent
+  createCoherentClientComponent,
+  createNextIntegration
 };

@@ -8,12 +8,23 @@ import { withState } from '../src/coherent.js';
 
 // Interactive counter with hydration support
 // Create a simple counter component that works with hydration
-function CounterComponent({ initialCount = 0, initialStep = 1 }) {
-  // For server-side rendering, we just return the initial state
-  // Client-side hydration will handle the actual state management
+const CounterComponent = withState({ count: 0, step: 1 })(({ state, setState, props = {} }) => {
+  // Extract initial values from props with defaults
+  const initialCount = props.initialCount !== undefined ? props.initialCount : 0;
+  const initialStep = props.initialStep !== undefined ? props.initialStep : 1;
+  
+  // Initialize state with initial values if not already set
+  if (state.count === undefined) {
+    state.count = initialCount;
+  }
+  if (state.step === undefined) {
+    state.step = initialStep;
+  }
+  
   return {
     div: {
       class: 'counter-widget',
+      'data-coherent-component': 'counter', // Add data attribute to identify component
       children: [
         {
           h4: {
@@ -25,8 +36,8 @@ function CounterComponent({ initialCount = 0, initialStep = 1 }) {
           div: {
             class: 'counter-display',
             children: [
-              { span: { text: `Count: ${initialCount}`, class: 'count-value' } },
-              { span: { text: `Step: ${initialStep}`, class: 'step-value' } }
+              { span: { text: `Count: ${state.count}`, class: 'count-value', 'data-ref': 'count' } },
+              { span: { text: `Step: ${state.step}`, class: 'step-value', 'data-ref': 'step' } }
             ]
           }
         },
@@ -37,19 +48,22 @@ function CounterComponent({ initialCount = 0, initialStep = 1 }) {
               {
                 button: {
                   text: '-',
-                  class: 'btn btn-secondary'
+                  class: 'btn btn-secondary',
+                  onclick: (event, state, setState) => setState({ count: state.count - state.step })
                 }
               },
               {
                 button: {
                   text: '+',
-                  class: 'btn btn-primary'
+                  class: 'btn btn-primary',
+                  onclick: (event, state, setState) => setState({ count: state.count + state.step })
                 }
               },
               {
                 button: {
-                  text: 'Reset',
-                  class: 'btn btn-outline'
+                  text: 'Reset Test',
+                  class: 'btn btn-outline',
+                  onclick: (event, state, setState) => setState({ count: initialCount })
                 }
               }
             ]
@@ -63,10 +77,11 @@ function CounterComponent({ initialCount = 0, initialStep = 1 }) {
               {
                 input: {
                   type: 'number',
-                  value: initialStep,
+                  value: state.step,
                   min: 1,
                   max: 10,
-                  class: 'step-input'
+                  class: 'step-input',
+                  oninput: (event, state, setState) => setState({ step: parseInt(event.target.value) || 1 })
                 }
               }
             ]
@@ -75,14 +90,15 @@ function CounterComponent({ initialCount = 0, initialStep = 1 }) {
       ]
     }
   };
-}
+});
 
-const HydratableCounter = makeHydratable(CounterComponent);
+const HydratableCounter = makeHydratable(CounterComponent, { componentName: 'HydratableCounter' });
 
 // Interactive todo list with hydration support
 const HydratableTodoList = makeHydratable(
   withState({ todos: [], newTodo: '', filter: 'all' })(({ state, setState }) => {
-    const addTodo = () => {
+    // Define functions that accept setState as parameter for hydration compatibility
+    const addTodo = (event, state, setState) => {
       if (state.newTodo.trim()) {
         setState({
           todos: [...state.todos, {
@@ -95,7 +111,7 @@ const HydratableTodoList = makeHydratable(
       }
     };
 
-    const toggleTodo = (id) => {
+    const toggleTodo = (id) => (event, state, setState) => {
       setState({
         todos: state.todos.map(todo => 
           todo.id === id ? { ...todo, completed: !todo.completed } : todo
@@ -103,14 +119,14 @@ const HydratableTodoList = makeHydratable(
       });
     };
 
-    const removeTodo = (id) => {
+    const removeTodo = (id) => (event, state, setState) => {
       setState({
         todos: state.todos.filter(todo => todo.id !== id)
       });
     };
 
-    const setFilter = (filter) => setState({ filter });
-    const setNewTodo = (value) => setState({ newTodo: value });
+    const setFilter = (filter) => (event, state, setState) => setState({ filter });
+    const setNewTodo = (value) => (event, state, setState) => setState({ newTodo: value });
 
     const filteredTodos = state.todos.filter(todo => {
       if (state.filter === 'active') return !todo.completed;
@@ -127,6 +143,7 @@ const HydratableTodoList = makeHydratable(
     return {
       div: {
         class: 'todo-widget',
+        'data-coherent-component': 'todo-list', // Add data attribute to identify component
         children: [
           {
             h4: {
@@ -138,9 +155,9 @@ const HydratableTodoList = makeHydratable(
             div: {
               class: 'todo-stats',
               children: [
-                { span: { text: `Total: ${stats.total}`, class: 'stat' } },
-                { span: { text: `Active: ${stats.active}`, class: 'stat' } },
-                { span: { text: `Completed: ${stats.completed}`, class: 'stat' } }
+                { span: { text: `Total: ${stats.total}`, class: 'stat-item' } },
+                { span: { text: `Active: ${stats.active}`, class: 'stat-item' } },
+                { span: { text: `Completed: ${stats.completed}`, class: 'stat-item' } }
               ]
             }
           },
@@ -154,15 +171,17 @@ const HydratableTodoList = makeHydratable(
                     value: state.newTodo,
                     placeholder: 'Add new todo...',
                     class: 'todo-input-field',
-                    oninput: typeof window !== 'undefined' ? (e) => setNewTodo(e.target.value) : null,
-                    onkeypress: typeof window !== 'undefined' ? (e) => e.key === 'Enter' && addTodo() : null
+                    oninput: (e, state, setState) => setState({ newTodo: e.target.value }),
+                    onkeypress: (e, state, setState) => {
+                      if (e.key === 'Enter') addTodo(e, state, setState);
+                    }
                   }
                 },
                 {
                   button: {
                     text: 'Add',
                     class: 'btn btn-primary',
-                    onclick: typeof window !== 'undefined' ? addTodo : null
+                    onclick: addTodo
                   }
                 }
               ]
@@ -176,21 +195,21 @@ const HydratableTodoList = makeHydratable(
                   button: {
                     text: 'All',
                     class: `filter-btn ${state.filter === 'all' ? 'active' : ''}`,
-                    onclick: typeof window !== 'undefined' ? () => setFilter('all') : null
+                    onclick: setFilter('all')
                   }
                 },
                 {
                   button: {
                     text: 'Active',
                     class: `filter-btn ${state.filter === 'active' ? 'active' : ''}`,
-                    onclick: typeof window !== 'undefined' ? () => setFilter('active') : null
+                    onclick: setFilter('active')
                   }
                 },
                 {
                   button: {
                     text: 'Completed',
                     class: `filter-btn ${state.filter === 'completed' ? 'active' : ''}`,
-                    onclick: typeof window !== 'undefined' ? () => setFilter('completed') : null
+                    onclick: setFilter('completed')
                   }
                 }
               ]
@@ -209,7 +228,7 @@ const HydratableTodoList = makeHydratable(
                         type: 'checkbox',
                         checked: todo.completed,
                         class: 'todo-checkbox',
-                        onchange: typeof window !== 'undefined' ? () => toggleTodo(todo.id) : null
+                        onchange: toggleTodo(todo.id)
                       }
                     },
                     {
@@ -222,7 +241,7 @@ const HydratableTodoList = makeHydratable(
                       button: {
                         text: '×',
                         class: 'btn btn-danger btn-small',
-                        onclick: typeof window !== 'undefined' ? () => removeTodo(todo.id) : null
+                        onclick: removeTodo(todo.id)
                       }
                     }
                   ]
@@ -233,7 +252,7 @@ const HydratableTodoList = makeHydratable(
         ]
       }
     };
-  })
+  }), { componentName: 'HydratableTodoList' }
 );
 
 // Complete hydration demo page
@@ -580,13 +599,17 @@ export const hydrationDemo = {
 // Make the demo page hydratable
 const HydrationDemoPage = makeHydratable(() => hydrationDemo);
 
-const componentRegistry = {
-  HydratableCounter,
-  HydratableTodoList
-};
-
-// Auto-hydrate all components
-autoHydrate(componentRegistry);
+// Export component registry for dev server (only in browser environment)
+if (typeof window !== 'undefined') {
+  // Initialize component registry
+  window.componentRegistry = {
+    HydratableCounter,
+    HydratableTodoList
+  };
+  
+  // Auto-hydrate all components with explicit registry
+  autoHydrate(window.componentRegistry);
+}
 
 
 // Export the demo page as default for live preview

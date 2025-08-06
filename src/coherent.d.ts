@@ -35,7 +35,7 @@ export function renderToStream(node: CoherentNode, options?: RenderOptions): Rea
 export function renderBatch(nodes: CoherentNode[], options?: RenderOptions): string[];
 
 // Component creation helpers
-export function createComponent(definition: Record<string, any>): ComponentFunction;
+export function createComponent(definition: Record<string, any> | Function): ComponentFunction;
 export function withState<T>(initialState: T): (component: ComponentFunction) => ComponentFunction;
 export function withProps(props: Record<string, any>): (component: ComponentFunction) => ComponentFunction;
 export function memo(component: ComponentFunction, areEqual?: (prevProps: any, nextProps: any) => boolean): ComponentFunction;

@@ -98,7 +98,7 @@ export class CacheManager {
 
         // Check memory limits before adding
         if (this.memoryUsage + size > this.maxMemoryMB * 1024 * 1024) {
-            this.evictLRU(cacheType, size);
+            this.optimize(cacheType, size);
         }
 
         const entry = {
@@ -115,7 +115,7 @@ export class CacheManager {
 
         // Prevent cache from growing too large
         if (cache.size > this.maxCacheSize) {
-            this.evictLRU(cacheType);
+            this.optimize(cacheType);
         }
     }
 
@@ -193,8 +193,8 @@ export class CacheManager {
         this.usageStats.set(key, stats);
     }
 
-    // Intelligent LRU eviction based on usage patterns
-    evictLRU(cacheType, requiredSpace = 0) {
+    // Intelligent cache optimization based on LRU eviction
+    optimize(cacheType, requiredSpace = 0) {
         const cache = this.getCache(cacheType);
         const entries = Array.from(cache.entries());
 

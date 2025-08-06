@@ -1,6 +1,6 @@
 {
-  "name": "coherent-framework",
-  "version": "0.1.0",
+  "name": "@coherentjs/core",
+  "version": "0.1.2",
   "description": "A lightweight, high-performance server-side rendering framework using pure JavaScript objects. Features include streaming renderer, performance monitoring, component composition, memoization, and integrations with Express.js, Fastify, and Next.js.",
   "main": "src/coherent.js",
   "type": "module",
@@ -9,7 +9,7 @@
   },
   "packageManager": "pnpm@8.15.0",
   "engines": {
-    "node": ">=20.0.0",
+    "node": ">=22.0.0",
     "pnpm": ">=8.0.0"
   },
   "scripts": {
@@ -57,17 +57,39 @@
     "url": "https://github.com/Tomdrouv1/coherent.js/issues"
   },
   "homepage": "https://github.com/Tomdrouv1/coherent.js#readme",
-  "dependencies": {
-    "express": "^5.1.0",
-    "koa": "3.0.1",
-    "node-fetch": "3.3.2"
+  "peerDependencies": {
+    "express": "^4.0.0 || ^5.0.0",
+    "koa": "^2.0.0 || ^3.0.0",
+    "fastify": "^4.0.0 || ^5.0.0",
+    "next": "^13.0.0 || ^14.0.0 || ^15.0.0",
+    "react": "^18.0.0 || ^19.0.0",
+    "node-fetch": "^3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "express": {
+      "optional": true
+    },
+    "koa": {
+      "optional": true
+    },
+    "fastify": {
+      "optional": true
+    },
+    "next": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "node-fetch": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/node": "^24.1.0",
     "chokidar": "4.0.3",
     "esbuild": "0.25.8",
     "eslint": "^9.32.0",
-    "fastify": "5.4.0",
     "husky": "^9.1.7",
     "next": "15.4.5",
     "prettier": "^3.6.2",
@@ -88,6 +110,18 @@
     },
     "./express": {
       "import": "./src/express/index.js"
+    },
+    "./koa": {
+      "import": "./src/koa/index.js"
+    },
+    "./nextjs": {
+      "import": "./src/nextjs/index.js"
+    },
+    "./api": {
+      "import": "./src/api/index.js"
+    },
+    "./fastify": {
+      "import": "./src/fastify/coherent-fastify.js"
     }
   },
   "pnpm": {

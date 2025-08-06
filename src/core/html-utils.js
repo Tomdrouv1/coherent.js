@@ -58,19 +58,63 @@ export function formatAttributes(props) {
       // Convert className to class for HTML output
       const attributeName = key === 'className' ? 'class' : key;
 
-      // Handle function values - for event handlers, preserve as string
+      // Handle function values - for event handlers, use data-action attributes
       if (typeof value === 'function') {
-        // For other function attributes, call them to get the value
-        try {
-          value = value();
-        } catch (error) {
-          console.warn(`Error executing function for attribute '${key}':`, {
-            error: error.message,
-            stack: error.stack,
-            attributeKey: key,
-          });
-          // Consider different fallback strategies based on attribute type
-          value = '';
+        // Check if this is an event handler (starts with 'on')
+        if (attributeName.startsWith('on')) {
+          // For event handlers, create a unique action identifier
+          const actionId = `__coherent_action_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          
+          // Store the function in a global registry that will be available during hydration
+          // Check if we're in Node.js or browser environment
+          if (typeof global !== 'undefined') {
+            // Server-side, store in global for hydration
+            if (!global.__coherentActionRegistry) {
+              global.__coherentActionRegistry = {};
+              console.log('Initialized global action registry');
+            }
+            global.__coherentActionRegistry[actionId] = value;
+            console.log(`Added action ${actionId} to global registry, total: ${Object.keys(global.__coherentActionRegistry).length}`);
+            console.log(`Global registry keys: ${Object.keys(global.__coherentActionRegistry).join(', ')}`);
+            
+            // Log the global object to see if it's being reset
+            if (typeof global.__coherentActionRegistryLog === 'undefined') {
+              global.__coherentActionRegistryLog = [];
+            }
+            global.__coherentActionRegistryLog.push({
+              action: 'add',
+              actionId: actionId,
+              timestamp: Date.now(),
+              registrySize: Object.keys(global.__coherentActionRegistry).length
+            });
+          } else if (typeof window !== 'undefined') {
+            // Browser-side, store in window
+            if (!window.__coherentActionRegistry) {
+              window.__coherentActionRegistry = {};
+              console.log('Initialized window action registry');
+            }
+            window.__coherentActionRegistry[actionId] = value;
+            console.log(`Added action ${actionId} to window registry, total: ${Object.keys(window.__coherentActionRegistry).length}`);
+            console.log(`Window registry keys: ${Object.keys(window.__coherentActionRegistry).join(', ')}`);
+          }
+          
+          // Use data-action and data-event attributes instead of inline JS
+          const eventType = attributeName.substring(2); // Remove 'on' prefix
+          formatted += ` data-action="${actionId}" data-event="${eventType}"`;
+          continue; // Skip normal processing
+        } else {
+          // For other function attributes, call them to get the value
+          try {
+            value = value();
+          } catch (error) {
+            console.warn(`Error executing function for attribute '${key}':`, {
+              error: error.message,
+              stack: error.stack,
+              attributeKey: key,
+            });
+            // Consider different fallback strategies based on attribute type
+            value = '';
+          }
         }
       }
 

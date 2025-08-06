@@ -5,6 +5,7 @@
 
 import { renderToString } from '../rendering/html-renderer.js';
 import { performanceMonitor } from '../performance/monitor.js';
+import { importPeerDependency } from '../utils/dependency-utils.js';
 
 /**
  * Coherent.js Express middleware
@@ -166,10 +167,36 @@ export function setupCoherentExpress(app, options = {}) {
   }
 }
 
+/**
+ * Create Express integration with dependency checking
+ * This function ensures Express is available before setting up the integration
+ * 
+ * @param {Object} options - Setup options
+ * @returns {Promise<Function>} - Function to setup Express integration
+ */
+export async function createExpressIntegration(options = {}) {
+  try {
+    // Verify Express is available
+    await importPeerDependency('express', 'Express.js');
+    
+    return function(app) {
+      if (!app || typeof app.use !== 'function') {
+        throw new Error('Invalid Express app instance provided');
+      }
+      
+      setupCoherentExpress(app, options);
+      return app;
+    };
+  } catch (error) {
+    throw error;
+  }
+}
+
 // Export all utilities
 export default {
   coherentMiddleware,
   createCoherentHandler,
   enhancedExpressEngine,
-  setupCoherentExpress
+  setupCoherentExpress,
+  createExpressIntegration
 };

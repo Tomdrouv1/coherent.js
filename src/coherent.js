@@ -312,7 +312,7 @@ class Coherent {
 
     optimizeCache() {
         if (this.cache) {
-            this.cache.optimize();
+            this.cache.optimize('component');
         }
         return this;
     }
@@ -510,7 +510,7 @@ if (typeof window !== 'undefined') {
         // Use idle time for cache optimization
         const optimizeInIdle = () => {
             if (coherent.cache) {
-                coherent.cache.optimize();
+                coherent.cache.optimize('component');
             }
         };
         window.requestIdleCallback(optimizeInIdle);

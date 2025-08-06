@@ -34,46 +34,131 @@ Coherent.js now includes a comprehensive API framework for building REST, RPC, a
 ## Installation
 
 ```bash
-npm install coherent-js
+npm install @coherent/core
 ```
+
+Note: The package uses scoped names. Install `@coherent/core` for the main framework, with additional packages available for specific integrations:
+- `@coherent/express` - Express.js integration
+- `@coherent/fastify` - Fastify integration
+- `@coherent/api` - API framework
 
 ## Quick Start
 
 ### UI Components
 
 ```javascript
-import { createComponent, renderToString } from 'coherent-js';
+import { createComponent, renderToString } from '@coherent/core';
 
-const HelloWorld = createComponent(() => {
-  return h('div', { className: 'hello' }, [
-    h('h1', {}, 'Hello, World!'),
-    h('p', {}, 'Welcome to Coherent.js')
-  ]);
-  ul: {
-    children: forEach(context.todos, (todo) => ({
-      li: { 
-        text: todo.text,
-        className: todo.completed ? 'completed' : 'pending'
-      }
-    }))
+const HelloWorld = createComponent(() => ({
+  div: { 
+    className: 'hello',
+    children: [
+      { h1: { text: 'Hello, World!' } },
+      { p: { text: 'Welcome to Coherent.js' } }
+    ]
   }
+}));
+
+// Render to HTML string
+const html = renderToString(HelloWorld());
+console.log(html);
+// Output: <div class="hello"><h1>Hello, World!</h1><p>Welcome to Coherent.js</p></div>
+```
+
+### Using with Express.js
+
+```javascript
+import express from 'express';
+import { createComponent, renderToString } from '@coherent/core';
+import { setupCoherentExpress, createCoherentHandler } from '@coherent/express';
+
+const app = express();
+
+const HomePage = createComponent(({ name = 'World' }) => ({
+  html: {
+    children: [
+      {
+        head: {
+          children: [
+            { title: { text: 'Coherent.js App' } }
+          ]
+        }
+      },
+      {
+        body: {
+          children: [
+            { h1: { text: `Hello, ${name}!` } },
+            { p: { text: 'Welcome to your Coherent.js application' } }
+          ]
+        }
+      }
+    ]
+  }
+}));
+
+app.get('/', (req, res) => {
+  const html = renderToString(HomePage({ name: 'Coherent Developer' }));
+  res.send(html);
+});
+
+app.listen(3000, () => {
+  console.log('Server running on http://localhost:3000');
 });
 ```
 
-### Conditional Rendering
+### API Framework
 
 ```javascript
-import { when } from 'coherent-framework';
+import { createApiRouter, withValidation } from '@coherent/api';
 
-const UserProfile = (context) => ({
-  div: {
-    children: [
-      when(context.user,
-        { p: { text: `Welcome, ${context.user.name}!` } },
-        { p: { text: 'Please log in' } }
-      )
-    ]
+// Create an API router
+const router = createApiRouter();
+
+// Define validation schema
+const userSchema = {
+  type: 'object',
+  properties: {
+    name: { type: 'string', minLength: 1 },
+    email: { type: 'string', format: 'email' }
+  },
+  required: ['name', 'email']
+};
+
+// Define routes
+router.get('/users', (req, res) => {
+  return { users: [] };
+});
+
+router.post('/users', 
+  withValidation(userSchema),
+  (req, res) => {
+    const { name, email } = req.body;
+    // Create user logic here
+    return { user: { id: 1, name, email } };
   }
+);
+
+export default router;
+```
+
+### API with Express.js
+
+```javascript
+import express from 'express';
+import apiRouter from './api-router.js'; // Your API router
+import { createErrorHandler } from '@coherent/api';
+
+const app = express();
+app.use(express.json());
+
+// Mount the API router
+app.use('/api', apiRouter.toExpress());
+
+// Global error handler
+app.use(createErrorHandler());
+
+app.listen(3000, () => {
+  console.log('API server running on http://localhost:3000');
 });
 ```
 
@@ -82,7 +167,7 @@ const UserProfile = (context) => ({
 ### Built-in Monitoring
 
 ```javascript
-import { performanceMonitor } from 'coherent-framework';
+import { performanceMonitor } from '@coherent/core';
 
 performanceMonitor.start();
 
@@ -95,7 +180,7 @@ console.log(stats);
 ### Memoization
 
 ```javascript
-import { memo } from 'coherent-framework';
+import { memo } from '@coherent/core';
 
 const ExpensiveComponent = memo(
   (context) => {
@@ -109,7 +194,7 @@ const ExpensiveComponent = memo(
 ### Streaming for Large Documents
 
 ```javascript
-import { renderToStream } from 'coherent-framework';
+import { renderToStream } from '@coherent/core';
 
 const stream = renderToStream(largeComponent, context);
 
@@ -127,6 +212,204 @@ stream.on('end', () => {
 - [API Reference](docs/api-reference.md) - Complete documentation of all Coherent.js APIs
 - [Migration Guide](docs/migration-guide.md) - Instructions for migrating from React, template engines, and string-based frameworks
 - [Examples](examples/) - Practical examples demonstrating various features
+
+## 🚀 Getting Started
+
+### Using UI Components
+
+Coherent.js uses a pure object syntax for defining components, making it intuitive and powerful:
+
+```javascript
+import { createComponent, renderToString } from '@coherent/core';
+
+// Create a simple component
+const Greeting = createComponent(({ name = 'World' }) => ({
+  div: {
+    className: 'greeting',
+    children: [
+      { h1: { text: `Hello, ${name}!` } },
+      { p: { text: 'Welcome to Coherent.js' } }
+    ]
+  }
+}));
+
+// Render the component
+const html = renderToString(Greeting({ name: 'Developer' }));
+console.log(html);
+```
+
+### Using the API Framework
+
+Coherent.js includes a powerful API framework for building REST APIs:
+
+```javascript
+import { createApiRouter, withValidation } from '@coherent/api';
+
+// Create an API router
+const router = createApiRouter();
+
+// Define a validation schema
+const userSchema = {
+  type: 'object',
+  properties: {
+    name: { type: 'string', minLength: 1 },
+    email: { type: 'string', format: 'email' }
+  },
+  required: ['name', 'email']
+};
+
+// Define routes
+router.get('/users', (req, res) => {
+  // Get all users
+  return { users: [] };
+});
+
+router.post('/users', 
+  withValidation(userSchema),
+  (req, res) => {
+    // Create a new user
+    const { name, email } = req.body;
+    return { user: { id: 1, name, email } };
+  }
+);
+
+// Export for use with Express, Fastify, etc.
+export default router;
+```
+
+### Integration with Express.js
+
+```javascript
+// server.js
+import express from 'express';
+import apiRouter from './api.js';
+import { createErrorHandler } from '@coherent/api';
+import { setupCoherentExpress, createCoherentHandler } from '@coherent/express';
+
+const app = express();
+app.use(express.json());
+
+// Setup Coherent.js with Express
+setupCoherentExpress(app);
+
+// Mount API routes
+app.use('/api', apiRouter.toExpress());
+
+// Error handling
+app.use(createErrorHandler());
+
+app.listen(3000, () => {
+  console.log('Server running on http://localhost:3000');
+});
+```
+
+### Integration with Fastify
+
+```javascript
+// server.js
+import fastify from 'fastify';
+import apiRouter from './api.js';
+import { setupCoherentFastify, createCoherentFastifyHandler } from '@coherent/fastify';
+
+const app = fastify();
+
+// Setup Coherent.js with Fastify
+setupCoherentFastify(app);
+
+// Register API routes
+app.register(apiRouter.toFastify());
+
+app.listen({ port: 3000 }, (err, address) => {
+  if (err) {
+    console.error(err);
+    process.exit(1);
+  }
+  console.log(`Server running on ${address}`);
+});
+```
+
+### Using in Another Project
+
+To use Coherent.js in your own project:
+
+1. Install the package:
+```bash
+npm install coherent-framework
+```
+
+2. Import and use components:
+```javascript
+import { createComponent, renderToString } from '@coherent/core';
+
+const MyComponent = createComponent(({ message }) => ({
+  div: {
+    className: 'my-component',
+    children: [
+      { h2: { text: message } },
+      { p: { text: 'This is my Coherent.js component!' } }
+    ]
+  }
+}));
+
+const html = renderToString(MyComponent({ message: 'Hello from Coherent.js!' }));
+```
+
+3. For API usage:
+```javascript
+import { createApiRouter } from '@coherent/api';
+
+const router = createApiRouter();
+
+router.get('/hello', (req, res) => {
+  return { message: 'Hello from Coherent.js API!' };
+});
+
+export default router;
+```
+
+4. For Express.js integration:
+```javascript
+import express from 'express';
+import { setupCoherentExpress, createCoherentHandler } from '@coherent/express';
+
+const app = express();
+setupCoherentExpress(app);
+
+// Now you can return Coherent.js components directly from routes
+app.get('/', (req, res) => {
+  res.send({
+    html: {
+      children: [
+        { h1: { text: 'Hello from Coherent.js with Express!' } }
+      ]
+    }
+  });
+});
+
+app.listen(3000);
+```
+
+5. For Fastify integration:
+```javascript
+import fastify from 'fastify';
+import { setupCoherentFastify, createCoherentFastifyHandler } from '@coherent/fastify';
+
+const app = fastify();
+setupCoherentFastify(app);
+
+// Now you can return Coherent.js components directly from routes
+app.get('/', (req, res) => {
+  return {
+    html: {
+      children: [
+        { h1: { text: 'Hello from Coherent.js with Fastify!' } }
+      ]
+    }
+  };
+});
+
+app.listen({ port: 3000 });
+```
 
 ## 🏗️ Object Structure
 

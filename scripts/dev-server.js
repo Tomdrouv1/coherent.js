@@ -12,7 +12,7 @@ const config = {
   port: parseInt(process.env.PORT) || 3000,
   host: process.env.HOST || 'localhost',
   watchPaths: ['src/**/*', 'examples/**/*'],
-  staticPaths: ['examples', 'public']
+  staticPaths: ['src', 'examples', 'public']
 };
 
 // Create and start the development server
