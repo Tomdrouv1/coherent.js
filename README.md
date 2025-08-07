@@ -334,7 +334,7 @@ To use Coherent.js in your own project:
 
 1. Install the package:
 ```bash
-npm install coherent-framework
+npm install @coherent/core
 ```
 
 2. Import and use components:

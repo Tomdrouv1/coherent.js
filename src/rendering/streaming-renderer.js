@@ -7,7 +7,6 @@
 import {
     validateComponent,
     isCoherentObject,
-    extractProps,
     hasChildren,
     normalizeChildren
 } from '../core/object-utils.js';
@@ -15,38 +14,35 @@ import {
 import {
     escapeHtml,
     isVoidElement,
-    formatAttributes
 } from '../core/html-utils.js';
 
 import { performanceMonitor } from '../performance/monitor.js';
 
-/**
- * Configuration for streaming renderer
- */
-const DEFAULT_STREAM_CONFIG = {
-    chunkSize: 1024,           // Size of each chunk in bytes
-    bufferSize: 4096,          // Internal buffer size
-    enableMetrics: false,       // Track streaming metrics
-    yieldThreshold: 100,       // Yield control after N elements
-    maxDepth: 1000,            // Maximum nesting depth
-    encoding: 'utf8'           // Output encoding
-};
+// Import BaseRenderer for inheritance
+import { BaseRenderer } from './base-renderer.js';
 
 /**
- * Streaming renderer class
+ * Streaming renderer class - extends BaseRenderer for shared functionality
  */
-export class StreamingRenderer {
+export class StreamingRenderer extends BaseRenderer {
     constructor(options = {}) {
-        this.config = { ...DEFAULT_STREAM_CONFIG, ...options };
-        this.metrics = {
-            totalChunks: 0,
-            totalBytes: 0,
-            elementsProcessed: 0,
-            startTime: null,
-            endTime: null
-        };
+        // Call parent constructor with streaming-specific defaults
+        super({
+            maxDepth: 1000,
+            enableMetrics: false,
+            ...options
+        });
+        
+        // Streaming-specific properties
         this.buffer = '';
         this.elementCount = 0;
+        
+        // Override metrics with streaming-specific fields
+        this.metrics = {
+            ...this.metrics,
+            chunksGenerated: 0,
+            totalBytes: 0
+        };
     }
 
     /**
@@ -131,7 +127,7 @@ export class StreamingRenderer {
         let openTag = `<${tagName}`;
 
         // Add attributes
-        const attributes = this.extractAttributes(props);
+        const attributes = this.utils.extractAttributes(props);
         if (attributes) {
             openTag += ` ${attributes}`;
         }
@@ -181,38 +177,6 @@ export class StreamingRenderer {
 
             yield this.createChunk(chunk);
         }
-    }
-
-    /**
-     * Extract attributes from props
-     */
-    extractAttributes(props) {
-        if (!props || typeof props !== 'object') return '';
-
-        const attributes = [];
-        const skipProps = ['text', 'children'];
-
-        for (const [key, value] of Object.entries(props)) {
-            if (skipProps.includes(key) || value === undefined || value === null) {
-                continue;
-            }
-
-            if (typeof value === 'function') {
-                continue; // Skip functions in attributes
-            }
-
-            if (key === 'className') {
-                attributes.push(`class="${escapeHtml(String(value))}"`);
-            } else if (key.startsWith('data-') || key.startsWith('aria-')) {
-                attributes.push(`${key}="${escapeHtml(String(value))}"`);
-            } else if (typeof value === 'boolean') {
-                if (value) attributes.push(key);
-            } else {
-                attributes.push(`${key}="${escapeHtml(String(value))}"`);
-            }
-        }
-
-        return attributes.join(' ');
     }
 
     /**

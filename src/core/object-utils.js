@@ -371,6 +371,12 @@ export function hasChildren(component) {
     }
 
     if (isCoherentObject(component)) {
+        // First check if the component itself has a children property
+        if (component.children !== undefined && component.children !== null) {
+            return Array.isArray(component.children) ? component.children.length > 0 : true;
+        }
+        
+        // Then check if any of its properties have children
         const keys = Object.keys(component);
         return keys.some(key => {
             const value = component[key];
@@ -394,6 +400,21 @@ export function normalizeChildren(children) {
     }
 
     return [children];
+}
+
+/**
+ * Get children from a component's props
+ */
+export function getChildren(props) {
+    if (!props || typeof props !== 'object') {
+        return [];
+    }
+
+    if (props.children === undefined) {
+        return [];
+    }
+
+    return normalizeChildren(props.children);
 }
 
 /**

@@ -3,10 +3,8 @@
  * Converts object-based components to HTML strings with advanced optimizations
  */
 
+import { BaseRenderer, RendererUtils } from './base-renderer.js';
 import {
-    validateComponent,
-    isCoherentObject,
-    extractProps,
     hasChildren,
     normalizeChildren,
 } from '../core/object-utils.js';
@@ -19,392 +17,232 @@ import {
 } from '../core/html-utils.js';
 
 import { performanceMonitor } from '../performance/monitor.js';
-import { CacheManager } from '../performance/cache-manager.js';
+import { CacheManager, globalCache } from '../performance/cache-manager.js';
 
-// Global cache instance for renderer
-let globalCache = null;
+/**
+ * HTML Renderer Class extending BaseRenderer
+ */
+class HTMLRenderer extends BaseRenderer {
+    constructor(options = {}) {
+        super({
+            enableCache: options.enableCache !== false,
+            enableMonitoring: options.enableMonitoring !== false,
+            minify: options.minify || false,
+            streaming: options.streaming || false,
+            maxDepth: options.maxDepth || 100,
+            ...options
+        });
+        
+        // Use globalCache if enabled, or create local cache as fallback
+        if (this.config.enableCache) {
+            if (globalCache) {
+                this.cache = globalCache;
+            } else if (!this.cache) {
+                this.cache = new CacheManager({
+                    maxSize: this.config.cacheSize || 1000,
+                    ttl: this.config.cacheTTL || 300000 // 5 minutes
+                });
+            }
+        }
+    }
+
+    /**
+     * Main render method
+     */
+    render(component, options = {}) {
+        const config = { ...this.config, ...options };
+        this.startTiming();
+
+        try {
+            // Input validation
+            if (config.validateInput && !this.isValidComponent(component)) {
+                throw new Error('Invalid component structure');
+            }
+
+            // Main rendering logic
+            const html = this.renderComponent(component, config, 0);
+            const finalHtml = config.minify ? minifyHtml(html, config) : html;
+
+            // Performance monitoring
+            this.endTiming();
+            this.recordPerformance('renderToString', this.metrics.startTime, false, { 
+                cacheEnabled: config.enableCache 
+            });
+
+            return finalHtml;
+
+        } catch (error) {
+            this.recordError('renderToString', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Render a single component with full optimization pipeline
+     */
+    renderComponent(component, options, depth = 0) {
+        // Use base class depth validation
+        this.validateDepth(depth);
+        
+        // Use base class component type processing
+        const { type, value } = this.processComponentType(component);
+        
+        switch (type) {
+            case 'empty':
+                return '';
+            case 'text':
+                return escapeHtml(value);
+            case 'function':
+                const result = this.executeFunctionComponent(value, depth);
+                return this.renderComponent(result, options, depth + 1);
+            case 'array':
+                return value.map(child => this.renderComponent(child, options, depth + 1)).join('');
+            case 'element':
+                // Process object-based component
+                const tagName = Object.keys(value)[0];
+                const elementContent = value[tagName];
+                return this.renderElement(tagName, elementContent, options, depth);
+            default:
+                this.recordError('renderComponent', new Error(`Unknown component type: ${type}`));
+                return '';
+        }
+    }
+
+    /**
+     * Render an HTML element with advanced caching and optimization
+     */
+    renderElement(tagName, element, options, depth = 0) {
+        const startTime = performance.now();
+
+        // Track element usage for performance analysis
+        if (options.enableMonitoring && this.cache) {
+            this.cache.trackElementUsage(tagName);
+        }
+
+        // Check cache first for static elements
+        if (options.enableCache && this.cache && RendererUtils.isStaticElement(element)) {
+            const cached = this.cache.getStaticElement(tagName, element);
+            if (cached) {
+                this.recordPerformance(tagName, startTime, true);
+                return cached;
+            }
+        }
+
+        // Handle text-only elements including booleans
+        if (typeof element === 'string' || typeof element === 'number' || typeof element === 'boolean') {
+            const html = isVoidElement(tagName)
+                ? `<${tagName}>`
+                : `<${tagName}>${escapeHtml(String(element))}</${tagName}>`;
+
+            this.cacheIfStatic(tagName, element, html, options);
+            this.recordPerformance(tagName, startTime, false);
+            return html;
+        }
+
+        // Handle function elements
+        if (typeof element === 'function') {
+            const result = this.executeFunctionComponent(element, depth);
+            return this.renderElement(tagName, result, options, depth);
+        }
+
+        // Handle object elements (complex elements with props and children)
+        if (element && typeof element === 'object') {
+            return this.renderObjectElement(tagName, element, options, depth);
+        }
+
+        // Handle null and undefined by returning empty tags
+        if (element === null || element === undefined) {
+            const html = isVoidElement(tagName)
+                ? `<${tagName}>`
+                : `<${tagName}></${tagName}>`;
+            this.recordPerformance(tagName, startTime, false);
+            return html;
+        }
+
+        // Fallback for any other types
+        const html = `<${tagName}>${escapeHtml(String(element))}</${tagName}>`;
+        this.recordPerformance(tagName, startTime, false);
+        return html;
+    }
+
+    /**
+     * Cache element if it's static
+     */
+    cacheIfStatic(tagName, element, html, options) {
+        if (options.enableCache && this.cache && RendererUtils.isStaticElement(element)) {
+            this.cache.cacheStaticElement(tagName, element, html);
+        }
+    }
+
+    /**
+     * Render complex object elements with attributes and children
+     */
+    renderObjectElement(tagName, element, options, depth = 0) {
+        const startTime = performance.now();
+
+        // Check component-level cache
+        if (options.enableCache && this.cache) {
+            const cacheKey = RendererUtils.generateCacheKey(tagName, element);
+            const cached = this.cache.get(cacheKey);
+            if (cached) {
+                this.recordPerformance(tagName, startTime, true);
+                return cached;
+            }
+        }
+
+        // Extract props and children directly from element content
+        const { children, text, ...attributes } = element || {};
+
+        // Build opening tag with attributes
+        const attributeString = formatAttributes(attributes);
+        const openingTag = attributeString
+            ? `<${tagName} ${attributeString}>`
+            : `<${tagName}>`;
+
+        // Handle text content
+        let textContent = '';
+        if (text !== undefined) {
+            textContent = typeof text === 'function' ? String(text()) : escapeHtml(String(text));
+        }
+
+        // Handle children
+        let childrenHtml = '';
+        if (hasChildren(element)) {
+            const normalizedChildren = normalizeChildren(children);
+            childrenHtml = normalizedChildren
+                .map(child => this.renderComponent(child, options, depth + 1))
+                .join('');
+        }
+
+        // Build complete HTML
+        const html = `${openingTag}${textContent}${childrenHtml}</${tagName}>`;
+
+        // Cache the result if appropriate
+        if (options.enableCache && this.cache && RendererUtils.isCacheable(element, options)) {
+            const cacheKey = RendererUtils.generateCacheKey(tagName, element);
+            this.cache.set(cacheKey, html);
+        }
+
+        this.recordPerformance(tagName, startTime, false);
+        return html;
+    }
+}
+
+// Note: globalCache is now imported from cache-manager.js
 
 /**
  * Main render function - converts object components to HTML
  */
 export function renderToString(component, options = {}) {
-    const config = {
-        enableCache: options.enableCache !== false,
-        enableMonitoring: options.enableMonitoring !== false,
-        minify: options.minify || false,
-        streaming: options.streaming || false,
-        validateInput: options.validateInput !== false,
-        maxDepth: options.maxDepth || 100,
-        ...options
-    };
-
-    // Initialize global cache if needed
-    if (config.enableCache && !globalCache) {
-        globalCache = new CacheManager({
-            maxSize: config.cacheSize || 1000,
-            ttl: config.cacheTTL || 300000 // 5 minutes
-        });
-    }
-
-    const startTime = performance.now();
-
-    try {
-        // Input validation
-        if (config.validateInput && !isValidComponent(component)) {
-            throw new Error('Invalid component structure');
-        }
-
-        // Main rendering logic
-        const html = renderComponent(component, config, 0);
-        const finalHtml = config.minify ? minifyHtml(html, config) : html;
-
-        // Performance monitoring
-        if (config.enableMonitoring) {
-            performanceMonitor.recordRender(
-                'renderToString',
-                performance.now() - startTime,
-                false,
-                { cacheEnabled: config.enableCache }
-            );
-        }
-
-        return finalHtml;
-
-    } catch (error) {
-        if (config.enableMonitoring) {
-            performanceMonitor.recordError('renderToString', error);
-        }
-        throw error;
-    }
-}
-
-/**
- * Render a single component with full optimization pipeline
- */
-function renderComponent(component, options, depth = 0) {
-    // Depth protection
-    if (depth > options.maxDepth) {
-        throw new Error(`Maximum render depth (${options.maxDepth}) exceeded`);
-    }
-
-    // Handle different component types
-    if (component === null || component === undefined) {
-        return '';
-    }
-
-    if (typeof component === 'string') {
-        return escapeHtml(component);
-    }
-
-    if (typeof component === 'number' || typeof component === 'boolean') {
-        return String(component);
-    }
-
-    if (typeof component === 'function') {
-        // Check if this is a context provider (takes a render function as parameter)
-        try {
-            // Try to call it with a render function
-            const result = component((children) => {
-                // This is a context provider, render the children within the context
-                return renderComponent(children, options, depth + 1);
-            });
-            
-            // If the result is not a function, it means the component was not a context provider
-            // or the context provider has already rendered the children
-            if (typeof result !== 'function') {
-                return result;
-            }
-            
-            // If result is a function, it's a context provider that wants to render its children
-            // The context provider has already rendered the children, so we just return the result
-            return result;
-        } catch (error) {
-            // If calling with a render function fails, it's a regular function component
-            const result = component();
-            
-            // Handle case where function returns another function
-            if (typeof result === 'function') {
-                // Prevent infinite recursion by limiting depth
-                if (depth + 1 > options.maxDepth) {
-                    throw new Error(`Maximum render depth (${options.maxDepth}) exceeded`);
-                }
-                return renderComponent(result, options, depth + 1);
-            }
-            
-            return renderComponent(result, options, depth + 1);
-        }
-    }
-
-    if (Array.isArray(component)) {
-        return component
-            .map(child => renderComponent(child, options, depth + 1))
-            .join('');
-    }
-
-    if (isCoherentObject(component)) {
-        // Extract tagName from the first key of the component object
-        const keys = Object.keys(component);
-        if (keys.length === 0) {
-            throw new Error('Coherent object has no keys');
-        }
-        
-        // Use the first key as the tagName
-        const tagName = keys[0];
-        const element = component[tagName];
-        
-        // Validate the component structure
-        validateComponent(component);
-        
-        return renderElement(tagName, element, options, depth);
-    }
-
-    // Fallback for unknown types
-    const errorMessage = `Unknown component type: ${typeof component}. Component: ${JSON.stringify(component, null, 2)}`;
+    // Use the imported globalCache - no need to initialize as it's already created in cache-manager.js
     
-    if (options.enableMonitoring) {
-        performanceMonitor.recordError('renderComponent',
-            new Error(errorMessage)
-        );
-    }
-    
-    // In development mode, provide more detailed error information
-    if (typeof process !== 'undefined' && process.env.NODE_ENV === 'development') {
-        console.warn('Coherent.js Render Warning:', errorMessage);
-    }
-
-    return '';
+    const renderer = new HTMLRenderer(options);
+    return renderer.render(component, options);
 }
 
-/**
- * Render an HTML element with advanced caching and optimization
- */
-function renderElement(tagName, element, options, depth = 0) {
-    const startTime = performance.now();
+// Old functions removed - now part of HTMLRenderer class
 
-    // Track element usage for performance analysis
-    if (options.enableMonitoring && globalCache) {
-        globalCache.trackElementUsage(tagName);
-    }
-
-    // Check cache first for static elements
-    if (options.enableCache && globalCache && isStaticElement(element)) {
-        const cached = globalCache.getStaticElement(tagName, element);
-        if (cached) {
-            if (options.enableMonitoring) {
-                performanceMonitor.recordRender(tagName, performance.now() - startTime, true);
-            }
-            return cached;
-        }
-    }
-
-    // Handle text-only elements including booleans
-    if (typeof element === 'string' || typeof element === 'number' || typeof element === 'boolean') {
-        const html = isVoidElement(tagName)
-            ? `<${tagName}>`
-            : `<${tagName}>${escapeHtml(String(element))}</${tagName}>`;
-
-        cacheIfStatic(tagName, element, html, options);
-        recordPerformance(tagName, startTime, options, false);
-        return html;
-    }
-
-    // Handle function elements
-    if (typeof element === 'function') {
-        const result = element();
-        return renderElement(tagName, result, options, depth + 1);
-    }
-
-    // Handle object elements with props and children
-    if (element && typeof element === 'object') {
-        return renderObjectElement(tagName, element, options, depth);
-    }
-
-    // Handle null and undefined by returning empty tags
-    if (element === null || element === undefined) {
-        const html = isVoidElement(tagName)
-            ? `<${tagName}>`
-            : `<${tagName}></${tagName}>`;
-        recordPerformance(tagName, startTime, options, false);
-        return html;
-    }
-
-    // Fallback for any other types
-    const html = `<${tagName}>${escapeHtml(String(element))}</${tagName}>`;
-    recordPerformance(tagName, startTime, options, false);
-    return html;
-}
-
-/**
- * Render complex object elements with attributes and children
- */
-function renderObjectElement(tagName, element, options, depth = 0) {
-    const startTime = performance.now();
-
-    // Check component-level cache
-    if (options.enableCache && globalCache) {
-        const cacheKey = generateCacheKey(tagName, element);
-        const cached = globalCache.get(cacheKey);
-        if (cached) {
-            recordPerformance(tagName, startTime, options, true);
-            return cached;
-        }
-    }
-
-    // Extract props and children directly from element content
-    // Element content structure: { className: 'class', id: 'id', children: [...], text: 'content' }
-    const { children, text, ...props } = element;
-
-    // Build opening tag
-    const attributes = formatAttributes(props);
-    const openingTag = attributes
-        ? `<${tagName} ${attributes}>`
-        : `<${tagName}>`;
-
-    // Handle void elements
-    if (isVoidElement(tagName)) {
-        const html = openingTag;
-        cacheIfStatic(tagName, element, html, options);
-        recordPerformance(tagName, startTime, options, false);
-        return html;
-    }
-
-    // Render children or text content
-    let childrenHtml = '';
-    if (text !== undefined) {
-        // Handle text content
-        childrenHtml = typeof text === 'function'
-            ? escapeHtml(String(text()))
-            : escapeHtml(String(text));
-    } else if (children) {
-        // Handle child components
-        const normalizedChildren = normalizeChildren(children);
-        childrenHtml = normalizedChildren
-            .map(child => renderComponent(child, options, depth + 1))
-            .join('');
-    }
-
-    // Build complete HTML
-    const html = `${openingTag}${childrenHtml}</${tagName}>`;
-
-    // Cache the result if appropriate
-    if (options.enableCache && globalCache && isCacheable(element, options)) {
-        const cacheKey = generateCacheKey(tagName, element);
-        globalCache.set(cacheKey, html);
-    }
-
-    recordPerformance(tagName, startTime, options, false);
-    return html;
-}
-
-/**
- * Helper functions for caching and optimization
- */
-
-function isStaticElement(element) {
-    if (!element || typeof element !== 'object') {
-        return typeof element === 'string' || typeof element === 'number';
-    }
-
-    // Check if element has any dynamic content
-    for (const [key, value] of Object.entries(element)) {
-        if (typeof value === 'function') return false;
-
-        if (key === 'children' && Array.isArray(value)) {
-            // Recursively check children for dynamic content
-            return value.every(child => isStaticElement(child));
-        }
-
-        if (key === 'children' && typeof value === 'object' && value !== null) {
-            return isStaticElement(value);
-        }
-    }
-
-    return true;
-}
-
-function isCacheable(element, options) {
-    // Don't cache if caching is disabled
-    if (!options.enableCache) return false;
-
-    // Don't cache elements with functions (dynamic content)
-    if (hasFunctions(element)) return false;
-
-    // Don't cache very large elements (memory consideration)
-    if (getElementComplexity(element) > 1000) return false;
-
-    return true;
-}
-
-function hasFunctions(obj, visited = new WeakSet()) {
-    if (visited.has(obj)) return false;
-    visited.add(obj);
-
-    for (const value of Object.values(obj)) {
-        if (typeof value === 'function') return true;
-        if (typeof value === 'object' && value !== null && hasFunctions(value, visited)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-function getElementComplexity(element) {
-    if (!element || typeof element !== 'object') return 1;
-
-    let complexity = Object.keys(element).length;
-
-    if (element.children && Array.isArray(element.children)) {
-        complexity += element.children.reduce(
-            (sum, child) => sum + getElementComplexity(child),
-            0
-        );
-    }
-
-    return complexity;
-}
-
-function generateCacheKey(tagName, element) {
-    try {
-        // Create a stable cache key for the element
-        const keyData = {
-            tag: tagName,
-            props: extractProps(element),
-            hasChildren: hasChildren(element),
-            childrenType: Array.isArray(element.children) ? 'array' : typeof element.children
-        };
-
-        return `element:${JSON.stringify(keyData)}`;
-    } catch {
-        // Fallback for circular references or complex objects
-        return `element:${tagName}:${Date.now()}:${Math.random()}`;
-    }
-}
-
-function cacheIfStatic(tagName, element, html, options) {
-    if (options.enableCache && globalCache && isStaticElement(element)) {
-        globalCache.cacheStaticElement(tagName, element, html);
-    }
-}
-
-function recordPerformance(tagName, startTime, options, fromCache) {
-    if (options.enableMonitoring) {
-        performanceMonitor.recordRender(
-            tagName,
-            performance.now() - startTime,
-            fromCache
-        );
-    }
-}
-
-function isValidComponent(component) {
-    if (component === null || component === undefined) return true;
-    if (typeof component === 'string' || typeof component === 'number') return true;
-    if (typeof component === 'function') return true;
-    if (Array.isArray(component)) return component.every(isValidComponent);
-    if (isCoherentObject(component)) return true;
-
-    return false;
-}
+// Old helper functions removed - now available in RendererUtils from BaseRenderer
 
 /**
  * Batch rendering for multiple components
@@ -446,9 +284,10 @@ export function renderBatch(components, options = {}) {
 }
 
 /**
- * Render with streaming support for large output
+ * Render to chunks for large output (fake streaming - renders full HTML then chunks it)
+ * For true progressive streaming, use the streaming-renderer.js renderToStream function
  */
-export async function* renderToStream(component, options = {}) {
+export async function* renderToChunks(component, options = {}) {
     const config = {
         chunkSize: options.chunkSize || 8192,
         ...options,
@@ -467,6 +306,15 @@ export async function* renderToStream(component, options = {}) {
             isLast: i + config.chunkSize >= html.length
         };
     }
+}
+
+/**
+ * @deprecated Use renderToChunks instead. This function will be removed in a future version.
+ * For true progressive streaming, use the streaming-renderer.js renderToStream function.
+ */
+export async function* renderToStream(component, options = {}) {
+    console.warn('renderToStream from html-renderer is deprecated. Use renderToChunks for chunking or streaming-renderer.js renderToStream for true streaming.');
+    return yield* renderToChunks(component, options);
 }
 
 /**

@@ -264,12 +264,22 @@ export class CacheManager {
             .map(([key, stats]) => ({ key, ...stats }));
     }
 
-    destroy() {
-        clearInterval(this.cleanupInterval);
+    // Clear all caches
+    clear() {
         this.staticCache.clear();
         this.componentCache.clear();
         this.templateCache.clear();
+        this.staticElementCache.clear();
+        this.elementUsageTracking.clear();
         this.usageStats.clear();
+        this.memoryUsage = 0;
+        this.cacheHits = 0;
+        this.cacheMisses = 0;
+    }
+
+    destroy() {
+        clearInterval(this.cleanupInterval);
+        this.clear();
     }
 }
 

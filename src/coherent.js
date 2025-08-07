@@ -12,7 +12,8 @@
 import {
     renderToString,
     renderBatch,
-    renderToStream,
+    renderToChunks,
+    renderToStream, // deprecated - kept for backward compatibility
     renderWithTiming,
     precompileComponent,
     getCache,
@@ -25,6 +26,28 @@ import {
     createStreamingRenderer,
     streamingUtils
 } from './rendering/streaming-renderer.js';
+
+// DOM rendering capabilities
+import {
+    DOMRenderer,
+    renderToDOM
+} from './rendering/dom-renderer.js';
+
+// Import hydrate separately from client module
+import { hydrate } from './client/hydration.js';
+
+// Configuration utilities
+import {
+    createHtmlConfig,
+    createStreamingConfig,
+    createDomConfig,
+    createDevConfig,
+    createProdConfig,
+    validateConfig,
+    mergeConfigs,
+    getConfigPreset,
+    CONFIG_PRESETS
+} from './rendering/renderer-config.js';
 
 // Performance monitoring and optimization
 import { performanceMonitor } from './performance/monitor.js';
@@ -411,12 +434,18 @@ export {
     // Core rendering
     renderToString,
     renderBatch,
-    renderToStream,
+    renderToChunks,
+    renderToStream, // deprecated
     renderWithTiming,
 
     // Streaming
     createStreamingRenderer,
     streamingUtils,
+
+    // DOM rendering
+    DOMRenderer,
+    renderToDOM,
+    hydrate,
 
     // Components
     createComponent,
@@ -437,6 +466,17 @@ export {
     formatAttributes,
     minifyHtml,
 
+    // Configuration utilities
+    createHtmlConfig,
+    createStreamingConfig,
+    createDomConfig,
+    createDevConfig,
+    createProdConfig,
+    validateConfig,
+    mergeConfigs,
+    getConfigPreset,
+    CONFIG_PRESETS,
+
     // Performance
     performanceMonitor,
     CacheManager,
@@ -456,8 +496,8 @@ export {
 export const server = {
     render: renderToString,
     renderBatch,
-    stream: renderToStream,
-    createStreamingRenderer,
+    chunk: renderToChunks, // chunking pre-rendered HTML
+    stream: createStreamingRenderer, // true progressive streaming
     CacheManager,
     performanceMonitor
 };

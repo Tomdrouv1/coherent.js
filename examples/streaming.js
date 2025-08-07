@@ -3,7 +3,7 @@
  * Demonstrates streaming capabilities for large datasets and real-time updates
  */
 
-import { renderToStream } from '../src/coherent.js';
+import { renderToStream } from '../src/rendering/streaming-renderer.js';
 
 // Large list component optimized for streaming
 const StreamingList = ({ itemCount = 100, title = 'Streaming List' }) => ({
@@ -206,6 +206,7 @@ const StreamingDemo = () => {
     .demo .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
     .streaming-list, .streaming-table-container, .progressive-content, .streaming-feed { 
       background: white; padding: 15px; border-radius: 5px; border: 1px solid #ddd; 
+      height: 100%;
     }
     .list-container { max-height: 200px; overflow-y: auto; }
     .list-item { padding: 5px; border-bottom: 1px solid #eee; }
@@ -264,7 +265,7 @@ const StreamingDemo = () => {
                             div: {
                               class: 'grid',
                               children: [
-                                StreamingList({ itemCount: 50, title: 'Progressive List' }),
+                                StreamingList({ itemCount: 1000, title: 'Progressive List' }),
                                 StreamingDataTable({ rows: sampleData.slice(0, 15), showProgress: true })
                               ]
                             }

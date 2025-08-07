@@ -169,12 +169,29 @@ export class PerformanceMonitor {
     calculateMemoryEfficiency() {
         if (this.metrics.memoryUsage.length < 2) return 'N/A';
 
+        // Calculate average memory growth per render
+        const renderCount = this.metrics.renderTimes.length;
+        if (renderCount === 0) return 'N/A';
+        
         const recent = this.metrics.memoryUsage.slice(-10);
         const first = recent[0];
         const last = recent[recent.length - 1];
-
-        const growth = ((last.heapUsed - first.heapUsed) / first.heapUsed * 100).toFixed(2);
-        return `${growth}% heap growth`;
+        
+        const totalGrowth = last.heapUsed - first.heapUsed;
+        const growthPerRender = totalGrowth / renderCount;
+        
+        // Convert to KB for readability
+        const growthKB = (growthPerRender / 1024).toFixed(2);
+        
+        if (Math.abs(growthPerRender) < 1024) {
+            return 'Excellent (< 1KB/render)';
+        } else if (Math.abs(growthPerRender) < 10240) {
+            return `Good (${growthKB}KB/render)`;
+        } else if (Math.abs(growthPerRender) < 102400) {
+            return `Fair (${growthKB}KB/render)`;
+        } else {
+            return `Poor (${growthKB}KB/render)`;
+        }
     }
 
     getRenderTimeStats() {
@@ -280,16 +297,41 @@ export class PerformanceMonitor {
         const topComponents = this.getTopComponentsByUsage(5);
         const hotComponents = topComponents.filter(c => c.count > this.metrics.renderTimes.length * 0.1);
 
-        if (hotComponents.length > 0) {
+        // Filter out components that are already static cached
+        const uncachedHotComponents = hotComponents.filter(c => {
+            return !this.staticCachedComponents || !this.staticCachedComponents.has(c.component);
+        });
+
+        if (uncachedHotComponents.length > 0) {
             recommendations.push({
                 priority: 'medium',
                 issue: 'High frequency components detected',
-                suggestion: `Consider static caching for: ${hotComponents.map(c => c.component).join(', ')}`,
+                suggestion: `Consider static caching for: ${uncachedHotComponents.map(c => c.component).join(', ')}`,
                 impact: 'Significant performance improvement for hot paths'
+            });
+        } else if (hotComponents.length > 0) {
+            // All hot components are already static cached - provide positive feedback
+            recommendations.push({
+                priority: 'low',
+                issue: 'Hot components optimized',
+                suggestion: `Static caching active for: ${hotComponents.map(c => c.component).join(', ')}`,
+                impact: 'Excellent performance optimization already implemented'
             });
         }
 
         return recommendations;
+    }
+
+    calculateTrend(values) {
+        if (values.length < 2) return 0;
+
+        const n = values.length;
+        const sumX = (n * (n - 1)) / 2;
+        const sumY = values.reduce((a, b) => a + b, 0);
+        const sumXY = values.reduce((sum, y, x) => sum + x * y, 0);
+        const sumXX = (n * (n - 1) * (2 * n - 1)) / 6;
+
+        return (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
     }
 
     // Real-time monitoring interface
