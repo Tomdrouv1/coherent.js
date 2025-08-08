@@ -5,7 +5,7 @@
 
 import express from 'express';
 import chokidar from 'chokidar';
-import { WebSocketServer } from 'ws';
+import { WebSocketServer, WebSocket } from 'ws';
 import path from 'path';
 import fs from 'fs';
 import { exec } from 'child_process';
@@ -25,7 +25,7 @@ export class DevServer {
     this.buildTimeout = null;
 
     this.setupMiddleware();
-    this.setupWebSocket();
+    // Do not start listening in constructor to avoid hanging test runner
     this.setupRoutes();
   }
 
@@ -105,7 +105,7 @@ export class DevServer {
                     break;
                   }
                 }
-              } catch (e) {
+              } catch {
                 continue;
               }
             } else if (exported && typeof exported === 'object') {
@@ -196,10 +196,13 @@ export class DevServer {
             '      const registry = window.componentRegistry || {};\n' +
             '      autoHydrate(registry);\n' +
             '    }).catch(error => {\n' +
-            '      console.error(\'❌ Failed to load example module:\', error);\n' +
+            "      console.error('❌ Failed to load example module:', error);\n" +
             '      // Fallback to empty registry\n' +
             '      autoHydrate({});\n' +
             '    });\n' +
+            '  </script>\n' +
+            '  <script type="module">\n' +
+            "    import '/src/client/hmr.js';\n" +
             '  </script>\n' +
             '</body>\n' +
             '</html>\n'
@@ -296,13 +299,6 @@ export class DevServer {
                               href: example.path,
                               className: 'example-link',
                               text: 'View Example',
-                            },
-                          },
-                          {
-                            button: {
-                              className: 'example-link',
-                              onclick: `previewComponent('${example.path}')`,
-                              text: 'Live Preview',
                             },
                           },
                         ],
@@ -424,35 +420,27 @@ export class DevServer {
     };
   }
 
-  setupWebSocket() {
-    // WebSocket server for hot reload and live preview
-    this.app.server = this.app.listen(this.port, this.host, () => {
-      console.log(
-        `🚀 Development server running at http://${this.host}:${this.port}`
-      );
-      console.log(`👀 Watching for changes in: ${this.watchPaths.join(', ')}`);
+  setupWebSocket(server) {
+    // WebSocket server for hot reload and live preview (expects an existing HTTP server)
+    this.wss = new WebSocketServer({ server });
 
-      // Setup WebSocket server after HTTP server is listening
-      this.wss = new WebSocketServer({ server: this.app.server });
+    this.wss.on('connection', (ws) => {
+      console.log('🔌 WebSocket client connected');
+      ws.send(JSON.stringify({ type: 'connected' }));
 
-      this.wss.on('connection', (ws) => {
-        console.log('🔌 WebSocket client connected');
-        ws.send(JSON.stringify({ type: 'connected' }));
-
-        ws.on('message', (message) => {
-          try {
-            const data = JSON.parse(message);
-            if (data.type === 'preview-request') {
-              this.handlePreviewRequest(ws, data);
-            }
-          } catch (err) {
-            console.error('Error parsing WebSocket message:', err);
+      ws.on('message', (message) => {
+        try {
+          const data = JSON.parse(message);
+          if (data.type === 'preview-request') {
+            this.handlePreviewRequest(ws, data);
           }
-        });
+        } catch (err) {
+          console.error('Error parsing WebSocket message:', err);
+        }
+      });
 
-        ws.on('close', () => {
-          console.log('🔌 WebSocket client disconnected');
-        });
+      ws.on('close', () => {
+        console.log('🔌 WebSocket client disconnected');
       });
     });
   }
@@ -506,7 +494,7 @@ export class DevServer {
                   break;
                 }
               }
-            } catch (e) {
+            } catch {
               // If calling the function fails, it's not a component function
               continue;
             }
@@ -553,7 +541,7 @@ export class DevServer {
               props: data.props || {},
             });
             html = tempContainer.innerHTML;
-          } catch (domError) {
+          } catch {
             // Fallback to HTML rendering
             const { renderToString } = await import(
               '../rendering/html-renderer.js'
@@ -576,7 +564,7 @@ export class DevServer {
               '../rendering/html-renderer.js'
             );
             html = renderToString(componentFn, data.props || {});
-          } catch (htmlError) {
+          } catch {
             // Fallback to DOM rendering
             const { renderToDOM } = await import(
               '../rendering/dom-renderer.js'
@@ -689,6 +677,9 @@ export class DevServer {
               autoHydrate();
             }
           </script>
+          <script type="module">
+            import './src/client/hmr.js';
+          </script>
         </body>
         </html>
       `);
@@ -719,20 +710,31 @@ export class DevServer {
     this.app.get('/health', (req, res) => {
       res.json({ status: 'ok', timestamp: new Date().toISOString() });
     });
+
+    // Dev-only: trigger a test HMR broadcast
+    this.app.get('/dev/hmr-test', (req, res) => {
+      const file = req.query.file || path.join(process.cwd(), 'examples/hydration-demo.js');
+      const type = req.query.type || this.determineUpdateType(String(file));
+      console.log('🧪 HMR test trigger:', { file, type });
+      this.broadcastHMRUpdate(String(file), String(type));
+      res.json({ ok: true, file, type });
+    });
   }
 
   startWatching() {
     // Watch for file changes
     this.watchPaths.forEach((watchPath) => {
       const fullPath = path.join(process.cwd(), watchPath);
-      
-      const watcher = chokidar.watch(fullPath, {
+
+      const watcher = chokidar.watch(watchPath, {
+        cwd: process.cwd(),
         ignored: /node_modules/,
         persistent: true,
         usePolling: true,
-        interval: 1000,
-        binaryInterval: 1000,
-        ignoreInitial: true
+        interval: 300,
+        binaryInterval: 300,
+        ignoreInitial: true,
+        awaitWriteFinish: { stabilityThreshold: 200, pollInterval: 50 }
       });
 
       watcher.on('change', (filePath) => {
@@ -741,33 +743,51 @@ export class DevServer {
         // Determine update type for intelligent HMR
         const updateType = this.determineUpdateType(filePath);
         
-        // Auto-build when source files change (not examples)
-        if (filePath.includes('src/') && filePath.endsWith('.js')) {
-          this.autoBuild();
-        }
-
-        // Broadcast HMR update to connected clients
-        console.log(`🔥 HMR: Broadcasting ${updateType} update for:`, filePath);
-        this.broadcastHMRUpdate(filePath, updateType);
-
-        // If it's a component file, broadcast preview update
-        if (
-          filePath.endsWith('.js') &&
-          (filePath.includes('examples') || filePath.includes('components'))
-        ) {
-          this.broadcastPreviewUpdate(filePath);
-        }
+        // Debounce rapid changes
+        if (this.pendingBuild) return;
+        this.pendingBuild = true;
+        setTimeout(() => {
+          this.pendingBuild = false;
+          console.log('🔥 HMR: File changed:', filePath);
+          console.log('🔥 HMR: Determined update type:', updateType);
+          // Only rebuild when server/dev tooling changed; HMR for client/examples doesn't need build
+          if (updateType === 'full-reload') {
+            console.log('🛠️  Auto-building due to full-reload update');
+            this.autoBuild();
+          }
+          console.log('🔥 HMR: Broadcasting', updateType, 'for', filePath);
+          this.broadcastHMRUpdate(filePath, updateType);
+          if (
+            filePath.endsWith('.js') &&
+            (filePath.includes('examples') || filePath.includes('components'))
+          ) {
+            console.log('🎯 Preview update for', filePath);
+            this.broadcastPreviewUpdate(filePath);
+          }
+        }, 50);
       });
 
-      watcher.on('add', (filePath) => {
+      watcher.on('add', (p) => {
+        console.log('📄 file added:', p);
+        console.log('📄 Broadcasting reload for added file:', p);
         this.broadcastReload();
       });
 
-      watcher.on('unlink', (filePath) => {
+      watcher.on('unlink', (p) => {
+        console.log('🗑️  file removed:', p);
         this.broadcastReload();
       });
 
       this.watchers.push(watcher);
+
+      watcher.on('ready', () => {
+        console.log('👂 watcher ready for', fullPath);
+      });
+
+      watcher.on('raw', (eventName, filePath, details) => {
+        // Low-level events for debugging
+        console.log('🪵 raw event:', eventName, filePath);
+      });
     });
   }
 
@@ -797,7 +817,7 @@ export class DevServer {
   broadcastReload() {
     if (this.wss) {
       this.wss.clients.forEach((client) => {
-        if (client.readyState === WebSocketServer.OPEN) {
+        if (client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify({ type: 'reload' }));
         }
       });
@@ -807,7 +827,7 @@ export class DevServer {
   broadcastPreviewUpdate(filePath) {
     if (this.wss) {
       this.wss.clients.forEach((client) => {
-        if (client.readyState === WebSocketServer.OPEN) {
+        if (client.readyState === WebSocket.OPEN) {
           client.send(
             JSON.stringify({
               type: 'preview-update',
@@ -830,6 +850,10 @@ export class DevServer {
     }
     
     if (normalizedPath.includes('src/') && normalizedPath.endsWith('.js')) {
+      // Any dev-server or tooling change should force a full reload
+      if (normalizedPath.includes('src/dev/')) {
+        return 'full-reload';
+      }
       if (normalizedPath.includes('components/') || 
           normalizedPath.includes('client/') ||
           normalizedPath.includes('rendering/')) {
@@ -857,12 +881,23 @@ export class DevServer {
     
     const normalizedPath = filePath.replace(/\\/g, '/');
     const moduleId = this.getModuleId(normalizedPath);
+    const cwd = process.cwd().replace(/\\/g, '/');
+    let rel = normalizedPath.startsWith(cwd) ? normalizedPath.slice(cwd.length) : normalizedPath;
+    if (!rel.startsWith('/')) rel = `/${rel}`;
+    // Derive a web-served path based on our static mounts
+    // We statically serve '/src', '/examples', '/public', '/node_modules'
+    let webPath = null;
+    for (const base of ['/src/', '/examples/', '/public/', '/node_modules/']) {
+      const idx = rel.indexOf(base);
+      if (idx !== -1) { webPath = rel.slice(idx); break; }
+    }
     
     let message = {
       type: updateType === 'component' ? 'hmr-component-update' : 'hmr-update',
       filePath: normalizedPath,
       moduleId,
-      updateType
+      updateType,
+      ...(webPath ? { webPath } : {})
     };
     
     if (updateType === 'component') {
@@ -877,8 +912,9 @@ export class DevServer {
       };
     }
     
+    console.log('🔔 HMR broadcast:', { updateType, file: normalizedPath, webPath });
     this.wss.clients.forEach((client) => {
-      if (client.readyState === WebSocketServer.OPEN) {
+      if (client.readyState === WebSocket.OPEN) {
         client.send(JSON.stringify(message));
       }
     });
@@ -911,7 +947,24 @@ export class DevServer {
   }
 
   start() {
-    this.startWatching();
+    // Start HTTP server and websocket, then start watching
+    this.app.server = this.app.listen(this.port, this.host, () => {
+      // Expose server on instance and avoid keeping event loop alive when idle
+      this.server = this.app.server;
+      if (this.server && typeof this.server.unref === 'function') {
+        this.server.unref();
+      }
+      console.log(
+        `🚀 Development server running at http://${this.host}:${this.port}`
+      );
+      console.log(`👀 Watching for changes in: ${this.watchPaths.join(', ')}`);
+
+      // Setup WebSocket server after HTTP server is listening
+      this.setupWebSocket(this.app.server);
+
+      // Start file watchers
+      this.startWatching();
+    });
   }
 
   stop() {

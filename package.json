@@ -15,6 +15,8 @@
   "scripts": {
     "test": "node --test tests/*.test.js",
     "dev": "coherent-dev",
+    "dev:server": "nodemon",
+    "dev:watch": "node --watch --watch-path=src/dev scripts/dev-server.js",
     "example:basic": "node examples/basic-usage.js",
     "example:components": "node examples/components-test.js",
     "example:performance": "node examples/performance-test.js",
@@ -25,7 +27,7 @@
     "example:state": "node examples/state-management.js",
     "example:memoization": "node examples/memoization-test.js",
     "example:composition": "node examples/component-composition.js",
-    "lint": "eslint src/ tests/ examples/",
+    "lint": "eslint src/ --max-warnings=0",
     "format": "prettier --write src/ tests/ examples/",
     "typecheck": "tsc --noEmit",
     "typecheck:strict": "tsc --noEmit --strict",
