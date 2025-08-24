@@ -1,10 +1,16 @@
+/**
+ * Object Factory for Coherent.js
+ * @fileoverview Creates Coherent objects with HTML elements and text nodes
+ */
+
 import { HTML_ELEMENTS, CoherentTypes } from '../types/constants.js';
 
 /**
  * Creates a Coherent object with the specified tag and properties
  * @param {string} tag - HTML tag name
- * @param {Object} props - Properties object
- * @returns {Object} Coherent object
+ * @param {Object} [props={}] - Properties object
+ * @returns {Object} Coherent object with element structure
+ * @throws {Error} When invalid HTML element is provided
  */
 export function createElement(tag, props = {}) {
     if (!HTML_ELEMENTS.has(tag)) {

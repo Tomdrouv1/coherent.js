@@ -65,7 +65,7 @@ export class BundleOptimizer {
             if (result) {
                 this.traverseComponent(result, {}, context);
             }
-        } catch (error) {
+        } catch {
             // Component might need specific props, skip runtime analysis
         }
     }

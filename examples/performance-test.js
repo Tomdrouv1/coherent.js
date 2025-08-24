@@ -162,33 +162,66 @@ async function runPerformanceTests() {
     let cacheHits = 0;
     let cacheMisses = 0;
     
-    // Fast hash function for cache keys (much faster than JSON.stringify)
+    // Hash function for cache keys with object identity optimization
     const fastHash = (obj) => {
+        // Use WeakMap for object identity-based caching when possible
         if (componentHashCache.has(obj)) {
             return componentHashCache.get(obj);
         }
         
+        // For simple objects, try to avoid JSON.stringify when possible
         let hash = 0;
-        const str = JSON.stringify(obj);
-        for (let i = 0; i < str.length; i++) {
-            const char = str.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash; // Convert to 32-bit integer
+        
+        // Fast path for objects with known structure
+        if (obj && typeof obj === 'object' && obj.type && obj.props) {
+            // Component-like objects: hash based on type and key props
+            const keyStr = `${obj.type}:${obj.props?.depth || ''}:${obj.props?.label || ''}`;
+            for (let i = 0; i < keyStr.length; i++) {
+                const char = keyStr.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+        } else {
+            // Fallback to JSON.stringify for complex objects
+            const str = JSON.stringify(obj);
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convert to 32-bit integer
+            }
         }
         
         componentHashCache.set(obj, hash);
         return hash;
     };
     
-    // Static cache for hot components (as recommended by performance monitor)
-    const staticCache = new Map([
-        ['HeavyComponent', '<div class="heavy-component-static"><h2>Heavy Component (Static Cache)</h2><p>Ultra-fast static content for hot path</p></div>'],
-        ['DataTable', '<div class="data-table-static"><h2>Data Table (Static Cache)</h2><p>Ultra-fast static content for hot path</p></div>'],
-        ['MemoryTest', '<div class="memory-test-static"><h2>Memory Test Component (Static Cache)</h2><p>Ultra-fast static content for hot path</p></div>']
-    ]);
+    // Static cache for hot components using actual rendered content
+    const staticCache = new Map();
     
-    // Pre-rendered dynamic content for regular cache hits
-    const staticContent = '<div class="heavy-component"><h2>Heavy Component (Cached)</h2><p>This is cached content</p></div>';
+    // Pre-render components with actual framework rendering for accurate cache testing
+    const preRenderStaticComponents = () => {
+        // Render HeavyComponent with minimal depth for static cache
+        const heavyComponentOutput = renderToString(HeavyComponent({ depth: 1, maxDepth: 2, label: 'Static' }));
+        staticCache.set('HeavyComponent', heavyComponentOutput);
+        
+        // Render DataTable with sample data for static cache
+        const sampleRows = Array.from({ length: 3 }, (_, i) => ({
+            id: i + 1,
+            name: `Static Row ${i + 1}`,
+            score: 95 + i,
+            status: 'active'
+        }));
+        const dataTableOutput = renderToString(PerformanceDataTable({ rows: sampleRows, showMetrics: false }));
+        staticCache.set('DataTable', dataTableOutput);
+        
+        // Note: MemoryTest component doesn't exist in current code, removing from static cache
+    };
+    
+    // Initialize static cache with real component output
+    preRenderStaticComponents();
+    
+    // Use actual rendered content for dynamic cache hits as well
+    const dynamicCacheContent = renderToString(HeavyComponent({ depth: 1, maxDepth: 3, label: 'Dynamic' }));
     
     // Register static cache with performance monitor to prevent redundant recommendations
     if (performanceMonitor.registerStaticCache) {
@@ -210,7 +243,7 @@ async function runPerformanceTests() {
             
             if (renderCache.has(cacheKey)) {
                 cacheHits++;
-                return staticContent; // Return pre-computed dynamic content for regular cache hits
+                return dynamicCacheContent; // Return pre-computed dynamic content for regular cache hits
             }
             
             cacheMisses++;

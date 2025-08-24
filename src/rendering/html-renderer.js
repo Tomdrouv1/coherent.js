@@ -21,6 +21,29 @@ import { CacheManager, globalCache } from '../performance/cache-manager.js';
 
 /**
  * HTML Renderer Class extending BaseRenderer
+ * 
+ * @class HTMLRenderer
+ * @extends BaseRenderer
+ * @description High-performance HTML renderer with caching, monitoring, and streaming support.
+ * Converts object-based components to HTML strings with advanced optimizations.
+ * 
+ * @param {Object} [options={}] - Renderer configuration options
+ * @param {boolean} [options.enableCache=true] - Enable component caching
+ * @param {boolean} [options.enableMonitoring=true] - Enable performance monitoring
+ * @param {boolean} [options.minify=false] - Enable HTML minification
+ * @param {boolean} [options.streaming=false] - Enable streaming mode
+ * @param {number} [options.maxDepth=100] - Maximum rendering depth
+ * @param {number} [options.cacheSize=1000] - Cache size limit
+ * @param {number} [options.cacheTTL=300000] - Cache TTL in milliseconds
+ * 
+ * @example
+ * const renderer = new HTMLRenderer({
+ *   enableCache: true,
+ *   enableMonitoring: true,
+ *   minify: true
+ * });
+ * 
+ * const html = renderer.render({ div: { text: 'Hello World' } });
  */
 class HTMLRenderer extends BaseRenderer {
     constructor(options = {}) {
@@ -47,7 +70,25 @@ class HTMLRenderer extends BaseRenderer {
     }
 
     /**
-     * Main render method
+     * Main render method - converts components to HTML string
+     * 
+     * @param {Object|Array|string|Function} component - Component to render
+     * @param {Object} [options={}] - Rendering options
+     * @param {Object} [options.context] - Rendering context
+     * @param {boolean} [options.enableCache] - Override cache setting
+     * @param {number} [options.depth=0] - Current rendering depth
+     * @returns {string} Rendered HTML string
+     * 
+     * @example
+     * const html = renderer.render({
+     *   div: {
+     *     className: 'container',
+     *     children: [
+     *       { h1: { text: 'Title' } },
+     *       { p: { text: 'Content' } }
+     *     ]
+     *   }
+     * });
      */
     render(component, options = {}) {
         const config = { ...this.config, ...options };
@@ -183,10 +224,12 @@ class HTMLRenderer extends BaseRenderer {
         // Check component-level cache
         if (options.enableCache && this.cache) {
             const cacheKey = RendererUtils.generateCacheKey(tagName, element);
-            const cached = this.cache.get(cacheKey);
-            if (cached) {
-                this.recordPerformance(tagName, startTime, true);
-                return cached;
+            if (cacheKey) {
+                const cached = this.cache.get(cacheKey);
+                if (cached) {
+                    this.recordPerformance(tagName, startTime, true);
+                    return cached;
+                }
             }
         }
 
@@ -220,7 +263,9 @@ class HTMLRenderer extends BaseRenderer {
         // Cache the result if appropriate
         if (options.enableCache && this.cache && RendererUtils.isCacheable(element, options)) {
             const cacheKey = RendererUtils.generateCacheKey(tagName, element);
-            this.cache.set(cacheKey, html);
+            if (cacheKey) {
+                this.cache.set(cacheKey, html);
+            }
         }
 
         this.recordPerformance(tagName, startTime, false);

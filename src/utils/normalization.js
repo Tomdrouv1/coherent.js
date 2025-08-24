@@ -5,7 +5,9 @@ export function normalizeProps(props) {
     }
 
     // Filter out key and ref from props (they're handled separately)
-    const { key, ref, ...normalizedProps } = props;
+    const normalizedProps = { ...props };
+    delete normalizedProps.key;
+    delete normalizedProps.ref;
 
     return normalizedProps;
 }

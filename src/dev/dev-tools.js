@@ -549,7 +549,7 @@ export class DevTools {
                 this.hotReloadEnabled = false;
             };
 
-        } catch (error) {
+        } catch {
             // Dev server not available
         }
     }
@@ -574,7 +574,7 @@ export class DevTools {
 
             this.hotReloadEnabled = true;
 
-        } catch (error) {
+        } catch {
             // File watching not available
         }
     }

@@ -1,6 +1,6 @@
 /**
  * API Serialization for Coherent.js
- * Utilities for serializing complex data types
+ * @fileoverview Utilities for serializing complex data types
  */
 
 /**
@@ -87,24 +87,44 @@ function deserializeSet(arr) {
 /**
  * Create serialization middleware
  * @param {Object} options - Serialization options
+ * @param {boolean} [options.enableDate=true] - Include Date helpers
+ * @param {boolean} [options.enableMap=true] - Include Map helpers
+ * @param {boolean} [options.enableSet=true] - Include Set helpers
+ * @param {Object} [options.custom] - Custom serializer/deserializer overrides
+ * @param {(d: Date) => any} [options.custom.serializeDate]
+ * @param {(v: any) => Date} [options.custom.deserializeDate]
+ * @param {(m: Map) => any} [options.custom.serializeMap]
+ * @param {(v: any) => Map} [options.custom.deserializeMap]
+ * @param {(s: Set) => any} [options.custom.serializeSet]
+ * @param {(v: any) => Set} [options.custom.deserializeSet]
  * @returns {Function} Middleware function
  */
 function withSerialization(options = {}) {
+  const {
+    enableDate = true,
+    enableMap = true,
+    enableSet = true,
+    custom = {}
+  } = options;
+
   return (req, res, next) => {
-    // Add serialization helpers to response object
-    res.serialize = {
-      date: serializeDate,
-      map: serializeMap,
-      set: serializeSet
-    };
-    
-    // Add deserialization helpers to request object
-    req.deserialize = {
-      date: deserializeDate,
-      map: deserializeMap,
-      set: deserializeSet
-    };
-    
+    // Build serialization helpers, honoring options/custom overrides
+    res.serialize = {};
+    req.deserialize = {};
+
+    if (enableDate) {
+      res.serialize.date = custom.serializeDate || serializeDate;
+      req.deserialize.date = custom.deserializeDate || deserializeDate;
+    }
+    if (enableMap) {
+      res.serialize.map = custom.serializeMap || serializeMap;
+      req.deserialize.map = custom.deserializeMap || deserializeMap;
+    }
+    if (enableSet) {
+      res.serialize.set = custom.serializeSet || serializeSet;
+      req.deserialize.set = custom.deserializeSet || deserializeSet;
+    }
+
     next();
   };
 }

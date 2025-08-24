@@ -77,6 +77,36 @@ export class DevServer {
           return res.status(404).send('Example not found');
         }
 
+        // Check if file contains server-only imports that can't run in browser
+        const fileContent = fs.readFileSync(examplePath, 'utf8');
+        if (fileContent.includes('database') || 
+            fileContent.includes('Migration') ||
+            fileContent.includes('createObjectRouter') ||
+            fileContent.includes('router-features') ||
+            fileContent.includes('websocket') ||
+            fileContent.includes('node:http') ||
+            fileContent.includes('node:crypto')) {
+          // Skip server-only examples that can't run in browser
+          return res.status(500).send(`
+            <html>
+              <head><title>Server-Only Example</title></head>
+              <body style="font-family: Arial, sans-serif; padding: 20px;">
+                <h1>🖥️ Server-Only Example</h1>
+                <p>This example (<strong>${req.params.exampleName}.js</strong>) contains server-side code that cannot run in the browser.</p>
+                <p>It includes Node.js modules like:</p>
+                <ul>
+                  <li>HTTP server creation</li>
+                  <li>Database connections</li>
+                  <li>WebSocket servers</li>
+                  <li>Crypto operations</li>
+                </ul>
+                <p>To run this example, use: <code>node examples/${req.params.exampleName}.js</code></p>
+                <a href="/">← Back to Examples</a>
+              </body>
+            </html>
+          `);
+        }
+
         // Dynamically import the component
         const module = await import(`file://${examplePath}`);
 
@@ -94,7 +124,30 @@ export class DevServer {
 
             if (typeof exported === 'function') {
               try {
-                const result = exported({});
+                // Skip certain files that shouldn't be loaded as examples
+                if (req.params.exampleName.includes('node_modules') || 
+                    req.params.exampleName.includes('.test.') || 
+                    req.params.exampleName.includes('.spec.') ||
+                    req.params.exampleName.endsWith('.md') ||
+                    req.params.exampleName.includes('router-features') ||
+                    req.params.exampleName.includes('websocket') ||
+                    req.params.exampleName.includes('database')) {
+                  continue;
+                }
+                
+                // Try calling with empty props first, then with default props if it fails
+                let result;
+                try {
+                  result = exported({});
+                } catch {
+                  // If empty props fail, try with some common default props
+                  try {
+                    result = exported({ userInput: '', data: [], items: [] });
+                  } catch {
+                    continue;
+                  }
+                }
+                
                 if (typeof result === 'string') {
                   componentFn = exported;
                   break;
@@ -229,18 +282,38 @@ export class DevServer {
   }
 
   createDashboardComponent() {
-    // Define the examples data
-    const examples = [
-      { name: 'Basic Demo', path: '/examples/basic-usage.js' },
-      {
-        name: 'Component Demo',
-        path: '/examples/component-composition.js',
-      },
-      { name: 'Context Demo', path: '/examples/context-example.js' },
-      { name: 'Hydration Demo', path: '/examples/hydration-demo.js' },
-      { name: 'Performance Monitoring Demo', path: '/examples/performance-test.js' },
-      { name: 'Streaming Renderer Demo', path: '/examples/streaming.js' },
-    ];
+    // Dynamically load all examples from the examples directory
+    const examplesDir = path.join(process.cwd(), 'examples');
+    let examples = [];
+    
+    try {
+      const files = fs.readdirSync(examplesDir);
+      examples = files
+        .filter(file => file.endsWith('.js'))
+        .map(file => {
+          const name = path.basename(file, '.js');
+          // Convert filename to display name
+          const displayName = name
+            .split('-')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+          
+          return {
+            name: displayName,
+            path: `/examples/${file}`
+          };
+        })
+        .sort((a, b) => a.name.localeCompare(b.name));
+    } catch (err) {
+      console.error('Error reading examples directory:', err);
+      // Fallback to basic examples if directory read fails
+      examples = [
+        { name: 'Basic Usage', path: '/examples/basic-usage.js' },
+        { name: 'Component Composition', path: '/examples/component-composition.js' },
+        { name: 'Context Example', path: '/examples/context-example.js' },
+        { name: 'Hydration Demo', path: '/examples/hydration-demo.js' },
+      ];
+    }
 
     // Create the dashboard component using Coherent.js syntax
     return {
@@ -784,7 +857,7 @@ export class DevServer {
         console.log('👂 watcher ready for', fullPath);
       });
 
-      watcher.on('raw', (eventName, filePath, details) => {
+      watcher.on('raw', (eventName, filePath) => {
         // Low-level events for debugging
         console.log('🪵 raw event:', eventName, filePath);
       });

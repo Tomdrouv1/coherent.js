@@ -78,6 +78,36 @@ export const AdvancedCounter = withState(
   { count: 0, step: 1, history: [] }
 );
 
+// Server-side compatible state management demo
+export const StateManagementDemo = ({ count = 5, step = 2 }) => ({
+  div: {
+    className: 'state-management-demo',
+    children: [
+      { h4: { text: 'State Management Demo' } },
+      { p: { text: `Current Count: ${count}` } },
+      { p: { text: `Step Size: ${step}` } },
+      {
+        button: {
+          text: `+${step}`,
+          disabled: true,
+          style: 'opacity: 0.6; cursor: not-allowed;'
+        }
+      },
+      {
+        div: {
+          children: [
+            { h5: { text: 'History' } },
+            { p: { text: 'increment: 0 → 2' } },
+            { p: { text: 'increment: 2 → 4' } },
+            { p: { text: 'increment: 4 → 5' } }
+          ]
+        }
+      },
+      { small: { text: '💡 Interactive version available in hydrated client-side mode' } }
+    ]
+  }
+});
+
 // Security demonstration component
 export const SecurityDemo = ({ userInput = '<script>alert("XSS")</script>' }) => ({
   div: {
@@ -169,7 +199,7 @@ export const advancedFeaturesDemo = {
                       className: 'demo-section',
                       children: [
                         { h2: { text: '🔄 State Management' } },
-                        AdvancedCounter()
+                        StateManagementDemo({})
                       ]
                     }
                   },
@@ -179,7 +209,7 @@ export const advancedFeaturesDemo = {
                       className: 'demo-section',
                       children: [
                         { h2: { text: '🔒 Security' } },
-                        SecurityDemo()
+                        SecurityDemo({})
                       ]
                     }
                   },

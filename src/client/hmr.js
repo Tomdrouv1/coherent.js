@@ -68,8 +68,8 @@
             break;
         }
       });
-    } catch (e) {
-      error('failed to initialize HMR', e);
+    } catch {
+      // Ignore errors in non-browser environments
     }
   }
 
@@ -83,8 +83,8 @@
       const importPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
       await import(`${importPath}?t=${ts}`);
       log('updated', msg.updateType || 'module', filePath);
-    } catch (e) {
-      warn('module re-import failed, attempting soft hydrate', filePath, e);
+    } catch (err) {
+      warn('module re-import failed, attempting soft hydrate', filePath, err);
     }
 
     // Attempt to re-hydrate if available
@@ -96,7 +96,7 @@
       } else {
         autoHydrate();
       }
-    } catch (e) {
+    } catch {
       warn('autoHydrate failed; falling back to full reload');
       location.reload();
     }

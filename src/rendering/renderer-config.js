@@ -93,19 +93,19 @@ export function createProdConfig(options = {}) {
 export function validateConfig(config) {
     const errors = [];
     
-    if (typeof config.maxDepth !== 'number' || config.maxDepth <= 0) {
+    if (config.maxDepth !== undefined && (typeof config.maxDepth !== 'number' || config.maxDepth <= 0)) {
         errors.push('maxDepth must be a positive number');
     }
     
-    if (typeof config.chunkSize !== 'number' || config.chunkSize <= 0) {
+    if (config.chunkSize !== undefined && (typeof config.chunkSize !== 'number' || config.chunkSize <= 0)) {
         errors.push('chunkSize must be a positive number');
     }
     
-    if (typeof config.yieldThreshold !== 'number' || config.yieldThreshold <= 0) {
+    if (config.yieldThreshold !== undefined && (typeof config.yieldThreshold !== 'number' || config.yieldThreshold <= 0)) {
         errors.push('yieldThreshold must be a positive number');
     }
     
-    if (config.encoding && !['utf8', 'ascii', 'base64', 'hex'].includes(config.encoding)) {
+    if (config.encoding !== undefined && config.encoding && !['utf8', 'ascii', 'base64', 'hex'].includes(config.encoding)) {
         errors.push('encoding must be one of: utf8, ascii, base64, hex');
     }
     

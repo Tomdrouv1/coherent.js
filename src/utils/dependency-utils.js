@@ -12,7 +12,7 @@ export function isPeerDependencyAvailable(packageName) {
     // Try to resolve the package
     import.meta.resolve(packageName);
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 }
@@ -27,7 +27,7 @@ export function isPeerDependencyAvailable(packageName) {
 export async function importPeerDependency(packageName, integrationName) {
   try {
     return await import(packageName);
-  } catch (error) {
+  } catch {
     throw new Error(
       `${integrationName} integration requires the '${packageName}' package to be installed.\n` +
       `Please install it with: npm install ${packageName}\n` +

@@ -12,12 +12,6 @@ import {
     normalizeChildren,
 } from '../core/object-utils.js';
 
-import {
-    escapeHtml,
-    isVoidElement,
-    formatAttributes
-} from '../core/html-utils.js';
-
 import { performanceMonitor } from '../performance/monitor.js';
 
 /**
@@ -53,7 +47,7 @@ export const DEFAULT_RENDERER_CONFIG = {
     performanceThreshold: 10,  // ms threshold for slow renders
 
     // Development options
-    enableDevWarnings: typeof process !== 'undefined' && process.env.NODE_ENV === 'development',
+    enableDevWarnings: typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development',
     enableDebugLogging: false,
 
     // Error handling options
@@ -81,14 +75,23 @@ export class BaseRenderer {
         const config = { ...DEFAULT_RENDERER_CONFIG, ...options };
         
         // Validate critical options
+        if (typeof config.maxDepth !== 'number') {
+            throw new Error('maxDepth must be a number');
+        }
         if (config.maxDepth <= 0) {
             throw new Error('maxDepth must be a positive number');
         }
         
+        if (typeof config.chunkSize !== 'number') {
+            throw new Error('chunkSize must be a number');
+        }
         if (config.chunkSize <= 0) {
             throw new Error('chunkSize must be a positive number');
         }
         
+        if (typeof config.yieldThreshold !== 'number') {
+            throw new Error('yieldThreshold must be a number');
+        }
         if (config.yieldThreshold <= 0) {
             throw new Error('yieldThreshold must be a positive number');
         }
@@ -126,8 +129,8 @@ export class BaseRenderer {
                 return {
                     ...baseConfig,
                     // Streaming-specific defaults
-                    enableMetrics: baseConfig.enableMetrics || false,
-                    maxDepth: baseConfig.maxDepth || 1000 // Higher default for streaming
+                    enableMetrics: baseConfig.enableMetrics ?? false,
+                    maxDepth: baseConfig.maxDepth ?? 1000 // Higher default for streaming
                 };
                 
             case 'dom':
@@ -216,40 +219,33 @@ export class BaseRenderer {
      */
     executeFunctionComponent(func, depth = 0) {
         try {
-            // Check if this is a context provider (takes a render function as parameter)
-            try {
-                // Try to call it with a render function
-                const result = func((children) => {
-                    // This is a context provider, render the children within the context
+            // Check if this is a context provider by checking function arity or a marker
+            const isContextProvider = func.length > 0 || func.isContextProvider;
+            
+            let result;
+            if (isContextProvider) {
+                // Call with render function for context providers
+                result = func((children) => {
                     return this.renderComponent(children, this.config, depth + 1);
                 });
-                
-                // If the result is not a function, it means the component was not a context provider
-                // or the context provider has already rendered the children
-                if (typeof result !== 'function') {
-                    return result;
-                }
-                
-                // If result is a function, it's a context provider that wants to render its children
-                return result;
-            } catch (error) {
-                // If calling with a render function fails, it's a regular function component
-                const result = func();
-                
-                // Handle case where function returns another function
-                if (typeof result === 'function') {
-                    return this.executeFunctionComponent(result, depth);
-                }
-                
-                return result;
+            } else {
+                // Regular function component
+                result = func();
             }
+            
+            // Handle case where function returns another function
+            if (typeof result === 'function') {
+                return this.executeFunctionComponent(result, depth);
+            }
+            
+            return result;
         } catch (error) {
             if (this.config.enableMonitoring) {
                 performanceMonitor.recordError('functionComponent', error);
             }
             
             // In development, provide detailed error info
-            if (typeof process !== 'undefined' && process.env.NODE_ENV === 'development') {
+            if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
                 console.warn('Coherent.js Function Component Error:', error.message);
             }
             
@@ -277,7 +273,9 @@ export class BaseRenderer {
     extractElementAttributes(props) {
         if (!props || typeof props !== 'object') return {};
 
-        const { children, text, ...attributes } = props;
+        const attributes = { ...props };
+        delete attributes.children;
+        delete attributes.text;
         return attributes;
     }
 
@@ -288,7 +286,7 @@ export class BaseRenderer {
         if (this.config.enableMonitoring) {
             performanceMonitor.recordRender(
                 operation,
-                performance.now() - startTime,
+                this.getCurrentTime() - startTime,
                 fromCache,
                 metadata
             );
@@ -305,17 +303,27 @@ export class BaseRenderer {
     }
 
     /**
+     * Get current timestamp with fallback
+     */
+    getCurrentTime() {
+        if (typeof performance !== 'undefined' && performance.now) {
+            return performance.now();
+        }
+        return Date.now();
+    }
+
+    /**
      * Start performance timing
      */
     startTiming() {
-        this.metrics.startTime = performance.now();
+        this.metrics.startTime = this.getCurrentTime();
     }
 
     /**
      * End performance timing
      */
     endTiming() {
-        this.metrics.endTime = performance.now();
+        this.metrics.endTime = this.getCurrentTime();
     }
 
     /**
@@ -324,7 +332,7 @@ export class BaseRenderer {
     getMetrics() {
         const duration = this.metrics.endTime ? 
             this.metrics.endTime - this.metrics.startTime :
-            performance.now() - this.metrics.startTime;
+            this.getCurrentTime() - this.metrics.startTime;
 
         return {
             ...this.metrics,
@@ -347,14 +355,14 @@ export class BaseRenderer {
     /**
      * Abstract method - must be implemented by subclasses
      */
-    renderComponent(component, options, depth = 0) {
+    renderComponent() {
         throw new Error('renderComponent must be implemented by subclass');
     }
 
     /**
      * Abstract method - must be implemented by subclasses
      */
-    render(component, options = {}) {
+    render() {
         throw new Error('render must be implemented by subclass');
     }
 }
@@ -436,9 +444,13 @@ export const RendererUtils = {
             };
 
             return `element:${JSON.stringify(keyData)}`;
-        } catch {
-            // Fallback for circular references or complex objects
-            return `element:${tagName}:${Date.now()}:${Math.random()}`;
+        } catch (error) {
+            // Log error in development mode
+            if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
+                console.warn('Failed to generate cache key:', error);
+            }
+            // Return null to indicate uncacheable element
+            return null;
         }
     },
 
@@ -454,6 +466,10 @@ export const RendererUtils = {
 
         // Don't cache very large elements (memory consideration)
         if (RendererUtils.getElementComplexity(element) > 1000) return false;
+
+        // Don't cache if we can't generate a stable cache key
+        const cacheKey = RendererUtils.generateCacheKey(element.tagName || 'unknown', element);
+        if (!cacheKey) return false;
 
         return true;
     }

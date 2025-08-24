@@ -12,7 +12,7 @@ const BasicComponent = {
 
 test('Basic component renders correctly', () => {
   const html = renderToString(BasicComponent);
-  strictEqual(html, '<div className="test">Hello, World!</div>');
+  strictEqual(html, '<div class="test">Hello, World!</div>');
 });
 
 test('Component with children renders correctly', () => {
@@ -27,7 +27,7 @@ test('Component with children renders correctly', () => {
   };
   
   const html = renderToString(ComponentWithChildren);
-  match(html, /<div className="parent">/);
+  match(html, /<div class="parent">/);
   match(html, /<h1>Title<\/h1>/);
   match(html, /<p>Content<\/p>/);
 });

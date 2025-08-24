@@ -10,12 +10,14 @@ import { performanceMonitor } from '../performance/monitor.js';
  * Component registry for global component management
  */
 const COMPONENT_REGISTRY = new Map();
+// eslint-disable-next-line no-unused-vars -- kept for future devtools/features
 const COMPONENT_INSTANCES = new WeakMap();
 const COMPONENT_METADATA = new WeakMap();
 
 /**
  * Component lifecycle hooks
  */
+// eslint-disable-next-line no-unused-vars -- lifecycle map kept for planned hooks
 const LIFECYCLE_HOOKS = {
     beforeCreate: 'beforeCreate',
     created: 'created',
@@ -29,7 +31,18 @@ const LIFECYCLE_HOOKS = {
 };
 
 /**
- * Component state management
+ * Component state management class
+ * 
+ * @class ComponentState
+ * @description Manages component state with reactive updates and listener notifications.
+ * Provides immutable state updates with change detection.
+ * 
+ * @param {Object} [initialState={}] - Initial state object
+ * 
+ * @example
+ * const state = new ComponentState({ count: 0 });
+ * state.set({ count: 1 });
+ * const count = state.get('count'); // 1
  */
 class ComponentState {
     constructor(initialState = {}) {
@@ -38,10 +51,22 @@ class ComponentState {
         this.isUpdating = false;
     }
 
+    /**
+     * Get state value by key or entire state
+     * 
+     * @param {string} [key] - State key to retrieve
+     * @returns {*} State value or entire state object
+     */
     get(key) {
         return key ? this.state[key] : {...this.state};
     }
 
+    /**
+     * Update state with new values
+     * 
+     * @param {Object} updates - State updates to apply
+     * @returns {ComponentState} This instance for chaining
+     */
     set(updates) {
         if (this.isUpdating) return this;
 
@@ -197,7 +222,7 @@ export class Component {
     /**
      * Handle state changes
      */
-    onStateChange(newState, oldState) {
+    onStateChange() {
         if (this.isDestroyed) return;
 
         // Clear computed cache
@@ -225,11 +250,11 @@ export class Component {
     /**
      * Handle component errors
      */
-    handleError(error, context) {
-        console.error(`Component Error in ${this.name} (${context}):`, error);
+    handleError(error) {
+        console.error(`Component Error in ${this.name}:`, error);
 
         // Call error hook
-        this.callHook('errorCaptured', error, context);
+        this.callHook('errorCaptured', error);
 
         // Propagate to parent
         if (this.parent && this.parent.handleError) {
@@ -273,7 +298,7 @@ export class Component {
             return this.rendered;
 
         } catch (error) {
-            this.handleError(error, 'render');
+            this.handleError(error);
             return {div: {className: 'component-error', text: `Error in ${this.name}`}};
         }
     }
@@ -1121,7 +1146,9 @@ export function memo(fn, options = {}) {
         keySerializer = JSON.stringify,  // Default serialization
 
         // Comparison
+        // eslint-disable-next-line no-unused-vars
         compareFn = null,           // Custom equality comparison
+        // eslint-disable-next-line no-unused-vars
         shallow = false,            // Shallow comparison for objects
 
         // Lifecycle hooks
@@ -1161,13 +1188,7 @@ export function memo(fn, options = {}) {
         return keySerializer(args);
     });
 
-    // Compare values for equality
-    const isEqual = compareFn || ((a, b) => {
-        if (shallow && typeof a === 'object' && typeof b === 'object') {
-            return shallowEqual(a, b);
-        }
-        return keySerializer(a) === keySerializer(b);
-    });
+    // Compare values for equality (inline via compareFn or defaults where used)
 
     const memoizedFn = (...args) => {
         const key = generateKey(...args);
@@ -1247,7 +1268,7 @@ export function memoComponent(component, options = {}) {
             component(props, state, context) :
             component;
     }, {
-        keyFn: (props, state, context) => {
+        keyFn: (props, state) => {
             // Create key based on props and state
             return `${name}:${JSON.stringify(props)}:${JSON.stringify(state)}`;
         },
@@ -1677,7 +1698,7 @@ export function withProps(propsTransform, options = {}) {
         // Apply memoization if requested
         if (memoize) {
             return memo(WithPropsComponent, {
-                keyFn: (props, state, context) => JSON.stringify({props, state}),
+                keyFn: (props, state) => JSON.stringify({props, state}),
                 ...memoOptions
             });
         }
@@ -1922,7 +1943,7 @@ export function withPropsDebug(component, debugOptions = {}) {
         return props;
     }, {
         debug: true,
-        onError: breakOnError ? (error) => {
+        onError: breakOnError ? () => {
             debugger
         } : undefined,
         onPropsChange: logChanges ? (finalProps, original) => {
@@ -1964,9 +1985,11 @@ export function withState(initialState = {}, options = {}) {
 
         // Performance
         memoizeState = false,       // Memoize state transformations
+        // eslint-disable-next-line no-unused-vars
         shallow = false,            // Shallow state comparison
 
         // Development
+        // eslint-disable-next-line no-unused-vars
         devTools = false,           // Connect to dev tools
         debug = false,              // Debug logging
         displayName = null,         // Component name for debugging
@@ -2141,7 +2164,6 @@ function createStateContainer(initialState, options) {
     let state = deepClone(initialState);
     let listeners = new Set();
     const middlewareStack = [...middleware];
-    let initialized = false;
 
     const container = {
         initialized: false,
@@ -2160,8 +2182,7 @@ function createStateContainer(initialState, options) {
                 }
             }
 
-            this.initialized = true;
-            initialized = true;
+            container.initialized = true;
         },
 
         getState() {
@@ -2534,6 +2555,7 @@ export function createStateManager(config) {
 
 // Utility to get component name
 function getComponentName(component) {
+    if (!component) return 'Component';
     return component.displayName ||
         component.name ||
         component.constructor?.name ||

@@ -7,7 +7,7 @@
   "bin": {
     "coherent-dev": "scripts/dev-server.js"
   },
-  "packageManager": "pnpm@8.15.0",
+  "packageManager": "pnpm@10.15.0",
   "engines": {
     "node": ">=22.0.0",
     "pnpm": ">=8.0.0"
@@ -24,7 +24,6 @@
     "example:streaming": "node examples/streaming-renderer.js",
     "example:security": "node examples/security-test.js",
     "example:hydration": "node examples/hydration-test.js",
-    "example:state": "node examples/state-management.js",
     "example:memoization": "node examples/memoization-test.js",
     "example:composition": "node examples/component-composition.js",
     "lint": "eslint src/ --max-warnings=0",
@@ -61,11 +60,11 @@
   "homepage": "https://github.com/Tomdrouv1/coherent.js#readme",
   "peerDependencies": {
     "express": "^4.0.0 || ^5.0.0",
-    "koa": "^2.0.0 || ^3.0.0",
     "fastify": "^4.0.0 || ^5.0.0",
+    "koa": "^2.0.0 || ^3.0.0",
     "next": "^13.0.0 || ^14.0.0 || ^15.0.0",
     "react": "^18.0.0 || ^19.0.0",
-    "node-fetch": "^3.0.0"
+    "sqlite3": "^5.0.0"
   },
   "peerDependenciesMeta": {
     "express": {
@@ -83,11 +82,16 @@
     "react": {
       "optional": true
     },
-    "node-fetch": {
+    "sqlite3": {
       "optional": true
     }
   },
   "devDependencies": {
+    "@eslint-community/eslint-utils": "4.7.0",
+    "@eslint-community/regexpp": "4.12.1",
+    "@eslint/config-array": "0.21.0",
+    "@eslint/config-helpers": "0.3.1",
+    "@eslint/core": "0.15.2",
     "@types/node": "^24.1.0",
     "chokidar": "4.0.3",
     "esbuild": "0.25.8",

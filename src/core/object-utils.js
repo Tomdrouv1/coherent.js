@@ -89,7 +89,7 @@ export function deepClone(obj, seen = new WeakMap()) {
         try {
             // Attempt to create instance with same constructor
             clonedObj.__proto__ = obj.__proto__;
-        } catch (e) {
+        } catch {
             // Fallback to Object.create if direct prototype assignment fails
             Object.setPrototypeOf(clonedObj, Object.getPrototypeOf(obj));
         }
@@ -111,7 +111,7 @@ export function deepClone(obj, seen = new WeakMap()) {
                     ...descriptors[key],
                     value: deepClone(descriptors[key].value, seen)
                 });
-            } catch (e) {
+            } catch {
                 // Skip properties that can't be cloned
             }
         }

@@ -12,10 +12,7 @@ import {
     getChildren
 } from '../core/object-utils.js';
 
-// Global event registry for function-valued props
-if (typeof window !== 'undefined') {
-    window.__coherentEventRegistry = window.__coherentEventRegistry || new Map();
-}
+
 
 /**
  * DOM Renderer class - extends BaseRenderer for shared functionality
@@ -50,7 +47,7 @@ export class DOMRenderer extends BaseRenderer {
             if (container && element) {
                 // Clear container first if hydration is disabled
                 if (!this.config.enableHydration) {
-                    container.innerHTML = '';
+                    container.replaceChildren();
                 }
                 container.appendChild(element);
             }
@@ -115,10 +112,13 @@ export class DOMRenderer extends BaseRenderer {
             return document.createTextNode(''); // Skip invalid objects
         }
 
-        // Process object-based component
-        for (const [tagName, props] of Object.entries(component)) {
+        // Process object-based component (expects single element)
+        const entries = Object.entries(component);
+        if (entries.length > 0) {
+            const [tagName, props] = entries[0];
             return this.renderDOMElement(tagName, props, depth + 1);
         }
+        return document.createTextNode('');
     }
 
     /**
@@ -149,6 +149,11 @@ export class DOMRenderer extends BaseRenderer {
                         element.appendChild(childElement);
                     }
                 });
+            } else if (children) {
+                const childElement = this.renderComponent(children, {}, depth + 1);
+                if (childElement) {
+                    element.appendChild(childElement);
+                }
             }
         }
 
@@ -171,13 +176,16 @@ export class DOMRenderer extends BaseRenderer {
             if (typeof value === 'function') {
                 // Handle event listeners
                 if (key.startsWith('on')) {
+                    // Normalize DOM event names to lowercase (e.g., onClick -> 'click')
                     const eventType = key.slice(2).toLowerCase();
+                    // Store listener reference for potential cleanup
                     element.addEventListener(eventType, value);
+                    element._listeners = element._listeners || [];
+                    element._listeners.push({ type: eventType, handler: value });
                 }
                 continue;
             }
-
-            if (key === 'className') {
+            if (key === 'class' || key === 'className') {
                 element.className = String(value);
             } else if (typeof value === 'boolean') {
                 if (value) {

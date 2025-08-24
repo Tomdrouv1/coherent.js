@@ -1,73 +1,78 @@
-# Coherent.js API Framework Usage Guide
+# Coherent.js Object-Based API Framework Usage Guide
 
-This guide explains how to use the new API framework features in Coherent.js, including routing, validation, error handling, serialization, OpenAPI documentation, middleware, and adapters.
+This guide explains how to use the pure object-oriented API framework in Coherent.js, featuring declarative routing, validation, error handling, serialization, and middleware.
 
 ## Table of Contents
 
-1. [API Router](#api-router)
+1. [Object Router](#object-router)
 2. [Error Handling](#error-handling)
 3. [Validation](#validation)
 4. [Serialization](#serialization)
-5. [OpenAPI Documentation](#openapi-documentation)
-6. [Middleware](#middleware)
-7. [API Adapters](#api-adapters)
-8. [Integration with Express](#integration-with-express)
-9. [Integration with Fastify](#integration-with-fastify)
+5. [Middleware](#middleware)
+6. [Pure Node.js HTTP Server Integration](#pure-nodejs-http-server-integration)
+7. [Security Features](#security-features)
 
-## API Router
+## Object Router
 
-The API router provides a simple way to define routes for your API endpoints.
+The object router provides a pure object-oriented approach to define API routes using nested JavaScript objects.
 
 ### Basic Usage
 
 ```javascript
-import { createApiRouter } from 'coherent/api';
+import { createObjectRouter } from 'coherent/api';
 
-const router = createApiRouter();
+const routes = {
+  api: {
+    users: {
+      get: {
+        handler: (req, res) => ({ users: [] })
+      },
+      post: {
+        handler: (req, res) => ({ user: { id: 1, name: 'John Doe' } })
+      },
+      ':id': {
+        get: {
+          handler: (req, res) => ({ user: { id: req.params.id, name: 'John Doe' } })
+        }
+      }
+    }
+  }
+};
 
-// Define routes
-router.get('/users', (req, res) => {
-  return { users: [] };
-});
-
-router.post('/users', (req, res) => {
-  // Create a new user
-  return { user: { id: 1, name: 'John Doe' } };
-});
-
-router.get('/users/:id', (req, res) => {
-  const userId = req.params.id;
-  return { user: { id: userId, name: 'John Doe' } };
-});
-
+const router = createObjectRouter(routes);
 export default router;
 ```
 
 ### HTTP Methods
 
-The router supports all standard HTTP methods:
+The object router supports all standard HTTP methods as object keys:
 
-- `router.get(path, handler)`
-- `router.post(path, handler)`
-- `router.put(path, handler)`
-- `router.delete(path, handler)`
-- `router.patch(path, handler)`
+- `get: { handler: ... }`
+- `post: { handler: ... }`
+- `put: { handler: ... }`
+- `delete: { handler: ... }`
+- `patch: { handler: ... }`
 
 ### Middleware
 
-You can add middleware to routes:
+You can add middleware to routes using the middleware property:
 
 ```javascript
-router.get('/users', 
-  (req, res, next) => {
-    // Middleware function
-    console.log('Request received');
-    next();
-  },
-  (req, res) => {
-    return { users: [] };
+const routes = {
+  api: {
+    users: {
+      get: {
+        middleware: [
+          (req, res, next) => {
+            console.log('Request received');
+            next();
+          }
+        ],
+        handler: (req, res) => ({ users: [] })
+      }
+    }
   }
-);
+};
 ```
 
 ## Error Handling
@@ -88,40 +93,59 @@ The API framework provides standardized error classes and handling utilities.
 ```javascript
 import { ApiError, NotFoundError } from 'coherent/api';
 
-router.get('/users/:id', (req, res) => {
-  const userId = req.params.id;
-  
-  if (userId !== '1') {
-    throw new NotFoundError('User not found');
+const routes = {
+  api: {
+    users: {
+      ':id': {
+        get: {
+          handler: (req, res) => {
+            const userId = req.params.id;
+            
+            if (userId !== '1') {
+              throw new NotFoundError('User not found');
+            }
+            
+            return { user: { id: userId, name: 'John Doe' } };
+          }
+        }
+      }
+    }
   }
-  
-  return { user: { id: userId, name: 'John Doe' } };
-});
+};
 ```
 
 ### Error Handling Middleware
 
-You can wrap route handlers with error handling middleware:
+Error handling is enabled by default in object routes, but you can control it:
 
 ```javascript
-import { withErrorHandling } from 'coherent/api';
-
-const handleErrors = withErrorHandling(async (req, res) => {
-  // This might throw an error
-  throw new Error('Something went wrong');
-});
-
-router.get('/error', handleErrors);
+const routes = {
+  api: {
+    error: {
+      get: {
+        errorHandling: true, // enabled by default
+        handler: async (req, res) => {
+          // This might throw an error
+          throw new Error('Something went wrong');
+        }
+      }
+    }
+  }
+};
 ```
 
-### Global Error Handler
+### Express Integration
 
-For Express integration, you can use the global error handler:
+For Express integration, the object router handles errors automatically:
 
 ```javascript
-import { createErrorHandler } from 'coherent/api';
+import express from 'express';
+import { createObjectRouter } from 'coherent/api';
 
-app.use(createErrorHandler());
+const app = express();
+const router = createObjectRouter(routes);
+
+app.use(router.toExpress());
 ```
 
 ## Validation
@@ -131,8 +155,6 @@ The API framework provides schema-based validation utilities.
 ### Usage
 
 ```javascript
-import { withValidation } from 'coherent/api';
-
 const userSchema = {
   type: 'object',
   properties: {
@@ -142,14 +164,20 @@ const userSchema = {
   required: ['name', 'email']
 };
 
-router.post('/users', 
-  withValidation(userSchema),
-  (req, res) => {
-    // This will only be called if validation passes
-    const { name, email } = req.body;
-    return { user: { id: 1, name, email } };
+const routes = {
+  api: {
+    users: {
+      post: {
+        validation: userSchema,
+        handler: (req, res) => {
+          // This will only be called if validation passes
+          const { name, email } = req.body;
+          return { user: { id: 1, name, email } };
+        }
+      }
+    }
   }
-);
+};
 ```
 
 ### Query and Parameter Validation
@@ -431,179 +459,270 @@ const customMiddleware = createApiMiddleware((req, res, next) => {
   next();
 });
 
-router.get('/users', 
-  customMiddleware,
-  (req, res) => {
-    return { users: [] };
+const routes = {
+  api: {
+    users: {
+      get: {
+        middleware: [customMiddleware],
+        handler: (req, res) => ({ users: [] })
+      }
+    }
   }
-);
+};
 ```
 
-## API Adapters
+## Pure Node.js HTTP Server Integration
 
-The API framework provides adapters for different API patterns like REST, RPC, and GraphQL.
-
-### REST Adapter
-
-The REST adapter automatically generates CRUD endpoints for a resource:
+The object router creates a pure Node.js HTTP server without external dependencies:
 
 ```javascript
-import { RestAdapter } from 'coherent/api';
+import { createObjectRouter } from 'coherent/api';
 
-// Mock model
-const userModel = {
-  findAll: async () => [{ id: 1, name: 'John Doe' }],
-  create: async (data) => ({ id: 2, ...data }),
-  findById: async (id) => ({ id, name: 'Item ' + id }),
-  update: async (id, data) => ({ id, ...data }),
-  patch: async (id, data) => ({ id, ...data }),
-  delete: async (id) => true
-};
-
-// Create REST adapter
-const userRestAdapter = new RestAdapter({
-  resource: 'users',
-  model: userModel,
-  schema: {
-    type: 'object',
-    properties: {
-      name: { type: 'string', minLength: 1 },
-      email: { type: 'string', format: 'email' }
+const routes = {
+  api: {
+    users: {
+      get: {
+        handler: (req, res) => ({ users: [] })
+      },
+      post: {
+        validation: userSchema,
+        handler: (req, res) => ({ user: { id: 1, name: 'New User' } })
+      }
     },
-    required: ['name', 'email']
-  }
-});
-
-// Register routes
-userRestAdapter.registerRoutes(router, '/api');
-```
-
-This automatically creates the following endpoints:
-- `GET /api/users` - List all users
-- `POST /api/users` - Create a new user
-- `GET /api/users/:id` - Get a specific user
-- `PUT /api/users/:id` - Update a specific user
-- `PATCH /api/users/:id` - Partially update a specific user
-- `DELETE /api/users/:id` - Delete a specific user
-
-### RPC Adapter
-
-The RPC adapter handles remote procedure calls:
-
-```javascript
-import { RpcAdapter } from 'coherent/api';
-
-// Mock methods
-const rpcMethods = {
-  add: async (params) => params.a + params.b,
-  greet: async (params) => `Hello, ${params.name}!`
-};
-
-// Create RPC adapter
-const rpcAdapter = new RpcAdapter({
-  methods: rpcMethods
-});
-
-// Register routes
-rpcAdapter.registerRoutes(router, '/api');
-```
-
-This creates a single endpoint `POST /api/rpc` that handles all RPC calls:
-
-```javascript
-// Example RPC call
-fetch('/api/rpc', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    method: 'add',
-    params: { a: 1, b: 2 }
-  })
-});
-```
-
-### GraphQL Adapter
-
-The GraphQL adapter handles GraphQL queries and mutations:
-
-```javascript
-import { GraphqlAdapter } from 'coherent/api';
-
-// Mock schema and resolvers
-const graphqlSchema = `
-  type Query {
-    hello: String
-  }
-`;
-
-const graphqlResolvers = {
-  Query: {
-    hello: () => 'Hello world!'
+    status: {
+      get: {
+        handler: (req, res) => ({ status: 'ok', timestamp: new Date() })
+      }
+    }
   }
 };
 
-// Create GraphQL adapter
-const graphqlAdapter = new GraphqlAdapter({
-  schema: graphqlSchema,
-  resolvers: graphqlResolvers
-});
+const router = createObjectRouter(routes);
+const server = router.createServer();
 
-// Register routes
-graphqlAdapter.registerRoutes(router, '/api');
-```
-
-This creates two endpoints:
-- `POST /api/graphql` - Handle GraphQL queries and mutations
-- `GET /api/graphql` - Serve GraphQL playground (in development)
-
-## Integration with Express
-
-The API router can be easily integrated with Express:
-
-```javascript
-import express from 'express';
-import apiRouter from './api-router.js';
-
-const app = express();
-app.use(express.json());
-
-// Mount the API router
-app.use('/api', apiRouter.toExpress());
-
-// Global error handler
-app.use(createErrorHandler());
-
-app.listen(3000, () => {
-  console.log('Server running on port 3000');
+server.listen(3000, () => {
+  console.log('Server running on http://localhost:3000');
 });
 ```
 
-## Integration with Fastify
+### Request Handling
 
-The API router can also be integrated with Fastify:
+The router automatically:
+- **Parses URLs** and matches routes
+- **Handles JSON responses** with proper Content-Type headers
+- **Applies middleware** in the correct order
+- **Validates requests** using JSON Schema
+- **Handles errors** with proper HTTP status codes
+
+## Security Features
+
+The Coherent.js API framework includes comprehensive security features built-in:
+
+### Security Headers
+
+All responses include security headers automatically:
 
 ```javascript
-import fastify from 'fastify';
-import apiRouter from './api-router.js';
+const { SimpleRouter, processRoutes } = require('../src/api');
 
-const app = fastify();
+const router = new SimpleRouter();
 
-// Register the API router as a plugin
-app.register(apiRouter.toFastify());
+// Security headers are automatically added:
+// - Access-Control-Allow-Origin: http://localhost:3000 (configurable)
+// - X-Frame-Options: DENY
+// - X-Content-Type-Options: nosniff
+// - X-XSS-Protection: 1; mode=block
+// - Content-Security-Policy: default-src 'self'
 
-app.listen({ port: 3000 }, (err, address) => {
-  if (err) {
-    console.error(err);
-    process.exit(1);
+const server = router.createServer({
+  corsOrigin: 'https://yourdomain.com', // Configure CORS origin
+  maxBodySize: 2 * 1024 * 1024, // 2MB request size limit
+  rateLimit: {
+    windowMs: 60000, // 1 minute
+    maxRequests: 200 // 200 requests per minute per IP
   }
-  console.log(`Server running on ${address}`);
 });
 ```
+
+### Rate Limiting
+
+Built-in rate limiting prevents DoS attacks:
+
+```javascript
+// Default: 100 requests per minute per IP
+// Customize in server options:
+const server = router.createServer({
+  rateLimit: {
+    windowMs: 300000, // 5 minutes
+    maxRequests: 1000 // 1000 requests per 5 minutes
+  }
+});
+
+// Rate limited requests return 429 status
+```
+
+### Input Sanitization
+
+All JSON request bodies are automatically sanitized:
+
+```javascript
+const routes = {
+  api: {
+    users: {
+      POST: {
+        handler: async (req, res) => {
+          // req.body is automatically sanitized:
+          // - HTML tags are escaped
+          // - Prototype pollution attempts are blocked
+          // - Dangerous properties are removed
+          
+          console.log('Safe data:', req.body);
+          return { success: true, user: req.body };
+        }
+      }
+    }
+  }
+};
+```
+
+### Authentication & Authorization
+
+Use built-in security middleware:
+
+```javascript
+const { withAuth, withRole, generateToken, hashPassword } = require('../src/api/security');
+
+const routes = {
+  api: {
+    protected: {
+      GET: {
+        middleware: [withAuth], // Requires valid JWT token
+        handler: async (req, res) => {
+          return { message: 'Access granted', user: req.user };
+        }
+      }
+    },
+    admin: {
+      GET: {
+        middleware: [withAuth, withRole('admin')], // Requires admin role
+        handler: async (req, res) => {
+          return { message: 'Admin access granted' };
+        }
+      }
+    },
+    login: {
+      POST: {
+        handler: async (req, res) => {
+          const { username, password } = req.body;
+          
+          // Verify credentials (implement your logic)
+          if (await verifyCredentials(username, password)) {
+            const token = generateToken({ username, role: 'user' });
+            return { token, user: { username } };
+          }
+          
+          res.statusCode = 401;
+          return { error: 'Invalid credentials' };
+        }
+      }
+    }
+  }
+};
+```
+
+### Input Validation
+
+JSON Schema validation with security considerations:
+
+```javascript
+const { withValidation } = require('../src/api/security');
+
+const userSchema = {
+  type: 'object',
+  properties: {
+    name: { 
+      type: 'string', 
+      minLength: 1, 
+      maxLength: 100,
+      pattern: '^[a-zA-Z0-9\\s]+$' // Prevent injection
+    },
+    email: { 
+      type: 'string', 
+      format: 'email',
+      maxLength: 255
+    }
+  },
+  required: ['name', 'email'],
+  additionalProperties: false // Prevent extra properties
+};
+
+const routes = {
+  api: {
+    users: {
+      POST: {
+        middleware: [withValidation(userSchema)],
+        handler: async (req, res) => {
+          // req.body is validated and sanitized
+          return { success: true, user: req.body };
+        }
+      }
+    }
+  }
+};
+```
+
+### Password Security
+
+Built-in password hashing utilities:
+
+```javascript
+const { hashPassword, verifyPassword } = require('../src/api/security');
+
+// Hash passwords before storing
+const hashedPassword = await hashPassword('userPassword');
+
+// Verify passwords during login
+const isValid = await verifyPassword('userPassword', hashedPassword);
+```
+
+### Request Size Limits
+
+Automatic protection against large payloads:
+
+```javascript
+// Default: 1MB limit
+// Requests exceeding limit return 413 status
+
+const server = router.createServer({
+  maxBodySize: 5 * 1024 * 1024 // 5MB limit
+});
+```
+
+### CORS Configuration
+
+Flexible CORS setup for cross-origin requests:
+
+```javascript
+const server = router.createServer({
+  corsOrigin: 'https://yourdomain.com', // Single origin
+  // or
+  corsOrigin: ['https://app.com', 'https://admin.com'], // Multiple origins
+  // or
+  corsOrigin: '*' // Allow all (not recommended for production)
+});
+```
+
+## Security Best Practices
+
+1. **Always validate input** - Use JSON Schema validation
+2. **Sanitize data** - Built-in sanitization prevents XSS
+3. **Use HTTPS** - Deploy with SSL/TLS certificates
+4. **Configure CORS** - Set specific allowed origins
+5. **Implement authentication** - Use JWT tokens with expiration
+6. **Rate limit requests** - Prevent abuse and DoS attacks
+7. **Monitor logs** - Track suspicious activity
+8. **Keep dependencies updated** - Regular security updates
 
 ## Example
 
-See the full example in `examples/api-demo.js` for a complete implementation of all API features.
-See `examples/api-with-serialization.js` for an example with serialization.
-See `examples/api-with-openapi.js` for an example with OpenAPI documentation.
-See `examples/api-with-middleware.js` for an example with middleware.
-See `examples/api-with-adapters.js` for an example with API adapters.
+See `examples/object-router-demo.js` for a comprehensive example with all features.

@@ -19,8 +19,15 @@ export class CacheManager {
         this.cacheHits = 0;
         this.cacheMisses = 0;
 
-        // Cleanup interval
-        this.cleanupInterval = setInterval(() => this.cleanup(), 30000)
+        // Cleanup interval (do not keep event loop alive in tests/short-lived processes)
+        {
+            const interval = setInterval(() => this.cleanup(), 30000);
+            // In Node.js, unref prevents the timer from keeping the event loop alive
+            if (typeof interval.unref === 'function') {
+                interval.unref();
+            }
+            this.cleanupInterval = interval;
+        }
 
         this.staticElementCache = new Map();  // Cache for static HTML elements
         this.elementUsageTracking = new Map(); // Track element usage patterns

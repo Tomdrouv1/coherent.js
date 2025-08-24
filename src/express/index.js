@@ -1,5 +1,4 @@
 // src/express/index.js
-import { createElement } from '../core/object-factory.js';
 import { renderToString } from '../rendering/html-renderer.js';
 
 export function expressEngine() {

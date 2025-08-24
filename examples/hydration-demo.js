@@ -8,7 +8,7 @@ import { withState } from '../src/coherent.js';
 
 // Interactive counter with hydration support
 // Create a simple counter component that works with hydration
-const CounterComponent = withState({ count: 0, step: 1 })(({ state, setState, props = {} }) => {
+const CounterComponent = withState({ count: 0, step: 1 })(({ state, props = {} }) => {
   // Extract initial values from props with defaults
   const initialCount = props.initialCount !== undefined ? props.initialCount : 0;
   const initialStep = props.initialStep !== undefined ? props.initialStep : 1;
@@ -95,8 +95,169 @@ const CounterComponent = withState({ count: 0, step: 1 })(({ state, setState, pr
 const HydratableCounter = makeHydratable(CounterComponent, { componentName: 'HydratableCounter' });
 
 // Interactive todo list with hydration support
+// Interactive user profile form with hydration support
+const HydratableUserProfile = makeHydratable(
+  withState({
+    firstName: 'John',
+    lastName: 'Doe',
+    age: 30,
+    email: 'john.doe@example.com',
+    bio: 'Software developer passionate about web technologies.',
+    newsletter: true
+  })(({ state }) => {
+    return {
+      div: {
+        class: 'profile-widget',
+        'data-coherent-component': 'user-profile',
+        children: [
+          {
+            h4: {
+              text: 'Interactive User Profile',
+              class: 'widget-title'
+            }
+          },
+          {
+            div: {
+              class: 'profile-display',
+              children: [
+                { p: { text: `Name: ${state.firstName} ${state.lastName}`, class: 'profile-info' } },
+                { p: { text: `Age: ${state.age}`, class: 'profile-info' } },
+                { p: { text: `Email: ${state.email}`, class: 'profile-info' } },
+                { p: { 
+                  text: `Status: ${state.age >= 18 ? 'Adult' : 'Minor'}`,
+                  class: `profile-status ${state.age >= 18 ? 'adult' : 'minor'}`
+                }},
+                { p: { text: `Newsletter: ${state.newsletter ? 'Subscribed' : 'Not subscribed'}`, class: 'profile-info' } }
+              ]
+            }
+          },
+          {
+            div: {
+              class: 'profile-form',
+              children: [
+                {
+                  div: {
+                    class: 'form-row',
+                    children: [
+                      {
+                        input: {
+                          type: 'text',
+                          placeholder: 'First Name',
+                          value: state.firstName,
+                          class: 'form-input',
+                          oninput: (event, state, setState) => setState({ firstName: event.target.value })
+                        }
+                      },
+                      {
+                        input: {
+                          type: 'text',
+                          placeholder: 'Last Name',
+                          value: state.lastName,
+                          class: 'form-input',
+                          oninput: (event, state, setState) => setState({ lastName: event.target.value })
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  div: {
+                    class: 'form-row',
+                    children: [
+                      {
+                        input: {
+                          type: 'number',
+                          placeholder: 'Age',
+                          value: state.age,
+                          min: 1,
+                          max: 120,
+                          class: 'form-input',
+                          oninput: (event, state, setState) => setState({ age: parseInt(event.target.value) || 0 })
+                        }
+                      },
+                      {
+                        input: {
+                          type: 'email',
+                          placeholder: 'Email',
+                          value: state.email,
+                          class: 'form-input',
+                          oninput: (event, state, setState) => setState({ email: event.target.value })
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  div: {
+                    class: 'form-row full-width',
+                    children: [
+                      {
+                        textarea: {
+                          placeholder: 'Bio',
+                          value: state.bio,
+                          class: 'form-textarea',
+                          rows: 3,
+                          oninput: (event, state, setState) => setState({ bio: event.target.value })
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  div: {
+                    class: 'form-row checkbox-row',
+                    children: [
+                      {
+                        label: {
+                          class: 'checkbox-label',
+                          children: [
+                            {
+                              input: {
+                                type: 'checkbox',
+                                checked: state.newsletter,
+                                class: 'form-checkbox',
+                                onchange: (event, state, setState) => setState({ newsletter: event.target.checked })
+                              }
+                            },
+                            { span: { text: 'Subscribe to newsletter', class: 'checkbox-text' } }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  div: {
+                    class: 'form-actions',
+                    children: [
+                      {
+                        button: {
+                          text: 'Reset Profile',
+                          class: 'btn btn-outline',
+                          onclick: (event, state, setState) => setState({
+                            firstName: 'John',
+                            lastName: 'Doe',
+                            age: 30,
+                            email: 'john.doe@example.com',
+                            bio: 'Software developer passionate about web technologies.',
+                            newsletter: true
+                          })
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    };
+  }), { componentName: 'HydratableUserProfile' }
+);
+
 const HydratableTodoList = makeHydratable(
-  withState({ todos: [], newTodo: '', filter: 'all' })(({ state, setState }) => {
+  withState({ todos: [], newTodo: '', filter: 'all' })(({ state }) => {
     // Define functions that accept setState as parameter for hydration compatibility
     const addTodo = (event, state, setState) => {
       if (state.newTodo.trim()) {
@@ -126,7 +287,6 @@ const HydratableTodoList = makeHydratable(
     };
 
     const setFilter = (filter) => (event, state, setState) => setState({ filter });
-    const setNewTodo = (value) => (event, state, setState) => setState({ newTodo: value });
 
     const filteredTodos = state.todos.filter(todo => {
       if (state.filter === 'active') return !todo.completed;
@@ -325,7 +485,7 @@ export const hydrationDemo = {
                   font-size: 1.25rem;
                   font-weight: 600;
                 }
-                .counter-widget, .todo-widget {
+                .counter-widget, .todo-widget, .profile-widget {
                   background: white;
                   padding: 25px;
                   border-radius: 8px;
@@ -424,7 +584,7 @@ export const hydrationDemo = {
                   background: #f7fafc;
                   border-radius: 6px;
                 }
-                .stat {
+                .stat-item {
                   font-weight: 500;
                   color: #4a5568;
                 }
@@ -506,6 +666,91 @@ export const hydrationDemo = {
                   flex: 1;
                   color: #2d3748;
                 }
+                .profile-display { 
+                  background: #f7fafc; 
+                  padding: 20px; 
+                  border-radius: 6px; 
+                  margin-bottom: 25px; 
+                }
+                .profile-info {
+                  margin: 8px 0;
+                  color: #4a5568;
+                  font-weight: 500;
+                }
+                .profile-status.adult { 
+                  color: #38a169; 
+                  font-weight: 600; 
+                }
+                .profile-status.minor { 
+                  color: #ed8936; 
+                  font-weight: 600; 
+                }
+                .profile-form { 
+                  display: flex; 
+                  flex-direction: column;
+                  gap: 15px; 
+                }
+                .form-row {
+                  display: flex;
+                  gap: 15px;
+                  align-items: center;
+                }
+                .form-row.full-width {
+                  flex-direction: column;
+                  align-items: stretch;
+                }
+                .form-row.checkbox-row {
+                  justify-content: flex-start;
+                }
+                .form-input { 
+                  padding: 10px 12px; 
+                  border: 1px solid #e2e8f0; 
+                  border-radius: 6px; 
+                  flex: 1; 
+                  min-width: 0;
+                  font-size: 14px;
+                  transition: border-color 0.2s ease;
+                }
+                .form-input:focus {
+                  outline: none;
+                  border-color: #4299e1;
+                  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+                }
+                .form-textarea {
+                  padding: 10px 12px; 
+                  border: 1px solid #e2e8f0; 
+                  border-radius: 6px; 
+                  width: 100%;
+                  font-size: 14px;
+                  font-family: inherit;
+                  resize: vertical;
+                  transition: border-color 0.2s ease;
+                }
+                .form-textarea:focus {
+                  outline: none;
+                  border-color: #4299e1;
+                  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+                }
+                .checkbox-label {
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  cursor: pointer;
+                }
+                .form-checkbox {
+                  width: 16px;
+                  height: 16px;
+                  cursor: pointer;
+                }
+                .checkbox-text {
+                  color: #4a5568;
+                  font-size: 14px;
+                }
+                .form-actions {
+                  display: flex;
+                  justify-content: flex-end;
+                  margin-top: 10px;
+                }
                 .hydration-info {
                   background: #e6fffa;
                   border: 1px solid #81e6d9;
@@ -565,6 +810,19 @@ export const hydrationDemo = {
                           div: {
                             class: 'demo-section',
                             children: [
+                              { h2: { text: 'Interactive User Profile', class: 'section-title' } },
+                              { p: { 
+                                text: 'A form component with various input types, computed properties, and real-time validation.',
+                                class: 'section-description'
+                              }},
+                              HydratableUserProfile.renderWithHydration()
+                            ]
+                          }
+                        },
+                        {
+                          div: {
+                            class: 'demo-section',
+                            children: [
                               { h2: { text: 'Interactive Todo List', class: 'section-title' } },
                               { p: { 
                                 text: 'A complex stateful component with filtering, statistics, and real-time interactions.',
@@ -604,6 +862,7 @@ if (typeof window !== 'undefined') {
   // Initialize component registry
   window.componentRegistry = {
     HydratableCounter,
+    HydratableUserProfile,
     HydratableTodoList
   };
   

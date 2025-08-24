@@ -1,0 +1,14 @@
+{
+  "watch": [
+    "src/dev"
+  ],
+  "ext": "js",
+  "exec": "coherent-dev",
+  "ignore": [
+    "src/client/**/*",
+    "src/components/**/*",
+    "examples/**/*",
+    "dist/**/*",
+    "node_modules/**/*"
+  ]
+}

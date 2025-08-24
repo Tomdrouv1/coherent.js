@@ -1,6 +1,6 @@
 /**
  * API Validation for Coherent.js
- * Schema-based validation utilities
+ * @fileoverview Schema-based validation utilities
  */
 
 import { ValidationError } from './errors.js';

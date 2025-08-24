@@ -93,17 +93,7 @@ function hydrate(element, component, props = {}, options = {}) {
   
   // Check if element is already hydrated
   if (componentInstances.has(element)) {
-    console.warn('Element is already hydrated - but still attaching function event listeners');
     const existingInstance = componentInstances.get(element);
-    
-    // Still need to attach function event listeners in case they weren't attached before
-    try {
-      const freshVirtualElement = component({ ...props, ...(existingInstance.state || {}) });
-      attachFunctionEventListeners(element, freshVirtualElement, existingInstance);
-    } catch (error) {
-      console.warn('Error re-attaching function listeners:', error);
-    }
-    
     return existingInstance;
   }
   
@@ -131,33 +121,10 @@ function hydrate(element, component, props = {}, options = {}) {
     // Re-render the component with current state
     rerender() {
       try {
-        // Import the DOM renderer for client-side rendering
-        import('../rendering/dom-renderer.js').then(({ renderToDOM }) => {
-          // Call the component function with current props and state
-          const componentProps = { ...this.props, ...(this.state || {}) };
-          const newVirtualElement = this.component(componentProps);
-          
-          // Clear the current element and render the new virtual element
-          while (this.element.firstChild) {
-            this.element.removeChild(this.element.firstChild);
-          }
-          
-          // Render the new virtual element using the DOM renderer
-          renderToDOM(newVirtualElement, this.element, { enableHydration: true });
-          
-          // Store the new virtual element for next comparison
-          this.previousVirtualElement = newVirtualElement;
-          
-          // Component re-rendered successfully
-        }).catch(error => {
-          console.error('Error importing DOM renderer:', error);
-          // Fallback to existing patching method
-          this.fallbackRerender();
-        });
+        // Always use the fallback patching method to preserve hydration
+        this.fallbackRerender();
       } catch (error) {
         console.error('Error during component re-render:', error);
-        // Fallback to existing patching method
-        this.fallbackRerender();
       }
     },
     
@@ -175,6 +142,9 @@ function hydrate(element, component, props = {}, options = {}) {
         
         // Perform intelligent DOM diffing and patching
         this.patchDOM(this.element, this.previousVirtualElement, newVirtualElement);
+        
+        // Re-attach event listeners for input elements only
+        attachFunctionEventListeners(this.element, newVirtualElement, this, { inputsOnly: true });
         
         // Store the new virtual element for next comparison
         this.previousVirtualElement = newVirtualElement;
@@ -271,7 +241,6 @@ function hydrate(element, component, props = {}, options = {}) {
       
       // Handle element nodes
       const newTagName = Object.keys(newVNode)[0];
-      const newProps = newVNode[newTagName] || {};
       
       // Check if tag name changed
       if (domElement.tagName.toLowerCase() !== newTagName.toLowerCase()) {
@@ -597,12 +566,23 @@ function hydrate(element, component, props = {}, options = {}) {
   
   // If this is a withState component, initialize its state properly
   if (instance.component.__stateContainer) {
-    // Get the current state from the state container
-    const currentState = instance.component.__stateContainer.getState();
-    // Merging hydrated state if available
+    // Initialize state container with hydrated state if available
     if (instance.state) {
       instance.component.__stateContainer.setState(instance.state);
     }
+    
+    // Override the instance setState to use the state container
+    instance.setState = (newState) => {
+      // Update the state container
+      instance.component.__stateContainer.setState(newState);
+      
+      // Update the instance state for consistency
+      const updatedState = instance.component.__stateContainer.getState();
+      instance.state = updatedState;
+      
+      // Trigger re-render
+      instance.rerender();
+    };
   }
   
   // Execute component function to get fresh virtual DOM
@@ -706,40 +686,11 @@ if (typeof window !== 'undefined') {
 function updateDOMWithState(rootElement, state) {
   if (!rootElement || !state) return;
   
-  // For now, use direct DOM updates to avoid breaking event handlers
-  // TODO: Implement proper virtual DOM diffing for complex state changes
+  // Use direct DOM updates to avoid breaking event handlers
   updateDOMElementsDirectly(rootElement, state);
   
   // Also update any dynamic content that needs to be re-rendered
   updateDynamicContent(rootElement, state);
-}
-
-/**
- * Patch the DOM to match the new virtual DOM structure
- * 
- * @param {HTMLElement} rootElement - The root DOM element to patch
- * @param {Object} newVirtualDOM - The new virtual DOM structure
- */
-function patchDOM(rootElement, newVirtualDOM) {
-  if (!rootElement || !newVirtualDOM) return;
-  
-  try {
-    // Clear the current content
-    rootElement.innerHTML = '';
-    
-    // Re-render the new virtual DOM structure
-    const { renderToDOM } = window.coherentRenderer || {};
-    if (renderToDOM) {
-      renderToDOM(newVirtualDOM, rootElement);
-    } else {
-      // Fallback: use simple rendering
-      renderVirtualDOMToElement(newVirtualDOM, rootElement);
-    }
-    
-  } catch (error) {
-    console.error('❌ Error patching DOM:', error);
-    throw error;
-  }
 }
 
 /**
@@ -748,6 +699,7 @@ function patchDOM(rootElement, newVirtualDOM) {
  * @param {Object} vdom - Virtual DOM object
  * @param {HTMLElement} container - Container element
  */
+// eslint-disable-next-line no-unused-vars -- kept for future SSR fallback rendering
 function renderVirtualDOMToElement(vdom, container) {
   if (!vdom || !container) return;
   
@@ -951,7 +903,7 @@ function updateFilterButtons(rootElement, state) {
  * @param {Object} state - The current state object for context
  * @since 0.1.2
  */
-function reattachTodoEventHandlers(rootElement, state) {
+function reattachTodoEventHandlers(rootElement) {
   // Find the component instance to get access to the component's handlers
   const componentInstance = rootElement.__coherentInstance;
   if (!componentInstance || !componentInstance.component) {
@@ -1012,7 +964,7 @@ function reattachTodoEventHandlers(rootElement, state) {
       }
       
       // Create new handler that calls the component's toggleTodo function
-      const changeHandler = (event) => {
+      const changeHandler = () => {
         // Get current state and setState from component
         if (component.__stateContainer) {
           const currentState = component.__stateContainer.getState();
@@ -1049,7 +1001,7 @@ function reattachTodoEventHandlers(rootElement, state) {
  * @param {Object} instance - The component instance providing state and context
  * @since 0.1.2
  */
-function attachFunctionEventListeners(rootElement, virtualElement, instance) {
+function attachFunctionEventListeners(rootElement, virtualElement, instance, options = {}) {
   if (!rootElement || !virtualElement || typeof window === 'undefined') {
     return;
   }
@@ -1082,12 +1034,24 @@ function attachFunctionEventListeners(rootElement, virtualElement, instance) {
         if (typeof handler === 'function') {
           const eventType = eventName.substring(2); // Remove 'on' prefix
           
+          // If inputsOnly option is set, only attach input-related events and click events on dynamically generated elements
+          if (options.inputsOnly) {
+            const inputEvents = ['input', 'change', 'keypress'];
+            const isDynamicElement = domElement.closest('.todo-item') || domElement.closest('[data-dynamic]');
+            
+            if (!inputEvents.includes(eventType) && !(eventType === 'click' && isDynamicElement)) {
+              return; // Skip non-input events except clicks on dynamic elements
+            }
+          }
+          
           // Special handling for input events
           
           // Check if handler is already attached to prevent duplicates
           const handlerKey = `__coherent_${eventType}_handler`;
           if (domElement[handlerKey]) {
-            return; // Handler already attached
+            // Remove the old handler first
+            domElement.removeEventListener(eventType, domElement[handlerKey]);
+            delete domElement[handlerKey];
           }
           
           // Create a wrapper that provides component context
@@ -1117,12 +1081,12 @@ function attachFunctionEventListeners(rootElement, virtualElement, instance) {
                   }
                   
                   // Get the updated state after setState
-                  const updatedState = instance.component.__stateContainer.getState();
+                  instance.component.__stateContainer.getState();
                   
-                  // Update the DOM to reflect the new state
+                  // Trigger component re-render to reflect the new state
                   const componentRoot = domElement.closest('[data-coherent-component]');
-                  if (componentRoot) {
-                    updateDOMWithState(componentRoot, updatedState);
+                  if (componentRoot && componentRoot.__coherentInstance) {
+                    componentRoot.__coherentInstance.rerender();
                   }
                 };
               } else if (instance.state) {
@@ -1133,10 +1097,10 @@ function attachFunctionEventListeners(rootElement, virtualElement, instance) {
                     Object.assign(instance.state, newState);
                   }
                   
-                  // Manually update the DOM elements that display the state
+                  // Trigger component re-render to reflect the new state
                   const componentRoot = domElement.closest('[data-coherent-component]');
-                  if (componentRoot) {
-                    updateDOMWithState(componentRoot, instance.state);
+                  if (componentRoot && componentRoot.__coherentInstance) {
+                    componentRoot.__coherentInstance.rerender();
                   }
                 };
               }
@@ -1775,7 +1739,7 @@ function autoHydrate(componentRegistry = {}) {
       // If not found by exact name, try to find it by checking if it's a hydratable component
       if (!component) {
         // Component not found by name, searching registry...
-        for (const [key, comp] of Object.entries(componentRegistry)) {
+        for (const comp of Object.values(componentRegistry)) {
           if (comp && comp.isHydratable) {
             component = comp;
             break;

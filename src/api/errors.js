@@ -1,6 +1,6 @@
 /**
  * API Error Handling for Coherent.js
- * Standardized error classes and handling utilities
+ * @fileoverview Standardized error classes and handling utilities
  */
 
 /**

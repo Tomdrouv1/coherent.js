@@ -34,15 +34,35 @@ const staticCache = new Map([
 ### 2. Demo Cache (Fast - ~0.01ms)
 ```javascript
 const renderCache = new Map();
+const componentHashCache = new Map();
+
 const fastHash = (obj) => {
-    // Fast hash function using bit manipulation
-    let hash = 0;
-    const str = JSON.stringify(obj);
-    for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash; // Convert to 32-bit integer
+    // Use cached hash if available
+    if (componentHashCache.has(obj)) {
+        return componentHashCache.get(obj);
     }
+    
+    let hash = 0;
+    
+    // Fast path for component-like objects (avoids JSON.stringify)
+    if (obj && typeof obj === 'object' && obj.type && obj.props) {
+        const keyStr = `${obj.type}:${obj.props?.depth || ''}:${obj.props?.label || ''}`;
+        for (let i = 0; i < keyStr.length; i++) {
+            const char = keyStr.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+    } else {
+        // Fallback to JSON.stringify for complex objects
+        const str = JSON.stringify(obj);
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32-bit integer
+        }
+    }
+    
+    componentHashCache.set(obj, hash);
     return hash;
 };
 ```
@@ -50,10 +70,12 @@ const fastHash = (obj) => {
 **Purpose**: Dynamic caching with fast hash-based lookups for component variations.
 
 **Benefits**:
-- **Fast hash computation** - much faster than JSON.stringify for keys
+- **Optimized hash computation** - avoids JSON.stringify for component-like objects
+- **Cached results** - avoids rehashing the same objects repeatedly  
 - **Dynamic content support** - handles component variations
 - **Efficient memory usage** - only caches what's actually used
 - **Hash collision protection** - 32-bit integer hashing
+- **Fallback safety** - uses JSON.stringify only when needed for complex objects
 
 **When to Use**: Components with variations in props or state that still benefit from caching.
 

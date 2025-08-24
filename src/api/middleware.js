@@ -1,11 +1,12 @@
 /**
  * Middleware system for Coherent.js API framework
+ * @fileoverview Common middleware utilities for API routes
  */
 
 /**
- * Create a custom API middleware
+ * Creates a custom API middleware with error handling
  * @param {Function} handler - Middleware handler function
- * @returns {Function} Middleware function
+ * @returns {Function} Middleware function that catches errors
  */
 export function createApiMiddleware(handler) {
   return (req, res, next) => {
@@ -40,7 +41,7 @@ export function withAuth(verifyToken) {
       const user = verifyToken(token);
       req.user = user;
       next();
-    } catch (error) {
+    } catch {
       return res.status(401).json({ 
         error: 'Unauthorized', 
         message: 'Invalid token' 
@@ -74,7 +75,7 @@ export function withPermission(checkPermission) {
       }
       
       next();
-    } catch (error) {
+    } catch {
       return res.status(403).json({ 
         error: 'Forbidden', 
         message: 'Permission check failed' 
@@ -162,8 +163,8 @@ export function withRateLimit(options = {}) {
   // Store request counts per IP
   const requestCounts = new Map();
   
-  // Cleanup old entries periodically
-  setInterval(() => {
+  // Cleanup old entries periodically (do not keep event loop alive)
+  const cleanupInterval = setInterval(() => {
     const now = Date.now();
     for (const [ip, record] of requestCounts.entries()) {
       if (now - record.resetTime > windowMs) {
@@ -171,6 +172,9 @@ export function withRateLimit(options = {}) {
       }
     }
   }, windowMs);
+  if (typeof cleanupInterval.unref === 'function') {
+    cleanupInterval.unref();
+  }
   
   return createApiMiddleware((req, res, next) => {
     const ip = req.ip || req.connection.remoteAddress;
