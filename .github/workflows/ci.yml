@@ -2,38 +2,133 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ '**' ]
+    tags: [ 'v*.*.*' ]
   pull_request:
-    branches: [ main ]
+    branches: [ '**' ]
+
+permissions:
+  contents: read
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 15
     strategy:
       matrix:
-        node-version: [22.x, 24.x]
-        
+        node-version: [20.x, 22.x]
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Install pnpm
-      uses: pnpm/action-setup@v4
-        
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'pnpm'
-        
-    - name: Install dependencies
-      run: pnpm install
-      
-    - name: Run lint
-      run: pnpm run lint
-      
-    - name: Run tests
-      run: pnpm test
-      
-    - name: Run type checking
-      run: pnpm run typecheck
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.0
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Type check
+        run: pnpm run typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Build package
+        run: pnpm run build
+
+      - name: Build website (sanity check)
+        run: pnpm run website:build
+
+  deploy_website:
+    name: Deploy Website (release branches/tags only)
+    needs: test
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'push' && (
+        startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/tags/v')
+      )
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: 'pages'
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build website
+        run: pnpm run website:build
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: website/dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Print deployed URL
+        run: |
+          echo "Pages URL: ${{ steps.deployment.outputs.page_url }}"
+
+  publish_npm:
+    name: Publish to npm (tags only)
+    needs: test
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') &&
+      github.repository == 'Tomdrouv1/coherent.js'
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org/
+          cache: 'pnpm'
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Publish
+        run: pnpm publish --provenance --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
