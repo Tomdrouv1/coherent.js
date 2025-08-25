@@ -9,9 +9,9 @@ export function Home() {
           { h1: { className: 'title', text: 'Coherent.js' } },
           { p: { className: 'lead', text: 'Lightweight, fast, and simple server-side rendering with object-based components.' } },
           { div: { className: 'cta', children: [
-            { a: { className: 'button primary', href: '/docs', text: 'Get Started' } },
-            { a: { className: 'button', href: '/examples', text: 'Examples' } },
-            { a: { className: 'button', href: '/performance', text: 'Performance' } }
+            { a: { className: 'button primary', href: 'docs', text: 'Get Started' } },
+            { a: { className: 'button', href: 'examples', text: 'Examples' } },
+            { a: { className: 'button', href: 'performance', text: 'Performance' } }
           ] } }
         ] } },
 
@@ -36,10 +36,10 @@ export function Home() {
         { section: { className: 'quick-links', children: [
           { h3: { text: 'Quick Links' } },
           { ul: { className: 'links', children: [
-            { li: { children: [ { a: { href: '/docs/getting-started/installation', text: 'Getting Started' } } ] } },
-            { li: { children: [ { a: { href: '/docs/api-reference', text: 'API Reference' } } ] } },
-            { li: { children: [ { a: { href: '/docs/framework-integrations', text: 'Framework Integrations' } } ] } },
-            { li: { children: [ { a: { href: '/changelog', text: 'Changelog' } } ] } }
+            { li: { children: [ { a: { href: 'docs/getting-started/installation', text: 'Getting Started' } } ] } },
+            { li: { children: [ { a: { href: 'docs/api-reference', text: 'API Reference' } } ] } },
+            { li: { children: [ { a: { href: 'docs/framework-integrations', text: 'Framework Integrations' } } ] } },
+            { li: { children: [ { a: { href: 'changelog', text: 'Changelog' } } ] } }
           ] } }
         ] } }
       ]

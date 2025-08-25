@@ -19,6 +19,10 @@ const DIST_DIR = path.join(WEBSITE_DIR, 'dist');
 const EXAMPLES_DIR = path.join(repoRoot, 'examples');
 const BENCH_DIR = path.join(repoRoot, 'benchmarks');
 
+// Determine base href for GitHub Pages project site
+const repoName = process.env.GITHUB_REPOSITORY ? process.env.GITHUB_REPOSITORY.split('/')[1] : '';
+const baseHref = repoName ? `/${repoName}/` : '/';
+
 async function ensureDir(dir) {
   await fs.mkdir(dir, { recursive: true });
 }
@@ -33,7 +37,7 @@ async function buildPerformance(sidebar) {
     } catch {}
   }
   const htmlBody = md ? marked.parse(md) : '<h1>Performance</h1><p>No benchmark report found.</p>';
-  const page = Layout({ title: 'Performance | Coherent.js', sidebar, currentPath: '/performance' });
+  const page = Layout({ title: 'Performance | Coherent.js', sidebar, currentPath: 'performance', baseHref });
   const html = renderToString(page).replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', htmlBody);
   await writePage('performance', html);
 }
@@ -104,7 +108,7 @@ function buildSidebarFromDocs(docs) {
   for (const d of docs) {
     const group = groupFor(d.rel);
     if (!groups.has(group)) groups.set(group, []);
-    const href = '/docs/' + slugifySegment(d.rel.replace(/\\\\/g, '/'))
+    const href = 'docs/' + slugifySegment(d.rel.replace(/\\\\/g, '/'))
       .split('/')
       .map(slugifySegment)
       .join('/');
@@ -145,7 +149,7 @@ async function copyPublic() {
 
 async function buildHome(sidebar) {
   const content = renderToString(Home());
-  const page = Layout({ title: 'Coherent.js', sidebar, currentPath: '/' });
+  const page = Layout({ title: 'Coherent.js', sidebar, currentPath: '', baseHref });
   let html = renderToString(page);
   html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', content);
   await writePage('', html);
@@ -166,7 +170,7 @@ async function buildExamples(sidebar) {
       .sort((a,b)=>a.label.localeCompare(b.label));
   } catch {}
   const content = renderToString(Examples({ items }));
-  const page = Layout({ title: 'Examples | Coherent.js', sidebar, currentPath: '/examples' });
+  const page = Layout({ title: 'Examples | Coherent.js', sidebar, currentPath: 'examples', baseHref });
   let html = renderToString(page);
   html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', content);
   await writePage('examples', html);
@@ -174,15 +178,32 @@ async function buildExamples(sidebar) {
 
 async function buildDocs(docs) {
   const sidebar = buildSidebarFromDocs(docs);
+  await buildDocsIndex(sidebar);
   for (const d of docs) {
     const md = await fs.readFile(d.full, 'utf8');
     const htmlBody = marked.parse(md);
     const title = (md.match(/^#\s+(.+)$/m) || [null, 'Documentation'])[1];
-    const page = Layout({ title: `${title} | Coherent.js Docs`, sidebar, currentPath: '/docs' });
+    const page = Layout({ title: `${title} | Coherent.js Docs`, sidebar, currentPath: 'docs', baseHref });
     let finalHtml = renderToString(page).replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', htmlBody);
-    const route = slugifySegment(d.rel.replace(/\\\\/g, '/')).split('/').map(slugifySegment).join('/');
+    const route = slugifySegment(d.rel.replace(/\\/g, '/')).split('/').map(slugifySegment).join('/');
     await writePage(path.join('docs', route), finalHtml);
   }
+}
+
+async function buildDocsIndex(sidebar) {
+  let firstHref = '';
+  for (const group of sidebar) {
+    if (group.items && group.items.length) { firstHref = group.items[0].href; break; }
+  }
+  let htmlBody = '';
+  if (firstHref) {
+    htmlBody = `<h1>Documentation</h1><p>Start here: <a href="${firstHref}">Open first guide</a></p>`;
+  } else {
+    htmlBody = '<h1>Documentation</h1><p>No docs found.</p>';
+  }
+  const page = Layout({ title: 'Docs | Coherent.js', sidebar, currentPath: 'docs', baseHref });
+  const html = renderToString(page).replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', htmlBody);
+  await writePage('docs', html);
 }
 
 async function buildChangelog(sidebar) {
@@ -190,7 +211,7 @@ async function buildChangelog(sidebar) {
   try {
     const md = await fs.readFile(changelogPath, 'utf8');
     const htmlBody = marked.parse(md);
-    const page = Layout({ title: 'Changelog | Coherent.js', sidebar, currentPath: '/changelog' });
+    const page = Layout({ title: 'Changelog | Coherent.js', sidebar, currentPath: 'changelog', baseHref });
     const html = renderToString(page).replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', htmlBody);
     await writePage('changelog', html);
   } catch {}
