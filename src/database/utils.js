@@ -5,7 +5,6 @@
  */
 
 import { DatabaseManager } from './connection-manager.js';
-import { Model } from './model.js';
 // Migration utilities are handled by the createMigration factory function
 
 /**
@@ -35,44 +34,6 @@ export async function createConnection(config) {
 }
 
 /**
- * Create and register a model class
- * 
- * @param {string} name - Model name
- * @param {Object} definition - Model definition
- * @param {DatabaseManager} db - Database manager instance
- * @returns {Function} Model class
- * 
- * @example
- * const User = createModel('User', {
- *   tableName: 'users',
- *   fillable: ['name', 'email', 'password'],
- *   hidden: ['password'],
- *   validationRules: {
- *     name: { required: true, minLength: 2 },
- *     email: { required: true, email: true, unique: true }
- *   },
- *   relationships: {
- *     posts: { type: 'hasMany', model: 'Post', foreignKey: 'user_id' }
- *   }
- * }, db);
- */
-export function createModel(name, definition, db) {
-  class DynamicModel extends Model {
-    static tableName = definition.tableName || name.toLowerCase() + 's';
-    static primaryKey = definition.primaryKey || 'id';
-    static fillable = definition.fillable || [];
-    static guarded = definition.guarded || [];
-    static hidden = definition.hidden || [];
-    static casts = definition.casts || {};
-    static dates = definition.dates || ['created_at', 'updated_at'];
-    static timestamps = definition.timestamps !== false;
-    static validationRules = definition.validationRules || {};
-    static relationships = definition.relationships || {};
-    static db = db;
-  }
-
-  // Set the model name
-  Object.defineProperty(DynamicModel, 'name', { value: name });
 
   // Add custom methods if provided
   if (definition.methods) {

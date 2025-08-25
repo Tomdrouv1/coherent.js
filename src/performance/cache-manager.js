@@ -1,298 +1,350 @@
 /**
- * Advanced caching system with memory management and smart invalidation
+ * Advanced caching system with memory management and smart invalidation for Coherent.js
+ * 
+ * @module @coherent/performance/cache-manager
+ * @license MIT
  */
 
-export class CacheManager {
-    constructor(options = {}) {
-        this.maxCacheSize = options.maxCacheSize || 1000;
-        this.maxMemoryMB = options.maxMemoryMB || 100;
-        this.ttlMs = options.ttlMs || 1000 * 60 * 5; // 5 minutes default
+/**
+ * @typedef {Object} CacheEntry
+ * @property {any} value - The cached value
+ * @property {number} timestamp - When the entry was created
+ * @property {number} lastAccess - Last access time
+ * @property {number} size - Approximate size in bytes
+ * @property {Object} metadata - Additional metadata
+ * @property {number} accessCount - Number of times accessed
+ */
 
-        // Multiple cache layers for different optimization strategies
-        this.staticCache = new Map();      // Never-changing components
-        this.componentCache = new Map();   // Component results with deps
-        this.templateCache = new Map();    // Template strings
-        this.usageStats = new Map();       // Track access patterns
+/**
+ * @typedef {Object} CacheStats
+ * @property {number} hits - Number of cache hits
+ * @property {number} misses - Number of cache misses
+ * @property {number} size - Current cache size in bytes
+ * @property {number} entries - Number of cache entries
+ * @property {Record<string, number>} hitRate - Hit rate by cache type
+ */
 
-        // Memory monitoring
-        this.memoryUsage = 0;
-        this.cacheHits = 0;
-        this.cacheMisses = 0;
+/**
+ * @typedef {Object} CacheOptions
+ * @property {number} [maxCacheSize=1000] - Maximum number of entries per cache type
+ * @property {number} [maxMemoryMB=100] - Maximum memory usage in MB
+ * @property {number} [ttlMs=300000] - Default time-to-live in milliseconds (5 minutes)
+ * @property {boolean} [enableStatistics=true] - Whether to collect usage statistics
+ */
 
-        // Cleanup interval (do not keep event loop alive in tests/short-lived processes)
-        {
-            const interval = setInterval(() => this.cleanup(), 30000);
-            // In Node.js, unref prevents the timer from keeping the event loop alive
-            if (typeof interval.unref === 'function') {
-                interval.unref();
-            }
-            this.cleanupInterval = interval;
+/**
+ * Creates a new CacheManager instance
+ * @param {CacheOptions} [options] - Configuration options
+ * @returns {Object} Cache manager instance
+ */
+export function createCacheManager(options = {}) {
+  const {
+    maxCacheSize = 1000,
+    maxMemoryMB = 100,
+    ttlMs = 1000 * 60 * 5, // 5 minutes
+    enableStatistics = true
+  } = options;
+
+  // Internal state
+  const caches = {
+    static: new Map(),     // Never-changing components
+    component: new Map(),  // Component results with deps
+    template: new Map(),   // Template strings
+    data: new Map()        // General purpose data
+  };
+
+  let memoryUsage = 0;
+  const stats = {
+    hits: 0,
+    misses: 0,
+    hitRate: {
+      static: 0,
+      component: 0,
+      template: 0,
+      data: 0
+    },
+    accessCount: {
+      static: 0,
+      component: 0,
+      template: 0,
+      data: 0
+    }
+  };
+
+  // Cleanup interval (doesn't keep Node.js process alive)
+  let cleanupInterval;
+  if (typeof setInterval === 'function') {
+    cleanupInterval = setInterval(() => cleanup(), 30000);
+    if (cleanupInterval.unref) {
+      cleanupInterval.unref();
+    }
+  }
+
+  /**
+   * Generate a cache key from component and props
+   * @param {any} component - Component or component name
+   * @param {Object} [props={}] - Component props
+   * @param {Object} [context={}] - Additional context
+   * @returns {string} Cache key
+   */
+  function generateCacheKey(component, props = {}, context = {}) {
+    const componentStr = typeof component === 'function'
+      ? component.name || component.toString()
+      : JSON.stringify(component);
+
+    const propsStr = JSON.stringify(props, Object.keys(props).sort());
+    const contextStr = JSON.stringify(context);
+    const hash = simpleHash(componentStr + propsStr + contextStr);
+    
+    return `${extractComponentName(component)}_${hash}`;
+  }
+
+  /**
+   * Get a value from the cache
+   * @param {string} key - Cache key
+   * @param {string} [type='component'] - Cache type
+   * @returns {any|null} Cached value or null if not found
+   */
+  function get(key, type = 'component') {
+    const cache = caches[type] || caches.component;
+    const entry = cache.get(key);
+
+    if (!entry) {
+      stats.misses++;
+      if (enableStatistics) stats.accessCount[type]++;
+      return null;
+    }
+
+    // Check TTL
+    if (Date.now() - entry.timestamp > ttlMs) {
+      cache.delete(key);
+      updateMemoryUsage(-entry.size);
+      stats.misses++;
+      if (enableStatistics) stats.accessCount[type]++;
+      return null;
+    }
+
+    // Update access time and stats
+    entry.lastAccess = Date.now();
+    entry.accessCount++;
+    stats.hits++;
+    if (enableStatistics) {
+      stats.accessCount[type]++;
+      stats.hitRate[type] = (stats.hits / (stats.hits + stats.misses)) * 100;
+    }
+
+    return entry.value;
+  }
+
+  /**
+   * Store a value in the cache
+   * @param {string} key - Cache key
+   * @param {any} value - Value to cache
+   * @param {string} [type='component'] - Cache type
+   * @param {Object} [metadata={}] - Additional metadata
+   */
+  function set(key, value, type = 'component', metadata = {}) {
+    const cache = caches[type] || caches.component;
+    const size = calculateSize(value);
+
+    // Check memory limits
+    if (memoryUsage + size > maxMemoryMB * 1024 * 1024) {
+      optimize(type, size);
+    }
+
+    const entry = {
+      value,
+      timestamp: Date.now(),
+      lastAccess: Date.now(),
+      size,
+      metadata,
+      accessCount: 0
+    };
+
+    // Remove existing entry if it exists
+    const existing = cache.get(key);
+    if (existing) {
+      updateMemoryUsage(-existing.size);
+    }
+
+    cache.set(key, entry);
+    updateMemoryUsage(size);
+
+    // Enforce cache size limits
+    if (cache.size > maxCacheSize) {
+      optimize(type);
+    }
+  }
+
+  /**
+   * Remove an entry from the cache
+   * @param {string} key - Cache key
+   * @param {string} [type] - Cache type (optional, checks all caches if not provided)
+   * @returns {boolean} True if an entry was removed
+   */
+  function remove(key, type) {
+    if (type) {
+      const cache = caches[type];
+      if (!cache) return false;
+      
+      const entry = cache.get(key);
+      if (entry) {
+        updateMemoryUsage(-entry.size);
+        return cache.delete(key);
+      }
+      return false;
+    }
+
+    // Check all caches if no type specified
+    for (const [, cache] of Object.entries(caches)) {
+      const entry = cache.get(key);
+      if (entry) {
+        updateMemoryUsage(-entry.size);
+        return cache.delete(key);
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Clear all caches or a specific cache type
+   * @param {string} [type] - Cache type to clear (optional, clears all if not provided)
+   */
+  function clear(type) {
+    if (type) {
+      const cache = caches[type];
+      if (cache) {
+        cache.clear();
+      }
+    } else {
+      Object.values(caches).forEach(cache => cache.clear());
+    }
+    memoryUsage = 0;
+  }
+
+  /**
+   * Get cache statistics
+   * @returns {CacheStats} Cache statistics
+   */
+  function getStats() {
+    const entries = Object.values(caches).reduce((sum, cache) => sum + cache.size, 0);
+    
+    return {
+      hits: stats.hits,
+      misses: stats.misses,
+      size: memoryUsage,
+      entries,
+      hitRate: stats.hitRate,
+      accessCount: stats.accessCount
+    };
+  }
+
+  /**
+   * Clean up expired entries
+   */
+  function cleanup() {
+    const now = Date.now();
+    let freed = 0;
+
+    for (const [, cache] of Object.entries(caches)) {
+      for (const [key, entry] of cache.entries()) {
+        if (now - entry.timestamp > ttlMs) {
+          cache.delete(key);
+          updateMemoryUsage(-entry.size);
+          freed++;
         }
-
-        this.staticElementCache = new Map();  // Cache for static HTML elements
-        this.elementUsageTracking = new Map(); // Track element usage patterns
+      }
     }
 
-    // Generate smart cache keys based on component structure and props
-    generateCacheKey(component, props = {}, context = {}) {
-        const componentStr = typeof component === 'function'
-            ? component.toString()
-            : JSON.stringify(component);
+    return { freed };
+  }
 
-        const propsStr = JSON.stringify(props, Object.keys(props).sort());
-        const contextStr = JSON.stringify(context);
+  // Internal helper functions
+  function calculateSize(value) {
+    if (value === null || value === undefined) return 0;
+    if (typeof value === 'string') return value.length * 2; // UTF-16
+    if (typeof value === 'number') return 8; // 64-bit float
+    if (typeof value === 'boolean') return 4;
+    if (Array.isArray(value)) {
+      return value.reduce((sum, item) => sum + calculateSize(item), 0);
+    }
+    if (typeof value === 'object') {
+      return Object.values(value).reduce((sum, val) => sum + calculateSize(val), 0);
+    }
+    return 0;
+  }
 
-        // Use hash for shorter keys but include component name for debugging
-        const componentName = this.extractComponentName(component);
-        const hash = this.simpleHash(componentStr + propsStr + contextStr);
+  function updateMemoryUsage(delta) {
+    memoryUsage = Math.max(0, memoryUsage + delta);
+  }
 
-        return `${componentName}_${hash}`;
+  function optimize(type, requiredSpace = 0) {
+    const cache = caches[type] || caches.component;
+    const entries = Array.from(cache.entries())
+      .sort(([, a], [, b]) => a.lastAccess - b.lastAccess);
+
+    let freed = 0;
+    for (const [key, entry] of entries) {
+      if (freed >= requiredSpace) break;
+      
+      cache.delete(key);
+      updateMemoryUsage(-entry.size);
+      freed += entry.size;
     }
 
-    extractComponentName(component) {
-        if (typeof component === 'function') {
-            return component.name || 'AnonymousComponent';
-        }
-        if (component && typeof component === 'object') {
-            const keys = Object.keys(component);
-            return keys.length > 0 ? keys[0] : 'ObjectComponent';
-        }
-        return 'UnknownComponent';
+    return { freed };
+  }
+
+  function simpleHash(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
     }
+    return Math.abs(hash).toString(36);
+  }
 
-    simpleHash(str) {
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-            const char = str.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash; // Convert to 32-bit integer
-        }
-        return Math.abs(hash).toString(36);
+  function extractComponentName(component) {
+    if (typeof component === 'function') {
+      return component.name || 'AnonymousComponent';
     }
-
-    // Get from cache with LRU update
-    get(key, cacheType = 'component') {
-        const cache = this.getCache(cacheType);
-        const entry = cache.get(key);
-
-        if (!entry) {
-            this.cacheMisses++;
-            return null;
-        }
-
-        // Check TTL
-        if (Date.now() - entry.timestamp > this.ttlMs) {
-            cache.delete(key);
-            this.updateMemoryUsage(-entry.size);
-            this.cacheMisses++;
-            return null;
-        }
-
-        // Update LRU
-        entry.lastAccess = Date.now();
-        this.updateUsageStats(key);
-        this.cacheHits++;
-
-        return entry.value;
+    if (component && typeof component === 'object') {
+      const keys = Object.keys(component);
+      return keys.length > 0 ? keys[0] : 'ObjectComponent';
     }
+    return 'UnknownComponent';
+  }
 
-    // Store in cache with memory management
-    set(key, value, cacheType = 'component', metadata = {}) {
-        const cache = this.getCache(cacheType);
-
-        // Calculate approximate memory size
-        const size = this.calculateSize(value);
-
-        // Check memory limits before adding
-        if (this.memoryUsage + size > this.maxMemoryMB * 1024 * 1024) {
-            this.optimize(cacheType, size);
-        }
-
-        const entry = {
-            value,
-            timestamp: Date.now(),
-            lastAccess: Date.now(),
-            size,
-            metadata,
-            accessCount: 1
-        };
-
-        cache.set(key, entry);
-        this.updateMemoryUsage(size);
-
-        // Prevent cache from growing too large
-        if (cache.size > this.maxCacheSize) {
-            this.optimize(cacheType);
-        }
+  // Clean up on destroy
+  function destroy() {
+    if (cleanupInterval) {
+      clearInterval(cleanupInterval);
     }
+    clear();
+  }
 
-    getCache(type) {
-        switch (type) {
-            case 'static': return this.staticCache;
-            case 'template': return this.templateCache;
-            default: return this.componentCache;
-        }
+  // Public API
+  return {
+    get,
+    set,
+    remove,
+    clear,
+    getStats,
+    cleanup,
+    destroy,
+    generateCacheKey,
+    get memoryUsage() {
+      return memoryUsage;
+    },
+    get maxMemory() {
+      return maxMemoryMB * 1024 * 1024;
     }
-
-    cacheStaticElement(tagName, props, html) {
-        const key = this.generateStaticElementKey(tagName, props);
-        this.staticElementCache.set(key, {
-            html,
-            createdAt: Date.now(),
-            accessCount: 1,
-            lastAccessed: Date.now()
-        });
-    }
-
-    getStaticElement(tagName, props) {
-        const key = this.generateStaticElementKey(tagName, props);
-        const cached = this.staticElementCache.get(key);
-
-        if (cached) {
-            cached.accessCount++;
-            cached.lastAccessed = Date.now();
-            return cached.html;
-        }
-
-        return null;
-    }
-
-    generateStaticElementKey(tagName, props) {
-        // Only cache truly static elements (no functions, no complex children)
-        const staticProps = {};
-        for (const [key, value] of Object.entries(props)) {
-            if (key === 'children' || typeof value === 'function') {
-                return null; // Don't cache dynamic elements
-            }
-            staticProps[key] = value;
-        }
-
-        return `static:${tagName}:${JSON.stringify(staticProps)}`;
-    }
-
-    trackElementUsage(tagName) {
-        const count = this.elementUsageTracking.get(tagName) || 0;
-        this.elementUsageTracking.set(tagName, count + 1);
-    }
-
-    getHotPathElements(threshold = 10) {
-        return Array.from(this.elementUsageTracking.entries())
-            .filter(([, count]) => count >= threshold)
-            .sort(([, a], [, b]) => b - a)
-            .map(([tagName, count]) => ({ tagName, count }));
-    }
-
-    calculateSize(value) {
-        if (typeof value === 'string') {
-            return value.length * 2; // Rough UTF-16 estimate
-        }
-        return JSON.stringify(value).length * 2;
-    }
-
-    updateMemoryUsage(delta) {
-        this.memoryUsage += delta;
-    }
-
-    updateUsageStats(key) {
-        const stats = this.usageStats.get(key) || { count: 0, lastAccess: 0 };
-        stats.count++;
-        stats.lastAccess = Date.now();
-        this.usageStats.set(key, stats);
-    }
-
-    // Intelligent cache optimization based on LRU eviction
-    optimize(cacheType, requiredSpace = 0) {
-        const cache = this.getCache(cacheType);
-        const entries = Array.from(cache.entries());
-
-        // Sort by access patterns (least recently used + least frequently used)
-        entries.sort(([keyA, entryA], [keyB, entryB]) => {
-            const scoreA = this.calculateEvictionScore(entryA, keyA);
-            const scoreB = this.calculateEvictionScore(entryB, keyB);
-            return scoreA - scoreB;
-        });
-
-        let freedSpace = 0;
-        for (const [key, entry] of entries) {
-            cache.delete(key);
-            this.updateMemoryUsage(-entry.size);
-            freedSpace += entry.size;
-
-            if (freedSpace >= requiredSpace) break;
-            if (cache.size <= this.maxCacheSize * 0.8) break; // Leave some headroom
-        }
-    }
-
-    calculateEvictionScore(entry, key) {
-        const age = Date.now() - entry.lastAccess;
-        const usage = this.usageStats.get(key)?.count || 1;
-        const sizeWeight = entry.size / 1024; // Favor evicting larger items
-
-        // Lower score = higher priority for eviction
-        return age + (sizeWeight * 1000) - (usage * 5000);
-    }
-
-    cleanup() {
-        const now = Date.now();
-        const caches = [this.staticCache, this.componentCache, this.templateCache];
-
-        for (const cache of caches) {
-            for (const [key, entry] of cache.entries()) {
-                if (now - entry.timestamp > this.ttlMs) {
-                    cache.delete(key);
-                    this.updateMemoryUsage(-entry.size);
-                }
-            }
-        }
-    }
-
-    // Analytics and monitoring
-    getStats() {
-        const hitRate = this.cacheHits / (this.cacheHits + this.cacheMisses) * 100;
-
-        return {
-            hitRate: `${hitRate.toFixed(2)}%`,
-            totalHits: this.cacheHits,
-            totalMisses: this.cacheMisses,
-            memoryUsageMB: (this.memoryUsage / (1024 * 1024)).toFixed(2),
-            cacheEntries: {
-                static: this.staticCache.size,
-                component: this.componentCache.size,
-                template: this.templateCache.size
-            },
-            topComponents: this.getTopComponents()
-        };
-    }
-
-    getTopComponents(limit = 10) {
-        return Array.from(this.usageStats.entries())
-            .sort(([, a], [, b]) => b.count - a.count)
-            .slice(0, limit)
-            .map(([key, stats]) => ({ key, ...stats }));
-    }
-
-    // Clear all caches
-    clear() {
-        this.staticCache.clear();
-        this.componentCache.clear();
-        this.templateCache.clear();
-        this.staticElementCache.clear();
-        this.elementUsageTracking.clear();
-        this.usageStats.clear();
-        this.memoryUsage = 0;
-        this.cacheHits = 0;
-        this.cacheMisses = 0;
-    }
-
-    destroy() {
-        clearInterval(this.cleanupInterval);
-        this.clear();
-    }
+  };
 }
 
-// Singleton instance for global use
-export const globalCache = new CacheManager({
-    maxCacheSize: 2000,
-    maxMemoryMB: 200,
-    ttlMs: 1000 * 60 * 10 // 10 minutes
-});
+// Create a default instance for convenience
+export const cacheManager = createCacheManager();
+
+// For backward compatibility
+export const CacheManager = { create: createCacheManager };

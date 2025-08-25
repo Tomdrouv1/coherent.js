@@ -9,45 +9,31 @@
  */
 
 export { DatabaseManager } from './connection-manager.js';
-export { QueryBuilder } from './query-builder.js';
-export { Model } from './model.js';
-export { Migration } from './migration.js';
+export { createQuery, executeQuery, QueryBuilder } from './query-builder.js';
+export { createModel } from './model.js';
+export { createMigration } from './migration.js';
 export { withDatabase } from './middleware.js';
 
 // Database adapters
-export { PostgreSQLAdapter } from './adapters/postgresql.js';
-export { MySQLAdapter } from './adapters/mysql.js';
-export { SQLiteAdapter } from './adapters/sqlite.js';
-export { MongoDBAdapter } from './adapters/mongodb.js';
+export { createPostgreSQLAdapter as PostgreSQLAdapter } from './adapters/postgresql.js';
+export { createMySQLAdapter as MySQLAdapter } from './adapters/mysql.js';
+export { createSQLiteAdapter as SQLiteAdapter } from './adapters/sqlite.js';
+export { createMongoDBAdapter as MongoDBAdapter } from './adapters/mongodb.js';
 
 // Utilities
-export { createConnection, createModel, runMigrations } from './utils.js';
+export { createConnection, runMigrations } from './utils.js';
 
 /**
  * Default database configuration
  */
 export const DEFAULT_DB_CONFIG = {
   type: 'sqlite',
-  host: 'localhost',
-  port: null,
-  database: 'coherent_app',
-  username: null,
-  password: null,
-  pool: {
-    min: 2,
-    max: 10,
-    acquireTimeoutMillis: 30000,
-    createTimeoutMillis: 30000,
-    destroyTimeoutMillis: 5000,
-    idleTimeoutMillis: 30000,
-    reapIntervalMillis: 1000,
-    createRetryIntervalMillis: 200
-  },
-  migrations: {
-    directory: './migrations',
-    tableName: 'coherent_migrations'
-  },
-  debug: false
+  database: ':memory:',
+  synchronize: true,
+  logging: false,
+  entities: [],
+  migrations: [],
+  subscribers: []
 };
 
 /**
@@ -68,6 +54,13 @@ export const DEFAULT_DB_CONFIG = {
  * });
  */
 export function setupDatabase(config = {}) {
-  const finalConfig = { ...DEFAULT_DB_CONFIG, ...config };
-  return new DatabaseManager(finalConfig);
+  const mergedConfig = { ...DEFAULT_DB_CONFIG, ...config };
+  const dbManager = new DatabaseManager(mergedConfig);
+  
+  // Auto-connect if autoConnect is not explicitly set to false
+  if (mergedConfig.autoConnect !== false) {
+    dbManager.connect().catch(console.error);
+  }
+  
+  return dbManager;
 }

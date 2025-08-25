@@ -46,7 +46,10 @@ const NestedContextApp = {
 
 // Run the test
 clearAllContexts();
-const html = renderToString(NestedContextApp);
+const html = renderToString(NestedContextApp, {
+    enableCache: true,
+    enableMonitoring: false
+});
 
 // Verify the output contains the expected class names in correct quantities
 const darkButtonCount = (html.match(/btn-dark/g) || []).length;

@@ -2,6 +2,8 @@
 
 This document provides a comprehensive reference for all public APIs available in Coherent.js.
 
+> **Pure Object Philosophy**: Coherent.js emphasizes **factory functions** over class instantiation. Throughout this API reference, we recommend using factory functions for a pure JavaScript object approach.
+
 ## Core Rendering
 
 ### `renderToString(component, context?)`
@@ -236,6 +238,82 @@ Resets performance statistics.
 Gets performance optimization recommendations.
 
 **Returns:** Array - Array of recommendation objects
+
+## Database Layer
+
+### Factory Functions (Recommended)
+
+#### `createDatabaseManager(config)`
+
+**✅ Recommended**: Creates a database manager instance using factory function.
+
+**Parameters:**
+- `config` (Object): Database configuration
+
+**Returns:** DatabaseManager - A database manager instance
+
+**Example:**
+```javascript
+import { createDatabaseManager } from 'coherent-js';
+
+// Recommended approach
+const db = createDatabaseManager({
+  type: 'sqlite',
+  database: ':memory:'
+});
+```
+
+#### `createQuery(config)`
+
+**✅ Recommended**: Creates a query builder instance using factory function.
+
+**Parameters:**
+- `config` (Object): Query configuration
+
+**Returns:** QueryBuilder - A query builder instance
+
+**Example:**
+```javascript
+import { createQuery } from 'coherent-js';
+
+// Pure object approach
+const query = createQuery({
+  table: 'users',
+  select: ['id', 'name'],
+  where: { active: true }
+});
+```
+
+#### `executeQuery(query, database?)`
+
+**✅ Recommended**: Executes a query created with factory functions.
+
+**Parameters:**
+- `query` (Object): Query object from createQuery
+- `database` (DatabaseManager, optional): Database instance
+
+**Returns:** Promise - Query results
+
+**Example:**
+```javascript
+import { createQuery, executeQuery, createDatabaseManager } from 'coherent-js';
+
+const db = createDatabaseManager({ type: 'sqlite', database: ':memory:' });
+const query = createQuery({ table: 'users', select: ['*'] });
+const results = await executeQuery(query, db);
+```
+
+### Direct Class Access (Advanced Usage)
+
+> **Note**: While direct class access is available for advanced use cases, we recommend using factory functions for consistency with the pure object philosophy.
+
+#### `new DatabaseManager(config)`
+
+**Alternative**: Direct class instantiation for advanced usage.
+
+#### `new QueryBuilder(options)`
+
+**Alternative**: Direct class instantiation for advanced usage.
 
 ## Client-side Hydration
 

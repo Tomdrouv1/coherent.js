@@ -1,19 +1,23 @@
 /**
- * @file Coherent.js Database - Pure JavaScript Object Query Examples
+ * @file Coherent.js Database - Pure JavaScript Object Query Builder Examples
  * 
- * This example demonstrates how to use Coherent.js with pure JavaScript objects
+ * This example demonstrates how to use Coherent.js QueryBuilder with pure JavaScript objects
  * for both model definitions and database queries, without using classes.
  * 
  * This example uses the in-memory database adapter for simplicity.
  */
 
-import { DatabaseManager } from '../src/database/connection-manager.js';
+// Using factory functions (recommended pure JS object approach)
+import { createDatabaseManager, createQuery, executeQuery } from '../src/coherent.js';
 import { MemoryAdapter } from '../src/database/adapters/memory.js';
+
+// Alternative: Direct imports (also available)
+// import { DatabaseManager, QueryBuilder, createQuery, executeQuery } from '../src/database/index.js';
 
 console.log('Setting up in-memory database connection...');
 
-// Setup in-memory database connection
-const db = new DatabaseManager({
+// Setup in-memory database connection using factory function
+const db = createDatabaseManager({
   adapter: new MemoryAdapter(),
   store: {
     name: 'example-store'
@@ -227,10 +231,7 @@ const testPost = await Post.create({
 console.log('✓ Created test post:', testPost);
 
 // Find a single user
-const foundUser = await User.findOne({
-  where: { id: testUser.id },
-  select: ['id', 'name', 'email']
-});
+const foundUser = await User.findOne({ id: testUser.id });
 
 console.log('✓ Found user by ID:', foundUser);
 
@@ -251,38 +252,22 @@ console.log('=================');
 
 // Find with complex conditions
 const activeAdmins = await User.find({
-  select: ['id', 'name', 'email'],
   where: { 
     active: true,
-    role: 'admin',
-    age: { '>': 25 }
+    role: 'admin'
   },
-  orderBy: { created_at: 'DESC' },
+  orderBy: ['created_at', 'DESC'],
   limit: 5
 });
 
 console.log('✓ Found active admins:', activeAdmins);
 
-// Complex query with joins
+// Simple published posts query (joins not supported in MemoryAdapter)
 const postsWithAuthors = await Post.find({
-  select: [
-    'posts.*',
-    { 'users.name': 'author_name' },
-    { 'users.email': 'author_email' }
-  ],
-  join: [
-    {
-      type: 'LEFT',
-      table: 'users',
-      on: { 'posts.user_id': 'users.id' }
-    }
-  ],
   where: {
-    'posts.published': true,
-    'users.role': { 'in': ['admin', 'editor'] },
-    'posts.created_at': { '>': '2023-01-01' }
+    published: true
   },
-  orderBy: { 'posts.created_at': 'DESC' },
+  orderBy: ['created_at', 'DESC'],
   limit: 10
 });
 
@@ -298,35 +283,20 @@ console.log('ℹ️ Skipping transaction example for in-memory adapter');
 console.log('\n3. Advanced Queries');
 console.log('===================');
 
-// Group by and aggregation
+// Simple post listing (aggregation not supported in MemoryAdapter)
 const userPostCounts = await Post.find({
-  select: [
-    'user_id',
-    'title', // For demo purposes, show title instead of user name
-    { 'COUNT(*)': 'post_count' }
-  ],
-  groupBy: ['user_id', 'title'],
-  orderBy: { post_count: 'DESC' },
+  orderBy: ['created_at', 'DESC'],
   limit: 5
 });
 
 console.log('✓ User post counts:', userPostCounts);
 
-// Date functions and complex conditions
-const oneWeekAgo = new Date();
-oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-
+// Recent published posts
 const recentPopularPosts = await Post.find({
   where: {
-    'posts.published': true,
-    'posts.created_at': {
-      '>': oneWeekAgo.toISOString()
-    }
-    // Simplified for in-memory adapter
+    published: true
   },
-  orderBy: [
-    { 'posts.created_at': 'DESC' }
-  ],
+  orderBy: ['created_at', 'DESC'],
   limit: 10
 });
 

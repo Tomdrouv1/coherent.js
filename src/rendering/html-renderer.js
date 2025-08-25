@@ -17,7 +17,13 @@ import {
 } from '../core/html-utils.js';
 
 import { performanceMonitor } from '../performance/monitor.js';
-import { CacheManager, globalCache } from '../performance/cache-manager.js';
+import { createCacheManager } from '../performance/cache-manager.js';
+
+// Create a global cache instance for the renderer
+const rendererCache = createCacheManager({
+    maxSize: 1000,
+    ttlMs: 300000 // 5 minutes
+});
 
 /**
  * HTML Renderer Class extending BaseRenderer
@@ -56,16 +62,9 @@ class HTMLRenderer extends BaseRenderer {
             ...options
         });
         
-        // Use globalCache if enabled, or create local cache as fallback
-        if (this.config.enableCache) {
-            if (globalCache) {
-                this.cache = globalCache;
-            } else if (!this.cache) {
-                this.cache = new CacheManager({
-                    maxSize: this.config.cacheSize || 1000,
-                    ttl: this.config.cacheTTL || 300000 // 5 minutes
-                });
-            }
+        // Initialize cache if enabled
+        if (this.config.enableCache && !this.cache) {
+            this.cache = rendererCache;
         }
     }
 
@@ -155,17 +154,18 @@ class HTMLRenderer extends BaseRenderer {
     renderElement(tagName, element, options, depth = 0) {
         const startTime = performance.now();
 
-        // Track element usage for performance analysis
+        // Track element usage for performance analysis (via stats in the new cache manager)
         if (options.enableMonitoring && this.cache) {
-            this.cache.trackElementUsage(tagName);
+            // The new cache manager tracks usage automatically via get/set operations
         }
 
         // Check cache first for static elements
         if (options.enableCache && this.cache && RendererUtils.isStaticElement(element)) {
-            const cached = this.cache.getStaticElement(tagName, element);
+            const cacheKey = `static:${tagName}:${JSON.stringify(element)}`;
+            const cached = this.cache.get('static', cacheKey);
             if (cached) {
                 this.recordPerformance(tagName, startTime, true);
-                return cached;
+                return cached.value; // Return the cached HTML
             }
         }
 
@@ -209,9 +209,13 @@ class HTMLRenderer extends BaseRenderer {
     /**
      * Cache element if it's static
      */
-    cacheIfStatic(tagName, element, html, options) {
-        if (options.enableCache && this.cache && RendererUtils.isStaticElement(element)) {
-            this.cache.cacheStaticElement(tagName, element, html);
+    cacheIfStatic(tagName, element, html) {
+        if (this.config.enableCache && this.cache && RendererUtils.isStaticElement(element)) {
+            const cacheKey = `static:${tagName}:${JSON.stringify(element)}`;
+            this.cache.set('static', cacheKey, html, {
+                ttlMs: this.config.cacheTTL || 5 * 60 * 1000, // 5 minutes default
+                size: html.length // Approximate size
+            });
         }
     }
 
@@ -279,10 +283,15 @@ class HTMLRenderer extends BaseRenderer {
  * Main render function - converts object components to HTML
  */
 export function renderToString(component, options = {}) {
-    // Use the imported globalCache - no need to initialize as it's already created in cache-manager.js
+    // Merge default options with provided options
+    const mergedOptions = {
+        enableCache: true,
+        enableMonitoring: false,
+        ...options
+    };
     
-    const renderer = new HTMLRenderer(options);
-    return renderer.render(component, options);
+    const renderer = new HTMLRenderer(mergedOptions);
+    return renderer.render(component, mergedOptions);
 }
 
 // Old functions removed - now part of HTMLRenderer class
@@ -293,63 +302,38 @@ export function renderToString(component, options = {}) {
  * Batch rendering for multiple components
  */
 export function renderBatch(components, options = {}) {
-    const startTime = performance.now();
-
-    try {
-        const results = components.map((component, index) => {
-            try {
-                return renderToString(component, {
-                    ...options,
-                    enableMonitoring: false // Avoid double monitoring
-                });
-            } catch (error) {
-                if (options.enableMonitoring) {
-                    performanceMonitor.recordError(`batch[${index}]`, error);
-                }
-                return options.fallback || '';
-            }
-        });
-
-        if (options.enableMonitoring) {
-            performanceMonitor.recordRender(
-                'renderBatch',
-                performance.now() - startTime,
-                false,
-                { batchSize: components.length }
-            );
-        }
-
-        return results;
-    } catch (error) {
-        if (options.enableMonitoring) {
-            performanceMonitor.recordError('renderBatch', error);
-        }
-        throw error;
+    if (!Array.isArray(components)) {
+        throw new Error('renderBatch expects an array of components');
     }
+
+    // Merge default options with provided options
+    const mergedOptions = {
+        enableCache: true,
+        enableMonitoring: false,
+        ...options
+    };
+
+    const renderer = new HTMLRenderer(mergedOptions);
+    return components.map(component => renderer.render(component, mergedOptions));
 }
 
 /**
  * Render to chunks for large output (fake streaming - renders full HTML then chunks it)
  * For true progressive streaming, use the streaming-renderer.js renderToStream function
  */
-export async function* renderToChunks(component, options = {}) {
-    const config = {
-        chunkSize: options.chunkSize || 8192,
+export function* renderToChunks(component, options = {}) {
+    // Merge default options with provided options
+    const mergedOptions = {
+        enableCache: true,
+        enableMonitoring: false,
         ...options,
-        streaming: true
+        chunkSize: options.chunkSize || 1024 // Default 1KB chunks
     };
-
-    const html = renderToString(component, config);
-
-    // Split into chunks for streaming
-    for (let i = 0; i < html.length; i += config.chunkSize) {
-        const chunk = html.slice(i, i + config.chunkSize);
-        yield {
-            chunk,
-            index: Math.floor(i / config.chunkSize),
-            size: chunk.length,
-            isLast: i + config.chunkSize >= html.length
-        };
+    
+    const html = renderToString(component, mergedOptions);
+    
+    for (let i = 0; i < html.length; i += mergedOptions.chunkSize) {
+        yield html.slice(i, i + mergedOptions.chunkSize);
     }
 }
 
@@ -366,15 +350,15 @@ export async function* renderToStream(component, options = {}) {
  * Get global cache instance for external access
  */
 export function getCache() {
-    return globalCache;
+    return rendererCache;
 }
 
 /**
  * Reset cache (useful for testing)
  */
 export function resetCache() {
-    if (globalCache) {
-        globalCache.clear();
+    if (rendererCache) {
+        rendererCache.clear();
     }
 }
 
@@ -383,7 +367,7 @@ export function resetCache() {
  */
 export function getRenderingStats() {
     return {
-        cache: globalCache ? globalCache.getStats() : null,
+        cache: rendererCache ? rendererCache.getStats() : null,
         performance: performanceMonitor.getStats()
     };
 }

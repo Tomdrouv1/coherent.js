@@ -2,7 +2,13 @@
  * Real-time performance monitoring and metrics collection
  */
 
-import { globalCache } from './cache-manager.js';
+import { createCacheManager } from './cache-manager.js';
+
+// Create a dedicated cache instance for monitoring
+const monitorCache = createCacheManager({
+    maxSize: 1000,
+    ttlMs: 300000 // 5 minutes
+});
 
 export class PerformanceMonitor {
     constructor() {
@@ -94,12 +100,14 @@ export class PerformanceMonitor {
             rss: memUsage.rss
         });
 
-        // Collect cache performance metrics
-        const cacheStats = globalCache.getStats();
-        this.metrics.cachePerformance.push({
-            timestamp: Date.now(),
-            ...cacheStats
-        });
+        // Get cache stats if available
+        if (monitorCache) {
+            const cacheStats = monitorCache.getStats();
+            this.metrics.cachePerformance.push({
+                timestamp: Date.now(),
+                ...cacheStats
+            });
+        }
 
         // Keep only recent system metrics
         if (this.metrics.memoryUsage.length > 100) {

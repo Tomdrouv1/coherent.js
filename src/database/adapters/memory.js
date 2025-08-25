@@ -84,12 +84,27 @@ export class MemoryAdapter {
             
             // Apply ORDER BY
             if (orderBy) {
-              const [field, direction = 'asc'] = Array.isArray(orderBy) ? orderBy : [orderBy];
-              results.sort((a, b) => {
-                if (a[field] < b[field]) return direction === 'asc' ? -1 : 1;
-                if (a[field] > b[field]) return direction === 'asc' ? 1 : -1;
-                return 0;
-              });
+              let field, direction;
+              if (Array.isArray(orderBy)) {
+                [field, direction = 'ASC'] = orderBy;
+              } else if (typeof orderBy === 'object') {
+                const entries = Object.entries(orderBy);
+                if (entries.length > 0) {
+                  [field, direction] = entries[0];
+                }
+              } else {
+                field = orderBy;
+                direction = 'ASC';
+              }
+              
+              if (field) {
+                const dir = direction.toLowerCase();
+                results.sort((a, b) => {
+                  if (a[field] < b[field]) return dir === 'asc' ? -1 : 1;
+                  if (a[field] > b[field]) return dir === 'asc' ? 1 : -1;
+                  return 0;
+                });
+              }
             }
             
             // Apply OFFSET and LIMIT

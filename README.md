@@ -19,6 +19,39 @@ A modern, lightweight JavaScript framework for building fast, scalable web appli
 - **Fastify Integration**: Seamless integration with Fastify web framework
 - **Next.js Integration**: Works with Next.js API routes and pages
 
+### Database & Query Builder
+
+Coherent.js includes a powerful, type-safe query builder with a pure object-based API:
+
+```javascript
+import { createQuery, executeQuery } from 'coherent/database';
+
+// Create and execute a query
+const query = createQuery({
+  table: 'users',
+  select: ['id', 'name', 'email'],
+  where: { 
+    active: true,
+    $or: [
+      { role: 'admin' },
+      { role: 'moderator' }
+    ]
+  },
+  orderBy: { created_at: 'DESC' },
+  limit: 10
+});
+
+const result = await executeQuery(db, query);
+```
+
+**Features:**
+- Pure object-based API for better type safety and composition
+- Supports all CRUD operations (SELECT, INSERT, UPDATE, DELETE)
+- Complex query building with nested conditions
+- Parameterized queries to prevent SQL injection
+- Database-agnostic with adapter support for PostgreSQL, MySQL, SQLite, and MongoDB
+- Backwards compatible with existing code
+
 ### API Framework
 
 Coherent.js now includes a comprehensive API framework for building REST, RPC, and GraphQL APIs:

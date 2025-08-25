@@ -5,15 +5,14 @@
  */
 
 /**
- * MongoDB Database Adapter
+ * Create a new MongoDB adapter instance
  * 
- * @class MongoDBAdapter
- * @description Provides MongoDB-specific database operations with connection pooling.
+ * @returns {Object} MongoDB adapter instance with database operations
  */
-export class MongoDBAdapter {
-  constructor() {
-    this.mongodb = null;
-  }
+export function createMongoDBAdapter() {
+  let mongodb = null;
+  let client = null;
+  let db = null;
 
   /**
    * Initialize MongoDB module
@@ -21,272 +20,216 @@ export class MongoDBAdapter {
    * @private
    * @returns {Promise<void>}
    */
-  async initializeMongoDB() {
-    if (!this.mongodb) {
+  async function initializeMongoDB() {
+    if (!mongodb) {
       try {
-        // Try to import mongodb (peer dependency)
         const mongoModule = await import('mongodb');
-        this.mongodb = mongoModule;
+        mongodb = mongoModule;
       } catch {
-        throw new Error('mongodb package is required for MongoDB adapter. Install with: npm install mongodb');
+        throw new Error('Failed to load mongodb module. Make sure to install it: npm install mongodb');
       }
     }
   }
 
   /**
-   * Create connection pool
+   * Connect to the database
    * 
    * @param {Object} config - Database configuration
-   * @returns {Promise<Object>} Connection pool (MongoDB client)
+   * @param {string} config.url - MongoDB connection URL
+   * @param {string} config.database - Database name
+   * @param {Object} [config.options] - MongoDB client options
+   * @returns {Promise<Object>} The database adapter instance
    */
-  async createPool(config) {
-    await this.initializeMongoDB();
-    
-    const uri = this.buildConnectionUri(config);
-    
-    const clientOptions = {
-      minPoolSize: config.pool.min,
-      maxPoolSize: config.pool.max,
-      maxIdleTimeMS: config.pool.idleTimeoutMillis,
-      serverSelectionTimeoutMS: config.pool.acquireTimeoutMillis,
-      socketTimeoutMS: config.pool.createTimeoutMillis
-    };
-
-    const client = new this.mongodb.MongoClient(uri, clientOptions);
-    await client.connect();
-    
-    // Test connection
-    await client.db(config.database).admin().ping();
-    
-    return {
-      client,
-      database: client.db(config.database),
-      config
-    };
-  }
-
-  /**
-   * Build MongoDB connection URI
-   * 
-   * @private
-   * @param {Object} config - Database configuration
-   * @returns {string} MongoDB URI
-   */
-  buildConnectionUri(config) {
-    let uri = 'mongodb://';
-    
-    if (config.username && config.password) {
-      uri += `${encodeURIComponent(config.username)}:${encodeURIComponent(config.password)}@`;
-    }
-    
-    uri += `${config.host}:${config.port}/${config.database}`;
-    
-    return uri;
-  }
-
-  /**
-   * Test database connection
-   * 
-   * @param {Object} pool - Connection pool
-   * @returns {Promise<void>}
-   */
-  async testConnection(pool) {
-    await pool.database.admin().ping();
-  }
-
-  /**
-   * Execute database query (MongoDB operations)
-   * 
-   * @param {Object} pool - Connection pool
-   * @param {string} operation - MongoDB operation (find, insertOne, updateOne, etc.)
-   * @param {Array} [params=[]] - Operation parameters [collection, query, options]
-   * @param {Object} [options={}] - Query options
-   * @returns {Promise<Object>} Query result
-   */
-  async query(pool, operation, params = [], options = {}) {
-    const [collectionName, query, operationOptions = {}] = params;
-    
-    if (!collectionName) {
-      throw new Error('Collection name is required for MongoDB operations');
-    }
-    
-    const collection = pool.database.collection(collectionName);
+  async function connect(config) {
+    await initializeMongoDB();
     
     try {
-      let result;
-      
-      switch (operation.toLowerCase()) {
-        case 'find':
-          if (options.single) {
-            result = await collection.findOne(query || {}, operationOptions);
-            return result;
-          } else {
-            const cursor = collection.find(query || {}, operationOptions);
-            const rows = await cursor.toArray();
-            return {
-              rows,
-              rowCount: rows.length
-            };
-          }
-          
-        case 'insertone':
-          result = await collection.insertOne(query, operationOptions);
-          return {
-            insertId: result.insertedId,
-            affectedRows: result.acknowledged ? 1 : 0,
-            rowCount: result.acknowledged ? 1 : 0
-          };
-          
-        case 'insertmany':
-          result = await collection.insertMany(query, operationOptions);
-          return {
-            insertIds: result.insertedIds,
-            affectedRows: result.insertedCount,
-            rowCount: result.insertedCount
-          };
-          
-        case 'updateone':
-          result = await collection.updateOne(query, operationOptions.update || {}, operationOptions);
-          return {
-            affectedRows: result.modifiedCount,
-            rowCount: result.modifiedCount,
-            matchedCount: result.matchedCount
-          };
-          
-        case 'updatemany':
-          result = await collection.updateMany(query, operationOptions.update || {}, operationOptions);
-          return {
-            affectedRows: result.modifiedCount,
-            rowCount: result.modifiedCount,
-            matchedCount: result.matchedCount
-          };
-          
-        case 'deleteone':
-          result = await collection.deleteOne(query, operationOptions);
-          return {
-            affectedRows: result.deletedCount,
-            rowCount: result.deletedCount
-          };
-          
-        case 'deletemany':
-          result = await collection.deleteMany(query, operationOptions);
-          return {
-            affectedRows: result.deletedCount,
-            rowCount: result.deletedCount
-          };
-          
-        case 'aggregate':
-          const pipeline = query || [];
-          const cursor = collection.aggregate(pipeline, operationOptions);
-          const rows = await cursor.toArray();
-          return {
-            rows,
-            rowCount: rows.length
-          };
-          
-        case 'count':
-        case 'countdocuments':
-          const count = await collection.countDocuments(query || {}, operationOptions);
-          return {
-            count,
-            rowCount: 1,
-            rows: [{ count }]
-          };
-          
-        default:
-          throw new Error(`Unsupported MongoDB operation: ${operation}`);
-      }
-      
+      client = new mongodb.MongoClient(config.url, config.options || {});
+      await client.connect();
+      db = client.db(config.database);
+      return instance;
     } catch (error) {
-      throw new Error(`MongoDB operation failed: ${error.message}`);
+      throw new Error(`Failed to connect to MongoDB: ${error.message}`);
     }
   }
 
   /**
-   * Start database transaction (MongoDB session)
+   * Execute a query on a collection
    * 
-   * @param {Object} pool - Connection pool
-   * @param {Object} [options={}] - Transaction options
-   * @returns {Promise<Object>} Transaction object
+   * @param {string} collectionName - Name of the collection
+   * @param {Object} query - Query object
+   * @param {Object} [options] - Query options
+   * @returns {Promise<Array<Object>>} Query results
    */
-  async transaction(pool, options = {}) {
-    const session = pool.client.startSession();
-    
-    // Start transaction
-    session.startTransaction(options);
+  async function query(collectionName, query = {}, options = {}) {
+    if (!db) {
+      throw new Error('Database connection not established. Call connect() first.');
+    }
 
-    const transaction = {
-      session,
-      pool,
-      isCommitted: false,
-      isRolledBack: false,
-
-      query: async (operation, params, queryOptions) => {
-        if (transaction.isCommitted || transaction.isRolledBack) {
-          throw new Error('Cannot execute query on completed transaction');
-        }
-        
-        // Add session to operation options
-        const [collectionName, query, operationOptions = {}] = params;
-        const sessionOptions = { ...operationOptions, session };
-        
-        return await this.query(pool, operation, [collectionName, query, sessionOptions], queryOptions);
-      },
-
-      commit: async () => {
-        if (transaction.isCommitted || transaction.isRolledBack) {
-          throw new Error('Transaction already completed');
-        }
-
-        try {
-          await session.commitTransaction();
-          transaction.isCommitted = true;
-        } finally {
-          await session.endSession();
-        }
-      },
-
-      rollback: async () => {
-        if (transaction.isCommitted || transaction.isRolledBack) {
-          throw new Error('Transaction already completed');
-        }
-
-        try {
-          await session.abortTransaction();
-          transaction.isRolledBack = true;
-        } finally {
-          await session.endSession();
-        }
+    try {
+      const collection = db.collection(collectionName);
+      const cursor = collection.find(query, options);
+      
+      if (options.sort) {
+        cursor.sort(options.sort);
       }
-    };
-
-    return transaction;
+      
+      if (options.limit) {
+        cursor.limit(options.limit);
+      }
+      
+      if (options.skip) {
+        cursor.skip(options.skip);
+      }
+      
+      if (options.projection) {
+        cursor.project(options.projection);
+      }
+      
+      return cursor.toArray();
+    } catch (error) {
+      throw new Error(`MongoDB query error: ${error.message}`);
+    }
   }
 
   /**
-   * Get pool statistics
+   * Execute a database command
    * 
-   * @param {Object} pool - Connection pool
-   * @returns {Object} Pool statistics
+   * @param {Object} command - Database command
+   * @returns {Promise<Object>} Command result
    */
-  getPoolStats(pool) {
-    // MongoDB doesn't expose detailed pool stats in the same way
-    // Return basic connection info
-    return {
-      connected: pool.client.topology && pool.client.topology.isConnected(),
-      database: pool.config.database,
-      host: pool.config.host,
-      port: pool.config.port
-    };
+  async function execute(command) {
+    if (!db) {
+      throw new Error('Database connection not established. Call connect() first.');
+    }
+
+    try {
+      return await db.command(command);
+    } catch (error) {
+      throw new Error(`MongoDB command error: ${error.message}`);
+    }
   }
 
   /**
-   * Close connection pool
+   * Begin a transaction
    * 
-   * @param {Object} pool - Connection pool
+   * @returns {Promise<Object>} Session object for the transaction
+   */
+  async function beginTransaction() {
+    if (!client) {
+      throw new Error('Database connection not established. Call connect() first.');
+    }
+
+    const session = client.startSession();
+    session.startTransaction();
+    return session;
+  }
+
+  /**
+   * Commit a transaction
+   * 
+   * @param {Object} session - The session object from beginTransaction
    * @returns {Promise<void>}
    */
-  async closePool(pool) {
-    await pool.client.close();
+  async function commit(session) {
+    if (!session) {
+      throw new Error('No active transaction session');
+    }
+
+    try {
+      await session.commitTransaction();
+    } finally {
+      await session.endSession();
+    }
   }
+
+  /**
+   * Rollback a transaction
+   * 
+   * @param {Object} session - The session object from beginTransaction
+   * @returns {Promise<void>}
+   */
+  async function rollback(session) {
+    if (!session) {
+      throw new Error('No active transaction session');
+    }
+
+    try {
+      await session.abortTransaction();
+    } finally {
+      await session.endSession();
+    }
+  }
+
+  /**
+   * Disconnect from the database
+   * 
+   * @returns {Promise<void>}
+   */
+  async function disconnect() {
+    if (client) {
+      await client.close();
+      client = null;
+      db = null;
+    }
+  }
+
+  /**
+   * Get the underlying database connection
+   * 
+   * @returns {Object} The database connection
+   */
+  function getConnection() {
+    if (!db) {
+      throw new Error('Database connection not established. Call connect() first.');
+    }
+    return db;
+  }
+
+  /**
+   * Ping the database to check if connection is alive
+   * 
+   * @returns {Promise<boolean>} True if connection is alive
+   */
+  async function ping() {
+    try {
+      await db.command({ ping: 1 });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Escape a value for MongoDB queries
+   * 
+   * @param {*} value - Value to escape
+   * @returns {*} Escaped value
+   */
+  function escape(value) {
+    // MongoDB driver handles escaping internally
+    return value;
+  }
+
+  // Public API
+  const instance = {
+    connect,
+    query,
+    execute,
+    beginTransaction,
+    commit,
+    rollback,
+    disconnect,
+    getConnection,
+    ping,
+    escape,
+    
+    // Alias for backward compatibility
+    run: execute
+  };
+
+  return instance;
 }
+
+// For backward compatibility
+export const MongoDBAdapter = { create: createMongoDBAdapter };

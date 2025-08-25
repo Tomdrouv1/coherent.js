@@ -2,320 +2,198 @@
  * Pure Object-based Query Builder for Coherent.js Database Layer
  * 
  * @fileoverview Provides pure JavaScript object structure for building database queries
+ * with a declarative, object-based approach.
  */
 
 /**
- * QueryBuilder - Build and execute database queries using pure JavaScript object configuration
+ * Creates a database query configuration object
  * 
- * This class allows developers to configure database queries using pure JS object structure,
- * providing a more intuitive and flexible approach consistent with Coherent.js philosophy.
+ * @typedef {Object} QueryConfig
+ * @property {string} [table] - The table to query
+ * @property {string|string[]} [select] - Columns to select
+ * @property {Object} [where] - Query conditions
+ * @property {Object} [orderBy] - Sort configuration
+ * @property {number} [limit] - Maximum number of results
+ * @property {number} [offset] - Number of rows to skip
+ * @property {Object} [insert] - Data to insert
+ * @property {Object} [update] - Data to update
+ * @property {boolean} [delete] - Whether to delete
+ */
+
+/**
+ * Creates a query configuration object
+ * 
+ * @param {QueryConfig} config - Query configuration
+ * @returns {QueryConfig} The query configuration object
  * 
  * @example
- * const queryConfig = {
+ * // Basic select
+ * const userQuery = createQuery({
+ *   table: 'users',
  *   select: ['id', 'name', 'email'],
- *   where: {
- *     active: true,
- *     age: { '>': 18 },
- *     role: { 'in': ['admin', 'moderator'] },
- *     created_at: { 'between': ['2023-01-01', '2023-12-31'] }
- *   },
- *   orderBy: { created_at: 'DESC', name: 'ASC' },
- *   limit: 10,
- *   offset: 20
- * };
+ *   where: { active: true },
+ *   orderBy: { created_at: 'DESC' },
+ *   limit: 10
+ * });
  * 
- * const users = await QueryBuilder.execute(db, queryConfig);
+ * // Insert
+ * const insertQuery = createQuery({
+ *   table: 'users',
+ *   insert: { name: 'John', email: 'john@example.com' }
+ * });
+ * 
+ * // Update
+ * const updateQuery = createQuery({
+ *   table: 'users',
+ *   update: { last_login: new Date() },
+ *   where: { id: 1 }
+ * });
+ * 
+ * // Delete
+ * const deleteQuery = createQuery({
+ *   table: 'users',
+ *   where: { inactive_days: { '>': 365 } },
+ *   delete: true
+ * });
  */
-export class QueryBuilder {
-  constructor(db) {
-    this.db = db;
-    this.tableName = null;
-    this.queryConfig = {};
-  }
-
-  /**
-   * Execute a query using object configuration
-   * 
-   * @param {DatabaseManager} db - Database manager instance
-   * @param {Object} config - Query configuration object
-   * @returns {Promise<*>} Query result
-   */
-  static async execute(db, config) {
-    const qb = this.buildFromConfig(db, config);
-    return await qb.execute();
-  }
-
-  /**
-   * Execute the configured query
-   * 
-   * @returns {Promise<*>} Query result
-   */
-  async execute() {
-    const sql = this.buildSQL();
-    return await this.db.query(sql, this.queryConfig.params || []);
-  }
-
-  /**
-   * Build SQL from configuration
-   * 
-   * @returns {string} SQL query string
-   */
-  buildSQL() {
-    const config = this.queryConfig;
-    
-    if (config.select) {
-      return this.buildSelectSQL();
-    } else if (config.insert) {
-      return this.buildInsertSQL();
-    } else if (config.update) {
-      return this.buildUpdateSQL();
-    } else if (config.delete) {
-      return this.buildDeleteSQL();
-    }
-    
-    throw new Error('Invalid query configuration');
-  }
-
-  /**
-   * Build SELECT SQL
-   */
-  buildSelectSQL() {
-    const config = this.queryConfig;
-    const columns = Array.isArray(config.select) ? config.select.join(', ') : config.select;
-    let sql = `SELECT ${columns} FROM ${this.tableName}`;
-    
-    if (config.where) {
-      sql += ` WHERE ${this.buildWhereSQL(config.where)}`;
-    }
-    
-    if (config.orderBy) {
-      sql += ` ORDER BY ${this.buildOrderBySQL(config.orderBy)}`;
-    }
-    
-    if (config.limit) {
-      sql += ` LIMIT ${config.limit}`;
-    }
-    
-    return sql;
-  }
-
-  /**
-   * Build INSERT SQL
-   */
-  buildInsertSQL() {
-    const config = this.queryConfig;
-    const data = config.insert;
-    const columns = Object.keys(data).join(', ');
-    const values = Object.values(data).map(() => '?').join(', ');
-    
-    this.queryConfig.params = Object.values(data);
-    return `INSERT INTO ${this.tableName} (${columns}) VALUES (${values})`;
-  }
-
-  /**
-   * Build UPDATE SQL
-   */
-  buildUpdateSQL() {
-    const config = this.queryConfig;
-    const data = config.update;
-    const sets = Object.keys(data).map(key => `${key} = ?`).join(', ');
-    
-    this.queryConfig.params = Object.values(data);
-    let sql = `UPDATE ${this.tableName} SET ${sets}`;
-    
-    if (config.where) {
-      sql += ` WHERE ${this.buildWhereSQL(config.where)}`;
-    }
-    
-    return sql;
-  }
-
-  /**
-   * Build DELETE SQL
-   */
-  buildDeleteSQL() {
-    const config = this.queryConfig;
-    let sql = `DELETE FROM ${this.tableName}`;
-    
-    if (config.where) {
-      sql += ` WHERE ${this.buildWhereSQL(config.where)}`;
-    }
-    
-    return sql;
-  }
-
-  /**
-   * Build WHERE clause SQL
-   */
-  buildWhereSQL(where) {
-    const conditions = [];
-    
-    for (const [field, value] of Object.entries(where)) {
-      if (typeof value === 'object' && !Array.isArray(value)) {
-        for (const [operator, operatorValue] of Object.entries(value)) {
-          conditions.push(`${field} ${operator} ${this.formatValue(operatorValue)}`);
-        }
-      } else {
-        conditions.push(`${field} = ${this.formatValue(value)}`);
-      }
-    }
-    
-    return conditions.join(' AND ');
-  }
-
-  /**
-   * Build ORDER BY clause SQL
-   */
-  buildOrderBySQL(orderBy) {
-    if (typeof orderBy === 'string') {
-      return orderBy;
-    }
-    
-    if (typeof orderBy === 'object') {
-      return Object.entries(orderBy)
-        .map(([field, direction]) => `${field} ${direction}`)
-        .join(', ');
-    }
-    
-    return '';
-  }
-
-  /**
-   * Format value for SQL
-   */
-  formatValue(value) {
-    if (typeof value === 'string') {
-      return `'${value.replace(/'/g, "''")}'`;
-    }
-    if (value === null) {
-      return 'NULL';
-    }
-    return value;
-  }
-
-  /**
-   * Build QueryBuilder instance from configuration object
-   * 
-   * @param {DatabaseManager} db - Database manager instance
-   * @param {Object} config - Query configuration object
-   * @returns {QueryBuilder} Configured query builder
-   */
-  static buildFromConfig(db, config) {
-    const qb = new QueryBuilder(db);
-    
-    // Store table name and configuration
-    if (config.from) {
-      qb.tableName = config.from;
-    }
-    
-    qb.queryConfig = { ...config };
-    return qb;
-  }
-
+export function createQuery(config) {
+  return { ...config };
 }
 
 /**
- * Query configuration examples and patterns
+ * Executes a query using the provided configuration
+ * 
+ * @param {Object} db - Database connection/manager
+ * @param {QueryConfig} query - Query configuration
+ * @returns {Promise<*>} Query result
  */
-export const QueryExamples = {
-  // Basic SELECT with conditions
-  basicSelect: {
-    select: ['id', 'name', 'email'],
-    from: 'users',
-    where: {
-      active: true,
-      role: 'admin'
-    },
-    orderBy: { created_at: 'DESC' },
-    limit: 10
-  },
+export async function executeQuery(db, query) {
+  const { sql, params } = buildSQL(query);
+  return await db.query(sql, params);
+}
 
-  // Complex WHERE with operators
-  complexWhere: {
-    select: '*',
-    from: 'products',
-    where: {
-      price: { '>': 100, '<': 1000 },
-      category: { 'in': ['electronics', 'books'] },
-      name: { 'like': '%phone%' },
-      created_at: { 'between': ['2023-01-01', '2023-12-31'] },
-      deleted_at: { 'isNull': true }
-    }
-  },
-
-  // OR conditions
-  orConditions: {
-    select: ['id', 'name'],
-    from: 'users',
-    where: {
-      $or: [
-        { role: 'admin' },
-        { role: 'moderator' },
-        { permissions: { 'like': '%manage%' } }
-      ]
-    }
-  },
-
-  // JOIN operations
-  withJoins: {
-    select: ['u.name', 'p.title', 'c.name as category'],
-    from: 'users u',
-    join: [
-      {
-        type: 'INNER',
-        table: 'posts p',
-        on: { local: 'u.id', operator: '=', foreign: 'p.user_id' }
-      },
-      {
-        type: 'LEFT',
-        table: 'categories c',
-        on: { local: 'p.category_id', operator: '=', foreign: 'c.id' }
-      }
-    ],
-    where: { 'u.active': true }
-  },
-
-  // INSERT operation
-  insert: {
-    insert: {
-      name: 'John Doe',
-      email: 'john@example.com',
-      active: true,
-      created_at: new Date()
-    },
-    from: 'users'
-  },
-
-  // UPDATE operation
-  update: {
-    update: {
-      name: 'Jane Doe',
-      updated_at: new Date()
-    },
-    from: 'users',
-    where: { id: 123 }
-  },
-
-  // DELETE operation
-  delete: {
-    delete: true,
-    from: 'users',
-    where: {
-      active: false,
-      last_login: { '<': '2022-01-01' }
-    }
-  },
-
-  // Aggregation with GROUP BY and HAVING
-  aggregation: {
-    select: ['category', 'COUNT(*) as count', 'AVG(price) as avg_price'],
-    from: 'products',
-    where: { active: true },
-    groupBy: ['category'],
-    having: {
-      count: { '>': 5 },
-      avg_price: { '>': 50 }
-    },
-    orderBy: { count: 'DESC' }
+// Internal SQL building functions
+function buildSQL(query) {
+  const params = [];
+  let sql = '';
+  
+  if (query.insert) {
+    sql = buildInsertSQL(query, params);
+  } else if (query.update) {
+    sql = buildUpdateSQL(query, params);
+  } else if (query.delete) {
+    sql = buildDeleteSQL(query, params);
+  } else {
+    sql = buildSelectSQL(query, params);
   }
+  
+  return { sql, params };
+}
+
+function buildSelectSQL(query, params) {
+  const columns = Array.isArray(query.select) 
+    ? query.select.join(', ')
+    : (query.select || '*');
+    
+  let sql = `SELECT ${columns} FROM ${query.table}`;
+  
+  if (query.where) {
+    const whereClause = buildWhereClause(query.where, params);
+    if (whereClause) sql += ` WHERE ${whereClause}`;
+  }
+  
+  if (query.orderBy) {
+    sql += ' ORDER BY ' + Object.entries(query.orderBy)
+      .map(([col, dir]) => `${col} ${dir.toUpperCase()}`)
+      .join(', ');
+  }
+  
+  if (query.limit) sql += ` LIMIT ${query.limit}`;
+  if (query.offset) sql += ` OFFSET ${query.offset}`;
+  
+  return sql;
+}
+
+function buildInsertSQL(query, params) {
+  const columns = Object.keys(query.insert);
+  const placeholders = columns.map(() => '?').join(', ');
+  
+  params.push(...Object.values(query.insert));
+  
+  return `INSERT INTO ${query.table} (${columns.join(', ')}) VALUES (${placeholders})`;
+}
+
+function buildUpdateSQL(query, params) {
+  const setClause = Object.entries(query.update)
+    .map(([col]) => `${col} = ?`)
+    .join(', ');
+    
+  params.push(...Object.values(query.update));
+  
+  let sql = `UPDATE ${query.table} SET ${setClause}`;
+  
+  if (query.where) {
+    const whereClause = buildWhereClause(query.where, params);
+    if (whereClause) sql += ` WHERE ${whereClause}`;
+  }
+  
+  return sql;
+}
+
+function buildDeleteSQL(query, params) {
+  let sql = `DELETE FROM ${query.table}`;
+  
+  if (query.where) {
+    const whereClause = buildWhereClause(query.where, params);
+    if (whereClause) sql += ` WHERE ${whereClause}`;
+  }
+  
+  return sql;
+}
+
+function buildWhereClause(conditions, params, operator = 'AND') {
+  if (!conditions) return '';
+  
+  const clauses = [];
+  
+  for (const [key, value] of Object.entries(conditions)) {
+    if (value === undefined) continue;
+    
+    // Handle logical operators at the top level
+    if (key === '$or' && Array.isArray(value)) {
+      const orClauses = value.map(c => `(${buildWhereClause(c, params)})`);
+      clauses.push(`(${orClauses.join(' OR ')})`);
+    } else if (key === '$and' && Array.isArray(value)) {
+      const andClauses = value.map(c => `(${buildWhereClause(c, params)})`);
+      clauses.push(`(${andClauses.join(' AND ')})`);
+    } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      // Handle field operators like { '>': 10 } or { 'in': [1, 2, 3] }
+      for (const [op, val] of Object.entries(value)) {
+        if (op === 'in' && Array.isArray(val)) {
+          const placeholders = val.map(() => '?').join(', ');
+          clauses.push(`${key} IN (${placeholders})`);
+          params.push(...val);
+        } else if (op === 'between' && Array.isArray(val) && val.length === 2) {
+          clauses.push(`${key} BETWEEN ? AND ?`);
+          params.push(...val);
+        } else if (['>', '>=', '<', '<=', '!=', '<>', 'LIKE'].includes(op)) {
+          clauses.push(`${key} ${op} ?`);
+          params.push(val);
+        }
+      }
+    } else if (value === null) {
+      clauses.push(`${key} IS NULL`);
+    } else {
+      clauses.push(`${key} = ?`);
+      params.push(value);
+    }
+  }
+  
+  return clauses.join(` ${operator} `);
+}
+
+// For backwards compatibility
+export const QueryBuilder = {
+  create: createQuery,
+  execute: executeQuery
 };

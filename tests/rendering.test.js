@@ -11,7 +11,10 @@ const BasicComponent = {
 };
 
 test('Basic component renders correctly', () => {
-  const html = renderToString(BasicComponent);
+  const html = renderToString(BasicComponent, {
+    enableCache: true,
+    enableMonitoring: false
+  });
   strictEqual(html, '<div class="test">Hello, World!</div>');
 });
 
@@ -26,7 +29,10 @@ test('Component with children renders correctly', () => {
     }
   };
   
-  const html = renderToString(ComponentWithChildren);
+  const html = renderToString(ComponentWithChildren, {
+    enableCache: true,
+    enableMonitoring: false
+  });
   match(html, /<div class="parent">/);
   match(html, /<h1>Title<\/h1>/);
   match(html, /<p>Content<\/p>/);
@@ -42,7 +48,10 @@ test('Boolean values render as text', () => {
     }
   };
   
-  const html = renderToString(ComponentWithBoolean);
+  const html = renderToString(ComponentWithBoolean, {
+    enableCache: true,
+    enableMonitoring: false
+  });
   match(html, /<span>true<\/span>/);
   match(html, /<span>false<\/span>/);
 });

@@ -13,13 +13,15 @@ import {
     renderToString,
     renderBatch,
     renderToChunks,
-    renderToStream, // deprecated - kept for backward compatibility
     renderWithTiming,
     precompileComponent,
     getCache,
     resetCache,
     getRenderingStats
 } from './rendering/html-renderer.js';
+
+// Cache management
+import { createCacheManager } from './performance/cache-manager.js';
 
 // Streaming capabilities
 import {
@@ -62,16 +64,17 @@ import { CacheManager } from './performance/cache-manager.js';
 // Database layer
 import {
   DatabaseManager,
+  createQuery,
+  executeQuery,
   QueryBuilder,
-  Model,
-  Migration,
+  createModel,
+  createMigration,
   withDatabase,
   PostgreSQLAdapter,
   MySQLAdapter,
   SQLiteAdapter,
   MongoDBAdapter,
   createConnection,
-  createModel,
   runMigrations,
   DEFAULT_DB_CONFIG,
   setupDatabase
@@ -128,9 +131,9 @@ class Coherent {
 
         // Initialize cache if enabled
         if (this.options.enableCache) {
-            this.cache = new CacheManager({
+            this.cache = createCacheManager({
                 maxSize: this.options.cacheSize,
-                ttl: this.options.cacheTTL
+                ttlMs: this.options.cacheTTL
             });
         }
 
@@ -348,20 +351,30 @@ class Coherent {
     clearCache() {
         if (this.cache) {
             this.cache.clear();
+            return true;
         }
-        resetCache();
-        return this;
+        return false;
     }
 
     getCacheStats() {
-        return this.cache ? this.cache.getStats() : null;
+        if (!this.cache) {
+            return {
+                enabled: false,
+                size: 0,
+                hits: 0,
+                misses: 0,
+                hitRate: 0
+            };
+        }
+        return this.cache.getStats();
     }
 
     optimizeCache() {
         if (this.cache) {
-            this.cache.optimize('component');
+            this.cache.cleanup();
+            return true;
         }
-        return this;
+        return false;
     }
 
     /**
@@ -444,6 +457,21 @@ export function createCoherent(options = {}) {
 }
 
 /**
+ * Factory function to create a DatabaseManager instance
+ * @param {Object} config - Database configuration
+ * @returns {DatabaseManager} Database manager instance
+ * 
+ * @example
+ * const db = createDatabaseManager({
+ *   type: 'sqlite',
+ *   database: ':memory:'
+ * });
+ */
+export function createDatabaseManager(config) {
+    return new DatabaseManager(config);
+}
+
+/**
  * Default instance for quick usage
  */
 export const coherent = new Coherent();
@@ -459,7 +487,6 @@ export {
     renderToString,
     renderBatch,
     renderToChunks,
-    renderToStream, // deprecated
     renderWithTiming,
 
     // Streaming
@@ -481,6 +508,14 @@ export {
     withProps,
     memo,
     lazy,
+
+    // Database - Factory functions (recommended)
+    createQuery,
+    executeQuery,
+
+    // Database - Direct class/object access (for advanced usage)
+    DatabaseManager,
+    QueryBuilder,
 
     // Utilities
     validateComponent,
@@ -541,8 +576,9 @@ export const components = {
     isCoherentObject
 };
 
-// Utilities bundle
+// Utilities bundle - Pure JS object approach
 export const utils = {
+    // Core utilities
     extractProps,
     hasChildren,
     normalizeChildren,
@@ -554,18 +590,24 @@ export const utils = {
     mergeProps,
     getNestedValue,
     setNestedValue,
-    DatabaseManager,
-    QueryBuilder,
-    Model,
-    Migration,
+    
+    // Database - Factory functions (recommended for pure JS objects)
+    createDatabaseManager,
+    createQuery,
+    executeQuery,
+    createModel,
+    createMigration,
     withDatabase,
+    createConnection,
+    runMigrations,
+    
+    // Database adapters (factory functions)
     PostgreSQLAdapter,
     MySQLAdapter,
     SQLiteAdapter,
     MongoDBAdapter,
-    createConnection,
-    createModel,
-    runMigrations,
+    
+    // Database constants and setup
     DEFAULT_DB_CONFIG,
     setupDatabase,
 };
