@@ -1,60 +1,90 @@
 # 🚀 Coherent.js
 
-A modern, lightweight JavaScript framework for building fast, scalable web applications and APIs with a focus on performance and developer experience.
+A high-performance JavaScript framework for building modern web applications with a focus on speed, simplicity, and developer experience.
 
-## Features
+## ✨ Features
 
 ### Core Framework
 
-- **Component-Based Architecture**: Build reusable UI components with a simple, intuitive API
-- **Server-Side Rendering (SSR)**: Render components on the server for faster initial page loads and better SEO
-- **Streaming SSR**: Stream HTML content for even faster perceived performance
-- **Client-Side Hydration**: Seamlessly transition from server-rendered HTML to interactive client-side components
-- **Performance Monitoring**: Built-in performance tracking and optimization tools
-- **Caching**: Automatic caching with flexible cache management
-- **Memoization**: Smart component memoization to prevent unnecessary re-renders
-- **State Management**: Built-in state management for components
-- **Context API**: Share data across component trees without prop drilling
-- **Express Integration**: First-class support for Express.js applications
-- **Fastify Integration**: Seamless integration with Fastify web framework
-- **Next.js Integration**: Works with Next.js API routes and pages
+- **Lightweight & Fast**: Optimized for performance with minimal overhead
+- **Component-Based**: Build reusable UI components with a simple API
+- **Server-Side Rendering (SSR)**: Built-in SSR for better SEO and performance
+- **Progressive Enhancement**: Graceful fallback to client-side rendering when needed
+- **State Management**: Built-in reactive state management
+- **Routing**: Declarative client-side routing
+- **Build Tooling**: Works with modern build tools like Vite and Webpack
 
-### Database & Query Builder
+### Performance Highlights
 
-Coherent.js includes a powerful, type-safe query builder with a pure object-based API:
+- **Fast Hydration**: Efficient client-side hydration
+- **Optimized Updates**: Smart re-rendering and DOM updates
+- **Tree-shaking Support**: Only include what you use
+- **Small Bundle Size**: Minimal footprint for faster loading
 
-```javascript
-import { createQuery, executeQuery } from 'coherent/database';
+## 📦 Packages
 
-// Create and execute a query
-const query = createQuery({
-  table: 'users',
-  select: ['id', 'name', 'email'],
-  where: { 
-    active: true,
-    $or: [
-      { role: 'admin' },
-      { role: 'moderator' }
-    ]
-  },
-  orderBy: { created_at: 'DESC' },
-  limit: 10
-});
+Coherent.js is distributed as a collection of packages:
 
-const result = await executeQuery(db, query);
+- `@coherentjs/core`: Core framework with component system and state management
+- `@coherentjs/router`: Client-side routing solution
+- `@coherentjs/ssr`: Server-side rendering utilities
+- `@coherentjs/hmr`: Hot Module Replacement support
+
+## 🚀 Getting Started
+
+### Installation
+
+```bash
+# Using npm
+npm install @coherentjs/core
+
+# Using yarn
+yarn add @coherentjs/core
+
+# Using pnpm
+pnpm add @coherentjs/core
 ```
 
-**Features:**
-- Pure object-based API for better type safety and composition
-- Supports all CRUD operations (SELECT, INSERT, UPDATE, DELETE)
-- Complex query building with nested conditions
-- Parameterized queries to prevent SQL injection
-- Database-agnostic with adapter support for PostgreSQL, MySQL, SQLite, and MongoDB
-- Backwards compatible with existing code
+### Basic Usage
 
-### API Framework
+```jsx
+// App.jsx
+import { createComponent, useState } from '@coherentjs/core';
 
-Coherent.js now includes a comprehensive API framework for building REST, RPC, and GraphQL APIs:
+export const Counter = createComponent(() => {
+  const [count, setCount] = useState(0);
+  
+  return {
+    render: () => (
+      <div class="counter">
+        <h2>Count: {count}</h2>
+        <button onclick={() => setCount(c => c + 1)}>Increment</button>
+      </div>
+    )
+  };
+});
+
+// Client-side hydration
+import { hydrate } from '@coherentjs/core';
+import { Counter } from './App';
+
+hydrate(Counter, document.getElementById('app'));
+```
+
+### Server-Side Rendering (SSR)
+
+```js
+// server.js
+import { renderToString } from '@coherentjs/core/ssr';
+import { App } from './App';
+
+const html = renderToString(App);
+// Send this HTML to the client
+```
+
+## 🔌 API Framework
+
+Coherent.js includes a comprehensive API framework for building REST, RPC, and GraphQL APIs:
 
 - **API Router**: Lightweight routing system with all HTTP methods
 - **Validation**: Schema-based request validation with JSON Schema
@@ -64,73 +94,67 @@ Coherent.js now includes a comprehensive API framework for building REST, RPC, a
 - **Middleware**: Extensible middleware system for authentication, logging, CORS, etc.
 - **Adapters**: Pre-built adapters for REST, RPC, and GraphQL patterns
 
-## Installation
+## 📦 Installation
 
 ```bash
-npm install @coherent/core
+# Core package
+npm install @coherentjs/core
+
+# Additional integrations (optional)
+npm install @coherentjs/express @coherentjs/fastify @coherentjs/api
 ```
 
-Note: The package uses scoped names. Install `@coherent/core` for the main framework, with additional packages available for specific integrations:
-- `@coherent/express` - Express.js integration
-- `@coherent/fastify` - Fastify integration
-- `@coherent/api` - API framework
+### Available Packages
 
-## Quick Start
+- `@coherentjs/core` - Core framework with component system and state management
+- `@coherentjs/express` - Express.js integration
+- `@coherentjs/fastify` - Fastify integration
+- `@coherentjs/api` - API framework utilities
 
-### UI Components
+## 🚀 Quick Start
 
-```javascript
-import { createComponent, renderToString } from '@coherent/core';
+### 1. Create a Simple Component
 
-const HelloWorld = createComponent(() => ({
-  div: { 
-    className: 'hello',
-    children: [
-      { h1: { text: 'Hello, World!' } },
-      { p: { text: 'Welcome to Coherent.js' } }
-    ]
-  }
-}));
+```jsx
+// components/HelloWorld.jsx
+import { createComponent } from '@coherentjs/core';
 
-// Render to HTML string
-const html = renderToString(HelloWorld());
-console.log(html);
-// Output: <div class="hello"><h1>Hello, World!</h1><p>Welcome to Coherent.js</p></div>
+export const HelloWorld = createComponent(() => {
+  return {
+    render: () => (
+      <div className="hello">
+        <h1>Hello, World!</h1>
+        <p>Welcome to Coherent.js</p>
+      </div>
+    )
+  };
+});
 ```
 
-### Using with Express.js
+### 2. Server-Side Rendering
 
-```javascript
+```js
+// server.js
 import express from 'express';
-import { createComponent, renderToString } from '@coherent/core';
-import { setupCoherentExpress, createCoherentHandler } from '@coherent/express';
+import { renderToString } from '@coherentjs/core/ssr';
+import { HelloWorld } from './components/HelloWorld';
 
 const app = express();
 
-const HomePage = createComponent(({ name = 'World' }) => ({
-  html: {
-    children: [
-      {
-        head: {
-          children: [
-            { title: { text: 'Coherent.js App' } }
-          ]
-        }
-      },
-      {
-        body: {
-          children: [
-            { h1: { text: `Hello, ${name}!` } },
-            { p: { text: 'Welcome to your Coherent.js application' } }
-          ]
-        }
-      }
-    ]
-  }
-}));
-
 app.get('/', (req, res) => {
-  const html = renderToString(HomePage({ name: 'Coherent Developer' }));
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Coherent.js App</title>
+      </head>
+      <body>
+        <div id="root">${renderToString(HelloWorld())}</div>
+        <script src="/client.js" type="module"></script>
+      </body>
+    </html>
+  `;
+  
   res.send(html);
 });
 
@@ -139,15 +163,27 @@ app.listen(3000, () => {
 });
 ```
 
-### API Framework
+### 3. Client-Side Hydration
 
-```javascript
-import { createApiRouter, withValidation } from '@coherent/api';
+```jsx
+// client.js
+import { hydrate } from '@coherentjs/core';
+import { HelloWorld } from './components/HelloWorld';
 
-// Create an API router
+hydrate(HelloWorld, document.getElementById('root'));
+```
+
+## 🛠️ API Framework
+
+### Basic API Endpoint
+
+```js
+// api/users.js
+import { createApiRouter, withValidation } from '@coherentjs/api';
+
 const router = createApiRouter();
 
-// Define validation schema
+// Validation schema
 const userSchema = {
   type: 'object',
   properties: {
@@ -157,17 +193,22 @@ const userSchema = {
   required: ['name', 'email']
 };
 
-// Define routes
+// GET /api/users
 router.get('/users', (req, res) => {
   return { users: [] };
 });
 
+// POST /api/users
 router.post('/users', 
   withValidation(userSchema),
   (req, res) => {
     const { name, email } = req.body;
     // Create user logic here
     return { user: { id: 1, name, email } };
+  }
+);
+
+export default router;
   }
 );
 
@@ -245,8 +286,6 @@ stream.on('end', () => {
 - [API Reference](docs/api-reference.md) - Complete documentation of all Coherent.js APIs
 - [Migration Guide](docs/migration-guide.md) - Instructions for migrating from React, template engines, and string-based frameworks
 - [Examples](examples/) - Practical examples demonstrating various features
-
-## 🚀 Getting Started
 
 ### Using UI Components
 
@@ -365,84 +404,91 @@ app.listen({ port: 3000 }, (err, address) => {
 
 To use Coherent.js in your own project:
 
-1. Install the package:
-```bash
-npm install @coherent/core
-```
+1. **Install the package**
 
-2. Import and use components:
-```javascript
-import { createComponent, renderToString } from '@coherent/core';
+   ```bash
+   npm install @coherent/core
+   ```
 
-const MyComponent = createComponent(({ message }) => ({
-  div: {
-    className: 'my-component',
-    children: [
-      { h2: { text: message } },
-      { p: { text: 'This is my Coherent.js component!' } }
-    ]
-  }
-}));
+2. **Import and use components**
 
-const html = renderToString(MyComponent({ message: 'Hello from Coherent.js!' }));
-```
+   ```javascript
+   import { createComponent, renderToString } from '@coherent/core';
+   
+   const MyComponent = createComponent(({ message }) => ({
+     div: {
+       className: 'my-component',
+       children: [
+         { h2: { text: message } },
+         { p: { text: 'This is my Coherent.js component!' } }
+       ]
+     }
+   }));
+   
+   const html = renderToString(MyComponent({ message: 'Hello from Coherent.js!' }));
+   ```
 
-3. For API usage:
-```javascript
-import { createApiRouter } from '@coherent/api';
+3. **API usage**
 
-const router = createApiRouter();
+   ```javascript
+   import { createApiRouter } from '@coherentjs/api';
+   
+   // Create a new API router
+   const router = createApiRouter();
+   
+   // Define a simple endpoint
+   router.get('/hello', (req, res) => {
+     return { message: 'Hello from Coherent.js API!' };
+   });
+   
+   export default router;
+   ```
 
-router.get('/hello', (req, res) => {
-  return { message: 'Hello from Coherent.js API!' };
-});
+4. **Express.js integration**
 
-export default router;
-```
+   ```javascript
+   import express from 'express';
+   import { setupCoherentExpress } from '@coherent/express';
+   
+   const app = express();
+   setupCoherentExpress(app);
+   
+   // Now you can return Coherent.js components directly from routes
+   app.get('/', (req, res) => {
+     res.send({
+       html: {
+         children: [
+           { h1: { text: 'Hello from Coherent.js with Express!' } }
+         ]
+       }
+     });
+   });
+   
+   app.listen(3000);
+   ```
 
-4. For Express.js integration:
-```javascript
-import express from 'express';
-import { setupCoherentExpress, createCoherentHandler } from '@coherent/express';
+5. **Fastify integration**
 
-const app = express();
-setupCoherentExpress(app);
-
-// Now you can return Coherent.js components directly from routes
-app.get('/', (req, res) => {
-  res.send({
-    html: {
-      children: [
-        { h1: { text: 'Hello from Coherent.js with Express!' } }
-      ]
-    }
-  });
-});
-
-app.listen(3000);
-```
-
-5. For Fastify integration:
-```javascript
-import fastify from 'fastify';
-import { setupCoherentFastify, createCoherentFastifyHandler } from '@coherent/fastify';
-
-const app = fastify();
-setupCoherentFastify(app);
-
-// Now you can return Coherent.js components directly from routes
-app.get('/', (req, res) => {
-  return {
-    html: {
-      children: [
-        { h1: { text: 'Hello from Coherent.js with Fastify!' } }
-      ]
-    }
-  };
-});
-
-app.listen({ port: 3000 });
-```
+   ```javascript
+   import fastify from 'fastify';
+   import { setupCoherentFastify } from '@coherent/fastify';
+   
+   const app = fastify();
+   setupCoherentFastify(app);
+   
+   // Now you can return Coherent.js components directly from routes
+   app.get('/', (req, res) => {
+     return {
+       html: {
+         children: [
+           { h1: { text: 'Hello from Coherent.js with Fastify!' } }
+         ]
+       }
+     };
+   });
+   
+   app.listen({ port: 3000 });
+   ```
 
 ## 🏗️ Object Structure
 
@@ -510,7 +556,7 @@ npm run demo
 
 ### Project Structure
 
-```
+```bash
 coherent-framework/
 ├── src/
 │   ├── coherent.js              # Main entry point
@@ -555,21 +601,31 @@ coherent-framework/
 └── CHANGELOG.md
 ```
 
-## 🎯 Why Choose Coherent.js?
+## Why Choose Coherent.js?
 
 ### vs JSX/React SSR
+
 - ✅ **No build step required** - Pure JavaScript, no compilation
 - ✅ **Smaller bundle size** - Minimal overhead, maximum performance
 - ✅ **Server-optimized** - Built specifically for SSR from ground up
 - ✅ **Better debugging** - Full object visibility and inspection
 
 ### vs Template Engines (Handlebars, Mustache, etc.)
+
 - ✅ **Type-safe with IDE support** - Full autocomplete and error checking
 - ✅ **Component composition** - Reusable, composable components
 - ✅ **Performance monitoring** - Built-in optimization tools
 - ✅ **Streaming support** - Handle large documents efficiently
 
+### vs Virtual DOM (React, Vue, etc.)
+
+- ✅ **Faster rendering** - No diffing overhead
+- ✅ **Smaller bundle size** - Minimal overhead, maximum performance
+- ✅ **Server-optimized** - Built specifically for SSR from ground up
+- ✅ **Better debugging** - Full object visibility and inspection
+
 ### vs String Concatenation/Template Literals
+
 - ✅ **Automatic HTML escaping** - Built-in XSS protection
 - ✅ **Structured, maintainable code** - Clear object hierarchy
 - ✅ **Component reusability** - DRY principle enforcement
@@ -579,7 +635,7 @@ coherent-framework/
 
 Coherent.js includes built-in security features:
 
-- **Automatic HTML escaping** for all text content
+- **Automatic HTML escaping** - All text content is automatically escaped to prevent XSS attacks
 - **XSS protection** by default for user-generated content
 - **Safe attribute handling** with proper escaping
 - **Void element validation** to prevent malformed HTML
@@ -627,12 +683,14 @@ Coherent.js is designed for speed:
 ## 🗺️ Roadmap
 
 ### Phase 1 (Completed)
+
 - [x] Core object-to-HTML rendering
 - [x] Performance monitoring system
 - [x] Streaming support
 - [x] Component utilities (memo, compose, etc.)
 
 ### Phase 2 (Current Focus)
+
 - [x] TypeScript definitions - Full type safety
 - [x] Client-side hydration - Progressive enhancement
 - [x] Hot reload development server - Faster development
@@ -643,16 +701,11 @@ Coherent.js is designed for speed:
 - [ ] Collect early user/developer feedback
 
 ### Phase 3 (Future)
+
 - [ ] IDE plugins - Syntax highlighting and autocomplete
 - [ ] Component library ecosystem - Reusable UI components
 - [ ] Advanced optimizations - Tree shaking, code splitting
 - [ ] Testing utilities - Component testing framework
-
-### Phase 3 (Future)
-- [ ] **IDE plugins** - Syntax highlighting and autocomplete
-- [ ] **Component library ecosystem** - Reusable UI components
-- [ ] **Advanced optimizations** - Tree shaking, code splitting
-- [ ] **Testing utilities** - Component testing framework
 
 ## 🤝 Contributing
 
@@ -686,14 +739,14 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - **Documentation**: This README and code examples
 - **GitHub Issues**: Bug reports and feature requests
 - **GitHub Discussions**: Questions and community support
-- **Email**: thomas.drouvin@gmail.com (for security issues)
+- **Email**: [thomas.drouvin@gmail.com](mailto:thomas.drouvin@gmail.com) (for security issues)
 
 ---
 
-<div align="center">
+<!-- CENTER_START -->
 
 **Coherent.js** - Pure objects, pure performance, pure simplicity. 🚀
 
 [Get Started](#-quick-start) • [API Reference](docs/api-reference.md) • [Examples](examples/) • [Contribute](#-contributing)
 
-</div>
+<!-- CENTER_END -->
