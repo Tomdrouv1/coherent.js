@@ -1,6 +1,6 @@
 {
   "name": "@coherentjs/core",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "A lightweight, high-performance server-side rendering framework using pure JavaScript objects. Features include streaming renderer, performance monitoring, component composition, memoization, and integrations with Express.js, Fastify, and Next.js.",
   "main": "src/coherent.js",
   "type": "module",
