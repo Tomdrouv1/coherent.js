@@ -99,13 +99,6 @@ async function initializeDatabase() {
 // Initialize the database with our schema
 await initializeDatabase();
 
-// Helper function to log query results
-const logResults = (title, results) => {
-  console.log(`\n=== ${title} ===`);
-  console.log(JSON.stringify(results, null, 2));
-  return results;
-};
-
 // Helper function to execute queries with the in-memory adapter
 const query = (modelName) => {
   // Get the model definition
@@ -202,17 +195,6 @@ const query = (modelName) => {
 // Create query interfaces for each model
 const User = query('users');
 const Post = query('posts');
-
-// Log database stats
-const logStats = async () => {
-  const store = db.connection.getStore();
-  const stats = await store.getStats();
-  console.log('\n=== Database Stats ===');
-  console.log(`Store: ${store.config.name}`);
-  console.log(`Uptime: ${Math.floor(stats.uptime / 1000)}s`);
-  console.log(`Operations: ${stats.operations}`);
-  console.log(`Items: ${stats.size}`);
-};
 
 console.log('🧪 Testing Pure JavaScript Object Query Structure...\n');
 

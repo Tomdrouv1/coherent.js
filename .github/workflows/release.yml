@@ -32,5 +32,6 @@ jobs:
       
     - name: Publish to npm
       run: pnpm publish --no-git-checks
+      if: github.ref_type == 'tag' && startsWith(github.ref, 'refs/tags/v') && github.repository == 'Tomdrouv1/coherent.js'
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
