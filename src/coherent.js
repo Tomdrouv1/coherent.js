@@ -29,12 +29,18 @@ import {
 
 // DOM rendering capabilities
 import {
-    DOMRenderer,
     renderToDOM
 } from './rendering/dom-renderer.js';
 
-// Import hydrate separately from client module
-import { hydrate } from './client/hydration.js';
+// Import hydration functions
+import { 
+    hydrate, 
+    makeHydratable, 
+    autoHydrate, 
+    hydrateAll, 
+    hydrateBySelector, 
+    enableClientEvents 
+} from './client/hydration.js';
 
 // Configuration utilities
 import {
@@ -52,6 +58,24 @@ import {
 // Performance monitoring and optimization
 import { performanceMonitor } from './performance/monitor.js';
 import { CacheManager } from './performance/cache-manager.js';
+
+// Database layer
+import {
+  DatabaseManager,
+  QueryBuilder,
+  Model,
+  Migration,
+  withDatabase,
+  PostgreSQLAdapter,
+  MySQLAdapter,
+  SQLiteAdapter,
+  MongoDBAdapter,
+  createConnection,
+  createModel,
+  runMigrations,
+  DEFAULT_DB_CONFIG,
+  setupDatabase
+} from './database/index.js';
 
 // Core utilities
 import {
@@ -442,10 +466,14 @@ export {
     createStreamingRenderer,
     streamingUtils,
 
-    // DOM rendering
-    DOMRenderer,
-    renderToDOM,
-    hydrate,
+    // Client-side rendering and hydration
+    renderToDOM, 
+    hydrate, 
+    makeHydratable, 
+    autoHydrate, 
+    hydrateAll, 
+    hydrateBySelector, 
+    enableClientEvents,
 
     // Components
     createComponent,
@@ -525,7 +553,21 @@ export const utils = {
     minifyHtml,
     mergeProps,
     getNestedValue,
-    setNestedValue
+    setNestedValue,
+    DatabaseManager,
+    QueryBuilder,
+    Model,
+    Migration,
+    withDatabase,
+    PostgreSQLAdapter,
+    MySQLAdapter,
+    SQLiteAdapter,
+    MongoDBAdapter,
+    createConnection,
+    createModel,
+    runMigrations,
+    DEFAULT_DB_CONFIG,
+    setupDatabase,
 };
 
 // Performance bundle
@@ -546,7 +588,7 @@ if (typeof window !== 'undefined') {
     window.coherent = coherent;
 
     // Add browser-specific optimizations
-    if ('requestIdleCallback' in window) {
+    if (typeof window !== 'undefined' && window.requestIdleCallback) {
         // Use idle time for cache optimization
         const optimizeInIdle = () => {
             if (coherent.cache) {
