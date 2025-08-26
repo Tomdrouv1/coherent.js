@@ -7,7 +7,7 @@ export function Home() {
         // Hero
         { div: { className: 'hero', children: [
           { h1: { className: 'title', text: 'Coherent.js' } },
-          { p: { className: 'lead', text: 'Lightweight, fast, and simple server-side rendering with object-based components.' } },
+          { p: { className: 'lead', text: 'Fast SSR and hydration with plain JS objects. Minimal API. Maximum clarity.' } },
           { div: { className: 'cta', children: [
             { a: { className: 'button primary', href: 'docs', text: 'Get Started' } },
             { a: { className: 'button', href: 'examples', text: 'Examples' } },
