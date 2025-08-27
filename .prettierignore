@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+packages/*/node_modules/
+
+# Build outputs
+dist/
+build/
+packages/*/dist/
+website/dist/
+
+# Generated files
+*.d.ts
+*.map
+CHANGELOG.md
+
+# Config files that should maintain their formatting
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Documentation that should maintain formatting
+LICENSE
+*.md
+
+# Cache directories
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

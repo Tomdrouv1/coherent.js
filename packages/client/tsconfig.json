@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "../../src",
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM"],
+    "baseUrl": "../../",
+    "paths": {
+      "@coherentjs/core": ["./packages/core/dist"],
+      "@coherentjs/client": ["./packages/client/dist"]
+    }
+  },
+  "include": [
+    "../../src/client/**/*"
+  ],
+  "references": [
+    { "path": "../core" }
+  ]
+}

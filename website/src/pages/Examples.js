@@ -160,6 +160,13 @@ export function Examples({ items = [] } = {}) {
                               },
                             },
                             {
+                              a: {
+                                className: 'button',
+                                href: `/playground/?file=${encodeURIComponent(ex.file)}`,
+                                text: '🧪 Open in Playground',
+                              },
+                            },
+                            {
                               button: {
                                 className: 'button secondary',
                                 text: '📋 Copy',
@@ -184,6 +191,15 @@ export function Examples({ items = [] } = {}) {
                                 target: '_blank',
                                 rel: 'noopener',
                                 text: '🔗 View on GitHub',
+                              },
+                            },
+                            {
+                              a: {
+                                className: 'button secondary',
+                                href: `https://codesandbox.io/p/github/Tomdrouv1/coherent.js/tree/main?file=examples%2F${encodeURIComponent(ex.file)}`,
+                                target: '_blank',
+                                rel: 'noopener',
+                                text: '🧰 Open in CodeSandbox',
                               },
                             },
                           ],

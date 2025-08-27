@@ -1,22 +1,26 @@
 {
-  "name": "@coherentjs/core",
-  "version": "0.2.5",
+  "name": "coherentjs-monorepo",
+  "version": "1.0.0",
+  "private": true,
   "description": "A lightweight, high-performance server-side rendering framework using pure JavaScript objects. Features include streaming renderer, performance monitoring, component composition, memoization, and integrations with Express.js, Fastify, and Next.js.",
-  "main": "src/coherent.js",
   "type": "module",
-  "bin": {
-    "coherent-dev": "scripts/dev-server.js"
-  },
   "packageManager": "pnpm@10.15.0",
   "engines": {
     "node": ">=20.0.0",
     "pnpm": ">=8.0.0"
   },
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "test": "node --test tests/*.test.js",
-    "dev": "coherent-dev",
-    "dev:server": "nodemon",
-    "dev:watch": "node --watch --watch-path=src/dev scripts/dev-server.js",
+    "test": "pnpm run test:unit && pnpm run test:integration",
+    "test:unit": "node --test tests/*.test.js",
+    "test:integration": "pnpm -r run test",
+    "build": "pnpm run build:packages && pnpm run build:types",
+    "build:packages": "pnpm -r --stream run build",
+    "build:types": "tsc --build",
+    "dev": "pnpm run build && pnpm run website:dev",
+    "clean": "pnpm -r run clean && rm -rf dist/",
     "example:basic": "node examples/basic-usage.js",
     "example:components": "node examples/components-test.js",
     "example:performance": "node examples/performance-test.js",
@@ -26,16 +30,27 @@
     "example:hydration": "node examples/hydration-test.js",
     "example:memoization": "node examples/memoization-test.js",
     "example:composition": "node examples/component-composition.js",
-    "lint": "eslint src/ --max-warnings=0",
-    "format": "prettier --write src/ tests/ examples/",
+    "lint": "eslint src/ packages/*/test/ examples/ scripts/ --max-warnings=0",
+    "lint:fix": "eslint src/ packages/*/test/ examples/ scripts/ --fix",
+    "format": "prettier --write src/ tests/ examples/ packages/",
+    "format:check": "prettier --check src/ tests/ examples/ packages/",
     "typecheck": "tsc --noEmit",
     "typecheck:strict": "tsc --noEmit --strict",
-    "build": "tsc && node scripts/build.js",
-    "website:build": "node scripts/build-website.js",
+    "typecheck:packages": "pnpm -r run typecheck",
+    "website:build": "pnpm --filter @coherentjs/client run build && node scripts/build-website.js",
     "website:serve": "node scripts/serve-website.js",
     "website:start": "pnpm run website:build && node scripts/serve-website.js",
     "website:dev": "node scripts/dev-website.js",
-    "prepare": "husky"
+    "release": "pnpm run build && pnpm run test && pnpm changeset publish",
+    "version": "pnpm changeset version",
+    "prepare": "husky",
+    "prepack": "pnpm run build",
+    "security:audit": "pnpm audit --audit-level moderate",
+    "security:update": "pnpm update --latest",
+    "security:check": "pnpm outdated",
+    "perf:analyze": "node scripts/analyze-bundle.mjs",
+    "perf:build": "NODE_ENV=production pnpm build",
+    "perf:benchmark": "node benchmarks/benchmark.js"
   },
   "keywords": [
     "ssr",
@@ -63,12 +78,15 @@
   },
   "homepage": "https://github.com/Tomdrouv1/coherent.js#readme",
   "peerDependencies": {
-    "express": "^4.0.0 || ^5.0.0",
-    "fastify": "^4.0.0 || ^5.0.0",
-    "koa": "^2.0.0 || ^3.0.0",
-    "next": "^13.0.0 || ^14.0.0 || ^15.0.0",
-    "react": "^18.0.0 || ^19.0.0",
-    "sqlite3": "^5.0.0"
+    "express": ">=4.18.0 < 6.0.0",
+    "fastify": ">=4.0.0 < 6.0.0",
+    "koa": ">=2.13.0 < 4.0.0",
+    "mongodb": ">=5.0.0 < 7.0.0",
+    "mysql2": ">=3.0.0 < 4.0.0",
+    "next": ">=13.0.0 < 16.0.0",
+    "pg": ">=8.8.0 < 9.0.0",
+    "react": ">=18.0.0 < 20.0.0",
+    "sqlite3": ">=5.1.0 < 6.0.0"
   },
   "peerDependenciesMeta": {
     "express": {
@@ -88,9 +106,19 @@
     },
     "sqlite3": {
       "optional": true
+    },
+    "mysql2": {
+      "optional": true
+    },
+    "pg": {
+      "optional": true
+    },
+    "mongodb": {
+      "optional": true
     }
   },
   "devDependencies": {
+    "@changesets/cli": "^2.27.9",
     "@commitlint/cli": "19.8.1",
     "@commitlint/config-conventional": "19.8.1",
     "@eslint-community/eslint-utils": "4.7.0",
@@ -100,48 +128,28 @@
     "@eslint/core": "0.15.2",
     "@types/node": "^24.1.0",
     "chokidar": "4.0.3",
+    "concurrently": "^9.1.0",
     "esbuild": "0.25.8",
     "eslint": "^9.32.0",
     "husky": "^9.1.7",
+    "marked": "^12.0.0",
     "next": "15.4.5",
     "prettier": "^3.6.2",
-    "marked": "^12.0.0",
     "react": "19.1.1",
     "react-dom": "19.1.1",
     "typescript": "^5.9.2",
+    "vitest": "^2.1.8",
     "ws": "8.18.3"
   },
-  "files": [
-    "src/",
-    "README.md",
-    "LICENSE"
-  ],
-  "exports": {
-    ".": {
-      "import": "./src/coherent.js",
-      "require": "./src/coherent.js"
-    },
-    "./express": {
-      "import": "./src/express/index.js"
-    },
-    "./koa": {
-      "import": "./src/koa/index.js"
-    },
-    "./nextjs": {
-      "import": "./src/nextjs/index.js"
-    },
-    "./api": {
-      "import": "./src/api/index.js"
-    },
-    "./fastify": {
-      "import": "./src/fastify/coherent-fastify.js"
-    }
-  },
+  "exports": {},
   "pnpm": {
     "peerDependencyRules": {
       "ignoreMissing": [
         "@types/react"
       ]
-    }
+    },
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }

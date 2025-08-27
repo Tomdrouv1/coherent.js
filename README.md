@@ -38,47 +38,70 @@ Coherent.js is distributed as a collection of packages:
 # Using npm
 npm install @coherentjs/core
 
-# Using yarn
+# Using yarn  
 yarn add @coherentjs/core
 
 # Using pnpm
 pnpm add @coherentjs/core
 ```
 
+> **Note**: Coherent.js is currently in development. Once published to npm, you can install individual packages as needed.
+
+### Development Installation
+
+To contribute or test the framework locally:
+
+```bash
+git clone https://github.com/Tomdrouv1/coherent.js.git
+cd coherent.js
+pnpm install
+pnpm build
+pnpm test
+```
+
 ### Basic Usage
 
-```jsx
-// App.jsx
-import { createComponent, useState } from '@coherentjs/core';
+```javascript
+// App.js - Using pure JavaScript objects (no JSX needed!)
+import { createComponent } from '@coherentjs/core';
 
-export const Counter = createComponent(() => {
-  const [count, setCount] = useState(0);
+export const Counter = createComponent(({ initialCount = 0 }) => {
+  let count = initialCount;
   
   return {
-    render: () => (
-      <div class="counter">
-        <h2>Count: {count}</h2>
-        <button onclick={() => setCount(c => c + 1)}>Increment</button>
-      </div>
-    )
+    div: {
+      className: 'counter',
+      children: [
+        { h2: { text: `Count: ${count}` } },
+        { 
+          button: { 
+            text: 'Increment',
+            onclick: () => {
+              count++;
+              // Re-render logic handled by framework
+            }
+          }
+        }
+      ]
+    }
   };
 });
 
 // Client-side hydration
-import { hydrate } from '@coherentjs/core';
-import { Counter } from './App';
+import { hydrate } from '@coherentjs/client';
+import { Counter } from './App.js';
 
-hydrate(Counter, document.getElementById('app'));
+hydrate(Counter({ initialCount: 0 }), document.getElementById('app'));
 ```
 
 ### Server-Side Rendering (SSR)
 
 ```js
 // server.js
-import { renderToString } from '@coherentjs/core/ssr';
-import { App } from './App';
+import { renderToString } from '@coherentjs/core';
+import { Counter } from './App.js';
 
-const html = renderToString(App);
+const html = renderToString(Counter({ initialCount: 5 }));
 // Send this HTML to the client
 ```
 
@@ -97,19 +120,31 @@ Coherent.js includes a comprehensive API framework for building REST, RPC, and G
 ## 📦 Installation
 
 ```bash
-# Core package
+# Core package (required)
 npm install @coherentjs/core
 
-# Additional integrations (optional)
-npm install @coherentjs/express @coherentjs/fastify @coherentjs/api
+# Framework integrations (choose what you need)
+npm install @coherentjs/express      # Express.js integration
+npm install @coherentjs/fastify      # Fastify integration  
+npm install @coherentjs/koa          # Koa integration
+npm install @coherentjs/nextjs       # Next.js integration
+
+# Additional packages
+npm install @coherentjs/api          # API framework utilities
+npm install @coherentjs/database     # Database layer with multiple adapters
+npm install @coherentjs/client       # Client-side hydration
 ```
 
 ### Available Packages
 
 - `@coherentjs/core` - Core framework with component system and state management
+- `@coherentjs/api` - API framework with validation, OpenAPI generation, and error handling
+- `@coherentjs/database` - Database layer with PostgreSQL, MySQL, SQLite, MongoDB adapters
+- `@coherentjs/client` - Client-side hydration and progressive enhancement
 - `@coherentjs/express` - Express.js integration
 - `@coherentjs/fastify` - Fastify integration
-- `@coherentjs/api` - API framework utilities
+- `@coherentjs/koa` - Koa.js integration
+- `@coherentjs/nextjs` - Next.js integration
 
 ## 🚀 Quick Start
 
@@ -209,10 +244,6 @@ router.post('/users',
 );
 
 export default router;
-  }
-);
-
-export default router;
 ```
 
 ### API with Express.js
@@ -285,7 +316,7 @@ stream.on('end', () => {
 
 - [API Reference](docs/api-reference.md) - Complete documentation of all Coherent.js APIs
 - [Migration Guide](docs/migration-guide.md) - Instructions for migrating from React, template engines, and string-based frameworks
-- [Examples](examples/) - Practical examples demonstrating various features
+- [Examples](examples) - Practical examples demonstrating various features
 
 ### Using UI Components
 
@@ -697,7 +728,7 @@ Coherent.js is designed for speed:
 - [x] Framework integrations - Express, Fastify, Next.js adapters
 - [x] Comprehensive API documentation
 - [x] Migration guides and examples
-- [ ] Prepare for npm publication
+- [x] Prepare for npm publication
 - [ ] Collect early user/developer feedback
 
 ### Phase 3 (Future)

@@ -64,6 +64,8 @@ export function formatAttributes(props) {
         if (attributeName.startsWith('on')) {
           // For event handlers, create a unique action identifier
           const actionId = `__coherent_action_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          const DEBUG = (typeof process !== 'undefined' && process && process.env && (process.env.COHERENT_DEBUG === '1' || process.env.NODE_ENV === 'development'))
+            || (typeof window !== 'undefined' && window && window.COHERENT_DEBUG === true);
           
           // Store the function in a global registry that will be available during hydration
           // Check if we're in Node.js or browser environment
@@ -71,31 +73,33 @@ export function formatAttributes(props) {
             // Server-side, store in global for hydration
             if (!global.__coherentActionRegistry) {
               global.__coherentActionRegistry = {};
-              console.log('Initialized global action registry');
+              if (DEBUG) console.log('Initialized global action registry');
             }
             global.__coherentActionRegistry[actionId] = value;
-            console.log(`Added action ${actionId} to global registry, total: ${Object.keys(global.__coherentActionRegistry).length}`);
-            console.log(`Global registry keys: ${Object.keys(global.__coherentActionRegistry).join(', ')}`);
+            if (DEBUG) console.log(`Added action ${actionId} to global registry, total: ${Object.keys(global.__coherentActionRegistry).length}`);
+            if (DEBUG) console.log(`Global registry keys: ${Object.keys(global.__coherentActionRegistry).join(', ')}`);
             
             // Log the global object to see if it's being reset
-            if (typeof global.__coherentActionRegistryLog === 'undefined') {
-              global.__coherentActionRegistryLog = [];
+            if (DEBUG) {
+              if (typeof global.__coherentActionRegistryLog === 'undefined') {
+                global.__coherentActionRegistryLog = [];
+              }
+              global.__coherentActionRegistryLog.push({
+                action: 'add',
+                actionId: actionId,
+                timestamp: Date.now(),
+                registrySize: Object.keys(global.__coherentActionRegistry).length
+              });
             }
-            global.__coherentActionRegistryLog.push({
-              action: 'add',
-              actionId: actionId,
-              timestamp: Date.now(),
-              registrySize: Object.keys(global.__coherentActionRegistry).length
-            });
           } else if (typeof window !== 'undefined') {
             // Browser-side, store in window
             if (!window.__coherentActionRegistry) {
               window.__coherentActionRegistry = {};
-              console.log('Initialized window action registry');
+              if (DEBUG) console.log('Initialized window action registry');
             }
             window.__coherentActionRegistry[actionId] = value;
-            console.log(`Added action ${actionId} to window registry, total: ${Object.keys(window.__coherentActionRegistry).length}`);
-            console.log(`Window registry keys: ${Object.keys(window.__coherentActionRegistry).join(', ')}`);
+            if (DEBUG) console.log(`Added action ${actionId} to window registry, total: ${Object.keys(window.__coherentActionRegistry).length}`);
+            if (DEBUG) console.log(`Window registry keys: ${Object.keys(window.__coherentActionRegistry).join(', ')}`);
           }
           
           // Use data-action and data-event attributes instead of inline JS

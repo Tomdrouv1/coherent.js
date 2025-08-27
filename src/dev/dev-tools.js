@@ -362,7 +362,7 @@ export class DevTools {
                 this.visualizeStructure(child, depth + 1, maxDepth)
             );
             const more = component.length > 3 ? `${indent}  ...${component.length - 3} more` : '';
-            return `${indent}[\n${items.join('\n')}${more ? '\n' + more : ''}\n${indent}]`;
+            return `${indent}[\n${items.join('\n')}${more ? `\n${  more}` : ''}\n${indent}]`;
         }
 
         if (isCoherentObject(component)) {
@@ -427,7 +427,7 @@ export class DevTools {
                 const occurrences = (serialized.match(new RegExp(this.escapeRegex(pattern), 'g')) || []).length;
 
                 if (occurrences > 2) {
-                    patterns.push({ pattern: pattern.substring(0, 50) + '...', occurrences });
+                    patterns.push({ pattern: `${pattern.substring(0, 50)  }...`, occurrences });
                     break; // Found a pattern starting at this position
                 }
             }

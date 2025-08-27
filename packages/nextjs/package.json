@@ -1,0 +1,28 @@
+{
+  "name": "@coherentjs/nextjs",
+  "version": "1.0.1",
+  "description": "Next.js integration for Coherent.js",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "../../src/nextjs/index.d.ts",
+  "exports": { ".": { "import": "./dist/index.js", "require": "./dist/index.cjs" } },
+  "scripts": { 
+    "build": "node build.mjs",
+    "clean": "rm -rf dist/",
+    "test": "node --test test/*.test.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "files": ["dist/", "README.md", "LICENSE"],
+  "engines": { "node": ">=20.0.0" },
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/Tomdrouv1/coherent.js.git" },
+  "peerDependencies": { 
+    "next": ">=13.0.0 < 16.0.0", 
+    "react": ">=18.0.0 < 20.0.0", 
+    "@coherentjs/core": "^1.0.1" 
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

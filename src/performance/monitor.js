@@ -254,8 +254,8 @@ export class PerformanceMonitor {
 
         return {
             direction: trend > 0 ? 'increasing' : trend < 0 ? 'decreasing' : 'stable',
-            rate: Math.abs(trend).toFixed(2) + ' bytes/second',
-            currentHeap: (recent[recent.length - 1].heapUsed / 1024 / 1024).toFixed(2) + 'MB',
+            rate: `${Math.abs(trend).toFixed(2)  } bytes/second`,
+            currentHeap: `${(recent[recent.length - 1].heapUsed / 1024 / 1024).toFixed(2)  }MB`,
             trend: trend
         };
     }
@@ -339,12 +339,12 @@ export class PerformanceMonitor {
         const recentMemory = this.metrics.memoryUsage.slice(-3);
 
         return {
-            currentRenderRate: recent.length > 0 ? (recent.length / 10).toFixed(1) + '/s' : '0/s',
+            currentRenderRate: recent.length > 0 ? `${(recent.length / 10).toFixed(1)  }/s` : '0/s',
             avgRecentRenderTime: recent.length > 0
-                ? (recent.reduce((sum, m) => sum + m.renderTime, 0) / recent.length).toFixed(2) + 'ms'
+                ? `${(recent.reduce((sum, m) => sum + m.renderTime, 0) / recent.length).toFixed(2)  }ms`
                 : '0ms',
             memoryUsage: recentMemory.length > 0
-                ? (recentMemory[recentMemory.length - 1].heapUsed / 1024 / 1024).toFixed(2) + 'MB'
+                ? `${(recentMemory[recentMemory.length - 1].heapUsed / 1024 / 1024).toFixed(2)  }MB`
                 : '0MB',
             cacheHitRate: globalCache.getStats().hitRate,
             activeComponents: this.metrics.componentCounts.size

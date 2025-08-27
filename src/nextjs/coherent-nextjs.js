@@ -136,7 +136,7 @@ export async function createCoherentServerComponent(componentFactory, options = 
     React = await importPeerDependency('react', 'React');
   } catch (error) {
     throw new Error(
-      'Next.js Server Component integration requires React. ' + error.message
+      `Next.js Server Component integration requires React. ${  error.message}`
     );
   }
   
@@ -190,7 +190,7 @@ export async function createCoherentClientComponent(componentFactory, options = 
     React = await importPeerDependency('react', 'React');
   } catch (error) {
     throw new Error(
-      'Next.js Client Component integration requires React. ' + error.message
+      `Next.js Client Component integration requires React. ${  error.message}`
     );
   }
   

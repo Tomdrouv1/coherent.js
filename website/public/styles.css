@@ -78,7 +78,6 @@ a:hover{text-decoration:underline}
 }
 .top-nav{display:flex;align-items:center;gap:8px}
 .top-nav a{padding:6px 10px;border-radius:8px;border:1px solid transparent}
-.top-nav a.active{border-color:var(--accent)}
 .menu-button{display:none;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid var(--border);border-radius:8px;background:#0d1117}
 .menu-button:hover{border-color:var(--accent)}
 .top-nav a{position:relative;margin-left:16px;color:var(--muted);padding:6px 2px;transition:color .15s ease}

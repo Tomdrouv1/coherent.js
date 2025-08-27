@@ -28,6 +28,7 @@ export function Layout({ title = 'Coherent.js', sidebar = [], currentPath = '/',
                 { a: { href: baseHref, className: currentPath === '' ? 'active' : '', text: 'Home' } },
                 { a: { href: 'docs', className: currentPath.startsWith('docs') ? 'active' : '', text: 'Docs' } },
                 { a: { href: 'examples', className: currentPath.startsWith('examples') ? 'active' : '', text: 'Examples' } },
+                { a: { href: 'playground', className: currentPath.startsWith('playground') ? 'active' : '', text: 'Playground' } },
                 { a: { href: 'performance', className: currentPath.startsWith('performance') ? 'active' : '', text: 'Performance' } },
                 { a: { href: 'changelog', className: currentPath.startsWith('changelog') ? 'active' : '', text: 'Changelog' } }
               ] } },

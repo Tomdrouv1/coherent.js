@@ -134,7 +134,7 @@ export function createCoherentHandler(componentFactory, options = {}) {
 export function enhancedExpressEngine(filePath, options, callback) {
   try {
     // Render Coherent.js component from options
-    const html = '<!DOCTYPE html>\n' + renderToString(options);
+    const html = `<!DOCTYPE html>\n${  renderToString(options)}`;
     callback(null, html);
   } catch (error) {
     callback(error);

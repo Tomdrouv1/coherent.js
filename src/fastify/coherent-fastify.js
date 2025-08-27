@@ -23,7 +23,7 @@ export function coherentFastify(fastify, options, done) {
   } = options;
   
   // Add decorator to check if an object is a Coherent.js component
-  fastify.decorateReply('isCoherentObject', function(obj) {
+  fastify.decorateReply('isCoherentObject', (obj) => {
     if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
       return false;
     }

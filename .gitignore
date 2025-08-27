@@ -53,5 +53,31 @@ Thumbs.db
 # Build outputs
 dist/
 build/
+packages/*/dist/
+*.tsbuildinfo
 
+# Cache directories
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+
+# TypeScript
+*.d.ts.map
+tsconfig.tsbuildinfo
+
+# Testing
+coverage/
+.nyc_output/
+junit.xml
+
+# Benchmarks
+benchmarks/results/
+
+# Temporary files
+tmp/
+temp/
+
+# Personal notes
 TODO.md
+NOTES.md

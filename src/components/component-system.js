@@ -1944,7 +1944,8 @@ export function withPropsDebug(component, debugOptions = {}) {
     }, {
         debug: true,
         onError: breakOnError ? () => {
-            debugger
+            // eslint-disable-next-line no-debugger
+            debugger;
         } : undefined,
         onPropsChange: logChanges ? (finalProps, original) => {
             console.log('Props changed:', {from: original, to: finalProps});

@@ -7,6 +7,7 @@ import { renderToString } from '../src/coherent.js';
 import { Layout } from '../website/src/layout/Layout.js';
 import { Home } from '../website/src/pages/Home.js';
 import { Examples } from '../website/src/pages/Examples.js';
+import { Playground } from '../website/src/pages/Playground.js';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -19,6 +20,7 @@ const PUBLIC_DIR = path.join(WEBSITE_DIR, 'public');
 const DIST_DIR = path.join(WEBSITE_DIR, 'dist');
 const EXAMPLES_DIR = path.join(repoRoot, 'examples');
 const BENCH_DIR = path.join(repoRoot, 'benchmarks');
+const ASSETS_DIR = path.join(WEBSITE_DIR, 'dist', 'assets');
 
 // Determine base href for GitHub Pages project site
 const repoName = process.env.GITHUB_REPOSITORY ? process.env.GITHUB_REPOSITORY.split('/')[1] : '';
@@ -29,7 +31,7 @@ async function ensureDir(dir) {
 }
 
 function linkForDoc(d){
-  const href = 'docs/' + slugifySegment(d.rel.replace(/\\/g, '/')).split('/').map(slugifySegment).join('/');
+  const href = `docs/${  slugifySegment(d.rel.replace(/\\/g, '/')).split('/').map(slugifySegment).join('/')}`;
   const label = slugifySegment(path.basename(d.rel)).replace(/-/g, ' ');
   return { href, label };
 }
@@ -47,7 +49,7 @@ function buildBreadcrumbs(rel){
   let acc = 'docs';
   crumbs.push(`<a href="/docs">Docs</a>`);
   for (const p of parts.slice(0, -1)) {
-    acc += '/' + slugifySegment(p);
+    acc += `/${  slugifySegment(p)}`;
     crumbs.push(`<span class="sep">/</span><a href="/${acc}">${escapeHtml(p.replace(/-/g,' '))}</a>`);
   }
   const last = parts[parts.length-1].replace(/\.md$/i,'');
@@ -59,9 +61,9 @@ function enhanceHeadings(html){
   // ensure h2/h3 have ids and collect them
   const headings = [];
   const newHtml = html.replace(/<(h[23])(\s+[^>]*)?>(.*?)<\/h[23]>/gi, (m, tag, attrs = '', inner) => {
-    let text = inner.replace(/<[^>]+>/g,'').trim();
+    const text = inner.replace(/<[^>]+>/g,'').trim();
     const id = (attrs && attrs.match(/id="([^"]+)"/i)) ? RegExp.$1 : slugifySegment(text);
-    if(!/id=/i.test(attrs)) attrs = (attrs || '') + ` id="${id}"`;
+    if(!/id=/i.test(attrs)) attrs = `${attrs || ''  } id="${id}"`;
     headings.push({ level: tag.toLowerCase(), id, text });
     return `<${tag}${attrs}>${inner}</${tag}>`;
   });
@@ -159,18 +161,18 @@ function buildSidebarFromDocs(docs) {
   for (const d of docs) {
     const group = groupFor(d.rel);
     if (!groups.has(group)) groups.set(group, []);
-    const href = 'docs/' + slugifySegment(d.rel.replace(/\\\\/g, '/'))
+    const href = `docs/${  slugifySegment(d.rel.replace(/\\\\/g, '/'))
       .split('/')
       .map(slugifySegment)
-      .join('/');
+      .join('/')}`;
     const label = slugifySegment(path.basename(d.rel)).replace(/-/g, ' ');
     groups.get(group).push({ href, label });
   }
   // Sort groups and items
   return Array.from(groups.entries()).map(([title, items]) => ({
     title,
-    items: items.sort((a,b)=>a.label.localeCompare(b.label))
-  })).sort((a,b)=>a.title.localeCompare(b.title));
+    items: items.sort((a,b) => a.label.localeCompare(b.label))
+  })).sort((a,b) => a.title.localeCompare(b.title));
 }
 
 async function writePage(routePath, html) {
@@ -193,8 +195,19 @@ async function copyPublic() {
       if (f.isDirectory()) continue; // no nested assets yet
       await fs.copyFile(src, dst);
     }
-  } catch (e) {
+  } catch (_e) {
     // no public dir or other issue
+  }
+}
+
+async function copyHydrationAsset() {
+  // Copy the client hydration bundle to website assets for playground pages
+  try {
+    const hydrationSrc = path.join(repoRoot, 'packages', 'client', 'dist', 'index.js');
+    await ensureDir(ASSETS_DIR);
+    await fs.copyFile(hydrationSrc, path.join(ASSETS_DIR, 'coherent-hydration.js'));
+  } catch (_e) {
+    // If client package hasn't been built yet, skip silently
   }
 }
 
@@ -213,7 +226,7 @@ async function buildExamples(sidebar) {
     const files = entries
       .filter(e => e.isFile() && e.name.endsWith('.js'))
       .map(e => e.name)
-      .sort((a,b)=>a.localeCompare(b));
+      .sort((a,b) => a.localeCompare(b));
 
     items = [];
     for (const file of files) {
@@ -226,7 +239,7 @@ async function buildExamples(sidebar) {
       if (firstLine.startsWith('//')) description = firstLine.replace(/^\/\/+\s*/, '');
       const base = file.replace(/\.js$/i, '');
       const label = base.replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-      items.push({ file, label, runCmd: `node examples/${file}`, description, code });
+      items.push({ file, slug: base, label, runCmd: `node examples/${file}`, description, code });
     }
   } catch {}
   const content = renderToString(Examples({ items }));
@@ -236,11 +249,141 @@ async function buildExamples(sidebar) {
   await writePage('examples', html);
 }
 
+function isBrowserSafeExample(code) {
+  const forbidden = [
+    'database',
+    'Migration',
+    'createObjectRouter',
+    'router-features',
+    'websocket',
+    'node:http',
+    'node:crypto',
+  ];
+  return !forbidden.some((k) => code.includes(k));
+}
+
+function toLabel(base) {
+  return base.replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+async function buildPlaygroundIndex(sidebar) {
+  const items = [];
+  try {
+    const entries = await fs.readdir(EXAMPLES_DIR, { withFileTypes: true });
+    const files = entries
+      .filter((e) => e.isFile() && e.name.endsWith('.js'))
+      .map((e) => e.name)
+      .sort((a, b) => a.localeCompare(b));
+
+    for (const file of files) {
+      const full = path.join(EXAMPLES_DIR, file);
+      let code = '';
+      try { code = await fs.readFile(full, 'utf8'); } catch {}
+      if (!code || !isBrowserSafeExample(code)) continue;
+      const base = file.replace(/\.js$/i, '');
+      const label = toLabel(base);
+      const firstLine = (code.split(/\r?\n/, 1)[0] || '').trim();
+      const description = firstLine.startsWith('//') ? firstLine.replace(/^\/\/\s*/, '') : '';
+      items.push({ file, slug: base, label, description, code });
+    }
+  } catch {}
+
+  const content = renderToString(Playground({ items }));
+  const page = Layout({ title: 'Playground | Coherent.js', sidebar, currentPath: 'playground', baseHref });
+  let html = renderToString(page);
+  html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', content);
+  await writePage('playground', html);
+  return items;
+}
+
+async function buildPlaygroundPages(items) {
+  for (const item of items) {
+    const examplePath = path.join(EXAMPLES_DIR, item.file);
+    let code = '';
+    try { code = await fs.readFile(examplePath, 'utf8'); } catch {}
+    if (!code) continue;
+
+    let html = '';
+    try {
+      const module = await import(`file://${  examplePath}`);
+      let componentFn = module.default;
+      if (!componentFn) {
+        for (const [name, exported] of Object.entries(module)) {
+          if (['hydrateClientSide', 'renderServerSide'].includes(name)) continue;
+          if (typeof exported === 'function') { componentFn = exported; break; }
+          if (exported && typeof exported === 'object') { componentFn = exported; break; }
+        }
+      }
+      if (!componentFn) throw new Error('No component export found');
+
+      const { renderToString: rts } = await import('../src/rendering/html-renderer.js');
+      if (componentFn.renderWithHydration && componentFn.isHydratable) {
+        const hydratedResult = componentFn.renderWithHydration({});
+        html = rts(hydratedResult);
+      } else {
+        html = rts(componentFn, {});
+      }
+    } catch (_e) {
+      html = `<h1>Playground build error</h1><pre>${escapeHtml(String(_e.message || _e))}</pre>`;
+    }
+
+    const pageHtml = [
+      '<!DOCTYPE html>',
+      '<html>',
+      '<head>',
+      `  <title>${escapeHtml(item.label)} | Playground</title>`,
+      '  <meta name="viewport" content="width=device-width, initial-scale=1">',
+      '  <link rel="stylesheet" href="../styles.css">',
+      '</head>',
+      '<body>',
+      '  <div class="container">',
+      html,
+      '  </div>',
+      '  <div class="sandbox-controls" style="margin: 16px 0; display: flex; gap: 8px; align-items:center; flex-wrap: wrap;">',
+      '    <button id="toggle-sandbox" class="button secondary">💻 Show CodeSandbox</button>',
+      `    <a class="button" target="_blank" rel="noopener" href="https://codesandbox.io/p/github/Tomdrouv1/coherent.js/tree/main?file=${encodeURIComponent(`examples/${  item.file}`)}">Open in CodeSandbox ↗</a>`,
+      '  </div>',
+      '  <div id="sandbox-wrap" style="display:none; border: 1px solid var(--border-color,#ddd); border-radius: 8px; overflow: hidden;">',
+      `    <iframe id="sandbox-frame" src="https://codesandbox.io/p/github/Tomdrouv1/coherent.js/tree/main?file=${encodeURIComponent(`examples/${  item.file}`)}&embed=1" style="width:100%; height:70vh; border:0;" allow="accelerometer; ambient-light-sensor; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; payment; usb; vr; xr-spatial-tracking;" sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"></iframe>`,
+      '  </div>',
+      '  <script type="module" src="../assets/coherent-hydration.js"></script>',
+      '  <script type="module">',
+      code,
+      '\n',
+      'import { autoHydrate } from "../assets/coherent-hydration.js";',
+      'const registry = window.componentRegistry || {};',
+      'autoHydrate(registry);',
+      '  </script>',
+      '  <script>',
+      '    (function(){',
+      '      const btn = document.getElementById("toggle-sandbox");',
+      '      const wrap = document.getElementById("sandbox-wrap");',
+      '      if (btn && wrap) {',
+      '        btn.addEventListener("click", () => {',
+      '          const show = wrap.style.display === "none";',
+      '          wrap.style.display = show ? "block" : "none";',
+      '          btn.textContent = show ? "💻 Hide CodeSandbox" : "💻 Show CodeSandbox";',
+      '          if (show) { wrap.scrollIntoView({behavior:"smooth", block:"start"}); }',
+      '        });',
+      '      }',
+      '    })();',
+      '  </script>',
+      '</body>',
+      '</html>'
+    ].join('\n');
+
+    const outDir = path.join(DIST_DIR, 'playground', item.slug);
+    await ensureDir(outDir);
+    await fs.writeFile(path.join(outDir, 'index.html'), pageHtml, 'utf8');
+    try { await fs.copyFile(path.join(DIST_DIR, 'styles.css'), path.join(outDir, 'styles.css')); } catch {}
+  }
+}
+
 async function buildDocs(docs) {
   const sidebar = buildSidebarFromDocs(docs);
   await buildDocsIndex(sidebar);
   // Establish doc order by relative path
-  const ordered = [...docs].sort((a,b)=>a.rel.localeCompare(b.rel));
+  const ordered = [...docs].sort((a,b) => a.rel.localeCompare(b.rel));
   for (let i = 0; i < ordered.length; i++) {
     const d = ordered[i];
     const md = await fs.readFile(d.full, 'utf8');
@@ -257,7 +400,7 @@ async function buildDocs(docs) {
     const navFooter = buildPrevNext(prev, next);
 
     const page = Layout({ title: `${title} | Coherent.js Docs`, sidebar, currentPath: 'docs', baseHref });
-    let finalHtml = renderToString(page)
+    const finalHtml = renderToString(page)
       .replace('[[[COHERENT_BREADCRUMBS_PLACEHOLDER]]]', breadcrumbs)
       .replace('[[[COHERENT_TOC_PLACEHOLDER]]]', tocHtml)
       .replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', htmlBody + navFooter);
@@ -286,7 +429,7 @@ async function buildDocsIndex(sidebar) {
       .replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', htmlBody)
       .replace('[[[COHERENT_BREADCRUMBS_PLACEHOLDER]]]', '<nav class="breadcrumbs"><a href="/docs">Documentation</a></nav>');
     await writePage('docs', html);
-  } catch (error) {
+  } catch (_error) {
     // Fallback if README.md doesn't exist
     let firstHref = '';
     for (const group of sidebar) {
@@ -323,13 +466,18 @@ async function main() {
   const sidebar = buildSidebarFromDocs(docs);
 
   await copyPublic();
+  await copyHydrationAsset();
   await buildHome(sidebar);
   await buildExamples(sidebar);
+  const playgroundItems = await buildPlaygroundIndex(sidebar);
+  await buildPlaygroundPages(playgroundItems);
   await buildPerformance(sidebar);
   await buildDocs(docs);
   await buildChangelog(sidebar);
 
   console.log(`Built website to ${DIST_DIR}`);
+  // Explicitly exit to avoid hanging if any imported modules registered listeners
+  process.exit(0);
 }
 
 main().catch(err => {

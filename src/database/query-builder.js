@@ -103,9 +103,9 @@ function buildSelectSQL(query, params) {
   }
   
   if (query.orderBy) {
-    sql += ' ORDER BY ' + Object.entries(query.orderBy)
+    sql += ` ORDER BY ${  Object.entries(query.orderBy)
       .map(([col, dir]) => `${col} ${dir.toUpperCase()}`)
-      .join(', ');
+      .join(', ')}`;
   }
   
   if (query.limit) sql += ` LIMIT ${query.limit}`;

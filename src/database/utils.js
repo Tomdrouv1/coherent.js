@@ -243,7 +243,7 @@ export async function createBackup(db, options = {}) {
   };
 
   const timestamp = backupConfig.timestamp ? new Date().toISOString().replace(/[:.]/g, '-') : '';
-  const fileName = `backup${timestamp ? '_' + timestamp : ''}.${backupConfig.format}`;
+  const fileName = `backup${timestamp ? `_${  timestamp}` : ''}.${backupConfig.format}`;
   const filePath = `${backupConfig.outputPath}/${fileName}`;
 
   // This would be adapter-specific implementation

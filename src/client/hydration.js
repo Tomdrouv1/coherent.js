@@ -305,7 +305,7 @@ function hydrate(element, component, props = {}, options = {}) {
           
           if (newValue === true) {
             domElement.setAttribute(attrName, '');
-          } else if (newValue === false || newValue == null) {
+          } else if (newValue === false || newValue === null) {
             domElement.removeAttribute(attrName);
           } else {
             domElement.setAttribute(attrName, String(newValue));
@@ -422,7 +422,7 @@ function hydrate(element, component, props = {}, options = {}) {
         
         if (value === true) {
           element.setAttribute(attrName, '');
-        } else if (value !== false && value != null) {
+        } else if (value !== false && value !== null) {
           element.setAttribute(attrName, String(value));
         }
       });
@@ -1247,6 +1247,8 @@ function attachEventListeners(element, instance) {
               const setState = instance.setState || (() => {});
               
               // Create a function with access to the event, state, and setState
+              // TODO: Replace Function constructor with safer alternative
+              // eslint-disable-next-line no-new-func
               const func = new Function('event', 'state', 'setState', 'element', eventAttr);
               func.call(elementWithEvent, e, state, setState, elementWithEvent);
             } catch (error) {

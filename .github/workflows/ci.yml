@@ -128,7 +128,7 @@ jobs:
       - name: Build
         run: pnpm run build
 
-      - name: Publish
-        run: pnpm publish --provenance --access public --no-git-checks
+      - name: Publish all packages
+        run: pnpm -r publish --provenance --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

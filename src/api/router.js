@@ -684,7 +684,7 @@ class SimpleRouter {
     }
     
     const acceptKey = createHash('sha1')
-      .update(key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')
+      .update(`${key  }258EAFA5-E914-47DA-95CA-C5AB0DC85B11`)
       .digest('base64');
     
     const responseHeaders = [
@@ -1290,8 +1290,8 @@ class SimpleRouter {
     return {
       ...this.metrics,
       averageResponseTime: Math.round(avgResponseTime * 100) / 100,
-      cacheHitRate: this.metrics.requests > 0 ? (this.metrics.cacheHits / this.metrics.requests * 100).toFixed(2) + '%' : '0%',
-      compilationHitRate: this.metrics.requests > 0 ? (this.metrics.compilationHits / this.metrics.requests * 100).toFixed(2) + '%' : '0%'
+      cacheHitRate: this.metrics.requests > 0 ? `${(this.metrics.cacheHits / this.metrics.requests * 100).toFixed(2)  }%` : '0%',
+      compilationHitRate: this.metrics.requests > 0 ? `${(this.metrics.compilationHits / this.metrics.requests * 100).toFixed(2)  }%` : '0%'
     };
   }
 

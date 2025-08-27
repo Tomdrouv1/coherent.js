@@ -249,7 +249,22 @@ class HTMLRenderer extends BaseRenderer {
         // Handle text content
         let textContent = '';
         if (text !== undefined) {
-            textContent = typeof text === 'function' ? String(text()) : escapeHtml(String(text));
+            const isScript = tagName === 'script';
+            const isStyle = tagName === 'style';
+            const isRawTag = isScript || isStyle;
+            const raw = typeof text === 'function' ? String(text()) : String(text);
+            if (isRawTag) {
+                // Prevent </script> or </style> early-terminating the tag
+                const safe = raw
+                  .replace(/<\/(script)/gi, '<\\/$1')
+                  .replace(/<\/(style)/gi, '<\\/$1')
+                  // Escape problematic Unicode line separators in JS
+                  .replace(/\u2028/g, '\\u2028')
+                  .replace(/\u2029/g, '\\u2029');
+                textContent = safe;
+            } else {
+                textContent = escapeHtml(raw);
+            }
         }
 
         // Handle children

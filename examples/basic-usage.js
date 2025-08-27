@@ -119,6 +119,5 @@ export const completePage = {
     }
 };
 
-console.log(JSON.stringify(completePage));
 // Export the complete page as default for live preview
 export default completePage;

@@ -21,7 +21,7 @@ import {
 } from './rendering/html-renderer.js';
 
 // Cache management
-import { createCacheManager } from './performance/cache-manager.js';
+import { createCacheManager, CacheManager } from './performance/cache-manager.js';
 
 // Streaming capabilities
 import {
@@ -59,26 +59,9 @@ import {
 
 // Performance monitoring and optimization
 import { performanceMonitor } from './performance/monitor.js';
-import { CacheManager } from './performance/cache-manager.js';
 
-// Database layer
-import {
-  DatabaseManager,
-  createQuery,
-  executeQuery,
-  QueryBuilder,
-  createModel,
-  createMigration,
-  withDatabase,
-  PostgreSQLAdapter,
-  MySQLAdapter,
-  SQLiteAdapter,
-  MongoDBAdapter,
-  createConnection,
-  runMigrations,
-  DEFAULT_DB_CONFIG,
-  setupDatabase
-} from './database/index.js';
+// NOTE: Database functionality moved to @coherentjs/database package
+// import { DatabaseManager, ... } from '@coherentjs/database';
 
 // Core utilities
 import {
@@ -456,20 +439,7 @@ export function createCoherent(options = {}) {
     return new Coherent(options);
 }
 
-/**
- * Factory function to create a DatabaseManager instance
- * @param {Object} config - Database configuration
- * @returns {DatabaseManager} Database manager instance
- * 
- * @example
- * const db = createDatabaseManager({
- *   type: 'sqlite',
- *   database: ':memory:'
- * });
- */
-export function createDatabaseManager(config) {
-    return new DatabaseManager(config);
-}
+// NOTE: createDatabaseManager moved to @coherentjs/database package
 
 /**
  * Default instance for quick usage
@@ -509,13 +479,7 @@ export {
     memo,
     lazy,
 
-    // Database - Factory functions (recommended)
-    createQuery,
-    executeQuery,
-
-    // Database - Direct class/object access (for advanced usage)
-    DatabaseManager,
-    QueryBuilder,
+    // NOTE: Database functionality moved to @coherentjs/database package
 
     // Utilities
     validateComponent,
@@ -591,25 +555,7 @@ export const utils = {
     getNestedValue,
     setNestedValue,
     
-    // Database - Factory functions (recommended for pure JS objects)
-    createDatabaseManager,
-    createQuery,
-    executeQuery,
-    createModel,
-    createMigration,
-    withDatabase,
-    createConnection,
-    runMigrations,
-    
-    // Database adapters (factory functions)
-    PostgreSQLAdapter,
-    MySQLAdapter,
-    SQLiteAdapter,
-    MongoDBAdapter,
-    
-    // Database constants and setup
-    DEFAULT_DB_CONFIG,
-    setupDatabase,
+    // NOTE: Database functionality moved to @coherentjs/database package
 };
 
 // Performance bundle

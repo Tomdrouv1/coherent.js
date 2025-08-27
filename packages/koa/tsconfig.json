@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "../../src",
+    "baseUrl": "../../",
+    "paths": {
+      "@coherentjs/core": ["./packages/core/dist"],
+      "@coherentjs/koa": ["./packages/koa/dist"]
+    }
+  },
+  "include": [
+    "../../src/koa/**/*"
+  ],
+  "references": [
+    { "path": "../core" }
+  ]
+}

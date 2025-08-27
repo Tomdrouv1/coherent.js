@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "../../src",
+    "baseUrl": "../../",
+    "paths": {
+      "@coherentjs/core": ["./packages/core/dist"],
+      "@coherentjs/fastify": ["./packages/fastify/dist"]
+    }
+  },
+  "include": [
+    "../../src/fastify/**/*"
+  ],
+  "references": [
+    { "path": "../core" }
+  ]
+}
