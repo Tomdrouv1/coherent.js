@@ -23,8 +23,7 @@ const BENCH_DIR = path.join(repoRoot, 'benchmarks');
 const ASSETS_DIR = path.join(WEBSITE_DIR, 'dist', 'assets');
 
 // Determine base href for GitHub Pages project site
-const repoName = process.env.GITHUB_REPOSITORY ? process.env.GITHUB_REPOSITORY.split('/')[1] : '';
-const baseHref = repoName ? `/${repoName}/` : '/';
+const baseHref = '/';
 
 async function ensureDir(dir) {
   await fs.mkdir(dir, { recursive: true });
@@ -292,6 +291,141 @@ async function buildPlaygroundIndex(sidebar) {
   const page = Layout({ title: 'Playground | Coherent.js', sidebar, currentPath: 'playground', baseHref });
   let html = renderToString(page);
   html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', content);
+  
+  // Add hydration script for interactive playground
+  const hydrationScript = `
+  <script type="module" src="assets/coherent-hydration.js"></script>
+  <script type="module">
+    import { autoHydrate } from "./assets/coherent-hydration.js";
+    
+    console.log('Setting up playground...');
+    
+    // Simple renderToString implementation for playground
+    function renderToString(component) {
+      if (!component) return '';
+      if (typeof component === 'string') return component;
+      if (typeof component === 'number' || typeof component === 'boolean') return String(component);
+      if (Array.isArray(component)) return component.map(renderToString).join('');
+      
+      if (typeof component === 'object') {
+        const tagName = Object.keys(component)[0];
+        const props = component[tagName] || {};
+        
+        if (typeof props === 'string') return \`<\${tagName}>\${props}</\${tagName}>\`;
+        
+        let html = \`<\${tagName}\`;
+        
+        // Add attributes
+        Object.keys(props).forEach(key => {
+          if (key !== 'children' && key !== 'text') {
+            html += \` \${key}="\${props[key]}"\`;
+          }
+        });
+        
+        html += '>';
+        
+        // Add text content
+        if (props.text) {
+          html += props.text;
+        }
+        
+        // Add children
+        if (props.children) {
+          if (Array.isArray(props.children)) {
+            html += props.children.map(renderToString).join('');
+          } else {
+            html += renderToString(props.children);
+          }
+        }
+        
+        html += \`</\${tagName}>\`;
+        return html;
+      }
+      
+      return '';
+    }
+    
+    // JSON parser with validation
+    function parseComponentJSON(jsonString) {
+      const parsed = JSON.parse(jsonString);
+      return validateAndNormalizeComponent(parsed);
+    }
+    
+    function validateAndNormalizeComponent(obj) {
+      if (obj === null || obj === undefined) return null;
+      if (typeof obj === 'string' || typeof obj === 'number' || typeof obj === 'boolean') return obj;
+      if (Array.isArray(obj)) return obj.map(item => validateAndNormalizeComponent(item));
+      
+      if (typeof obj === 'object') {
+        const result = {};
+        const safeTags = ['div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'em', 'strong', 'a', 'img', 'br', 'section', 'article', 'header', 'footer', 'nav', 'main', 'button', 'input', 'select', 'option', 'textarea', 'form', 'table', 'tr', 'td', 'th', 'thead', 'tbody', 'tfoot'];
+        const safeProps = ['text', 'children', 'style', 'className', 'class', 'id', 'href', 'src', 'alt', 'title', 'placeholder', 'value', 'type', 'name', 'for', 'colspan', 'rowspan'];
+        
+        for (const [key, value] of Object.entries(obj)) {
+          if (safeTags.includes(key.toLowerCase()) || safeProps.includes(key)) {
+            result[key] = validateAndNormalizeComponent(value);
+          }
+        }
+        return result;
+      }
+      return obj;
+    }
+    
+    // Global playground runner
+    window.runPlaygroundComponent = function() {
+      console.log('Running playground component...');
+      
+      const codeEl = document.getElementById('code');
+      const outputEl = document.getElementById('output');
+      const previewEl = document.getElementById('preview');
+      const sourceEl = document.getElementById('source');
+      
+      if (!codeEl) return;
+      
+      const setStatus = (msg) => outputEl && (outputEl.textContent = msg, outputEl.className = 'output-status');
+      const setError = (msg) => {
+        if (outputEl) outputEl.textContent = 'Error: ' + msg, outputEl.className = 'output-error';
+        if (previewEl) previewEl.innerHTML = '';
+        if (sourceEl) sourceEl.textContent = '';
+      };
+      const setSuccess = (component, html) => {
+        if (outputEl) outputEl.textContent = 'Component rendered successfully!', outputEl.className = 'output-success';
+        if (previewEl) {
+          previewEl.innerHTML = '';
+          try {
+            // Simple DOM rendering - just use the HTML fallback for now
+            previewEl.innerHTML = html;
+          } catch (e) {
+            previewEl.innerHTML = html;
+          }
+        }
+        if (sourceEl) sourceEl.textContent = html;
+      };
+      
+      try {
+        setStatus('Parsing component...');
+        const userInput = codeEl.value.trim();
+        if (!userInput) return setError('No component definition provided');
+        
+        const component = parseComponentJSON(userInput);
+        if (!component) return setError('Component definition is empty');
+        
+        setStatus('Rendering component...');
+        const html = renderToString(component);
+        setSuccess(component, html);
+      } catch (error) {
+        setError(error.message);
+      }
+    };
+    
+    // Auto-hydrate components
+    const registry = window.componentRegistry || {};
+    autoHydrate(registry);
+  </script>`;
+  
+  // Insert the script before closing </body> tag
+  html = html.replace(`</body> ${hydrationScript}\n</body>`);
+  
   await writePage('playground', html);
   return items;
 }
