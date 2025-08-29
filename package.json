@@ -1,6 +1,6 @@
 {
   "name": "coherentjs-monorepo",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": true,
   "description": "A lightweight, high-performance server-side rendering framework using pure JavaScript objects. Features include streaming renderer, performance monitoring, component composition, memoization, and integrations with Express.js, Fastify, and Next.js.",
   "type": "module",
