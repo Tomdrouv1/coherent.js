@@ -17,6 +17,8 @@
     "../../src/dev/**/*",
     "../../src/state/**/*",
     "../../src/utils/**/*",
-    "../../src/types/**/*"
+    "../../src/types/**/*",
+    "../../src/routing/**/*",
+    "../../src/forms/**/*"
   ]
 }
