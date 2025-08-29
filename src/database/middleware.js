@@ -41,8 +41,8 @@ export function withDatabase(db, options = {}) {
       // Attach database to request
       req.db = db;
 
-      // Attach query helper
-      req.query = async (sql, params, queryOptions) => {
+      // Attach query helper (preserve original req.query)
+      req.dbQuery = async (sql, params, queryOptions) => {
         return await db.query(sql, params, queryOptions);
       };
 
@@ -413,8 +413,8 @@ export function withConnectionPool(db, options = {}) {
       // Attach connection to request
       req.dbConnection = connection;
       
-      // Override query method to use this connection
-      req.query = async (sql, params, queryOptions) => {
+      // Attach query helper to use this connection
+      req.dbQuery = async (sql, params, queryOptions) => {
         return await db.adapter.query(connection, sql, params, queryOptions);
       };
 

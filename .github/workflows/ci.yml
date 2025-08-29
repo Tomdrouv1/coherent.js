@@ -42,8 +42,29 @@ jobs:
       - name: Type check
         run: pnpm run typecheck
 
-      - name: Unit tests
-        run: pnpm test
+      - name: Unit tests with coverage
+        run: pnpm run test:coverage
+
+      - name: Generate coverage report
+        run: pnpm run coverage:report
+
+      - name: Upload coverage to Codecov
+        if: matrix.node-version == '22.x'
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage/lcov.info
+          fail_ci_if_error: false
+          verbose: true
+        continue-on-error: true
+
+      - name: Upload coverage artifacts
+        if: matrix.node-version == '22.x'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            coverage/
+            coverage-summary.json
 
       - name: Build package
         run: pnpm run build
@@ -83,6 +104,25 @@ jobs:
 
       - name: Build website
         run: pnpm run website:build
+
+      - name: Download coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+          path: ./coverage-temp/
+        continue-on-error: true
+
+      - name: Copy coverage files to website
+        run: |
+          if [ -d "coverage-temp" ]; then
+            mkdir -p website/dist/coverage
+            cp -r coverage-temp/* website/dist/
+            echo "✅ Coverage files copied to website"
+          else
+            echo "⚠️  No coverage files found, creating placeholder badge"
+            mkdir -p website/dist/coverage
+            echo '{"schemaVersion": 1, "label": "coverage", "message": "N/A", "color": "lightgrey"}' > website/dist/coverage/badge.json
+          fi
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

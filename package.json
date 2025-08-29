@@ -13,9 +13,13 @@
     "packages/*"
   ],
   "scripts": {
-    "test": "pnpm run test:unit && pnpm run test:integration",
-    "test:unit": "node --test tests/*.test.js",
-    "test:integration": "pnpm -r run test",
+    "test": "vitest run",
+    "test:vitest": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:packages": "pnpm -r run test",
+    "test:coverage": "vitest run --coverage",
+    "coverage:report": "node scripts/generate-coverage-report.js",
     "build": "pnpm run build:packages && pnpm run build:types",
     "build:packages": "pnpm -r --stream run build",
     "build:types": "tsc --build",
@@ -50,7 +54,8 @@
     "security:check": "pnpm outdated",
     "perf:analyze": "node scripts/analyze-bundle.mjs",
     "perf:build": "NODE_ENV=production pnpm build",
-    "perf:benchmark": "node benchmarks/benchmark.js"
+    "perf:benchmark": "node benchmarks/benchmark.js",
+    "test:node": "pnpm -r run test:node"
   },
   "keywords": [
     "ssr",

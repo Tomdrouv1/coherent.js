@@ -22,6 +22,22 @@ import {
 
 // Cache management
 import { createCacheManager, CacheManager } from './performance/cache-manager.js';
+import { ComponentCache, createComponentCache, memoize } from './performance/component-cache.js';
+
+// Enhanced error handling
+import { globalErrorHandler, ErrorHandler } from './utils/error-handler.js';
+
+// Reactive state management
+import { ReactiveState, createReactiveState, observable, computed, stateUtils } from './state/reactive-state.js';
+
+// Component lifecycle and events
+import { ComponentLifecycle, eventSystem, componentUtils, withLifecycle } from './components/lifecycle.js';
+
+// Advanced routing
+import { Router, createRouter, routeGuards, routeComponents } from './routing/router.js';
+
+// Form validation and binding
+import { FormValidator, createForm, validationRules, binding, formComponents } from './forms/validation.js';
 
 // Streaming capabilities
 import {
@@ -31,7 +47,8 @@ import {
 
 // DOM rendering capabilities
 import {
-    renderToDOM
+    renderToDOM,
+    updateDOM
 } from './rendering/dom-renderer.js';
 
 // Import hydration functions
@@ -118,7 +135,27 @@ class Coherent {
                 maxSize: this.options.cacheSize,
                 ttlMs: this.options.cacheTTL
             });
+            
+            // Initialize component cache for advanced caching
+            this.componentCache = createComponentCache({
+                maxSize: this.options.componentCacheSize || 500,
+                defaultTTL: this.options.componentCacheTTL || 300000
+            });
         }
+
+        // Initialize reactive state system
+        this.state = createReactiveState({}, {
+            enableHistory: this.options.enableStateHistory !== false,
+            maxHistorySize: this.options.stateHistorySize || 50
+        });
+
+        // Initialize router if routing is enabled
+        if (this.options.enableRouting) {
+            this.router = createRouter(this.options.routerOptions || {});
+        }
+
+        // Initialize global error handler
+        this.errorHandler = this.options.errorHandler || globalErrorHandler;
 
         // Initialize dev tools in development
         if (this.options.enableDevTools && typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
@@ -241,11 +278,120 @@ class Coherent {
     }
 
     /**
+     * Component caching and memoization
+     */
+    memoize(component, keyGenerator, options = {}) {
+        return memoize(component, keyGenerator, {
+            ...options,
+            cache: this.componentCache
+        });
+    }
+
+    /**
+     * Update DOM with virtual DOM diffing
+     */
+    updateDOM(element, newComponent, componentId = 'default', options = {}) {
+        const config = { ...this.options, ...options };
+        return updateDOM(element, newComponent, componentId, config);
+    }
+
+    /**
+     * Invalidate component cache by dependencies
+     */
+    invalidateCache(dependencies) {
+        if (this.componentCache) {
+            if (Array.isArray(dependencies)) {
+                return this.componentCache.invalidateMultiple(dependencies);
+            } else {
+                return this.componentCache.invalidate(dependencies);
+            }
+        }
+        return 0;
+    }
+
+    /**
+     * Reactive state management
+     */
+    setState(key, value) {
+        return this.state.set(key, value);
+    }
+
+    getState(key) {
+        return this.state.get(key);
+    }
+
+    watchState(key, callback, options) {
+        return this.state.watch(key, callback, options);
+    }
+
+    createComputed(key, getter, options) {
+        return this.state.computed(key, getter, options);
+    }
+
+    /**
+     * Event system
+     */
+    emit(eventName, data, target) {
+        return eventSystem.emit(eventName, data, target);
+    }
+
+    on(eventName, handler, componentId) {
+        return eventSystem.on(eventName, handler, componentId);
+    }
+
+    off(eventName, handler, componentId) {
+        return eventSystem.off(eventName, handler, componentId);
+    }
+
+    /**
+     * Router methods
+     */
+    navigate(location) {
+        if (!this.router) {
+            console.warn('Router not initialized. Enable routing in options.');
+            return Promise.resolve(false);
+        }
+        return this.router.push(location);
+    }
+
+    getCurrentRoute() {
+        return this.router ? this.router.getCurrentRoute() : null;
+    }
+
+    addRoutes(routes) {
+        if (this.router) {
+            this.router.addRoutes(routes);
+        }
+    }
+
+    /**
+     * Form validation
+     */
+    createForm(schema, options) {
+        return createForm(schema, options);
+    }
+
+    /**
+     * Component lifecycle
+     */
+    createComponentWithLifecycle(component, options) {
+        return componentUtils.createWithLifecycle(component, options);
+    }
+
+    /**
+     * Error handling
+     */
+    handleError(error, context) {
+        return this.errorHandler.handle(error, context);
+    }
+
+    /**
      * Performance and monitoring
      */
     getPerformanceStats() {
         return {
             cache: this.cache ? this.cache.getStats() : null,
+            componentCache: this.componentCache ? this.componentCache.getStats() : null,
             monitor: performanceMonitor.getStats(),
             rendering: getRenderingStats()
         };
@@ -464,7 +610,8 @@ export {
     streamingUtils,
 
     // Client-side rendering and hydration
-    renderToDOM, 
+    renderToDOM,
+    updateDOM,
     hydrate, 
     makeHydratable, 
     autoHydrate, 
@@ -507,9 +654,42 @@ export {
     // Performance
     performanceMonitor,
     CacheManager,
+    ComponentCache,
+    createComponentCache,
+    memoize,
     getCache,
     resetCache,
     getRenderingStats,
+
+    // Error Handling
+    ErrorHandler,
+    globalErrorHandler,
+
+    // Reactive State
+    ReactiveState,
+    createReactiveState,
+    observable,
+    computed,
+    stateUtils,
+
+    // Component Lifecycle & Events
+    ComponentLifecycle,
+    eventSystem,
+    componentUtils,
+    withLifecycle,
+
+    // Routing
+    Router,
+    createRouter,
+    routeGuards,
+    routeComponents,
+
+    // Forms & Validation
+    FormValidator,
+    createForm,
+    validationRules,
+    binding,
+    formComponents,
 
     // Development
     DevTools

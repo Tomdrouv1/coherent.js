@@ -15,8 +15,12 @@
   "scripts": {
     "build": "node build.mjs",
     "clean": "rm -rf dist/",
-    "test": "node --test test/*.test.js",
-    "typecheck": "tsc --noEmit"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "test:vitest": "vitest run",
+    "test:node": "node --test test/*.test.js"
   },
   "files": [
     "dist/",

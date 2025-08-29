@@ -10,9 +10,9 @@
 
 export { DatabaseManager } from './connection-manager.js';
 export { createQuery, executeQuery, QueryBuilder } from './query-builder.js';
-export { createModel } from './model.js';
-export { createMigration } from './migration.js';
-export { withDatabase } from './middleware.js';
+export { createModel, Model } from './model.js';
+export { createMigration, Migration } from './migration.js';
+export { withDatabase, withTransaction, withModel, withPagination } from './middleware.js';
 
 // Database adapters
 export { createPostgreSQLAdapter as PostgreSQLAdapter } from './adapters/postgresql.js';

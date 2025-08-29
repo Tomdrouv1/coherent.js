@@ -1,27 +1,26 @@
-import { test } from 'node:test';
-import assert from 'node:assert';
+import { describe, it, expect } from 'vitest';
 // import Koa from 'koa';
 // import { coherentKoa } from '../../../src/koa/index.js';
 
-test('Koa.js integration', async (t) => {
-  await t.test('creates Koa middleware', () => {
+describe('Koa.js integration', () => {
+  it('creates Koa middleware', () => {
     // const app = new Koa();
     // app.use(coherentKoa());
-    assert.ok(true, 'Test placeholder - implement Koa middleware');
+    expect(true).toBe(true); // Test placeholder - implement Koa middleware
   });
 
-  await t.test('renders Coherent components in Koa', () => {
+  it('renders Coherent components in Koa', () => {
     // Test component rendering in Koa
-    assert.ok(true, 'Test placeholder - implement Koa component rendering');
+    expect(true).toBe(true); // Test placeholder - implement Koa component rendering
   });
 
-  await t.test('supports Koa context', () => {
+  it('supports Koa context', () => {
     // Test Koa context integration
-    assert.ok(true, 'Test placeholder - implement Koa context support');
+    expect(true).toBe(true); // Test placeholder - implement Koa context support
   });
 
-  await t.test('handles middleware chain', () => {
+  it('handles middleware chain', () => {
     // Test middleware chain compatibility
-    assert.ok(true, 'Test placeholder - implement Koa middleware chain');
+    expect(true).toBe(true); // Test placeholder - implement Koa middleware chain
   });
 });

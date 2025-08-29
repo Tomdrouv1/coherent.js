@@ -4,18 +4,35 @@
   "description": "Client-side hydration/HMR utilities for Coherent.js",
   "type": "module",
   "module": "dist/index.js",
-  "exports": { ".": { "import": "./dist/index.js" } },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    }
+  },
   "types": "./dist/client/hydration.d.ts",
-  "scripts": { 
+  "scripts": {
     "build": "node build.mjs",
     "clean": "rm -rf dist/",
-    "test": "node --test test/*.test.js",
-    "typecheck": "tsc --noEmit"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "test:coverage": "vitest run --coverage",
+    "test:vitest": "vitest run",
+    "test:node": "node --test test/*.test.js"
   },
-  "files": ["dist/", "README.md", "LICENSE"],
-  "engines": { "node": ">=20.0.0" },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "license": "MIT",
-  "repository": { "type": "git", "url": "git+https://github.com/Tomdrouv1/coherent.js.git" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tomdrouv1/coherent.js.git"
+  },
   "publishConfig": {
     "access": "public"
   }

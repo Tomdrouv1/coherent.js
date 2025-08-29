@@ -2,7 +2,7 @@
  * Real-time performance monitoring and metrics collection
  */
 
-import { createCacheManager } from './cache-manager.js';
+import { createCacheManager, cacheManager as globalCache } from './cache-manager.js';
 
 // Create a dedicated cache instance for monitoring
 const monitorCache = createCacheManager({

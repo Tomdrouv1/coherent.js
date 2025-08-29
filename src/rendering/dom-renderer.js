@@ -11,6 +11,7 @@ import {
     hasChildren,
     getChildren
 } from '../core/object-utils.js';
+import { VDOMDiffer } from './vdom-diff.js';
 
 
 
@@ -23,6 +24,7 @@ export class DOMRenderer extends BaseRenderer {
         super({
             enableHydration: true,
             maxDepth: 100, // Lower depth for DOM rendering
+            enableVDOMDiff: options.enableVDOMDiff !== false, // Enable VDOM diffing by default
             ...options
         });
         
@@ -32,6 +34,12 @@ export class DOMRenderer extends BaseRenderer {
             hasChildren,
             getChildren
         };
+
+        // Initialize virtual DOM differ for efficient updates
+        if (this.config.enableVDOMDiff) {
+            this.vdomDiffer = new VDOMDiffer();
+            this.componentCache = new Map(); // Cache previous component states
+        }
     }
 
     /**
@@ -198,6 +206,68 @@ export class DOMRenderer extends BaseRenderer {
             }
         }
     }
+
+    /**
+     * Update existing DOM element with new component using virtual DOM diffing
+     */
+    update(element, newComponent, componentId = 'default') {
+        if (!this.config.enableVDOMDiff || !this.vdomDiffer) {
+            // Fallback to full re-render
+            return this.render(newComponent, element.parentNode);
+        }
+
+        const oldComponent = this.componentCache.get(componentId);
+        
+        if (!oldComponent) {
+            // First render, cache the component and render normally
+            this.componentCache.set(componentId, newComponent);
+            return this.render(newComponent, element.parentNode);
+        }
+
+        // Perform virtual DOM diffing
+        try {
+            const patchCount = this.vdomDiffer.update(element, oldComponent, newComponent);
+            
+            // Update cache with new component
+            this.componentCache.set(componentId, newComponent);
+            
+            // Log performance metrics
+            if (this.config.enableMonitoring) {
+                this.metrics.patchesApplied = (this.metrics.patchesApplied || 0) + patchCount;
+            }
+            
+            return element;
+        } catch (error) {
+            console.warn('VDOM diffing failed, falling back to full re-render:', error);
+            // Clear corrupted cache entry
+            this.componentCache.delete(componentId);
+            // Fall back to full re-render
+            return this.render(newComponent, element.parentNode);
+        }
+    }
+
+    /**
+     * Clear component cache (useful for development or memory management)
+     */
+    clearCache() {
+        if (this.componentCache) {
+            this.componentCache.clear();
+        }
+        if (this.vdomDiffer) {
+            this.vdomDiffer.clearCache();
+        }
+    }
+
+    /**
+     * Get cache statistics
+     */
+    getCacheStats() {
+        return {
+            componentsCached: this.componentCache ? this.componentCache.size : 0,
+            vdomCached: this.vdomDiffer ? this.vdomDiffer.cache.size : 0,
+            patchesApplied: this.metrics.patchesApplied || 0
+        };
+    }
 }
 
 /**
@@ -206,4 +276,12 @@ export class DOMRenderer extends BaseRenderer {
 export function renderToDOM(component, container = null, options = {}) {
     const renderer = new DOMRenderer(options);
     return renderer.render(component, container);
+}
+
+/**
+ * Update DOM element with new component using virtual DOM diffing
+ */
+export function updateDOM(element, newComponent, componentId, options = {}) {
+    const renderer = new DOMRenderer(options);
+    return renderer.update(element, newComponent, componentId);
 }

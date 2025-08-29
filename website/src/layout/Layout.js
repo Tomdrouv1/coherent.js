@@ -11,13 +11,24 @@ export function Layout({ title = 'Coherent.js', sidebar = [], currentPath = '/',
             { meta: { name: 'theme-color', content: '#0b0e14' } },
             { title: { text: title } },
             { base: { href: baseHref } },
-            { link: { rel: 'stylesheet', href: './styles.css' } }
+            { link: { rel: 'icon', type: 'image/svg+xml', href: './favicon.svg' } },
+            { link: { rel: 'stylesheet', href: './styles.css' } },
+            ...(currentPath === 'playground' ? [{ script: { src: './playground.js', defer: true } }] : []),
+            ...(currentPath === 'performance' ? [{ script: { src: './performance.js', defer: true } }] : [])
           ]
         }},
         { body: {
           children: [
             { header: { className: 'site-header', children: [
-              { a: { className: 'logo', href: baseHref, text: 'Coherent.js' } },
+              { a: { className: 'logo-link', href: baseHref, children: [
+                { img: { 
+                  src: './coherent-logo.svg', 
+                  alt: 'Coherent.js', 
+                  className: 'logo-svg',
+                  width: '180',
+                  height: '50'
+                } }
+              ] } },
               { button: { 
                 className: 'menu-button', 
                 'aria-label': 'Toggle menu', 
@@ -30,6 +41,7 @@ export function Layout({ title = 'Coherent.js', sidebar = [], currentPath = '/',
                 { a: { href: 'examples', className: currentPath.startsWith('examples') ? 'active' : '', text: 'Examples' } },
                 { a: { href: 'playground', className: currentPath.startsWith('playground') ? 'active' : '', text: 'Playground' } },
                 { a: { href: 'performance', className: currentPath.startsWith('performance') ? 'active' : '', text: 'Performance' } },
+                { a: { href: 'coverage', className: currentPath.startsWith('coverage') ? 'active' : '', text: 'Coverage' } },
                 { a: { href: 'changelog', className: currentPath.startsWith('changelog') ? 'active' : '', text: 'Changelog' } }
               ] } },
               { div: { className: 'header-tools', children: [

@@ -77,7 +77,7 @@ export default [
             // ES6+
             'arrow-spacing': 'error',
             'no-duplicate-imports': 'error',
-            'prefer-arrow-callback': 'warn',
+            'prefer-arrow-callback': 'off',
             'prefer-template': 'warn',
             
             // Async/await

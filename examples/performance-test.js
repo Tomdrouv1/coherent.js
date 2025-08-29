@@ -5,7 +5,7 @@
 
 import { renderToString } from '../src/rendering/html-renderer.js';
 import { performanceMonitor } from '../src/performance/monitor.js';
-import { globalCache } from '../src/performance/cache-manager.js';
+import { cacheManager as globalCache } from '../src/performance/cache-manager.js';
 import { bundleOptimizer } from '../src/performance/bundle-optimizer.js';
 
 // Recursive component for performance testing
@@ -425,8 +425,8 @@ async function runPerformanceTests() {
     console.log('First render (populating framework cache)...');
     const firstRender = renderToString(frameworkTestComponent, { enableCache: true, enableMonitoring: true });
     const frameworkStatsAfterFirst = globalCache.getStats();
-    console.log(`- Framework cache after first render: ${frameworkStatsAfterFirst.memoryUsageMB}MB`);
-    console.log(`- Cache entries: Static=${frameworkStatsAfterFirst.cacheEntries.static}, Component=${frameworkStatsAfterFirst.cacheEntries.component}, Template=${frameworkStatsAfterFirst.cacheEntries.template}`);
+    console.log(`- Framework cache after first render: ${(frameworkStatsAfterFirst.size / 1024 / 1024).toFixed(2)}MB`);
+    console.log(`- Cache entries: ${frameworkStatsAfterFirst.entries}`);
     
     // Multiple renders - should use framework cache
     console.log('Multiple cached renders...');
@@ -435,10 +435,10 @@ async function runPerformanceTests() {
     }
     
     const frameworkStatsAfterMultiple = globalCache.getStats();
-    console.log(`- Framework cache after 20 renders: ${frameworkStatsAfterMultiple.memoryUsageMB}MB`);
-    console.log(`- Framework cache hits: ${frameworkStatsAfterMultiple.totalHits}`);
-    console.log(`- Framework cache misses: ${frameworkStatsAfterMultiple.totalMisses}`);
-    console.log(`- Framework hit rate: ${frameworkStatsAfterMultiple.hitRate}`);
+    console.log(`- Framework cache after 20 renders: ${(frameworkStatsAfterMultiple.size / 1024 / 1024).toFixed(2)}MB`);
+    console.log(`- Framework cache hits: ${frameworkStatsAfterMultiple.hits}`);
+    console.log(`- Framework cache misses: ${frameworkStatsAfterMultiple.misses}`);
+    console.log(`- Framework hit rate: ${frameworkStatsAfterMultiple.hits > 0 ? ((frameworkStatsAfterMultiple.hits / (frameworkStatsAfterMultiple.hits + frameworkStatsAfterMultiple.misses)) * 100).toFixed(1) + '%' : '0%'}`);
     
     // Test 4: Memory usage
     console.log('\n🧠 Test 4: Memory Usage Analysis');
@@ -477,7 +477,7 @@ async function runPerformanceTests() {
     console.log(`\n📈 Cache Statistics (Before Cleanup):`);
     console.log(`- Demo cache entries: ${finalCacheSize}`);
     console.log(`- Static cache entries: ${staticCacheSize} hot components`);
-    console.log(`- Framework cache usage: ${frameworkCacheStats.memoryUsageMB}MB`);
+    console.log(`- Framework cache usage: ${(frameworkCacheStats.size / 1024 / 1024).toFixed(2)}MB`);
     console.log(`- Framework cache hits: ${frameworkCacheStats.hits}`);
     console.log(`- Framework cache misses: ${frameworkCacheStats.misses}`);
     
@@ -525,7 +525,7 @@ async function runPerformanceTests() {
     console.log(`- Cache hit rate: ${demoCacheRate}%`);
     console.log(`- Cache hits/misses: ${totalDemoHits}/${totalDemoMisses}`);
     console.log(`- Memory efficiency: ${finalReport.summary.memoryEfficiency}`);
-    console.log(`- Framework cache usage: ${frameworkCacheStats.memoryUsageMB}MB`);
+    console.log(`- Framework cache usage: ${(frameworkCacheStats.size / 1024 / 1024).toFixed(2)}MB`);
     console.log(`- Demo cache entries: ${finalCacheSize}`);
     console.log(`- Demonstration cache effectiveness: ${demoCacheRate}% (${totalDemoHits} hits, ${totalDemoMisses} misses)`);
     console.log(`- Static cache optimizations: ${staticCacheSize} components`);

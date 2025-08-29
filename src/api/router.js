@@ -1644,4 +1644,5 @@ export function createObjectRouter(routeConfig, options = {}) {
   return router;
 }
 
+export { SimpleRouter };
 export default createObjectRouter;

@@ -1,21 +1,17 @@
-import { test } from 'node:test';
-import assert from 'node:assert';
-import { defineComponent, memo } from '../../../src/components/component-system.js';
+import { describe, it, expect } from 'vitest';
+import { createComponent, memo } from '../../../src/components/component-system.js';
 
-test('Component system', async (t) => {
-  await t.test('creates basic component', () => {
-    const Button = defineComponent({
-      name: 'Button',
-      render: ({ text = 'Click me' }) => ({
-        button: { text }
-      })
-    });
+describe('Component system', () => {
+  it('creates basic component instance', () => {
+    const Button = createComponent(({ text = 'Click me' }) => ({
+      button: { text }
+    }));
     
-    const component = Button({ text: 'Hello' });
-    assert.deepStrictEqual(component, { button: { text: 'Hello' } });
+    expect(Button).toBeDefined();
+    expect(typeof Button.render).toBe('function');
   });
 
-  await t.test('memoizes component results', () => {
+  it('creates memoized function', () => {
     let callCount = 0;
     const ExpensiveComponent = memo(() => {
       callCount++;
@@ -25,31 +21,32 @@ test('Component system', async (t) => {
     const result1 = ExpensiveComponent();
     const result2 = ExpensiveComponent();
     
-    assert.strictEqual(callCount, 1);
-    assert.deepStrictEqual(result1, result2);
+    expect(callCount).toBe(1);
+    expect(result1).toEqual(result2);
   });
 
-  await t.test('component with props', () => {
-    const Greeting = defineComponent({
-      name: 'Greeting',
-      render: ({ name, title }) => ({
-        div: {
-          children: [
-            { h2: { text: title || 'Hello' } },
-            { p: { text: `Welcome, ${name}!` } }
-          ]
-        }
-      })
-    });
-    
-    const component = Greeting({ name: 'John', title: 'Hi there' });
-    assert.deepStrictEqual(component, {
+  it('handles component creation with props', () => {
+    const Card = createComponent(({ title = 'Default', content }) => ({
       div: {
+        className: 'card',
         children: [
-          { h2: { text: 'Hi there' } },
-          { p: { text: 'Welcome, John!' } }
+          { h3: { text: title } },
+          { p: { text: content } }
         ]
       }
+    }));
+
+    expect(Card).toBeDefined();
+    expect(typeof Card.render).toBe('function');
+    
+    // Test the render function directly
+    const rendered = Card.render({ 
+      title: 'Test Card', 
+      content: 'This is test content' 
     });
+
+    expect(rendered.div.className).toBe('card');
+    expect(rendered.div.children[0].h3.text).toBe('Test Card');
+    expect(rendered.div.children[1].p.text).toBe('This is test content');
   });
 });

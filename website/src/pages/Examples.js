@@ -193,15 +193,6 @@ export function Examples({ items = [] } = {}) {
                                 text: '🔗 View on GitHub',
                               },
                             },
-                            {
-                              a: {
-                                className: 'button secondary',
-                                href: `https://codesandbox.io/p/github/Tomdrouv1/coherent.js/tree/main?file=examples%2F${encodeURIComponent(ex.file)}`,
-                                target: '_blank',
-                                rel: 'noopener',
-                                text: '🧰 Open in CodeSandbox',
-                              },
-                            },
                           ],
                         },
                       },

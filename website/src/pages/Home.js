@@ -8,6 +8,11 @@ export function Home() {
         { div: { className: 'hero', children: [
           { h1: { className: 'title', text: 'Coherent.js' } },
           { p: { className: 'lead', text: 'Fast SSR and hydration with plain JS objects. Minimal API. Maximum clarity.' } },
+          { div: { className: 'badges', children: [
+            { img: { src: 'https://img.shields.io/endpoint?url=https://coherent.js.org/coverage/badge.json&label=coverage', alt: 'Coverage', className: 'badge' } },
+            { img: { src: 'https://img.shields.io/npm/v/@coherentjs/core', alt: 'npm version', className: 'badge' } },
+            { img: { src: 'https://img.shields.io/github/actions/workflow/status/Tomdrouv1/coherent.js/ci.yml?branch=main', alt: 'CI Status', className: 'badge' } }
+          ] } },
           { div: { className: 'cta', children: [
             { a: { className: 'button primary', href: 'docs', text: 'Get Started' } },
             { a: { className: 'button', href: 'examples', text: 'Examples' } },
