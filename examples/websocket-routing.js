@@ -1,5 +1,5 @@
 import http from 'http';
-import createObjectRouter from '../src/api/router.js';
+import createObjectRouter from '../packages/api/src/router.js';
 
 // Create router with WebSocket support enabled
 const router = createObjectRouter({}, {

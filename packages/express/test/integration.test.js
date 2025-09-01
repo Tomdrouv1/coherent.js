@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 // import express from 'express';
-// import { setupCoherentExpress } from '../../../src/express/index.js';
+// import { setupCoherentExpress } from '../src/index.js';
 
 describe('Express.js integration', () => {
   it('sets up Coherent middleware', () => {

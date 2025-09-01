@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { Model } from '../../../../src/database/model.js';
+import { Model } from '../../src/model.js';
 
 // Mock QueryBuilder
 vi.mock('../../src/database/query-builder.js', () => ({

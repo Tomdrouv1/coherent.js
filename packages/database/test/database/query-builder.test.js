@@ -3,7 +3,7 @@
  */
 
 import { describe, it, beforeEach, expect } from 'vitest';
-import { createQuery, executeQuery } from '../../../../src/database/query-builder.js';
+import { createQuery, executeQuery } from '../../src/query-builder.js';
 
 // Simple mock implementation
 function createMockDb() {

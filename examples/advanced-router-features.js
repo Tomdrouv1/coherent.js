@@ -9,7 +9,7 @@
  * 5. Performance metrics and monitoring
  */
 
-import { createObjectRouter } from '../src/api/router.js';
+import { createObjectRouter } from '../packages/api/src/router.js';
 
 // Create router with all advanced features enabled
 const router = createObjectRouter({}, {

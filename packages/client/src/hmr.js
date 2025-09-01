@@ -89,7 +89,7 @@
 
     // Attempt to re-hydrate if available
     try {
-      const { autoHydrate } = await import('/src/client/hydration.js');
+      const { autoHydrate } = await import('/packages/client/src/hydration.js');
       // If examples register a component registry on window, prefer targeted hydrate
       if (window.componentRegistry) {
         autoHydrate(window.componentRegistry);

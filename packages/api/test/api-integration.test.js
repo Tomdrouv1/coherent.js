@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { createObjectRouter } from '../../../src/api/router.js';
-import { withAuth, withInputValidation, generateJWT } from '../../../src/api/security.js';
+import { createObjectRouter } from '../src/router.js';
+import { withAuth, withInputValidation, generateJWT } from '../src/security.js';
 
 describe('API Integration Features', () => {
   it('should create router with security middleware', () => {

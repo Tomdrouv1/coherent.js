@@ -1,5 +1,5 @@
 // src/express/index.js
-import { renderToString, renderHTML } from '../rendering/html-renderer.js';
+import { renderToString, renderHTML } from '../../core/src/index.js';
 
 export function expressEngine() {
     return (filePath, options, callback) => {

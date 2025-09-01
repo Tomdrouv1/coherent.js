@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-// import { setupCoherentNextjs } from '../../../src/nextjs/index.js';
+// import { setupCoherentNextjs } from '../src/index.js';
 
 describe('Next.js integration', () => {
   it('integrates with Next.js API routes', () => {

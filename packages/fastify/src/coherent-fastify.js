@@ -3,8 +3,8 @@
  * Provides plugins and utilities for using Coherent.js with Fastify
  */
 
-import { renderToString } from '../rendering/html-renderer.js';
-import { performanceMonitor } from '../performance/monitor.js';
+import { renderToString } from '../../core/src/index.js';
+import { performanceMonitor } from '../../core/src/performance/monitor.js';
 
 /**
  * Fastify plugin for Coherent.js

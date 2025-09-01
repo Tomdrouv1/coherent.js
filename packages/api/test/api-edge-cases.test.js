@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { createObjectRouter } from '../../../src/api/router.js';
-import { withInputValidation } from '../../../src/api/security.js';
+import { createObjectRouter } from '../src/router.js';
+import { withInputValidation } from '../src/security.js';
 
 describe('API Edge Cases', () => {
   it('should handle router errors gracefully', () => {

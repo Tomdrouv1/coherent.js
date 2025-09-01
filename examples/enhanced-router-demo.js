@@ -10,7 +10,7 @@
  * - Performance metrics collection
  */
 
-import { createObjectRouter } from '../src/api/router.js';
+import { createObjectRouter } from '../packages/api/src/router.js';
 
 // Create router with enhanced features enabled
 const router = createObjectRouter({}, {

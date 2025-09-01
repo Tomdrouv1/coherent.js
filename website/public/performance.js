@@ -207,32 +207,51 @@ function updateMetricCards(performanceResults = null) {
         // Use real results from performance tests
         if (renderMetrics) {
             renderMetrics.innerHTML = `
-                <div class="metric-value">${performanceResults.avgRenderTime || '0.50'}ms</div>
-                <div class="metric-detail">Average render time</div>
-                <div class="metric-detail">${performanceResults.totalRenders || 5} renders completed</div>
+                <div style="font-size: 1.8rem; font-weight: 700; color: #7cc4ff; margin-bottom: 8px;">
+                    ${performanceResults.avgRenderTime || '0.50'}ms
+                </div>
+                <div style="color: #e6edf3; font-weight: 500; margin-bottom: 4px;">
+                    Average render time
+                </div>
+                <div style="color: #9aa4b2; font-size: 0.875rem;">
+                    ${performanceResults.totalRenders || 5} renders completed
+                </div>
             `;
         }
         
         if (cacheMetrics) {
             cacheMetrics.innerHTML = `
-                <div class="metric-value">${performanceResults.hitRate || '49.5'}%</div>
-                <div class="metric-detail">Cache hit rate</div>
-                <div class="metric-detail">${performanceResults.totalHits || 99} hits, ${performanceResults.totalMisses || 101} misses</div>
+                <div style="font-size: 1.8rem; font-weight: 700; color: #3bf77d; margin-bottom: 8px;">
+                    ${performanceResults.hitRate || '49.5'}%
+                </div>
+                <div style="color: #e6edf3; font-weight: 500; margin-bottom: 4px;">
+                    Cache hit rate
+                </div>
+                <div style="color: #9aa4b2; font-size: 0.875rem;">
+                    ${performanceResults.totalHits || 99} hits, ${performanceResults.totalMisses || 101} misses
+                </div>
             `;
         }
         
         if (memoryMetrics) {
             memoryMetrics.innerHTML = `
-                <div class="metric-value">${performanceResults.usedComponents || 18}</div>
-                <div class="metric-detail">Used components</div>
-                <div class="metric-detail">${performanceResults.bundleSize || '34KB'} bundle size</div>
+                <div style="font-size: 1.8rem; font-weight: 700; color: #c77dff; margin-bottom: 8px;">
+                    ${performanceResults.usedComponents || 18}
+                </div>
+                <div style="color: #e6edf3; font-weight: 500; margin-bottom: 4px;">
+                    Used components
+                </div>
+                <div style="color: #9aa4b2; font-size: 0.875rem;">
+                    ${performanceResults.bundleSize || '34KB'} bundle size
+                </div>
             `;
         }
     } else {
-        // Show placeholder when no results
-        if (renderMetrics) renderMetrics.textContent = 'No data yet - run tests to see results';
-        if (cacheMetrics) cacheMetrics.textContent = 'No data yet - run tests to see results';  
-        if (memoryMetrics) memoryMetrics.textContent = 'No data yet - run tests to see results';
+        // Show placeholder when no results with themed styling
+        const placeholderStyle = 'color: #9aa4b2; font-style: italic; text-align: center; padding: 20px 0;';
+        if (renderMetrics) renderMetrics.innerHTML = `<div style="${placeholderStyle}">📊 No data yet - run tests to see results</div>`;
+        if (cacheMetrics) cacheMetrics.innerHTML = `<div style="${placeholderStyle}">💾 No data yet - run tests to see results</div>`;  
+        if (memoryMetrics) memoryMetrics.innerHTML = `<div style="${placeholderStyle}">🧠 No data yet - run tests to see results</div>`;
     }
 }
 
@@ -585,14 +604,15 @@ function clearResults() {
         memoryUsage: []
     };
     
-    // Reset metric cards
+    // Reset metric cards with themed styling
     const renderMetrics = document.getElementById('render-metrics');
     const cacheMetrics = document.getElementById('cache-metrics');
     const memoryMetrics = document.getElementById('memory-metrics');
     
-    if (renderMetrics) renderMetrics.textContent = 'No data yet - run tests to see results';
-    if (cacheMetrics) cacheMetrics.textContent = 'No data yet - run tests to see results';
-    if (memoryMetrics) memoryMetrics.textContent = 'No data yet - run tests to see results';
+    const placeholderStyle = 'color: #9aa4b2; font-style: italic; text-align: center; padding: 20px 0;';
+    if (renderMetrics) renderMetrics.innerHTML = `<div style="${placeholderStyle}">📊 No data yet - run tests to see results</div>`;
+    if (cacheMetrics) cacheMetrics.innerHTML = `<div style="${placeholderStyle}">💾 No data yet - run tests to see results</div>`;
+    if (memoryMetrics) memoryMetrics.innerHTML = `<div style="${placeholderStyle}">🧠 No data yet - run tests to see results</div>`;
 }
 
 // Interactive demo functions
@@ -621,13 +641,48 @@ async function testHeavyComponent() {
     const renderTime = end - start;
     
     resultDiv.innerHTML = `
-        <div class="demo-result-content">
-            <strong>Rendered in ${renderTime.toFixed(2)}ms</strong><br>
-            <small>Depth: ${depth}, HTML length: ${html.length} characters</small>
+        <div class="demo-result-content" style="
+            background: rgba(255, 255, 255, 0.05); 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            border-radius: 12px; 
+            padding: 16px; 
+            margin-top: 10px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            color: #e6edf3;
+        ">
+            <div style="
+                color: #7cc4ff; 
+                font-weight: 600; 
+                margin-bottom: 8px;
+                font-size: 14px;
+            ">✅ Rendered in ${renderTime.toFixed(2)}ms</div>
+            <div style="color: #9aa4b2; font-size: 13px; margin-bottom: 12px;">
+                Depth: ${depth} • HTML length: ${html.length} characters
+            </div>
             <details style="margin-top: 10px;">
-                <summary>View rendered HTML</summary>
-                <div style="max-height: 200px; overflow-y: auto; background: #f5f5f5; padding: 10px; margin-top: 5px; font-family: monospace; font-size: 12px;">
-                    ${html.substring(0, 500)}${html.length > 500 ? '...' : ''}
+                <summary style="
+                    color: #7cc4ff; 
+                    cursor: pointer; 
+                    font-weight: 500; 
+                    font-size: 13px;
+                    margin-bottom: 8px;
+                ">📄 View rendered HTML</summary>
+                <div style="
+                    max-height: 200px; 
+                    overflow-y: auto; 
+                    background: rgba(15, 20, 32, 0.8); 
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    border-radius: 8px;
+                    padding: 12px; 
+                    margin-top: 8px; 
+                    font-family: ui-monospace, 'SF Mono', 'Monaco', monospace; 
+                    font-size: 11px;
+                    color: #9aa4b2;
+                    line-height: 1.4;
+                    word-break: break-all;
+                ">
+                    ${html.substring(0, 500)}${html.length > 500 ? '<span style="color: #7cc4ff;">...</span>' : ''}
                 </div>
             </details>
         </div>
@@ -656,10 +711,28 @@ async function testDataTable() {
     const renderTime = end - start;
     
     resultDiv.innerHTML = `
-        <div class="demo-result-content">
-            <strong>Rendered ${rowCount} rows in ${renderTime.toFixed(2)}ms</strong><br>
-            <small>Average: ${(renderTime / rowCount).toFixed(3)}ms per row</small><br>
-            <small>HTML length: ${html.length} characters</small>
+        <div class="demo-result-content" style="
+            background: rgba(255, 255, 255, 0.05); 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            border-radius: 12px; 
+            padding: 16px; 
+            margin-top: 10px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            color: #e6edf3;
+        ">
+            <div style="
+                color: #7cc4ff; 
+                font-weight: 600; 
+                margin-bottom: 8px;
+                font-size: 14px;
+            ">📊 Rendered ${rowCount} rows in ${renderTime.toFixed(2)}ms</div>
+            <div style="color: #9aa4b2; font-size: 13px; margin-bottom: 6px;">
+                Average: <span style="color: #3bf77d; font-weight: 500;">${(renderTime / rowCount).toFixed(3)}ms</span> per row
+            </div>
+            <div style="color: #9aa4b2; font-size: 13px;">
+                HTML length: ${html.length.toLocaleString()} characters
+            </div>
         </div>
     `;
 }

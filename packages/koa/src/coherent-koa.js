@@ -3,9 +3,9 @@
  * Provides middleware and utilities for using Coherent.js with Koa
  */
 
-import { renderToString } from '../rendering/html-renderer.js';
-import { performanceMonitor } from '../performance/monitor.js';
-import { importPeerDependency } from '../utils/dependency-utils.js';
+import { renderToString } from '../../core/src/index.js';
+import { performanceMonitor } from '../../core/src/performance/monitor.js';
+import { importPeerDependency } from '../../core/src/utils/dependency-utils.js';
 
 /**
  * Coherent.js Koa middleware

@@ -2,7 +2,7 @@ import express from 'express';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readFileSync } from 'fs';
-import { renderToString } from './src/rendering/html-renderer.js';
+import { renderToString } from './packages/core/src/rendering/html-renderer.js';
 import { Performance } from './website/src/pages/Performance.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -42,11 +42,11 @@ app.get('/', async (req, res) => {
     .button.secondary { background: #6c757d; color: white; }
     .button:hover { opacity: 0.8; }
     .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0; }
-    .metric-card { background: white; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; }
+    .metric-card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 20px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); color: #e6edf3; }
     .demo-section { margin: 30px 0; }
-    .demo-card { background: white; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; }
+    .demo-card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 20px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); color: #e6edf3; }
     .demo-controls { display: flex; gap: 10px; align-items: center; margin: 15px 0; }
-    .demo-result { background: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 10px; min-height: 60px; }
+    .demo-result { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 16px; margin-top: 15px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); color: #e6edf3; min-height: 60px; }
     .tips-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 20px 0; }
     .tip-card { border-radius: 8px; padding: 15px; }
     input[type="range"] { width: 100px; margin: 0 10px; }

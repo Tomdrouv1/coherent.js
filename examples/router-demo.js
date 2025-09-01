@@ -11,8 +11,8 @@
  * @version 1.0.0
  */
 
-import { createObjectRouter } from '../src/api/router.js';
-import { ApiError } from '../src/api/errors.js';
+import { createObjectRouter } from '../packages/api/src/router.js';
+import { ApiError } from '../packages/api/src/errors.js';
 
 // Sample data stores
 const users = [

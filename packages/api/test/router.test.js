@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { createObjectRouter } from '../../../src/api/router.js';
+import { createObjectRouter } from '../src/router.js';
 
 // Mock request and response objects for Node.js HTTP server
 function createMockReq(method = 'GET', url = '/', body = {}) {

@@ -1,7 +1,7 @@
 import http2 from 'http2';
 import fs from 'fs';
 import path from 'path';
-import { createApiRouter } from '../src/api/index.js';
+import { createApiRouter } from '../packages/api/src/index.js';
 import { performance } from 'perf_hooks';
 
 // HTTP/2 server with Coherent.js API router

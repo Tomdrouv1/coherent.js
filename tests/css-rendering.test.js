@@ -11,7 +11,7 @@ import {
   renderHTML,
   renderHTMLSync,
   render
-} from '../src/rendering/html-renderer.js';
+} from '../packages/core/src/rendering/html-renderer.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixturesDir = join(__dirname, 'fixtures', 'css-rendering');

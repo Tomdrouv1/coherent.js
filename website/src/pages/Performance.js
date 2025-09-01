@@ -1,4 +1,4 @@
-import { withState } from '../../../src/coherent.js';
+import { withState } from "../../../packages/core/src/index.js";
 
 // Performance.js - Interactive performance testing page with Coherent.js state management
 const PerformanceComponent = withState({
@@ -14,52 +14,15 @@ const PerformanceView = (props) => {
   const { state, stateUtils } = props;
   const { setState } = stateUtils;
 
-  // Define performance test functions that delegate to the client-side implementation
-  const runAllTests = async () => {
-    // This function will be called on the client-side via data-action
-    // It should delegate to the window.runPerformanceTests function
-    if (typeof window !== 'undefined' && window.runPerformanceTests) {
-      return window.runPerformanceTests();
-    }
-    
-    // Server-side fallback (should not normally run)
-    setState({ isRunning: true, currentTest: 'Running performance tests...', progress: 0 });
-  };
+  // Event handlers are now string-based and will call the global functions
+  // loaded by performance.js when the page loads
 
-  const runRenderingTest = async () => {
-    // This function will be called on the client-side via data-action
-    if (typeof window !== 'undefined' && window.runRenderingTest) {
-      return window.runRenderingTest();
-    }
-    
-    // Server-side fallback
-    setState({ isRunning: true, currentTest: 'Running rendering test...', progress: 0 });
-  };
-
-  const runCacheTest = async () => {
-    // This function will be called on the client-side via data-action
-    if (typeof window !== 'undefined' && window.runCacheTest) {
-      return window.runCacheTest();
-    }
-    
-    // Server-side fallback
-    setState({ isRunning: true, currentTest: 'Running cache test...', progress: 0 });
-  };
-
-  const clearResults = () => {
-    // This function will be called on the client-side via data-action
-    if (typeof window !== 'undefined' && window.clearResults) {
-      return window.clearResults();
-    }
-    
-    // Server-side fallback
-    setState({ 
-      performanceResults: null, 
-      isRunning: false,
-      currentTest: '',
-      progress: 0
-    });
-  };
+  // Make setState available globally for performance.js to update component state
+  if (typeof window !== 'undefined') {
+    window.updatePerformanceState = (performanceResults) => {
+      setState({ performanceResults });
+    };
+  }
 
   return {
     div: {
@@ -95,7 +58,7 @@ const PerformanceView = (props) => {
                         id: 'run-all-tests',
                         className: 'button primary',
                         text: '🚀 Run All Performance Tests',
-                        onclick: runAllTests
+                        onclick: 'runPerformanceTests()'
                       }
                     },
                     {
@@ -103,7 +66,7 @@ const PerformanceView = (props) => {
                         id: 'run-render-test',
                         className: 'button secondary',
                         text: '📊 Rendering Test Only',
-                        onclick: runRenderingTest
+                        onclick: 'runRenderingTest()'
                       }
                     },
                     {
@@ -111,7 +74,7 @@ const PerformanceView = (props) => {
                         id: 'run-cache-test',
                         className: 'button secondary',
                         text: '💾 Cache Test Only', 
-                        onclick: runCacheTest
+                        onclick: 'runCacheTest()'
                       }
                     },
                     {
@@ -119,7 +82,7 @@ const PerformanceView = (props) => {
                         id: 'clear-results',
                         className: 'button',
                         text: '🗑️ Clear Results',
-                        onclick: clearResults
+                        onclick: 'clearResults()'
                       }
                     }
                   ]
@@ -361,40 +324,40 @@ const PerformanceView = (props) => {
                     {
                       div: {
                         className: 'tip-card',
-                        style: 'background: #e8f5e8; border-left: 4px solid #4CAF50; padding: 15px;',
+                        style: 'background: rgba(67, 233, 123, 0.1); border: 1px solid rgba(67, 233, 123, 0.3); border-radius: 12px; padding: 20px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);',
                         children: [
-                          { h4: { text: '⚡ Enable Caching', style: 'margin-top: 0; color: #2E7D32;' } },
-                          { p: { text: 'Use framework caching for frequently rendered components to achieve up to 200x performance improvements.' } }
+                          { h4: { text: '⚡ Enable Caching', style: 'margin-top: 0; color: #3bf77d; font-weight: 600;' } },
+                          { p: { text: 'Use framework caching for frequently rendered components to achieve up to 200x performance improvements.', style: 'color: #e6edf3; margin-bottom: 0;' } }
                         ]
                       }
                     },
                     {
                       div: {
                         className: 'tip-card',
-                        style: 'background: #e3f2fd; border-left: 4px solid #2196F3; padding: 15px;',
+                        style: 'background: rgba(79, 172, 254, 0.1); border: 1px solid rgba(79, 172, 254, 0.3); border-radius: 12px; padding: 20px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);',
                         children: [
-                          { h4: { text: '🗂️ Static Components', style: 'margin-top: 0; color: #1976D2;' } },
-                          { p: { text: 'Pre-render static components and cache them for ultra-fast rendering of unchanging UI elements.' } }
+                          { h4: { text: '🗂️ Static Components', style: 'margin-top: 0; color: #7cc4ff; font-weight: 600;' } },
+                          { p: { text: 'Pre-render static components and cache them for ultra-fast rendering of unchanging UI elements.', style: 'color: #e6edf3; margin-bottom: 0;' } }
                         ]
                       }
                     },
                     {
                       div: {
                         className: 'tip-card',
-                        style: 'background: #fff3e0; border-left: 4px solid #FF9800; padding: 15px;',
+                        style: 'background: rgba(255, 152, 0, 0.1); border: 1px solid rgba(255, 152, 0, 0.3); border-radius: 12px; padding: 20px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);',
                         children: [
-                          { h4: { text: '📦 Bundle Optimization', style: 'margin-top: 0; color: #F57C00;' } },
-                          { p: { text: 'Use the bundle optimizer to identify and remove unused components from your production builds.' } }
+                          { h4: { text: '📦 Bundle Optimization', style: 'margin-top: 0; color: #ff9800; font-weight: 600;' } },
+                          { p: { text: 'Use the bundle optimizer to identify and remove unused components from your production builds.', style: 'color: #e6edf3; margin-bottom: 0;' } }
                         ]
                       }
                     },
                     {
                       div: {
                         className: 'tip-card',
-                        style: 'background: #fce4ec; border-left: 4px solid #E91E63; padding: 15px;',
+                        style: 'background: rgba(233, 30, 99, 0.1); border: 1px solid rgba(233, 30, 99, 0.3); border-radius: 12px; padding: 20px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);',
                         children: [
-                          { h4: { text: '🧠 Memory Management', style: 'margin-top: 0; color: #C2185B;' } },
-                          { p: { text: 'Monitor memory usage and implement cleanup strategies for long-running applications.' } }
+                          { h4: { text: '🧠 Memory Management', style: 'margin-top: 0; color: #ff6b9d; font-weight: 600;' } },
+                          { p: { text: 'Monitor memory usage and implement cleanup strategies for long-running applications.', style: 'color: #e6edf3; margin-bottom: 0;' } }
                         ]
                       }
                     }

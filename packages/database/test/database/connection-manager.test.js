@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { DatabaseManager } from '../../../../src/database/connection-manager.js';
+import { DatabaseManager } from '../../src/connection-manager.js';
 
 describe('DatabaseManager', () => {
   let db;

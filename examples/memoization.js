@@ -3,7 +3,7 @@
  * Demonstrates memo() for component optimization and performance
  */
 
-import { renderToString, memo } from '../src/coherent.js';
+import { renderToString, memo } from "../packages/core/src/index.js";
 import { performanceMonitor } from '../src/performance/monitor.js';
 
 // Expensive computation component (non-memoized)

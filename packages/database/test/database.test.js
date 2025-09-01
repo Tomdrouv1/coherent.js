@@ -4,9 +4,9 @@
  */
 
 import { test, assert } from 'vitest';
-import { DatabaseManager } from '../../../src/database/connection-manager.js';
-import { createModel } from '../../../src/database/model.js';
-import { QueryBuilder } from '../../../src/database/query-builder.js';
+import { DatabaseManager } from '../src/connection-manager.js';
+import { createModel } from '../src/model.js';
+import { QueryBuilder } from '../src/query-builder.js';
 
 // Mock adapter for testing
 class MockAdapter {

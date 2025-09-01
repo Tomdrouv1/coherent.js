@@ -11,7 +11,7 @@ import {
   withQueryValidation,
   withHealthCheck,
   withConnectionPool
-} from '../../../../src/database/middleware.js';
+} from '../../src/middleware.js';
 
 describe('Database Middleware', () => {
   let mockDb;

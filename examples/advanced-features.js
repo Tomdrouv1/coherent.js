@@ -10,7 +10,7 @@
  * - Complex component composition
  */
 
-import { memo, withState } from '../src/coherent.js';
+import { memo, withState } from "../packages/core/src/index.js";
 
 // Memoized expensive computation component
 export const MemoizedCalculator = memo(

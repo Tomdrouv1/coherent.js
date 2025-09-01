@@ -3,7 +3,7 @@
  * Demonstrates CSS file loading, external links, and inline styles
  */
 
-import { renderHTML } from '../../src/coherent.js';
+import { renderHTML } from "../../../packages/core/src/index.js";
 
 // Demo components
 const Button = ({ variant = 'primary', size = 'medium', children, onClick, disabled = false }) => ({

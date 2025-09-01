@@ -198,7 +198,7 @@ export class BundleOptimizer {
     generateOptimizedConfig() {
         return {
             entryPoints: {
-                core: ['./src/coherent.js'],
+                core: ['./src/index.js'],
                 components: Array.from(this.usedComponents)
                     .filter(name => !name.startsWith('html_'))
                     .map(name => `./src/components/${name}.js`),

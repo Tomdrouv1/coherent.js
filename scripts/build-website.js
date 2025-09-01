@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { marked } from 'marked';
-import { renderToString } from '../src/coherent.js';
+import { renderToString } from "../packages/core/src/index.js";
 import { Layout } from '../website/src/layout/Layout.js';
 import { Home } from '../website/src/pages/Home.js';
 import { Examples } from '../website/src/pages/Examples.js';
@@ -76,7 +76,19 @@ function enhanceHeadings(html){
 
 function buildToc(headings){
   if(!headings || !headings.length) return '<div class="toc-empty">No sections</div>';
-  const items = headings.map(h => `<li class="${h.level}"><a href="#${h.id}">${escapeHtml(h.text)}</a></li>`).join('');
+  const items = headings.map(h => {
+    // Clean up method names - remove object prefixes and parameters for all methods
+    let displayText = h.text;
+    
+    // Remove object prefixes (e.g., "performanceMonitor.", "cssManager.", etc.)
+    displayText = displayText.replace(/^[a-zA-Z_$][a-zA-Z0-9_$]*\./, '');
+    
+    // Remove parameters and everything after them (e.g., "(param)" or "(param1, param2)")
+    displayText = displayText.replace(/\([^)]*\).*$/, '');
+    
+    // Use onclick to prevent navigation and scroll to anchor instead
+    return `<li class="${h.level}"><a href="#${h.id}" onclick="event.preventDefault(); document.getElementById('${h.id}')?.scrollIntoView({behavior: 'smooth'}); window.history.replaceState(null, null, '#${h.id}');">${escapeHtml(displayText)}</a></li>`;
+  }).join('');
   return `<div class="toc-box"><div class="toc-title">On this page</div><ul class="toc-list">${items}</ul></div>`;
 }
 
@@ -182,10 +194,10 @@ async function buildPerformance(sidebar) {
                       children: [{
                         tr: {
                           children: [
-                            { th: { text: 'ID', style: 'border: 1px solid #ddd; padding: 8px; background: #f5f5f5;' } },
-                            { th: { text: 'Name', style: 'border: 1px solid #ddd; padding: 8px; background: #f5f5f5;' } },
-                            { th: { text: 'Score', style: 'border: 1px solid #ddd; padding: 8px; background: #f5f5f5;' } },
-                            { th: { text: 'Status', style: 'border: 1px solid #ddd; padding: 8px; background: #f5f5f5;' } }
+                            { th: { text: 'ID', style: 'border: 1px solid rgba(255, 255, 255, 0.1); padding: 8px; background: rgba(255, 255, 255, 0.1);' } },
+                            { th: { text: 'Name', style: 'border: 1px solid rgba(255, 255, 255, 0.1); padding: 8px; background: rgba(255, 255, 255, 0.1);' } },
+                            { th: { text: 'Score', style: 'border: 1px solid rgba(255, 255, 255, 0.1); padding: 8px; background: rgba(255, 255, 255, 0.1);' } },
+                            { th: { text: 'Status', style: 'border: 1px solid rgba(255, 255, 255, 0.1); padding: 8px; background: rgba(255, 255, 255, 0.1);' } }
                           ]
                         }
                       }]
@@ -196,10 +208,10 @@ async function buildPerformance(sidebar) {
                       children: rows.map(row => ({
                         tr: {
                           children: [
-                            { td: { text: row.id, style: 'border: 1px solid #ddd; padding: 8px;' } },
-                            { td: { text: row.name, style: 'border: 1px solid #ddd; padding: 8px;' } },
-                            { td: { text: row.score, style: 'border: 1px solid #ddd; padding: 8px;' } },
-                            { td: { text: row.status, style: 'border: 1px solid #ddd; padding: 8px;' } }
+                            { td: { text: row.id, style: 'border: 1px solid rgba(255, 255, 255, 0.1); padding: 8px;' } },
+                            { td: { text: row.name, style: 'border: 1px solid rgba(255, 255, 255, 0.1); padding: 8px;' } },
+                            { td: { text: row.score, style: 'border: 1px solid rgba(255, 255, 255, 0.1); padding: 8px;' } },
+                            { td: { text: row.status, style: 'border: 1px solid rgba(255, 255, 255, 0.1); padding: 8px;' } }
                           ]
                         }
                       }))
@@ -320,7 +332,7 @@ async function buildPerformance(sidebar) {
             \${renderResults}
             \${cacheResults}
             \${memoryResults}
-            <div class="result-summary" style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <div class="result-summary" style="background: rgba(67, 233, 123, 0.1); border: 1px solid rgba(67, 233, 123, 0.3); padding: 15px; border-radius: 12px; margin: 20px 0; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
               <h4>📊 Summary</h4>
               <ul>
                 <li><strong>Rendering Performance:</strong> 87-95% improvement with optimization</li>
@@ -380,7 +392,7 @@ async function buildPerformance(sidebar) {
       const improvement = ((basicTime - optimizedTime) / basicTime * 100);
       
       return \`
-        <div class="test-result" style="background: white; border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px;">
+        <div class="test-result" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); padding: 20px; margin: 16px 0; border-radius: 12px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
           <h4>📊 Rendering Performance Test</h4>
           <div style="margin: 10px 0;">
             <strong>Basic rendering (100x):</strong> \${basicTime.toFixed(2)}ms<br>
@@ -422,7 +434,7 @@ async function buildPerformance(sidebar) {
       const speedup = coldTime / warmTime;
       
       return \`
-        <div class="test-result" style="background: white; border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px;">
+        <div class="test-result" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); padding: 20px; margin: 16px 0; border-radius: 12px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
           <h4>💾 Cache Performance Test</h4>
           <div style="margin: 10px 0;">
             <strong>Cold cache render:</strong> \${coldTime.toFixed(2)}ms<br>
@@ -447,7 +459,7 @@ async function buildPerformance(sidebar) {
       const avgSizeKB = (totalSize / components.length / 1024);
       
       return \`
-        <div class="test-result" style="background: white; border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px;">
+        <div class="test-result" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); padding: 20px; margin: 16px 0; border-radius: 12px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
           <h4>🧠 Memory Usage Test</h4>
           <div style="margin: 10px 0;">
             <strong>Components tested:</strong> \${components.length}<br>
@@ -500,14 +512,14 @@ async function buildPerformance(sidebar) {
         const renderTime = performance.now() - start;
         
         resultEl.innerHTML = \`
-          <div style="background: #f0f0f0; padding: 10px; border-radius: 4px; margin: 10px 0;">
+          <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 16px; margin: 10px 0; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); color: #e6edf3;">
             <strong>Render time:</strong> \${renderTime.toFixed(2)}ms<br>
             <strong>Output size:</strong> \${(result.length / 1024).toFixed(1)}KB<br>
             <strong>Depth:</strong> \${depth} levels
           </div>
           <details style="margin: 10px 0;">
             <summary>Show rendered HTML preview</summary>
-            <div style="max-height: 200px; overflow: auto; background: white; padding: 10px; border: 1px solid #ddd; margin: 5px 0;">
+            <div style="max-height: 200px; overflow: auto; background: rgba(15, 20, 32, 0.8); color: #9aa4b2; padding: 10px; border: 1px solid rgba(255, 255, 255, 0.1); margin: 5px 0;">
               \${result.substring(0, 1000)}\${result.length > 1000 ? '...' : ''}
             </div>
           </details>
@@ -534,14 +546,14 @@ async function buildPerformance(sidebar) {
         const renderTime = performance.now() - start;
         
         resultEl.innerHTML = \`
-          <div style="background: #f0f0f0; padding: 10px; border-radius: 4px; margin: 10px 0;">
+          <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 16px; margin: 10px 0; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); color: #e6edf3;">
             <strong>Render time:</strong> \${renderTime.toFixed(2)}ms<br>
             <strong>Output size:</strong> \${(result.length / 1024).toFixed(1)}KB<br>
             <strong>Rows:</strong> \${rows} records
           </div>
           <details style="margin: 10px 0;">
             <summary>Show table preview (first 50 rows)</summary>
-            <div style="max-height: 300px; overflow: auto; background: white; padding: 10px; border: 1px solid #ddd; margin: 5px 0;">
+            <div style="max-height: 300px; overflow: auto; background: rgba(15, 20, 32, 0.8); color: #9aa4b2; padding: 10px; border: 1px solid rgba(255, 255, 255, 0.1); margin: 5px 0;">
               \${result.substring(0, 2000)}\${result.length > 2000 ? '...' : ''}
             </div>
           </details>
@@ -1199,6 +1211,38 @@ async function copyHydrationAsset() {
   }
 }
 
+async function copyCoverageBadge() {
+  try {
+    const coverageDistDir = path.join(DIST_DIR, 'coverage');
+    await ensureDir(coverageDistDir);
+    
+    // Copy badge.json
+    const coverageBadgeSrc = path.join(repoRoot, 'coverage', 'badge.json');
+    await fs.copyFile(coverageBadgeSrc, path.join(coverageDistDir, 'badge.json'));
+    
+    // Copy coverage-summary.json to root for JavaScript access
+    const coverageSummarySrc = path.join(repoRoot, 'coverage-summary.json');
+    await fs.copyFile(coverageSummarySrc, path.join(DIST_DIR, 'coverage-summary.json'));
+    
+    // Copy coverage report markdown
+    const coverageReportSrc = path.join(repoRoot, 'coverage', 'coverage-report.md');
+    await fs.copyFile(coverageReportSrc, path.join(coverageDistDir, 'coverage-report.md'));
+    
+    // Copy LCOV report directory if it exists
+    const lcovReportSrc = path.join(repoRoot, 'coverage', 'lcov-report');
+    const lcovReportDst = path.join(coverageDistDir, 'lcov-report');
+    try {
+      await fs.cp(lcovReportSrc, lcovReportDst, { recursive: true });
+    } catch (e) {
+      console.warn('LCOV report not found, skipping...');
+    }
+    
+    console.log('Coverage files copied to dist');
+  } catch (e) {
+    console.warn('Failed to copy coverage files:', e.message);
+  }
+}
+
 async function buildHome(sidebar) {
   const content = renderToString(Home());
   const page = Layout({ title: 'Coherent.js', sidebar, currentPath: '', baseHref });
@@ -1631,7 +1675,7 @@ async function generateSearchData(docs) {
       
       // Truncate content for search
       if (content.length > 200) {
-        content = content.substring(0, 200) + '...';
+        content = `${content.substring(0, 200)  }...`;
       }
       
       // Determine section based on file path
@@ -1721,6 +1765,7 @@ async function main() {
   await buildPlaygroundPages(playgroundItems);
   await buildPerformance(sidebar);
   await buildCoverage(sidebar);
+  await copyCoverageBadge();
   await buildDocs(docs);
   await buildChangelog(sidebar);
 

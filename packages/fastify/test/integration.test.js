@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 // import fastify from 'fastify';
-// import { setupCoherentFastify } from '../../../src/fastify/index.js';
+// import { setupCoherentFastify } from '../src/index.js';
 
 describe('Fastify integration', () => {
   it('registers Coherent plugin', () => {

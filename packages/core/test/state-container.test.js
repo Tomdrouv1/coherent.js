@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { withState } from '../../../src/coherent.js';
+import { withState } from '../src/index.js';
 
 // Helper component factory using correct withState HOC API
 function makeTestComponent() {

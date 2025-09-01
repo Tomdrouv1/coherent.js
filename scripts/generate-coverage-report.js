@@ -20,21 +20,76 @@ const packageDirs = readdirSync(packagesDir).filter(dir => {
   return statSync(dirPath).isDirectory();
 });
 
-const totalFunctions = 0;
-const coveredFunctions = 0;
-const totalBranches = 0;
-const coveredBranches = 0;
-const totalLines = 0;
-const coveredLines = 0;
+let totalFunctions = 0;
+let coveredFunctions = 0;
+let totalBranches = 0;
+let coveredBranches = 0;
+let totalLines = 0;
+let coveredLines = 0;
 
 const packageCoverage = [];
 let combinedLcov = '';
 
-// Collect coverage from each package
-for (const packageDir of packageDirs) {
-  const packagePath = join(packagesDir, packageDir);
-  const coveragePath = join(packagePath, 'coverage');
-  const lcovPath = join(coveragePath, 'lcov.info');
+// Check if root coverage exists first
+const rootLcovPath = 'coverage/lcov.info';
+if (existsSync(rootLcovPath)) {
+  console.log('📊 Using root coverage data');
+  const lcovContent = readFileSync(rootLcovPath, 'utf-8');
+  combinedLcov = lcovContent;
+  
+  // Parse coverage summary from root lcov
+  const lines = lcovContent.split('\n');
+  const packageStats = {
+    name: 'coherent.js',
+    statements: { covered: 0, total: 0, pct: 0 },
+    functions: { covered: 0, total: 0, pct: 0 },
+    branches: { covered: 0, total: 0, pct: 0 },
+    lines: { covered: 0, total: 0, pct: 0 }
+  };
+  
+  for (const line of lines) {
+    if (line.startsWith('LF:')) {
+      const value = parseInt(line.split(':')[1]);
+      packageStats.lines.total += value;
+      totalLines += value;
+    } else if (line.startsWith('LH:')) {
+      const value = parseInt(line.split(':')[1]);
+      packageStats.lines.covered += value;
+      coveredLines += value;
+    } else if (line.startsWith('BRF:')) {
+      const value = parseInt(line.split(':')[1]);
+      packageStats.branches.total += value;
+      totalBranches += value;
+    } else if (line.startsWith('BRH:')) {
+      const value = parseInt(line.split(':')[1]);
+      packageStats.branches.covered += value;
+      coveredBranches += value;
+    } else if (line.startsWith('FNF:')) {
+      const value = parseInt(line.split(':')[1]);
+      packageStats.functions.total += value;
+      totalFunctions += value;
+    } else if (line.startsWith('FNH:')) {
+      const value = parseInt(line.split(':')[1]);
+      packageStats.functions.covered += value;
+      coveredFunctions += value;
+    }
+  }
+  
+  // Calculate percentages
+  packageStats.lines.pct = packageStats.lines.total > 0 ? 
+    Math.round((packageStats.lines.covered / packageStats.lines.total) * 100) : 0;
+  packageStats.branches.pct = packageStats.branches.total > 0 ? 
+    Math.round((packageStats.branches.covered / packageStats.branches.total) * 100) : 0;
+  packageStats.functions.pct = packageStats.functions.total > 0 ? 
+    Math.round((packageStats.functions.covered / packageStats.functions.total) * 100) : 0;
+  
+  packageCoverage.push(packageStats);
+} else {
+  // Fallback to individual package collection
+  for (const packageDir of packageDirs) {
+    const packagePath = join(packagesDir, packageDir);
+    const coveragePath = join(packagePath, 'coverage');
+    const lcovPath = join(coveragePath, 'lcov.info');
   
   if (existsSync(lcovPath)) {
     console.log(`📊 Found coverage for ${packageDir}`);
@@ -84,8 +139,9 @@ for (const packageDir of packageDirs) {
       Math.round((packageStats.functions.covered / packageStats.functions.total) * 100) : 0;
     
     packageCoverage.push(packageStats);
-  } else {
-    console.log(`⚠️  No coverage found for ${packageDir}`);
+    } else {
+      console.log(`⚠️  No coverage found for ${packageDir}`);
+    }
   }
 }
 

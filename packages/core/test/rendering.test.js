@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { renderToString } from '../../../src/coherent.js';
+import { renderToString } from '../src/index.js';
 
 describe('Component Rendering', () => {
   it('renders basic component correctly', () => {

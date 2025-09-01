@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { coherentFastify, createCoherentFastifyHandler, setupCoherentFastify } from '../../../src/fastify/coherent-fastify.js';
-import { renderToString } from '../../../src/rendering/html-renderer.js';
+import { coherentFastify, createCoherentFastifyHandler, setupCoherentFastify } from '../src/coherent-fastify.js';
+import { renderToString } from '../../core/src/index.js';
 
 describe('Fastify Integration', () => {
   it('should create coherentFastify plugin', () => {

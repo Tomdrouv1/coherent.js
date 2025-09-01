@@ -375,7 +375,7 @@ export function renderHTMLSync(component, options = {}) {
         cssHtml += defaultCSSManager.generateCSSLinks(cssOptions.links);
     }
     if (cssOptions.inline) {
-        cssHtml += '\n' + defaultCSSManager.generateInlineStyles(cssOptions.inline);
+        cssHtml += `\n${  defaultCSSManager.generateInlineStyles(cssOptions.inline)}`;
     }
     
     if (cssHtml && htmlContent.includes('<head>')) {

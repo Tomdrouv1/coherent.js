@@ -1,5 +1,5 @@
-import { renderToString } from '../../../src/coherent.js';
-import { createContextProvider, useContext, clearAllContexts } from '../../../src/state/state-manager.js';
+import { renderToString } from '../src/index.js';
+import { createContextProvider, useContext, clearAllContexts } from '../src/state/state-manager.js';
 import { describe, it, expect } from 'vitest';
 
 // Test component that uses context
@@ -49,10 +49,7 @@ describe('Context Provider', () => {
   it('should handle nested context providers correctly', () => {
     // Run the test
     clearAllContexts();
-    const html = renderToString(NestedContextApp, {
-        enableCache: true,
-        enableMonitoring: false
-    });
+    const html = renderToString(NestedContextApp);
 
     // Verify the output contains the expected class names in correct quantities
     const darkButtonCount = (html.match(/btn-dark/g) || []).length;

@@ -3,16 +3,16 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { DatabaseManager } from '../../../../src/database/connection-manager.js';
-import { QueryBuilder } from '../../../../src/database/query-builder.js';
-import { Model } from '../../../../src/database/model.js';
-import { Migration } from '../../../../src/database/migration.js';
+import { DatabaseManager } from '../../src/connection-manager.js';
+import { QueryBuilder } from '../../src/query-builder.js';
+import { Model } from '../../src/model.js';
+import { Migration } from '../../src/migration.js';
 import { 
   withDatabase, 
   withTransaction, 
   withModel, 
   withPagination 
-} from '../../../../src/database/middleware.js';
+} from '../../src/middleware.js';
 import { 
   MockAdapter, 
   DatabaseTestHelper, 
@@ -122,6 +122,10 @@ describe('Database Integration E2E Tests', () => {
         };
       }
 
+      // Make models globally available for relationship lookup
+      global.User = User;
+      global.Post = Post;
+
       User.setDatabase(dbManager);
       Post.setDatabase(dbManager);
 
@@ -132,6 +136,11 @@ describe('Database Integration E2E Tests', () => {
         content: 'Hello World', 
         user_id: user.get('id') 
       });
+      const post2 = await Post.create({ 
+        title: 'Second Post', 
+        content: 'Another post', 
+        user_id: user.get('id') 
+      });
 
       // Test relationships
       const userPosts = await user.posts();
@@ -140,6 +149,10 @@ describe('Database Integration E2E Tests', () => {
 
       const postUser = await post1.user();
       expect(postUser.get('name')).toBe('John Doe');
+      
+      // Clean up global references
+      delete global.User;
+      delete global.Post;
     });
 
     it('should handle complex queries with query builder', async () => {

@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { hydrate, hydrateAll, hydrateBySelector, makeHydratable } from '../../../src/client/hydration.js';
+import { hydrate, hydrateAll, hydrateBySelector, makeHydratable } from '../src/hydration.js';
 
 // Mock DOM environment for testing
 const createMockElement = (tagName = 'div', className = '') => ({

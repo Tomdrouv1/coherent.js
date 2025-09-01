@@ -3,8 +3,8 @@
  * Demonstrates various client-side hydration scenarios and best practices
  */
 
-import { withState } from '../src/coherent.js';
-import { makeHydratable, autoHydrate } from '../src/client/hydration.js';
+import { withState } from "../packages/core/src/index.js";
+import { makeHydratable, autoHydrate } from '../packages/client/src/hydration.js';
 
 // Example 1: Simple Interactive Counter with Hydration
 const CounterComponent = withState({ count: 0 })(({ state, stateUtils }) => {

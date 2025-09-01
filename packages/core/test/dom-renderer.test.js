@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import { strictEqual, ok } from 'node:assert';
-import { DOMRenderer } from '../../../src/rendering/dom-renderer.js';
+import { DOMRenderer } from '../src/rendering/dom-renderer.js';
 
 // Minimal DOM mock to run DOMRenderer without jsdom
 class MockNode {

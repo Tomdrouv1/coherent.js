@@ -10,7 +10,7 @@
  * - Transaction support and connection pooling
  */
 
-import { createSimpleRouter } from '../src/api/router.js';
+import { createSimpleRouter } from '../packages/api/src/router.js';
 import { 
   createDatabaseManager,
   createQuery,
@@ -21,7 +21,7 @@ import {
   withModel,
   withPagination,
   runMigrations
-} from '../src/database/index.js';
+} from '../packages/database/src/index.js';
 
 // Database configuration examples for different engines
 const configs = {

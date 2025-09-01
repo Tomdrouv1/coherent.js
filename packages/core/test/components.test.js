@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createComponent, memo } from '../../../src/components/component-system.js';
+import { createComponent, memo } from '../src/components/component-system.js';
 
 describe('Component system', () => {
   it('creates basic component instance', () => {

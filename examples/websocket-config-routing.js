@@ -1,4 +1,4 @@
-import createObjectRouter from '../src/api/router.js';
+import createObjectRouter from '../packages/api/src/router.js';
 import http from 'http';
 
 

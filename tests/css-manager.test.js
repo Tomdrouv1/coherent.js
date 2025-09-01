@@ -12,7 +12,7 @@ import {
   createCSSManager, 
   defaultCSSManager,
   cssUtils 
-} from '../src/rendering/css-manager.js';
+} from '../packages/core/src/rendering/css-manager.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixturesDir = join(__dirname, 'fixtures', 'css');

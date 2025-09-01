@@ -3,7 +3,7 @@
  * Demonstrates how to use external CSS files with Coherent.js
  */
 
-import { renderHTML, renderHTMLSync } from '../../src/coherent.js';
+import { renderHTML, renderHTMLSync } from "../packages/core/src/index.js";
 
 // Simple component using CSS classes
 const Button = ({ variant = 'primary', size = 'medium', children, onClick }) => ({

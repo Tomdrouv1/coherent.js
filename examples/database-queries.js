@@ -8,11 +8,11 @@
  */
 
 // Using factory functions (recommended pure JS object approach)
-import { createDatabaseManager, createQuery, executeQuery } from '../src/database/index.js';
-import { MemoryAdapter } from '../src/database/adapters/memory.js';
+import { createDatabaseManager, createQuery, executeQuery } from '../packages/database/src/index.js';
+import { MemoryAdapter } from '../packages/database/src/adapters/memory.js';
 
 // Alternative: Direct imports (also available)
-// import { DatabaseManager, QueryBuilder, createQuery, executeQuery } from '../src/database/index.js';
+// import { DatabaseManager, QueryBuilder, createQuery, executeQuery } from '../packages/database/src/index.js';
 
 console.log('Setting up in-memory database connection...');
 

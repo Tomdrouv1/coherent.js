@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { coherentMiddleware, createCoherentHandler, setupCoherentExpress } from '../../../src/express/coherent-express.js';
-import { renderToString } from '../../../src/rendering/html-renderer.js';
+import { coherentMiddleware, createCoherentHandler, setupCoherentExpress } from '../src/coherent-express.js';
+import { renderToString } from '../../core/src/rendering/html-renderer.js';
 
 describe('Express.js Integration', () => {
   it('should create coherentMiddleware', () => {

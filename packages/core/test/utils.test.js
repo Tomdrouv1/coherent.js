@@ -180,7 +180,7 @@ test('Dependency utilities', async () => {
             total: deps.length,
             scoped: deps.filter(d => d.startsWith('@')).length,
             local: deps.filter(d => d.startsWith('./') || d.startsWith('../')).length,
-            external: deps.filter(d => !d.startsWith('./') && !d.startsWith('../')).length
+            external: deps.filter(d => !d.startsWith('./') && !d.startsWith('../') && !d.startsWith('@')).length
           };
         }
       };

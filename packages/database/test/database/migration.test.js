@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Migration, SchemaBuilder, TableBuilder } from '../../../../src/database/migration.js';
+import { Migration, SchemaBuilder, TableBuilder } from '../../src/migration.js';
 import * as fs from 'fs/promises';
 
 // Mock fs operations

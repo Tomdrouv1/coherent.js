@@ -1,5 +1,5 @@
-import { withState } from '../src/coherent.js';
-import { makeHydratable, autoHydrate } from '../src/client/hydration.js';
+import { withState } from "../packages/core/src/index.js";
+import { makeHydratable, autoHydrate } from '../packages/client/src/hydration.js';
 
 // Example 1: Basic component composition
 export const Header = ({ title, subtitle }) => ({
