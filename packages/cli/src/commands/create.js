@@ -7,7 +7,7 @@ import prompts from 'prompts';
 import ora from 'ora';
 import picocolors from 'picocolors';
 import { existsSync, mkdirSync } from 'fs';
-import { join, resolve } from 'path';
+import { resolve } from 'path';
 import { scaffoldProject } from '../generators/project-scaffold.js';
 import { validateProjectName } from '../utils/validation.js';
 
@@ -117,9 +117,9 @@ export const createCommand = new Command('create')
       console.log();
       console.log(picocolors.gray('Happy coding! 🎉'));
 
-    } catch (error) {
+    } catch (_error) {
       spinner.fail('Failed to create project');
-      console.error(picocolors.red('❌ Error:'), error.message);
+      console.error(picocolors.red('❌ Error:'), _error.message);
       process.exit(1);
     }
   });

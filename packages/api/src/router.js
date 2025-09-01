@@ -3,7 +3,7 @@
  * Pure object-oriented approach to backend API routing
  * 
  * @fileoverview Transforms nested JavaScript objects into API routes with
- * middleware, validation, and error handling support.
+ * middleware, validation, and _error handling support.
  * 
  * @author Coherent.js Team
  * @version 1.0.0
@@ -60,7 +60,7 @@ function parseBody(req, maxSize = 1024 * 1024) { // 1MB limit
       }
     });
     
-    req.on('error', reject);
+    req.on('_error', reject);
   });
 }
 
@@ -295,7 +295,7 @@ function registerRoute(method, config, router, path) {
     return;
   }
 
-  // Apply error handling
+  // Apply _error handling
   if (errorHandling) {
     chain.forEach((fn, i) => {
       chain[i] = withErrorHandling(fn);
@@ -321,10 +321,10 @@ function registerRoute(method, config, router, path) {
         res.writeHead(204);
         res.end();
       }
-    } catch (error) {
-      const statusCode = error.statusCode || 500;
+    } catch (_error) {
+      const statusCode = _error.statusCode || 500;
       res.writeHead(statusCode, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: error.message }));
+      res.end(JSON.stringify({ _error: _error.message }));
     }
   }, { name });
 }
@@ -488,7 +488,7 @@ class SimpleRouter {
       if (!handler) {
         res.writeHead(406, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ 
-          error: 'Not Acceptable',
+          _error: 'Not Acceptable',
           supportedTypes: Object.keys(handlers)
         }));
         return;
@@ -727,8 +727,8 @@ class SimpleRouter {
       if (ws.onclose) {
         try {
           ws.onclose();
-        } catch (error) {
-          console.error('WebSocket onclose handler error:', error);
+        } catch (_error) {
+          console.error('WebSocket onclose handler _error:', _error);
         }
       }
       
@@ -742,7 +742,7 @@ class SimpleRouter {
     try {
       matchedRoute.route.handler(ws, request);
     } catch (err) {
-      console.error('WebSocket upgrade error:', err);
+      console.error('WebSocket upgrade _error:', err);
       socket.end('HTTP/1.1 500 Internal Server Error\r\n\r\n');
     }
   }
@@ -848,9 +848,9 @@ class SimpleRouter {
     });
     
     // Handle socket errors
-    socket.on('error', (err) => {
-      console.log('WebSocket socket error (connection likely closed):', err.code);
-      // Don't re-throw the error, just log it
+    socket.on('_error', (err) => {
+      console.log('WebSocket socket _error (connection likely closed):', err.code);
+      // Don't re-throw the _error, just log it
     });
     
     return ws;
@@ -1469,7 +1469,7 @@ class SimpleRouter {
     const clientIP = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
     if (!checkRateLimit(clientIP, rateLimit.windowMs, rateLimit.maxRequests)) {
       res.writeHead(429, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Too Many Requests' }));
+      res.end(JSON.stringify({ _error: 'Too Many Requests' }));
       return;
     }
     
@@ -1481,11 +1481,11 @@ class SimpleRouter {
     // Parse request body with size limits
     try {
       req.body = await parseBody(req, options.maxBodySize);
-    } catch (error) {
+    } catch (_error) {
       if (this.enableMetrics) this.metrics.errors++;
-      const statusCode = error.message.includes('too large') ? 413 : 400;
+      const statusCode = _error.message.includes('too large') ? 413 : 400;
       res.writeHead(statusCode, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: error.message }));
+      res.end(JSON.stringify({ _error: _error.message }));
       return;
     }
     
@@ -1582,11 +1582,11 @@ class SimpleRouter {
           }
         }
         return;
-      } catch (error) {
+      } catch (_error) {
         if (this.enableMetrics) this.metrics.errors++;
         if (!res.headersSent) {
           res.writeHead(500, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: error.message }));
+          res.end(JSON.stringify({ _error: _error.message }));
         }
         return;
       }
@@ -1596,7 +1596,7 @@ class SimpleRouter {
     if (this.enableMetrics) this.metrics.errors++;
     if (!res.headersSent) {
       res.writeHead(404, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Not Found' }));
+      res.end(JSON.stringify({ _error: 'Not Found' }));
     }
   }
 

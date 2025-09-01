@@ -1,5 +1,5 @@
 // src/express/index.js
-import { renderToString, renderHTML } from '../../core/src/index.js';
+import { renderHTML } from '../../core/src/index.js';
 
 export function expressEngine() {
     return (filePath, options, callback) => {
@@ -7,8 +7,8 @@ export function expressEngine() {
             // options contains the Coherent object structure
             const html = renderHTML(options);
             callback(null, html);
-        } catch (error) {
-            callback(error);
+        } catch (_error) {
+            callback(_error);
         }
     };
 }

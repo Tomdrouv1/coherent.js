@@ -30,7 +30,7 @@ function formatAttributes(attrs) {
   if (!attrs || typeof attrs !== 'object') return '';
   
   return Object.entries(attrs)
-    .filter(([key, value]) => value !== null && value !== undefined && value !== false)
+    .filter(([, value]) => value !== null && value !== undefined && value !== false)
     .map(([key, value]) => {
       // Execute functions to get the actual value
       if (typeof value === 'function') {

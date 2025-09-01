@@ -22,15 +22,15 @@ function createMockKoaContext(method = 'GET', url = '/', body = {}) {
     },
     state: {},
     throw: (status, message) => {
-      const error = new Error(message || `HTTP ${status}`);
-      error.status = status;
-      throw error;
+      const _error = new Error(message || `HTTP ${status}`);
+      _error.status = status;
+      throw _error;
     },
     assert: (condition, status, message) => {
       if (!condition) {
-        const error = new Error(message || `HTTP ${status}`);
-        error.status = status;
-        throw error;
+        const _error = new Error(message || `HTTP ${status}`);
+        _error.status = status;
+        throw _error;
       }
     }
   };
@@ -48,8 +48,8 @@ test('Koa middleware creation and basic functionality', async () => {
     
     
     
-  } catch (error) {
-    if (error.code === 'ERR_MODULE_NOT_FOUND' || error.message.includes('Cannot resolve')) {
+  } catch (_error) {
+    if (_error.code === 'ERR_MODULE_NOT_FOUND' || _error.message.includes('Cannot resolve')) {
       console.log('⚠️  Koa source module dependencies not found - using mock implementation');
       
       // Test with mock middleware
@@ -65,7 +65,7 @@ test('Koa middleware creation and basic functionality', async () => {
       assert.strictEqual(mockMiddleware.length, 2);
       
     } else {
-      throw error;
+      throw _error;
     }
   }
 });
@@ -87,7 +87,7 @@ test('Koa context handling', async () => {
   
 });
 
-test('Koa error handling middleware', async () => {
+test('Koa _error handling middleware', async () => {
   try {
     const { createCoherentKoaHandler } = await import('../../../src/koa/coherent-koa.js');
     
@@ -99,32 +99,32 @@ test('Koa error handling middleware', async () => {
       console.log('⚠️  Error handler not available - skipping test');
     }
     
-  } catch (error) {
-    if (error.code === 'ERR_MODULE_NOT_FOUND' || error.message.includes('Cannot resolve')) {
-      console.log('⚠️  Koa error handling module not found - testing mock implementation');
+  } catch (_error) {
+    if (_error.code === 'ERR_MODULE_NOT_FOUND' || _error.message.includes('Cannot resolve')) {
+      console.log('⚠️  Koa _error handling module not found - testing mock implementation');
       
-      // Test basic error handling pattern
+      // Test basic _error handling pattern
       const mockErrorHandler = async (ctx, next) => {
         try {
           await next();
-        } catch (error) {
-          ctx.status = error.status || 500;
-          ctx.body = { error: error.message };
+        } catch (_error) {
+          ctx.status = _error.status || 500;
+          ctx.body = { _error: _error.message };
         }
       };
       
       const mockCtx = createMockKoaContext();
       const mockNext = async () => {
-        throw new Error('Test error');
+        throw new Error('Test _error');
       };
       
       await mockErrorHandler(mockCtx, mockNext);
       assert.strictEqual(mockCtx.status, 500);
-      assert.ok(mockCtx.body.error);
+      assert.ok(mockCtx.body._error);
       
       
     } else {
-      throw error;
+      throw _error;
     }
   }
 });
@@ -137,7 +137,7 @@ test('Koa response formatting', () => {
     { data: { message: 'Hello' } },
     { data: [1, 2, 3] },
     { data: 'Simple string' },
-    { error: 'Something went wrong' }
+    { _error: 'Something went wrong' }
   ];
   
   for (const response of testResponses) {

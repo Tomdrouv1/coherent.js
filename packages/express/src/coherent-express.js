@@ -47,9 +47,9 @@ export function coherentMiddleware(options = {}) {
           // Set content type and send HTML
           res.set('Content-Type', 'text/html');
           return originalSend.call(this, finalHtml);
-        } catch (error) {
-          console.error('Coherent.js rendering error:', error);
-          return next(error);
+        } catch (_error) {
+          console.error('Coherent.js rendering _error:', _error);
+          return next(_error);
         }
       }
       
@@ -117,9 +117,9 @@ export function createCoherentHandler(componentFactory, options = {}) {
       // Send HTML response
       res.set('Content-Type', 'text/html');
       res.send(finalHtml);
-    } catch (error) {
-      console.error('Coherent.js handler error:', error);
-      next(error);
+    } catch (_error) {
+      console.error('Coherent.js handler _error:', _error);
+      next(_error);
     }
   };
 }
@@ -136,8 +136,8 @@ export function enhancedExpressEngine(filePath, options, callback) {
     // Render Coherent.js component from options
     const html = renderHTML(options);
     callback(null, html);
-  } catch (error) {
-    callback(error);
+  } catch (_error) {
+    callback(_error);
   }
 }
 
@@ -187,8 +187,8 @@ export async function createExpressIntegration(options = {}) {
       setupCoherentExpress(app, options);
       return app;
     };
-  } catch (error) {
-    throw error;
+  } catch (_error) {
+    throw _error;
   }
 }
 

@@ -51,8 +51,8 @@ export class CSSManager {
             
             this.loadedFiles.add(filePath);
             return content;
-        } catch (error) {
-            console.warn(`Failed to load CSS file: ${filePath}`, error.message);
+        } catch (_error) {
+            console.warn(`Failed to load CSS file: ${filePath}`, _error.message);
             return '';
         }
     }

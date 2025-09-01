@@ -10,7 +10,7 @@
 
   const log = (...args) => console.log('[Coherent HMR]', ...args);
   const warn = (...args) => console.warn('[Coherent HMR]', ...args);
-  const error = (...args) => console.error('[Coherent HMR]', ...args);
+  const _error = (...args) => console.error('[Coherent HMR]', ...args);
 
   let hadDisconnect = false;
 
@@ -35,8 +35,8 @@
         warn('disconnected, retrying in 1s...');
         setTimeout(connect, 1000);
       });
-      ws.addEventListener('error', (e) => {
-        error('socket error', e);
+      ws.addEventListener('_error', (e) => {
+        _error('socket _error', e);
         try { ws.close(); } catch {}
       });
 

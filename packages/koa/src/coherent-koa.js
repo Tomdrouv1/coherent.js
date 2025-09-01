@@ -44,9 +44,9 @@ export function coherentKoaMiddleware(options = {}) {
         // Set content type and body
         ctx.type = 'text/html';
         ctx.body = finalHtml;
-      } catch (error) {
-        console.error('Coherent.js rendering error:', error);
-        throw error;
+      } catch (_error) {
+        console.error('Coherent.js rendering _error:', _error);
+        throw _error;
       }
     }
   };
@@ -108,9 +108,9 @@ export function createCoherentKoaHandler(componentFactory, options = {}) {
       // Set response
       ctx.type = 'text/html';
       ctx.body = finalHtml;
-    } catch (error) {
-      console.error('Coherent.js handler error:', error);
-      throw error;
+    } catch (_error) {
+      console.error('Coherent.js handler _error:', _error);
+      throw _error;
     }
   };
 }
@@ -153,8 +153,8 @@ export async function createKoaIntegration(options = {}) {
       setupCoherentKoa(app, options);
       return app;
     };
-  } catch (error) {
-    throw error;
+  } catch (_error) {
+    throw _error;
   }
 }
 

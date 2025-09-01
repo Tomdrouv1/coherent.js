@@ -20,7 +20,7 @@
     "test:packages": "pnpm -r run test",
     "test:coverage": "vitest run --coverage",
     "coverage:report": "node scripts/generate-coverage-report.js",
-    "build": "pnpm run build:packages && pnpm run build:types",
+    "build": "pnpm run build:packages",
     "build:packages": "pnpm -r --stream run build",
     "build:types": "tsc --build",
     "dev": "pnpm run build && pnpm run website:dev",

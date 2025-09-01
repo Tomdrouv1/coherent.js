@@ -18,7 +18,7 @@ export function isPeerDependencyAvailable(packageName) {
 }
 
 /**
- * Dynamically import a peer dependency with error handling
+ * Dynamically import a peer dependency with _error handling
  * @param {string} packageName - Name of the package to import
  * @param {string} integrationName - Human-readable name of the integration
  * @returns {Promise<any>} - The imported module
@@ -69,7 +69,7 @@ export function createLazyIntegration(packageName, integrationName, createIntegr
 }
 
 /**
- * Check multiple peer dependencies and provide helpful error messages
+ * Check multiple peer dependencies and provide helpful _error messages
  * @param {Array<{package: string, integration: string}>} dependencies - List of dependencies to check
  * @returns {Object} - Object with availability status for each dependency
  */

@@ -56,20 +56,20 @@ describe('DatabaseManager', () => {
       expect(db.isConnected).toBe(false);
     });
 
-    it('should throw error for missing config', () => {
+    it('should throw _error for missing config', () => {
       expect(() => new DatabaseManager()).toThrow('Database configuration is required');
     });
 
-    it('should throw error for missing type', () => {
+    it('should throw _error for missing type', () => {
       expect(() => new DatabaseManager({})).toThrow('Either database type or adapter is required');
     });
 
-    it('should throw error for unsupported type', () => {
+    it('should throw _error for unsupported type', () => {
       expect(() => new DatabaseManager({ type: 'unsupported', database: 'test' }))
         .toThrow('Unsupported database type: unsupported');
     });
 
-    it('should throw error for missing database name', () => {
+    it('should throw _error for missing database name', () => {
       expect(() => new DatabaseManager({ type: 'sqlite' }))
         .toThrow('Database name is required');
     });
@@ -137,7 +137,7 @@ describe('DatabaseManager', () => {
       mockAdapter.testConnection.mockResolvedValue();
 
       const errorSpy = vi.fn();
-      db.on('error', errorSpy);
+      db.on('_error', errorSpy);
 
       await db.connect();
 
@@ -146,11 +146,11 @@ describe('DatabaseManager', () => {
       expect(errorSpy).toHaveBeenCalledTimes(1);
     });
 
-    it('should throw error after max retries', async () => {
+    it('should throw _error after max retries', async () => {
       mockAdapter.createPool.mockRejectedValue(new Error('Connection failed'));
 
       await expect(db.connect()).rejects.toThrow('Connection failed');
-      expect(mockAdapter.createPool).toHaveBeenCalledTimes(1);
+      expect(mockAdapter.createPool).toHaveBeenCalledTimes(3); // Should try 3 times (maxRetries = 3)
     });
 
     it('should connect without starting health checks when adapter does not support them', async () => {
@@ -186,7 +186,7 @@ describe('DatabaseManager', () => {
       expect(result).toEqual(mockResult);
     });
 
-    it('should throw error if not connected', async () => {
+    it('should throw _error if not connected', async () => {
       db.isConnected = false;
 
       await expect(db.query('SELECT 1')).rejects.toThrow('Database not connected');
@@ -219,7 +219,7 @@ describe('DatabaseManager', () => {
         operation: 'INVALID SQL',
         params: {},
         duration: expect.any(Number),
-        error: 'Query failed'
+        _error: 'Query failed'
       });
     });
 
@@ -260,7 +260,7 @@ describe('DatabaseManager', () => {
       expect(transaction).toEqual(mockTransaction);
     });
 
-    it('should throw error if not connected', async () => {
+    it('should throw _error if not connected', async () => {
       db.isConnected = false;
 
       await expect(db.transaction()).rejects.toThrow('Database not connected');
@@ -330,7 +330,7 @@ describe('DatabaseManager', () => {
       expect(disconnectedSpy).toHaveBeenCalled();
     });
 
-    it('should not error if already disconnected', async () => {
+    it('should not _error if already disconnected', async () => {
       await db.close();
       
       // Should not throw
@@ -362,7 +362,7 @@ describe('DatabaseManager', () => {
       await expect(db.testConnection()).resolves.toBeUndefined();
     });
 
-    it('should throw error on failed connection test', async () => {
+    it('should throw _error on failed connection test', async () => {
       mockAdapter.testConnection.mockRejectedValue(new Error('Health check failed'));
       await expect(db.testConnection()).rejects.toThrow('Health check failed');
     });

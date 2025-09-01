@@ -4,7 +4,7 @@
  */
 
 import { ReactiveState, observable, computed } from '../state/reactive-state.js';
-import { globalErrorHandler } from '../utils/error-handler.js';
+import { globalErrorHandler } from '../utils/_error-handler.js';
 
 /**
  * Built-in validation rules
@@ -152,18 +152,18 @@ class FieldValidator {
                 if (result !== true) {
                     errors.push(typeof result === 'string' ? result : `Invalid ${this.name}`);
                     
-                    // Stop on first error unless configured otherwise
+                    // Stop on first _error unless configured otherwise
                     if (!this.options.validateAll) {
                         break;
                     }
                 }
             }
-        } catch (error) {
-            globalErrorHandler.handle(error, {
-                type: 'validation-error',
+        } catch (_error) {
+            globalErrorHandler.handle(_error, {
+                type: 'validation-_error',
                 context: { field: this.name, value, rules: this.rules }
             });
-            errors.push('Validation error occurred');
+            errors.push('Validation _error occurred');
         } finally {
             this.isPending.value = false;
         }
@@ -419,9 +419,9 @@ export class FormValidator {
 
             return true;
 
-        } catch (error) {
-            globalErrorHandler.handle(error, {
-                type: 'form-submit-error',
+        } catch (_error) {
+            globalErrorHandler.handle(_error, {
+                type: 'form-submit-_error',
                 context: { formData: this.getData() }
             });
             return false;
@@ -600,9 +600,9 @@ export const binding = {
  */
 export const formComponents = {
     /**
-     * Validation error display
+     * Validation _error display
      */
-    ValidationError({ form, field, className = 'validation-error' }) {
+    ValidationError({ form, field, className = 'validation-_error' }) {
         const validator = form.getValidator(field);
         if (!validator || validator.errors.value.length === 0) {
             return null;
@@ -611,8 +611,8 @@ export const formComponents = {
         return {
             div: {
                 className,
-                children: validator.errors.value.map(error => ({
-                    span: { text: error, className: 'error-message' }
+                children: validator.errors.value.map(_error => ({
+                    span: { text: _error, className: '_error-message' }
                 }))
             }
         };
@@ -627,7 +627,7 @@ export const formComponents = {
 
         return {
             div: {
-                className: `form-field ${state.hasError ? 'has-error' : ''} ${state.isTouched ? 'touched' : ''}`,
+                className: `form-field ${state.hasError ? 'has-_error' : ''} ${state.isTouched ? 'touched' : ''}`,
                 children: [
                     label ? { label: { text: label, htmlFor: field } } : null,
                     children,

@@ -54,9 +54,9 @@ export function withDatabase(db, options = {}) {
           const result = await callback(tx);
           await tx.commit();
           return result;
-        } catch (error) {
+        } catch (_error) {
           await tx.rollback();
-          throw error;
+          throw _error;
         }
       };
 
@@ -67,15 +67,15 @@ export function withDatabase(db, options = {}) {
 
       await next();
 
-    } catch (error) {
+    } catch (_error) {
       // Log database errors
-      console.error('Database middleware error:', error);
+      console.error('Database middleware _error:', _error);
       
-      // Pass error to error handler
+      // Pass _error to _error handler
       if (typeof next === 'function') {
-        next(error);
+        next(_error);
       } else {
-        throw error;
+        throw _error;
       }
     }
   };
@@ -93,7 +93,7 @@ export function withDatabase(db, options = {}) {
  *   // All database operations in this handler will be wrapped in a transaction
  *   await req.tx.query('UPDATE accounts SET balance = balance - ? WHERE id = ?', [amount, fromId]);
  *   await req.tx.query('UPDATE accounts SET balance = balance + ? WHERE id = ?', [amount, toId]);
- *   // Transaction is automatically committed on success or rolled back on error
+ *   // Transaction is automatically committed on success or rolled back on _error
  * });
  */
 export function withTransaction(db, options = {}) {
@@ -115,13 +115,13 @@ export function withTransaction(db, options = {}) {
         await tx.commit();
       }
       
-    } catch (error) {
+    } catch (_error) {
       // Rollback transaction if not already rolled back
       if (!tx.isRolledBack && !tx.isCommitted) {
         await tx.rollback();
       }
       
-      throw error;
+      throw _error;
     }
   };
 }
@@ -164,27 +164,27 @@ export function withModel(ModelClass, paramName = 'id', requestKey = null) {
       const paramValue = req.params[paramName];
       
       if (!paramValue) {
-        const error = new Error(`Parameter '${paramName}' is required`);
-        error.status = 400;
-        throw error;
+        const _error = new Error(`Parameter '${paramName}' is required`);
+        _error.status = 400;
+        throw _error;
       }
 
       const model = await ModelClass.find(paramValue);
       
       if (!model) {
-        const error = new Error(`${ModelClass.name} not found`);
-        error.status = 404;
-        throw error;
+        const _error = new Error(`${ModelClass.name} not found`);
+        _error.status = 404;
+        throw _error;
       }
 
       req[key] = model;
       await next();
       
-    } catch (error) {
+    } catch (_error) {
       if (typeof next === 'function') {
-        next(error);
+        next(_error);
       } else {
-        throw error;
+        throw _error;
       }
     }
   };
@@ -272,9 +272,9 @@ export function withQueryValidation(schema, options = {}) {
         // Skip if not provided and not required
         if (value === undefined || value === null || value === '') {
           if (rules.required) {
-            const error = new Error(`Query parameter '${key}' is required`);
-            error.status = 400;
-            throw error;
+            const _error = new Error(`Query parameter '${key}' is required`);
+            _error.status = 400;
+            throw _error;
           }
           continue;
         }
@@ -286,9 +286,9 @@ export function withQueryValidation(schema, options = {}) {
             case 'number':
               coercedValue = Number(value);
               if (isNaN(coercedValue)) {
-                const error = new Error(`Query parameter '${key}' must be a number`);
-                error.status = 400;
-                throw error;
+                const _error = new Error(`Query parameter '${key}' must be a number`);
+                _error.status = 400;
+                throw _error;
               }
               break;
             case 'boolean':
@@ -302,21 +302,21 @@ export function withQueryValidation(schema, options = {}) {
 
         // Validation
         if (rules.enum && !rules.enum.includes(coercedValue)) {
-          const error = new Error(`Query parameter '${key}' must be one of: ${rules.enum.join(', ')}`);
-          error.status = 400;
-          throw error;
+          const _error = new Error(`Query parameter '${key}' must be one of: ${rules.enum.join(', ')}`);
+          _error.status = 400;
+          throw _error;
         }
 
         if (rules.min !== undefined && coercedValue < rules.min) {
-          const error = new Error(`Query parameter '${key}' must be at least ${rules.min}`);
-          error.status = 400;
-          throw error;
+          const _error = new Error(`Query parameter '${key}' must be at least ${rules.min}`);
+          _error.status = 400;
+          throw _error;
         }
 
         if (rules.max !== undefined && coercedValue > rules.max) {
-          const error = new Error(`Query parameter '${key}' must be at most ${rules.max}`);
-          error.status = 400;
-          throw error;
+          const _error = new Error(`Query parameter '${key}' must be at most ${rules.max}`);
+          _error.status = 400;
+          throw _error;
         }
 
         validatedQuery[key] = coercedValue;
@@ -330,11 +330,11 @@ export function withQueryValidation(schema, options = {}) {
       req.query = validatedQuery;
       await next();
       
-    } catch (error) {
+    } catch (_error) {
       if (typeof next === 'function') {
-        next(error);
+        next(_error);
       } else {
-        throw error;
+        throw _error;
       }
     }
   };
@@ -385,10 +385,10 @@ export function withHealthCheck(db, options = {}) {
 
       await next();
       
-    } catch (error) {
+    } catch (_error) {
       req.dbHealth = {
         status: 'unhealthy',
-        error: error.message,
+        _error: _error.message,
         connected: db.isConnected
       };
       
@@ -440,13 +440,13 @@ export function withConnectionPool(db, options = {}) {
 
       await next();
       
-    } catch (error) {
-      // Release connection on error
+    } catch (_error) {
+      // Release connection on _error
       if (connection) {
         db.pool.release(connection);
       }
       
-      throw error;
+      throw _error;
     }
   };
 }

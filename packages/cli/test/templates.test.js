@@ -366,7 +366,7 @@ test('RPC API template should generate correct content', async () => {
     assert(content.includes('jsonrpc: \'2.0\''));
     assert(content.includes('result:'));
     assert(content.includes('id: req.body.id'));
-    assert(content.includes('error: {'));
+    assert(content.includes('_error: {'));
     assert(content.includes('code: -32602'));
     
     

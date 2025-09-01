@@ -3,7 +3,7 @@
  * Provides hooks and events for component lifecycle management
  */
 
-import { globalErrorHandler } from '../utils/error-handler.js';
+import { globalErrorHandler } from '../utils/_error-handler.js';
 import { ReactiveState } from '../state/reactive-state.js';
 
 /**
@@ -18,7 +18,7 @@ export const LIFECYCLE_PHASES = {
     UPDATED: 'updated',
     BEFORE_UNMOUNT: 'beforeUnmount',
     UNMOUNTED: 'unmounted',
-    ERROR: 'error'
+    ERROR: '_error'
 };
 
 /**
@@ -94,8 +94,8 @@ export class ComponentLifecycle {
         for (const hook of hooks) {
             try {
                 await hook.call(this, ...args);
-            } catch (error) {
-                this.handleError(error, phase);
+            } catch (_error) {
+                this.handleError(_error, phase);
             }
         }
     }
@@ -103,8 +103,8 @@ export class ComponentLifecycle {
     /**
      * Handle component errors
      */
-    handleError(error, phase) {
-        const enhancedError = globalErrorHandler.handle(error, {
+    handleError(_error, phase) {
+        const enhancedError = globalErrorHandler.handle(_error, {
             component: this.component,
             context: {
                 phase,
@@ -135,8 +135,8 @@ export class ComponentLifecycle {
             // Actual mounting logic would be handled by the renderer
             this.isMounted = true;
             await this.executeHook(LIFECYCLE_PHASES.MOUNTED, container);
-        } catch (error) {
-            this.handleError(error, 'mount');
+        } catch (_error) {
+            this.handleError(_error, 'mount');
         }
     }
 
@@ -156,8 +156,8 @@ export class ComponentLifecycle {
         try {
             // Update logic would be handled by the renderer
             await this.executeHook(LIFECYCLE_PHASES.UPDATED, this.props, oldProps);
-        } catch (error) {
-            this.handleError(error, 'update');
+        } catch (_error) {
+            this.handleError(_error, 'update');
         }
     }
 
@@ -181,8 +181,8 @@ export class ComponentLifecycle {
             this.subscriptions.forEach(unsub => {
                 try {
                     unsub();
-                } catch (error) {
-                    console.warn('Error cleaning up subscription:', error);
+                } catch (_error) {
+                    console.warn('Error cleaning up subscription:', _error);
                 }
             });
 
@@ -212,8 +212,8 @@ export class ComponentLifecycle {
             // Unregister
             componentRegistry.delete(this.id);
 
-        } catch (error) {
-            this.handleError(error, 'unmount');
+        } catch (_error) {
+            this.handleError(_error, 'unmount');
         }
     }
 
@@ -421,9 +421,9 @@ export class ComponentEventSystem {
                 
                 try {
                     handler(event);
-                } catch (error) {
-                    globalErrorHandler.handle(error, {
-                        type: 'event-handler-error',
+                } catch (_error) {
+                    globalErrorHandler.handle(_error, {
+                        type: 'event-handler-_error',
                         context: { event, handler: handler.toString() }
                     });
                 }
@@ -442,9 +442,9 @@ export class ComponentEventSystem {
                 
                 try {
                     handler(event);
-                } catch (error) {
-                    globalErrorHandler.handle(error, {
-                        type: 'global-event-handler-error',
+                } catch (_error) {
+                    globalErrorHandler.handle(_error, {
+                        type: 'global-event-handler-_error',
                         context: { event, handler: handler.toString() }
                     });
                 }

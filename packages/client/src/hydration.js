@@ -68,8 +68,8 @@ function extractInitialState(element, options = {}) {
     }
     
     return hasState ? state : null;
-  } catch (error) {
-    console.warn('Error extracting initial state:', error);
+  } catch (_error) {
+    console.warn('Error extracting initial state:', _error);
     return options.initialState || null;
   }
 }
@@ -123,8 +123,8 @@ function hydrate(element, component, props = {}, options = {}) {
       try {
         // Always use the fallback patching method to preserve hydration
         this.fallbackRerender();
-      } catch (error) {
-        console.error('Error during component re-render:', error);
+      } catch (_error) {
+        console.error('Error during component re-render:', _error);
       }
     },
     
@@ -150,8 +150,8 @@ function hydrate(element, component, props = {}, options = {}) {
         this.previousVirtualElement = newVirtualElement;
         
         // Component re-rendered successfully with fallback
-      } catch (error) {
-        console.error('Error during component re-render (fallback):', error);
+      } catch (_error) {
+        console.error('Error during component re-render (fallback):', _error);
       }
     },
     
@@ -358,9 +358,9 @@ function hydrate(element, component, props = {}, options = {}) {
             return node.nodeType === Node.ELEMENT_NODE || 
                    (node.nodeType === Node.TEXT_NODE && node.textContent && node.textContent.trim());
           });
-        } catch (error) {
+        } catch (_error) {
           // Fallback to empty array if Array.from fails
-          console.warn('Failed to convert childNodes to array:', error);
+          console.warn('Failed to convert childNodes to array:', _error);
           domChildren = [];
         }
       }
@@ -657,15 +657,15 @@ if (typeof window !== 'undefined') {
         try {
           // Call the handler function with the element as context and pass event, state, setState
           handlerFunc.call(element, event, state, setState);
-        } catch (error) {
-          console.warn(`Error executing coherent event handler:`, error);
+        } catch (_error) {
+          console.warn(`Error executing coherent event handler:`, _error);
         }
       } else {
         // Fallback: call the handler without component context
         try {
           handlerFunc.call(element, event);
-        } catch (error) {
-          console.warn(`Error executing coherent event handler (no component context):`, error);
+        } catch (_error) {
+          console.warn(`Error executing coherent event handler (no component context):`, _error);
         }
       }
     } else {
@@ -1109,8 +1109,8 @@ function attachFunctionEventListeners(rootElement, virtualElement, instance, opt
               const result = handler.call(domElement, event, currentState, currentSetState);
               
               return result;
-            } catch (error) {
-              console.error(`Error in ${eventName} handler:`, error);
+            } catch (_error) {
+              console.error(`Error in ${eventName} handler:`, _error);
             }
           };
           
@@ -1251,8 +1251,8 @@ function attachEventListeners(element, instance) {
               // eslint-disable-next-line no-new-func
               const func = new Function('event', 'state', 'setState', 'element', eventAttr);
               func.call(elementWithEvent, e, state, setState, elementWithEvent);
-            } catch (error) {
-              console.warn(`Error executing ${eventName} handler:`, error);
+            } catch (_error) {
+              console.warn(`Error executing ${eventName} handler:`, _error);
             }
           };
           
@@ -1316,8 +1316,8 @@ function attachEventListeners(element, instance) {
                   // Fallback: call the handler without component context
                   handlerFunc.call(actionElement, e);
                 }
-              } catch (error) {
-                console.warn(`Error executing action handler for ${actionId}:`, error);
+              } catch (_error) {
+                console.warn(`Error executing action handler for ${actionId}:`, _error);
               }
             };
             
@@ -1369,8 +1369,8 @@ function attachEventListeners(element, instance) {
                 
                 // Bind the function to the element and call it with the event
                 handlerFunc.call(elementWithCoherentEvent, e, state, setState);
-              } catch (error) {
-                console.warn(`Error executing coherent event handler:`, error);
+              } catch (_error) {
+                console.warn(`Error executing coherent event handler:`, _error);
               }
             };
             
@@ -1389,8 +1389,8 @@ function attachEventListeners(element, instance) {
       }
     });
     
-  } catch (error) {
-    console.warn('Error attaching event listeners:', error);
+  } catch (_error) {
+    console.warn('Error attaching event listeners:', _error);
   }
 }
 
@@ -1487,8 +1487,8 @@ function handleComponentAction(event, action, target, instance) {
         try {
           // Call the custom method on the instance
           instance[action](event, target);
-        } catch (error) {
-          console.warn(`Error executing custom action ${action}:`, error);
+        } catch (_error) {
+          console.warn(`Error executing custom action ${action}:`, _error);
         }
       } else {
         // Check if this is a function handler in the action registry
@@ -1502,8 +1502,8 @@ function handleComponentAction(event, action, target, instance) {
           try {
             // Call the handler function with event, state, and setState
             handlerFunc(event, state, setState);
-          } catch (error) {
-            console.warn(`Error executing action handler ${action}:`, error);
+          } catch (_error) {
+            console.warn(`Error executing action handler ${action}:`, _error);
           }
         } else {
           // Custom action handling would go here
@@ -1772,8 +1772,8 @@ function autoHydrate(componentRegistry = {}) {
           } else {
             console.warn(`❌ Failed to hydrate component: ${componentName}`);
           }
-        } catch (error) {
-          console.error(`❌ Failed to auto-hydrate component ${componentName}:`, error);
+        } catch (_error) {
+          console.error(`❌ Failed to auto-hydrate component ${componentName}:`, _error);
         }
       }
     });

@@ -30,7 +30,7 @@ export function createCoherentNextHandler(componentFactory, options = {}) {
       );
       
       if (!component) {
-        res.status(500).json({ error: 'Component factory returned null/undefined' });
+        res.status(500).json({ _error: 'Component factory returned null/undefined' });
         return;
       }
       
@@ -50,9 +50,9 @@ export function createCoherentNextHandler(componentFactory, options = {}) {
       // Send HTML response
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.status(200).send(finalHtml);
-    } catch (error) {
-      console.error('Coherent.js Next.js handler error:', error);
-      res.status(500).json({ error: error.message });
+    } catch (_error) {
+      console.error('Coherent.js Next.js handler _error:', _error);
+      res.status(500).json({ _error: _error.message });
     }
   };
 }
@@ -79,7 +79,7 @@ export function createCoherentAppRouterHandler(componentFactory, options = {}) {
       
       if (!component) {
         return new Response(
-          JSON.stringify({ error: 'Component factory returned null/undefined' }),
+          JSON.stringify({ _error: 'Component factory returned null/undefined' }),
           {
             status: 500,
             headers: { 'Content-Type': 'application/json' }
@@ -105,10 +105,10 @@ export function createCoherentAppRouterHandler(componentFactory, options = {}) {
         status: 200,
         headers: { 'Content-Type': 'text/html; charset=utf-8' }
       });
-    } catch (error) {
-      console.error('Coherent.js Next.js App Router handler error:', error);
+    } catch (_error) {
+      console.error('Coherent.js Next.js App Router handler _error:', _error);
       return new Response(
-        JSON.stringify({ error: error.message }),
+        JSON.stringify({ _error: _error.message }),
         {
           status: 500,
           headers: { 'Content-Type': 'application/json' }
@@ -134,9 +134,9 @@ export async function createCoherentServerComponent(componentFactory, options = 
   let React;
   try {
     React = await importPeerDependency('react', 'React');
-  } catch (error) {
+  } catch (_error) {
     throw new Error(
-      `Next.js Server Component integration requires React. ${  error.message}`
+      `Next.js Server Component integration requires React. ${  _error.message}`
     );
   }
   
@@ -165,9 +165,9 @@ export async function createCoherentServerComponent(componentFactory, options = 
       return React.default.createElement('div', {
         dangerouslySetInnerHTML: { __html: html }
       });
-    } catch (error) {
-      console.error('Coherent.js Next.js Server Component error:', error);
-      return React.default.createElement('div', null, `Error: ${error.message}`);
+    } catch (_error) {
+      console.error('Coherent.js Next.js Server Component _error:', _error);
+      return React.default.createElement('div', null, `Error: ${_error.message}`);
     }
   };
 }
@@ -188,9 +188,9 @@ export async function createCoherentClientComponent(componentFactory, options = 
   let React;
   try {
     React = await importPeerDependency('react', 'React');
-  } catch (error) {
+  } catch (_error) {
     throw new Error(
-      `Next.js Client Component integration requires React. ${  error.message}`
+      `Next.js Client Component integration requires React. ${  _error.message}`
     );
   }
   
@@ -221,9 +221,9 @@ export async function createCoherentClientComponent(componentFactory, options = 
           }
           
           setHtml(renderedHtml);
-        } catch (error) {
-          console.error('Coherent.js Next.js Client Component error:', error);
-          setHtml(`Error: ${error.message}`);
+        } catch (_error) {
+          console.error('Coherent.js Next.js Client Component _error:', _error);
+          setHtml(`Error: ${_error.message}`);
         }
       }
       
@@ -259,8 +259,8 @@ export async function createNextIntegration(options = {}) {
       createCoherentClientComponent: (componentFactory, componentOptions = {}) => 
         createCoherentClientComponent(componentFactory, { ...options, ...componentOptions })
     };
-  } catch (error) {
-    throw error;
+  } catch (_error) {
+    throw _error;
   }
 }
 

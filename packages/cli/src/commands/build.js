@@ -29,7 +29,7 @@ export const buildCommand = new Command('build')
     let packageJson;
     try {
       packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
-    } catch (error) {
+    } catch {
       console.error(picocolors.red('❌ Failed to read package.json'));
       process.exit(1);
     }
@@ -95,7 +95,7 @@ export const buildCommand = new Command('build')
             stdio: 'inherit',
             cwd: process.cwd()
           });
-        } catch (error) {
+        } catch {
           console.log(picocolors.yellow('⚠️  Bundle analyzer not available'));
           console.log(picocolors.gray('   Install webpack-bundle-analyzer for detailed analysis'));
         }
@@ -112,7 +112,7 @@ export const buildCommand = new Command('build')
         try {
           const distSize = execSync('du -sh dist', { encoding: 'utf-8' }).trim().split('\t')[0];
           console.log(picocolors.gray('📦 Output size:'), distSize);
-        } catch (error) {
+        } catch {
           // Ignore size calculation errors
         }
       }

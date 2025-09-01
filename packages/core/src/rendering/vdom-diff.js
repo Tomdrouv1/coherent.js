@@ -56,9 +56,9 @@ export function objectToVNode(component, depth = 0) {
         try {
             const result = component();
             return objectToVNode(result, depth + 1);
-        } catch (error) {
-            console.error('Error executing function component:', error);
-            return createVNode('span', { className: 'error' }, [`Error: ${error.message}`]);
+        } catch (_error) {
+            console.error('Error executing function component:', _error);
+            return createVNode('span', { className: '_error' }, [`Error: ${_error.message}`]);
         }
     }
 
@@ -269,8 +269,8 @@ export function patch(element, patches) {
         try {
             const result = applyPatch(element, p);
             patchResults.push(result);
-        } catch (error) {
-            console.error('Error applying patch:', error, p);
+        } catch (_error) {
+            console.error('Error applying patch:', _error, p);
         }
     }
 

@@ -136,7 +136,7 @@ describe('Database Integration E2E Tests', () => {
         content: 'Hello World', 
         user_id: user.get('id') 
       });
-      const post2 = await Post.create({ 
+      await Post.create({ 
         title: 'Second Post', 
         content: 'Another post', 
         user_id: user.get('id') 
@@ -207,8 +207,8 @@ describe('Database Integration E2E Tests', () => {
         
         expect(user.get('name')).toBe('John Doe');
         
-        // Simulate error
-        throw new Error('Simulated error');
+        // Simulate _error
+        throw new Error('Simulated _error');
         
       } catch {
         if (transaction && !transaction.isRolledBack) {
@@ -421,14 +421,14 @@ describe('Database Integration E2E Tests', () => {
       await expect(failingManager.connect()).rejects.toThrow('Connection failed');
     });
 
-    it('should handle query failures with proper error messages', async () => {
-      adapter.errors.query = 'SQL syntax error';
+    it('should handle query failures with proper _error messages', async () => {
+      adapter.errors.query = 'SQL syntax _error';
       
       const qb = new QueryBuilder(dbManager);
       
       await expect(
         qb.select('*').from('invalid_table').execute()
-      ).rejects.toThrow('SQL syntax error');
+      ).rejects.toThrow('SQL syntax _error');
     });
 
     it('should handle model validation errors', async () => {

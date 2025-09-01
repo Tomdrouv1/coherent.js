@@ -103,18 +103,18 @@ export class Migration {
           }
           migration.applied = true;
           
-        } catch (error) {
+        } catch (_error) {
           if (tx.rollback) {
             await tx.rollback();
           }
-          throw error;
+          throw _error;
         }
         
-      } catch (error) {
-        console.error(`Migration ${migration.name} failed: ${error.message}`);
+      } catch (_error) {
+        console.error(`Migration ${migration.name} failed: ${_error.message}`);
         
         if (!options.continueOnError) {
-          throw error;
+          throw _error;
         }
         // Continue to next migration if continueOnError is true
       }
@@ -124,7 +124,7 @@ export class Migration {
   }
   
   async rollback(steps = 1) { 
-    // Initialize if needed (with error handling)
+    // Initialize if needed (with _error handling)
     try {
       await this.loadAppliedMigrations();
       await this.loadMigrationFiles();
@@ -196,16 +196,16 @@ export class Migration {
           rolledBackMigrations.push(migration.name);
           migration.applied = false;
           
-        } catch (error) {
+        } catch (_error) {
           if (tx.rollback) {
             await tx.rollback();
           }
-          throw error;
+          throw _error;
         }
         
-      } catch (error) {
-        console.error(`Rollback ${migration.name} failed: ${error.message}`);
-        throw error;
+      } catch (_error) {
+        console.error(`Rollback ${migration.name} failed: ${_error.message}`);
+        throw _error;
       }
     }
     
@@ -396,20 +396,20 @@ export async function down(schema) {
             down: migration.down || migration.default?.down,
             applied: this.appliedMigrations.has(migrationName)
           });
-        } catch (error) {
-          console.warn(`Failed to load migration ${file}: ${error.message}`);
+        } catch (_error) {
+          console.warn(`Failed to load migration ${file}: ${_error.message}`);
         }
       }
       
       // Sort migrations by name (which includes timestamp)
       this.migrations.sort((a, b) => a.name.localeCompare(b.name));
       
-    } catch (error) {
-      if (error.code === 'ENOENT') {
+    } catch (_error) {
+      if (_error.code === 'ENOENT') {
         // Directory doesn't exist, initialize empty
         this.migrations = [];
       } else {
-        throw error;
+        throw _error;
       }
     }
     
@@ -680,13 +680,13 @@ export function createMigration(db, config = {}) {
             down: migration.down,
             applied: appliedMigrations.has(migrationName)
           });
-        } catch (error) {
-          console.warn(`Failed to load migration ${file}: ${error.message}`);
+        } catch (_error) {
+          console.warn(`Failed to load migration ${file}: ${_error.message}`);
         }
       }
-    } catch (error) {
-      if (error.code !== 'ENOENT') {
-        throw error;
+    } catch (_error) {
+      if (_error.code !== 'ENOENT') {
+        throw _error;
       }
     }
   }
@@ -722,9 +722,9 @@ export function createMigration(db, config = {}) {
     try {
       const { mkdir } = await import('fs/promises');
       await mkdir(dirPath, { recursive: true });
-    } catch (error) {
-      if (error.code !== 'EEXIST') {
-        throw error;
+    } catch (_error) {
+      if (_error.code !== 'EEXIST') {
+        throw _error;
       }
     }
   }
@@ -813,16 +813,16 @@ export async function down(schema) {
             
             console.log(`✓ Migration ${migration.name} completed`);
             
-          } catch (error) {
+          } catch (_error) {
             await tx.rollback();
-            throw error;
+            throw _error;
           }
           
-        } catch (error) {
-          console.error(`✗ Migration ${migration.name} failed: ${error.message}`);
+        } catch (_error) {
+          console.error(`✗ Migration ${migration.name} failed: ${_error.message}`);
           
           if (!options.continueOnError) {
-            throw error;
+            throw _error;
           }
         }
       }
@@ -874,14 +874,14 @@ export async function down(schema) {
               
               console.log(`✓ Migration ${migrationName} rolled back`);
               
-            } catch (error) {
+            } catch (_error) {
               await tx.rollback();
-              throw error;
+              throw _error;
             }
             
-          } catch (error) {
-            console.error(`✗ Rollback ${migrationName} failed: ${error.message}`);
-            throw error;
+          } catch (_error) {
+            console.error(`✗ Rollback ${migrationName} failed: ${_error.message}`);
+            throw _error;
           }
         }
       }

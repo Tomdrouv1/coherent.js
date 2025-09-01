@@ -241,9 +241,9 @@ export class QueryBuilder {
       this.db.adapter.queries.push({ sql, params: [], timestamp: Date.now() });
     }
     
-    // Simulate SQL error for invalid table names
+    // Simulate SQL _error for invalid table names
     if (this._query.from === 'invalid_table') {
-      throw new Error('SQL syntax error');
+      throw new Error('SQL syntax _error');
     }
     
     return Promise.resolve({ rows: [], rowCount: 0 }); 

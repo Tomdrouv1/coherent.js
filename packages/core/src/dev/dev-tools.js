@@ -131,9 +131,9 @@ export class DevTools {
 
                 return result;
 
-            } catch (error) {
-                this.handleRenderError(error, component, context, renderId);
-                throw error;
+            } catch (_error) {
+                this.handleRenderError(_error, component, context, renderId);
+                throw _error;
             }
         };
     }
@@ -220,10 +220,10 @@ export class DevTools {
         // Basic validation
         try {
             validateComponent(component);
-        } catch (error) {
+        } catch (_error) {
             return {
                 isValid: false,
-                message: `Invalid component at ${path}: ${error.message}`
+                message: `Invalid component at ${path}: ${_error.message}`
             };
         }
 
@@ -308,8 +308,8 @@ export class DevTools {
         // Circular reference check
         try {
             JSON.stringify(context);
-        } catch (error) {
-            if (error.message.includes('circular')) {
+        } catch (_error) {
+            if (_error.message.includes('circular')) {
                 this.warnings.push({
                     type: 'context',
                     message: 'Circular reference detected in context',
@@ -444,10 +444,10 @@ export class DevTools {
     }
 
     /**
-     * Setup error handling
+     * Setup _error handling
      */
     setupErrorHandling() {
-        // Global error handler
+        // Global _error handler
         const originalConsoleError = console.error;
         console.error = (...args) => {
             // Log to dev tools
@@ -474,11 +474,11 @@ export class DevTools {
             });
         }
 
-        // Browser error handler
+        // Browser _error handler
         if (typeof window !== 'undefined') {
-            window.addEventListener('error', (event) => {
+            window.addEventListener('_error', (event) => {
                 this.errors.push({
-                    type: 'browser-error',
+                    type: 'browser-_error',
                     message: event.message,
                     filename: event.filename,
                     lineno: event.lineno,
@@ -492,18 +492,18 @@ export class DevTools {
     /**
      * Handle render errors specifically
      */
-    handleRenderError(error, component, context, renderId) {
+    handleRenderError(_error, component, context, renderId) {
         this.errors.push({
-            type: 'render-error',
-            message: error.message,
-            stack: error.stack,
+            type: 'render-_error',
+            message: _error.message,
+            stack: _error.stack,
             component: this.serializeComponent(component),
             context: Object.keys(context),
             renderId,
             timestamp: Date.now()
         });
 
-        console.error(`🚨 Render Error in ${renderId}:`, error.message);
+        console.error(`🚨 Render Error in ${renderId}:`, _error.message);
         console.error('Component:', this.serializeComponent(component));
     }
 
@@ -840,8 +840,8 @@ export class DevTools {
 
             return component;
 
-        } catch (error) {
-            return `[Serialization Error: ${error.message}]`;
+        } catch (_error) {
+            return `[Serialization Error: ${_error.message}]`;
         }
     }
 
@@ -941,8 +941,8 @@ export const devUtils = {
             validateComponent(component);
             console.log('✅ Component is valid');
             return true;
-        } catch (error) {
-            console.error('❌ Component validation failed:', error.message);
+        } catch (_error) {
+            console.error('❌ Component validation failed:', _error.message);
             return false;
         }
     },

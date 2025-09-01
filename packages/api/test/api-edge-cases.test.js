@@ -10,10 +10,10 @@ describe('API Edge Cases', () => {
   it('should handle router errors gracefully', () => {
     const errorRoutes = {
       api: {
-        error: {
+        _error: {
           get: {
             handler: () => {
-              throw new Error('Test error');
+              throw new Error('Test _error');
             }
           }
         }

@@ -112,9 +112,9 @@ class HTMLRenderer extends BaseRenderer {
 
             return finalHtml;
 
-        } catch (error) {
-            this.recordError('renderToString', error);
-            throw error;
+        } catch (_error) {
+            this.recordError('renderToString', _error);
+            throw _error;
         }
     }
 

@@ -5,7 +5,7 @@
 
 import { ReactiveState } from '../state/reactive-state.js';
 import { eventSystem } from '../components/lifecycle.js';
-import { globalErrorHandler } from '../utils/error-handler.js';
+import { globalErrorHandler } from '../utils/_error-handler.js';
 
 /**
  * Route configuration structure
@@ -77,7 +77,7 @@ class NavigationContext {
         this.router = router;
         this.cancelled = false;
         this.redirected = false;
-        this.error = null;
+        this._error = null;
     }
 
     cancel() {
@@ -89,8 +89,8 @@ class NavigationContext {
         this.redirectLocation = location;
     }
 
-    setError(error) {
-        this.error = error;
+    setError(_error) {
+        this._error = _error;
     }
 }
 
@@ -245,8 +245,8 @@ export class Router {
                 return this.navigate(context.redirectLocation, method);
             }
 
-            if (context.error) {
-                throw context.error;
+            if (context._error) {
+                throw context._error;
             }
 
             // Resolve route
@@ -281,13 +281,13 @@ export class Router {
 
             return true;
 
-        } catch (error) {
-            globalErrorHandler.handle(error, {
-                type: 'navigation-error',
+        } catch (_error) {
+            globalErrorHandler.handle(_error, {
+                type: 'navigation-_error',
                 context: { location, method, currentRoute: this.currentRoute }
             });
 
-            eventSystem.emit('route:error', { error, context });
+            eventSystem.emit('route:_error', { _error, context });
             return false;
 
         } finally {
@@ -383,25 +383,25 @@ export class Router {
         // beforeEach guards
         for (const guard of this.guards.beforeEach) {
             await this.runGuard(guard, context);
-            if (context.cancelled || context.redirected || context.error) return;
+            if (context.cancelled || context.redirected || context._error) return;
         }
 
         // Route-specific beforeEnter guards
         if (context.to.beforeEnter) {
             await this.runGuard(context.to.beforeEnter, context);
-            if (context.cancelled || context.redirected || context.error) return;
+            if (context.cancelled || context.redirected || context._error) return;
         }
 
         // beforeLeave guards on current route
         if (context.from && context.from.beforeLeave) {
             await this.runGuard(context.from.beforeLeave, context);
-            if (context.cancelled || context.redirected || context.error) return;
+            if (context.cancelled || context.redirected || context._error) return;
         }
 
         // beforeResolve guards
         for (const guard of this.guards.beforeResolve) {
             await this.runGuard(guard, context);
-            if (context.cancelled || context.redirected || context.error) return;
+            if (context.cancelled || context.redirected || context._error) return;
         }
     }
 
@@ -425,8 +425,8 @@ export class Router {
                 context.redirect(result);
             }
 
-        } catch (error) {
-            context.setError(error);
+        } catch (_error) {
+            context.setError(_error);
         }
     }
 

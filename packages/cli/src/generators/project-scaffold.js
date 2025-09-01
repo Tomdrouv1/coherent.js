@@ -2,11 +2,10 @@
  * Project scaffolding generator
  */
 
-import { writeFileSync, mkdirSync, copyFileSync, existsSync } from 'fs';
-import { join } from 'path';
+import { writeFileSync, mkdirSync } from 'fs';
+import { join, dirname } from 'path';
 import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -42,16 +41,22 @@ export async function scaffoldProject(projectPath, options) {
       await generateBasicTemplate(projectPath, name);
       break;
     case 'fullstack':
-      await generateFullStackTemplate(projectPath, name);
+      // TODO: Implement fullstack template generation
+      console.warn('Fullstack template not yet implemented, falling back to basic');
+      await generateBasicTemplate(projectPath, name);
       break;
     case 'express':
       await generateExpressTemplate(projectPath, name);
       break;
     case 'fastify':
-      await generateFastifyTemplate(projectPath, name);
+      // TODO: Implement Fastify template generation
+      console.warn('Fastify template not yet implemented, falling back to basic');
+      await generateBasicTemplate(projectPath, name);
       break;
     case 'components':
-      await generateComponentsTemplate(projectPath, name);
+      // TODO: Implement components template generation
+      console.warn('Components template not yet implemented, falling back to basic');
+      await generateBasicTemplate(projectPath, name);
       break;
     default:
       await generateBasicTemplate(projectPath, name);
@@ -68,7 +73,7 @@ export async function scaffoldProject(projectPath, options) {
         cwd: projectPath,
         stdio: 'inherit'
       });
-    } catch (error) {
+    } catch {
       console.warn('⚠️  Failed to install dependencies automatically');
     }
   }
@@ -79,7 +84,7 @@ export async function scaffoldProject(projectPath, options) {
       execSync('git init', { cwd: projectPath, stdio: 'pipe' });
       execSync('git add .', { cwd: projectPath, stdio: 'pipe' });
       execSync('git commit -m "Initial commit"', { cwd: projectPath, stdio: 'pipe' });
-    } catch (error) {
+    } catch {
       console.warn('⚠️  Failed to initialize git repository');
     }
   }
@@ -358,7 +363,7 @@ MIT
 node_modules/
 npm-debug.log*
 yarn-debug.log*
-yarn-error.log*
+yarn-_error.log*
 
 # Production builds
 dist/

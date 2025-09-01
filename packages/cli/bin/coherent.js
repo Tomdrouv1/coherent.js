@@ -22,15 +22,15 @@ const __dirname = dirname(__filename);
 try {
   const { createCLI } = await import('../dist/index.js');
   await createCLI();
-} catch (error) {
+} catch (_error) {
   // Fallback to source if dist doesn't exist (development)
   try {
     const { createCLI } = await import('../src/index.js');
     await createCLI();
   } catch (fallbackError) {
-    console.error('❌ Failed to load Coherent.js CLI:');
-    console.error('   ', fallbackError.message);
-    console.error('\n💡 Try running: npm install');
+    console._error('❌ Failed to load Coherent.js CLI:');
+    console._error('   ', fallbackError.message);
+    console._error('\n💡 Try running: npm install');
     process.exit(1);
   }
 }

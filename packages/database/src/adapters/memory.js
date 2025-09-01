@@ -196,16 +196,16 @@ export class MemoryAdapter {
        * @returns {Promise<*>} Result of the transaction
        */
       async transaction(callback) {
-        // In a real implementation, this would track changes and rollback on error
+        // In a real implementation, this would track changes and rollback on _error
         // For this simple implementation, we'll just execute the callback
         try {
           const result = await callback({
             query: (operation, params) => this.query(operation, params)
           });
           return result;
-        } catch (error) {
+        } catch (_error) {
           // In a real implementation, we would rollback changes here
-          throw error;
+          throw _error;
         }
       }
     };
@@ -259,16 +259,16 @@ export class MemoryAdapter {
    * @returns {Promise<*>} Result of the transaction
    */
   async transaction(callback) {
-    // In a real implementation, this would track changes and rollback on error
+    // In a real implementation, this would track changes and rollback on _error
     // For this simple implementation, we'll just execute the callback
     try {
       const result = await callback({
         query: (operation, params) => this.query(operation, params)
       });
       return result;
-    } catch (error) {
+    } catch (_error) {
       // In a real implementation, we would rollback changes here
-      throw error;
+      throw _error;
     }
   }
 }

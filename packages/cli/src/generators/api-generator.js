@@ -56,7 +56,9 @@ export async function generateAPI(name, options = {}) {
 function generateAPIContent(apiName, originalName, template) {
   switch (template) {
     case 'graphql':
-      return generateGraphQLAPI(apiName, originalName);
+      // TODO: Implement GraphQL API generation
+      console.warn('GraphQL API generation not yet implemented, falling back to REST');
+      return generateRESTAPI(apiName, originalName);
     case 'rpc':
       return generateRPCAPI(apiName, originalName);
     case 'crud':
@@ -173,7 +175,7 @@ ${camelCaseApiName}API.get('/:id', (req, res) => {
   
   if (!item) {
     return res.status(404).json({
-      error: '${className} not found',
+      _error: '${className} not found',
       code: 'NOT_FOUND'
     });
   }
@@ -219,7 +221,7 @@ ${camelCaseApiName}API.put('/:id',
     
     if (itemIndex === -1) {
       return res.status(404).json({
-        error: '${className} not found',
+        _error: '${className} not found',
         code: 'NOT_FOUND'
       });
     }
@@ -249,7 +251,7 @@ ${camelCaseApiName}API.delete('/:id', (req, res) => {
   
   if (itemIndex === -1) {
     return res.status(404).json({
-      error: '${className} not found',
+      _error: '${className} not found',
       code: 'NOT_FOUND'
     });
   }
@@ -368,7 +370,7 @@ ${camelCaseApiName}RPC.post('/get',
     if (!item) {
       return {
         jsonrpc: '2.0',
-        error: {
+        _error: {
           code: -32602,
           message: '${className} not found'
         },
@@ -451,7 +453,7 @@ ${camelCaseApiName}RPC.post('/update',
     if (!existing) {
       return {
         jsonrpc: '2.0',
-        error: {
+        _error: {
           code: -32602,
           message: '${className} not found'
         },
@@ -500,7 +502,7 @@ ${camelCaseApiName}RPC.post('/delete',
     if (!item) {
       return {
         jsonrpc: '2.0',
-        error: {
+        _error: {
           code: -32602,
           message: '${className} not found'
         },

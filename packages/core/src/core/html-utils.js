@@ -110,10 +110,10 @@ export function formatAttributes(props) {
           // For other function attributes, call them to get the value
           try {
             value = value();
-          } catch (error) {
+          } catch (_error) {
             console.warn(`Error executing function for attribute '${key}':`, {
-              error: error.message,
-              stack: error.stack,
+              _error: _error.message,
+              stack: _error.stack,
               attributeKey: key,
             });
             // Consider different fallback strategies based on attribute type

@@ -15,8 +15,8 @@ describe('Express.js integration', () => {
   });
 
   it('handles errors gracefully', () => {
-    // Test error handling
-    expect(true).toBe(true); // Test placeholder - implement Express error handling
+    // Test _error handling
+    expect(true).toBe(true); // Test placeholder - implement Express _error handling
   });
 
   it('supports streaming responses', () => {

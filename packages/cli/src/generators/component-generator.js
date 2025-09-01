@@ -3,7 +3,7 @@
  */
 
 import { writeFileSync, existsSync, mkdirSync } from 'fs';
-import { join, dirname } from 'path';
+import { join } from 'path';
 
 /**
  * Generate a new component

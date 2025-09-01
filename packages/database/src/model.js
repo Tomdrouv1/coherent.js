@@ -407,22 +407,22 @@ export class Model {
       // If there are multiple validation errors, use general message
       const totalErrors = Object.keys(errors).length;
       if (totalErrors > 1) {
-        const error = new Error('Validation failed');
-        error.errors = errors;
-        throw error;
+        const _error = new Error('Validation failed');
+        _error.errors = errors;
+        throw _error;
       }
       
-      // For single field error, throw with the specific message
+      // For single field _error, throw with the specific message
       const firstError = Object.values(errors)[0];
       if (Array.isArray(firstError) && firstError[0]) {
-        const error = new Error(firstError[0]);
-        error.errors = errors;
-        throw error;
+        const _error = new Error(firstError[0]);
+        _error.errors = errors;
+        throw _error;
       }
       
-      const error = new Error('Validation failed');
-      error.errors = errors;
-      throw error;
+      const _error = new Error('Validation failed');
+      _error.errors = errors;
+      throw _error;
     }
     
     this.errors = {};
@@ -437,8 +437,8 @@ export class Model {
         if (result === false) {
           throw new Error('Validation failed');
         }
-      } catch (error) {
-        throw error;
+      } catch (_error) {
+        throw _error;
       }
     }
     

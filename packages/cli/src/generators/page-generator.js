@@ -60,9 +60,13 @@ function generatePageContent(name, template) {
     case 'form':
       return generateFormPage(name);
     case 'list':
-      return generateListPage(name);
+      // TODO: Implement list page generation
+      console.warn('List page generation not yet implemented, falling back to basic');
+      return generateBasicPage(name);
     case 'detail':
-      return generateDetailPage(name);
+      // TODO: Implement detail page generation
+      console.warn('Detail page generation not yet implemented, falling back to basic');
+      return generateBasicPage(name);
     default:
       return generateBasicPage(name);
   }
@@ -474,13 +478,13 @@ export const ${name} = createComponent(({ initialData = {}, errors = {} }) => {
                                           id: 'name',
                                           name: 'name',
                                           value: initialData.name || '',
-                                          className: errors.name ? 'error' : '',
+                                          className: errors.name ? '_error' : '',
                                           required: true
                                         }
                                       },
                                       errors.name ? {
                                         span: {
-                                          className: 'error-message',
+                                          className: '_error-message',
                                           text: errors.name
                                         }
                                       } : null
@@ -503,13 +507,13 @@ export const ${name} = createComponent(({ initialData = {}, errors = {} }) => {
                                           id: 'email',
                                           name: 'email',
                                           value: initialData.email || '',
-                                          className: errors.email ? 'error' : '',
+                                          className: errors.email ? '_error' : '',
                                           required: true
                                         }
                                       },
                                       errors.email ? {
                                         span: {
-                                          className: 'error-message',
+                                          className: '_error-message',
                                           text: errors.email
                                         }
                                       } : null

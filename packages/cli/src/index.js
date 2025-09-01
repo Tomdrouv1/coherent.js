@@ -24,7 +24,7 @@ try {
   const packagePath = join(__dirname, '..', 'package.json');
   const packageJson = JSON.parse(readFileSync(packagePath, 'utf-8'));
   version = packageJson.version;
-} catch (error) {
+} catch {
   // Use fallback version
 }
 

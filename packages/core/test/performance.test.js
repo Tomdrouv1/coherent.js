@@ -19,8 +19,8 @@ test('Performance monitoring setup', async () => {
     
     
     
-  } catch (error) {
-    if (error.code === 'ERR_MODULE_NOT_FOUND') {
+  } catch (_error) {
+    if (_error.code === 'ERR_MODULE_NOT_FOUND') {
       console.log('⚠️  Performance monitor module not found - testing with mock');
       
       // Test mock performance monitoring
@@ -42,7 +42,7 @@ test('Performance monitoring setup', async () => {
       
       
     } else {
-      throw error;
+      throw _error;
     }
   }
 });
@@ -72,8 +72,8 @@ test('Cache manager functionality', async () => {
     
     
     
-  } catch (error) {
-    if (error.code === 'ERR_MODULE_NOT_FOUND') {
+  } catch (_error) {
+    if (_error.code === 'ERR_MODULE_NOT_FOUND') {
       console.log('⚠️  Cache manager module not found - testing with mock');
       
       // Test mock cache implementation
@@ -98,7 +98,7 @@ test('Cache manager functionality', async () => {
       
       
     } else {
-      throw error;
+      throw _error;
     }
   }
 });
@@ -122,8 +122,8 @@ test('Bundle optimizer functionality', async () => {
     
     
     
-  } catch (error) {
-    if (error.code === 'ERR_MODULE_NOT_FOUND') {
+  } catch (_error) {
+    if (_error.code === 'ERR_MODULE_NOT_FOUND') {
       console.log('⚠️  Bundle optimizer module not found - testing optimization concepts');
       
       // Test mock bundle optimization concepts
@@ -158,7 +158,7 @@ test('Bundle optimizer functionality', async () => {
       
       
     } else {
-      throw error;
+      throw _error;
     }
   }
 });
@@ -175,8 +175,8 @@ test('Streaming renderer performance', async () => {
     
     
     
-  } catch (error) {
-    if (error.code === 'ERR_MODULE_NOT_FOUND') {
+  } catch (_error) {
+    if (_error.code === 'ERR_MODULE_NOT_FOUND') {
       console.log('⚠️  Streaming renderer module not found - testing streaming concepts');
       
       // Test mock streaming concepts
@@ -207,7 +207,7 @@ test('Streaming renderer performance', async () => {
       
       
     } else {
-      throw error;
+      throw _error;
     }
   }
 });

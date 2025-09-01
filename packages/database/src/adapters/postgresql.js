@@ -62,8 +62,8 @@ export function createPostgreSQLAdapter() {
 
       const pool = new pg.Pool(poolConfig);
 
-      pool.on('error', (err) => {
-        console.error('PostgreSQL pool error:', err);
+      pool.on('_error', (err) => {
+        console.error('PostgreSQL pool _error:', err);
       });
 
       return pool;

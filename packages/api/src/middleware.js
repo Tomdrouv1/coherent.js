@@ -4,7 +4,7 @@
  */
 
 /**
- * Creates a custom API middleware with error handling
+ * Creates a custom API middleware with _error handling
  * @param {Function} handler - Middleware handler function
  * @returns {Function} Middleware function that catches errors
  */
@@ -12,9 +12,9 @@ export function createApiMiddleware(handler) {
   return (req, res, next) => {
     try {
       return handler(req, res, next);
-    } catch (error) {
+    } catch (_error) {
       // Pass errors to next middleware
-      next(error);
+      next(_error);
     }
   };
 }
@@ -30,7 +30,7 @@ export function withAuth(verifyToken) {
     
     if (!authHeader) {
       return res.status(401).json({ 
-        error: 'Unauthorized', 
+        _error: 'Unauthorized', 
         message: 'Missing authorization header' 
       });
     }
@@ -43,7 +43,7 @@ export function withAuth(verifyToken) {
       next();
     } catch {
       return res.status(401).json({ 
-        error: 'Unauthorized', 
+        _error: 'Unauthorized', 
         message: 'Invalid token' 
       });
     }
@@ -59,7 +59,7 @@ export function withPermission(checkPermission) {
   return createApiMiddleware((req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ 
-        error: 'Unauthorized', 
+        _error: 'Unauthorized', 
         message: 'User not authenticated' 
       });
     }
@@ -69,7 +69,7 @@ export function withPermission(checkPermission) {
       
       if (!hasPermission) {
         return res.status(403).json({ 
-          error: 'Forbidden', 
+          _error: 'Forbidden', 
           message: 'Insufficient permissions' 
         });
       }
@@ -77,7 +77,7 @@ export function withPermission(checkPermission) {
       next();
     } catch {
       return res.status(403).json({ 
-        error: 'Forbidden', 
+        _error: 'Forbidden', 
         message: 'Permission check failed' 
       });
     }
@@ -201,7 +201,7 @@ export function withRateLimit(options = {}) {
     // Check if limit exceeded
     if (record.count > max) {
       return res.status(statusCode).json({
-        error: 'Rate limit exceeded',
+        _error: 'Rate limit exceeded',
         message
       });
     }

@@ -48,8 +48,8 @@ export function createMongoDBAdapter() {
       await client.connect();
       db = client.db(config.database);
       return instance;
-    } catch (error) {
-      throw new Error(`Failed to connect to MongoDB: ${error.message}`);
+    } catch (_error) {
+      throw new Error(`Failed to connect to MongoDB: ${_error.message}`);
     }
   }
 
@@ -87,8 +87,8 @@ export function createMongoDBAdapter() {
       }
       
       return cursor.toArray();
-    } catch (error) {
-      throw new Error(`MongoDB query error: ${error.message}`);
+    } catch (_error) {
+      throw new Error(`MongoDB query _error: ${_error.message}`);
     }
   }
 
@@ -105,8 +105,8 @@ export function createMongoDBAdapter() {
 
     try {
       return await db.command(command);
-    } catch (error) {
-      throw new Error(`MongoDB command error: ${error.message}`);
+    } catch (_error) {
+      throw new Error(`MongoDB command _error: ${_error.message}`);
     }
   }
 

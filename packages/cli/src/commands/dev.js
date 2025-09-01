@@ -29,7 +29,7 @@ export const devCommand = new Command('dev')
     let packageJson;
     try {
       packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
-    } catch (error) {
+    } catch {
       console.error(picocolors.red('❌ Failed to read package.json'));
       process.exit(1);
     }
@@ -124,8 +124,8 @@ export const devCommand = new Command('dev')
         }
       });
 
-      devProcess.on('error', (error) => {
-        console.error(picocolors.red('❌ Failed to start development server:'), error.message);
+      devProcess.on('_error', (_error) => {
+        console.error(picocolors.red('❌ Failed to start development server:'), _error.message);
         process.exit(1);
       });
 

@@ -1,6 +1,6 @@
 /**
  * API Error Handling for Coherent.js
- * @fileoverview Standardized error classes and handling utilities
+ * @fileoverview Standardized _error classes and handling utilities
  */
 
 /**
@@ -9,10 +9,10 @@
  */
 class ApiError extends Error {
   /**
-   * Create an API error
+   * Create an API _error
    * @param {string} message - Error message
    * @param {number} statusCode - HTTP status code
-   * @param {Object} details - Additional error details
+   * @param {Object} details - Additional _error details
    */
   constructor(message, statusCode = 500, details = {}) {
     super(message);
@@ -27,12 +27,12 @@ class ApiError extends Error {
   }
   
   /**
-   * Convert error to JSON-serializable object
+   * Convert _error to JSON-serializable object
    * @returns {Object} Error object
    */
   toJSON() {
     return {
-      error: this.name,
+      _error: this.name,
       message: this.message,
       statusCode: this.statusCode,
       details: this.details
@@ -46,7 +46,7 @@ class ApiError extends Error {
  */
 class ValidationError extends ApiError {
   /**
-   * Create a validation error
+   * Create a validation _error
    * @param {Object} errors - Validation errors
    * @param {string} message - Error message
    */
@@ -62,7 +62,7 @@ class ValidationError extends ApiError {
  */
 class AuthenticationError extends ApiError {
   /**
-   * Create an authentication error
+   * Create an authentication _error
    * @param {string} message - Error message
    */
   constructor(message = 'Authentication required') {
@@ -77,7 +77,7 @@ class AuthenticationError extends ApiError {
  */
 class AuthorizationError extends ApiError {
   /**
-   * Create an authorization error
+   * Create an authorization _error
    * @param {string} message - Error message
    */
   constructor(message = 'Access denied') {
@@ -92,7 +92,7 @@ class AuthorizationError extends ApiError {
  */
 class NotFoundError extends ApiError {
   /**
-   * Create a not found error
+   * Create a not found _error
    * @param {string} message - Error message
    */
   constructor(message = 'Resource not found') {
@@ -107,7 +107,7 @@ class NotFoundError extends ApiError {
  */
 class ConflictError extends ApiError {
   /**
-   * Create a conflict error
+   * Create a conflict _error
    * @param {string} message - Error message
    */
   constructor(message = 'Resource conflict') {
@@ -117,7 +117,7 @@ class ConflictError extends ApiError {
 }
 
 /**
- * Create error handling middleware
+ * Create _error handling middleware
  * @param {Function} handler - Error handler function
  * @returns {Function} Middleware function
  */
@@ -125,54 +125,54 @@ function withErrorHandling(handler) {
   return async (req, res, next) => {
     try {
       return await handler(req, res, next);
-    } catch (error) {
-      // If it's already an API error, use it as-is
-      if (error instanceof ApiError) {
-        throw error;
+    } catch (_error) {
+      // If it's already an API _error, use it as-is
+      if (_error instanceof ApiError) {
+        throw _error;
       }
       
-      // Otherwise, wrap it as a generic server error
-      throw new ApiError(error.message || 'Internal server error', 500);
+      // Otherwise, wrap it as a generic server _error
+      throw new ApiError(_error.message || 'Internal server _error', 500);
     }
   };
 }
 
 /**
- * Global error handler middleware
- * @returns {Function} Express error handler middleware
+ * Global _error handler middleware
+ * @returns {Function} Express _error handler middleware
  */
 function createErrorHandler() {
-  return (error, req, res, next) => {
-    // Log error for debugging
-    console.error('API Error:', error);
+  return (_error, req, res, next) => {
+    // Log _error for debugging
+    console.error('API Error:', _error);
     
-    // If headers are already sent, delegate to default error handler
+    // If headers are already sent, delegate to default _error handler
     if (res.headersSent) {
-      return next(error);
+      return next(_error);
     }
     
-    // Format error response
+    // Format _error response
     const response = {
-      error: error.name || 'Error',
-      message: error.message || 'An error occurred',
-      statusCode: error.statusCode || 500
+      _error: _error.name || 'Error',
+      message: _error.message || 'An _error occurred',
+      statusCode: _error.statusCode || 500
     };
     
     // Add details if available
-    if (error.details) {
-      response.details = error.details;
+    if (_error.details) {
+      response.details = _error.details;
     }
     
     // Add stack trace in development
     if (process.env.NODE_ENV === 'development') {
-      response.stack = error.stack;
+      response.stack = _error.stack;
     }
     
     res.status(response.statusCode).json(response);
   };
 }
 
-// Export all error classes and utilities
+// Export all _error classes and utilities
 export {
   ApiError,
   ValidationError,

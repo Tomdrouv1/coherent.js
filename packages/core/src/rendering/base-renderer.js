@@ -215,7 +215,7 @@ export class BaseRenderer {
     }
 
     /**
-     * Execute function components with error handling
+     * Execute function components with _error handling
      */
     executeFunctionComponent(func, depth = 0) {
         try {
@@ -239,14 +239,14 @@ export class BaseRenderer {
             }
             
             return result;
-        } catch (error) {
+        } catch (_error) {
             if (this.config.enableMonitoring) {
-                performanceMonitor.recordError('functionComponent', error);
+                performanceMonitor.recordError('functionComponent', _error);
             }
             
-            // In development, provide detailed error info
+            // In development, provide detailed _error info
             if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
-                console.warn('Coherent.js Function Component Error:', error.message);
+                console.warn('Coherent.js Function Component Error:', _error.message);
             }
             
             return null;
@@ -294,11 +294,11 @@ export class BaseRenderer {
     }
 
     /**
-     * Record error for monitoring
+     * Record _error for monitoring
      */
-    recordError(operation, error, metadata = {}) {
+    recordError(operation, _error, metadata = {}) {
         if (this.config.enableMonitoring) {
-            performanceMonitor.recordError(operation, error, metadata);
+            performanceMonitor.recordError(operation, _error, metadata);
         }
     }
 
@@ -444,10 +444,10 @@ export const RendererUtils = {
             };
 
             return `element:${JSON.stringify(keyData)}`;
-        } catch (error) {
-            // Log error in development mode
+        } catch (_error) {
+            // Log _error in development mode
             if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
-                console.warn('Failed to generate cache key:', error);
+                console.warn('Failed to generate cache key:', _error);
             }
             // Return null to indicate uncacheable element
             return null;

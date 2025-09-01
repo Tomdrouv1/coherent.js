@@ -170,10 +170,10 @@ export class DatabaseManager extends EventEmitter {
       }
       
       return this;
-    } catch (error) {
+    } catch (_error) {
       this.connectionAttempts++;
       this.stats.failedConnections++;
-      this.emit('error', error);
+      this.emit('_error', _error);
       
       if (this.connectionAttempts < this.maxRetries) {
         console.warn(`Connection attempt ${this.connectionAttempts} failed. Retrying in 2 seconds...`);
@@ -181,7 +181,7 @@ export class DatabaseManager extends EventEmitter {
         return this.connect();
       }
       
-      throw new Error(`Failed to connect to database after ${this.connectionAttempts} attempts: ${error.message}`);
+      throw new Error(`Failed to connect to database after ${this.connectionAttempts} attempts: ${_error.message}`);
     }
   }
 
@@ -227,8 +227,8 @@ export class DatabaseManager extends EventEmitter {
         
         throw new Error(`No valid adapter found in ${adapterPath}`);
       })
-      .catch(error => {
-        throw new Error(`Failed to load ${type} adapter: ${error.message}`);
+      .catch(_error => {
+        throw new Error(`Failed to load ${type} adapter: ${_error.message}`);
       });
   }
 
@@ -254,9 +254,9 @@ export class DatabaseManager extends EventEmitter {
       this.stats.lastHealthCheck = new Date();
       this.emit('connect:test', { duration });
       
-    } catch (error) {
-      this.emit('error', error);
-      throw new Error(`Database connection test failed: ${error.message}`);
+    } catch (_error) {
+      this.emit('_error', _error);
+      throw new Error(`Database connection test failed: ${_error.message}`);
     }
   }
 
@@ -309,11 +309,11 @@ export class DatabaseManager extends EventEmitter {
       
       return result;
       
-    } catch (error) {
+    } catch (_error) {
       const duration = Date.now() - startTime;
-      this.emit('queryError', { operation, params, duration, error: error.message });
+      this.emit('queryError', { operation, params, duration, _error: _error.message });
       
-      throw new Error(`Query failed: ${error.message}`);
+      throw new Error(`Query failed: ${_error.message}`);
     }
   }
 
@@ -328,9 +328,9 @@ export class DatabaseManager extends EventEmitter {
    *   await tx.query('INSERT INTO users (name) VALUES (?)', ['John']);
    *   await tx.query('INSERT INTO profiles (user_id) VALUES (?)', [userId]);
    *   await tx.commit();
-   * } catch (error) {
+   * } catch (_error) {
    *   await tx.rollback();
-   *   throw error;
+   *   throw _error;
    * }
    */
   async transaction() {
@@ -355,11 +355,11 @@ export class DatabaseManager extends EventEmitter {
       try {
         await this.testConnection();
         this.emit('healthCheck', { status: 'healthy', timestamp: new Date() });
-      } catch (error) {
-        this.emit('healthCheck', { status: 'unhealthy', error: error.message, timestamp: new Date() });
+      } catch (_error) {
+        this.emit('healthCheck', { status: 'unhealthy', _error: _error.message, timestamp: new Date() });
         
         if (this.config.debug) {
-          console.error('Database health check failed:', error.message);
+          console.error('Database health check failed:', _error.message);
         }
       }
     }, this.healthCheckFrequency);

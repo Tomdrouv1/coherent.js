@@ -47,7 +47,7 @@ test('CLI modules should be importable', async () => {
     assert(typeof generateCommand === 'object');
     
     
-  } catch (error) {
-    assert.fail(`Failed to import CLI modules: ${error.message}`);
+  } catch (_error) {
+    assert.fail(`Failed to import CLI modules: ${_error.message}`);
   }
 });

@@ -62,10 +62,10 @@ export class DOMRenderer extends BaseRenderer {
             
             this.metrics.endTime = performance.now();
             return element;
-        } catch (error) {
-            this.recordError('render', error);
-            console.error('Error rendering to DOM:', error);
-            throw error;
+        } catch (_error) {
+            this.recordError('render', _error);
+            console.error('Error rendering to DOM:', _error);
+            throw _error;
         }
     }
 
@@ -237,8 +237,8 @@ export class DOMRenderer extends BaseRenderer {
             }
             
             return element;
-        } catch (error) {
-            console.warn('VDOM diffing failed, falling back to full re-render:', error);
+        } catch (_error) {
+            console.warn('VDOM diffing failed, falling back to full re-render:', _error);
             // Clear corrupted cache entry
             this.componentCache.delete(componentId);
             // Fall back to full re-render

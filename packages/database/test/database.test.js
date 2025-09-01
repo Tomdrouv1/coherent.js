@@ -64,9 +64,9 @@ class MockAdapter {
       const result = await callback(tx);
       await tx.commit();
       return result;
-    } catch (error) {
+    } catch (_error) {
       await tx.rollback();
-      throw error;
+      throw _error;
     }
   }
 }
@@ -298,14 +298,14 @@ test('Transaction handling', async () => {
       // Simulate some database operations
       await tx.query('SELECT 1 as test', []);
       
-      // Force an error to test rollback
-      throw new Error('Simulated error');
+      // Force an _error to test rollback
+      throw new Error('Simulated _error');
     });
   } catch {
     rollbackOccurred = true;
   }
 
-  assert.strictEqual(rollbackOccurred, true, 'Rollback should occur on error');
+  assert.strictEqual(rollbackOccurred, true, 'Rollback should occur on _error');
 
   await dbManager.close();
 });

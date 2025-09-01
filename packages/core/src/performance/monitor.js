@@ -57,9 +57,9 @@ export class PerformanceMonitor {
             });
 
             return result;
-        } catch (error) {
-            this.recordError(error, component);
-            throw error;
+        } catch (_error) {
+            this.recordError(_error, component);
+            throw _error;
         }
     }
 
@@ -79,11 +79,11 @@ export class PerformanceMonitor {
         }
     }
 
-    recordError(error, component) {
+    recordError(_error, component) {
         this.metrics.errors.push({
-            error: error.message,
+            _error: _error.message,
             component: this.getComponentName(component),
-            stack: error.stack,
+            stack: _error.stack,
             timestamp: Date.now()
         });
     }
@@ -277,8 +277,8 @@ export class PerformanceMonitor {
         if (errorRate > 5) {
             recommendations.push({
                 priority: 'high',
-                issue: 'High error rate',
-                suggestion: 'Review component validation and error handling',
+                issue: 'High _error rate',
+                suggestion: 'Review component validation and _error handling',
                 impact: 'Improve stability and user experience'
             });
         }

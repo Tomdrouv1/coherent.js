@@ -94,15 +94,15 @@ describe('Database Middleware', () => {
     });
 
     it('should handle database errors', async () => {
-      const error = new Error('Database connection failed');
-      mockDb.connect.mockRejectedValue(error);
+      const _error = new Error('Database connection failed');
+      mockDb.connect.mockRejectedValue(_error);
       mockDb.isConnected = false;
       
       const middleware = withDatabase(mockDb, { autoConnect: true });
       
       await middleware(mockReq, mockRes, mockNext);
       
-      expect(mockNext).toHaveBeenCalledWith(error);
+      expect(mockNext).toHaveBeenCalledWith(_error);
     });
 
     describe('request.query helper', () => {
@@ -140,7 +140,7 @@ describe('Database Middleware', () => {
         expect(result).toBe('result');
       });
 
-      it('should rollback transaction on error', async () => {
+      it('should rollback transaction on _error', async () => {
         const mockTx = {
           commit: vi.fn(),
           rollback: vi.fn().mockResolvedValue()
@@ -194,7 +194,7 @@ describe('Database Middleware', () => {
       expect(mockTx.commit).not.toHaveBeenCalled();
     });
 
-    it('should rollback on error', async () => {
+    it('should rollback on _error', async () => {
       const mockTx = {
         commit: vi.fn(),
         rollback: vi.fn().mockResolvedValue(),
@@ -322,15 +322,15 @@ describe('Database Middleware', () => {
     });
 
     it('should handle database errors', async () => {
-      const error = new Error('Database error');
-      MockModel.find.mockRejectedValue(error);
+      const _error = new Error('Database _error');
+      MockModel.find.mockRejectedValue(_error);
       mockReq.params.id = '1';
       
       const middleware = withModel(MockModel);
       
       await middleware(mockReq, mockRes, mockNext);
       
-      expect(mockNext).toHaveBeenCalledWith(error);
+      expect(mockNext).toHaveBeenCalledWith(_error);
     });
   });
 
@@ -552,7 +552,7 @@ describe('Database Middleware', () => {
       
       expect(mockReq.dbHealth).toMatchObject({
         status: 'unhealthy',
-        error: 'Connection failed',
+        _error: 'Connection failed',
         connected: true
       });
       expect(mockNext).toHaveBeenCalled();
@@ -566,7 +566,7 @@ describe('Database Middleware', () => {
       await middleware(mockReq, mockRes, mockNext);
       
       expect(mockReq.dbHealth.status).toBe('unhealthy');
-      expect(mockReq.dbHealth.error).toBe('Health check timeout');
+      expect(mockReq.dbHealth._error).toBe('Health check timeout');
     });
 
     it('should exclude stats when configured', async () => {
@@ -645,7 +645,7 @@ describe('Database Middleware', () => {
       expect(mockRes.on).not.toHaveBeenCalled();
     });
 
-    it('should release connection on error', async () => {
+    it('should release connection on _error', async () => {
       mockNext.mockRejectedValue(new Error('Handler failed'));
       
       const middleware = withConnectionPool(mockDb);
@@ -654,9 +654,9 @@ describe('Database Middleware', () => {
       expect(mockPool.release).toHaveBeenCalledWith(mockConnection);
     });
 
-    it('should handle acquire error', async () => {
-      const error = new Error('Pool exhausted');
-      mockPool.acquire.mockRejectedValue(error);
+    it('should handle acquire _error', async () => {
+      const _error = new Error('Pool exhausted');
+      mockPool.acquire.mockRejectedValue(_error);
       
       const middleware = withConnectionPool(mockDb);
       

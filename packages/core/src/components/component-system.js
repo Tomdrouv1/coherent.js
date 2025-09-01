@@ -97,8 +97,8 @@ class ComponentState {
         this.listeners.forEach(listener => {
             try {
                 listener(newState, oldState);
-            } catch (error) {
-                console.error('State listener error:', error);
+            } catch (_error) {
+                console.error('State listener _error:', _error);
             }
         });
 
@@ -242,23 +242,23 @@ export class Component {
             if (this.hooks[hookName]) {
                 return this.hooks[hookName].call(this, ...args);
             }
-        } catch (error) {
-            this.handleError(error, `${hookName} hook`);
+        } catch (_error) {
+            this.handleError(_error, `${hookName} hook`);
         }
     }
 
     /**
      * Handle component errors
      */
-    handleError(error) {
-        console.error(`Component Error in ${this.name}:`, error);
+    handleError(_error) {
+        console.error(`Component Error in ${this.name}:`, _error);
 
-        // Call error hook
-        this.callHook('errorCaptured', error);
+        // Call _error hook
+        this.callHook('errorCaptured', _error);
 
         // Propagate to parent
         if (this.parent && this.parent.handleError) {
-            this.parent.handleError(error, `${this.name} -> ${context}`);
+            this.parent.handleError(_error, `${this.name} -> ${context}`);
         }
     }
 
@@ -297,9 +297,9 @@ export class Component {
 
             return this.rendered;
 
-        } catch (error) {
-            this.handleError(error);
-            return {div: {className: 'component-error', text: `Error in ${this.name}`}};
+        } catch (_error) {
+            this.handleError(_error);
+            return {div: {className: 'component-_error', text: `Error in ${this.name}`}};
         }
     }
 
@@ -805,8 +805,8 @@ export function lazy(factory, options = {}) {
 
                 // Handle promises
                 if (result && typeof result.then === 'function') {
-                    return result.catch(error => {
-                        if (onError) onError(error);
+                    return result.catch(_error => {
+                        if (onError) onError(_error);
                         return fallback;
                     });
                 }
@@ -819,11 +819,11 @@ export function lazy(factory, options = {}) {
 
                 return result;
 
-            } catch (error) {
+            } catch (_error) {
                 if (onError) {
-                    onError(error);
+                    onError(_error);
                 } else {
-                    console.error('Lazy evaluation error:', error);
+                    console.error('Lazy evaluation _error:', _error);
                 }
                 return fallback;
             } finally {
@@ -967,7 +967,7 @@ export function batchEvaluate(lazyValues, ...args) {
             if (result && typeof result.then === 'function') {
                 promises.push(
                     result.then(value => ({key, value}))
-                        .catch(error => ({key, error}))
+                        .catch(_error => ({key, _error}))
                 );
             } else {
                 results[key] = result;
@@ -982,9 +982,9 @@ export function batchEvaluate(lazyValues, ...args) {
     }
 
     return Promise.all(promises).then(asyncResults => {
-        asyncResults.forEach(({key, value, error}) => {
-            if (error) {
-                console.error(`Batch evaluation error for ${key}:`, error);
+        asyncResults.forEach(({key, value, _error}) => {
+            if (_error) {
+                console.error(`Batch evaluation _error for ${key}:`, _error);
                 results[key] = null;
             } else {
                 results[key] = value;
@@ -1025,17 +1025,17 @@ function evaluateWithTimeout(factory, timeout, args, fallback) {
                         clearTimeout(timer);
                         resolve(value);
                     })
-                    .catch(error => {
+                    .catch(_error => {
                         clearTimeout(timer);
-                        reject(error);
+                        reject(_error);
                     });
             } else {
                 clearTimeout(timer);
                 resolve(result);
             }
-        } catch (error) {
+        } catch (_error) {
             clearTimeout(timer);
-            reject(error);
+            reject(_error);
         }
     }).catch(() => fallback);
 }
@@ -1298,10 +1298,10 @@ export function memoAsync(asyncFn, options = {}) {
         }
 
         // Start new async operation
-        const promise = asyncFn(...args).catch(error => {
+        const promise = asyncFn(...args).catch(_error => {
             // Remove failed promise from cache
             promiseCache.delete(key);
-            throw error;
+            throw _error;
         });
 
         promiseCache.set(key, promise);
@@ -1594,7 +1594,7 @@ export function withProps(propsTransform, options = {}) {
 
         // Error handling
         onError = null,             // Error handler for transformation
-        fallbackProps = {},         // Fallback props on error
+        fallbackProps = {},         // Fallback props on _error
 
         // Development
         displayName = null,         // Component name for debugging
@@ -1624,17 +1624,17 @@ export function withProps(propsTransform, options = {}) {
                 if (transformedProps && typeof transformedProps.then === 'function') {
                     return transformedProps.then(resolved => {
                         return processProps(resolved, originalProps, WrappedComponent, state, context);
-                    }).catch(error => {
-                        if (onError) onError(error, originalProps);
+                    }).catch(_error => {
+                        if (onError) onError(_error, originalProps);
                         return processProps(fallbackProps, originalProps, WrappedComponent, state, context);
                     });
                 }
 
                 return processProps(transformedProps, originalProps, WrappedComponent, state, context);
 
-            } catch (error) {
-                if (debug) console.error('withProps error:', error);
-                if (onError) onError(error, originalProps);
+            } catch (_error) {
+                if (debug) console.error('withProps _error:', _error);
+                if (onError) onError(_error, originalProps);
 
                 // Use fallback props
                 return processProps(fallbackProps, originalProps, WrappedComponent, state, context);
@@ -1785,7 +1785,7 @@ export const withPropsUtils = {
      */
     validated: (transform, validator) => withProps(transform, {
         validate: validator,
-        onError: (error) => console.warn('Prop validation failed:', error)
+        onError: (_error) => console.warn('Prop validation failed:', _error)
     }),
 
     /**
@@ -1794,8 +1794,8 @@ export const withPropsUtils = {
     async: (asyncTransform, loadingProps = {}) => withProps(async (props, state, context) => {
         try {
             return await asyncTransform(props, state, context);
-        } catch (error) {
-            console.error('Async prop transform failed:', error);
+        } catch (_error) {
+            console.error('Async prop transform failed:', _error);
             return loadingProps;
         }
     }, {
@@ -1965,7 +1965,7 @@ export function withState(initialState = {}, options = {}) {
         // State options
         persistent = false,         // Persist state across component unmounts
         storageKey = null,          // Key for persistent storage
-        storage = typeof localStorage !== 'undefined' ? localStorage : {
+        storage = (typeof window !== 'undefined' && typeof window.localStorage !== 'undefined') ? window.localStorage : {
             // Fallback storage for Node.js environments
             _data: new Map(),
             setItem(key, value) { this._data.set(key, value); },
@@ -2178,8 +2178,8 @@ function createStateContainer(initialState, options) {
                         const parsed = JSON.parse(saved);
                         state = {...state, ...parsed};
                     }
-                } catch (error) {
-                    if (debug) console.warn('Failed to load persisted state:', error);
+                } catch (_error) {
+                    if (debug) console.warn('Failed to load persisted state:', _error);
                 }
             }
 
@@ -2218,8 +2218,8 @@ function createStateContainer(initialState, options) {
             if (persistent && storageKey) {
                 try {
                     storage.setItem(storageKey, JSON.stringify(state));
-                } catch (error) {
-                    if (debug) console.warn('Failed to persist state:', error);
+                } catch (_error) {
+                    if (debug) console.warn('Failed to persist state:', _error);
                 }
             }
 
@@ -2228,8 +2228,8 @@ function createStateContainer(initialState, options) {
                 listeners.forEach(listener => {
                     try {
                         listener(state, prevState);
-                    } catch (error) {
-                        if (debug) console.error('State listener error:', error);
+                    } catch (_error) {
+                        if (debug) console.error('State listener _error:', _error);
                     }
                 });
 
@@ -2268,8 +2268,8 @@ function createStateContainer(initialState, options) {
             if (persistent && storageKey) {
                 try {
                     storage.removeItem(storageKey);
-                } catch (error) {
-                    if (debug) console.warn('Failed to remove persisted state:', error);
+                } catch (_error) {
+                    if (debug) console.warn('Failed to remove persisted state:', _error);
                 }
             }
         }
@@ -2296,16 +2296,16 @@ function createBoundActions(actions, stateContainer, options) {
 
                 // Handle async actions
                 if (supportAsync && result && typeof result.then === 'function') {
-                    return result.catch(error => {
-                        if (debug) console.error(`Async action ${actionName} failed:`, error);
-                        throw error;
+                    return result.catch(_error => {
+                        if (debug) console.error(`Async action ${actionName} failed:`, _error);
+                        throw _error;
                     });
                 }
 
                 return result;
-            } catch (error) {
-                if (debug) console.error(`Action ${actionName} failed:`, error);
-                throw error;
+            } catch (_error) {
+                if (debug) console.error(`Action ${actionName} failed:`, _error);
+                throw _error;
             }
         };
     });
@@ -2413,7 +2413,7 @@ export const withStateUtils = {
     }),
 
     /**
-     * State with loading/error handling
+     * State with loading/_error handling
      */
     withLoading: async (initialState) => withState({
         ...initialState,
@@ -2426,8 +2426,8 @@ export const withStateUtils = {
                 setState({_loading: loading});
             },
 
-            setError: (state, setState, {args: [error]}) => {
-                setState({_error: error, _loading: false});
+            setError: (state, setState, {args: [_error]}) => {
+                setState({_error: _error, _loading: false});
             },
 
             clearError: (state, setState) => {
@@ -2440,9 +2440,9 @@ export const withStateUtils = {
                     const result = await asyncFn(state);
                     setState({_loading: false});
                     return result;
-                } catch (error) {
-                    setState({_loading: false, _error: error});
-                    throw error;
+                } catch (_error) {
+                    setState({_loading: false, _error: _error});
+                    throw _error;
                 }
             }
         }

@@ -6,7 +6,6 @@ import { Command } from 'commander';
 import prompts from 'prompts';
 import ora from 'ora';
 import picocolors from 'picocolors';
-import { existsSync } from 'fs';
 import { generateComponent } from '../generators/component-generator.js';
 import { generatePage } from '../generators/page-generator.js';
 import { generateAPI } from '../generators/api-generator.js';
@@ -144,18 +143,18 @@ export const generateCommand = new Command('generate')
         console.log();
       }
 
-    } catch (error) {
+    } catch (_error) {
       spinner.fail(`Failed to generate ${generationType}`);
-      console.error(picocolors.red('❌ Error:'), error.message);
+      console.error(picocolors.red('❌ Error:'), _error.message);
       process.exit(1);
     }
   });
 
 // Placeholder for additional generators
-async function generateModel(name, options) {
+async function generateModel() {
   throw new Error('Model generation not implemented yet');
 }
 
-async function generateMiddleware(name, options) {
+async function generateMiddleware() {
   throw new Error('Middleware generation not implemented yet');
 }

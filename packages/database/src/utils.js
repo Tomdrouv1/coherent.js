@@ -330,10 +330,10 @@ export async function checkDatabaseHealth(db) {
       stats
     };
     
-  } catch (error) {
+  } catch (_error) {
     return {
       status: 'unhealthy',
-      error: error.message,
+      _error: _error.message,
       connected: db.isConnected,
       responseTime: Date.now() - startTime
     };
@@ -371,20 +371,20 @@ export async function batchOperations(db, operations, options = {}) {
         try {
           const result = await tx.query(operation.sql, operation.params);
           results.push({ success: true, result });
-        } catch (error) {
-          results.push({ success: false, error: error.message });
+        } catch (_error) {
+          results.push({ success: false, _error: _error.message });
           
           if (!config.continueOnError) {
-            throw error;
+            throw _error;
           }
         }
       }
       
       await tx.commit();
       
-    } catch (error) {
+    } catch (_error) {
       await tx.rollback();
-      throw error;
+      throw _error;
     }
     
   } else {
@@ -392,11 +392,11 @@ export async function batchOperations(db, operations, options = {}) {
       try {
         const result = await db.query(operation.sql, operation.params);
         results.push({ success: true, result });
-      } catch (error) {
-        results.push({ success: false, error: error.message });
+      } catch (_error) {
+        results.push({ success: false, _error: _error.message });
         
         if (!config.continueOnError) {
-          throw error;
+          throw _error;
         }
       }
     }

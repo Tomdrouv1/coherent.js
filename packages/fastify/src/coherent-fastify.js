@@ -56,11 +56,11 @@ export function coherentFastify(fastify, options, done) {
       // Set content type and send HTML
       this.header('Content-Type', 'text/html; charset=utf-8');
       this.send(finalHtml);
-    } catch (error) {
-      console.error('Coherent.js rendering error:', error);
+    } catch (_error) {
+      console.error('Coherent.js rendering _error:', _error);
       this.status(500).send({
-        error: 'Internal Server Error',
-        message: error.message
+        _error: 'Internal Server Error',
+        message: _error.message
       });
     }
   });
@@ -86,9 +86,9 @@ export function coherentFastify(fastify, options, done) {
         // Set content type and return HTML
         reply.header('Content-Type', 'text/html; charset=utf-8');
         return finalHtml;
-      } catch (error) {
-        console.error('Coherent.js rendering error:', error);
-        throw error;
+      } catch (_error) {
+        console.error('Coherent.js rendering _error:', _error);
+        throw _error;
       }
     }
     
@@ -139,9 +139,9 @@ export function createCoherentFastifyHandler(componentFactory, options = {}) {
       // Send HTML response
       reply.header('Content-Type', 'text/html; charset=utf-8');
       return finalHtml;
-    } catch (error) {
-      console.error('Coherent.js handler error:', error);
-      throw error;
+    } catch (_error) {
+      console.error('Coherent.js handler _error:', _error);
+      throw _error;
     }
   };
 }

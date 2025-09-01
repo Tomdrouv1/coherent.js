@@ -3,7 +3,7 @@
  * Provides computed properties, watchers, and reactive updates
  */
 
-import { globalErrorHandler, StateError } from '../utils/error-handler.js';
+import { globalErrorHandler, StateError } from '../utils/_error-handler.js';
 
 /**
  * Observable wrapper for tracking state changes
@@ -40,9 +40,9 @@ export class Observable {
         this._observers.forEach(observer => {
             try {
                 observer(newValue, oldValue);
-            } catch (error) {
-                globalErrorHandler.handle(error, {
-                    type: 'watcher-error',
+            } catch (_error) {
+                globalErrorHandler.handle(_error, {
+                    type: 'watcher-_error',
                     context: { newValue, oldValue }
                 });
             }
@@ -129,9 +129,9 @@ class Computed extends Observable {
 
             this._cached = true;
             this._dirty = false;
-        } catch (error) {
-            globalErrorHandler.handle(error, {
-                type: 'computed-error',
+        } catch (_error) {
+            globalErrorHandler.handle(_error, {
+                type: 'computed-_error',
                 context: { getter: this._getter.toString() }
             });
         } finally {
@@ -396,9 +396,9 @@ export class ReactiveState {
                         break;
                     }
                 }
-            } catch (error) {
-                globalErrorHandler.handle(error, {
-                    type: 'middleware-error',
+            } catch (_error) {
+                globalErrorHandler.handle(_error, {
+                    type: 'middleware-_error',
                     context: { action, middleware: middleware.toString() }
                 });
             }

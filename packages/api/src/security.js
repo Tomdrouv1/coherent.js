@@ -148,7 +148,7 @@ export function withAuth(options = {}) {
     
     if (required && !user) {
       res.writeHead(401, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Unauthorized' }));
+      res.end(JSON.stringify({ _error: 'Unauthorized' }));
       return;
     }
     
@@ -168,13 +168,13 @@ export function withRole(roles) {
   return (req, res) => {
     if (!req.user) {
       res.writeHead(401, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Unauthorized' }));
+      res.end(JSON.stringify({ _error: 'Unauthorized' }));
       return;
     }
     
     if (!requiredRoles.includes(req.user.role)) {
       res.writeHead(403, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Forbidden' }));
+      res.end(JSON.stringify({ _error: 'Forbidden' }));
       return;
     }
     
@@ -254,7 +254,7 @@ export function withInputValidation(rules) {
     
     if (errors.length > 0) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Validation failed', details: errors }));
+      res.end(JSON.stringify({ _error: 'Validation failed', details: errors }));
       return;
     }
     

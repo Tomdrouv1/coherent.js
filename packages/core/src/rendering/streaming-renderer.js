@@ -67,9 +67,9 @@ export class StreamingRenderer extends BaseRenderer {
                 this.buffer = '';
             }
 
-        } catch (error) {
-            // Stream error information
-            yield this.createErrorChunk(error);
+        } catch (_error) {
+            // Stream _error information
+            yield this.createErrorChunk(_error);
         } finally {
             this.metrics.endTime = performance.now();
         }
@@ -201,13 +201,13 @@ export class StreamingRenderer extends BaseRenderer {
     }
 
     /**
-     * Create an error chunk
+     * Create an _error chunk
      */
-    createErrorChunk(error) {
-        return this.createChunk(`<!-- Streaming Error: ${error.message} -->`, {
-            error: true,
-            errorMessage: error.message,
-            errorStack: error.stack
+    createErrorChunk(_error) {
+        return this.createChunk(`<!-- Streaming Error: ${_error.message} -->`, {
+            _error: true,
+            errorMessage: _error.message,
+            errorStack: _error.stack
         });
     }
 
