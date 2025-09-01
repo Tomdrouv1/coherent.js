@@ -10,6 +10,7 @@ import { Examples } from '../website/src/pages/Examples.js';
 import { Playground } from '../website/src/pages/Playground.js';
 import { Coverage } from '../website/src/pages/Coverage.js';
 import { Performance } from '../website/src/pages/Performance.js';
+import { DocsIndexPage } from '../website/src/pages/DocsPage.js';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -48,14 +49,16 @@ function buildBreadcrumbs(rel){
   const parts = rel.replace(/\\/g,'/').split('/');
   const crumbs = [];
   let acc = 'docs';
-  crumbs.push(`<a href="/docs">Docs</a>`);
+  crumbs.push(`<a href="/docs">Documentation</a>`);
   for (const p of parts.slice(0, -1)) {
-    acc += `/${  slugifySegment(p)}`;
-    crumbs.push(`<span class="sep">/</span><a href="/${acc}">${escapeHtml(p.replace(/-/g,' '))}</a>`);
+    acc += `/${slugifySegment(p)}`;
+    const label = toTitleCase(p.replace(/-/g,' '));
+    crumbs.push(`<span class="sep"> / </span><a href="/${acc}">${escapeHtml(label)}</a>`);
   }
   const last = parts[parts.length-1].replace(/\.md$/i,'');
-  crumbs.push(`<span class="sep">/</span><span class="current">${escapeHtml(last.replace(/-/g,' '))}</span>`);
-  return crumbs.join(' ');
+  const lastLabel = toTitleCase(last.replace(/-/g,' '));
+  crumbs.push(`<span class="sep"> / </span><span class="current">${escapeHtml(lastLabel)}</span>`);
+  return `<nav class="breadcrumbs">${crumbs.join('')}</nav>`;
 }
 
 function enhanceHeadings(html){
@@ -972,38 +975,91 @@ function slugifySegment(name) {
 }
 
 function groupFor(relPath) {
-  // Very simple grouping based on top-level folder/file
+  // Enhanced grouping with logical progression from basics to advanced
   const p = relPath.split(path.sep);
   const top = p[0];
+  const filename = path.basename(relPath, '.md');
+  
   switch (top) {
-    case 'getting-started': return 'Getting Started';
+    case 'getting-started':
+      return 'Getting Started';
+      
     case 'components':
-    case 'server-side':
-    case 'client-side':
-    case 'function-on-element-events.md':
       return 'Core Concepts';
-    case 'api-usage.md':
-    case 'api-reference.md':
-    case 'object-based-routing.md':
-    case 'routing':
-    case 'framework-integrations.md':
-    case 'security-guide.md':
-      return 'API & Routing';
+      
+    case 'client-side':
+      return 'Client-Side Features';
+      
+    case 'server-side':
+      return 'Server-Side Rendering';
+      
     case 'database':
-    case 'database-integration.md':
-    case 'query-builder.md':
       return 'Database';
-    case 'migration-guide.md':
-      return 'Migration';
+      
     case 'performance':
-    case 'performance-optimizations.md':
       return 'Performance';
+      
     case 'advanced':
       return 'Advanced';
-    case 'api-enhancement-plan.md':
-      return 'Plans';
+      
+    case 'examples':
+      return 'Examples';
+      
     default:
-      return 'Other';
+      // Handle individual files
+      switch (filename) {
+        // Getting Started files
+        case 'getting-started':
+          return 'Getting Started';
+          
+        // Core Concepts files
+        case 'function-on-element-events':
+          return 'Core Concepts';
+          
+        // Client-Side Features
+        case 'client-side-hydration-guide':
+        case 'hydration-guide':
+          return 'Client-Side Features';
+          
+        // API & Routing files
+        case 'api-usage':
+        case 'api-reference':
+        case 'object-based-routing':
+        case 'framework-integrations':
+          return 'API & Routing';
+          
+        // Database files
+        case 'database-integration':
+        case 'query-builder':
+          return 'Database';
+          
+        // Performance files  
+        case 'performance-optimizations':
+          return 'Performance';
+          
+        // Security files
+        case 'security-guide':
+          return 'Security';
+          
+        // Deployment files
+        case 'deployment-guide':
+          return 'Integration & Deployment';
+          
+        // Migration files
+        case 'migration-guide':
+          return 'Migration';
+          
+        // Reference files
+        case 'api-reference':
+          return 'Reference';
+          
+        // Plans files
+        case 'api-enhancement-plan':
+          return 'Plans';
+          
+        default:
+          return 'Other';
+      }
   }
 }
 
@@ -1032,14 +1088,79 @@ function buildSidebarFromDocs(docs) {
       .split('/')
       .map(slugifySegment)
       .join('/')}`;
-    const label = slugifySegment(path.basename(d.rel)).replace(/-/g, ' ');
+    const label = toTitleCase(slugifySegment(path.basename(d.rel)).replace(/-/g, ' '));
     groups.get(group).push({ href, label });
   }
-  // Sort groups and items
-  return Array.from(groups.entries()).map(([title, items]) => ({
-    title,
-    items: items.sort((a,b) => a.label.localeCompare(b.label))
-  })).sort((a,b) => a.title.localeCompare(b.title));
+  
+  // Define logical order for documentation sections (basics to advanced)
+  const sectionOrder = [
+    'Getting Started',
+    'Core Concepts', 
+    'Client-Side Features',
+    'Server-Side Rendering',
+    'Database',
+    'API & Routing',
+    'Performance',
+    'Security',
+    'Integration & Deployment', 
+    'Migration',
+    'Reference',
+    'Advanced',
+    'Examples',
+    'Plans',
+    'Other'
+  ];
+  
+  // Define logical order for items within each section
+  const itemOrder = {
+    'Getting Started': ['Installation', 'Quick Start', 'Getting Started', 'Readme'],
+    'Core Concepts': ['Basic Components', 'State Management', 'Advanced Components', 'Styling Components', 'Function On Element Events'],
+    'Client-Side Features': ['Client Side Hydration Guide', 'Hydration Guide', 'Hydration'],
+    'Server-Side Rendering': ['Ssr Guide'],
+    'Database': ['Database Integration', 'Query Builder'],
+    'API & Routing': ['Api Reference', 'Api Usage', 'Framework Integrations', 'Object Based Routing', 'Security Guide'],
+    'Performance': ['Performance Optimizations'],
+    'Migration': ['Migration Guide'],
+    'Reference': ['Api Reference'],
+    'Examples': ['Performance Page Integration']
+  };
+  
+  const result = [];
+  
+  // Process sections in defined order
+  for (const sectionTitle of sectionOrder) {
+    if (groups.has(sectionTitle)) {
+      const items = groups.get(sectionTitle);
+      
+      // Sort items within section based on logical order or alphabetically
+      const orderedItems = itemOrder[sectionTitle] 
+        ? items.sort((a, b) => {
+            const indexA = itemOrder[sectionTitle].indexOf(a.label);
+            const indexB = itemOrder[sectionTitle].indexOf(b.label);
+            const priorityA = indexA >= 0 ? indexA : 999;
+            const priorityB = indexB >= 0 ? indexB : 999;
+            
+            if (priorityA !== priorityB) {
+              return priorityA - priorityB;
+            }
+            return a.label.localeCompare(b.label);
+          })
+        : items.sort((a, b) => a.label.localeCompare(b.label));
+      
+      result.push({
+        title: sectionTitle,
+        items: orderedItems
+      });
+    }
+  }
+  
+  return result;
+}
+
+function toTitleCase(str) {
+  return str.replace(/\w\S*/g, (txt) => {
+    return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+  });
 }
 
 async function writePage(routePath, html) {
@@ -1381,11 +1502,86 @@ async function buildPlaygroundPages(items) {
   }
 }
 
+function buildLogicalDocOrder(docs) {
+  // Use the same section and item ordering as the sidebar
+  const sectionOrder = [
+    'Getting Started',
+    'Core Concepts', 
+    'Client-Side Features',
+    'Server-Side Rendering',
+    'Database',
+    'API & Routing',
+    'Performance',
+    'Security',
+    'Integration & Deployment',
+    'Migration',
+    'Examples',
+    'Plans',
+    'Other'
+  ];
+
+  const itemOrder = {
+    'Getting Started': ['Installation', 'Quick Start', 'Getting Started', 'Readme'],
+    'Core Concepts': ['Basic Components', 'State Management', 'Advanced Components', 'Styling Components', 'Function On Element Events'],
+    'Client-Side Features': ['Client Side Hydration Guide', 'Hydration Guide', 'Hydration'],
+    'Server-Side Rendering': ['Ssr Guide'],
+    'Database': ['Database Integration', 'Query Builder'],
+    'API & Routing': ['Api Reference', 'Api Usage', 'Api Enhancement Plan', 'Object Based Routing', 'Framework Integrations'],
+    'Performance': ['Performance Optimizations'],
+    'Security': ['Security Guide'],
+    'Integration & Deployment': ['Deployment Guide'],
+    'Migration': ['Migration Guide'],
+    'Examples': ['Performance Page Integration'],
+    'Plans': ['Api Enhancement Plan'],
+    'Other': ['Docs Index', 'Navigation', 'CSS File Integration']
+  };
+
+  // Group docs by section
+  const groups = new Map();
+  for (const doc of docs) {
+    const section = doc.section || groupFor(doc.rel);
+    if (!groups.has(section)) {
+      groups.set(section, []);
+    }
+    // Use the same label creation logic as linkForDoc for consistency
+    const label = toTitleCase(path.basename(doc.rel).replace(/\.md$/i, '').replace(/-/g, ' '));
+    groups.get(section).push({ ...doc, label });
+  }
+
+  // Build ordered list following the same logic as sidebar
+  const orderedDocs = [];
+  
+  for (const sectionTitle of sectionOrder) {
+    if (groups.has(sectionTitle)) {
+      const items = groups.get(sectionTitle);
+      
+      // Sort items within section based on logical order
+      const orderedItems = itemOrder[sectionTitle] 
+        ? items.sort((a, b) => {
+            const indexA = itemOrder[sectionTitle].indexOf(a.label);
+            const indexB = itemOrder[sectionTitle].indexOf(b.label);
+            const priorityA = indexA >= 0 ? indexA : 999;
+            const priorityB = indexB >= 0 ? indexB : 999;
+            
+            if (priorityA !== priorityB) {
+              return priorityA - priorityB;
+            }
+            return a.label.localeCompare(b.label);
+          })
+        : items.sort((a, b) => a.label.localeCompare(b.label));
+      
+      orderedDocs.push(...orderedItems);
+    }
+  }
+  
+  return orderedDocs;
+}
+
 async function buildDocs(docs) {
   const sidebar = buildSidebarFromDocs(docs);
-  await buildDocsIndex(sidebar);
-  // Establish doc order by relative path
-  const ordered = [...docs].sort((a,b) => a.rel.localeCompare(b.rel));
+  await buildDocsIndex(sidebar, docs);
+  // Establish doc order using logical ordering (same as sidebar)
+  const ordered = buildLogicalDocOrder(docs);
   for (let i = 0; i < ordered.length; i++) {
     const d = ordered[i];
     const md = await fs.readFile(d.full, 'utf8');
@@ -1412,40 +1608,82 @@ async function buildDocs(docs) {
   }
 }
 
-async function buildDocsIndex(sidebar) {
-  let htmlBody = '';
-  try {
-    // Try to load the docs README.md for the index page
-    const docsReadmePath = path.join(DOCS_DIR, 'README.md');
-    const md = await fs.readFile(docsReadmePath, 'utf8');
-    htmlBody = marked.parse(md);
-    
-    // Enhance headings and build ToC for docs index
-    const enhanced = enhanceHeadings(htmlBody);
-    htmlBody = `<div class="markdown-body">${enhanced.html}</div>`;
-    const tocHtml = buildToc(enhanced.headings);
-    
-    const page = Layout({ title: 'Documentation | Coherent.js', sidebar, currentPath: 'docs', baseHref });
-    const html = renderToString(page)
-      .replace('[[[COHERENT_TOC_PLACEHOLDER]]]', tocHtml)
-      .replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', htmlBody)
-      .replace('[[[COHERENT_BREADCRUMBS_PLACEHOLDER]]]', '<nav class="breadcrumbs"><a href="/docs">Documentation</a></nav>');
-    await writePage('docs', html);
-  } catch (_error) {
-    // Fallback if README.md doesn't exist
-    let firstHref = '';
-    for (const group of sidebar) {
-      if (group.items && group.items.length) { firstHref = group.items[0].href; break; }
+async function generateSearchData(docs) {
+  const searchData = [];
+  
+  // Process each documentation file
+  for (const doc of docs) {
+    try {
+      const md = await fs.readFile(doc.full, 'utf8');
+      const title = (md.match(/^#\s+(.+)$/m) || [null, path.basename(doc.rel, '.md')])[1];
+      
+      // Extract content without markdown syntax
+      let content = md
+        .replace(/^#{1,6}\s+.+$/gm, '') // Remove headers
+        .replace(/```[\s\S]*?```/g, '') // Remove code blocks
+        .replace(/`[^`]+`/g, '') // Remove inline code
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Convert links to text
+        .replace(/[*_]+([^*_]+)[*_]+/g, '$1') // Remove emphasis
+        .replace(/^\s*[-*+]\s+/gm, '') // Remove list markers
+        .replace(/^\s*\d+\.\s+/gm, '') // Remove numbered list markers
+        .replace(/\n+/g, ' ') // Collapse newlines
+        .trim();
+      
+      // Truncate content for search
+      if (content.length > 200) {
+        content = content.substring(0, 200) + '...';
+      }
+      
+      // Determine section based on file path
+      const section = groupFor(doc.rel);
+      
+      // Generate URL
+      const url = `docs/${slugifySegment(doc.rel.replace(/\\/g, '/')).split('/').map(slugifySegment).join('/')}`;
+      
+      searchData.push({
+        title: title,
+        url: url,
+        content: content,
+        section: section
+      });
+    } catch (error) {
+      console.warn(`Failed to process ${doc.rel} for search:`, error.message);
     }
-    if (firstHref) {
-      htmlBody = `<h1>Documentation</h1><p>Start here: <a href="${firstHref}">Open first guide</a></p>`;
-    } else {
-      htmlBody = '<h1>Documentation</h1><p>No docs found.</p>';
-    }
-    const page = Layout({ title: 'Docs | Coherent.js', sidebar, currentPath: 'docs', baseHref });
-    const html = renderToString(page).replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', htmlBody);
-    await writePage('docs', html);
   }
+  
+  return searchData;
+}
+
+async function buildDocsIndex(sidebar, docs = []) {
+  // Generate search data
+  const searchData = await generateSearchData(docs);
+  
+  // Use the new DocsIndexPage component
+  const content = renderToString(DocsIndexPage({ searchData }));
+  const page = Layout({ title: 'Documentation | Coherent.js', sidebar, currentPath: 'docs', baseHref });
+  let html = renderToString(page);
+  
+  // Replace content placeholder
+  html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', content);
+  html = html.replace('[[[COHERENT_BREADCRUMBS_PLACEHOLDER]]]', '<nav class="breadcrumbs"><a href="/docs">Documentation</a></nav>');
+  
+  // Remove TOC placeholder for docs index page since it doesn't need a TOC
+  html = html.replace('[[[COHERENT_TOC_PLACEHOLDER]]]', '');
+  
+  // Add search functionality script
+  html = html.replace('</head>', `
+    <script src="./docs-search.js" defer></script>
+    <script>
+      window.searchData = ${JSON.stringify(searchData)};
+    </script>
+    </head>`);
+  
+  await writePage('docs', html);
+  
+  // Also write search data as JSON for external loading
+  await fs.writeFile(path.join(DIST_DIR, 'search-data.json'), JSON.stringify(searchData, null, 2));
+  
+  return searchData;
 }
 
 async function buildCoverage(sidebar) {

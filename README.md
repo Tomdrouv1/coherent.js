@@ -202,10 +202,226 @@ app.listen(3000, () => {
 
 ```jsx
 // client.js
-import { hydrate } from '@coherentjs/core';
+import { hydrate, makeHydratable, autoHydrate } from '@coherentjs/client';
 import { HelloWorld } from './components/HelloWorld';
 
+// Method 1: Direct hydration
 hydrate(HelloWorld, document.getElementById('root'));
+
+// Method 2: Auto-hydration for multiple components
+const HydratableHelloWorld = makeHydratable(HelloWorld);
+autoHydrate({
+  HelloWorld: HydratableHelloWorld
+});
+```
+
+## 🌊 Client-Side Hydration Guide
+
+Coherent.js provides powerful client-side hydration capabilities to make server-rendered components interactive in the browser.
+
+### Basic Hydration Setup
+
+For simple cases, directly hydrate a single component:
+
+```javascript
+import { hydrate } from '@coherentjs/client';
+import { MyComponent } from './components/MyComponent.js';
+
+// Hydrate a component on page load
+document.addEventListener('DOMContentLoaded', () => {
+  const rootElement = document.getElementById('app');
+  if (rootElement) {
+    hydrate(rootElement, MyComponent, { initialProps: {} });
+  }
+});
+```
+
+### State Management with Hydration
+
+For components with state management using `withState`:
+
+```javascript
+// components/Counter.js
+import { withState } from '@coherentjs/core';
+
+const CounterComponent = withState({
+  count: 0
+}, {
+  debug: true
+});
+
+const CounterView = (props) => {
+  const { state, stateUtils } = props;
+  const { setState } = stateUtils;
+
+  const increment = () => {
+    setState({ count: state.count + 1 });
+  };
+
+  return {
+    div: {
+      className: 'counter',
+      'data-coherent-component': 'counter',
+      children: [
+        { h2: { text: `Count: ${state.count}` } },
+        { 
+          button: { 
+            id: 'increment-btn',
+            text: 'Increment',
+            onclick: increment
+          }
+        }
+      ]
+    }
+  };
+};
+
+export const Counter = CounterComponent(CounterView);
+```
+
+### Auto-Hydration for Multiple Components
+
+For pages with multiple interactive components:
+
+```javascript
+// hydration.js
+import { makeHydratable, autoHydrate } from '@coherentjs/client';
+import { Counter } from './components/Counter.js';
+import { TodoList } from './components/TodoList.js';
+
+// Make components hydratable
+const HydratableCounter = makeHydratable(Counter);
+const HydratableTodoList = makeHydratable(TodoList);
+
+// Auto-hydrate all components on page load
+document.addEventListener('DOMContentLoaded', () => {
+  autoHydrate({
+    counter: HydratableCounter,
+    todolist: HydratableTodoList
+  });
+});
+```
+
+### Handling Event Listeners
+
+Coherent.js automatically converts function event handlers to `data-action` attributes during SSR:
+
+```javascript
+// Server renders this:
+{ button: { onclick: () => alert('Clicked!') } }
+// Becomes: <button data-action="__coherent_action_123" data-event="click">
+
+// Client-side hydration automatically reconnects these handlers
+```
+
+### Custom Hydration for Complex Cases
+
+For complex interactive pages, you might need custom hydration logic:
+
+```javascript
+// custom-hydration.js
+async function setupPageHydration() {
+  // Wait for all scripts to load
+  await new Promise(resolve => {
+    if (document.readyState === 'complete') {
+      resolve();
+    } else {
+      window.addEventListener('load', resolve);
+    }
+  });
+  
+  // Custom button mapping for specific pages
+  if (document.querySelector('[data-coherent-component="performance"]')) {
+    setupPerformancePageHandlers();
+  }
+  
+  // Generic auto-hydration for other components
+  autoHydrate(componentRegistry);
+}
+
+function setupPerformancePageHandlers() {
+  const buttonMappings = [
+    { id: 'run-all-tests', handler: 'runPerformanceTests' },
+    { id: 'run-render-test', handler: 'runRenderingTest' },
+    { id: 'clear-results', handler: 'clearResults' }
+  ];
+
+  buttonMappings.forEach(mapping => {
+    const button = document.getElementById(mapping.id);
+    const handler = window[mapping.handler];
+    
+    if (button && handler) {
+      // Remove any conflicting attributes
+      button.removeAttribute('data-action');
+      button.removeAttribute('data-event');
+      
+      // Attach clean event listener
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+        handler();
+      });
+    }
+  });
+}
+
+// Initialize hydration
+setupPageHydration();
+```
+
+### Best Practices for Hydration
+
+1. **Use data-coherent-component attributes** to identify components:
+   ```javascript
+   {
+     div: {
+       'data-coherent-component': 'my-component',
+       className: 'my-component',
+       children: [...]
+     }
+   }
+   ```
+
+2. **Handle timing properly** - ensure DOM and scripts are loaded:
+   ```javascript
+   document.addEventListener('DOMContentLoaded', () => {
+     setTimeout(initHydration, 100); // Small delay for deferred scripts
+   });
+   ```
+
+3. **Clean up conflicting handlers** when needed:
+   ```javascript
+   // Remove server-rendered data-action attributes if they conflict
+   element.removeAttribute('data-action');
+   element.removeAttribute('data-event');
+   ```
+
+4. **Provide fallbacks** for when JavaScript is disabled:
+   ```javascript
+   // Server-rendered forms should work without JavaScript
+   { 
+     form: { 
+       action: '/api/submit', 
+       method: 'POST',
+       onsubmit: enhancedSubmitHandler // Enhanced with JS
+     }
+   }
+   ```
+
+### Debugging Hydration Issues
+
+Add debugging to understand what's happening:
+
+```javascript
+console.log('🌊 Hydration starting...');
+console.log('Available functions:', Object.keys(window).filter(k => typeof window[k] === 'function'));
+console.log('Component elements:', document.querySelectorAll('[data-coherent-component]'));
+
+// Enable debug mode for withState components
+const ComponentWithDebug = withState({
+  // initial state
+}, {
+  debug: true // Logs all state changes
+});
 ```
 
 ## 🛠️ API Framework

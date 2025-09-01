@@ -540,4 +540,20 @@ export async function safeExecuteAsync(fn, context = {}, fallback = null) {
     }
 }
 
+/**
+ * Factory function to create an ErrorHandler instance
+ * 
+ * @param {Object} options - ErrorHandler configuration
+ * @returns {ErrorHandler} ErrorHandler instance
+ * 
+ * @example
+ * const errorHandler = createErrorHandler({
+ *   enableTracing: true,
+ *   enableSuggestions: true
+ * });
+ */
+export function createErrorHandler(options = {}) {
+    return new ErrorHandler(options);
+}
+
 export default ErrorHandler;

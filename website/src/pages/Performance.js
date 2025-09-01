@@ -1,8 +1,70 @@
-// Performance.js - Interactive performance testing page
-export function Performance() {
+import { withState } from '../../../src/coherent.js';
+
+// Performance.js - Interactive performance testing page with Coherent.js state management
+const PerformanceComponent = withState({
+  performanceResults: null,
+  isRunning: false,
+  currentTest: '',
+  progress: 0
+}, {
+  debug: true
+});
+
+const PerformanceView = (props) => {
+  const { state, stateUtils } = props;
+  const { setState } = stateUtils;
+
+  // Define performance test functions that delegate to the client-side implementation
+  const runAllTests = async () => {
+    // This function will be called on the client-side via data-action
+    // It should delegate to the window.runPerformanceTests function
+    if (typeof window !== 'undefined' && window.runPerformanceTests) {
+      return window.runPerformanceTests();
+    }
+    
+    // Server-side fallback (should not normally run)
+    setState({ isRunning: true, currentTest: 'Running performance tests...', progress: 0 });
+  };
+
+  const runRenderingTest = async () => {
+    // This function will be called on the client-side via data-action
+    if (typeof window !== 'undefined' && window.runRenderingTest) {
+      return window.runRenderingTest();
+    }
+    
+    // Server-side fallback
+    setState({ isRunning: true, currentTest: 'Running rendering test...', progress: 0 });
+  };
+
+  const runCacheTest = async () => {
+    // This function will be called on the client-side via data-action
+    if (typeof window !== 'undefined' && window.runCacheTest) {
+      return window.runCacheTest();
+    }
+    
+    // Server-side fallback
+    setState({ isRunning: true, currentTest: 'Running cache test...', progress: 0 });
+  };
+
+  const clearResults = () => {
+    // This function will be called on the client-side via data-action
+    if (typeof window !== 'undefined' && window.clearResults) {
+      return window.clearResults();
+    }
+    
+    // Server-side fallback
+    setState({ 
+      performanceResults: null, 
+      isRunning: false,
+      currentTest: '',
+      progress: 0
+    });
+  };
+
   return {
     div: {
       className: 'performance-page',
+      'data-coherent-component': 'performance',
       children: [
         // Header
         {
@@ -33,7 +95,7 @@ export function Performance() {
                         id: 'run-all-tests',
                         className: 'button primary',
                         text: '🚀 Run All Performance Tests',
-                        onclick: 'runPerformanceTests()'
+                        onclick: runAllTests
                       }
                     },
                     {
@@ -41,7 +103,7 @@ export function Performance() {
                         id: 'run-render-test',
                         className: 'button secondary',
                         text: '📊 Rendering Test Only',
-                        onclick: 'runRenderingTest()'
+                        onclick: runRenderingTest
                       }
                     },
                     {
@@ -49,7 +111,7 @@ export function Performance() {
                         id: 'run-cache-test',
                         className: 'button secondary',
                         text: '💾 Cache Test Only', 
-                        onclick: 'runCacheTest()'
+                        onclick: runCacheTest
                       }
                     },
                     {
@@ -57,7 +119,7 @@ export function Performance() {
                         id: 'clear-results',
                         className: 'button',
                         text: '🗑️ Clear Results',
-                        onclick: 'clearResults()'
+                        onclick: clearResults
                       }
                     }
                   ]
@@ -98,10 +160,38 @@ export function Performance() {
           div: {
             id: 'results-section',
             className: 'results-section',
-            style: 'display: none;',
+            style: state.performanceResults ? 'display: block;' : 'display: none;',
             children: [
               { h2: { text: '📈 Test Results' } },
-              { div: { id: 'test-results', className: 'test-results' } }
+              { 
+                div: { 
+                  id: 'test-results', 
+                  className: 'test-results',
+                  children: state.performanceResults ? [
+                    {
+                      div: {
+                        className: 'test-results-container',
+                        children: [
+                          {
+                            div: {
+                              className: 'test-result',
+                              children: [
+                                { h3: { text: '📊 Performance Test Results' } },
+                                { p: { text: `Performance improvement: ${state.performanceResults.performanceImprovement}%` } },
+                                { p: { text: `Cache speedup: ${state.performanceResults.cacheSpeedup}x` } },
+                                { p: { text: `Average render time: ${state.performanceResults.avgRenderTime}ms` } },
+                                { p: { text: `Cache hit rate: ${state.performanceResults.hitRate}%` } },
+                                { p: { text: `Components: ${state.performanceResults.usedComponents}` } },
+                                { p: { text: `Bundle size: ${state.performanceResults.bundleSize}` } }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ] : []
+                }
+              }
             ]
           }
         },
@@ -117,7 +207,14 @@ export function Performance() {
                   className: 'metric-card',
                   children: [
                     { h3: { text: '🏃 Rendering Speed' } },
-                    { div: { id: 'render-metrics', text: 'No data yet - run tests to see results' } }
+                    { 
+                      div: { 
+                        id: 'render-metrics',
+                        text: state.performanceResults 
+                          ? `${state.performanceResults.avgRenderTime}ms avg (${state.performanceResults.totalRenders} renders)`
+                          : 'No data yet - run tests to see results'
+                      }
+                    }
                   ]
                 }
               },
@@ -128,7 +225,14 @@ export function Performance() {
                   className: 'metric-card',
                   children: [
                     { h3: { text: '💾 Cache Performance' } },
-                    { div: { id: 'cache-metrics', text: 'No data yet - run tests to see results' } }
+                    { 
+                      div: { 
+                        id: 'cache-metrics',
+                        text: state.performanceResults 
+                          ? `${state.performanceResults.hitRate}% hit rate (${state.performanceResults.totalHits} hits, ${state.performanceResults.totalMisses} misses)`
+                          : 'No data yet - run tests to see results'
+                      }
+                    }
                   ]
                 }
               },
@@ -139,7 +243,14 @@ export function Performance() {
                   className: 'metric-card',
                   children: [
                     { h3: { text: '🧠 Memory Efficiency' } },
-                    { div: { id: 'memory-metrics', text: 'No data yet - run tests to see results' } }
+                    { 
+                      div: { 
+                        id: 'memory-metrics',
+                        text: state.performanceResults 
+                          ? `${state.performanceResults.usedComponents} components (${state.performanceResults.bundleSize})`
+                          : 'No data yet - run tests to see results'
+                      }
+                    }
                   ]
                 }
               }
@@ -296,4 +407,11 @@ export function Performance() {
       ]
     }
   };
+};
+
+// Create the stateful component
+const StatefulPerformanceComponent = PerformanceComponent(PerformanceView);
+
+export function Performance() {
+  return StatefulPerformanceComponent();
 }

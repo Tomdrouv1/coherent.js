@@ -1,0 +1,142 @@
+/**
+ * Custom styles for CDN integration example
+ * Demonstrates mixing local CSS files with external CDN styles
+ */
+
+/* Custom typography using Inter font from Google Fonts */
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 400;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+}
+
+.page-title {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Custom color scheme */
+:root {
+  --custom-primary: #6366f1;
+  --custom-secondary: #8b5cf6;
+  --custom-accent: #06b6d4;
+  --custom-success: #10b981;
+  --custom-warning: #f59e0b;
+  --custom-error: #ef4444;
+}
+
+/* Override button styles with custom colors */
+.btn--primary {
+  background: linear-gradient(135deg, var(--custom-primary) 0%, var(--custom-secondary) 100%);
+  border: none;
+  box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.1), 0 2px 4px -1px rgba(99, 102, 241, 0.06);
+}
+
+.btn--primary:hover {
+  background: linear-gradient(135deg, var(--custom-secondary) 0%, var(--custom-primary) 100%);
+  box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.1), 0 4px 6px -2px rgba(99, 102, 241, 0.05);
+}
+
+.btn--success {
+  background: var(--custom-success);
+  border: none;
+}
+
+.btn--success:hover {
+  background: #059669;
+}
+
+/* Custom animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.demo-section {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.demo-section:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.demo-section:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+/* Custom card styling */
+.card {
+  border: 1px solid rgba(99, 102, 241, 0.1);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+}
+
+.card-header {
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.05), rgba(139, 92, 246, 0.05));
+}
+
+/* Custom grid enhancements */
+.grid-item {
+  background: linear-gradient(135deg, var(--custom-accent) 0%, var(--custom-primary) 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.grid-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.grid-item:hover::before {
+  opacity: 1;
+}
+
+/* Utility classes */
+.text-gradient {
+  background: linear-gradient(135deg, var(--custom-primary) 0%, var(--custom-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glassmorphism {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #0f172a;
+    color: #f8fafc;
+  }
+  
+  .card {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: rgba(99, 102, 241, 0.2);
+    color: #f8fafc;
+  }
+  
+  .card-header {
+    background: linear-gradient(90deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+  }
+  
+  .app {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  }
+}

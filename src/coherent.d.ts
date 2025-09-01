@@ -26,11 +26,18 @@ export interface RenderOptions {
   cacheSize?: number;
   cacheTTL?: number;
   maxDepth?: number;
+  cssFiles?: string[];
+  cssLinks?: string[];
+  cssInline?: string;
+  cssMinify?: boolean;
   [key: string]: any;
 }
 
 // Core rendering functions
 export function renderToString(node: CoherentNode, options?: RenderOptions): string;
+export function renderHTML(node: CoherentNode, options?: RenderOptions): Promise<string>;
+export function renderHTMLSync(node: CoherentNode, options?: RenderOptions): string | Promise<string>;
+export function render(node: CoherentNode, options?: RenderOptions): Promise<string>;
 export function renderToStream(node: CoherentNode, options?: RenderOptions): ReadableStream;
 export function renderBatch(nodes: CoherentNode[], options?: RenderOptions): string[];
 
@@ -69,6 +76,31 @@ export interface StateManager {
 }
 
 export const stateManager: StateManager;
+
+// CSS Management
+export interface CSSOptions {
+  files?: string[];
+  links?: string[];
+  inline?: string;
+  minify?: boolean;
+}
+
+export interface CSSManager {
+  loadCSSFile(filePath: string): Promise<string>;
+  generateCSSLinks(filePaths: string[], baseUrl?: string): string;
+  generateInlineStyles(css: string): string;
+  minifyCSS(css: string): string;
+}
+
+export function createCSSManager(options?: { baseDir?: string; enableCache?: boolean; minify?: boolean }): CSSManager;
+export const defaultCSSManager: CSSManager;
+
+export interface CSSUtils {
+  processCSSOptions(options: RenderOptions): CSSOptions;
+  generateCSSHtml(cssOptions: CSSOptions, cssManager: CSSManager): Promise<string>;
+}
+
+export const cssUtils: CSSUtils;
 
 // Performance Monitoring
 export interface PerformanceMetrics {
@@ -218,6 +250,7 @@ export const utils: {
   merge: typeof mergeProps;
   getNestedValue: Function;
   setNestedValue: Function;
+  cssUtils: typeof cssUtils;
 };
 
 export const performance: {

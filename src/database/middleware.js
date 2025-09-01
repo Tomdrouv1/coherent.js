@@ -146,7 +146,18 @@ export function withTransaction(db, options = {}) {
  * });
  */
 export function withModel(ModelClass, paramName = 'id', requestKey = null) {
-  const key = requestKey || ModelClass.name.toLowerCase();
+  // Handle different model types - class vs object
+  let modelName = requestKey;
+  if (!modelName) {
+    if (ModelClass && ModelClass.name) {
+      modelName = ModelClass.name.toLowerCase();
+    } else if (ModelClass && ModelClass.tableName) {
+      modelName = ModelClass.tableName.slice(0, -1); // Remove 's' from table name
+    } else {
+      modelName = 'model'; // fallback
+    }
+  }
+  const key = modelName;
   
   return async (req, res, next) => {
     try {

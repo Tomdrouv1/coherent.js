@@ -8,7 +8,7 @@
  */
 
 // Using factory functions (recommended pure JS object approach)
-import { createDatabaseManager, createQuery, executeQuery } from '../src/coherent.js';
+import { createDatabaseManager, createQuery, executeQuery } from '../src/database/index.js';
 import { MemoryAdapter } from '../src/database/adapters/memory.js';
 
 // Alternative: Direct imports (also available)

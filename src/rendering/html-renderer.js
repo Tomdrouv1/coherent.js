@@ -18,6 +18,7 @@ import {
 
 import { performanceMonitor } from '../performance/monitor.js';
 import { createCacheManager } from '../performance/cache-manager.js';
+import { cssUtils, defaultCSSManager } from './css-manager.js';
 
 // Create a global cache instance for the renderer
 const rendererCache = createCacheManager({
@@ -307,6 +308,106 @@ export function renderToString(component, options = {}) {
     
     const renderer = new HTMLRenderer(mergedOptions);
     return renderer.render(component, mergedOptions);
+}
+
+/**
+ * Renders component to complete HTML document with DOCTYPE
+ * Better alternative to manual DOCTYPE concatenation
+ * Supports CSS file inclusion and inline styles
+ */
+export async function renderHTML(component, options = {}) {
+    const htmlContent = renderToString(component, options);
+    
+    // Process CSS options
+    const cssOptions = cssUtils.processCSSOptions(options);
+    
+    // Generate CSS HTML if any CSS is specified
+    let cssHtml = '';
+    if (cssOptions.files.length > 0 || cssOptions.links.length > 0 || cssOptions.inline) {
+        cssHtml = await cssUtils.generateCSSHtml(cssOptions, defaultCSSManager);
+    }
+    
+    // If the component includes a head tag, inject CSS into it
+    if (cssHtml && htmlContent.includes('<head>')) {
+        const htmlWithCSS = htmlContent.replace(
+            '</head>', 
+            `${cssHtml}\n</head>`
+        );
+        return `<!DOCTYPE html>\n${htmlWithCSS}`;
+    }
+    
+    // If there's CSS but no head tag, wrap the component with a basic HTML structure
+    if (cssHtml) {
+        return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+${cssHtml}
+</head>
+<body>
+${htmlContent}
+</body>
+</html>`;
+    }
+    
+    return `<!DOCTYPE html>\n${htmlContent}`;
+}
+
+/**
+ * Synchronous version of renderHTML for cases without CSS files
+ * Falls back to async if CSS files are detected
+ */
+export function renderHTMLSync(component, options = {}) {
+    const cssOptions = cssUtils.processCSSOptions(options);
+    
+    // If CSS files are specified, return a promise
+    if (cssOptions.files.length > 0) {
+        console.warn('CSS files detected, use renderHTML() (async) instead of renderHTMLSync()');
+        return renderHTML(component, options);
+    }
+    
+    const htmlContent = renderToString(component, options);
+    
+    // Handle inline CSS and external links only
+    let cssHtml = '';
+    if (cssOptions.links.length > 0) {
+        cssHtml += defaultCSSManager.generateCSSLinks(cssOptions.links);
+    }
+    if (cssOptions.inline) {
+        cssHtml += '\n' + defaultCSSManager.generateInlineStyles(cssOptions.inline);
+    }
+    
+    if (cssHtml && htmlContent.includes('<head>')) {
+        const htmlWithCSS = htmlContent.replace(
+            '</head>', 
+            `${cssHtml}\n</head>`
+        );
+        return `<!DOCTYPE html>\n${htmlWithCSS}`;
+    }
+    
+    if (cssHtml) {
+        return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+${cssHtml}
+</head>
+<body>
+${htmlContent}
+</body>
+</html>`;
+    }
+    
+    return `<!DOCTYPE html>\n${htmlContent}`;
+}
+
+/**
+ * Alias for renderHTML - more semantic name for HTML rendering
+ */
+export function render(component, options = {}) {
+    return renderHTML(component, options);
 }
 
 // Old functions removed - now part of HTMLRenderer class

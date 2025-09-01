@@ -410,3 +410,19 @@ export class DatabaseManager extends EventEmitter {
     }
   }
 }
+
+/**
+ * Factory function to create a DatabaseManager instance
+ * 
+ * @param {Object} config - Database configuration
+ * @returns {DatabaseManager} Database manager instance
+ * 
+ * @example
+ * const db = createDatabaseManager({
+ *   type: 'sqlite',
+ *   database: './app.db'
+ * });
+ */
+export function createDatabaseManager(config) {
+  return new DatabaseManager(config);
+}

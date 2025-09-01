@@ -10,17 +10,16 @@
  * - Transaction support and connection pooling
  */
 
-import { SimpleRouter } from '../src/api/router.js';
+import { createSimpleRouter } from '../src/api/router.js';
 import { 
-  DatabaseManager, 
-  QueryBuilder, 
-  Model, 
-  Migration,
+  createDatabaseManager,
+  createQuery,
+  createModel,
+  createMigration,
   withDatabase,
   withTransaction,
   withModel,
   withPagination,
-  createModel,
   runMigrations
 } from '../src/database/index.js';
 
@@ -68,7 +67,7 @@ const configs = {
 };
 
 // Initialize database (using SQLite for this example)
-const db = new DatabaseManager(configs.sqlite);
+const db = createDatabaseManager(configs.sqlite);
 
 // Define User model
 const User = createModel('User', {
@@ -143,7 +142,7 @@ const Profile = createModel('Profile', {
 }, db);
 
 // Create router with database middleware
-const router = new SimpleRouter();
+const router = createSimpleRouter();
 
 // Add database middleware to all routes
 router.use(withDatabase(db, { 
@@ -170,7 +169,7 @@ router.get('/users', withPagination({ defaultLimit: 10 }), async (req, res) => {
     req.pagination.hasNext = req.pagination.page < req.pagination.totalPages;
 
     res.json({
-      data: users.rows.map(user => new User(user).toJSON()),
+      data: users.rows, // Using pure object data
       pagination: req.pagination
     });
   } catch (error) {
@@ -198,12 +197,12 @@ router.get('/users/:id', withModel(User), async (req, res) => {
 // Create new user
 router.post('/users', async (req, res) => {
   try {
-    const user = new User(req.body);
-    await user.save();
+    const userData = req.body;
+    const createdUser = await User.create(userData);
 
     res.status(201).json({
       message: 'User created successfully',
-      user: user.toJSON()
+      user: createdUser
     });
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -239,7 +238,7 @@ router.delete('/users/:id', withModel(User), async (req, res) => {
 router.get('/posts/with-authors', async (req, res) => {
   try {
     // Using query builder for complex queries
-    const query = new QueryBuilder(db, 'posts')
+    const query = createQuery({ from: 'posts' })
       .select([
         'posts.id',
         'posts.title',
@@ -352,7 +351,7 @@ router.get('/search/users', async (req, res) => {
     const users = await query.limit(50).execute();
 
     res.json({
-      users: users.rows.map(user => new User(user).toJSON())
+      users: users.rows // Using pure object data
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -518,7 +517,7 @@ async function demonstrateDatabase() {
     console.log(`Found ${activeUsers.rows.length} active users over 20`);
 
     // Demonstrate complex join query
-    const postsWithAuthors = await new QueryBuilder(db, 'posts')
+    const postsWithAuthors = await createQuery({ from: 'posts' })
       .select(['posts.*', 'users.name as author_name'])
       .join('users', 'posts.user_id', '=', 'users.id')
       .where('posts.published', true)

@@ -11,6 +11,9 @@
 // Core rendering engine
 import {
     renderToString,
+    renderHTML,
+    renderHTMLSync,
+    render,
     renderBatch,
     renderToChunks,
     renderWithTiming,
@@ -20,18 +23,21 @@ import {
     getRenderingStats
 } from './rendering/html-renderer.js';
 
+// CSS management
+import { CSSManager, createCSSManager, defaultCSSManager, cssUtils } from './rendering/css-manager.js';
+
 // Cache management
 import { createCacheManager, CacheManager } from './performance/cache-manager.js';
 import { ComponentCache, createComponentCache, memoize } from './performance/component-cache.js';
 
 // Enhanced error handling
-import { globalErrorHandler, ErrorHandler } from './utils/error-handler.js';
+import { globalErrorHandler, ErrorHandler, createErrorHandler } from './utils/error-handler.js';
 
 // Reactive state management
 import { ReactiveState, createReactiveState, observable, computed, stateUtils } from './state/reactive-state.js';
 
 // Component lifecycle and events
-import { ComponentLifecycle, eventSystem, componentUtils, withLifecycle } from './components/lifecycle.js';
+import { ComponentLifecycle, eventSystem, componentUtils, withLifecycle, createLifecycleHooks } from './components/lifecycle.js';
 
 // Advanced routing
 import { Router, createRouter, routeGuards, routeComponents } from './routing/router.js';
@@ -601,6 +607,8 @@ export {
 
     // Core rendering
     renderToString,
+    renderHTML,
+    render,
     renderBatch,
     renderToChunks,
     renderWithTiming,
@@ -651,45 +659,47 @@ export {
     getConfigPreset,
     CONFIG_PRESETS,
 
-    // Performance
+    // Performance (factory functions preferred)
     performanceMonitor,
-    CacheManager,
-    ComponentCache,
     createComponentCache,
+    createCacheManager,
     memoize,
     getCache,
     resetCache,
     getRenderingStats,
 
-    // Error Handling
-    ErrorHandler,
+    // Error Handling (factory functions preferred)
+    createErrorHandler,
     globalErrorHandler,
 
-    // Reactive State
-    ReactiveState,
+    // Reactive State (factory functions preferred)
     createReactiveState,
     observable,
     computed,
     stateUtils,
 
-    // Component Lifecycle & Events
-    ComponentLifecycle,
+    // Component Lifecycle & Events (factory functions preferred)
+    createLifecycleHooks,
     eventSystem,
     componentUtils,
     withLifecycle,
 
-    // Routing
-    Router,
+    // Routing (factory functions preferred)
     createRouter,
     routeGuards,
     routeComponents,
 
-    // Forms & Validation
-    FormValidator,
+    // Forms & Validation (factory functions preferred)
     createForm,
     validationRules,
     binding,
     formComponents,
+
+    // CSS Management (factory functions preferred)
+    CSSManager,
+    createCSSManager,
+    defaultCSSManager,
+    cssUtils,
 
     // Development
     DevTools
@@ -734,6 +744,9 @@ export const utils = {
     mergeProps,
     getNestedValue,
     setNestedValue,
+    
+    // CSS utilities
+    cssUtils,
     
     // NOTE: Database functionality moved to @coherentjs/database package
 };

@@ -1604,6 +1604,35 @@ class SimpleRouter {
     const mergedOptions = { ...this.defaultOptions, ...options };
     return createServer((req, res) => this.handle(req, res, mergedOptions));
   }
+
+  // HTTP convenience methods
+  get(path, handler, options = {}) {
+    return this.addRoute('GET', path, handler, options);
+  }
+
+  post(path, handler, options = {}) {
+    return this.addRoute('POST', path, handler, options);
+  }
+
+  put(path, handler, options = {}) {
+    return this.addRoute('PUT', path, handler, options);
+  }
+
+  patch(path, handler, options = {}) {
+    return this.addRoute('PATCH', path, handler, options);
+  }
+
+  delete(path, handler, options = {}) {
+    return this.addRoute('DELETE', path, handler, options);
+  }
+
+  options(path, handler, options = {}) {
+    return this.addRoute('OPTIONS', path, handler, options);
+  }
+
+  head(path, handler, options = {}) {
+    return this.addRoute('HEAD', path, handler, options);
+  }
 }
 
 /**
@@ -1633,6 +1662,16 @@ class SimpleRouter {
  * const server = router.createServer();
  * server.listen(3000);
  */
+/**
+ * Factory function to create a SimpleRouter instance
+ * 
+ * @param {Object} options - Router options
+ * @returns {SimpleRouter} Router instance
+ */
+export function createSimpleRouter(options = {}) {
+  return new SimpleRouter(options);
+}
+
 export function createObjectRouter(routeConfig, options = {}) {
   const router = new SimpleRouter(options);
   router.defaultOptions = options; // Store default options

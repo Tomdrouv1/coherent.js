@@ -98,7 +98,7 @@ Create `server.js` with Express:
 
 ```javascript
 import express from 'express';
-import { renderToString } from '@coherentjs/core';
+import { renderHTML } from '@coherentjs/core';
 
 const app = express();
 
@@ -142,7 +142,7 @@ const HomePage = {
 };
 
 app.get('/', (req, res) => {
-  const html = '<!DOCTYPE html>' + renderToString(HomePage);
+  const html = renderHTML(HomePage); // Includes DOCTYPE automatically
   res.send(html);
 });
 

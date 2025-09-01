@@ -3,7 +3,7 @@
  * Provides middleware and utilities for using Coherent.js with Express
  */
 
-import { renderToString } from '../rendering/html-renderer.js';
+import { renderToString, renderHTML } from '../rendering/html-renderer.js';
 import { performanceMonitor } from '../performance/monitor.js';
 import { importPeerDependency } from '../utils/dependency-utils.js';
 
@@ -134,7 +134,7 @@ export function createCoherentHandler(componentFactory, options = {}) {
 export function enhancedExpressEngine(filePath, options, callback) {
   try {
     // Render Coherent.js component from options
-    const html = `<!DOCTYPE html>\n${  renderToString(options)}`;
+    const html = renderHTML(options);
     callback(null, html);
   } catch (error) {
     callback(error);
