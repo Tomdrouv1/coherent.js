@@ -1,11 +1,11 @@
 {
   "name": "@coherentjs/nextjs",
-  "version": "1.0.1",
+  "version": "1.1.1",
   "description": "Next.js integration for Coherent.js",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
-  "types": "../../src/nextjs/index.d.ts",
+  "types": "./types/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -23,6 +23,7 @@
     "test:node": "node --test test/*.test.js"
   },
   "files": [
+    "types/",
     "dist/",
     "README.md",
     "LICENSE"

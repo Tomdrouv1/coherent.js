@@ -1,11 +1,11 @@
 {
   "name": "@coherentjs/core",
-  "version": "1.0.1",
+  "version": "1.1.1",
   "description": "Core runtime for Coherent.js (SSR framework).",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
-  "types": "./dist/coherent.d.ts",
+  "types": "./types/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -25,6 +25,7 @@
   },
   "files": [
     "dist/",
+    "types/",
     "README.md",
     "LICENSE"
   ],
