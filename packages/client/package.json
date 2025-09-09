@@ -3,9 +3,11 @@
   "version": "1.2.0",
   "description": "Client-side hydration/HMR utilities for Coherent.js",
   "type": "module",
+  "main": "src/hydration.js",
   "module": "dist/index.js",
   "exports": {
     ".": {
+      "development": "./src/hydration.js",
       "import": "./dist/index.js"
     }
   },
