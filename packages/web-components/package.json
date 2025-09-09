@@ -1,6 +1,6 @@
 {
   "name": "@coherentjs/web-components",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Web Components integration for Coherent.js",
   "type": "module",
   "main": "src/index.js",
