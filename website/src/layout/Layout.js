@@ -37,7 +37,10 @@ export function Layout({
               },
               { link: { rel: 'stylesheet', href: './styles.css' } },
               ...(currentPath === 'playground'
-                ? [{ script: { src: './playground.js', defer: true } }]
+                ? [
+                    { script: { src: './codemirror-editor.js', defer: true } },
+                    { script: { src: './playground.js', defer: true } }
+                  ]
                 : []),
               ...(currentPath === 'performance'
                 ? [{ script: { src: './performance.js', defer: true } }]
