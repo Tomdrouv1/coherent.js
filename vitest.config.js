@@ -37,12 +37,17 @@ export default defineConfig({
       '**/node_modules/**'
     ],
 
-    // Workspace configuration
+    // Workspace configuration - Enable better test isolation
     pool: 'forks',
     poolOptions: {
       forks: {
-        singleFork: true
+        singleFork: false // Allow multiple forks for better isolation
       }
-    }
+    },
+    
+    // Test isolation settings
+    isolate: true, // Isolate tests
+    clearMocks: true, // Clear mocks between tests
+    restoreMocks: true // Restore mocks between tests
   }
 });

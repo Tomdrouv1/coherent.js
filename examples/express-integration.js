@@ -23,7 +23,7 @@ function ExpressHomePage({ name = 'Express Developer' }) {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       max-width: 900px; margin: 0 auto; padding: 40px 20px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh; color: white;
+      min-height: 100dvh; color: white;
     }
     .container { background: rgba(255,255,255,0.1); border-radius: 20px; padding: 40px; backdrop-filter: blur(10px); }
     .header { text-align: center; margin-bottom: 40px; }
@@ -139,7 +139,7 @@ function ExpressUserPage(req) {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       max-width: 800px; margin: 0 auto; padding: 40px 20px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh; color: white;
+      min-height: 100dvh; color: white;
     }
     .profile { background: rgba(255,255,255,0.1); border-radius: 20px; padding: 40px; backdrop-filter: blur(10px); }
     .profile h1 { text-align: center; margin-bottom: 30px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }

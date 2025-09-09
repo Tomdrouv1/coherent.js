@@ -431,7 +431,7 @@ export const hydrationDemo = {
                   margin: 0;
                   padding: 20px;
                   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                  min-height: 100vh;
+                  min-height: 100dvh;
                   color: #2d3748;
                 }
                 .demo-container {

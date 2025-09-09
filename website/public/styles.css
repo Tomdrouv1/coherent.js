@@ -9,7 +9,7 @@ html, body {
 body {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 /* Header takes only needed space */
@@ -514,7 +514,7 @@ a:hover{text-decoration:underline}
   position: sticky;
   top: 100px;
   height: fit-content;
-  max-height: calc(100vh - 140px);
+  max-height: calc(100dvh - 140px);
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--accent) transparent;
@@ -609,7 +609,7 @@ a:hover{text-decoration:underline}
   top: 100px;
   height: fit-content;
   min-height: 100px;
-  max-height: calc(100vh - 140px);
+  max-height: calc(100dvh - 140px);
   width: 240px;
   flex-shrink: 0;
   overflow-y: auto;

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coherent.js Universal Runtime - Browser Example</title>
+</head>
+<body>
+  <div id="app"></div>
+  
+  <script type="module">
+    import { createCoherentApp } from '../dist/coherent-universal.js';
+    
+    // Create a simple counter component
+    const Counter = ({ count = 0 }) => ({
+      div: {
+        style: { padding: '20px', textAlign: 'center' },
+        children: [
+          { h1: { text: `Count: ${count}` } },
+          { 
+            button: { 
+              text: 'Increment',
+              onclick: (event, state, setState) => {
+                setState({ count: (state.count || 0) + 1 });
+              }
+            } 
+          }
+        ]
+      }
+    });
+    
+    // Create and mount the app
+    const app = await createCoherentApp();
+    app.component('Counter', Counter);
+    await app.mount('Counter', '#app');
+  </script>
+</body>
+</html>

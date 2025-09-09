@@ -12,7 +12,8 @@ describe('Component Rendering', () => {
 
     const html = renderToString(BasicComponent, {
       enableCache: true,
-      enableMonitoring: false
+      enableMonitoring: false,
+      encapsulate: false
     });
     
     expect(html).toBe('<div class="test">Hello, World!</div>');
@@ -31,7 +32,8 @@ describe('Component Rendering', () => {
 
     const html = renderToString(ComponentWithChildren, {
       enableCache: true,
-      enableMonitoring: false
+      enableMonitoring: false,
+      encapsulate: false
     });
 
     expect(html).toMatch(/<div class="parent"><h1>Title<\/h1><p>Content<\/p><\/div>/);
@@ -49,7 +51,8 @@ describe('Component Rendering', () => {
 
     const html = renderToString(ComponentWithBooleans, {
       enableCache: true,
-      enableMonitoring: false
+      enableMonitoring: false,
+      encapsulate: false
     });
 
     expect(html).toMatch(/<div><span>true<\/span><span>false<\/span><\/div>/);

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Shadow DOM Component Demo</title>
+    <style>
+        /* Global styles that won't affect shadow components */
+        body { 
+            font-family: Arial, sans-serif; 
+            background: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        /* These styles won't affect the shadow components */
+        .demo-box { background: red !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌟 Shadow DOM Component Demo</h1>
+        <p>The components below use <strong>native Shadow DOM</strong> for true style isolation:</p>
+        
+        <!-- Regular DOM element that will host shadow components -->
+        <div id="shadow-host-1"></div>
+        <div id="shadow-host-2"></div>
+        
+        <!-- For comparison: regular element that will be affected by global styles -->
+        <div class="demo-box" style="padding: 20px; margin: 10px;">
+            <h3>🔓 Regular DOM Element</h3>
+            <p>This element can be affected by global CSS</p>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import our Shadow DOM utilities
+        // In a real setup, this would be: import { shadowDOM } from '@coherentjs/core';
+        
+        // Mock implementation for demo purposes
+        const createShadowComponent = (element, componentDef, options = {}) => {
+            const shadowRoot = element.attachShadow({ 
+                mode: options.mode || 'closed',
+                delegatesFocus: options.delegatesFocus || false
+            });
+            
+            // Extract styles from component
+            let styles = '';
+            if (componentDef.style) {
+                styles = componentDef.style.text;
+            }
+            
+            // Create style element
+            if (styles) {
+                const styleEl = document.createElement('style');
+                styleEl.textContent = styles;
+                shadowRoot.appendChild(styleEl);
+            }
+            
+            // Create content
+            shadowRoot.innerHTML += componentDef.content;
+            
+            return shadowRoot;
+        };
+
+        // Define Coherent.js-style components
+        const Component1 = {
+            style: {
+                text: `
+                    .demo-box {
+                        background: linear-gradient(45deg, #ff6b6b, #feca57);
+                        color: white;
+                        padding: 20px;
+                        border-radius: 15px;
+                        margin: 10px 0;
+                        text-align: center;
+                        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                    }
+                    h3 {
+                        margin: 0 0 10px 0;
+                        font-size: 1.5em;
+                        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+                    }
+                    p { margin: 0; opacity: 0.9; }
+                `
+            },
+            content: `
+                <div class="demo-box">
+                    <h3>🔒 Shadow DOM Component 1</h3>
+                    <p>My styles are completely isolated! Global CSS can't touch me.</p>
+                </div>
+            `
+        };
+
+        const Component2 = {
+            style: {
+                text: `
+                    .demo-box {
+                        background: linear-gradient(45deg, #4ecdc4, #45b7d1);
+                        color: white;
+                        padding: 25px;
+                        border-radius: 20px;
+                        margin: 10px 0;
+                        border: 3px solid #fff;
+                        font-family: 'Comic Sans MS', cursive;
+                    }
+                    h3 {
+                        color: #fff200;
+                        font-size: 2em;
+                        margin: 0 0 15px 0;
+                        text-transform: uppercase;
+                    }
+                    p { 
+                        font-size: 1.1em;
+                        line-height: 1.4;
+                        margin: 0;
+                    }
+                `
+            },
+            content: `
+                <div class="demo-box">
+                    <h3>🛡️ Shadow DOM Component 2</h3>
+                    <p>I have completely different styles, including Comic Sans font, but I don't affect anything outside my shadow boundary!</p>
+                </div>
+            `
+        };
+
+        // Create shadow components
+        const host1 = document.getElementById('shadow-host-1');
+        const host2 = document.getElementById('shadow-host-2');
+        
+        createShadowComponent(host1, Component1, { mode: 'open' });
+        createShadowComponent(host2, Component2, { mode: 'open' });
+        
+        console.log('✅ Shadow DOM components created!');
+        console.log('🔍 Inspect the elements to see the shadow roots');
+    </script>
+</body>
+</html>

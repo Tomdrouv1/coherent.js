@@ -1,0 +1,27 @@
+{
+  "name": "@coherentjs/performance-profiler",
+  "version": "1.1.1",
+  "description": "Performance profiling and monitoring tools for Coherent.js applications",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./profiler": "./src/profiler.js",
+    "./server": "./src/server.js",
+    "./dashboard": "./src/dashboard/index.js"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "vitest",
+    "dev": "node src/server.js"
+  },
+  "keywords": ["performance", "profiling", "monitoring", "coherent", "ssr"],
+  "author": "Coherent.js Team",
+  "license": "MIT",
+  "dependencies": {
+    "@coherentjs/core": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.4"
+  }
+}

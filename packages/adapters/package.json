@@ -1,0 +1,26 @@
+{
+  "name": "@coherentjs/adapters",
+  "version": "1.1.1",
+  "description": "Framework adapters for Coherent.js (Astro, Remix, SvelteKit)",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./astro": "./src/astro.js",
+    "./remix": "./src/remix.js",
+    "./sveltekit": "./src/sveltekit.js"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "vitest"
+  },
+  "keywords": ["astro", "remix", "svelte", "sveltekit", "coherent", "ssr", "adapters"],
+  "author": "Coherent.js Team",
+  "license": "MIT",
+  "dependencies": {
+    "@coherentjs/core": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.4"
+  }
+}

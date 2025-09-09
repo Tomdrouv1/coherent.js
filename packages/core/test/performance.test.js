@@ -7,7 +7,7 @@ import { describe, test, assert } from 'vitest';
 describe('Performance tests completed', () => {
 test('Performance monitoring setup', async () => {
   try {
-    const { PerformanceMonitor } = await import('../../../src/performance/monitor.js');
+    const { PerformanceMonitor } = await import('../../core/src/performance/monitor.js');
     
     // Test monitor creation
     const monitor = new PerformanceMonitor();

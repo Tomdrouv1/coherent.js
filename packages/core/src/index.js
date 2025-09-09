@@ -7,6 +7,78 @@
  * @license MIT
  */
 
+// Performance monitoring
+import { performanceMonitor } from './performance/monitor.js';
+
+// CSS Scoping System (similar to Angular View Encapsulation)
+const scopeCounter = { value: 0 };
+
+function generateScopeId() {
+  return `coh-${scopeCounter.value++}`;
+}
+
+function scopeCSS(css, scopeId) {
+  if (!css || typeof css !== 'string') return css;
+  
+  // Add scope attribute to all selectors
+  return css
+    .replace(/([^{}]*)\s*{/g, (match, selector) => {
+      // Handle multiple selectors separated by commas
+      const selectors = selector.split(',').map(s => {
+        const trimmed = s.trim();
+        if (!trimmed) return s;
+        
+        // Handle pseudo-selectors and complex selectors
+        if (trimmed.includes(':')) {
+          return trimmed.replace(/([^:]+)(:.*)?/, `$1[${scopeId}]$2`);
+        }
+        
+        // Simple selector scoping
+        return `${trimmed}[${scopeId}]`;
+      });
+      
+      return `${selectors.join(', ')} {`;
+    });
+}
+
+function applyScopeToElement(element, scopeId) {
+  if (typeof element === 'string' || typeof element === 'number' || !element) {
+    return element;
+  }
+  
+  if (Array.isArray(element)) {
+    return element.map(item => applyScopeToElement(item, scopeId));
+  }
+  
+  if (typeof element === 'object') {
+    const scoped = {};
+    
+    for (const [tagName, props] of Object.entries(element)) {
+      if (typeof props === 'object' && props !== null) {
+        const scopedProps = { ...props };
+        
+        // Add scope attribute to the element
+        scopedProps[scopeId] = '';
+        
+        // Recursively scope children
+        if (scopedProps.children) {
+          scopedProps.children = applyScopeToElement(scopedProps.children, scopeId);
+        }
+        
+        scoped[tagName] = scopedProps;
+      } else {
+        // For simple text content elements, keep them as is
+        // Don't add scope attributes to text-only elements
+        scoped[tagName] = props;
+      }
+    }
+    
+    return scoped;
+  }
+  
+  return element;
+}
+
 // Core HTML utilities
 function escapeHtml(text) {
   if (typeof text !== 'string') return text;
@@ -45,16 +117,16 @@ function formatAttributes(attrs) {
     .join(' ');
 }
 
-// Core rendering function
-export function renderToString(obj) {
+// Internal raw rendering (no encapsulation) - used by scoped renderer
+function renderRaw(obj) {
   if (obj === null || obj === undefined) return '';
   if (typeof obj === 'string' || typeof obj === 'number') return escapeHtml(String(obj));
-  if (Array.isArray(obj)) return obj.map(renderToString).join('');
+  if (Array.isArray(obj)) return obj.map(renderRaw).join('');
   
   // Handle functions (like context providers)
   if (typeof obj === 'function') {
-    const result = obj(renderToString);
-    return renderToString(result);
+    const result = obj(renderRaw);
+    return renderRaw(result);
   }
   
   if (typeof obj !== 'object') return escapeHtml(String(obj));
@@ -79,7 +151,7 @@ export function renderToString(obj) {
       if (text !== undefined) {
         content = escapeHtml(String(text));
       } else if (children) {
-        content = renderToString(children);
+        content = renderRaw(children);
       }
       
       return `${openTag}${content}</${tagName}>`;
@@ -93,6 +165,66 @@ export function renderToString(obj) {
   return '';
 }
 
+// Core rendering function with optional encapsulation (default: enabled)
+export function renderToString(obj, options = { encapsulate: true }) {
+  // Use scoped rendering by default for better isolation
+  if (options.encapsulate !== false) {
+    return renderScopedComponent(obj);
+  }
+  
+  return renderRaw(obj);
+}
+
+// Explicit unsafe rendering (opt-out of encapsulation)
+export function renderUnsafe(obj) {
+  return renderRaw(obj);
+}
+
+// Scoped rendering with CSS encapsulation
+export function renderScopedComponent(component) {
+  const scopeId = generateScopeId();
+  
+  // Handle style elements specially
+  function processScopedElement(element) {
+    if (!element || typeof element !== 'object') {
+      return element;
+    }
+    
+    if (Array.isArray(element)) {
+      return element.map(processScopedElement);
+    }
+    
+    const result = {};
+    
+    for (const [tagName, props] of Object.entries(element)) {
+      if (tagName === 'style' && typeof props === 'object' && props.text) {
+        // Scope CSS within style tags
+        result[tagName] = {
+          ...props,
+          text: scopeCSS(props.text, scopeId)
+        };
+      } else if (typeof props === 'object' && props !== null) {
+        // Recursively process children
+        const scopedProps = { ...props };
+        if (scopedProps.children) {
+          scopedProps.children = processScopedElement(scopedProps.children);
+        }
+        result[tagName] = scopedProps;
+      } else {
+        result[tagName] = props;
+      }
+    }
+    
+    return result;
+  }
+  
+  // First process styles, then apply scope attributes
+  const processedComponent = processScopedElement(component);
+  const scopedComponent = applyScopeToElement(processedComponent, scopeId);
+  
+  return renderRaw(scopedComponent);
+}
+
 // Alias for renderToString
 export function renderHTML(obj) {
   return renderToString(obj);
@@ -101,6 +233,11 @@ export function renderHTML(obj) {
 // Synchronous version (same as renderHTML for now)
 export function renderHTMLSync(obj) {
   return renderToString(obj);
+}
+
+// Scoped version
+export function renderScopedHTML(obj) {
+  return renderScopedComponent(obj);
 }
 
 // Simple state management
@@ -250,17 +387,40 @@ export function deepClone(obj) {
 // Version info
 export const VERSION = '1.1.1';
 
+// Performance monitoring export
+export { performanceMonitor };
+
+// Shadow DOM exports
+export { shadowDOM };
+
+// Import Shadow DOM functionality  
+import * as shadowDOM from './shadow-dom.js';
+
 // Default export
 const coherent = {
+  // Core rendering (encapsulated by default)
   renderToString,
   renderHTML,
   renderHTMLSync,
+  
+  // Explicit encapsulation control
+  renderScopedComponent,
+  renderScopedHTML,
+  renderUnsafe,
+  
+  // Shadow DOM (client-side only)
+  shadowDOM,
+  
+  // State management
   withState,
   memo,
+  
+  // Utilities
   validateComponent,
   isCoherentObject,
   deepClone,
   escapeHtml,
+  performanceMonitor,
   VERSION
 };
 
