@@ -12,7 +12,6 @@
       "require": "./dist/index.cjs"
     }
   },
-  "bin": {},
   "scripts": {
     "build": "node build.mjs",
     "clean": "rm -rf dist/",
