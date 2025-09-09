@@ -1,6 +1,6 @@
 {
   "name": "@coherentjs/runtime",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Runtime for Coherent.js - works in browsers, edge workers, and any JavaScript environment",
   "type": "module",
   "main": "dist/coherent-universal.js",
