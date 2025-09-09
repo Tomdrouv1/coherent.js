@@ -189,9 +189,10 @@ describe('Runtime Utilities', () => {
 
   describe('Integration Tests', () => {
     it('should work together for runtime initialization', async () => {
-      // Mock browser environment
-      vi.stubGlobal('window', { document: {} });
+      // Mock browser environment properly
+      vi.stubGlobal('window', { document: {}, navigator: {} });
       vi.stubGlobal('document', {});
+      vi.stubGlobal('navigator', {});
       
       const { RuntimeDetector } = await import('../src/utils/runtime-detector.js');
       const { ModuleResolver } = await import('../src/utils/module-resolver.js');
@@ -200,6 +201,9 @@ describe('Runtime Utilities', () => {
       const detector = new RuntimeDetector();
       const resolver = new ModuleResolver();
       const assetManager = new AssetManager();
+      
+      // Reset detection cache to pick up our mocked globals
+      detector.reset();
       
       const info = detector.getEnvironmentInfo();
       const corePath = resolver.resolve('@coherentjs/core');
