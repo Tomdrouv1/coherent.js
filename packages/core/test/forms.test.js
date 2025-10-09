@@ -150,7 +150,7 @@ describe('Enhanced Form System', () => {
           username: {
             validators: [{
               name: 'unique',
-              validate: async (value) => {
+              validate: async () => {
                 callCount++;
                 await new Promise(resolve => setTimeout(resolve, 10));
                 return true;

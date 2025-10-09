@@ -1,9 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { 
-  isShadowDOMSupported, 
-  createShadowComponent,
-  createShadowRoot,
-  attachStylesToShadowRoot
+import {
+  isShadowDOMSupported,
+  createShadowComponent
 } from '../src/shadow-dom.js';
 
 // Mock DOM environment for testing

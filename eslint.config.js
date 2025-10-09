@@ -91,6 +91,33 @@ export default [
         }
     },
     {
+        // Core package - isomorphic code needs both Node and browser globals
+        files: ['packages/core/**/*.js'],
+        languageOptions: {
+            globals: {
+                // Browser APIs used in isomorphic code
+                window: 'readonly',
+                document: 'readonly',
+                localStorage: 'readonly',
+                sessionStorage: 'readonly',
+                indexedDB: 'readonly',
+                IntersectionObserver: 'readonly',
+                MutationObserver: 'readonly',
+                requestIdleCallback: 'readonly',
+                CustomEvent: 'readonly',
+                FormData: 'readonly',
+                btoa: 'readonly',
+                atob: 'readonly',
+                BroadcastChannel: 'readonly',
+                alert: 'readonly',
+                event: 'readonly'
+            }
+        },
+        rules: {
+            'no-alert': 'off' // Allow alert in tests
+        }
+    },
+    {
         // Browser-specific rules for client package
         files: ['packages/client/**/*.js', 'src/client/**/*.js'],
         languageOptions: {

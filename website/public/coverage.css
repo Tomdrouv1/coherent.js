@@ -1,0 +1,449 @@
+/* Coverage Page Specific Styles */
+
+.coverage-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  box-sizing: border-box;
+}
+
+/* Standardized hero title styling matching examples page */
+.coverage-page h1 {
+  font-size: 2.5rem;
+  margin: 0 0 20px;
+  background: var(--gradient-text);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Ensure coverage page content doesn't overflow */
+.coverage-page,
+.coverage-page * {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.coverage-badges {
+  margin-bottom: 32px;
+}
+
+.badges-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.badges-row img {
+  border-radius: 4px;
+}
+
+.coverage-summary {
+  margin-bottom: 32px;
+}
+
+.coverage-data {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 24px;
+  backdrop-filter: var(--blur);
+  box-shadow: 0 8px 32px var(--glass-shadow);
+}
+
+.coverage-stats {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  margin: 2rem 0;
+  flex-wrap: wrap;
+}
+
+.stat {
+  text-align: center;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+/* Apply color coding to stat values as well */
+.stat-value.coverage-excellent,
+.stat-value.coverage-good,
+.stat-value.coverage-fair,
+.stat-value.coverage-poor {
+  text-shadow: 0 0 12px currentColor;
+}
+
+.stat-label {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.package-coverage {
+  margin-bottom: 32px;
+}
+
+.coverage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.coverage-item {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 28px;
+  backdrop-filter: var(--blur);
+  box-shadow: 0 8px 32px var(--glass-shadow);
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.coverage-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--gradient-accent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.coverage-item:hover::before {
+  opacity: 1;
+}
+
+.coverage-item:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 60px var(--glass-shadow);
+  border-color: var(--accent);
+}
+
+.package-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 20px;
+  text-align: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--glass-border);
+  background: var(--gradient-text);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.coverage-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.metric {
+  text-align: center;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s ease;
+}
+
+.metric:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: scale(1.05);
+}
+
+.metric-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.coverage-cell {
+  font-family: ui-monospace, 'SF Mono', monospace;
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 8px;
+  text-shadow: 0 0 20px currentColor;
+}
+
+.coverage-detail {
+  color: var(--muted);
+  font-size: 10px;
+  font-family: ui-monospace, 'SF Mono', monospace;
+  opacity: 0.8;
+}
+
+.coverage-note {
+  text-align: center;
+  color: var(--muted);
+  font-style: italic;
+  padding: 32px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  backdrop-filter: var(--blur);
+}
+
+/* Coverage percentage color coding */
+.coverage-excellent {
+  color: #ffd700; /* Gold - 95%+ */
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+}
+
+.coverage-good {
+  color: #22c55e; /* Green - 80-94% */
+  text-shadow: 0 0 8px rgba(34, 197, 94, 0.3);
+}
+
+.coverage-fair {
+  color: #f59e0b; /* Orange - 60-79% */
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+}
+
+.coverage-poor {
+  color: #ef4444; /* Red - <60% */
+  text-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
+}
+
+/* Special highlighting for coverage cells */
+.coverage-cell.coverage-excellent,
+.coverage-cell.coverage-good,
+.coverage-cell.coverage-fair,
+.coverage-cell.coverage-poor {
+  background: rgba(var(--accent-rgb), 0.1);
+  border-radius: 4px;
+  padding: 4px 8px;
+  margin: 0 2px;
+}
+
+.coverage-reports ul {
+  list-style: none;
+  padding: 0;
+}
+
+.coverage-reports li {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  backdrop-filter: var(--blur);
+}
+
+.coverage-reports a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.coverage-reports a:hover {
+  text-decoration: underline;
+}
+
+.testing-info {
+  margin-bottom: 32px;
+}
+
+.testing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.testing-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 2rem;
+  backdrop-filter: var(--blur);
+  box-shadow: 0 8px 32px var(--glass-shadow);
+  transition: all 0.3s ease;
+}
+
+.testing-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px var(--glass-shadow);
+  border-color: var(--accent);
+}
+
+.testing-card h3 {
+  color: var(--accent);
+  margin-bottom: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.testing-card p {
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Responsive Coverage Styles */
+@media (max-width: 960px) {
+  .coverage-page {
+    padding: 20px 16px;
+    margin: 0;
+  }
+
+  .coverage-page h1 {
+    font-size: 1.8rem;
+    margin: 16px 0;
+    padding: 0 16px;
+  }
+
+  .coverage-page h2 {
+    font-size: 1.3rem;
+    margin: 16px 0 8px 0;
+    padding: 0 16px;
+  }
+
+  .coverage-page section {
+    padding: 0 16px;
+    margin: 12px 0;
+    width: 100%;
+  }
+
+  .coverage-badges {
+    margin-bottom: 24px;
+  }
+
+  .badges-row {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .coverage-summary {
+    margin-bottom: 24px;
+  }
+
+  .coverage-stats {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .package-coverage {
+    margin-bottom: 24px;
+  }
+
+  .coverage-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .coverage-item {
+    padding: 16px;
+  }
+
+  .coverage-metrics {
+    gap: 12px;
+  }
+
+  .testing-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .coverage-page {
+    padding: 16px 12px;
+    margin: 0;
+  }
+
+  .coverage-page section {
+    padding: 0;
+    margin: 12px 0;
+  }
+
+  .coverage-stats {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .badges-row {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .testing-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .coverage-page {
+    padding: 12px 8px;
+    margin: 0;
+  }
+
+  .coverage-page h1 {
+    font-size: 1.5rem;
+    margin: 12px 6px;
+  }
+
+  .coverage-page h2 {
+    font-size: 1.2rem;
+    margin: 12px 6px 6px 6px;
+  }
+
+  .coverage-page section {
+    padding: 0;
+    margin: 8px 0;
+  }
+
+  .stat-value {
+    font-size: 1.3rem;
+  }
+
+  .stat-label {
+    font-size: 0.8rem;
+  }
+
+  .testing-card {
+    padding: 16px;
+  }
+
+  .coverage-data {
+    padding: 16px;
+  }
+
+  .stat {
+    padding: 16px;
+  }
+
+  .coverage-item {
+    padding: 12px;
+  }
+
+  .coverage-metrics {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .coverage-cell {
+    font-size: 16px;
+  }
+}

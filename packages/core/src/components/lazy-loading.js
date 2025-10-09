@@ -373,6 +373,8 @@ export function createLazyComponent(componentLoader, options = {}) {
     }
   };
   LazyComponentWrapper.getState = () => ({ ...state });
+  LazyComponentWrapper.setupViewportObserver = setupViewportObserver;
+  LazyComponentWrapper.setupPreload = setupPreload;
 
   return LazyComponentWrapper;
 }
@@ -411,7 +413,7 @@ function renderComponentToHTML(component) {
     }
   });
 
-  const attrsStr = attributes.length > 0 ? ' ' + attributes.join(' ') : '';
+  const attrsStr = attributes.length > 0 ? ` ${  attributes.join(' ')}` : '';
   return `<${tag}${attrsStr}>${content}</${tag}>`;
 }
 

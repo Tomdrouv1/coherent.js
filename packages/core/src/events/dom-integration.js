@@ -332,7 +332,7 @@ export class DOMEventIntegration {
                              (value.startsWith('[') && value.endsWith(']'))) {
                         value = JSON.parse(value);
                     }
-                } catch (e) {
+                } catch {
                     // Keep as string if parsing fails
                 }
 

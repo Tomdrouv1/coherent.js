@@ -113,7 +113,7 @@ All packages updated to version 1.2.1:
 
 ### Fixed
 
-- CI workflow updated to use correct pnpm version 10.15.1
+- CI workflow updated to use correct pnpm version 10.18.1
 - Various build and deployment improvements
 
 ### Package Versions

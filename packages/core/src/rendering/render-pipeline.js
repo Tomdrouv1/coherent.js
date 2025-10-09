@@ -191,7 +191,7 @@ export function createRenderPipeline(options = {}) {
       }
     });
 
-    const attrsStr = attributes.length > 0 ? ' ' + attributes.join(' ') : '';
+    const attrsStr = attributes.length > 0 ? ` ${  attributes.join(' ')}` : '';
 
     if (selfClosing) {
       return `<${tag}${attrsStr} />`;
@@ -453,10 +453,9 @@ export const middleware = {
 export const hooks = {
   /**
    * Performance monitoring hook
-   * @param {Object} options - Monitor options
    * @returns {Function} Hook function
    */
-  performanceMonitor: (options = {}) => (context) => {
+  performanceMonitor: () => (context) => {
     const start = performance.now();
     context.metadata.renderStart = start;
 
@@ -471,10 +470,9 @@ export const hooks = {
 
   /**
    * Debug logging hook
-   * @param {Object} options - Debug options
    * @returns {Function} Hook function
    */
-  debugLog: (options = {}) => (context) => {
+  debugLog: () => (context) => {
     const indent = '  '.repeat(context.depth);
     console.log(`${indent}[Render] ${context.path}`, context.component);
     return context;

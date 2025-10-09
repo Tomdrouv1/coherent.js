@@ -1,10 +1,9 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   createRenderPipeline,
   middleware,
   hooks,
-  customRenderers,
-  createCustomRenderer
+  customRenderers
 } from '../src/rendering/render-pipeline.js';
 
 describe('Render Pipeline', () => {
@@ -132,7 +131,7 @@ describe('Render Pipeline', () => {
 
     it('should execute afterRender hooks', async () => {
       const afterHook = vi.fn((context) => {
-        return { ...context, result: context.result + '<!-- modified -->' };
+        return { ...context, result: `${context.result  }<!-- modified -->` };
       });
 
       const pipeline = createRenderPipeline({
@@ -181,7 +180,7 @@ describe('Render Pipeline', () => {
 
   describe('Middleware', () => {
     it('should execute middleware', async () => {
-      const mw = vi.fn((component, context) => {
+      const mw = vi.fn((component) => {
         const tag = Object.keys(component)[0];
         return {
           [tag]: {

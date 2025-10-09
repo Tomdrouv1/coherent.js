@@ -6,7 +6,7 @@
  */
 
 import { globalEventBus } from './event-bus.js';
-import { withProps, withState } from '../components/component-system.js';
+import { withState } from '../components/component-system.js';
 
 /**
  * Higher-order component that provides event bus integration
@@ -210,7 +210,7 @@ export const createActionHandlers = {
         } = options;
 
         return {
-            'submit-form': ({element, data, emit}) => {
+            'submit-form': ({element, emit}) => {
                 const formData = extractFormData(element.closest('form'));
 
                 if (onValidate) {

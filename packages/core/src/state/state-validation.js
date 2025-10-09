@@ -178,7 +178,7 @@ class SchemaValidator {
               });
             }
           }
-        } catch (e) {
+        } catch {
           errors.push({
             path,
             message: `Cannot coerce value to ${primaryType}`,
@@ -338,7 +338,7 @@ class SchemaValidator {
 
   validateArray(value, schema, path) {
     const errors = [];
-    let coercedValue = [...value];
+    const coercedValue = [...value];
 
     if (schema.minItems !== undefined && value.length < schema.minItems) {
       errors.push({
@@ -401,7 +401,7 @@ class SchemaValidator {
 
   validateObject(value, schema, path) {
     const errors = [];
-    let coercedValue = { ...value };
+    const coercedValue = { ...value };
 
     // Required properties
     if (schema.required) {

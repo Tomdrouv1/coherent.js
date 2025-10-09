@@ -416,7 +416,7 @@ export function createPersistentState(initialState = {}, options = {}) {
 
     try {
       const filteredState = filterKeys(state);
-      let serialized = opts.serialize(filteredState);
+      const serialized = opts.serialize(filteredState);
 
       // Add metadata
       const data = {
