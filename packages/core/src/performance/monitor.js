@@ -1,403 +1,680 @@
 /**
- * Real-time performance monitoring and metrics collection
+ * Enhanced Performance Monitoring System
+ *
+ * Provides comprehensive performance monitoring with:
+ * - Custom metrics
+ * - Sampling strategies
+ * - Automated reporting
+ * - Alert rules
+ * - Resource monitoring
+ * - Performance budgets
  */
 
-import { createCacheManager, cacheManager as globalCache } from './cache-manager.js';
+/**
+ * Create an enhanced performance monitor
+ *
+ * @param {Object} options - Configuration options
+ * @param {boolean} [options.enabled=true] - Enable monitoring
+ * @param {Object} [options.metrics] - Custom metrics configuration
+ * @param {Object} [options.sampling] - Sampling strategy configuration
+ * @param {Object} [options.reporting] - Automated reporting configuration
+ * @param {Object} [options.alerts] - Alert rules configuration
+ * @param {Object} [options.resources] - Resource monitoring configuration
+ * @param {Object} [options.profiling] - Profiling configuration
+ * @returns {Object} Enhanced performance monitor instance
+ */
+export function createPerformanceMonitor(options = {}) {
+  const opts = {
+    enabled: true,
+    metrics: {
+      custom: {}
+    },
+    sampling: {
+      enabled: false,
+      rate: 1.0,
+      strategy: 'random'
+    },
+    reporting: {
+      enabled: false,
+      interval: 60000,
+      format: 'json',
+      batch: {
+        enabled: false,
+        maxSize: 100,
+        flushInterval: 5000
+      },
+      onReport: null
+    },
+    alerts: {
+      enabled: true,
+      rules: []
+    },
+    resources: {
+      enabled: false,
+      track: ['memory'],
+      interval: 1000
+    },
+    profiling: {
+      enabled: false,
+      mode: 'production',
+      flamegraph: false,
+      tracing: {
+        enabled: false,
+        sampleRate: 0.01
+      }
+    },
+    ...options
+  };
 
-// Create a dedicated cache instance for monitoring
-const monitorCache = createCacheManager({
-    maxSize: 1000,
-    ttlMs: 300000 // 5 minutes
-});
+  // Ensure nested defaults are preserved
+  opts.reporting.batch = {
+    enabled: false,
+    maxSize: 100,
+    flushInterval: 5000,
+    ...(options.reporting?.batch || {})
+  };
 
-export class PerformanceMonitor {
-    constructor() {
-        this.metrics = {
-            renderTimes: [],
-            componentCounts: new Map(),
-            memoryUsage: [],
-            cachePerformance: [],
-            errors: []
-        };
+  // Metrics storage
+  const metrics = {
+    builtin: {
+      renderTime: { type: 'histogram', unit: 'ms', values: [] },
+      componentCount: { type: 'counter', unit: 'renders', value: 0 },
+      errorCount: { type: 'counter', unit: 'errors', value: 0 },
+      memoryUsage: { type: 'gauge', unit: 'MB', values: [] }
+    },
+    custom: {}
+  };
 
-        this.startTime = Date.now();
-        this.isMonitoring = false;
+  // Initialize custom metrics
+  Object.entries(opts.metrics.custom).forEach(([name, config]) => {
+    metrics.custom[name] = {
+      type: config.type || 'counter',
+      unit: config.unit || '',
+      threshold: config.threshold,
+      values: config.type === 'histogram' ? [] : undefined,
+      value: config.type === 'counter' || config.type === 'gauge' ? 0 : undefined
+    };
+  });
+
+  // Sampling state
+  const samplingState = {
+    count: 0,
+    sampled: 0,
+    adaptiveRate: opts.sampling.rate
+  };
+
+  // Reporting state
+  const reportingState = {
+    batch: [],
+    lastReport: Date.now(),
+    reportTimer: null,
+    flushTimer: null
+  };
+
+  // Alert state
+  const alertState = {
+    triggered: new Map(),
+    history: []
+  };
+
+  // Resource monitoring state
+  const resourceState = {
+    samples: [],
+    timer: null
+  };
+
+  // Profiling state
+  const profilingState = {
+    traces: [],
+    flamegraphData: []
+  };
+
+  // Statistics
+  const stats = {
+    metricsRecorded: 0,
+    sampleRate: opts.sampling.rate,
+    reportsGenerated: 0,
+    alertsTriggered: 0
+  };
+
+  /**
+   * Check if event should be sampled
+   */
+  function shouldSample() {
+    if (!opts.sampling.enabled) return true;
+
+    samplingState.count++;
+
+    if (opts.sampling.strategy === 'random') {
+      return Math.random() < samplingState.adaptiveRate;
+    } else if (opts.sampling.strategy === 'deterministic') {
+      return samplingState.count % Math.ceil(1 / samplingState.adaptiveRate) === 0;
+    } else if (opts.sampling.strategy === 'adaptive') {
+      // Adaptive sampling based on recent metric values
+      const recentRenderTimes = metrics.builtin.renderTime.values.slice(-10);
+      if (recentRenderTimes.length > 0) {
+        const avgTime = recentRenderTimes.reduce((a, b) => a + b, 0) / recentRenderTimes.length;
+        // Sample more when performance is poor
+        samplingState.adaptiveRate = avgTime > 16 ? Math.min(1.0, opts.sampling.rate * 2) : opts.sampling.rate;
+      }
+      return Math.random() < samplingState.adaptiveRate;
     }
 
-    start() {
-        this.isMonitoring = true;
-        this.collectSystemMetrics();
-        console.log('🚀 Performance monitoring started');
-    }
+    return true;
+  }
 
-    stop() {
-        this.isMonitoring = false;
-        console.log('⏹️  Performance monitoring stopped');
-        return this.generateReport();
-    }
+  /**
+   * Record a metric value
+   */
+  function recordMetric(name, value, metadata = {}) {
+    if (!opts.enabled) return;
+    if (!shouldSample()) return;
 
-    // Measure render performance
-    measureRender(component, props, renderFn) {
-        const startTime = process.hrtime.bigint();
-        const startMemory = process.memoryUsage();
+    stats.metricsRecorded++;
 
-        try {
-            const result = renderFn(component, props);
-            const endTime = process.hrtime.bigint();
-            const endMemory = process.memoryUsage();
-
-            const renderTimeMs = Number(endTime - startTime) / 1000000;
-            const memoryDelta = endMemory.heapUsed - startMemory.heapUsed;
-
-            this.recordRenderMetric({
-                component: this.getComponentName(component),
-                renderTime: renderTimeMs,
-                memoryDelta,
-                resultSize: typeof result === 'string' ? result.length : 0
-            });
-
-            return result;
-        } catch (_error) {
-            this.recordError(_error, component);
-            throw _error;
+    // Check if it's a built-in metric
+    const builtinMetric = metrics.builtin[name];
+    if (builtinMetric) {
+      if (builtinMetric.type === 'histogram') {
+        builtinMetric.values.push(value);
+        if (builtinMetric.values.length > 1000) {
+          builtinMetric.values = builtinMetric.values.slice(-1000);
         }
+      } else if (builtinMetric.type === 'counter') {
+        builtinMetric.value += value;
+      } else if (builtinMetric.type === 'gauge') {
+        builtinMetric.values.push(value);
+        if (builtinMetric.values.length > 100) {
+          builtinMetric.values = builtinMetric.values.slice(-100);
+        }
+      }
     }
 
-    recordRenderMetric(metric) {
-        this.metrics.renderTimes.push({
-            ...metric,
-            timestamp: Date.now()
-        });
-
-        // Update component usage stats
-        const current = this.metrics.componentCounts.get(metric.component) || 0;
-        this.metrics.componentCounts.set(metric.component, current + 1);
-
-        // Keep only recent metrics
-        if (this.metrics.renderTimes.length > 1000) {
-            this.metrics.renderTimes = this.metrics.renderTimes.slice(-1000);
+    // Check if it's a custom metric
+    const customMetric = metrics.custom[name];
+    if (customMetric) {
+      if (customMetric.type === 'histogram') {
+        customMetric.values = customMetric.values || [];
+        customMetric.values.push(value);
+        if (customMetric.values.length > 1000) {
+          customMetric.values = customMetric.values.slice(-1000);
         }
+      } else if (customMetric.type === 'counter') {
+        customMetric.value = (customMetric.value || 0) + value;
+      } else if (customMetric.type === 'gauge') {
+        customMetric.values = customMetric.values || [];
+        customMetric.values.push(value);
+        if (customMetric.values.length > 100) {
+          customMetric.values = customMetric.values.slice(-100);
+        }
+      }
+
+      // Check threshold
+      if (customMetric.threshold) {
+        const currentValue = customMetric.type === 'histogram' || customMetric.type === 'gauge'
+          ? customMetric.values[customMetric.values.length - 1]
+          : customMetric.value;
+
+        if (currentValue > customMetric.threshold) {
+          checkAlerts(name, currentValue);
+        }
+      }
     }
 
-    recordError(_error, component) {
-        this.metrics.errors.push({
-            _error: _error.message,
-            component: this.getComponentName(component),
-            stack: _error.stack,
-            timestamp: Date.now()
-        });
+    // Add to batch if enabled
+    if (opts.reporting.enabled && opts.reporting.batch.enabled) {
+      reportingState.batch.push({
+        metric: name,
+        value,
+        metadata,
+        timestamp: Date.now()
+      });
+
+      if (reportingState.batch.length >= opts.reporting.batch.maxSize) {
+        flushBatch();
+      }
     }
 
-    collectSystemMetrics() {
-        if (!this.isMonitoring) return;
+    // Check alerts
+    checkAlerts(name, value);
+  }
 
-        const memUsage = process.memoryUsage();
-        this.metrics.memoryUsage.push({
-            timestamp: Date.now(),
-            heapUsed: memUsage.heapUsed,
-            heapTotal: memUsage.heapTotal,
-            external: memUsage.external,
-            rss: memUsage.rss
-        });
+  /**
+   * Check alert rules
+   */
+  function checkAlerts(metric, value) {
+    if (!opts.alerts.enabled) return;
 
-        // Get cache stats if available
-        if (monitorCache) {
-            const cacheStats = monitorCache.getStats();
-            this.metrics.cachePerformance.push({
-                timestamp: Date.now(),
-                ...cacheStats
-            });
-        }
+    opts.alerts.rules.forEach(rule => {
+      if (rule.metric !== metric) return;
 
-        // Keep only recent system metrics
-        if (this.metrics.memoryUsage.length > 100) {
-            this.metrics.memoryUsage = this.metrics.memoryUsage.slice(-100);
-        }
+      let triggered = false;
 
-        setTimeout(() => this.collectSystemMetrics(), 5000); // Every 5 seconds
-    }
+      if (rule.condition === 'exceeds' && value > rule.threshold) {
+        triggered = true;
+      } else if (rule.condition === 'below' && value < rule.threshold) {
+        triggered = true;
+      } else if (rule.condition === 'equals' && value === rule.threshold) {
+        triggered = true;
+      }
 
-    getComponentName(component) {
-        if (typeof component === 'function') {
-            return component.name || 'AnonymousFunction';
-        }
-        if (typeof component === 'object' && component) {
-            const keys = Object.keys(component);
-            return keys.length > 0 ? keys[0] : 'EmptyObject';
-        }
-        return 'Unknown';
-    }
-
-    generateReport() {
+      if (triggered) {
+        const alertKey = `${rule.metric}-${rule.condition}-${rule.threshold}`;
+        const lastTriggered = alertState.triggered.get(alertKey);
         const now = Date.now();
-        const uptimeMs = now - this.startTime;
 
-        return {
-            summary: {
-                uptime: `${(uptimeMs / 1000).toFixed(2)}s`,
-                totalRenders: this.metrics.renderTimes.length,
-                averageRenderTime: this.calculateAverageRenderTime(),
-                errorRate: this.calculateErrorRate(),
-                memoryEfficiency: this.calculateMemoryEfficiency()
-            },
+        // Debounce alerts (don't trigger same alert within 5 seconds)
+        if (!lastTriggered || now - lastTriggered > 5000) {
+          alertState.triggered.set(alertKey, now);
+          alertState.history.push({
+            rule,
+            value,
+            timestamp: now
+          });
+          stats.alertsTriggered++;
 
-            performance: {
-                renderTimes: this.getRenderTimeStats(),
-                topComponents: this.getTopComponentsByUsage(),
-                slowestComponents: this.getSlowestComponents(),
-                memoryTrends: this.getMemoryTrends()
-            },
+          if (rule.action) {
+            rule.action(value, rule);
+          }
+        }
+      }
+    });
+  }
 
-            caching: globalCache.getStats(),
+  /**
+   * Flush batch of metrics
+   */
+  function flushBatch() {
+    if (reportingState.batch.length === 0) return;
 
-            recommendations: this.generatePerformanceRecommendations(),
+    const batch = [...reportingState.batch];
+    reportingState.batch = [];
 
-            rawMetrics: {
-                recentRenders: this.metrics.renderTimes.slice(-50),
-                recentErrors: this.metrics.errors.slice(-10),
-                memorySnapshots: this.metrics.memoryUsage.slice(-20)
-            }
+    if (opts.reporting.onReport) {
+      opts.reporting.onReport({ type: 'batch', data: batch });
+    }
+  }
+
+  /**
+   * Generate a performance report
+   */
+  function generateReport() {
+    const report = {
+      timestamp: Date.now(),
+      statistics: { ...stats },
+      metrics: {}
+    };
+
+    // Built-in metrics
+    Object.entries(metrics.builtin).forEach(([name, metric]) => {
+      if (metric.type === 'histogram') {
+        report.metrics[name] = {
+          type: 'histogram',
+          unit: metric.unit,
+          count: metric.values.length,
+          min: metric.values.length > 0 ? Math.min(...metric.values) : 0,
+          max: metric.values.length > 0 ? Math.max(...metric.values) : 0,
+          avg: metric.values.length > 0
+            ? metric.values.reduce((a, b) => a + b, 0) / metric.values.length
+            : 0,
+          p50: percentile(metric.values, 0.5),
+          p95: percentile(metric.values, 0.95),
+          p99: percentile(metric.values, 0.99)
         };
-    }
-
-    calculateAverageRenderTime() {
-        if (this.metrics.renderTimes.length === 0) return 0;
-
-        const total = this.metrics.renderTimes.reduce((sum, metric) => sum + metric.renderTime, 0);
-        return (total / this.metrics.renderTimes.length).toFixed(2);
-    }
-
-    calculateErrorRate() {
-        const totalOperations = this.metrics.renderTimes.length + this.metrics.errors.length;
-        if (totalOperations === 0) return 0;
-
-        return ((this.metrics.errors.length / totalOperations) * 100).toFixed(2);
-    }
-
-    calculateMemoryEfficiency() {
-        if (this.metrics.memoryUsage.length < 2) return 'N/A';
-
-        const recent = this.metrics.memoryUsage.slice(-10);
-        const first = recent[0];
-        const last = recent[recent.length - 1];
-        
-        // Calculate growth over the recent time period
-        const totalGrowth = last.heapUsed - first.heapUsed;
-        const timeSpanMs = last.timestamp - first.timestamp;
-        const recentRenderCount = this.metrics.renderTimes.filter(
-            r => r.timestamp >= first.timestamp && r.timestamp <= last.timestamp
-        ).length;
-        
-        if (recentRenderCount === 0) return 'N/A';
-        const growthPerRender = totalGrowth / recentRenderCount;
-        
-        // Convert to KB for readability
-        const growthKB = (growthPerRender / 1024).toFixed(2);
-        
-        if (Math.abs(growthPerRender) < 1024) {
-            return 'Excellent (< 1KB/render in 10s)';
-        } else if (Math.abs(growthPerRender) < 10240) {
-            return `Good (${growthKB}KB/render in ${timeSpanMs}ms)`;
-        } else if (Math.abs(growthPerRender) < 102400) {
-            return `Fair (${growthKB}KB/render in ${timeSpanMs}ms)`;
-        } else {
-            return `Poor (${growthKB}KB/render in ${timeSpanMs}ms)`;
-        }
-    }
-
-    getRenderTimeStats() {
-        if (this.metrics.renderTimes.length === 0) return {};
-
-        const times = this.metrics.renderTimes.map(m => m.renderTime).sort((a, b) => a - b);
-
-        return {
-            min: times[0].toFixed(2),
-            max: times[times.length - 1].toFixed(2),
-            median: times[Math.floor(times.length / 2)].toFixed(2),
-            p95: times[Math.floor(times.length * 0.95)].toFixed(2),
-            p99: times[Math.floor(times.length * 0.99)].toFixed(2)
+      } else if (metric.type === 'counter') {
+        report.metrics[name] = {
+          type: 'counter',
+          unit: metric.unit,
+          value: metric.value
         };
-    }
-
-    getTopComponentsByUsage(limit = 10) {
-        return Array.from(this.metrics.componentCounts.entries())
-            .sort(([, a], [, b]) => b - a)
-            .slice(0, limit)
-            .map(([component, count]) => ({ component, count }));
-    }
-
-    getSlowestComponents(limit = 10) {
-        const componentTimes = new Map();
-
-        for (const metric of this.metrics.renderTimes) {
-            const existing = componentTimes.get(metric.component) || [];
-            existing.push(metric.renderTime);
-            componentTimes.set(metric.component, existing);
-        }
-
-        return Array.from(componentTimes.entries())
-            .map(([component, times]) => ({
-                component,
-                avgTime: (times.reduce((a, b) => a + b, 0) / times.length).toFixed(2),
-                maxTime: Math.max(...times).toFixed(2),
-                count: times.length
-            }))
-            .sort((a, b) => parseFloat(b.avgTime) - parseFloat(a.avgTime))
-            .slice(0, limit);
-    }
-
-    getMemoryTrends() {
-        if (this.metrics.memoryUsage.length < 2) return {};
-
-        const recent = this.metrics.memoryUsage.slice(-20);
-        const trend = this.calculateTrend(recent.map(m => m.heapUsed));
-
-        return {
-            direction: trend > 0 ? 'increasing' : trend < 0 ? 'decreasing' : 'stable',
-            rate: `${Math.abs(trend).toFixed(2)  } bytes/second`,
-            currentHeap: `${(recent[recent.length - 1].heapUsed / 1024 / 1024).toFixed(2)  }MB`,
-            trend: trend
+      } else if (metric.type === 'gauge') {
+        report.metrics[name] = {
+          type: 'gauge',
+          unit: metric.unit,
+          current: metric.values.length > 0 ? metric.values[metric.values.length - 1] : 0,
+          avg: metric.values.length > 0
+            ? metric.values.reduce((a, b) => a + b, 0) / metric.values.length
+            : 0
         };
-    }
+      }
+    });
 
-    generatePerformanceRecommendations() {
-        const recommendations = [];
-        const avgRenderTime = parseFloat(this.calculateAverageRenderTime());
-
-        if (avgRenderTime > 10) {
-            recommendations.push({
-                priority: 'high',
-                issue: 'High average render time',
-                suggestion: 'Enable caching for frequently rendered components',
-                impact: 'Could reduce render time by 70-90%'
-            });
-        }
-
-        const errorRate = parseFloat(this.calculateErrorRate());
-        if (errorRate > 5) {
-            recommendations.push({
-                priority: 'high',
-                issue: 'High _error rate',
-                suggestion: 'Review component validation and _error handling',
-                impact: 'Improve stability and user experience'
-            });
-        }
-
-        const memTrends = this.getMemoryTrends();
-        if (memTrends.direction === 'increasing' && memTrends.trend > 1000000) {
-            recommendations.push({
-                priority: 'medium',
-                issue: 'Memory usage increasing',
-                suggestion: 'Check for memory leaks, implement cleanup for cached objects',
-                impact: 'Prevent out-of-memory errors in production'
-            });
-        }
-
-        const topComponents = this.getTopComponentsByUsage(5);
-        const hotComponents = topComponents.filter(c => c.count > this.metrics.renderTimes.length * 0.1);
-
-        // Filter out components that are already static cached
-        const uncachedHotComponents = hotComponents.filter(c => {
-            return !this.staticCachedComponents || !this.staticCachedComponents.has(c.component);
-        });
-
-        if (uncachedHotComponents.length > 0) {
-            recommendations.push({
-                priority: 'medium',
-                issue: 'High frequency components detected',
-                suggestion: `Consider static caching for: ${uncachedHotComponents.map(c => c.component).join(', ')}`,
-                impact: 'Significant performance improvement for hot paths'
-            });
-        } else if (hotComponents.length > 0) {
-            // All hot components are already static cached - provide positive feedback
-            recommendations.push({
-                priority: 'low',
-                issue: 'Hot components optimized',
-                suggestion: `Static caching active for: ${hotComponents.map(c => c.component).join(', ')}`,
-                impact: 'Excellent performance optimization already implemented'
-            });
-        }
-
-        return recommendations;
-    }
-
-    calculateTrend(values) {
-        if (values.length < 2) return 0;
-
-        const n = values.length;
-        const sumX = (n * (n - 1)) / 2;
-        const sumY = values.reduce((a, b) => a + b, 0);
-        const sumXY = values.reduce((sum, y, x) => sum + x * y, 0);
-        const sumXX = (n * (n - 1) * (2 * n - 1)) / 6;
-
-        return (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-    }
-
-    // Real-time monitoring interface
-    getRealtimeStats() {
-        const recent = this.metrics.renderTimes.slice(-10);
-        const recentMemory = this.metrics.memoryUsage.slice(-3);
-
-        return {
-            currentRenderRate: recent.length > 0 ? `${(recent.length / 10).toFixed(1)  }/s` : '0/s',
-            avgRecentRenderTime: recent.length > 0
-                ? `${(recent.reduce((sum, m) => sum + m.renderTime, 0) / recent.length).toFixed(2)  }ms`
-                : '0ms',
-            memoryUsage: recentMemory.length > 0
-                ? `${(recentMemory[recentMemory.length - 1].heapUsed / 1024 / 1024).toFixed(2)  }MB`
-                : '0MB',
-            cacheHitRate: globalCache.getStats().hitRate,
-            activeComponents: this.metrics.componentCounts.size
+    // Custom metrics
+    Object.entries(metrics.custom).forEach(([name, metric]) => {
+      if (metric.type === 'histogram') {
+        report.metrics[name] = {
+          type: 'histogram',
+          unit: metric.unit,
+          count: metric.values?.length || 0,
+          min: metric.values?.length > 0 ? Math.min(...metric.values) : 0,
+          max: metric.values?.length > 0 ? Math.max(...metric.values) : 0,
+          avg: metric.values?.length > 0
+            ? metric.values.reduce((a, b) => a + b, 0) / metric.values.length
+            : 0,
+          p95: percentile(metric.values || [], 0.95),
+          p99: percentile(metric.values || [], 0.99)
         };
-    }
-
-    /**
-     * Record component render performance
-     */
-    recordRender(componentName, startTime, endTime, metadata = {}) {
-        if (!this.enabled) return;
-
-        const renderTime = endTime - startTime;
-        const renderData = {
-            component: componentName,
-            duration: renderTime,
-            timestamp: Date.now(),
-            ...metadata
+      } else if (metric.type === 'counter') {
+        report.metrics[name] = {
+          type: 'counter',
+          unit: metric.unit,
+          value: metric.value || 0
         };
+      } else if (metric.type === 'gauge') {
+        report.metrics[name] = {
+          type: 'gauge',
+          unit: metric.unit,
+          current: metric.values?.length > 0 ? metric.values[metric.values.length - 1] : 0,
+          avg: metric.values?.length > 0
+            ? metric.values.reduce((a, b) => a + b, 0) / metric.values.length
+            : 0
+        };
+      }
+    });
 
-        // Store render time
-        this.renderTimes.push(renderData);
+    // Alerts
+    report.alerts = {
+      total: alertState.history.length,
+      recent: alertState.history.slice(-10)
+    };
 
-        // Update component stats
-        if (!this.componentStats.has(componentName)) {
-            this.componentStats.set(componentName, {
-                renders: 0,
-                totalTime: 0,
-                avgTime: 0,
-                minTime: Infinity,
-                maxTime: 0
-            });
-        }
-
-        const stats = this.componentStats.get(componentName);
-        stats.renders++;
-        stats.totalTime += renderTime;
-        stats.avgTime = stats.totalTime / stats.renders;
-        stats.minTime = Math.min(stats.minTime, renderTime);
-        stats.maxTime = Math.max(stats.maxTime, renderTime);
-
-        // Cleanup old data (keep last 1000 renders)
-        if (this.renderTimes.length > 1000) {
-            this.renderTimes = this.renderTimes.slice(-1000);
-        }
-
-        // Warning for slow renders
-        if (renderTime > this.thresholds.renderTime) {
-            console.warn(`Slow render detected: ${componentName} took ${renderTime.toFixed(2)}ms`);
-        }
+    // Resources
+    if (opts.resources.enabled) {
+      report.resources = {
+        samples: resourceState.samples.slice(-20)
+      };
     }
+
+    stats.reportsGenerated++;
+
+    if (opts.reporting.onReport) {
+      opts.reporting.onReport({ type: 'report', data: report });
+    }
+
+    return report;
+  }
+
+  /**
+   * Calculate percentile
+   */
+  function percentile(values, p) {
+    if (values.length === 0) return 0;
+    const sorted = [...values].sort((a, b) => a - b);
+    const index = Math.ceil(sorted.length * p) - 1;
+    return sorted[Math.max(0, index)];
+  }
+
+  /**
+   * Start resource monitoring
+   */
+  function startResourceMonitoring() {
+    if (!opts.resources.enabled) return;
+
+    const collectResources = () => {
+      const sample = {
+        timestamp: Date.now()
+      };
+
+      if (opts.resources.track.includes('memory')) {
+        if (typeof process !== 'undefined' && process.memoryUsage) {
+          const mem = process.memoryUsage();
+          sample.memory = {
+            heapUsed: mem.heapUsed / 1024 / 1024,
+            heapTotal: mem.heapTotal / 1024 / 1024,
+            external: mem.external / 1024 / 1024,
+            rss: mem.rss / 1024 / 1024
+          };
+        } else if (typeof performance !== 'undefined' && performance.memory) {
+          sample.memory = {
+            heapUsed: performance.memory.usedJSHeapSize / 1024 / 1024,
+            heapTotal: performance.memory.totalJSHeapSize / 1024 / 1024
+          };
+        }
+      }
+
+      resourceState.samples.push(sample);
+      if (resourceState.samples.length > 100) {
+        resourceState.samples = resourceState.samples.slice(-100);
+      }
+
+      resourceState.timer = setTimeout(collectResources, opts.resources.interval);
+    };
+
+    collectResources();
+  }
+
+  /**
+   * Stop resource monitoring
+   */
+  function stopResourceMonitoring() {
+    if (resourceState.timer) {
+      clearTimeout(resourceState.timer);
+      resourceState.timer = null;
+    }
+  }
+
+  /**
+   * Start automated reporting
+   */
+  function startReporting() {
+    if (!opts.reporting.enabled) return;
+
+    reportingState.reportTimer = setInterval(() => {
+      generateReport();
+    }, opts.reporting.interval);
+
+    if (opts.reporting.batch.enabled) {
+      reportingState.flushTimer = setInterval(() => {
+        flushBatch();
+      }, opts.reporting.batch.flushInterval);
+    }
+  }
+
+  /**
+   * Stop automated reporting
+   */
+  function stopReporting() {
+    if (reportingState.reportTimer) {
+      clearInterval(reportingState.reportTimer);
+      reportingState.reportTimer = null;
+    }
+    if (reportingState.flushTimer) {
+      clearInterval(reportingState.flushTimer);
+      reportingState.flushTimer = null;
+    }
+    flushBatch(); // Flush remaining batch
+  }
+
+  /**
+   * Start profiling
+   */
+  function startProfiling() {
+    if (!opts.profiling.enabled) return;
+    // Profiling implementation would hook into render pipeline
+  }
+
+  /**
+   * Record a trace
+   */
+  function recordTrace(name, duration, metadata = {}) {
+    if (!opts.profiling.enabled || !opts.profiling.tracing.enabled) return;
+
+    if (Math.random() < opts.profiling.tracing.sampleRate) {
+      profilingState.traces.push({
+        name,
+        duration,
+        metadata,
+        timestamp: Date.now()
+      });
+
+      if (profilingState.traces.length > 1000) {
+        profilingState.traces = profilingState.traces.slice(-1000);
+      }
+    }
+  }
+
+  /**
+   * Measure execution time
+   */
+  function measure(name, fn, metadata = {}) {
+    if (!opts.enabled) return fn();
+
+    const start = performance.now();
+    try {
+      const result = fn();
+      const duration = performance.now() - start;
+
+      recordMetric('renderTime', duration, { name, ...metadata });
+      recordTrace(name, duration, metadata);
+
+      return result;
+    } catch (error) {
+      recordMetric('errorCount', 1, { name, error: error.message });
+      throw error;
+    }
+  }
+
+  /**
+   * Measure async execution time
+   */
+  async function measureAsync(name, fn, metadata = {}) {
+    if (!opts.enabled) return fn();
+
+    const start = performance.now();
+    try {
+      const result = await fn();
+      const duration = performance.now() - start;
+
+      recordMetric('renderTime', duration, { name, ...metadata });
+      recordTrace(name, duration, metadata);
+
+      return result;
+    } catch (error) {
+      recordMetric('errorCount', 1, { name, error: error.message });
+      throw error;
+    }
+  }
+
+  /**
+   * Add a custom metric
+   */
+  function addMetric(name, config) {
+    metrics.custom[name] = {
+      type: config.type || 'counter',
+      unit: config.unit || '',
+      threshold: config.threshold,
+      values: config.type === 'histogram' ? [] : undefined,
+      value: config.type === 'counter' || config.type === 'gauge' ? 0 : undefined
+    };
+  }
+
+  /**
+   * Add an alert rule
+   */
+  function addAlertRule(rule) {
+    opts.alerts.rules.push(rule);
+  }
+
+  /**
+   * Get current statistics
+   */
+  function getStats() {
+    return {
+      ...stats,
+      sampleRate: samplingState.adaptiveRate,
+      batchSize: reportingState.batch.length,
+      resourceSamples: resourceState.samples.length,
+      traces: profilingState.traces.length,
+      alerts: {
+        total: alertState.history.length,
+        unique: alertState.triggered.size
+      }
+    };
+  }
+
+  /**
+   * Reset all metrics
+   */
+  function reset() {
+    // Reset built-in metrics
+    Object.values(metrics.builtin).forEach(metric => {
+      if (metric.type === 'histogram' || metric.type === 'gauge') {
+        metric.values = [];
+      } else if (metric.type === 'counter') {
+        metric.value = 0;
+      }
+    });
+
+    // Reset custom metrics
+    Object.values(metrics.custom).forEach(metric => {
+      if (metric.type === 'histogram' || metric.type === 'gauge') {
+        metric.values = [];
+      } else if (metric.type === 'counter') {
+        metric.value = 0;
+      }
+    });
+
+    // Reset state
+    samplingState.count = 0;
+    samplingState.sampled = 0;
+    reportingState.batch = [];
+    alertState.history = [];
+    alertState.triggered.clear();
+    resourceState.samples = [];
+    profilingState.traces = [];
+
+    // Reset stats
+    stats.metricsRecorded = 0;
+    stats.reportsGenerated = 0;
+    stats.alertsTriggered = 0;
+  }
+
+  // Start monitoring
+  if (opts.enabled) {
+    startResourceMonitoring();
+    startReporting();
+    startProfiling();
+  }
+
+  return {
+    recordMetric,
+    // Backward compatibility aliases
+    recordRender(type, duration, metadata = {}) {
+      recordMetric('renderTime', duration, { type, ...metadata });
+    },
+    recordError(type, error, metadata = {}) {
+      recordMetric('errorCount', 1, { type, error: error?.message || error, ...metadata });
+    },
+    measure,
+    measureAsync,
+    addMetric,
+    addAlertRule,
+    generateReport,
+    getStats,
+    reset,
+    start() {
+      opts.enabled = true;
+      startResourceMonitoring();
+      startReporting();
+      startProfiling();
+    },
+    stop() {
+      opts.enabled = false;
+      stopResourceMonitoring();
+      stopReporting();
+      return generateReport();
+    }
+  };
 }
 
-// Global monitor instance
-export const performanceMonitor = new PerformanceMonitor();
+// Export default instance
+export const performanceMonitor = createPerformanceMonitor();
 
+// Backward compatibility: Export as class
+export class PerformanceMonitor {
+  constructor(options = {}) {
+    const monitor = createPerformanceMonitor(options);
+    // Copy all methods to this instance
+    Object.assign(this, monitor);
+  }
+}

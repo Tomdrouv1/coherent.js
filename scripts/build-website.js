@@ -66,7 +66,23 @@ function enhanceHeadings(html){
   const headings = [];
   const newHtml = html.replace(/<(h[23])(\s+[^>]*)?>(.*?)<\/h[23]>/gi, (m, tag, attrs = '', inner) => {
     const text = inner.replace(/<[^>]+>/g,'').trim();
-    const id = (attrs && attrs.match(/id="([^"]+)"/i)) ? RegExp.$1 : slugifySegment(text);
+    
+    // Generate simple IDs for function names
+    let id;
+    if (attrs && attrs.match(/id="([^"]+)"/i)) {
+      id = RegExp.$1; // Use existing ID if present
+    } else {
+      // For function signatures like "renderToString(component, context?)", extract just the function name
+      const functionMatch = text.match(/^(\w+)\(/);
+      if (functionMatch) {
+        // It's a function - use just the function name in lowercase
+        id = functionMatch[1].toLowerCase();
+      } else {
+        // Regular heading - use full slugified text
+        id = slugifySegment(text);
+      }
+    }
+    
     if(!/id=/i.test(attrs)) attrs = `${attrs || ''  } id="${id}"`;
     headings.push({ level: tag.toLowerCase(), id, text });
     return `<${tag}${attrs}>${inner}</${tag}>`;
@@ -74,7 +90,7 @@ function enhanceHeadings(html){
   return { html: newHtml, headings };
 }
 
-function buildToc(headings){
+function buildToc(headings, currentPath = ''){
   if(!headings || !headings.length) return '<div class="toc-empty">No sections</div>';
   const items = headings.map(h => {
     // Clean up method names - remove object prefixes and parameters for all methods
@@ -86,8 +102,9 @@ function buildToc(headings){
     // Remove parameters and everything after them (e.g., "(param)" or "(param1, param2)")
     displayText = displayText.replace(/\([^)]*\).*$/, '');
     
-    // Use onclick to prevent navigation and scroll to anchor instead
-    return `<li class="${h.level}"><a href="#${h.id}" onclick="event.preventDefault(); document.getElementById('${h.id}')?.scrollIntoView({behavior: 'smooth'}); window.history.replaceState(null, null, '#${h.id}');">${escapeHtml(displayText)}</a></li>`;
+    // Use proper anchor links with JavaScript smooth scrolling to prevent page jump
+    const href = currentPath ? `${currentPath}#${h.id}` : `#${h.id}`;
+    return `<li class="${h.level}"><a href="${href}" data-toc-target="${h.id}" onclick="event.preventDefault(); document.getElementById('${h.id}')?.scrollIntoView({behavior: 'smooth', block: 'start'}); history.replaceState(null, null, '#${h.id}'); updateTocActive('${h.id}', true);">${escapeHtml(displayText)}</a></li>`;
   }).join('');
   return `<div class="toc-box"><div class="toc-title">On this page</div><ul class="toc-list">${items}</ul></div>`;
 }
@@ -1243,6 +1260,49 @@ async function copyCoverageBadge() {
   }
 }
 
+async function copyCodeMirrorModules() {
+  try {
+    const codeMirrorDir = path.join(DIST_DIR, 'codemirror');
+    await ensureDir(codeMirrorDir);
+    
+    // List of CodeMirror modules we need
+    const modules = [
+      '@codemirror/view',
+      '@codemirror/state', 
+      '@codemirror/autocomplete',
+      '@codemirror/lang-javascript',
+      '@codemirror/theme-one-dark'
+    ];
+    
+    for (const module of modules) {
+      const modulePath = path.join(repoRoot, 'website', 'node_modules', module);
+      const destPath = path.join(codeMirrorDir, module.replace('@', ''));
+      
+      try {
+        await ensureDir(destPath);
+        // Copy the dist folder content 
+        const distPath = path.join(modulePath, 'dist');
+        const distFiles = await fs.readdir(distPath);
+        
+        for (const file of distFiles) {
+          if (file.endsWith('.js')) {
+            await fs.copyFile(
+              path.join(distPath, file), 
+              path.join(destPath, file)
+            );
+          }
+        }
+      } catch (e) {
+        console.warn(`Failed to copy ${module}:`, e.message);
+      }
+    }
+    
+    console.log('CodeMirror modules copied to dist');
+  } catch (e) {
+    console.warn('Failed to copy CodeMirror modules:', e.message);
+  }
+}
+
 async function buildHome(sidebar) {
   const content = renderToString(Home());
   const page = Layout({ title: 'Coherent.js', sidebar, currentPath: '', baseHref });
@@ -1633,21 +1693,21 @@ async function buildDocs(docs) {
     // Ensure headings have ids and build ToC
     const enhanced = enhanceHeadings(htmlBody);
     htmlBody = `<div class="markdown-body">${enhanced.html}</div>`;
-    const tocHtml = buildToc(enhanced.headings);
+    // Calculate route first so we can use it in TOC
+    const route = slugifySegment(d.rel.replace(/\\/g, '/')).split('/').map(slugifySegment).join('/');
+    const tocHtml = buildToc(enhanced.headings, `docs/${route}`);
     // Title, breadcrumbs, prev/next
     const title = (md.match(/^#\s+(.+)$/m) || [null, 'Documentation'])[1];
     const breadcrumbs = buildBreadcrumbs(d.rel);
     const prev = ordered[i-1] ? linkForDoc(ordered[i-1]) : null;
     const next = ordered[i+1] ? linkForDoc(ordered[i+1]) : null;
     const navFooter = buildPrevNext(prev, next);
-
-    const page = Layout({ title: `${title} | Coherent.js Docs`, sidebar, currentPath: 'docs', baseHref });
+    const page = Layout({ title: `${title} | Coherent.js Docs`, sidebar, currentPath: `docs/${route}`, baseHref });
     const finalHtml = renderToString(page)
       .replace('[[[COHERENT_BREADCRUMBS_PLACEHOLDER]]]', breadcrumbs)
       .replace('[[[COHERENT_TOC_PLACEHOLDER]]]', tocHtml)
       .replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', htmlBody + navFooter);
 
-    const route = slugifySegment(d.rel.replace(/\\/g, '/')).split('/').map(slugifySegment).join('/');
     await writePage(path.join('docs', route), finalHtml);
   }
 }

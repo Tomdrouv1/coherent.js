@@ -228,8 +228,8 @@ app.use((err, req, res) => {
   });
 });
 
-// Start server only if not imported as module
-if (process.env.NODE_ENV !== 'test') {
+// Start server only if run directly (not imported as module)
+if (import.meta.url === `file://${process.argv[1]}`) {
   app.listen(PORT, () => {
     if (process.env.NODE_ENV !== 'production') {
       console.log(`Express + Coherent.js server: http://localhost:${PORT}`);

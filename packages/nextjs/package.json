@@ -1,6 +1,6 @@
 {
   "name": "@coherentjs/nextjs",
-  "version": "1.2.1",
+  "version": "1.0.0",
   "description": "Next.js integration for Coherent.js",
   "type": "module",
   "main": "dist/index.cjs",

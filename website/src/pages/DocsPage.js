@@ -1,39 +1,15 @@
 // DocsPage.js - Enhanced documentation page with search and navigation
-export function DocsPage({ title, html, searchData = [] }) {
+export function DocsPage({ title, html }) {
   return {
     section: {
       className: 'docs-page',
       children: [
-        // Header with search
+        // Header
         { 
           div: { 
             className: 'docs-header', 
             children: [
-              { h1: { className: 'docs-title', text: title || 'Documentation' } },
-              { 
-                div: { 
-                  className: 'docs-search-container',
-                  children: [
-                    {
-                      input: {
-                        type: 'search',
-                        id: 'docs-search',
-                        className: 'docs-search',
-                        placeholder: 'Search documentation...',
-                        'data-search': JSON.stringify(searchData),
-                        oninput: 'searchDocs(this.value)'
-                      }
-                    },
-                    {
-                      div: {
-                        id: 'search-results',
-                        className: 'search-results',
-                        style: 'display: none;'
-                      }
-                    }
-                  ]
-                }
-              }
+              { h1: { className: 'docs-title', text: title || 'Documentation' } }
             ]
           }
         },
@@ -54,7 +30,7 @@ export function DocsPage({ title, html, searchData = [] }) {
 }
 
 // Enhanced DocsIndexPage for the main documentation landing page
-export function DocsIndexPage({ searchData = [] }) {
+export function DocsIndexPage() {
   return {
     section: {
       className: 'docs-index-page',
@@ -64,36 +40,23 @@ export function DocsIndexPage({ searchData = [] }) {
           div: {
             className: 'docs-hero',
             children: [
-              { h1: { className: 'docs-hero-title', text: '📚 Coherent.js Documentation' } },
+              { h1: { className: 'docs-hero-title', text: 'Documentation' } },
               { 
-                p: { 
+                div: { 
                   className: 'docs-hero-description', 
-                  text: 'Everything you need to build fast, maintainable applications with pure JavaScript objects.' 
-                } 
-              },
-              {
-                div: {
-                  className: 'docs-search-hero',
                   children: [
                     {
-                      input: {
-                        type: 'search',
-                        id: 'hero-docs-search',
-                        className: 'docs-search-large',
-                        placeholder: 'Search all documentation...',
-                        'data-search': JSON.stringify(searchData),
-                        oninput: 'searchDocs(this.value, "hero-search-results")'
+                      p: {
+                        text: 'Coherent.js is a high-performance server-side rendering framework that lets you build components using pure JavaScript objects. No JSX, no complex build steps—just clean, readable code that renders blazingly fast.'
                       }
                     },
                     {
-                      div: {
-                        id: 'hero-search-results',
-                        className: 'search-results search-results-hero',
-                        style: 'display: none;'
+                      p: {
+                        text: 'This documentation will guide you through everything from basic concepts to advanced patterns. Use the search above to quickly find what you need, or explore the sections below to learn systematically.'
                       }
                     }
                   ]
-                }
+                } 
               }
             ]
           }

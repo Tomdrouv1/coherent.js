@@ -1,6 +1,6 @@
 {
   "name": "@coherentjs/cli",
-  "version": "1.2.1",
+  "version": "1.0.0",
   "description": "Command-line interface for Coherent.js projects",
   "type": "module",
   "main": "dist/index.cjs",

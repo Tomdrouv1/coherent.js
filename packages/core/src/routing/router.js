@@ -1,726 +1,568 @@
 /**
- * Advanced Routing System for Coherent.js
- * Supports nested routes, route guards, lazy loading, and transitions
+ * Enhanced Routing System
+ *
+ * Provides advanced routing features:
+ * - Route prefetching strategies
+ * - Page transitions
+ * - Code splitting per route
+ * - Advanced scroll behavior
  */
-
-import { ReactiveState } from '../state/reactive-state.js';
-import { eventSystem } from '../components/lifecycle.js';
-import { globalErrorHandler } from '../utils/_error-handler.js';
 
 /**
- * Route configuration structure
+ * Create an enhanced router with advanced features
+ *
+ * @param {Object} options - Configuration options
+ * @param {Object} [options.prefetch] - Prefetching configuration
+ * @param {Object} [options.transitions] - Page transition configuration
+ * @param {Object} [options.codeSplitting] - Code splitting configuration
+ * @param {Object} [options.scrollBehavior] - Scroll behavior configuration
+ * @returns {Object} Enhanced router instance
  */
-export class Route {
-    constructor(config) {
-        this.path = config.path;
-        this.name = config.name;
-        this.component = config.component;
-        this.children = config.children || [];
-        this.meta = config.meta || {};
-        this.beforeEnter = config.beforeEnter;
-        this.beforeLeave = config.beforeLeave;
-        this.redirect = config.redirect;
-        this.alias = config.alias;
-        this.params = {};
-        this.query = {};
-        this.hash = '';
+export function createRouter(options = {}) {
+  const opts = {
+    mode: options.mode || 'history',
+    base: options.base || '/',
+    ...options
+  };
 
-        // Convert children to Route instances
-        this.children = this.children.map(child => new Route(child));
+  // Ensure nested defaults are preserved
+  opts.prefetch = {
+    enabled: false,
+    strategy: 'hover',
+    delay: 100,
+    maxConcurrent: 3,
+    priority: {
+      critical: 100,
+      high: 50,
+      normal: 0,
+      low: -50
+    },
+    ...(options.prefetch || {})
+  };
+
+  opts.transitions = {
+    enabled: false,
+    default: {
+      enter: 'fade-in',
+      leave: 'fade-out',
+      duration: 300
+    },
+    routes: {},
+    onStart: null,
+    onComplete: null,
+    ...(options.transitions || {})
+  };
+
+  opts.codeSplitting = {
+    enabled: false,
+    strategy: 'route',
+    chunkNaming: '[name]-[hash]',
+    preload: [],
+    onLoad: null,
+    ...(options.codeSplitting || {})
+  };
+
+  opts.scrollBehavior = {
+    enabled: true,
+    behavior: 'smooth',
+    position: 'top',
+    delay: 0,
+    savePosition: true,
+    custom: null,
+    ...(options.scrollBehavior || {})
+  };
+
+  // Router state
+  const state = {
+    routes: new Map(),
+    currentRoute: null,
+    history: [],
+    prefetchQueue: [],
+    prefetching: new Set(),
+    loadedChunks: new Map(),
+    savedPositions: new Map(),
+    transitionState: null
+  };
+
+  // Statistics
+  const stats = {
+    navigations: 0,
+    prefetches: 0,
+    transitionsCompleted: 0,
+    chunksLoaded: 0,
+    scrollRestores: 0
+  };
+
+  /**
+   * Register a route
+   */
+  function addRoute(path, config) {
+    state.routes.set(path, {
+      path,
+      component: config.component,
+      meta: config.meta || {},
+      beforeEnter: config.beforeEnter,
+      beforeLeave: config.beforeLeave,
+      priority: config.priority || opts.prefetch.priority.normal,
+      transition: config.transition || opts.transitions.default,
+      lazy: typeof config.component === 'function',
+      loaded: !config.component || typeof config.component !== 'function',
+      chunk: null
+    });
+
+    // Preload if configured
+    if (opts.codeSplitting.enabled &&
+        Array.isArray(opts.codeSplitting.preload) &&
+        opts.codeSplitting.preload.includes(path)) {
+      loadRoute(path);
+    }
+  }
+
+  /**
+   * Load a route component
+   */
+  async function loadRoute(path) {
+    const route = state.routes.get(path);
+    if (!route) {
+      throw new Error(`Route not found: ${path}`);
     }
 
-    /**
-     * Check if this route matches a path
-     */
-    matches(path) {
-        return this.matchPath(path, this.path);
+    if (route.loaded) {
+      return route.component;
     }
 
-    /**
-     * Match path against route pattern with parameters
-     */
-    matchPath(path, pattern) {
-        // Convert pattern to regex
-        const paramNames = [];
-        const regexPattern = pattern
-            .replace(/\//g, '\\/')
-            .replace(/:\w+/g, (match) => {
-                paramNames.push(match.slice(1));
-                return '([^/]+)';
-            })
-            .replace(/\*/g, '(.*)');
+    try {
+      const startTime = performance.now();
 
-        const regex = new RegExp(`^${regexPattern}$`);
-        const match = path.match(regex);
+      // Load the component
+      const component = await route.component();
+      route.component = component;
+      route.loaded = true;
+      route.chunk = opts.codeSplitting.chunkNaming
+        .replace('[name]', path.replace(/\//g, '-'))
+        .replace('[hash]', generateHash(path));
 
-        if (match) {
-            // Extract parameters
-            const params = {};
-            paramNames.forEach((name, index) => {
-                params[name] = match[index + 1];
-            });
+      const loadTime = performance.now() - startTime;
 
-            return { params, match };
-        }
+      state.loadedChunks.set(path, {
+        path,
+        loadTime,
+        timestamp: Date.now()
+      });
 
-        return null;
+      stats.chunksLoaded++;
+
+      if (opts.codeSplitting.onLoad) {
+        opts.codeSplitting.onLoad(path, component, loadTime);
+      }
+
+      return component;
+    } catch (error) {
+      route.loaded = false;
+      throw new Error(`Failed to load route ${path}: ${error.message}`);
     }
+  }
+
+  /**
+   * Prefetch a route
+   */
+  async function prefetchRoute(path, priority = opts.prefetch.priority.normal) {
+    if (!opts.prefetch.enabled) return;
+
+    const route = state.routes.get(path);
+    if (!route || route.loaded || state.prefetching.has(path)) {
+      return;
+    }
+
+    // Add to queue with priority
+    state.prefetchQueue.push({ path, priority });
+    state.prefetchQueue.sort((a, b) => b.priority - a.priority);
+
+    // Process queue
+    processPrefetchQueue();
+  }
+
+  /**
+   * Process prefetch queue
+   */
+  async function processPrefetchQueue() {
+    // Limit concurrent prefetches
+    if (state.prefetching.size >= opts.prefetch.maxConcurrent) {
+      return;
+    }
+
+    const item = state.prefetchQueue.shift();
+    if (!item) return;
+
+    const { path } = item;
+    state.prefetching.add(path);
+
+    try {
+      await loadRoute(path);
+      stats.prefetches++;
+    } catch (error) {
+      console.warn(`Prefetch failed for ${path}:`, error);
+    } finally {
+      state.prefetching.delete(path);
+      // Process next item in queue
+      if (state.prefetchQueue.length > 0) {
+        processPrefetchQueue();
+      }
+    }
+  }
+
+  /**
+   * Setup prefetch strategy
+   */
+  function setupPrefetchStrategy(element, path) {
+    if (!opts.prefetch.enabled || !element) return;
+
+    if (opts.prefetch.strategy === 'hover') {
+      let timeoutId;
+      element.addEventListener('mouseenter', () => {
+        timeoutId = setTimeout(() => {
+          prefetchRoute(path);
+        }, opts.prefetch.delay);
+      });
+      element.addEventListener('mouseleave', () => {
+        clearTimeout(timeoutId);
+      });
+    } else if (opts.prefetch.strategy === 'visible') {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            prefetchRoute(path);
+            observer.unobserve(element);
+          }
+        });
+      });
+      observer.observe(element);
+    } else if (opts.prefetch.strategy === 'idle') {
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => prefetchRoute(path));
+      } else {
+        setTimeout(() => prefetchRoute(path), 1);
+      }
+    }
+  }
+
+  /**
+   * Execute page transition
+   */
+  async function executeTransition(from, to) {
+    if (!opts.transitions.enabled) return;
+
+    const transition = state.routes.get(to)?.transition || opts.transitions.default;
+
+    state.transitionState = {
+      from,
+      to,
+      phase: 'start'
+    };
+
+    if (opts.transitions.onStart) {
+      opts.transitions.onStart(from, to);
+    }
+
+    // Leave transition
+    state.transitionState.phase = 'leave';
+    await applyTransition(transition.leave, transition.duration / 2);
+
+    // Enter transition
+    state.transitionState.phase = 'enter';
+    await applyTransition(transition.enter, transition.duration / 2);
+
+    state.transitionState.phase = 'complete';
+    stats.transitionsCompleted++;
+
+    if (opts.transitions.onComplete) {
+      opts.transitions.onComplete(from, to);
+    }
+
+    state.transitionState = null;
+  }
+
+  /**
+   * Apply transition animation
+   */
+  function applyTransition(animationName, duration) {
+    return new Promise(resolve => {
+      const element = document.querySelector('[data-router-view]');
+      if (!element) {
+        resolve();
+        return;
+      }
+
+      element.style.animation = `${animationName} ${duration}ms`;
+
+      setTimeout(() => {
+        element.style.animation = '';
+        resolve();
+      }, duration);
+    });
+  }
+
+  /**
+   * Handle scroll behavior
+   */
+  function handleScroll(to, from, savedPosition) {
+    if (!opts.scrollBehavior.enabled) return;
+
+    // Custom scroll behavior
+    if (opts.scrollBehavior.custom) {
+      const position = opts.scrollBehavior.custom(to, from, savedPosition);
+      scrollToPosition(position);
+      return;
+    }
+
+    // Default scroll behavior
+    let position;
+
+    if (savedPosition && opts.scrollBehavior.savePosition) {
+      // Restore saved position
+      position = savedPosition;
+      stats.scrollRestores++;
+    } else if (to.hash) {
+      // Scroll to hash
+      const element = document.querySelector(to.hash);
+      if (element) {
+        position = {
+          el: element,
+          behavior: opts.scrollBehavior.behavior
+        };
+      }
+    } else if (opts.scrollBehavior.position === 'top') {
+      // Scroll to top
+      position = { x: 0, y: 0 };
+    } else if (opts.scrollBehavior.position === 'saved' && savedPosition) {
+      position = savedPosition;
+    }
+
+    if (position) {
+      setTimeout(() => {
+        scrollToPosition(position);
+      }, opts.scrollBehavior.delay);
+    }
+  }
+
+  /**
+   * Scroll to position
+   */
+  function scrollToPosition(position) {
+    if (typeof window === 'undefined') return;
+
+    if (position.el) {
+      position.el.scrollIntoView({
+        behavior: position.behavior || opts.scrollBehavior.behavior
+      });
+    } else {
+      window.scrollTo({
+        left: position.x || 0,
+        top: position.y || 0,
+        behavior: position.behavior || opts.scrollBehavior.behavior
+      });
+    }
+  }
+
+  /**
+   * Save current scroll position
+   */
+  function saveScrollPosition(path) {
+    if (!opts.scrollBehavior.savePosition || typeof window === 'undefined') return;
+
+    state.savedPositions.set(path, {
+      x: window.scrollX,
+      y: window.scrollY
+    });
+  }
+
+  /**
+   * Navigate to a route
+   */
+  async function push(path, options = {}) {
+    stats.navigations++;
+
+    const from = state.currentRoute;
+    const to = { path, ...options };
+
+    // Save scroll position
+    if (from) {
+      saveScrollPosition(from.path);
+    }
+
+    try {
+      // Execute transition (leave phase)
+      if (opts.transitions.enabled) {
+        await executeTransition(from?.path, path);
+      }
+
+      // Load route component
+      const component = await loadRoute(path);
+
+      // Update current route
+      state.currentRoute = {
+        path,
+        component,
+        meta: state.routes.get(path)?.meta || {},
+        ...options
+      };
+
+      // Add to history
+      state.history.push({
+        path,
+        timestamp: Date.now()
+      });
+
+      // Handle scroll
+      const savedPosition = state.savedPositions.get(path);
+      handleScroll(to, from, savedPosition);
+
+      return true;
+    } catch (error) {
+      console.error('Navigation failed:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Replace current route
+   */
+  async function replace(path, options = {}) {
+    const result = await push(path, options);
+
+    if (result && state.history.length > 1) {
+      // Remove the previous history entry
+      state.history.splice(state.history.length - 2, 1);
+    }
+
+    return result;
+  }
+
+  /**
+   * Go back in history
+   */
+  function back() {
+    if (state.history.length > 1) {
+      const previous = state.history[state.history.length - 2];
+      push(previous.path);
+    }
+  }
+
+  /**
+   * Go forward (if supported by browser)
+   */
+  function forward() {
+    if (typeof window !== 'undefined') {
+      window.history.forward();
+    }
+  }
+
+  /**
+   * Prefetch multiple routes
+   */
+  function prefetchRoutes(paths, priority) {
+    paths.forEach(path => prefetchRoute(path, priority));
+  }
+
+  /**
+   * Get route by path
+   */
+  function getRoute(path) {
+    return state.routes.get(path);
+  }
+
+  /**
+   * Get all routes
+   */
+  function getRoutes() {
+    return Array.from(state.routes.values());
+  }
+
+  /**
+   * Get current route
+   */
+  function getCurrentRoute() {
+    return state.currentRoute;
+  }
+
+  /**
+   * Get router statistics
+   */
+  function getStats() {
+    return {
+      ...stats,
+      routesRegistered: state.routes.size,
+      prefetchQueueSize: state.prefetchQueue.length,
+      activePrefetches: state.prefetching.size,
+      loadedChunks: state.loadedChunks.size,
+      savedPositions: state.savedPositions.size,
+      historyLength: state.history.length
+    };
+  }
+
+  /**
+   * Clear all caches
+   */
+  function clearCaches() {
+    state.prefetchQueue = [];
+    state.prefetching.clear();
+    state.savedPositions.clear();
+
+    // Unload lazy-loaded chunks
+    state.routes.forEach(route => {
+      if (route.lazy && route.loaded) {
+        route.loaded = false;
+      }
+    });
+
+    state.loadedChunks.clear();
+  }
+
+  /**
+   * Generate hash for chunk naming
+   */
+  function generateHash(input) {
+    let hash = 0;
+    for (let i = 0; i < input.length; i++) {
+      const char = input.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    return Math.abs(hash).toString(36).substring(0, 8);
+  }
+
+  // Initialize
+  if (opts.prefetch.enabled && opts.prefetch.strategy === 'idle') {
+    // Prefetch all routes on idle
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      requestIdleCallback(() => {
+        state.routes.forEach((route, path) => {
+          if (!route.loaded) {
+            prefetchRoute(path, opts.prefetch.priority.low);
+          }
+        });
+      });
+    }
+  }
+
+  return {
+    addRoute,
+    push,
+    replace,
+    back,
+    forward,
+    prefetchRoute,
+    prefetchRoutes,
+    setupPrefetchStrategy,
+    getRoute,
+    getRoutes,
+    getCurrentRoute,
+    getStats,
+    clearCaches,
+    // Expose state for testing
+    _state: state
+  };
 }
 
-/**
- * Navigation context for route resolution
- */
-class NavigationContext {
-    constructor(from, to, router) {
-        this.from = from;
-        this.to = to;
-        this.router = router;
-        this.cancelled = false;
-        this.redirected = false;
-        this._error = null;
-    }
-
-    cancel() {
-        this.cancelled = true;
-    }
-
-    redirect(location) {
-        this.redirected = true;
-        this.redirectLocation = location;
-    }
-
-    setError(_error) {
-        this._error = _error;
-    }
-}
-
-/**
- * Advanced router with nested routing support
- */
-export class Router {
-    constructor(options = {}) {
-        this.options = {
-            mode: options.mode || 'history', // 'history' | 'hash'
-            base: options.base || '/',
-            fallback: options.fallback !== false,
-            scrollBehavior: options.scrollBehavior,
-            ...options
-        };
-
-        this.routes = [];
-        this.currentRoute = null;
-        this.history = [];
-        this.guards = {
-            beforeEach: [],
-            beforeResolve: [],
-            afterEach: []
-        };
-
-        // Reactive state for route data
-        this.state = new ReactiveState({
-            path: '',
-            params: {},
-            query: {},
-            hash: '',
-            meta: {},
-            matched: [],
-            loading: false
-        });
-
-        // Initialize based on mode
-        this.init();
-    }
-
-    /**
-     * Initialize router
-     */
-    init() {
-        if (typeof window !== 'undefined') {
-            this.setupBrowser();
-        } else {
-            this.setupServer();
-        }
-
-        // Listen to initial route
-        this.resolveInitialRoute();
-    }
-
-    /**
-     * Setup browser environment
-     */
-    setupBrowser() {
-        // Handle back/forward navigation
-        window.addEventListener('popstate', (event) => {
-            this.handlePopState(event);
-        });
-
-        // Handle hash changes in hash mode
-        if (this.options.mode === 'hash') {
-            window.addEventListener('hashchange', () => {
-                this.syncFromLocation();
-            });
-        }
-    }
-
-    /**
-     * Setup server environment
-     */
-    setupServer() {
-        // Server-side routing setup
-        this.isServer = true;
-    }
-
-    /**
-     * Add routes to router
-     */
-    addRoutes(routes) {
-        routes.forEach(route => {
-            this.routes.push(new Route(route));
-        });
-    }
-
-    /**
-     * Navigate to a route
-     */
-    async push(location) {
-        return this.navigate(location, 'push');
-    }
-
-    /**
-     * Replace current route
-     */
-    async replace(location) {
-        return this.navigate(location, 'replace');
-    }
-
-    /**
-     * Go back in history
-     */
-    back() {
-        if (typeof window !== 'undefined' && window.history.length > 1) {
-            window.history.back();
-        }
-    }
-
-    /**
-     * Go forward in history
-     */
-    forward() {
-        if (typeof window !== 'undefined') {
-            window.history.forward();
-        }
-    }
-
-    /**
-     * Navigate to specific history index
-     */
-    go(delta) {
-        if (typeof window !== 'undefined') {
-            window.history.go(delta);
-        }
-    }
-
-    /**
-     * Main navigation method
-     */
-    async navigate(location, method = 'push') {
-        // Normalize location
-        const route = this.normalizeLocation(location);
-        
-        // Create navigation context
-        const context = new NavigationContext(this.currentRoute, route, this);
-
-        try {
-            // Set loading state
-            this.state.set('loading', true);
-
-            // Run navigation guards
-            await this.runGuards(context);
-
-            if (context.cancelled) {
-                return false;
-            }
-
-            if (context.redirected) {
-                return this.navigate(context.redirectLocation, method);
-            }
-
-            if (context._error) {
-                throw context._error;
-            }
-
-            // Resolve route
-            const resolved = await this.resolveRoute(route.path);
-
-            if (!resolved) {
-                throw new Error(`Route not found: ${route.path}`);
-            }
-
-            // Update browser URL
-            if (!this.isServer) {
-                this.updateURL(resolved, method);
-            }
-
-            // Update current route and state
-            this.currentRoute = resolved;
-            this.updateState(resolved);
-
-            // Add to history
-            this.history.push({
-                ...resolved,
-                timestamp: Date.now(),
-                method
-            });
-
-            // Emit navigation events
-            eventSystem.emit('route:changed', {
-                from: context.from,
-                to: resolved,
-                method
-            });
-
-            return true;
-
-        } catch (_error) {
-            globalErrorHandler.handle(_error, {
-                type: 'navigation-_error',
-                context: { location, method, currentRoute: this.currentRoute }
-            });
-
-            eventSystem.emit('route:_error', { _error, context });
-            return false;
-
-        } finally {
-            this.state.set('loading', false);
-        }
-    }
-
-    /**
-     * Normalize location input
-     */
-    normalizeLocation(location) {
-        if (typeof location === 'string') {
-            return this.parseURL(location);
-        }
-
-        return {
-            path: location.path || '/',
-            params: location.params || {},
-            query: location.query || {},
-            hash: location.hash || '',
-            name: location.name
-        };
-    }
-
-    /**
-     * Parse URL string into route object
-     */
-    parseURL(url) {
-        const urlObj = new URL(url, 'http://localhost');
-        
-        return {
-            path: urlObj.pathname,
-            params: {},
-            query: Object.fromEntries(urlObj.searchParams),
-            hash: urlObj.hash.slice(1)
-        };
-    }
-
-    /**
-     * Resolve route by path
-     */
-    async resolveRoute(path, routes = this.routes, parentRoute = null) {
-        for (const route of routes) {
-            const match = route.matchPath(path, route.path);
-            
-            if (match) {
-                const resolved = {
-                    ...route,
-                    params: { ...match.params },
-                    fullPath: path,
-                    matched: parentRoute ? [...parentRoute.matched, route] : [route]
-                };
-
-                // Handle redirects
-                if (route.redirect) {
-                    const redirectPath = typeof route.redirect === 'function' 
-                        ? route.redirect(resolved)
-                        : route.redirect;
-                    return this.resolveRoute(redirectPath);
-                }
-
-                // Check for child routes
-                if (route.children.length > 0) {
-                    const remainingPath = path.slice(route.path.length).replace(/^\//, '');
-                    if (remainingPath) {
-                        const childMatch = await this.resolveRoute(remainingPath, route.children, resolved);
-                        if (childMatch) {
-                            return {
-                                ...childMatch,
-                                parent: resolved,
-                                matched: [...resolved.matched, ...childMatch.matched]
-                            };
-                        }
-                    }
-                }
-
-                // Load component if lazy
-                if (typeof route.component === 'function' && route.component.lazy) {
-                    route.component = await route.component();
-                }
-
-                return resolved;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Run navigation guards
-     */
-    async runGuards(context) {
-        // beforeEach guards
-        for (const guard of this.guards.beforeEach) {
-            await this.runGuard(guard, context);
-            if (context.cancelled || context.redirected || context._error) return;
-        }
-
-        // Route-specific beforeEnter guards
-        if (context.to.beforeEnter) {
-            await this.runGuard(context.to.beforeEnter, context);
-            if (context.cancelled || context.redirected || context._error) return;
-        }
-
-        // beforeLeave guards on current route
-        if (context.from && context.from.beforeLeave) {
-            await this.runGuard(context.from.beforeLeave, context);
-            if (context.cancelled || context.redirected || context._error) return;
-        }
-
-        // beforeResolve guards
-        for (const guard of this.guards.beforeResolve) {
-            await this.runGuard(guard, context);
-            if (context.cancelled || context.redirected || context._error) return;
-        }
-    }
-
-    /**
-     * Run individual guard
-     */
-    async runGuard(guard, context) {
-        try {
-            const result = await guard(context.to, context.from, (location) => {
-                if (location === false) {
-                    context.cancel();
-                } else if (location && location !== true) {
-                    context.redirect(location);
-                }
-            });
-
-            // Handle guard return values
-            if (result === false) {
-                context.cancel();
-            } else if (result && typeof result === 'object') {
-                context.redirect(result);
-            }
-
-        } catch (_error) {
-            context.setError(_error);
-        }
-    }
-
-    /**
-     * Update browser URL
-     */
-    updateURL(route, method = 'push') {
-        if (!window || !window.history) return;
-
-        const url = this.buildURL(route);
-        
-        if (method === 'replace') {
-            window.history.replaceState(route, '', url);
-        } else {
-            window.history.pushState(route, '', url);
-        }
-    }
-
-    /**
-     * Build URL from route
-     */
-    buildURL(route) {
-        let url = route.fullPath || route.path;
-
-        // Add query parameters
-        const queryString = new URLSearchParams(route.query).toString();
-        if (queryString) {
-            url += `?${  queryString}`;
-        }
-
-        // Add hash
-        if (route.hash) {
-            url += `#${  route.hash}`;
-        }
-
-        return url;
-    }
-
-    /**
-     * Update reactive state
-     */
-    updateState(route) {
-        this.state.batch({
-            path: route.fullPath || route.path,
-            params: route.params || {},
-            query: route.query || {},
-            hash: route.hash || '',
-            meta: route.meta || {},
-            matched: route.matched || []
-        });
-    }
-
-    /**
-     * Handle browser popstate event
-     */
-    handlePopState() {
-        this.syncFromLocation();
-    }
-
-    /**
-     * Sync router state from browser location
-     */
-    syncFromLocation() {
-        if (!window) return;
-
-        let path = window.location.pathname;
-        
-        if (this.options.mode === 'hash') {
-            path = window.location.hash.slice(1) || '/';
-        }
-
-        this.navigate(path, 'popstate');
-    }
-
-    /**
-     * Resolve initial route
-     */
-    resolveInitialRoute() {
-        let initialPath = '/';
-
-        if (!this.isServer && window) {
-            initialPath = this.options.mode === 'hash' 
-                ? window.location.hash.slice(1) || '/'
-                : window.location.pathname;
-        }
-
-        this.navigate(initialPath, 'initial');
-    }
-
-    /**
-     * Add navigation guards
-     */
-    beforeEach(guard) {
-        this.guards.beforeEach.push(guard);
-        return () => {
-            const index = this.guards.beforeEach.indexOf(guard);
-            if (index > -1) this.guards.beforeEach.splice(index, 1);
-        };
-    }
-
-    beforeResolve(guard) {
-        this.guards.beforeResolve.push(guard);
-        return () => {
-            const index = this.guards.beforeResolve.indexOf(guard);
-            if (index > -1) this.guards.beforeResolve.splice(index, 1);
-        };
-    }
-
-    afterEach(guard) {
-        this.guards.afterEach.push(guard);
-        return () => {
-            const index = this.guards.afterEach.indexOf(guard);
-            if (index > -1) this.guards.afterEach.splice(index, 1);
-        };
-    }
-
-    /**
-     * Get current route information
-     */
-    getCurrentRoute() {
-        return this.currentRoute;
-    }
-
-    /**
-     * Check if route is current
-     */
-    isActive(route, exact = false) {
-        if (!this.currentRoute) return false;
-
-        if (exact) {
-            return this.currentRoute.path === route;
-        }
-
-        return this.currentRoute.path.startsWith(route);
-    }
-
-    /**
-     * Generate URL for route
-     */
-    resolve(location) {
-        const route = this.normalizeLocation(location);
-        return this.buildURL(route);
-    }
-
-    /**
-     * Get router statistics
-     */
-    getStats() {
-        return {
-            totalRoutes: this.routes.length,
-            currentRoute: this.currentRoute?.path,
-            historyLength: this.history.length,
-            guards: {
-                beforeEach: this.guards.beforeEach.length,
-                beforeResolve: this.guards.beforeResolve.length,
-                afterEach: this.guards.afterEach.length
-            },
-            isLoading: this.state.get('loading')
-        };
-    }
-
-    /**
-     * Cleanup router
-     */
-    destroy() {
-        // Remove event listeners
-        if (typeof window !== 'undefined') {
-            window.removeEventListener('popstate', this.handlePopState);
-            if (this.options.mode === 'hash') {
-                window.removeEventListener('hashchange', this.syncFromLocation);
-            }
-        }
-
-        // Cleanup state
-        this.state.destroy();
-
-        // Clear arrays
-        this.routes = [];
-        this.history = [];
-        Object.values(this.guards).forEach(guards => guards.length = 0);
-    }
-}
-
-/**
- * Route guard utilities
- */
-export const routeGuards = {
-    /**
-     * Authentication guard
-     */
-    requireAuth(authCheck) {
-        return (to, from, next) => {
-            if (authCheck()) {
-                next();
-            } else {
-                next('/login');
-            }
-        };
-    },
-
-    /**
-     * Role-based access guard
-     */
-    requireRole(roleCheck, roles) {
-        return (to, from, next) => {
-            const userRoles = roleCheck();
-            const hasRole = roles.some(role => userRoles.includes(role));
-            
-            if (hasRole) {
-                next();
-            } else {
-                next('/unauthorized');
-            }
-        };
-    },
-
-    /**
-     * Meta-based guard
-     */
-    requireMeta(metaKey, expectedValue) {
-        return (to, from, next) => {
-            if (to.meta[metaKey] === expectedValue) {
-                next();
-            } else {
-                next(false);
-            }
-        };
-    },
-
-    /**
-     * Confirmation guard
-     */
-    requireConfirmation(message, confirmCallback) {
-        return (to, from, next) => {
-            if (confirmCallback) {
-                confirmCallback(message, (confirmed) => {
-                    if (confirmed) {
-                        next();
-                    } else {
-                        next(false);
-                    }
-                });
-            } else {
-                // Default to allowing navigation if no callback provided
-                next();
-            }
-        };
-    }
-};
-
-/**
- * Create router instance
- */
-export function createRouter(options) {
-    return new Router(options);
-}
-
-/**
- * Route component helpers
- */
-export const routeComponents = {
-    /**
-     * Router link component
-     */
-    RouterLink(props = {}) {
-        const { to, exact = false, children, ...otherProps } = props;
-        
-        return {
-            a: {
-                ...otherProps,
-                href: to,
-                className: `router-link ${exact ? 'router-link-exact' : ''}`,
-                onclick: (event) => {
-                    event.preventDefault();
-                    // This would need access to router instance
-                    // router.push(to);
-                },
-                children
-            }
-        };
-    },
-
-    /**
-     * Router view component
-     */
-    RouterView(props = {}) {
-        // This would render the current route's component
-        return {
-            div: {
-                className: 'router-view',
-                children: props.children || []
-            }
-        };
-    }
-};
-
-export default Router;
+// Export default instance
+export const router = createRouter();

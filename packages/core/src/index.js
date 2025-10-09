@@ -393,8 +393,60 @@ export { performanceMonitor };
 // Shadow DOM exports
 export { shadowDOM };
 
-// Import Shadow DOM functionality  
+// Import Shadow DOM functionality
 import * as shadowDOM from './shadow-dom.js';
+
+// Event system imports and exports
+import eventSystemDefault, {
+    EventBus,
+    createEventBus,
+    globalEventBus,
+    emit,
+    emitSync,
+    on,
+    once,
+    off,
+    registerAction,
+    handleAction,
+    DOMEventIntegration,
+    globalDOMIntegration,
+    initializeDOMIntegration,
+    withEventBus,
+    withEventState,
+    createActionHandlers,
+    createEventHandlers,
+    createEventComponent
+} from './events/index.js';
+
+export {
+    eventSystemDefault as eventSystem,
+    EventBus,
+    createEventBus,
+    globalEventBus,
+    emit,
+    emitSync,
+    on,
+    once,
+    off,
+    registerAction,
+    handleAction,
+    DOMEventIntegration,
+    globalDOMIntegration,
+    initializeDOMIntegration,
+    withEventBus,
+    withEventState,
+    createActionHandlers,
+    createEventHandlers,
+    createEventComponent
+};
+
+// Form system imports and exports
+import { createForm, formValidators } from './forms/forms.js';
+
+export {
+    createForm,
+    formValidators
+};
 
 // Default export
 const coherent = {
@@ -402,19 +454,35 @@ const coherent = {
   renderToString,
   renderHTML,
   renderHTMLSync,
-  
+
   // Explicit encapsulation control
   renderScopedComponent,
   renderScopedHTML,
   renderUnsafe,
-  
+
   // Shadow DOM (client-side only)
   shadowDOM,
-  
+
   // State management
   withState,
   memo,
-  
+
+  // Event system
+  eventSystem: eventSystemDefault,
+  emit,
+  emitSync,
+  on,
+  once,
+  off,
+  registerAction,
+  handleAction,
+  withEventBus,
+  withEventState,
+
+  // Form system
+  createForm,
+  formValidators,
+
   // Utilities
   validateComponent,
   isCoherentObject,

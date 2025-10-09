@@ -22,12 +22,21 @@ app.use('/examples', express.static(join(__dirname, '../examples')));
 app.use(express.static(join(__dirname, 'public')));
 app.use('/dist', express.static(join(__dirname, 'dist')));
 
-// Helper function to scan examples directory
+// Helper function to scan examples directory - only playground-compatible examples
 function getExamplesList() {
   const examplesDir = join(__dirname, '../examples');
+  
+  // Playground-compatible examples (no import statements - exports are okay)
+  const playgroundCompatible = [
+    // Only examples that actually work in playground (no imports)
+    'basic-usage.js'
+  ];
+  
   const files = readdirSync(examplesDir).filter(file => {
     const filePath = join(examplesDir, file);
-    return statSync(filePath).isFile() && file.endsWith('.js');
+    return statSync(filePath).isFile() && 
+           file.endsWith('.js') && 
+           playgroundCompatible.includes(file);
   });
 
   return files.map(file => {
@@ -54,9 +63,12 @@ function getExamplesList() {
       ).join(' ');
 
       // Special handling for specific examples
-      if (file === 'master-showcase.js') {
-        label = '🔥 Master Showcase - Complete Demo';
-        description = 'Comprehensive example showcasing ALL Coherent.js features with SSR, state management, forms, real-time data, performance optimization, and accessibility best practices.';
+      if (file === 'basic-usage.js') {
+        label = '🚀 Basic Usage';
+        description = 'Basic component examples showing greetings, user cards, and complete page composition patterns with styling.';
+      } else if (file === 'dev-preview.js') {
+        label = '🔧 Dev Preview';
+        description = 'Development server preview component demonstrating basic structure and styling capabilities.';
       }
 
     } catch (error) {
@@ -73,9 +85,9 @@ function getExamplesList() {
       code: code.length > 5000 ? code.substring(0, 4997) + '...' : code
     };
   }).sort((a, b) => {
-    // Master showcase first, then alphabetical
-    if (a.file === 'master-showcase.js') return -1;
-    if (b.file === 'master-showcase.js') return 1;
+    // Sort basic-usage.js first, then alphabetical
+    if (a.file === 'basic-usage.js') return -1;
+    if (b.file === 'basic-usage.js') return 1;
     return a.label.localeCompare(b.label);
   });
 }
