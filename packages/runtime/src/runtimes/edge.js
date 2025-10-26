@@ -21,6 +21,7 @@ export class EdgeRuntime {
     this.componentRegistry = new Map();
     this.routeRegistry = new Map();
     this.cache = new Map();
+    this.middleware = [];
     this.renderCount = 0;
     
     // Initialize cache cleanup if caching is enabled
@@ -171,6 +172,38 @@ export class EdgeRuntime {
       const url = new URL(request.url);
       const pathname = url.pathname;
       
+      // Create context
+      const context = {
+        request,
+        url,
+        pathname,
+        params: {},
+        searchParams: Object.fromEntries(url.searchParams),
+        method: request.method,
+        headers: Object.fromEntries(request.headers),
+        runtime: this,
+        state: {} // Shared state for middleware
+      };
+
+      // Execute middleware chain
+      let middlewareIndex = 0;
+      const next = async () => {
+        if (middlewareIndex < this.middleware.length) {
+          const middleware = this.middleware[middlewareIndex++];
+          return await middleware(context, next);
+        }
+      };
+
+      // Run middleware
+      if (this.middleware.length > 0) {
+        await next();
+      }
+
+      // Check if middleware already sent a response
+      if (context.response) {
+        return context.response;
+      }
+      
       // Find matching route
       const match = this.matchRoute(pathname);
       
@@ -178,18 +211,10 @@ export class EdgeRuntime {
         return this.createErrorResponse(404, 'Not Found');
       }
 
-      // Execute route handler
-      const context = {
-        request,
-        url,
-        pathname,
-        params: match.params,
-        searchParams: Object.fromEntries(url.searchParams),
-        method: request.method,
-        headers: Object.fromEntries(request.headers),
-        runtime: this
-      };
+      // Add route params to context
+      context.params = match.params;
 
+      // Execute route handler
       const result = await match.handler(context);
       
       // Handle different response types
@@ -321,9 +346,110 @@ export class EdgeRuntime {
       return await this.renderComponent(component, props);
     }
 
-    // TODO: Implement streaming rendering
-    // This would require chunked rendering of the component tree
-    return await this.renderComponent(component, props);
+    // Implement streaming rendering with chunked output
+    const encoder = new TextEncoder();
+    let buffer = '';
+    const chunkSize = this.options.streamChunkSize || 1024;
+
+    // Create a readable stream
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          // Helper to flush buffer
+          const flush = () => {
+            if (buffer.length > 0) {
+              controller.enqueue(encoder.encode(buffer));
+              buffer = '';
+            }
+          };
+
+          // Render component tree recursively with streaming
+          const renderNode = async (node) => {
+            if (!node || typeof node !== 'object') {
+              if (node !== null && node !== undefined) {
+                buffer += String(node);
+                if (buffer.length >= chunkSize) {
+                  flush();
+                }
+              }
+              return;
+            }
+
+            // Handle arrays
+            if (Array.isArray(node)) {
+              for (const child of node) {
+                await renderNode(child);
+              }
+              return;
+            }
+
+            // Handle component objects
+            for (const [tag, content] of Object.entries(node)) {
+              if (typeof content === 'object' && content !== null) {
+                // Opening tag
+                buffer += `<${tag}`;
+                
+                // Attributes
+                for (const [key, value] of Object.entries(content)) {
+                  if (key !== 'children' && key !== 'text' && value !== undefined) {
+                    buffer += ` ${key}="${String(value)}"`;
+                  }
+                }
+                buffer += '>';
+                
+                // Flush if buffer is large
+                if (buffer.length >= chunkSize) {
+                  flush();
+                }
+
+                // Text content
+                if (content.text) {
+                  buffer += String(content.text);
+                  if (buffer.length >= chunkSize) {
+                    flush();
+                  }
+                }
+
+                // Children
+                if (content.children) {
+                  await renderNode(content.children);
+                }
+
+                // Closing tag
+                buffer += `</${tag}>`;
+                if (buffer.length >= chunkSize) {
+                  flush();
+                }
+              } else {
+                // Simple text content
+                buffer += `<${tag}>${String(content)}</${tag}>`;
+                if (buffer.length >= chunkSize) {
+                  flush();
+                }
+              }
+            }
+          };
+
+          // Start rendering
+          await renderNode(component);
+          
+          // Flush remaining buffer
+          flush();
+          
+          // Close stream
+          controller.close();
+        } catch (error) {
+          controller.error(error);
+        }
+      }
+    });
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Transfer-Encoding': 'chunked'
+      }
+    });
   }
 
   // Create app factory
@@ -353,10 +479,13 @@ export class EdgeRuntime {
         });
       },
       
-      // Middleware (simplified)
-      use: (_middleware) => {
-        // TODO: Implement middleware support
-        console.warn('Middleware not yet implemented in EdgeRuntime');
+      // Middleware support
+      use: (middleware) => {
+        if (typeof middleware !== 'function') {
+          throw new Error('Middleware must be a function');
+        }
+        this.middleware.push(middleware);
+        return app;
       },
       
       // Request handler

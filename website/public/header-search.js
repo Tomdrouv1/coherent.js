@@ -538,7 +538,7 @@ function handleAnchorClick(event) {
   // Extract anchor from URL
   const [url, anchor] = href.split('#');
   const currentPath = window.location.pathname.replace(/\/$/, ''); // Remove trailing slash
-  const targetPath = url.startsWith('/') ? url.replace(/\/$/, '') : '/' + url.replace(/\/$/, '');
+  const targetPath = url.startsWith('/') ? url.replace(/\/$/, '') : `/${  url.replace(/\/$/, '')}`;
   
   if (currentPath === targetPath) {
     // Same page - let browser handle native anchor navigation

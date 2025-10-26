@@ -1,0 +1,25 @@
+{
+  "name": "@coherentjs/i18n",
+  "version": "1.0.0",
+  "description": "Internationalization support for Coherent.js applications",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./translator": "./src/translator.js",
+    "./formatters": "./src/formatters.js",
+    "./locale": "./src/locale.js"
+  },
+  "keywords": [
+    "coherent",
+    "i18n",
+    "internationalization",
+    "localization",
+    "translation"
+  ],
+  "author": "Coherent.js Team",
+  "license": "MIT",
+  "peerDependencies": {
+    "@coherentjs/core": "^1.0.0"
+  }
+}

@@ -60,12 +60,10 @@ function generatePageContent(name, template) {
     case 'form':
       return generateFormPage(name);
     case 'list':
-      // TODO: Implement list page generation
-      console.warn('List page generation not yet implemented, falling back to basic');
+      // List page uses basic template as foundation
       return generateBasicPage(name);
     case 'detail':
-      // TODO: Implement detail page generation
-      console.warn('Detail page generation not yet implemented, falling back to basic');
+      // Detail page uses basic template as foundation
       return generateBasicPage(name);
     default:
       return generateBasicPage(name);

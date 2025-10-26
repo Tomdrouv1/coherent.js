@@ -3,10 +3,7 @@
  * Demonstrates performance monitoring, caching, and optimization features
  */
 
-import { renderToString } from '../src/rendering/html-renderer.js';
-import { performanceMonitor } from '../src/performance/monitor.js';
-import { cacheManager as globalCache } from '../src/performance/cache-manager.js';
-import { bundleOptimizer } from '../src/performance/bundle-optimizer.js';
+import { renderToString, performanceMonitor } from '../packages/core/src/index.js';
 
 // Recursive component for performance testing
 const HeavyComponent = ({ depth = 0, maxDepth = 3, label = 'Node' }) => {

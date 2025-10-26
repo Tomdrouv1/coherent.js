@@ -25,6 +25,7 @@
     "build:types": "tsc --build",
     "dev": "pnpm run build && pnpm run website:dev",
     "clean": "pnpm -r run clean && rm -rf dist/",
+    "demo": "node examples/master-showcase.js",
     "example:basic": "node examples/basic-usage.js",
     "example:components": "node examples/components-test.js",
     "example:performance": "node examples/performance-test.js",

@@ -2,13 +2,38 @@
  * Coherent.js - Object-Based Rendering Framework
  * A pure JavaScript framework for server-side rendering using natural object syntax
  *
- * @version 1.1.1
+ * @version 2.0.0
  * @author Coherent Framework Team  
  * @license MIT
  */
 
 // Performance monitoring
 import { performanceMonitor } from './performance/monitor.js';
+
+// Component system imports
+import { 
+  withState, 
+  withStateUtils, 
+  createStateManager,
+  createComponent,
+  defineComponent,
+  registerComponent,
+  getComponent,
+  getRegisteredComponents,
+  lazy,
+  isLazy,
+  evaluateLazy
+} from './components/component-system.js';
+
+// Error boundary imports
+import {
+  createErrorBoundary,
+  createErrorFallback,
+  withErrorBoundary,
+  createAsyncErrorBoundary,
+  GlobalErrorHandler,
+  createGlobalErrorHandler
+} from './components/error-boundary.js';
 
 // CSS Scoping System (similar to Angular View Encapsulation)
 const scopeCounter = { value: 0 };
@@ -90,6 +115,28 @@ function escapeHtml(text) {
     .replace(/'/g, '&#x27;');
 }
 
+/**
+ * Mark content as safe/trusted to skip HTML escaping
+ * USE WITH EXTREME CAUTION - only for developer-controlled content
+ * NEVER use with user input!
+ * 
+ * @param {string} content - Trusted content (e.g., inline scripts/styles)
+ * @returns {Object} Marked safe content
+ */
+export function dangerouslySetInnerContent(content) {
+  return {
+    __html: content,
+    __trusted: true
+  };
+}
+
+/**
+ * Check if content is marked as safe
+ */
+function isTrustedContent(value) {
+  return value && typeof value === 'object' && value.__trusted === true && typeof value.__html === 'string';
+}
+
 function isVoidElement(tagName) {
   const voidElements = new Set([
     'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
@@ -149,15 +196,20 @@ function renderRaw(obj) {
       
       let content = '';
       if (text !== undefined) {
-        content = escapeHtml(String(text));
+        // Check if content is explicitly marked as trusted
+        if (isTrustedContent(text)) {
+          content = text.__html;
+        } else {
+          content = escapeHtml(String(text));
+        }
       } else if (children) {
         content = renderRaw(children);
       }
       
       return `${openTag}${content}</${tagName}>`;
     } else if (typeof props === 'string') {
-      // Simple text content
-      const content = escapeHtml(props);
+      // Simple text content - always escape unless explicitly marked as trusted
+      const content = isTrustedContent(props) ? props.__html : escapeHtml(props);
       return isVoidElement(tagName) ? `<${tagName} />` : `<${tagName}>${content}</${tagName}>`;
     }
   }
@@ -240,101 +292,30 @@ export function renderScopedHTML(obj) {
   return renderScopedComponent(obj);
 }
 
-// Simple state management
-const componentState = new Map();
+// Component system - Re-export from component-system for unified API
+export { 
+  withState, 
+  withStateUtils, 
+  createStateManager,
+  createComponent,
+  defineComponent,
+  registerComponent,
+  getComponent,
+  getRegisteredComponents,
+  lazy,
+  isLazy,
+  evaluateLazy
+} from './components/component-system.js';
 
-export function withState(initialStateOrComponent, maybeInitialState) {
-  // Support both API styles:
-  // 1. withState(initialState)(component) - curried
-  // 2. withState(component, initialState) - direct
-  
-  if (typeof initialStateOrComponent === 'function') {
-    // Direct style: withState(component, initialState)
-    const component = initialStateOrComponent;
-    const initialState = maybeInitialState || {};
-    
-    return function StatefulComponent(props = {}) {
-      const stateKey = component.name || 'anonymous';
-      
-      if (!componentState.has(stateKey)) {
-        componentState.set(stateKey, { ...initialState });
-      }
-      
-      const state = componentState.get(stateKey);
-      
-      const setState = (newState) => {
-        componentState.set(stateKey, { ...state, ...newState });
-      };
-      
-      const stateUtils = {
-        setState,
-        getState: () => componentState.get(stateKey),
-        resetState: () => componentState.set(stateKey, { ...initialState }),
-        updateState: (updater) => {
-          const currentState = componentState.get(stateKey);
-          const newState = typeof updater === 'function' ? updater(currentState) : updater;
-          componentState.set(stateKey, { ...currentState, ...newState });
-        },
-        batchUpdate: (updates) => {
-          const currentState = componentState.get(stateKey);
-          componentState.set(stateKey, { ...currentState, ...updates });
-        }
-      };
-
-      return component({
-        ...props,
-        state,
-        setState,
-        stateUtils
-      });
-    };
-  } else {
-    // Curried style: withState(initialState)(component)
-    const initialState = initialStateOrComponent || {};
-    
-    return function withStateHOC(component) {
-      if (typeof component !== 'function') {
-        throw new Error('withState: component must be a function');
-      }
-      
-      return function StatefulComponent(props = {}) {
-        const stateKey = component.name || 'anonymous';
-        
-        if (!componentState.has(stateKey)) {
-          componentState.set(stateKey, { ...initialState });
-        }
-        
-        const state = componentState.get(stateKey);
-        
-        const setState = (newState) => {
-          componentState.set(stateKey, { ...state, ...newState });
-        };
-        
-        const stateUtils = {
-          setState,
-          getState: () => componentState.get(stateKey),
-          resetState: () => componentState.set(stateKey, { ...initialState }),
-          updateState: (updater) => {
-            const currentState = componentState.get(stateKey);
-            const newState = typeof updater === 'function' ? updater(currentState) : updater;
-            componentState.set(stateKey, { ...currentState, ...newState });
-          },
-          batchUpdate: (updates) => {
-            const currentState = componentState.get(stateKey);
-            componentState.set(stateKey, { ...currentState, ...updates });
-          }
-        };
-
-        return component({
-          ...props,
-          state,
-          setState,
-          stateUtils
-        });
-      };
-    };
-  }
-}
+// Error boundaries
+export {
+  createErrorBoundary,
+  createErrorFallback,
+  withErrorBoundary,
+  createAsyncErrorBoundary,
+  GlobalErrorHandler,
+  createGlobalErrorHandler
+} from './components/error-boundary.js';
 
 // Simple memoization
 const memoCache = new Map();
@@ -385,7 +366,7 @@ export function deepClone(obj) {
 }
 
 // Version info
-export const VERSION = '1.1.1';
+export const VERSION = '2.0.0';
 
 // Performance monitoring export
 export { performanceMonitor };
@@ -463,9 +444,29 @@ const coherent = {
   // Shadow DOM (client-side only)
   shadowDOM,
 
+  // Component system
+  createComponent,
+  defineComponent,
+  registerComponent,
+  getComponent,
+  getRegisteredComponents,
+  lazy,
+  isLazy,
+  evaluateLazy,
+  
   // State management
   withState,
+  withStateUtils,
+  createStateManager,
   memo,
+  
+  // Error boundaries
+  createErrorBoundary,
+  createErrorFallback,
+  withErrorBoundary,
+  createAsyncErrorBoundary,
+  GlobalErrorHandler,
+  createGlobalErrorHandler,
 
   // Event system
   eventSystem: eventSystemDefault,

@@ -3,9 +3,13 @@
  * Provides middleware and utilities for using Coherent.js with Express
  */
 
-import { renderToString, renderHTML } from '../../core/src/index.js';
-import { performanceMonitor } from '../../core/src/performance/monitor.js';
+import { renderHTML } from '../../core/src/index.js';
 import { importPeerDependency } from '../../core/src/utils/dependency-utils.js';
+import { 
+  renderWithTemplate, 
+  renderComponentFactory,
+  isCoherentComponent 
+} from '../../core/src/utils/render-utils.js';
 
 /**
  * Coherent.js Express middleware
@@ -29,20 +33,10 @@ export function coherentMiddleware(options = {}) {
     // Override send method to handle Coherent.js objects
     res.send = function(data) {
       // If data is a Coherent.js object (plain object with a single key), render it
-      if (isCoherentObject(data)) {
+      if (isCoherentComponent(data)) {
         try {
-          let html;
-          
-          if (enablePerformanceMonitoring) {
-            const renderId = performanceMonitor.startRender();
-            html = renderToString(data);
-            performanceMonitor.endRender(renderId);
-          } else {
-            html = renderToString(data);
-          }
-          
-          // Apply template
-          const finalHtml = template.replace('{{content}}', html);
+          // Use shared rendering utility
+          const finalHtml = renderWithTemplate(data, { enablePerformanceMonitoring, template });
           
           // Set content type and send HTML
           res.set('Content-Type', 'text/html');
@@ -62,22 +56,6 @@ export function coherentMiddleware(options = {}) {
 }
 
 /**
- * Check if an object is a Coherent.js component object
- * A Coherent.js component is a plain object with a single key
- * 
- * @param {any} obj - Object to check
- * @returns {boolean} True if object is a Coherent.js component
- */
-function isCoherentObject(obj) {
-  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
-    return false;
-  }
-  
-  const keys = Object.keys(obj);
-  return keys.length === 1;
-}
-
-/**
  * Create an Express route handler for Coherent.js components
  * 
  * @param {Function} componentFactory - Function that returns a Coherent.js component
@@ -85,34 +63,14 @@ function isCoherentObject(obj) {
  * @returns {Function} Express route handler
  */
 export function createCoherentHandler(componentFactory, options = {}) {
-  const {
-    enablePerformanceMonitoring = false,
-    template = '<!DOCTYPE html>\n{{content}}'
-  } = options;
-  
   return async (req, res, next) => {
     try {
-      // Create component with request data
-      const component = await Promise.resolve(
-        componentFactory(req, res, next)
+      // Use shared rendering utility
+      const finalHtml = await renderComponentFactory(
+        componentFactory,
+        [req, res, next],
+        options
       );
-      
-      if (!component) {
-        return next(new Error('Component factory returned null/undefined'));
-      }
-      
-      // Render component
-      let html;
-      if (enablePerformanceMonitoring) {
-        const renderId = performanceMonitor.startRender();
-        html = renderToString(component);
-        performanceMonitor.endRender(renderId);
-      } else {
-        html = renderToString(component);
-      }
-      
-      // Apply template
-      const finalHtml = template.replace('{{content}}', html);
       
       // Send HTML response
       res.set('Content-Type', 'text/html');

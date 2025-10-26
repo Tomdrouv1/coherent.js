@@ -92,14 +92,9 @@ export async function createRuntime(options = {}) {
     }
     
     case RuntimeEnvironment.NODE: {
-      // For Node.js, use edge runtime if no server framework is specified
-      if (options.framework) {
-        // TODO: Import Node runtime when available
-        throw new Error('Node.js runtime with frameworks not implemented yet');
-      } else {
-        const { EdgeRuntime } = await import('./runtimes/edge.js');
-        return new EdgeRuntime(options);
-      }
+      // Use Node.js runtime for Node.js environments
+      const { NodeRuntime } = await import('./runtimes/node.js');
+      return new NodeRuntime(options);
     }
     
     case RuntimeEnvironment.STATIC: {

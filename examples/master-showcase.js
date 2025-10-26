@@ -20,8 +20,14 @@
  * Run this example: node examples/master-showcase.js
  */
 
-import { renderToString, withState, memo } from '../packages/core/src/index.js';
+import { renderToString, withState, memo, dangerouslySetInnerContent } from '../packages/core/src/index.js';
 import { createServer } from 'http';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // ===== UTILITY COMPONENTS =====
 
@@ -126,61 +132,13 @@ const ContactForm = withState({
     return errors;
   };
   
-  // Handle input changes
-  const handleInputChange = (field, value) => {
-    stateUtils.updateState(prevState => ({
-      formData: { ...prevState.formData, [field]: value },
-      errors: { ...prevState.errors, [field]: undefined }
-    }));
-  };
-  
-  // Handle form submission
-  const handleSubmit = async (event) => {
-    if (event) event.preventDefault();
-    
-    const errors = validateForm(state.formData);
-    
-    if (Object.keys(errors).length > 0) {
-      setState({ errors });
-      return;
-    }
-    
-    setState({ isSubmitting: true, errors: {} });
-    
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      stateUtils.batchUpdate({
-        isSubmitting: false,
-        submitCount: state.submitCount + 1,
-        lastSubmitted: new Date().toLocaleString(),
-        formData: {
-          name: '',
-          email: '',
-          phone: '',
-          message: '',
-          interests: [],
-          newsletter: false
-        }
-      });
-      
-      console.log('✅ Form submitted successfully!');
-    } catch (error) {
-      setState({ 
-        isSubmitting: false, 
-        errors: { submit: 'Failed to submit form. Please try again.' } 
-      });
-    }
-  };
-  
   return Card({
     title: '📝 Advanced Form with State Management',
     className: 'contact-form-card',
     children: [
       {
         form: {
-          onsubmit: 'event.preventDefault(); return false;', // Prevent default browser submission
+          onsubmit: 'event.preventDefault(); alert("Form submitted! (Hydration will enable full functionality)"); return false;',
           className: 'contact-form',
           children: [
             // Form success message
@@ -312,14 +270,10 @@ const ContactForm = withState({
                 className: 'form-actions',
                 children: [
                   Button({
-                    type: 'button',
+                    type: 'submit',
                     variant: 'primary',
                     size: 'lg',
-                    disabled: state.isSubmitting,
-                    onClick: handleSubmit,
-                    children: state.isSubmitting 
-                      ? [Icon({ name: 'loading' }), { span: { text: ' Submitting...' } }]
-                      : [Icon({ name: 'arrow' }), { span: { text: ' Submit Form' } }]
+                    children: [Icon({ name: 'arrow' }), { span: { text: ' Submit Form' } }]
                   })
                 ].filter(Boolean)
               }
@@ -341,33 +295,6 @@ const LiveDataDashboard = withState({
   refreshCount: 0
 })(({ state, setState, stateUtils }) => {
   
-  // Simulate fetching live data
-  const fetchData = async () => {
-    setState({ isLoading: true });
-    
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      const newData = Array.from({ length: 4 }, (_, i) => ({
-        id: i + 1,
-        name: `Metric ${i + 1}`,
-        value: Math.floor(Math.random() * 100) + 1,
-        trend: Math.random() > 0.5 ? 'up' : 'down',
-        change: (Math.random() * 10 - 5).toFixed(1)
-      }));
-      
-      stateUtils.batchUpdate({
-        data: newData,
-        isLoading: false,
-        lastUpdate: new Date().toLocaleTimeString(),
-        refreshCount: state.refreshCount + 1
-      });
-    } catch (error) {
-      setState({ isLoading: false });
-    }
-  };
-  
   return Card({
     title: '📊 Real-time Data Dashboard',
     className: 'dashboard-card',
@@ -379,11 +306,8 @@ const LiveDataDashboard = withState({
           children: [
             Button({
               variant: 'primary',
-              disabled: state.isLoading,
-              onClick: fetchData,
-              children: state.isLoading 
-                ? [Icon({ name: 'loading' }), { span: { text: ' Loading...' } }]
-                : [Icon({ name: 'refresh' }), { span: { text: ' Refresh Data' } }]
+              onclick: 'alert("Refresh clicked! (Hydration will enable full functionality)");',
+              children: [Icon({ name: 'refresh' }), { span: { text: ' Refresh Data' } }]
             }),
             
             state.lastUpdate && {
@@ -733,17 +657,48 @@ const MasterShowcase = withState({
         {
           main: {
             className: 'tab-content',
-            children: tabs.map(tab => ({
-              div: {
-                id: `${tab.id}-panel`,
-                className: `tab-panel ${state.currentTab === tab.id ? 'active' : ''}`,
-                role: 'tabpanel',
-                key: tab.id,
-                children: [
-                  tab.id === state.currentTab ? renderTabContent() : { div: { text: '' } }
-                ]
+            children: [
+              // Overview tab
+              {
+                div: {
+                  id: 'overview-panel',
+                  className: `tab-panel ${state.currentTab === 'overview' ? 'active' : ''}`,
+                  role: 'tabpanel',
+                  children: [renderTabContent()]
+                }
+              },
+              // Forms tab
+              {
+                div: {
+                  id: 'forms-panel',
+                  className: `tab-panel ${state.currentTab === 'forms' ? 'active' : ''}`,
+                  role: 'tabpanel',
+                  children: [ContactForm()]
+                }
+              },
+              // Dashboard tab
+              {
+                div: {
+                  id: 'dashboard-panel',
+                  className: `tab-panel ${state.currentTab === 'dashboard' ? 'active' : ''}`,
+                  role: 'tabpanel',
+                  children: [LiveDataDashboard()]
+                }
+              },
+              // Products tab
+              {
+                div: {
+                  id: 'products-panel',
+                  className: `tab-panel ${state.currentTab === 'products' ? 'active' : ''}`,
+                  role: 'tabpanel',
+                  children: [OptimizedProductList({
+                    products: state.sampleProducts,
+                    filters: state.productFilters,
+                    sortBy: state.productSort
+                  })]
+                }
               }
-            }))
+            ]
           }
         },
         
@@ -1346,12 +1301,29 @@ const masterShowcasePage = {
           children: [
             MasterShowcase(),
             
-            // Performance monitoring script
+            // Load hydration module
             {
               script: {
-                text: `
-                  console.log('🔥 Coherent.js Master Showcase loaded successfully!');
-                  console.log('✨ Server-side rendered with client-side interactivity');
+                type: 'module',
+                text: dangerouslySetInnerContent(`
+                  import { autoHydrate } from '/hydration.js';
+                  
+                  console.log('🔥 Coherent.js Master Showcase loaded!');
+                  console.log('✨ Initializing Coherent.js hydration...');
+                  
+                  // Component registry will be populated by inline script below
+                  window.componentRegistry = {};
+                  
+                  // Auto-hydrate when DOM is ready
+                  if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', () => {
+                      autoHydrate(window.componentRegistry);
+                      console.log('✅ Coherent.js hydration complete!');
+                    });
+                  } else {
+                    autoHydrate(window.componentRegistry);
+                    console.log('✅ Coherent.js hydration complete!');
+                  }
                   
                   // Performance monitoring
                   if (typeof performance !== 'undefined') {
@@ -1366,7 +1338,7 @@ const masterShowcasePage = {
                       }
                     });
                   }
-                `
+                `)
               }
             }
           ]
@@ -1380,6 +1352,24 @@ const masterShowcasePage = {
 
 function startServer() {
   const server = createServer((req, res) => {
+    // Serve hydration client bundle
+    if (req.url === '/hydration.js') {
+      try {
+        const hydrationPath = join(__dirname, '../packages/client/src/hydration.js');
+        const hydrationCode = readFileSync(hydrationPath, 'utf-8');
+        res.setHeader('Content-Type', 'application/javascript');
+        res.writeHead(200);
+        res.end(hydrationCode);
+        return;
+      } catch (error) {
+        console.error('Error serving hydration.js:', error);
+        res.writeHead(404);
+        res.end('Not found');
+        return;
+      }
+    }
+    
+    // Serve main page
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     

@@ -237,7 +237,7 @@ const Layout = ({ title, subtitle, navLinks, children }) => ({
 ### Server-Side Rendering
 
 ```javascript
-import { renderToString } from 'coherent-js';
+import { renderToString } from '@coherentjs/core';
 
 const component = Greeting({ name: 'Server User', mood: 'excited' });
 const html = renderToString(component);
@@ -248,7 +248,7 @@ console.log(html);
 ### Using the Factory Function
 
 ```javascript
-import { createCoherent } from 'coherent-js';
+import { createCoherent } from '@coherentjs/core';
 
 const coherent = createCoherent({
   enableCache: true,

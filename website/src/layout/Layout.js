@@ -105,6 +105,15 @@ export function Layout({
                           },
                           {
                             a: {
+                              href: 'starter-app',
+                              className: currentPath.startsWith('starter-app')
+                                ? 'active'
+                                : '',
+                              text: '🚀 Starter App',
+                            },
+                          },
+                          {
+                            a: {
                               href: 'examples',
                               className: currentPath.startsWith('examples')
                                 ? 'active'

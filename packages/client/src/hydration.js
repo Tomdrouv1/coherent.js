@@ -91,6 +91,12 @@ function hydrate(element, component, props = {}, options = {}) {
     return null;
   }
   
+  // Validate component
+  if (typeof component !== 'function') {
+    console.error('Hydrate error: component must be a function, received:', typeof component);
+    return null;
+  }
+  
   // Check if element is already hydrated
   if (componentInstances.has(element)) {
     const existingInstance = componentInstances.get(element);
@@ -133,6 +139,13 @@ function hydrate(element, component, props = {}, options = {}) {
       try {
         // Call the component function with current props and state
         const componentProps = { ...this.props, ...(this.state || {}) };
+        
+        // Check if component is a function before calling
+        if (typeof this.component !== 'function') {
+          console.error('Component is not a function:', this.component);
+          return;
+        }
+        
         const newVirtualElement = this.component(componentProps);
         
         // Store the previous virtual element for comparison
@@ -1220,7 +1233,7 @@ function attachEventListeners(element, instance) {
       }
     });
     
-    // Also look for common event attributes and convert them to event listeners
+    // Check for inline event attributes and warn users to use safer alternatives
     const eventAttributes = ['onclick', 'onchange', 'oninput', 'onfocus', 'onblur', 'onsubmit'];
     
     eventAttributes.forEach(eventName => {
@@ -1232,40 +1245,17 @@ function attachEventListeners(element, instance) {
         if (!elementWithEvent || typeof elementWithEvent.getAttribute !== 'function') return;
         
         const eventAttr = elementWithEvent.getAttribute(eventName);
-        const eventType = eventName.substring(2); // Remove 'on' prefix
         
-        // Handle regular string event handlers
-        if (eventAttr && typeof elementWithEvent.hasAttribute === 'function' && !elementWithEvent.hasAttribute(`data-hydrated-${eventType}`)) {
-          // Mark as processed to avoid duplicate handling
-          elementWithEvent.setAttribute(`data-hydrated-${eventType}`, 'true');
-          
-          const handler = (e) => {
-            try {
-              // Create a safe execution context with access to component state
-              // We'll pass the component instance's state and setState function to the handler
-              const state = instance.state || {};
-              const setState = instance.setState || (() => {});
-              
-              // Create a function with access to the event, state, and setState
-              // TODO: Replace Function constructor with safer alternative
-              // eslint-disable-next-line no-new-func
-              const func = new Function('event', 'state', 'setState', 'element', eventAttr);
-              func.call(elementWithEvent, e, state, setState, elementWithEvent);
-            } catch (_error) {
-              console.warn(`Error executing ${eventName} handler:`, _error);
-            }
-          };
-          
-          if (typeof elementWithEvent.addEventListener === 'function') {
-            elementWithEvent.addEventListener(eventType, handler);
-            if (instance.eventListeners && Array.isArray(instance.eventListeners)) {
-              instance.eventListeners.push({
-                element: elementWithEvent,
-                event: eventType,
-                handler
-              });
-            }
-          }
+        if (eventAttr) {
+          // Warn about inline event attributes - they are not supported for security reasons
+          console.warn(
+            `[Coherent.js] Inline event attribute "${eventName}="${eventAttr}" found but not supported.\n` +
+            `For security and CSP compliance, use one of these alternatives:\n` +
+            `1. Function-based handlers: Pass functions directly in virtual DOM\n` +
+            `2. Data-action registry: <button data-action="actionId" data-event="click">\n` +
+            `3. Event registry: <button data-coherent-event="handlerId" data-coherent-event-type="click">\n` +
+            `See documentation for details.`
+          );
         }
       });
     });

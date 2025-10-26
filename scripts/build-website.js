@@ -11,6 +11,7 @@ import { Playground } from '../website/src/pages/Playground.js';
 import { Coverage } from '../website/src/pages/Coverage.js';
 import { Performance } from '../website/src/pages/Performance.js';
 import { DocsIndexPage } from '../website/src/pages/DocsPage.js';
+import { StarterAppPage } from '../website/src/pages/StarterApp.js';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -1231,19 +1232,41 @@ async function copyHydrationAsset() {
 async function copyCoverageBadge() {
   try {
     const coverageDistDir = path.join(DIST_DIR, 'coverage');
+    
+    // Check if coverage directory exists
+    const coverageDir = path.join(repoRoot, 'coverage');
+    try {
+      await fs.access(coverageDir);
+    } catch (e) {
+      console.log('ℹ️  Coverage files not found - run tests to generate coverage');
+      return;
+    }
+    
     await ensureDir(coverageDistDir);
     
-    // Copy badge.json
+    // Copy badge.json if it exists
     const coverageBadgeSrc = path.join(repoRoot, 'coverage', 'badge.json');
-    await fs.copyFile(coverageBadgeSrc, path.join(coverageDistDir, 'badge.json'));
+    try {
+      await fs.copyFile(coverageBadgeSrc, path.join(coverageDistDir, 'badge.json'));
+    } catch (e) {
+      console.log('ℹ️  Coverage badge not found, skipping...');
+    }
     
     // Copy coverage-summary.json to root for JavaScript access
     const coverageSummarySrc = path.join(repoRoot, 'coverage-summary.json');
-    await fs.copyFile(coverageSummarySrc, path.join(DIST_DIR, 'coverage-summary.json'));
+    try {
+      await fs.copyFile(coverageSummarySrc, path.join(DIST_DIR, 'coverage-summary.json'));
+    } catch (e) {
+      // Silent skip
+    }
     
     // Copy coverage report markdown
     const coverageReportSrc = path.join(repoRoot, 'coverage', 'coverage-report.md');
-    await fs.copyFile(coverageReportSrc, path.join(coverageDistDir, 'coverage-report.md'));
+    try {
+      await fs.copyFile(coverageReportSrc, path.join(coverageDistDir, 'coverage-report.md'));
+    } catch (e) {
+      // Silent skip
+    }
     
     // Copy LCOV report directory if it exists
     const lcovReportSrc = path.join(repoRoot, 'coverage', 'lcov-report');
@@ -1251,12 +1274,12 @@ async function copyCoverageBadge() {
     try {
       await fs.cp(lcovReportSrc, lcovReportDst, { recursive: true });
     } catch (e) {
-      console.warn('LCOV report not found, skipping...');
+      // Silent skip
     }
     
-    console.log('Coverage files copied to dist');
+    console.log('✅ Coverage files copied to dist');
   } catch (e) {
-    console.warn('Failed to copy coverage files:', e.message);
+    // Silent skip - coverage is optional
   }
 }
 
@@ -1799,14 +1822,21 @@ async function buildCoverage(sidebar) {
 }
 
 async function buildChangelog(sidebar) {
-  const changelogPath = path.join(repoRoot, 'CHANGELOG.md');
   try {
-    const md = await fs.readFile(changelogPath, 'utf8');
+    const md = await fs.readFile(path.join(repoRoot, 'CHANGELOG.md'), 'utf8');
     const htmlBody = marked.parse(md);
     const page = Layout({ title: 'Changelog | Coherent.js', sidebar, currentPath: 'changelog', baseHref });
     const html = renderToString(page).replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', htmlBody);
     await writePage('changelog', html);
   } catch {}
+}
+
+async function buildStarterApp(sidebar) {
+  const content = renderToString(StarterAppPage());
+  const page = Layout({ title: 'Starter App | Coherent.js', sidebar, currentPath: 'starter-app', baseHref });
+  let html = renderToString(page);
+  html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', content);
+  await writePage('starter-app', html);
 }
 
 async function main() {
@@ -1825,6 +1855,7 @@ async function main() {
   await buildPlaygroundPages(playgroundItems);
   await buildPerformance(sidebar);
   await buildCoverage(sidebar);
+  await buildStarterApp(sidebar);
   await copyCoverageBadge();
   await buildDocs(docs);
   await buildChangelog(sidebar);

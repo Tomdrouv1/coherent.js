@@ -1,0 +1,25 @@
+{
+  "name": "@coherentjs/seo",
+  "version": "1.0.0",
+  "description": "SEO utilities for Coherent.js applications",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./meta": "./src/meta.js",
+    "./sitemap": "./src/sitemap.js",
+    "./structured-data": "./src/structured-data.js"
+  },
+  "keywords": [
+    "coherent",
+    "seo",
+    "meta-tags",
+    "sitemap",
+    "structured-data"
+  ],
+  "author": "Coherent.js Team",
+  "license": "MIT",
+  "peerDependencies": {
+    "@coherentjs/core": "^1.0.0"
+  }
+}

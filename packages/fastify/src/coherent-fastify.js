@@ -3,8 +3,11 @@
  * Provides plugins and utilities for using Coherent.js with Fastify
  */
 
-import { renderToString } from '../../core/src/index.js';
-import { performanceMonitor } from '../../core/src/performance/monitor.js';
+import { 
+  renderWithTemplate, 
+  renderComponentFactory,
+  isCoherentComponent 
+} from '../../core/src/utils/render-utils.js';
 
 /**
  * Fastify plugin for Coherent.js
@@ -40,18 +43,11 @@ export function coherentFastify(fastify, options, done) {
     } = renderOptions;
     
     try {
-      let html;
-      
-      if (renderPerformanceMonitoring) {
-        const renderId = performanceMonitor.startRender();
-        html = renderToString(component);
-        performanceMonitor.endRender(renderId);
-      } else {
-        html = renderToString(component);
-      }
-      
-      // Apply template
-      const finalHtml = renderTemplate.replace('{{content}}', html);
+      // Use shared rendering utility
+      const finalHtml = renderWithTemplate(component, {
+        enablePerformanceMonitoring: renderPerformanceMonitoring,
+        template: renderTemplate
+      });
       
       // Set content type and send HTML
       this.header('Content-Type', 'text/html; charset=utf-8');
@@ -70,18 +66,8 @@ export function coherentFastify(fastify, options, done) {
     // If payload is a Coherent.js object, render it
     if (reply.isCoherentObject(payload)) {
       try {
-        let html;
-        
-        if (enablePerformanceMonitoring) {
-          const renderId = performanceMonitor.startRender();
-          html = renderToString(payload);
-          performanceMonitor.endRender(renderId);
-        } else {
-          html = renderToString(payload);
-        }
-        
-        // Apply template
-        const finalHtml = template.replace('{{content}}', html);
+        // Use shared rendering utility
+        const finalHtml = renderWithTemplate(payload, { enablePerformanceMonitoring, template });
         
         // Set content type and return HTML
         reply.header('Content-Type', 'text/html; charset=utf-8');
@@ -107,34 +93,14 @@ export function coherentFastify(fastify, options, done) {
  * @returns {Function} Fastify route handler
  */
 export function createCoherentFastifyHandler(componentFactory, options = {}) {
-  const {
-    enablePerformanceMonitoring = false,
-    template = '<!DOCTYPE html>\n{{content}}'
-  } = options;
-  
   return async (request, reply) => {
     try {
-      // Create component with request data
-      const component = await Promise.resolve(
-        componentFactory(request, reply)
+      // Use shared rendering utility
+      const finalHtml = await renderComponentFactory(
+        componentFactory,
+        [request, reply],
+        options
       );
-      
-      if (!component) {
-        throw new Error('Component factory returned null/undefined');
-      }
-      
-      // Render component
-      let html;
-      if (enablePerformanceMonitoring) {
-        const renderId = performanceMonitor.startRender();
-        html = renderToString(component);
-        performanceMonitor.endRender(renderId);
-      } else {
-        html = renderToString(component);
-      }
-      
-      // Apply template
-      const finalHtml = template.replace('{{content}}', html);
       
       // Send HTML response
       reply.header('Content-Type', 'text/html; charset=utf-8');

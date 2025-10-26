@@ -14,21 +14,95 @@ A high-performance JavaScript framework for building modern web applications wit
 - **Routing**: Declarative client-side routing
 - **Build Tooling**: Works with modern build tools like Vite and Webpack
 
+### 🎯 New Features (v2.0)
+
+#### **Plugin System**
+- Extensible plugin architecture with lifecycle hooks
+- 7 built-in plugins (Performance, DevLogger, Analytics, Cache, ErrorRecovery, Validation, Hydration)
+- Dependency resolution and priority-based execution
+- 10+ lifecycle hooks for complete control
+
+#### **Testing Utilities**
+- Complete testing package with test renderer
+- 15+ custom matchers for Coherent.js
+- Event simulation and async testing utilities
+- Mock functions and spies
+- Snapshot testing support
+
+#### **Error Boundaries**
+- Production-ready error handling
+- Custom fallback components
+- Reset functionality and auto-recovery
+- Async error boundaries
+- Global error handler
+
+#### **Developer Tools**
+- Component inspector for structure analysis
+- Performance profiler with session tracking
+- Development logger with 6 log levels
+- Real-time debugging and statistics
+
+#### **Internationalization (i18n)**
+- Complete translation system with interpolation
+- Pluralization support (Intl.PluralRules)
+- Date/Number/Currency/List formatters
+- Automatic locale detection
+- RTL language support
+
+#### **Form Utilities**
+- Comprehensive validation system
+- 10+ built-in validators
+- Form builder with auto-generation
+- Field-level and form-level validation
+- Touch tracking and error management
+
+#### **SEO Optimization**
+- Meta tag builder (Open Graph, Twitter Cards)
+- XML sitemap generator
+- JSON-LD structured data
+- Automatic SEO optimization
+
+#### **Performance Optimization**
+- Code splitting with dynamic imports
+- Advanced caching (LRU, LFU, FIFO)
+- Lazy loading with Intersection Observer
+- Memoization utilities
+- Progressive image loading
+
 ### Performance Highlights
 
 - **Fast Hydration**: Efficient client-side hydration
 - **Optimized Updates**: Smart re-rendering and DOM updates
 - **Tree-shaking Support**: Only include what you use
 - **Small Bundle Size**: Minimal footprint for faster loading
+- **Smart Caching**: Multiple caching strategies built-in
+- **Code Splitting**: Automatic route-based splitting
 
 ## 📦 Packages
 
 Coherent.js is distributed as a collection of packages:
 
+### Core Packages
 - `@coherentjs/core`: Core framework with component system and state management
 - `@coherentjs/router`: Client-side routing solution
 - `@coherentjs/ssr`: Server-side rendering utilities
 - `@coherentjs/hmr`: Hot Module Replacement support
+
+### New Packages (v2.0)
+- `@coherentjs/plugins`: Plugin system with 7 built-in plugins
+- `@coherentjs/testing`: Complete testing utilities and matchers
+- `@coherentjs/devtools`: Developer tools (inspector, profiler, logger)
+- `@coherentjs/runtime`: Enhanced runtimes (Node.js, Edge)
+- `@coherentjs/i18n`: Full internationalization support
+- `@coherentjs/forms`: Form utilities and validation
+- `@coherentjs/seo`: SEO optimization tools
+- `@coherentjs/performance`: Performance optimization utilities
+
+### Integration Packages
+- `@coherentjs/api`: API framework with validation and OpenAPI
+- `@coherentjs/express`: Express.js integration
+- `@coherentjs/fastify`: Fastify integration
+- `@coherentjs/koa`: Koa.js integration
 
 ## 🚀 Getting Started
 
@@ -150,20 +224,19 @@ npm install @coherentjs/client       # Client-side hydration
 
 ### 1. Create a Simple Component
 
-```jsx
-// components/HelloWorld.jsx
+```javascript
+// components/HelloWorld.js
 import { createComponent } from '@coherentjs/core';
 
-export const HelloWorld = createComponent(() => {
-  return {
-    render: () => (
-      <div className="hello">
-        <h1>Hello, World!</h1>
-        <p>Welcome to Coherent.js</p>
-      </div>
-    )
-  };
-});
+export const HelloWorld = createComponent(() => ({
+  div: {
+    className: 'hello',
+    children: [
+      { h1: { text: 'Hello, World!' } },
+      { p: { text: 'Welcome to Coherent.js' } }
+    ]
+  }
+}));
 ```
 
 ### 2. Server-Side Rendering
@@ -488,7 +561,7 @@ app.listen(3000, () => {
 ### Built-in Monitoring
 
 ```javascript
-import { performanceMonitor } from '@coherent/core';
+import { performanceMonitor } from '@coherentjs/core';
 
 performanceMonitor.start();
 
@@ -562,7 +635,7 @@ console.log(html);
 Coherent.js includes a powerful API framework for building REST APIs:
 
 ```javascript
-import { createApiRouter, withValidation } from '@coherent/api';
+import { createApiRouter, withValidation } from '@coherentjs/api';
 
 // Create an API router
 const router = createApiRouter();
@@ -602,8 +675,8 @@ export default router;
 // server.js
 import express from 'express';
 import apiRouter from './api.js';
-import { createErrorHandler } from '@coherent/api';
-import { setupCoherentExpress, createCoherentHandler } from '@coherent/express';
+import { createErrorHandler } from '@coherentjs/api';
+import { setupCoherentExpress, createCoherentHandler } from '@coherentjs/express';
 
 const app = express();
 app.use(express.json());
@@ -628,7 +701,7 @@ app.listen(3000, () => {
 // server.js
 import fastify from 'fastify';
 import apiRouter from './api.js';
-import { setupCoherentFastify, createCoherentFastifyHandler } from '@coherent/fastify';
+import { setupCoherentFastify, createCoherentFastifyHandler } from '@coherentjs/fastify';
 
 const app = fastify();
 
@@ -654,13 +727,13 @@ To use Coherent.js in your own project:
 1. **Install the package**
 
    ```bash
-   npm install @coherent/core
+   npm install @coherentjs/core
    ```
 
 2. **Import and use components**
 
    ```javascript
-   import { createComponent, renderToString } from '@coherent/core';
+   import { createComponent, renderToString } from '@coherentjs/core';
    
    const MyComponent = createComponent(({ message }) => ({
      div: {
@@ -797,8 +870,8 @@ Coherent.js is built around pure JavaScript objects that represent HTML structur
 ```bash
 git clone https://github.com/your-username/coherent-js.git
 cd coherent-js
-npm install
-npm run demo
+pnpm install
+pnpm run demo
 ```
 
 ### Project Structure
@@ -961,7 +1034,7 @@ We welcome contributions! Here's how to get started:
 1. **Fork the repository**
 2. **Create a feature branch**: `git checkout -b feature-name`
 3. **Make your changes** and add tests
-4. **Run the demo**: `npm run demo` to ensure everything works
+4. **Run the demo**: `pnpm run demo` to ensure everything works
 5. **Submit a pull request**
 
 ### Development Guidelines

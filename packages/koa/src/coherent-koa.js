@@ -3,9 +3,12 @@
  * Provides middleware and utilities for using Coherent.js with Koa
  */
 
-import { renderToString } from '../../core/src/index.js';
-import { performanceMonitor } from '../../core/src/performance/monitor.js';
 import { importPeerDependency } from '../../core/src/utils/dependency-utils.js';
+import { 
+  renderWithTemplate, 
+  renderComponentFactory,
+  isCoherentComponent 
+} from '../../core/src/utils/render-utils.js';
 
 /**
  * Coherent.js Koa middleware
@@ -26,20 +29,10 @@ export function coherentKoaMiddleware(options = {}) {
     await next();
     
     // If response body is a Coherent.js object, render it
-    if (isCoherentObject(ctx.body)) {
+    if (isCoherentComponent(ctx.body)) {
       try {
-        let html;
-        
-        if (enablePerformanceMonitoring) {
-          const renderId = performanceMonitor.startRender();
-          html = renderToString(ctx.body);
-          performanceMonitor.endRender(renderId);
-        } else {
-          html = renderToString(ctx.body);
-        }
-        
-        // Apply template
-        const finalHtml = template.replace('{{content}}', html);
+        // Use shared rendering utility
+        const finalHtml = renderWithTemplate(ctx.body, { enablePerformanceMonitoring, template });
         
         // Set content type and body
         ctx.type = 'text/html';
@@ -53,22 +46,6 @@ export function coherentKoaMiddleware(options = {}) {
 }
 
 /**
- * Check if an object is a Coherent.js component object
- * A Coherent.js component is a plain object with a single key
- * 
- * @param {any} obj - Object to check
- * @returns {boolean} True if object is a Coherent.js component
- */
-function isCoherentObject(obj) {
-  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
-    return false;
-  }
-  
-  const keys = Object.keys(obj);
-  return keys.length === 1;
-}
-
-/**
  * Create a Koa route handler for Coherent.js components
  * 
  * @param {Function} componentFactory - Function that returns a Coherent.js component
@@ -76,34 +53,14 @@ function isCoherentObject(obj) {
  * @returns {Function} Koa route handler
  */
 export function createCoherentKoaHandler(componentFactory, options = {}) {
-  const {
-    enablePerformanceMonitoring = false,
-    template = '<!DOCTYPE html>\n{{content}}'
-  } = options;
-  
   return async (ctx, next) => {
     try {
-      // Create component with context data
-      const component = await Promise.resolve(
-        componentFactory(ctx, next)
+      // Use shared rendering utility
+      const finalHtml = await renderComponentFactory(
+        componentFactory,
+        [ctx, next],
+        options
       );
-      
-      if (!component) {
-        throw new Error('Component factory returned null/undefined');
-      }
-      
-      // Render component
-      let html;
-      if (enablePerformanceMonitoring) {
-        const renderId = performanceMonitor.startRender();
-        html = renderToString(component);
-        performanceMonitor.endRender(renderId);
-      } else {
-        html = renderToString(component);
-      }
-      
-      // Apply template
-      const finalHtml = template.replace('{{content}}', html);
       
       // Set response
       ctx.type = 'text/html';

@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Coherent.js is a high-performance server-side rendering framework built around pure JavaScript objects. The project is structured as a pnpm monorepo with multiple packages providing different framework integrations and utilities.
+Coherent.js is a high-performance server-side rendering framework built around pure JavaScript objects.
+The project is structured as a pnpm monorepo with multiple packages providing different framework
+integrations and utilities.
 
 ## Development Commands
 

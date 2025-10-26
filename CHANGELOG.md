@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🎉 Major Release - Clean Version Reset
 
-This is the official stable release of Coherent.js! We've reset the versioning to provide a clean, professional version history going forward.
+This is the official stable release of Coherent.js! We've reset the versioning to provide a clean,
+professional version history going forward.
 
 ### ✨ What's New in 1.0.0
 
@@ -58,7 +59,8 @@ Going forward, we'll follow strict semantic versioning:
 
 ## Legacy Versions (Pre-1.0.0)
 
-*The following versions represent the development history leading to the stable 1.0.0 release. These versions are deprecated and should not be used in new projects.*
+*The following versions represent the development history leading to the stable 1.0.0 release. These
+versions are deprecated and should not be used in new projects.*
 
 ## [1.2.1] - 2025-01-13 [DEPRECATED]
 

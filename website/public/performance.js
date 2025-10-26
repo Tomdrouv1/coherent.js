@@ -460,7 +460,7 @@ async function runPerformanceTests() {
         
     } catch (error) {
         console.error('Performance test error:', error);
-        updateStatus('Test failed: ' + error.message, 0);
+        updateStatus(`Test failed: ${  error.message}`, 0);
     } finally {
         perfState.isRunning = false;
         setTimeout(() => {

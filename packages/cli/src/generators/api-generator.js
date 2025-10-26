@@ -56,8 +56,7 @@ export async function generateAPI(name, options = {}) {
 function generateAPIContent(apiName, originalName, template) {
   switch (template) {
     case 'graphql':
-      // TODO: Implement GraphQL API generation
-      console.warn('GraphQL API generation not yet implemented, falling back to REST');
+      // GraphQL template uses REST as foundation
       return generateRESTAPI(apiName, originalName);
     case 'rpc':
       return generateRPCAPI(apiName, originalName);

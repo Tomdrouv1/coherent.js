@@ -1,0 +1,25 @@
+{
+  "name": "@coherentjs/performance",
+  "version": "1.0.0",
+  "description": "Performance optimization utilities for Coherent.js",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./code-splitting": "./src/code-splitting.js",
+    "./cache": "./src/cache.js",
+    "./lazy-loading": "./src/lazy-loading.js"
+  },
+  "keywords": [
+    "coherent",
+    "performance",
+    "code-splitting",
+    "caching",
+    "lazy-loading"
+  ],
+  "author": "Coherent.js Team",
+  "license": "MIT",
+  "peerDependencies": {
+    "@coherentjs/core": "^1.0.0"
+  }
+}

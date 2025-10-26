@@ -4,8 +4,11 @@
  */
 
 import { renderToString } from '../../core/src/index.js';
-import { performanceMonitor } from '../../core/src/performance/monitor.js';
 import { importPeerDependency } from '../../core/src/utils/dependency-utils.js';
+import { 
+  renderWithTemplate, 
+  renderComponentFactory
+} from '../../core/src/utils/render-utils.js';
 
 /**
  * Create a Next.js API route handler for Coherent.js components
@@ -17,35 +20,14 @@ import { importPeerDependency } from '../../core/src/utils/dependency-utils.js';
  * @returns {Function} Next.js API route handler
  */
 export function createCoherentNextHandler(componentFactory, options = {}) {
-  const {
-    enablePerformanceMonitoring = false,
-    template = '<!DOCTYPE html>\n{{content}}'
-  } = options;
-  
   return async (req, res) => {
     try {
-      // Create component with request data
-      const component = await Promise.resolve(
-        componentFactory(req, res)
+      // Use shared rendering utility
+      const finalHtml = await renderComponentFactory(
+        componentFactory,
+        [req, res],
+        options
       );
-      
-      if (!component) {
-        res.status(500).json({ _error: 'Component factory returned null/undefined' });
-        return;
-      }
-      
-      // Render component
-      let html;
-      if (enablePerformanceMonitoring) {
-        const renderId = performanceMonitor.startRender();
-        html = renderToString(component);
-        performanceMonitor.endRender(renderId);
-      } else {
-        html = renderToString(component);
-      }
-      
-      // Apply template
-      const finalHtml = template.replace('{{content}}', html);
       
       // Send HTML response
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -65,40 +47,14 @@ export function createCoherentNextHandler(componentFactory, options = {}) {
  * @returns {Function} Next.js App Router route handler
  */
 export function createCoherentAppRouterHandler(componentFactory, options = {}) {
-  const {
-    enablePerformanceMonitoring = false,
-    template = '<!DOCTYPE html>\n{{content}}'
-  } = options;
-  
   return async function handler(request) {
     try {
-      // Create component with request data
-      const component = await Promise.resolve(
-        componentFactory(request)
+      // Use shared rendering utility
+      const finalHtml = await renderComponentFactory(
+        componentFactory,
+        [request],
+        options
       );
-      
-      if (!component) {
-        return new Response(
-          JSON.stringify({ _error: 'Component factory returned null/undefined' }),
-          {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' }
-          }
-        );
-      }
-      
-      // Render component
-      let html;
-      if (enablePerformanceMonitoring) {
-        const renderId = performanceMonitor.startRender();
-        html = renderToString(component);
-        performanceMonitor.endRender(renderId);
-      } else {
-        html = renderToString(component);
-      }
-      
-      // Apply template
-      const finalHtml = template.replace('{{content}}', html);
       
       // Send HTML response
       return new Response(finalHtml, {

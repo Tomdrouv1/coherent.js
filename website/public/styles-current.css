@@ -2621,7 +2621,7 @@ body:not(:focus-within) #templates-menu {
 }
 
 .badge {
-  height: 20px;
+  height: 25px;
 }
 
 /* Header Search Styles */

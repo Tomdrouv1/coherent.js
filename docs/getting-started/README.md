@@ -26,15 +26,15 @@ const component = {
 ### 1. Installation
 
 ```bash
-npm install coherent-js
+npm install @coherentjs/core
 # or
-pnpm add coherent-js
+pnpm add @coherentjs/core
 ```
 
 ### 2. Your First Component
 
 ```javascript
-import { renderToString } from 'coherent-js';
+import { renderToString } from '@coherentjs/core';
 
 // Define a component as a pure JavaScript object
 const WelcomeComponent = {
@@ -154,14 +154,14 @@ Coherent.js emphasizes factory functions for a pure object approach:
 
 ```javascript
 // ✅ Recommended: Factory functions
-import { createDatabaseManager, createQuery } from 'coherent-js';
+import { renderToString } from '@coherentjs/core';
 
-const db = createDatabaseManager({ type: 'sqlite', database: ':memory:' });
-const query = createQuery({ table: 'users', select: ['*'] });
+const db = renderToString({ type: 'sqlite', database: ':memory:' });
+const query = renderToString({ table: 'users', select: ['*'] });
 
 // ✅ Also available: Direct class access (for advanced use)
-import { DatabaseManager } from 'coherent-js';
-const db = new DatabaseManager(config);
+import { renderToString } from '@coherentjs/core';
+const db = new renderToString(config);
 ```
 
 ## Framework Features Overview

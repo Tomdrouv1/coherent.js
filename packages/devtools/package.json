@@ -1,0 +1,25 @@
+{
+  "name": "@coherentjs/devtools",
+  "version": "1.0.0",
+  "description": "Developer tools for Coherent.js applications",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./inspector": "./src/inspector.js",
+    "./profiler": "./src/profiler.js",
+    "./logger": "./src/logger.js"
+  },
+  "keywords": [
+    "coherent",
+    "devtools",
+    "debugging",
+    "profiling",
+    "inspector"
+  ],
+  "author": "Coherent.js Team",
+  "license": "MIT",
+  "peerDependencies": {
+    "@coherentjs/core": "^1.0.0"
+  }
+}

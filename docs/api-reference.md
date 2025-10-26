@@ -18,7 +18,7 @@ Renders a Coherent.js component to an HTML string.
 
 **Example:**
 ```javascript
-import { renderToString } from 'coherent-js';
+import { renderToString } from '@coherentjs/core';
 
 const component = {
   div: {
@@ -130,7 +130,7 @@ Renders a Coherent.js component to a Node.js Readable stream.
 
 **Example:**
 ```javascript
-import { renderToStream } from 'coherent-js';
+import { renderToStream } from '@coherentjs/core';
 
 const stream = renderToStream(largeComponent, context);
 
@@ -156,7 +156,7 @@ Creates a component from a render function.
 
 **Example:**
 ```javascript
-import { createComponent } from 'coherent-js';
+import { createComponent } from '@coherentjs/core';
 
 const Greeting = createComponent(({ name }) => ({
   div: {
@@ -297,7 +297,7 @@ Memoizes a component to prevent unnecessary re-renders.
 
 **Example:**
 ```javascript
-import { memo } from 'coherent-js';
+import { memo } from '@coherentjs/core';
 
 const ExpensiveComponent = memo(
   (context) => {
@@ -319,7 +319,7 @@ Composes multiple components into a single component.
 
 **Example:**
 ```javascript
-import { compose } from 'coherent-js';
+import { compose } from '@coherentjs/core';
 
 const Header = () => ({ header: { /* ... */ } });
 const Main = () => ({ main: { /* ... */ } });
@@ -343,7 +343,7 @@ Renders one of two components based on a condition.
 
 **Example:**
 ```javascript
-import { when } from 'coherent-js';
+import { when } from '@coherentjs/core';
 
 const UserProfile = (context) => ({
   div: {
@@ -369,7 +369,7 @@ Renders an array of items using a render function.
 
 **Example:**
 ```javascript
-import { forEach } from 'coherent-js';
+import { forEach } from '@coherentjs/core';
 
 const TodoList = (context) => ({
   ul: {
@@ -533,7 +533,7 @@ Gets performance optimization recommendations.
 
 **Example:**
 ```javascript
-import { createDatabaseManager } from 'coherent-js';
+import { createDatabaseManager } from '@coherentjs/core';
 
 // Recommended approach
 const db = createDatabaseManager({
@@ -553,7 +553,7 @@ const db = createDatabaseManager({
 
 **Example:**
 ```javascript
-import { createQuery } from 'coherent-js';
+import { createQuery } from '@coherentjs/core';
 
 // Pure object approach
 const query = createQuery({
@@ -575,7 +575,7 @@ const query = createQuery({
 
 **Example:**
 ```javascript
-import { createQuery, executeQuery, createDatabaseManager } from 'coherent-js';
+import { createQuery, executeQuery, createDatabaseManager } from '@coherentjs/core';
 
 const db = createDatabaseManager({ type: 'sqlite', database: ':memory:' });
 const query = createQuery({ table: 'users', select: ['*'] });

@@ -19,16 +19,16 @@ Express.js is the most popular Node.js framework, and Coherent.js integrates sea
 ### Installation
 
 ```bash
-npm install express coherent-js
+npm install express @coherentjs/core
 # or
-pnpm add express coherent-js
+pnpm add express @coherentjs/core
 ```
 
 ### Basic Setup
 
 ```javascript
 import express from 'express';
-import { renderToString } from 'coherent-js';
+import { renderToString } from '@coherentjs/core';
 
 const app = express();
 
@@ -68,7 +68,7 @@ app.listen(3000, () => {
 
 ```javascript
 import express from 'express';
-import { renderToString, createCoherent } from 'coherent-js';
+import { renderToString, createCoherent } from '@coherentjs/core';
 
 const app = express();
 const coherent = createCoherent({
@@ -207,7 +207,7 @@ app.use((error, req, res, next) => {
 ### Performance Monitoring
 
 ```javascript
-import { performanceMonitor } from 'coherent-js';
+import { performanceMonitor } from '@coherentjs/core';
 
 // Add performance monitoring middleware
 app.use((req, res, next) => {
@@ -257,16 +257,16 @@ Fastify is a high-performance alternative to Express with built-in support for J
 ### Installation
 
 ```bash
-npm install fastify coherent-js
+npm install fastify @coherentjs/core
 # or
-pnpm add fastify coherent-js
+pnpm add fastify @coherentjs/core
 ```
 
 ### Basic Setup
 
 ```javascript
 import Fastify from 'fastify';
-import { renderToString } from 'coherent-js';
+import { renderToString } from '@coherentjs/core';
 
 const fastify = Fastify({ logger: true });
 
@@ -315,7 +315,7 @@ start();
 
 ```javascript
 import Fastify from 'fastify';
-import { renderToString, createCoherent } from 'coherent-js';
+import { renderToString, createCoherent } from '@coherentjs/core';
 
 const fastify = Fastify({ logger: true });
 
@@ -620,7 +620,7 @@ For maximum performance and control, use Coherent.js directly with Node.js HTTP 
 ### Installation
 
 ```bash
-npm install coherent-js
+npm install @coherentjs/core
 # No additional dependencies needed
 ```
 
@@ -628,7 +628,7 @@ npm install coherent-js
 
 ```javascript
 import http from 'node:http';
-import { renderToString, createCoherent } from 'coherent-js';
+import { renderToString, createCoherent } from '@coherentjs/core';
 
 const coherent = createCoherent({
   enableCache: true,
@@ -697,14 +697,14 @@ Koa provides a lightweight, expressive middleware framework for Node.js.
 ### Installation
 
 ```bash
-npm install koa coherent-js
+npm install koa @coherentjs/core
 ```
 
 ### Basic Setup
 
 ```javascript
 import Koa from 'koa';
-import { renderToString, createCoherent } from 'coherent-js';
+import { renderToString, createCoherent } from '@coherentjs/core';
 
 const app = new Koa();
 const coherent = createCoherent({
@@ -792,14 +792,14 @@ Hono is an ultrafast web framework designed for edge environments.
 ### Installation
 
 ```bash
-npm install hono coherent-js
+npm install hono @coherentjs/core
 ```
 
 ### Edge-Optimized Setup
 
 ```javascript
 import { Hono } from 'hono';
-import { renderToString } from 'coherent-js';
+import { renderToString } from '@coherentjs/core';
 
 const app = new Hono();
 
@@ -940,7 +940,7 @@ const ErrorPage = ({ error, status }) => Layout({
 ### 5. Monitor Performance
 
 ```javascript
-import { performanceMonitor } from 'coherent-js';
+import { performanceMonitor } from '@coherentjs/core';
 
 // Regular monitoring
 setInterval(() => {

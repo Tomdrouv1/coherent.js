@@ -1,0 +1,23 @@
+{
+  "name": "@coherentjs/forms",
+  "version": "1.0.0",
+  "description": "Form utilities and validation for Coherent.js applications",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./validation": "./src/validation.js",
+    "./form-builder": "./src/form-builder.js"
+  },
+  "keywords": [
+    "coherent",
+    "forms",
+    "validation",
+    "form-builder"
+  ],
+  "author": "Coherent.js Team",
+  "license": "MIT",
+  "peerDependencies": {
+    "@coherentjs/core": "^1.0.0"
+  }
+}

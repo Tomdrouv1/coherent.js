@@ -6,7 +6,7 @@ function initNavAnimation() {
   if (!activeLink) return;
   
   const storedPosition = sessionStorage.getItem('nav-border-position');
-  let previousPosition = storedPosition ? JSON.parse(storedPosition) : null;
+  const previousPosition = storedPosition ? JSON.parse(storedPosition) : null;
   
   function getActivePosition() {
     const navRect = nav.getBoundingClientRect();
@@ -40,18 +40,18 @@ function initNavAnimation() {
   
   if (shouldAnimate) {
     nav.classList.remove('animate');
-    nav.style.setProperty('--border-left', previousPosition.left + 'px');
-    nav.style.setProperty('--border-width', previousPosition.width + 'px');
+    nav.style.setProperty('--border-left', `${previousPosition.left  }px`);
+    nav.style.setProperty('--border-width', `${previousPosition.width  }px`);
     nav.classList.add('has-active');
     
     nav.offsetHeight;
     
     nav.classList.add('animate');
-    nav.style.setProperty('--border-left', currentPosition.left + 'px');
-    nav.style.setProperty('--border-width', currentPosition.width + 'px');
+    nav.style.setProperty('--border-left', `${currentPosition.left  }px`);
+    nav.style.setProperty('--border-width', `${currentPosition.width  }px`);
   } else {
-    nav.style.setProperty('--border-left', currentPosition.left + 'px');
-    nav.style.setProperty('--border-width', currentPosition.width + 'px');
+    nav.style.setProperty('--border-left', `${currentPosition.left  }px`);
+    nav.style.setProperty('--border-width', `${currentPosition.width  }px`);
     nav.classList.add('has-active');
   }
   
@@ -74,8 +74,8 @@ function initNavAnimation() {
   window.addEventListener('resize', () => {
     const newPosition = getActivePosition();
     nav.classList.remove('animate');
-    nav.style.setProperty('--border-left', newPosition.left + 'px');
-    nav.style.setProperty('--border-width', newPosition.width + 'px');
+    nav.style.setProperty('--border-left', `${newPosition.left  }px`);
+    nav.style.setProperty('--border-width', `${newPosition.width  }px`);
     sessionStorage.setItem('nav-border-position', JSON.stringify(newPosition));
   });
 }

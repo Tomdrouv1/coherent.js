@@ -65,7 +65,7 @@ export const Counter = ({ initialCount = 0 }) => {
 
 ```javascript
 // server.js
-import { renderToString } from 'coherent-js';
+import { renderToString } from '@coherentjs/core';
 import { Counter } from './shared/components.js';
 
 const server = http.createServer((req, res) => {
@@ -105,7 +105,7 @@ const server = http.createServer((req, res) => {
 
 ```javascript
 // client.js
-import { hydrate, hydrateAll } from 'coherent-js';
+import { hydrate, hydrateAll } from '@coherentjs/client';
 import { Counter } from './shared/components.js';
 
 // Hydrate when DOM is ready
@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
 ### Automatic Hydration
 
 ```javascript
-import { autoHydrate, makeHydratable } from 'coherent-js';
+import { autoHydrate, makeHydratable } from '@coherentjs/client';
 
 // Mark components as hydratable
 const HydratableButton = makeHydratable(({ text, onClick }) => ({
@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
 ### Selective Hydration by Selector
 
 ```javascript
-import { hydrateBySelector } from 'coherent-js';
+import { hydrateBySelector } from '@coherentjs/client';
 
 // Hydrate all components with specific class
 document.addEventListener('DOMContentLoaded', () => {
@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
 ### Batch Hydration
 
 ```javascript
-import { hydrateAll } from 'coherent-js';
+import { hydrateAll } from '@coherentjs/client';
 
 document.addEventListener('DOMContentLoaded', () => {
   const elements = [
@@ -609,7 +609,7 @@ document.addEventListener('DOMContentLoaded', () => {
 ### Selective Event Binding
 
 ```javascript
-import { enableClientEvents } from 'coherent-js';
+import { enableClientEvents } from '@coherentjs/client';
 
 // Only enable events on specific parts of the page
 document.addEventListener('DOMContentLoaded', () => {

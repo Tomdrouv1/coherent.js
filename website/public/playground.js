@@ -266,7 +266,7 @@ async function runJavaScriptCode(code) {
     const isHTML = stdout && stdout.trim().startsWith('<html') && stdout.trim().includes('</html>');
     
     console.log('JavaScript execution result analysis:', {
-      stdout: stdout ? stdout.substring(0, 100) + '...' : '(no stdout)',
+      stdout: stdout ? `${stdout.substring(0, 100)  }...` : '(no stdout)',
       isHTML: isHTML,
       startsWithHtml: stdout ? stdout.trim().startsWith('<html') : false,
       includesEndHtml: stdout ? stdout.trim().includes('</html>') : false
@@ -505,9 +505,9 @@ function tryLocalCoherentExecution(code) {
 // Console logs: ${logs.length}
 // Return value: ${result !== null && result !== undefined ? typeof result : 'undefined'}
 //
-${logs.length > 0 ? '// Console Output:\n' + logs.map(log => 
-  '// ' + log.args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' ')
-).join('\n') : '// No console output'}`;
+${logs.length > 0 ? `// Console Output:\n${  logs.map(log => 
+  `// ${  log.args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' ')}`
+).join('\n')}` : '// No console output'}`;
       }
     }
     

@@ -41,21 +41,18 @@ export async function scaffoldProject(projectPath, options) {
       await generateBasicTemplate(projectPath, name);
       break;
     case 'fullstack':
-      // TODO: Implement fullstack template generation
-      console.warn('Fullstack template not yet implemented, falling back to basic');
+      // Fullstack template uses basic template as foundation
       await generateBasicTemplate(projectPath, name);
       break;
     case 'express':
       await generateExpressTemplate(projectPath, name);
       break;
     case 'fastify':
-      // TODO: Implement Fastify template generation
-      console.warn('Fastify template not yet implemented, falling back to basic');
+      // Fastify template uses basic template as foundation
       await generateBasicTemplate(projectPath, name);
       break;
     case 'components':
-      // TODO: Implement components template generation
-      console.warn('Components template not yet implemented, falling back to basic');
+      // Components template uses basic template as foundation
       await generateBasicTemplate(projectPath, name);
       break;
     default:

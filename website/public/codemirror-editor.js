@@ -226,7 +226,7 @@ function createAdvancedJavaScriptEditor(container, initialContent = '') {
         }
       } else {
         // Tab: indent
-        textarea.value = value.substring(0, start) + '  ' + value.substring(end);
+        textarea.value = `${value.substring(0, start)  }  ${  value.substring(end)}`;
         textarea.selectionStart = textarea.selectionEnd = start + 2;
       }
       updateLineNumbers();
@@ -243,7 +243,7 @@ function createAdvancedJavaScriptEditor(container, initialContent = '') {
           const indent = indentMatch ? indentMatch[0] : '';
           
           if (prevLine.trim().endsWith('{') || prevLine.trim().endsWith('[') || prevLine.trim().endsWith('(')) {
-            textarea.value = textarea.value.substring(0, cursorPos) + indent + '  ' + textarea.value.substring(cursorPos);
+            textarea.value = `${textarea.value.substring(0, cursorPos) + indent  }  ${  textarea.value.substring(cursorPos)}`;
             textarea.selectionStart = textarea.selectionEnd = cursorPos + indent.length + 2;
           } else if (indent.length > 0) {
             textarea.value = textarea.value.substring(0, cursorPos) + indent + textarea.value.substring(cursorPos);

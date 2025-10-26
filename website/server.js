@@ -9,6 +9,7 @@ import { DocsPage } from './src/pages/DocsPage.js';
 import { Playground } from './src/pages/Playground.js';
 import { Performance } from './src/pages/Performance.js';
 import { Coverage } from './src/pages/Coverage.js';
+import { StarterAppPage } from './src/pages/StarterApp.js';
 import { Layout } from './src/layout/Layout.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -80,9 +81,9 @@ function getExamplesList() {
     return {
       file,
       label,
-      description: description.length > 150 ? description.substring(0, 147) + '...' : description,
+      description: description.length > 150 ? `${description.substring(0, 147)  }...` : description,
       runCmd: `node examples/${file}`,
-      code: code.length > 5000 ? code.substring(0, 4997) + '...' : code
+      code: code.length > 5000 ? `${code.substring(0, 4997)  }...` : code
     };
   }).sort((a, b) => {
     // Sort basic-usage.js first, then alphabetical
@@ -185,6 +186,20 @@ app.get('/coverage', (req, res) => {
     res.send(renderPage(content, 'Coverage - Coherent.js'));
   } catch (error) {
     console.error('Error rendering coverage:', error);
+    res.status(500).send(`Error: ${error.message}`);
+  }
+});
+
+app.get('/starter-app', (req, res) => {
+  console.log('Rendering starter app...');
+  try {
+    const content = renderToString(Layout({ 
+      currentPath: '/starter-app', 
+      children: [StarterAppPage()] 
+    }));
+    res.send(renderPage(content, 'Starter App - Coherent.js'));
+  } catch (error) {
+    console.error('Error rendering starter app:', error);
     res.status(500).send(`Error: ${error.message}`);
   }
 });

@@ -285,7 +285,7 @@ Implement optimizations incrementally and measure impact at each step.
 
 ```javascript
 import http from 'node:http';
-import { createCoherent } from 'coherent-js';
+import { createCoherent } from '@coherentjs/core';
 
 const coherent = createCoherent({
   enableCache: true,
@@ -317,7 +317,7 @@ server.headersTimeout = 60000;
 ```javascript
 import express from 'express';
 import compression from 'compression';
-import { createCoherent } from 'coherent-js';
+import { createCoherent } from '@coherentjs/core';
 
 const app = express();
 const coherent = createCoherent({ enableCache: true });
@@ -631,7 +631,7 @@ invalidator.watch(/^user:\d+:/, (key) => {
 
 ```javascript
 import { Pool } from 'pg';
-import { createCoherent } from 'coherent-js';
+import { createCoherent } from '@coherentjs/core';
 
 // Database connection pool
 const pool = new Pool({

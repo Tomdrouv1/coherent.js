@@ -51,7 +51,7 @@ function Counter() {
 
 **Coherent.js with withState:**
 ```javascript
-import { withState } from 'coherent-js';
+import { withState } from '@coherentjs/core';
 
 const Counter = withState({ count: 0 })(({ state, setState }) => ({
   div: {
@@ -87,7 +87,7 @@ function UserProfile({ user }) {
 
 **Coherent.js:**
 ```javascript
-import { when } from 'coherent-js';
+import { when } from '@coherentjs/core';
 
 function UserProfile({ user }) {
   return {
@@ -122,7 +122,7 @@ function TodoList({ todos }) {
 
 **Coherent.js:**
 ```javascript
-import { forEach } from 'coherent-js';
+import { forEach } from '@coherentjs/core';
 
 function TodoList({ todos }) {
   return {
@@ -178,7 +178,7 @@ function Greeting({ name, notifications }) {
 
 **Coherent.js:**
 ```javascript
-import { when } from 'coherent-js';
+import { when } from '@coherentjs/core';
 
 function UserProfile({ user }) {
   return {
@@ -209,7 +209,7 @@ function UserProfile({ user }) {
 
 **Coherent.js:**
 ```javascript
-import { forEach } from 'coherent-js';
+import { forEach } from '@coherentjs/core';
 
 function TodoList({ todos }) {
   return {
@@ -252,7 +252,7 @@ function Greeting({ name }) {
 }
 
 // Render with:
-import { renderToString } from 'coherent-js';
+import { renderToString } from '@coherentjs/core';
 const html = renderToString(Greeting({ name: 'World' }));
 ```
 
@@ -567,6 +567,7 @@ const enhancedSubmit = async (event) => {
 ## Migration Checklist
 
 ### Server-Side Migration
+
 - [ ] Identify components that need to be converted
 - [ ] Convert JSX/components to Coherent.js object structure
 - [ ] Replace state management with `withState`
@@ -577,6 +578,7 @@ const enhancedSubmit = async (event) => {
 - [ ] Test server-side rendering output matches original
 
 ### Client-Side Hydration Setup
+
 - [ ] Install `@coherentjs/client` package (when available)
 - [ ] Create hydration entry point (`hydration.js`)
 - [ ] Set up component registry for `autoHydrate`
@@ -587,6 +589,7 @@ const enhancedSubmit = async (event) => {
 - [ ] Add error handling for hydration failures
 
 ### Testing and Optimization
+
 - [ ] Verify performance improvements
 - [ ] Test progressive enhancement (works without JS)
 - [ ] Implement selective hydration for performance
