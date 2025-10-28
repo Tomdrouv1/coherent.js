@@ -108,9 +108,8 @@ export class BasePlugin {
 
   /**
    * Register plugin hooks (override in subclass)
-   * @param {PluginManager} manager - Plugin manager instance
    */
-  registerHooks(manager) {
+  registerHooks() {
     // Override in subclass
   }
 

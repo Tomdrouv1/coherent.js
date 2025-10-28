@@ -174,7 +174,7 @@ describe('Validators', () => {
 
       try {
         await promise;
-      } catch (error) {
+      } catch {
         expect(cancelled).toBe(true);
       }
     });

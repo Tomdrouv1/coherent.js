@@ -3,10 +3,9 @@
  * Provides plugins and utilities for using Coherent.js with Fastify
  */
 
-import { 
-  renderWithTemplate, 
-  renderComponentFactory,
-  isCoherentComponent 
+import {
+  renderWithTemplate,
+  renderComponentFactory
 } from '../../core/src/utils/render-utils.js';
 
 /**

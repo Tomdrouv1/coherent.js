@@ -45,11 +45,11 @@ const formatters = {
     }
     return formatter.format(value, options);
   },
-  time: (value, locale = 'en-US', options = {}) => {
-    const formatter = new DateFormatter(locale);
+  time: (value, options = {}) => {
+    const formatter = new DateFormatter('en-US');
     return formatter.time(value, options);
   },
-  relativeTime: (value, locale = 'en-US') => {
+  relativeTime: (value) => {
     const now = new Date();
     const diff = now - value;
     const days = Math.floor(diff / (24 * 60 * 60 * 1000));
@@ -74,7 +74,7 @@ const formatters = {
     if (!formatter) return value;
     try {
       return formatter(value, options);
-    } catch (e) {
+    } catch {
       return value; // Gracefully handle errors
     }
   },

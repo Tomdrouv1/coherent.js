@@ -96,7 +96,6 @@ export class NodeRuntime {
 
   // Rendering
   async renderComponent(component, props = {}, options = {}) {
-    const startTime = Date.now();
     
     try {
       // Resolve component
@@ -344,7 +343,7 @@ export class NodeRuntime {
   }
 
   fastifyPlugin() {
-    return async (fastify, options) => {
+    return async (fastify) => {
       fastify.decorate('coherent', {
         render: async (component, props, renderOptions) => {
           return await this.renderComponent(component, props, renderOptions);

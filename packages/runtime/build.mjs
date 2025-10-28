@@ -11,6 +11,13 @@ import path from 'path';
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
+// List of Node.js built-in modules to mark as external
+const nodeBuiltins = [
+  'http', 'https', 'fs', 'path', 'url', 'crypto', 'stream',
+  'util', 'events', 'buffer', 'querystring', 'zlib', 'net',
+  'tls', 'os', 'child_process', 'fs/promises', 'node:*'
+];
+
 async function buildUniversalRuntime() {
   console.log('🌐 Building @coherentjs/runtime...');
 
@@ -24,8 +31,9 @@ async function buildUniversalRuntime() {
     target: ['es2020'],
     external: [
       '@coherentjs/core',
-      '@coherentjs/client', 
-      '@coherentjs/web-components'
+      '@coherentjs/client',
+      '@coherentjs/web-components',
+      ...nodeBuiltins
     ],
     define: {
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
@@ -34,14 +42,13 @@ async function buildUniversalRuntime() {
 
   // Main universal bundle
   const universalBuilds = [
-    // Universal runtime (browser + edge compatible)
+    // Universal runtime (works in node and can be imported by browser code)
     {
       ...commonConfig,
       entryPoints: ['src/index.js'],
       outfile: 'dist/coherent-universal.js',
       format: 'esm',
-      platform: 'browser',
-      globalName: 'Coherent'
+      platform: 'neutral' // neutral allows both browser and node imports
     },
     {
       ...commonConfig,
@@ -50,11 +57,11 @@ async function buildUniversalRuntime() {
       format: 'cjs',
       platform: 'node'
     },
-    
-    // Universal runtime minified for CDN
+
+    // Universal runtime minified for CDN (browser-only, excludes node runtime)
     {
       ...commonConfig,
-      entryPoints: ['src/index.js'],
+      entryPoints: ['src/runtimes/browser.js'], // Use browser entry instead of universal
       outfile: 'dist/coherent-universal.min.js',
       format: 'iife',
       platform: 'browser',
@@ -111,15 +118,31 @@ async function buildUniversalRuntime() {
       outfile: 'dist/coherent-static.cjs',
       format: 'cjs',
       platform: 'node'
+    },
+
+    // Node.js runtime (server-side only)
+    {
+      ...commonConfig,
+      entryPoints: ['src/runtimes/node.js'],
+      outfile: 'dist/coherent-node.js',
+      format: 'esm',
+      platform: 'node'
+    },
+    {
+      ...commonConfig,
+      entryPoints: ['src/runtimes/node.js'],
+      outfile: 'dist/coherent-node.cjs',
+      format: 'cjs',
+      platform: 'node'
     }
   ];
 
   // Standalone builds (with dependencies bundled)
   const standaloneBuilds = [
-    // Complete standalone bundle for browsers
+    // Complete standalone bundle for browsers (use browser runtime only)
     {
       ...commonConfig,
-      entryPoints: ['src/index.js'],
+      entryPoints: ['src/runtimes/browser.js'],
       outfile: 'dist/coherent-standalone.js',
       format: 'iife',
       platform: 'browser',
@@ -127,11 +150,11 @@ async function buildUniversalRuntime() {
       external: ['@coherentjs/core', '@coherentjs/client', '@coherentjs/web-components'],
       minify: true
     },
-    
-    // Standalone ESM for modern browsers
+
+    // Standalone ESM for modern browsers (use browser runtime only)
     {
       ...commonConfig,
-      entryPoints: ['src/index.js'],
+      entryPoints: ['src/runtimes/browser.js'],
       outfile: 'dist/coherent-standalone.esm.js',
       format: 'esm',
       platform: 'browser',

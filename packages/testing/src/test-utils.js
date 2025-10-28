@@ -88,7 +88,7 @@ export function waitFor(condition, options = {}) {
           resolve();
           return;
         }
-      } catch (error) {
+      } catch {
         // Condition threw an error, keep waiting
       }
       

@@ -141,7 +141,7 @@ export const customMatchers = {
    * Check if component matches snapshot
    */
   toMatchSnapshot(received) {
-    const snapshot = received?.toSnapshot ? received.toSnapshot() : received;
+    const _snapshot = received?.toSnapshot ? received.toSnapshot() : received;
     
     // This would integrate with the testing framework's snapshot system
     return {

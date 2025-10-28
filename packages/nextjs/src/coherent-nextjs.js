@@ -5,8 +5,7 @@
 
 import { renderToString } from '../../core/src/index.js';
 import { importPeerDependency } from '../../core/src/utils/dependency-utils.js';
-import { 
-  renderWithTemplate, 
+import {
   renderComponentFactory
 } from '../../core/src/utils/render-utils.js';
 

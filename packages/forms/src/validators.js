@@ -250,7 +250,7 @@ export const validators = {
   // Debounce async validator
   debounce: (validator, delay = 300) => {
     let timeoutId;
-    return (value, options, translator, allValues) => {
+    return (value) => {
       return new Promise((resolve) => {
         clearTimeout(timeoutId);
         timeoutId = setTimeout(async () => {
@@ -264,13 +264,14 @@ export const validators = {
   // Cancellable async validator
   cancellable: (validator) => {
     let abortController;
-    const wrapped = async (value, options, translator, allValues) => {
+    const wrapped = async (value) => {
       if (abortController) {
         abortController.abort();
       }
-      abortController = new AbortController();
+      // AbortController is a global browser/Node.js API
+      abortController = typeof AbortController !== 'undefined' ? new AbortController() : null;
       try {
-        return await validator(value, abortController.signal);
+        return await validator(value, abortController ? abortController.signal : null);
       } catch (error) {
         if (error.name === 'AbortError') {
           return null;

@@ -148,7 +148,7 @@ export class PerformanceProfiler {
             `coherent-render-start-${measurementId}`,
             `coherent-render-end-${measurementId}`
           );
-        } catch (e) {
+        } catch {
           // Ignore measure errors
         }
       }

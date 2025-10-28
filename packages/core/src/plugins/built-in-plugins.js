@@ -62,10 +62,10 @@ export function createPerformancePlugin(options = {}) {
       }
     },
     
-    setup(manager) {
+    setup() {
       // Add method to get metrics
       this.getMetrics = () => ({ ...metrics });
-      
+
       // Add method to reset metrics
       this.resetMetrics = () => {
         metrics.renders = 0;
@@ -101,7 +101,7 @@ export function createDevLoggerPlugin(options = {}) {
         return component;
       },
       
-      [PluginHooks.STATE_CHANGED]: (state, context) => {
+      [PluginHooks.STATE_CHANGED]: (state) => {
         if (logStateChanges) {
           console.log(`${prefix} State changed:`, state);
         }
@@ -328,12 +328,12 @@ export function createValidationPlugin(options = {}) {
     version: '1.0.0',
     
     hooks: {
-      [PluginHooks.BEFORE_RENDER]: (component, context) => {
+      [PluginHooks.BEFORE_RENDER]: (component) => {
         const validation = validateComponent(component);
-        
+
         if (!validation.valid) {
           const error = new Error(`Component validation failed: ${validation.error}`);
-          
+
           if (throwOnError) {
             throw error;
           } else {

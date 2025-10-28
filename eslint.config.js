@@ -142,6 +142,29 @@ export default [
         }
     },
     {
+        // i18n, forms, performance, runtime packages - isomorphic code
+        files: ['packages/i18n/**/*.js', 'packages/forms/**/*.js', 'packages/performance/**/*.js', 'packages/runtime/**/*.js', 'packages/nextjs/**/*.js'],
+        languageOptions: {
+            globals: {
+                // Browser APIs
+                window: 'readonly',
+                document: 'readonly',
+                navigator: 'readonly',
+                localStorage: 'readonly',
+                sessionStorage: 'readonly',
+                IntersectionObserver: 'readonly',
+                requestIdleCallback: 'readonly',
+                Image: 'readonly',
+                AbortController: 'readonly',
+                TextEncoder: 'readonly',
+                TextDecoder: 'readonly',
+                // Performance APIs
+                performance: 'readonly',
+                performanceMonitor: 'readonly'
+            }
+        }
+    },
+    {
         // Web Components - needs all browser globals
         files: ['packages/web-components/**/*.js'],
         languageOptions: {

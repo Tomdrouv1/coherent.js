@@ -108,7 +108,7 @@ export function getLocaleDisplayName(locale, displayLocale = 'en') {
     try {
       const displayNames = new Intl.DisplayNames([displayLocale], { type: 'language' });
       return displayNames.of(locale);
-    } catch (e) {
+    } catch {
       // Fallback
     }
   }
@@ -265,7 +265,7 @@ export class LocaleManager {
     if (typeof localStorage !== 'undefined') {
       try {
         localStorage.setItem(this.options.storageKey, this.currentLocale);
-      } catch (e) {
+      } catch {
         // Ignore storage errors
       }
     }
@@ -281,7 +281,7 @@ export class LocaleManager {
         if (stored) {
           this.setLocale(stored);
         }
-      } catch (e) {
+      } catch {
         // Ignore storage errors
       }
     }

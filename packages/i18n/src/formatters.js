@@ -201,7 +201,7 @@ export class NumberFormatter {
           compactDisplay: 'short'
         });
         return formatter.format(value);
-      } catch (e) {
+      } catch {
         // Fallback for older browsers
       }
     }
@@ -230,7 +230,7 @@ export class NumberFormatter {
           ...options
         });
         return formatter.format(value);
-      } catch (e) {
+      } catch {
         // Fallback
       }
     }

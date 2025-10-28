@@ -48,7 +48,7 @@ export class LocaleManager {
         if (stored && this.isSupported(stored)) {
           return stored;
         }
-      } catch (e) {
+      } catch {
         // Storage not available
       }
     }
