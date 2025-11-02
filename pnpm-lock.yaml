@@ -152,9 +152,6 @@ importers:
 
   packages/cli:
     dependencies:
-      '@coherentjs/core':
-        specifier: ^1.0.1
-        version: 1.0.1
       chalk:
         specifier: ^5.3.0
         version: 5.6.0
