@@ -104,7 +104,7 @@ export class RuntimeDetector {
 declare global {
   interface Window {
     Coherent?: {
-      renderToString(obj: any): Promise<string>;
+      render(obj: any): Promise<string>;
       hydrate(element: Element, component: Function, props?: any): Promise<any>;
       defineComponent(name: string, component: Function, options?: any): Promise<any>;
       createApp(options?: AppOptions): Promise<CoherentApp>;

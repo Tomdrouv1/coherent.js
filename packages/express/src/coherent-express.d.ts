@@ -116,7 +116,7 @@ export function enhancedExpressEngine(
  * @param app Express application instance
  * @param options Configuration options
  */
-export function setupCoherentExpress(
+export function setupCoherent(
   app: Application,
   options?: SetupCoherentExpressOptions
 ): void;
@@ -139,7 +139,7 @@ declare const coherentExpress: {
   coherentMiddleware: typeof coherentMiddleware;
   createCoherentHandler: typeof createCoherentHandler;
   enhancedExpressEngine: typeof enhancedExpressEngine;
-  setupCoherentExpress: typeof setupCoherentExpress;
+  setupCoherent: typeof setupCoherent;
   renderComponent: typeof renderComponent;
 };
 

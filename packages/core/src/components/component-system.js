@@ -703,7 +703,8 @@ if (performanceMonitor) {
         const result = originalRender.apply(this, args);
         const duration = performance.now() - start;
 
-        performanceMonitor.recordRender('component', duration, {
+        performanceMonitor.recordMetric('renderTime', duration, {
+            type: 'component',
             name: this.name,
             propsSize: JSON.stringify(this.props || {}).length,
             hasState: Object.keys(this.state?.get() || {}).length > 0

@@ -12,27 +12,22 @@
     ".": {
       "browser": "./dist/coherent-universal.js",
       "import": "./dist/coherent-universal.js",
-      "require": "./dist/coherent-universal.cjs",
       "types": "./types/index.d.ts"
     },
     "./browser": {
       "import": "./dist/coherent-browser.js",
-      "require": "./dist/coherent-browser.cjs",
       "types": "./types/browser.d.ts"
     },
     "./edge": {
       "import": "./dist/coherent-edge.js",
-      "require": "./dist/coherent-edge.cjs",
       "types": "./types/edge.d.ts"
     },
     "./static": {
       "import": "./dist/coherent-static.js",
-      "require": "./dist/coherent-static.cjs",
       "types": "./types/static.d.ts"
     },
     "./desktop": {
       "import": "./dist/coherent-desktop.js",
-      "require": "./dist/coherent-desktop.cjs",
       "types": "./types/desktop.d.ts"
     }
   },

@@ -4,7 +4,7 @@
  * Demonstrates error handling with error boundaries
  */
 
-import { renderToString } from '../packages/core/src/index.js';
+import { render } from '../packages/core/src/index.js';
 import {
   createErrorBoundary,
   createErrorFallback,
@@ -39,7 +39,7 @@ const SafeBuggyComponent = basicBoundary(BuggyComponent);
 
 try {
   const result = SafeBuggyComponent();
-  console.log('Rendered fallback:', renderToString(result));
+  console.log('Rendered fallback:', render(result));
 } catch (error) {
   console.log('Error was not caught!');
 }
@@ -105,12 +105,12 @@ const SafeSometimesBuggyComponent = resetBoundary(SometimesBuggyComponent);
 
 console.log('First render (will fail):');
 const result1 = SafeSometimesBuggyComponent();
-console.log(renderToString(result1));
+console.log(render(result1));
 
 console.log('\nAfter reset (should succeed):');
 shouldFail = false;
 const result2 = SafeSometimesBuggyComponent();
-console.log(renderToString(result2));
+console.log(render(result2));
 
 // Example 4: Error Boundary with Reset Keys
 console.log('\n--- Example 4: Error Boundary with Reset Keys ---\n');
@@ -133,11 +133,11 @@ const SafeUserComponent = userBoundary(UserComponent);
 
 console.log('Rendering with bad user:');
 const badUserResult = SafeUserComponent({ userId: 'bad-user' });
-console.log(renderToString(badUserResult));
+console.log(render(badUserResult));
 
 console.log('\nRendering with good user (auto-reset):');
 const goodUserResult = SafeUserComponent({ userId: 'good-user' });
-console.log(renderToString(goodUserResult));
+console.log(render(goodUserResult));
 
 // Example 5: Max Errors
 console.log('\n--- Example 5: Max Errors ---\n');
@@ -172,16 +172,16 @@ const maxErrorsBoundary = createErrorBoundary({
 const SafeAlwaysBuggyComponent = maxErrorsBoundary(AlwaysBuggyComponent);
 
 console.log('Attempt 1:');
-console.log(renderToString(SafeAlwaysBuggyComponent()));
+console.log(render(SafeAlwaysBuggyComponent()));
 
 console.log('\nAttempt 2:');
-console.log(renderToString(SafeAlwaysBuggyComponent()));
+console.log(render(SafeAlwaysBuggyComponent()));
 
 console.log('\nAttempt 3:');
-console.log(renderToString(SafeAlwaysBuggyComponent()));
+console.log(render(SafeAlwaysBuggyComponent()));
 
 console.log('\nAttempt 4 (permanent fallback):');
-console.log(renderToString(SafeAlwaysBuggyComponent()));
+console.log(render(SafeAlwaysBuggyComponent()));
 
 // Example 6: Auto-Reset Timeout
 console.log('\n--- Example 6: Auto-Reset Timeout ---\n');
@@ -212,9 +212,9 @@ const safeComponents = withErrorBoundary(
   { Header, Content, Footer }
 );
 
-console.log('Safe Header:', renderToString(safeComponents.Header()));
-console.log('Safe Content:', renderToString(safeComponents.Content()));
-console.log('Safe Footer:', renderToString(safeComponents.Footer()));
+console.log('Safe Header:', render(safeComponents.Header()));
+console.log('Safe Content:', render(safeComponents.Content()));
+console.log('Safe Footer:', render(safeComponents.Footer()));
 
 // Example 8: Async Error Boundary
 console.log('\n--- Example 8: Async Error Boundary ---\n');
@@ -241,12 +241,12 @@ const SafeFailingAsyncComponent = asyncBoundary(FailingAsyncComponent);
 
 console.log('Loading async component...');
 SafeAsyncComponent().then(result => {
-  console.log('Success:', renderToString(result));
+  console.log('Success:', render(result));
 });
 
 console.log('Loading failing async component...');
 SafeFailingAsyncComponent().then(result => {
-  console.log('Fallback:', renderToString(result));
+  console.log('Fallback:', render(result));
 });
 
 // Example 9: Global Error Handler
@@ -300,7 +300,7 @@ const outerBoundary = createErrorBoundary({
 const SafeOuterComponent = outerBoundary(OuterComponent);
 
 console.log('Nested boundaries result:');
-console.log(renderToString(SafeOuterComponent()));
+console.log(render(SafeOuterComponent()));
 
 // Example 11: Error Boundary with Component Tree
 console.log('\n--- Example 11: Error Boundary with Component Tree ---\n');
@@ -341,7 +341,7 @@ const SafePage = pageBoundary(Page);
 
 console.log('Page with error boundary:');
 const pageResult = SafePage();
-console.log(renderToString(pageResult).substring(0, 200) + '...');
+console.log(render(pageResult).substring(0, 200) + '...');
 
 console.log('\n=== Demo Complete ===\n');
 console.log('Error boundaries provide robust error handling for your components!');

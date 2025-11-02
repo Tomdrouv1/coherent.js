@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { coherentMiddleware, createCoherentHandler, setupCoherentExpress } from '../src/coherent-express.js';
-import { renderToString } from '../../core/src/rendering/html-renderer.js';
+import { coherentMiddleware, createCoherentHandler, setupCoherent } from '../src/coherent-express.js';
+import { render } from '../../core/src/rendering/html-renderer.js';
 
 describe('Express.js Integration', () => {
   it('should create coherentMiddleware', () => {
@@ -34,7 +34,7 @@ describe('Express.js Integration', () => {
     };
     
     expect(() => {
-      setupCoherentExpress(mockApp);
+      setupCoherent(mockApp);
     }).not.toThrow();
   });
 
@@ -46,7 +46,7 @@ describe('Express.js Integration', () => {
       }
     };
     
-    const html = renderToString(testComponent);
+    const html = render(testComponent);
     expect(html).toContain('Hello Coherent.js!');
   });
 });

@@ -259,14 +259,8 @@ export function createSQLiteAdapter() {
     disconnect,
     getConnection,
     ping,
-    escape,
-    
-    // Alias for backward compatibility
-    run: execute
+    escape
   };
 
   return instance;
 }
-
-// For backward compatibility
-export const SQLiteAdapter = { create: createSQLiteAdapter };

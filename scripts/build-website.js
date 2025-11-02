@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { marked } from 'marked';
-import { renderToString } from "../packages/core/src/index.js";
+import { render } from "../packages/core/src/index.js";
 import { Layout } from '../website/src/layout/Layout.js';
 import { Home } from '../website/src/pages/Home.js';
 import { Examples } from '../website/src/pages/Examples.js';
@@ -73,7 +73,7 @@ function enhanceHeadings(html){
     if (attrs && attrs.match(/id="([^"]+)"/i)) {
       id = RegExp.$1; // Use existing ID if present
     } else {
-      // For function signatures like "renderToString(component, context?)", extract just the function name
+      // For function signatures like "render(component, context?)", extract just the function name
       const functionMatch = text.match(/^(\w+)\(/);
       if (functionMatch) {
         // It's a function - use just the function name in lowercase
@@ -115,9 +115,9 @@ function escapeHtml(s){
 }
 
 async function buildPerformance(sidebar) {
-  const content = renderToString(Performance());
+  const content = render(Performance());
   const page = Layout({ title: 'Performance | Coherent.js', sidebar, currentPath: 'performance', baseHref });
-  let html = renderToString(page);
+  let html = render(page);
   html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', content);
   
   // Add performance testing JavaScript
@@ -127,12 +127,12 @@ async function buildPerformance(sidebar) {
     let testCache = new Map();
     let isTestRunning = false;
     
-    // Simple renderToString implementation for browser
-    function renderToString(component) {
+    // Simple render implementation for browser
+    function render(component) {
       if (!component) return '';
       if (typeof component === 'string') return component;
       if (typeof component === 'number' || typeof component === 'boolean') return String(component);
-      if (Array.isArray(component)) return component.map(renderToString).join('');
+      if (Array.isArray(component)) return component.map(render).join('');
       
       if (typeof component === 'object') {
         const tagName = Object.keys(component)[0];
@@ -159,9 +159,9 @@ async function buildPerformance(sidebar) {
         // Add children
         if (props.children) {
           if (Array.isArray(props.children)) {
-            html += props.children.map(renderToString).join('');
+            html += props.children.map(render).join('');
           } else {
-            html += renderToString(props.children);
+            html += render(props.children);
           }
         }
         
@@ -390,7 +390,7 @@ async function buildPerformance(sidebar) {
       testCache.clear();
       const basicStart = performance.now();
       for (let i = 0; i < 100; i++) {
-        renderToString(testComponent);
+        render(testComponent);
       }
       const basicTime = performance.now() - basicStart;
       
@@ -401,7 +401,7 @@ async function buildPerformance(sidebar) {
         if (testCache.has(cacheKey)) {
           testCache.get(cacheKey);
         } else {
-          const result = renderToString(testComponent);
+          const result = render(testComponent);
           testCache.set(cacheKey, result);
         }
       }
@@ -434,13 +434,13 @@ async function buildPerformance(sidebar) {
       // Cold cache
       testCache.clear();
       const coldStart = performance.now();
-      renderToString(tableComponent);
+      render(tableComponent);
       const coldTime = performance.now() - coldStart;
       
       // Warm cache
       let warmTime = 0;
       const cacheKey = JSON.stringify(tableComponent);
-      testCache.set(cacheKey, renderToString(tableComponent));
+      testCache.set(cacheKey, render(tableComponent));
       
       for (let i = 0; i < 10; i++) {
         const warmStart = performance.now();
@@ -470,7 +470,7 @@ async function buildPerformance(sidebar) {
       
       let totalSize = 0;
       components.forEach(comp => {
-        const result = renderToString(comp);
+        const result = render(comp);
         totalSize += result.length;
       });
       
@@ -526,7 +526,7 @@ async function buildPerformance(sidebar) {
         const depth = parseInt(depthSlider.value);
         const start = performance.now();
         const component = HeavyComponent({ maxDepth: depth });
-        const result = renderToString(component);
+        const result = render(component);
         const renderTime = performance.now() - start;
         
         resultEl.innerHTML = \`
@@ -560,7 +560,7 @@ async function buildPerformance(sidebar) {
         
         const start = performance.now();
         const component = PerformanceDataTable({ rows: data });
-        const result = renderToString(component);
+        const result = render(component);
         const renderTime = performance.now() - start;
         
         resultEl.innerHTML = \`
@@ -1327,9 +1327,9 @@ async function copyCodeMirrorModules() {
 }
 
 async function buildHome(sidebar) {
-  const content = renderToString(Home());
+  const content = render(Home());
   const page = Layout({ title: 'Coherent.js', sidebar, currentPath: '', baseHref });
-  let html = renderToString(page);
+  let html = render(page);
   html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', content);
   await writePage('', html);
 }
@@ -1357,9 +1357,9 @@ async function buildExamples(sidebar) {
       items.push({ file, slug: base, label, runCmd: `node examples/${file}`, description, code });
     }
   } catch {}
-  const content = renderToString(Examples({ items }));
+  const content = render(Examples({ items }));
   const page = Layout({ title: 'Examples | Coherent.js', sidebar, currentPath: 'examples', baseHref });
-  let html = renderToString(page);
+  let html = render(page);
   html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', content);
   await writePage('examples', html);
 }
@@ -1368,7 +1368,7 @@ function isBrowserSafeExample(code) {
   const forbidden = [
     'database',
     'Migration',
-    'createObjectRouter',
+    'createRouter',
     'router-features',
     'websocket',
     'node:http',
@@ -1403,9 +1403,9 @@ async function buildPlaygroundIndex(sidebar) {
     }
   } catch {}
 
-  const content = renderToString(Playground({ items }));
+  const content = render(Playground({ items }));
   const page = Layout({ title: 'Playground | Coherent.js', sidebar, currentPath: 'playground', baseHref });
-  let html = renderToString(page);
+  let html = render(page);
   html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', content);
   
   // Add hydration script for interactive playground
@@ -1416,12 +1416,12 @@ async function buildPlaygroundIndex(sidebar) {
     
     console.log('Setting up playground...');
     
-    // Simple renderToString implementation for playground
-    function renderToString(component) {
+    // Simple render implementation for playground
+    function render(component) {
       if (!component) return '';
       if (typeof component === 'string') return component;
       if (typeof component === 'number' || typeof component === 'boolean') return String(component);
-      if (Array.isArray(component)) return component.map(renderToString).join('');
+      if (Array.isArray(component)) return component.map(render).join('');
       
       if (typeof component === 'object') {
         const tagName = Object.keys(component)[0];
@@ -1448,9 +1448,9 @@ async function buildPlaygroundIndex(sidebar) {
         // Add children
         if (props.children) {
           if (Array.isArray(props.children)) {
-            html += props.children.map(renderToString).join('');
+            html += props.children.map(render).join('');
           } else {
-            html += renderToString(props.children);
+            html += render(props.children);
           }
         }
         
@@ -1527,7 +1527,7 @@ async function buildPlaygroundIndex(sidebar) {
         if (!component) return setError('Component definition is empty');
         
         setStatus('Rendering component...');
-        const html = renderToString(component);
+        const html = render(component);
         setSuccess(component, html);
       } catch (error) {
         setError(error.message);
@@ -1566,7 +1566,7 @@ async function buildPlaygroundPages(items) {
       }
       if (!componentFn) throw new Error('No component export found');
 
-      const { renderToString: rts } = await import('../src/rendering/html-renderer.js');
+      const { render: rts } = await import('../src/rendering/html-renderer.js');
       if (componentFn.renderWithHydration && componentFn.isHydratable) {
         const hydratedResult = componentFn.renderWithHydration({});
         html = rts(hydratedResult);
@@ -1726,7 +1726,7 @@ async function buildDocs(docs) {
     const next = ordered[i+1] ? linkForDoc(ordered[i+1]) : null;
     const navFooter = buildPrevNext(prev, next);
     const page = Layout({ title: `${title} | Coherent.js Docs`, sidebar, currentPath: `docs/${route}`, baseHref });
-    const finalHtml = renderToString(page)
+    const finalHtml = render(page)
       .replace('[[[COHERENT_BREADCRUMBS_PLACEHOLDER]]]', breadcrumbs)
       .replace('[[[COHERENT_TOC_PLACEHOLDER]]]', tocHtml)
       .replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', htmlBody + navFooter);
@@ -1786,9 +1786,9 @@ async function buildDocsIndex(sidebar, docs = []) {
   const searchData = await generateSearchData(docs);
   
   // Use the new DocsIndexPage component
-  const content = renderToString(DocsIndexPage({ searchData }));
+  const content = render(DocsIndexPage({ searchData }));
   const page = Layout({ title: 'Documentation | Coherent.js', sidebar, currentPath: 'docs', baseHref });
-  let html = renderToString(page);
+  let html = render(page);
   
   // Replace content placeholder
   html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', content);
@@ -1814,9 +1814,9 @@ async function buildDocsIndex(sidebar, docs = []) {
 }
 
 async function buildCoverage(sidebar) {
-  const content = renderToString(Coverage());
+  const content = render(Coverage());
   const page = Layout({ title: 'Coverage | Coherent.js', sidebar, currentPath: 'coverage', baseHref });
-  let html = renderToString(page);
+  let html = render(page);
   html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', content);
   await writePage('coverage', html);
 }
@@ -1826,15 +1826,15 @@ async function buildChangelog(sidebar) {
     const md = await fs.readFile(path.join(repoRoot, 'CHANGELOG.md'), 'utf8');
     const htmlBody = marked.parse(md);
     const page = Layout({ title: 'Changelog | Coherent.js', sidebar, currentPath: 'changelog', baseHref });
-    const html = renderToString(page).replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', htmlBody);
+    const html = render(page).replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', htmlBody);
     await writePage('changelog', html);
   } catch {}
 }
 
 async function buildStarterApp(sidebar) {
-  const content = renderToString(StarterAppPage());
+  const content = render(StarterAppPage());
   const page = Layout({ title: 'Starter App | Coherent.js', sidebar, currentPath: 'starter-app', baseHref });
-  let html = renderToString(page);
+  let html = render(page);
   html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', content);
   await writePage('starter-app', html);
 }

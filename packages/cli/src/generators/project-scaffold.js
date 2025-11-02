@@ -2,61 +2,117 @@
  * Project scaffolding generator
  */
 
-import { writeFileSync, mkdirSync } from 'fs';
-import { join, dirname } from 'path';
-import { execSync } from 'child_process';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { writeFileSync, mkdirSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { execSync } from 'node:child_process';
+import { generateServerFile, getRuntimeDependencies } from './runtime-scaffold.js';
+import { generateDatabaseScaffolding } from './database-scaffold.js';
+import { generateAuthScaffolding } from './auth-scaffold.js';
+import { generatePackageScaffolding } from './package-scaffold.js';
 
 /**
  * Scaffold a new Coherent.js project
  */
 export async function scaffoldProject(projectPath, options) {
-  const { name, template, skipInstall, skipGit } = options;
+  const {
+    name,
+    template,
+    skipInstall,
+    skipGit,
+    runtime = 'built-in',
+    database = null,
+    auth = null,
+    packages = [],
+    packageManager = 'npm'
+  } = options;
 
   // Create directory structure
   const dirs = [
     'src',
     'src/components',
-    'src/pages', 
-    'src/api',
+    'src/pages',
     'src/utils',
     'public',
     'tests'
   ];
+
+  // Add directories based on selections
+  if (packages.includes('api') || auth) {
+    dirs.push('src/api');
+  }
+  if (database) {
+    dirs.push('src/db', 'src/db/models', 'data');
+  }
+  if (auth) {
+    if (runtime === 'fastify') {
+      dirs.push('src/plugins');
+    } else {
+      // For built-in, express, and koa
+      dirs.push('src/middleware');
+    }
+  }
+  if (packages.includes('i18n')) {
+    dirs.push('src/i18n', 'src/i18n/locales');
+  }
 
   dirs.forEach(dir => {
     mkdirSync(join(projectPath, dir), { recursive: true });
   });
 
   // Generate package.json
-  const packageJson = generatePackageJson(name, template);
+  const packageJson = generatePackageJson(name, { template, runtime, database, auth, packages, packageManager });
   writeFileSync(join(projectPath, 'package.json'), JSON.stringify(packageJson, null, 2));
 
-  // Generate template-specific files
-  switch (template) {
-    case 'basic':
-      await generateBasicTemplate(projectPath, name);
-      break;
-    case 'fullstack':
-      // Fullstack template uses basic template as foundation
-      await generateBasicTemplate(projectPath, name);
-      break;
-    case 'express':
-      await generateExpressTemplate(projectPath, name);
-      break;
-    case 'fastify':
-      // Fastify template uses basic template as foundation
-      await generateBasicTemplate(projectPath, name);
-      break;
-    case 'components':
-      // Components template uses basic template as foundation
-      await generateBasicTemplate(projectPath, name);
-      break;
-    default:
-      await generateBasicTemplate(projectPath, name);
+  // Generate main server file
+  const serverContent = generateServerFile(runtime, {
+    port: 3000,
+    hasApi: packages.includes('api') || auth,
+    hasDatabase: !!database,
+    hasAuth: !!auth
+  });
+  writeFileSync(join(projectPath, 'src/index.js'), serverContent);
+
+  // Generate HomePage component
+  await generateHomePageComponent(projectPath, name);
+
+  // Generate database scaffolding
+  if (database) {
+    const dbScaffolding = generateDatabaseScaffolding(database);
+    writeFileSync(join(projectPath, 'src/db/config.js'), dbScaffolding.config);
+    writeFileSync(join(projectPath, 'src/db/index.js'), dbScaffolding.init);
+    writeFileSync(join(projectPath, 'src/db/models/User.js'), dbScaffolding.model);
+
+    // Generate or update .env.example
+    const existingEnv = '';
+    writeFileSync(join(projectPath, '.env.example'), existingEnv + dbScaffolding.env);
+  }
+
+  // Generate auth scaffolding
+  if (auth) {
+    const authScaffolding = generateAuthScaffolding(auth, runtime);
+
+    // Write auth middleware/plugin
+    const authDir = runtime === 'fastify' ? 'plugins' : 'middleware';
+    writeFileSync(join(projectPath, `src/${authDir}/auth.js`), authScaffolding.middleware);
+
+    // Write auth routes
+    writeFileSync(join(projectPath, 'src/api/auth.js'), authScaffolding.routes);
+
+    // Append to .env.example
+    const envPath = join(projectPath, '.env.example');
+    const existingEnv = '';
+    writeFileSync(envPath, existingEnv + authScaffolding.env);
+  }
+
+  // Generate optional package scaffolding
+  if (packages.length > 0) {
+    const { files } = generatePackageScaffolding(packages);
+
+    Object.entries(files).forEach(([filePath, content]) => {
+      const fullPath = join(projectPath, filePath);
+      mkdirSync(dirname(fullPath), { recursive: true });
+      writeFileSync(fullPath, content);
+    });
   }
 
   // Generate common files
@@ -64,14 +120,22 @@ export async function scaffoldProject(projectPath, options) {
 
   // Install dependencies
   if (!skipInstall) {
-    console.log('📦 Installing dependencies...');
+    console.log(`📦 Installing dependencies with ${packageManager}...`);
     try {
-      execSync('npm install', { 
+      const installCommands = {
+        npm: 'npm install',
+        yarn: 'yarn install',
+        pnpm: 'pnpm install'
+      };
+
+      const installCmd = installCommands[packageManager] || 'npm install';
+
+      execSync(installCmd, {
         cwd: projectPath,
         stdio: 'inherit'
       });
     } catch {
-      console.warn('⚠️  Failed to install dependencies automatically');
+      console.warn(`⚠️  Failed to install dependencies with ${packageManager}`);
     }
   }
 
@@ -88,9 +152,11 @@ export async function scaffoldProject(projectPath, options) {
 }
 
 /**
- * Generate package.json based on template
+ * Generate package.json based on options
  */
-function generatePackageJson(name, template) {
+function generatePackageJson(name, options) {
+  const { runtime = 'built-in', database = null, auth = null, packages = [], packageManager = 'npm' } = options;
+
   const base = {
     name,
     version: '1.0.0',
@@ -111,198 +177,102 @@ function generatePackageJson(name, template) {
     }
   };
 
-  // Template-specific dependencies
-  switch (template) {
-    case 'express':
-      base.dependencies.express = '^4.18.2';
-      base.dependencies['@coherentjs/express'] = '^1.0.1';
-      break;
-    case 'fastify':
-      base.dependencies.fastify = '^4.24.3';
-      base.dependencies['@coherentjs/fastify'] = '^1.0.1';
-      break;
-    case 'fullstack':
-      base.dependencies['@coherentjs/api'] = '^1.0.1';
-      base.dependencies['@coherentjs/database'] = '^1.0.1';
-      base.dependencies.express = '^4.18.2';
-      base.dependencies['@coherentjs/express'] = '^1.0.1';
-      break;
+  // Add packageManager field (Corepack standard)
+  if (packageManager === 'pnpm') {
+    base.packageManager = 'pnpm@9.0.0';
+  } else if (packageManager === 'yarn') {
+    base.packageManager = 'yarn@4.0.0';
+  }
+
+  // Runtime dependencies
+  const runtimeDeps = getRuntimeDependencies(runtime);
+  Object.assign(base.dependencies, runtimeDeps);
+
+  // Database dependencies
+  if (database) {
+    const { dependencies: dbDeps } = generateDatabaseScaffolding(database);
+    Object.assign(base.dependencies, dbDeps);
+  }
+
+  // Auth dependencies
+  if (auth) {
+    const { dependencies: authDeps } = generateAuthScaffolding(auth, runtime);
+    Object.assign(base.dependencies, authDeps);
+  }
+
+  // Optional package dependencies
+  if (packages.length > 0) {
+    const { dependencies: pkgDeps } = generatePackageScaffolding(packages);
+    Object.assign(base.dependencies, pkgDeps);
   }
 
   return base;
 }
 
 /**
- * Generate basic template files
+ * Generate HomePage component
  */
-async function generateBasicTemplate(projectPath, name) {
-  // Main entry point
-  const indexJs = `/**
- * ${name} - Coherent.js Application
+async function generateHomePageComponent(projectPath, name) {
+  const homePage = `/**
+ * HomePage Component
  */
+export function HomePage(props = {}) {
+  const { title = 'Welcome to ${name}!' } = props;
 
-import { renderToString, createComponent } from '@coherentjs/core';
-import { createServer } from 'http';
-
-// Simple component
-const App = createComponent(() => ({
-  html: {
-    children: [
-      { 
-        head: {
-          children: [
-            { title: { text: '${name}' } },
-            { 
-              meta: { 
-                name: 'viewport', 
-                content: 'width=device-width, initial-scale=1.0' 
-              } 
-            }
-          ]
-        }
-      },
-      {
-        body: {
-          children: [
-            {
-              div: {
-                className: 'container',
-                children: [
-                  { h1: { text: 'Welcome to ${name}!' } },
-                  { 
-                    p: { 
-                      text: 'This is a Coherent.js application built with pure JavaScript objects.' 
-                    } 
-                  },
-                  {
-                    div: {
-                      className: 'features',
-                      children: [
-                        { h2: { text: 'Features:' } },
-                        {
-                          ul: {
-                            children: [
-                              { li: { text: '⚡ Lightning fast SSR' } },
-                              { li: { text: '🎯 Pure JavaScript objects' } },
-                              { li: { text: '🔒 Built-in XSS protection' } },
-                              { li: { text: '📦 Minimal bundle size' } }
-                            ]
-                          }
-                        }
-                      ]
-                    }
-                  }
-                ]
+  return {
+    div: {
+      className: 'container',
+      children: [
+        { h1: { text: title } },
+        {
+          p: {
+            text: 'This is a Coherent.js application built with pure JavaScript objects.'
+          }
+        },
+        {
+          div: {
+            className: 'features',
+            children: [
+              { h2: { text: 'Features:' } },
+              {
+                ul: {
+                  children: [
+                    { li: { text: '⚡ Lightning fast SSR' } },
+                    { li: { text: '🎯 Pure JavaScript objects' } },
+                    { li: { text: '🔒 Built-in XSS protection' } },
+                    { li: { text: '📦 Minimal bundle size' } }
+                  ]
+                }
               }
-            }
-          ]
+            ]
+          }
         }
-      }
-    ]
-  }
-}));
+      ]
+    }
+  };
+}
+`;
 
-// Create server
-const server = createServer((req, res) => {
-  const html = renderToString(App());
-  
-  res.writeHead(200, { 'Content-Type': 'text/html' });
-  res.end(html);
-});
+  writeFileSync(join(projectPath, 'src/components/HomePage.js'), homePage);
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(\`🚀 Server running at http://localhost:\${PORT}\`);
-});`;
+  // Simple Button component example
+  const buttonComponent = `/**
+ * Button Component
+ */
+export function Button(props = {}) {
+  const { text = 'Click me', onClick, className = '' } = props;
 
-  writeFileSync(join(projectPath, 'src/index.js'), indexJs);
-
-  // Simple component example
-  const buttonComponent = `import { createComponent } from '@coherentjs/core';
-
-export const Button = createComponent(({ text = 'Click me', onClick, className = '' }) => ({
-  button: {
-    className: \`btn \${className}\`,
-    onclick: onClick,
-    text
-  }
-}));`;
+  return {
+    button: {
+      className: \`btn \${className}\`,
+      onclick: onClick,
+      text
+    }
+  };
+}
+`;
 
   writeFileSync(join(projectPath, 'src/components/Button.js'), buttonComponent);
-}
-
-/**
- * Generate Express template files
- */
-async function generateExpressTemplate(projectPath, name) {
-  const indexJs = `/**
- * ${name} - Express + Coherent.js Application
- */
-
-import express from 'express';
-import { setupCoherentExpress } from '@coherentjs/express';
-import { renderToString, createComponent } from '@coherentjs/core';
-
-const app = express();
-
-// Setup Coherent.js with Express
-setupCoherentExpress(app);
-
-// Serve static files
-app.use(express.static('public'));
-
-// Home page component
-const HomePage = createComponent(() => ({
-  html: {
-    children: [
-      { 
-        head: {
-          children: [
-            { title: { text: '${name}' } },
-            { 
-              meta: { 
-                name: 'viewport', 
-                content: 'width=device-width, initial-scale=1.0' 
-              } 
-            }
-          ]
-        }
-      },
-      {
-        body: {
-          children: [
-            {
-              div: {
-                className: 'container',
-                children: [
-                  { h1: { text: 'Express + Coherent.js' } },
-                  { 
-                    p: { 
-                      text: 'Combining the power of Express.js with Coherent.js SSR!' 
-                    } 
-                  }
-                ]
-              }
-            }
-          ]
-        }
-      }
-    ]
-  }
-}));
-
-// Routes
-app.get('/', (req, res) => {
-  const html = renderToString(HomePage());
-  res.send(html);
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(\`🚀 Express server running at http://localhost:\${PORT}\`);
-});`;
-
-  writeFileSync(join(projectPath, 'src/index.js'), indexJs);
 }
 
 /**
@@ -418,7 +388,7 @@ logs
   // Basic test file
   const testFile = `import { test } from 'node:test';
 import assert from 'node:assert';
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 
 test('renders basic component', () => {
   const component = {
@@ -427,7 +397,7 @@ test('renders basic component', () => {
     }
   };
   
-  const html = renderToString(component);
+  const html = render(component);
   assert(html.includes('Hello, World!'));
 });
 `;

@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { DatabaseManager } from '../../src/connection-manager.js';
-import { QueryBuilder } from '../../src/query-builder.js';
+import { executeQuery } from '../../src/query-builder.js';
 import { Model } from '../../src/model.js';
 import { Migration } from '../../src/migration.js';
 import { 
@@ -156,21 +156,19 @@ describe('Database Integration E2E Tests', () => {
     });
 
     it('should handle complex queries with query builder', async () => {
-      const qb = new QueryBuilder(dbManager);
-
-      // Complex SELECT query
-      const query = qb
-        .select(['u.name', 'u.email', 'p.title'])
-        .from('users', 'u')
-        .join('posts', 'p', 'u.id = p.user_id')
-        .where('u.active', '=', true)
-        .where('p.published_at', '>', '2023-01-01')
-        .orderBy('u.name', 'ASC')
-        .orderBy('p.created_at', 'DESC')
-        .limit(10)
-        .offset(0);
-
-      const result = await query.execute();
+      // Complex SELECT query using object configuration
+      const result = await executeQuery(dbManager, {
+        select: ['u.name', 'u.email', 'p.title'],
+        from: { table: 'users', alias: 'u' },
+        joins: [{ table: 'posts', alias: 'p', condition: 'u.id = p.user_id' }],
+        where: {
+          'u.active': true,
+          'p.published_at': { '>': '2023-01-01' }
+        },
+        orderBy: { 'u.name': 'ASC', 'p.created_at': 'DESC' },
+        limit: 10,
+        offset: 0
+      });
       
       expect(result.rows).toBeDefined();
       
@@ -373,33 +371,33 @@ describe('Database Integration E2E Tests', () => {
     });
 
     it('should handle connection pooling under load', async () => {
-      const qb = new QueryBuilder(dbManager);
-
       // Execute multiple queries concurrently
-      const queryPromises = Array.from({ length: 20 }, (_, i) => 
-        qb.select('*').from('users').where('id', '=', i).execute()
+      const queryPromises = Array.from({ length: 20 }, (_, i) =>
+        executeQuery(dbManager, {
+          select: '*',
+          from: 'users',
+          where: { id: i }
+        })
       );
 
       const results = await Promise.all(queryPromises);
-      
+
       expect(results).toHaveLength(20);
       expect(results.every(result => result.rows !== undefined)).toBe(true);
     });
 
     it('should maintain performance with large datasets', async () => {
-      const qb = new QueryBuilder(dbManager);
-
       const startTime = performance.now();
-      
+
       // Simulate large dataset query
-      const result = await qb
-        .select('*')
-        .from('users')
-        .where('active', '=', true)
-        .orderBy('created_at', 'DESC')
-        .limit(1000)
-        .execute();
-      
+      const result = await executeQuery(dbManager, {
+        select: '*',
+        from: 'users',
+        where: { active: true },
+        orderBy: { created_at: 'DESC' },
+        limit: 1000
+      });
+
       const endTime = performance.now();
       const duration = endTime - startTime;
 
@@ -423,11 +421,12 @@ describe('Database Integration E2E Tests', () => {
 
     it('should handle query failures with proper _error messages', async () => {
       adapter.errors.query = 'SQL syntax _error';
-      
-      const qb = new QueryBuilder(dbManager);
-      
+
       await expect(
-        qb.select('*').from('invalid_table').execute()
+        executeQuery(dbManager, {
+          select: '*',
+          from: 'invalid_table'
+        })
       ).rejects.toThrow('SQL syntax _error');
     });
 

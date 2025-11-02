@@ -252,8 +252,8 @@ function Greeting({ name }) {
 }
 
 // Render with:
-import { renderToString } from '@coherentjs/core';
-const html = renderToString(Greeting({ name: 'World' }));
+import { render } from '@coherentjs/core';
+const html = render(Greeting({ name: 'World' }));
 ```
 
 ## Client-Side Hydration for Interactive Components

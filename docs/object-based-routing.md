@@ -11,7 +11,7 @@ Object-based routing allows developers to define their entire API structure usin
 ### Simple Route Definition
 
 ```javascript
-import { createObjectRouter } from '../src/api/router.js';
+import { createRouter } from '../src/api/router.js';
 
 const routes = {
   // GET /
@@ -28,7 +28,7 @@ const routes = {
   }
 };
 
-const router = createObjectRouter(routes);
+const router = createRouter(routes);
 ```
 
 ### Nested Routes
@@ -222,12 +222,12 @@ const routes = {
 
 ```javascript
 import express from 'express';
-import { createObjectRouter } from '@coherent/api/router';
+import { createRouter } from '@coherent/api/router';
 
 const app = express();
 app.use(express.json());
 
-const router = createObjectRouter(routes);
+const router = createRouter(routes);
 app.use(router.toExpress());
 
 app.listen(3000);
@@ -237,10 +237,10 @@ app.listen(3000);
 
 ```javascript
 import Fastify from 'fastify';
-import { createObjectRouter } from '@coherent/api/router';
+import { createRouter } from '@coherent/api/router';
 
 const fastify = Fastify();
-const router = createObjectRouter(routes);
+const router = createRouter(routes);
 
 fastify.register(router.toFastify());
 fastify.listen({ port: 3000 });
@@ -374,7 +374,7 @@ const routes = {
   }
 };
 
-const router = createObjectRouter(routes);
+const router = createRouter(routes);
 ```
 
 ## Benefits

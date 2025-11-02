@@ -3,7 +3,7 @@
  * Demonstrates performance monitoring, caching, and optimization features
  */
 
-import { renderToString, performanceMonitor } from '../packages/core/src/index.js';
+import { render, performanceMonitor } from '../packages/core/src/index.js';
 
 // Recursive component for performance testing
 const HeavyComponent = ({ depth = 0, maxDepth = 3, label = 'Node' }) => {
@@ -198,7 +198,7 @@ async function runPerformanceTests() {
     // Pre-render components with actual framework rendering for accurate cache testing
     const preRenderStaticComponents = () => {
         // Render HeavyComponent with minimal depth for static cache
-        const heavyComponentOutput = renderToString(HeavyComponent({ depth: 1, maxDepth: 2, label: 'Static' }));
+        const heavyComponentOutput = render(HeavyComponent({ depth: 1, maxDepth: 2, label: 'Static' }));
         staticCache.set('HeavyComponent', heavyComponentOutput);
         
         // Render DataTable with sample data for static cache
@@ -208,7 +208,7 @@ async function runPerformanceTests() {
             score: 95 + i,
             status: 'active'
         }));
-        const dataTableOutput = renderToString(PerformanceDataTable({ rows: sampleRows, showMetrics: false }));
+        const dataTableOutput = render(PerformanceDataTable({ rows: sampleRows, showMetrics: false }));
         staticCache.set('DataTable', dataTableOutput);
         
         // Note: MemoryTest component doesn't exist in current code, removing from static cache
@@ -218,7 +218,7 @@ async function runPerformanceTests() {
     preRenderStaticComponents();
     
     // Use actual rendered content for dynamic cache hits as well
-    const dynamicCacheContent = renderToString(HeavyComponent({ depth: 1, maxDepth: 3, label: 'Dynamic' }));
+    const dynamicCacheContent = render(HeavyComponent({ depth: 1, maxDepth: 3, label: 'Dynamic' }));
     
     // Register static cache with performance monitor to prevent redundant recommendations
     if (performanceMonitor.registerStaticCache) {
@@ -245,13 +245,13 @@ async function runPerformanceTests() {
             
             cacheMisses++;
             // For first render, use actual rendering but cache the result
-            const result = renderToString(component, { enableCache: false, enableMonitoring: false });
+            const result = render(component, { enableCache: false, enableMonitoring: false });
             renderCache.set(cacheKey, result);
             return result;
         } else {
             // Non-cached path - always render fresh
             cacheMisses++;
-            return renderToString(component, { enableCache: false, enableMonitoring: false });
+            return render(component, { enableCache: false, enableMonitoring: false });
         }
     };
 
@@ -265,7 +265,7 @@ async function runPerformanceTests() {
     const basicStart = process.hrtime.bigint();
     for (let i = 0; i < 100; i++) {
         // Use framework rendering with cache disabled for basic test (to show baseline)
-        const result = renderToString(testComponent, { enableCache: false, enableMonitoring: false });
+        const result = render(testComponent, { enableCache: false, enableMonitoring: false });
         // Manually record the metric with proper component name
         performanceMonitor.recordRenderMetric({
             component: 'HeavyComponent',
@@ -315,7 +315,7 @@ async function runPerformanceTests() {
         } else {
             cacheMisses++;
             // Use framework cache enabled for first render to populate framework cache
-            result = renderToString(testComponent, { enableCache: true, enableMonitoring: false });
+            result = render(testComponent, { enableCache: true, enableMonitoring: false });
             renderCache.set(cacheKey, result);
             // Record slower first render
             performanceMonitor.recordRenderMetric({
@@ -362,7 +362,7 @@ async function runPerformanceTests() {
     // Cold cache test with monitoring (clear only global cache, keep our demo cache)
     globalCache.clear();
     const coldStart = process.hrtime.bigint();
-    const dataTableResult = renderToString(tableComponent, { enableCache: true, enableMonitoring: true });
+    const dataTableResult = render(tableComponent, { enableCache: true, enableMonitoring: true });
     // Manually record with proper component name
     performanceMonitor.recordRenderMetric({
         component: 'DataTable',
@@ -378,7 +378,7 @@ async function runPerformanceTests() {
     const warmRuns = 10;
     for (let i = 0; i < warmRuns; i++) {
         const warmStart = process.hrtime.bigint();
-        const warmResult = renderToString(tableComponent, { enableCache: true, enableMonitoring: true });
+        const warmResult = render(tableComponent, { enableCache: true, enableMonitoring: true });
         // Manually record with proper component name
         performanceMonitor.recordRenderMetric({
             component: 'DataTable',
@@ -420,7 +420,7 @@ async function runPerformanceTests() {
     
     // First render - should populate framework cache
     console.log('First render (populating framework cache)...');
-    const firstRender = renderToString(frameworkTestComponent, { enableCache: true, enableMonitoring: true });
+    const firstRender = render(frameworkTestComponent, { enableCache: true, enableMonitoring: true });
     const frameworkStatsAfterFirst = globalCache.getStats();
     console.log(`- Framework cache after first render: ${(frameworkStatsAfterFirst.size / 1024 / 1024).toFixed(2)}MB`);
     console.log(`- Cache entries: ${frameworkStatsAfterFirst.entries}`);
@@ -428,7 +428,7 @@ async function runPerformanceTests() {
     // Multiple renders - should use framework cache
     console.log('Multiple cached renders...');
     for (let i = 0; i < 20; i++) {
-        renderToString(frameworkTestComponent, { enableCache: true, enableMonitoring: true });
+        render(frameworkTestComponent, { enableCache: true, enableMonitoring: true });
     }
     
     const frameworkStatsAfterMultiple = globalCache.getStats();
@@ -449,7 +449,7 @@ async function runPerformanceTests() {
     trackMemory('memory_test_start');
     components.forEach((comp, i) => {
         // Enable framework caching for memory test components to populate framework cache
-        const memTestResult = renderToString(comp, { enableCache: true, enableMonitoring: true });
+        const memTestResult = render(comp, { enableCache: true, enableMonitoring: true });
         // Manually record with proper component name
         performanceMonitor.recordRenderMetric({
             component: 'MemoryTest',

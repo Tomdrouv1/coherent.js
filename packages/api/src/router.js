@@ -1655,7 +1655,7 @@ class SimpleRouter {
  *   }
  * };
  * 
- * const router = createObjectRouter(routes, {
+ * const router = createRouter(routes, {
  *   corsOrigin: 'https://myapp.com',
  *   rateLimit: { windowMs: 60000, maxRequests: 50 }
  * });
@@ -1672,10 +1672,10 @@ export function createSimpleRouter(options = {}) {
   return new SimpleRouter(options);
 }
 
-export function createObjectRouter(routeConfig, options = {}) {
+export function createRouter(routeConfig, options = {}) {
   const router = new SimpleRouter(options);
   router.defaultOptions = options; // Store default options
-  
+
   if (routeConfig) {
     router.addRoutes(routeConfig);
   }
@@ -1684,4 +1684,4 @@ export function createObjectRouter(routeConfig, options = {}) {
 }
 
 export { SimpleRouter };
-export default createObjectRouter;
+export default createRouter;

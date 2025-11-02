@@ -15,7 +15,7 @@ Coherent.js supports multiple CSS integration methods:
 ### Basic CSS File Loading
 
 ```javascript
-import { renderHTML } from 'coherent';
+import { render } from 'coherent';
 
 const App = () => ({
   div: {
@@ -28,7 +28,7 @@ const App = () => ({
 });
 
 // Load CSS files and render complete HTML
-const html = await renderHTML(App(), {
+const html = await render(App(), {
   cssFiles: [
     './styles/main.css',
     './styles/components.css'
@@ -74,7 +74,7 @@ CSS sources are loaded and applied in this order:
 3. **Inline CSS** (highest precedence)
 
 ```javascript
-const html = await renderHTML(App(), {
+const html = await render(App(), {
   // 1. Loaded first
   cssFiles: [
     './styles/reset.css',      // CSS reset
@@ -106,7 +106,7 @@ const SimpleComponent = () => ({
   div: { className: 'content', text: 'Hello World' }
 });
 
-const html = await renderHTML(SimpleComponent(), {
+const html = await render(SimpleComponent(), {
   cssFiles: ['./styles/main.css']
 });
 
@@ -151,7 +151,7 @@ const FullPageComponent = () => ({
   }
 });
 
-const html = await renderHTML(FullPageComponent(), {
+const html = await render(FullPageComponent(), {
   cssFiles: ['./styles/app.css']
 });
 
@@ -160,7 +160,7 @@ const html = await renderHTML(FullPageComponent(), {
 
 ## 🛠 API Reference
 
-### renderHTML(component, options)
+### render(component, options)
 
 Renders a component to complete HTML with CSS support.
 
@@ -172,9 +172,9 @@ Renders a component to complete HTML with CSS support.
 - `minify` (boolean): Minify HTML output
 
 ```javascript
-import { renderHTML } from 'coherent';
+import { render } from 'coherent';
 
-const html = await renderHTML(MyComponent(), {
+const html = await render(MyComponent(), {
   cssFiles: ['./styles/main.css'],
   cssLinks: ['https://fonts.googleapis.com/css2?family=Inter'],
   cssInline: '.custom { color: red; }',
@@ -183,28 +183,28 @@ const html = await renderHTML(MyComponent(), {
 });
 ```
 
-### renderHTMLSync(component, options)
+### renderSync(component, options)
 
 Synchronous version for CSS links and inline styles only:
 
 ```javascript
-import { renderHTMLSync } from 'coherent';
+import { renderSync } from 'coherent';
 
 // Works synchronously (no CSS files)
-const html = renderHTMLSync(MyComponent(), {
+const html = renderSync(MyComponent(), {
   cssLinks: ['https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css'],
   cssInline: '.app { font-family: Inter; }'
 });
 
 // Returns Promise if CSS files detected (with warning)
-const htmlPromise = renderHTMLSync(MyComponent(), {
+const htmlPromise = renderSync(MyComponent(), {
   cssFiles: ['./styles/main.css']  // Triggers warning
 });
 ```
 
 ### render(component, options)
 
-Semantic alias for `renderHTML()`:
+Semantic alias for `render()`:
 
 ```javascript
 import { render } from 'coherent';
@@ -239,7 +239,7 @@ const minified = customCSSManager.minifyCSS(css);
 Integrate with CSS preprocessors:
 
 ```javascript
-import { renderHTML } from 'coherent';
+import { render } from 'coherent';
 import { compileSass, compilePostCSS } from './css-processors';
 
 // Preprocess CSS files before loading
@@ -249,7 +249,7 @@ const processedCSS = await Promise.all([
 ]);
 
 // Write processed CSS to temporary files or use inline
-const html = await renderHTML(App(), {
+const html = await render(App(), {
   cssInline: processedCSS.join('\n')
 });
 ```
@@ -273,7 +273,7 @@ const ThemeableApp = ({ theme = 'light', features = [] }) => {
     cssFiles.push('./styles/responsive.css');
   }
   
-  return renderHTML(AppComponent({ theme }), {
+  return render(AppComponent({ theme }), {
     cssFiles,
     cssMinify: true
   });
@@ -332,7 +332,7 @@ const App = () => ({
 });
 
 // Load the CSS Module file
-const html = await renderHTML(App(), {
+const html = await render(App(), {
   cssFiles: ['./styles/Button.module.css']
 });
 ```
@@ -443,7 +443,7 @@ const UtilityComponent = () => ({
   }
 });
 
-const html = await renderHTML(UtilityComponent(), {
+const html = await render(UtilityComponent(), {
   cssFiles: [
     './utilities/spacing.css',
     './utilities/colors.css'
@@ -511,7 +511,7 @@ const html = await renderHTML(UtilityComponent(), {
 ### 1. CSS Optimization
 
 ```javascript
-const html = await renderHTML(App(), {
+const html = await render(App(), {
   cssFiles: [
     './styles/main.css',
     './styles/components.css'
@@ -551,7 +551,7 @@ const getPageCSS = (page) => {
 };
 
 // Usage
-const html = await renderHTML(HomePage(), {
+const html = await render(HomePage(), {
   cssFiles: getPageCSS('home')
 });
 ```
@@ -561,11 +561,11 @@ const html = await renderHTML(HomePage(), {
 ### Test CSS Loading
 
 ```javascript
-import { renderHTML } from 'coherent';
+import { render } from 'coherent';
 
 describe('CSS Integration', () => {
   it('should load CSS files correctly', async () => {
-    const html = await renderHTML(TestComponent(), {
+    const html = await render(TestComponent(), {
       cssFiles: ['./test-styles.css']
     });
     
@@ -575,7 +575,7 @@ describe('CSS Integration', () => {
   });
   
   it('should maintain CSS order', async () => {
-    const html = await renderHTML(TestComponent(), {
+    const html = await render(TestComponent(), {
       cssFiles: ['./base.css', './override.css'],
       cssInline: '.final-override { color: red; }'
     });
@@ -599,7 +599,7 @@ describe('CSS Integration', () => {
    ```javascript
    // Error: ENOENT: no such file or directory
    // Solution: Check file paths and ensure files exist
-   const html = await renderHTML(App(), {
+   const html = await render(App(), {
      cssFiles: ['./styles/main.css'] // Verify this path exists
    });
    ```
@@ -618,9 +618,9 @@ describe('CSS Integration', () => {
 
 3. **Async/Sync Mismatch**
    ```javascript
-   // Issue: Using renderHTMLSync with CSS files
-   // Solution: Use renderHTML for CSS files
-   const html = await renderHTML(App(), {  // Use async version
+   // Issue: Using renderSync with CSS files
+   // Solution: Use render for CSS files
+   const html = await render(App(), {  // Use async version
      cssFiles: ['./styles/main.css']
    });
    ```
@@ -645,7 +645,7 @@ describe('CSS Integration', () => {
 3. **Monitor Performance**
    ```javascript
    const startTime = performance.now();
-   const html = await renderHTML(App(), {
+   const html = await render(App(), {
      cssFiles: ['./large-file.css']
    });
    const endTime = performance.now();

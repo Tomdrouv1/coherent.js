@@ -5,10 +5,10 @@
  * and can be run directly with Node.js or bundled for the browser.
  * 
  * Run with: node coherent-master-demo.js
- * Or serve with: node -e "const demo = require('./coherent-master-demo.js'); console.log(demo.renderHTML());"
+ * Or serve with: node -e "const demo = require('./coherent-master-demo.js'); console.log(demo.render());"
  */
 
-import { renderToString, renderHTML, withState, memo, VERSION } from '@coherentjs/core';
+import { render, render, withState, memo, VERSION } from '@coherentjs/core';
 import { createServer } from 'http';
 import { parse as parseUrl } from 'url';
 
@@ -547,7 +547,7 @@ export function createCoherentServer(port = 3000) {
     
     try {
       // Render the demo component to HTML string
-      const htmlString = renderToString(CoherentMasterDemo());
+      const htmlString = render(CoherentMasterDemo());
       
       // Send the response
       res.writeHead(200);
@@ -589,7 +589,7 @@ export {
 };
 
 // For direct HTML rendering  
-export const renderDemo = () => renderToString(CoherentMasterDemo());
+export const renderDemo = () => render(CoherentMasterDemo());
 export const renderDemoHTML = renderDemo;
 
 // ===== CLI RUNNER =====

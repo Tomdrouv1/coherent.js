@@ -35,7 +35,7 @@ function coherentJsCompletions(context) {
     { label: 'alt', type: 'property', info: 'Alternative text for images' },
     
     // Coherent.js functions (when browser runtime is available)
-    { label: 'renderToString', type: 'function', info: 'Render component to HTML string' },
+    { label: 'render', type: 'function', info: 'Render component to HTML string' },
     { label: 'renderToDOM', type: 'function', info: 'Render component to DOM element' },
     { label: 'useState', type: 'function', info: 'Create stateful component' },
     { label: 'useEffect', type: 'function', info: 'Add side effects to component' },
@@ -361,7 +361,7 @@ function createAdvancedJavaScriptEditor(container, initialContent = '') {
     { label: 'required', type: 'attribute', info: 'Mark field as required' },
     
     // Coherent.js functions
-    { label: 'renderToString', type: 'function', info: 'Render component to HTML string' },
+    { label: 'render', type: 'function', info: 'Render component to HTML string' },
     { label: 'renderToDOM', type: 'function', info: 'Render component to DOM element' },
     
     // JavaScript patterns
@@ -649,7 +649,7 @@ async function createCodeMirror6Editor(container, initialContent = '') {
         { label: 'value', type: 'property', info: 'Input value' },
         
         // Coherent.js functions
-        { label: 'renderToString', type: 'function', info: 'Render component to HTML string' },
+        { label: 'render', type: 'function', info: 'Render component to HTML string' },
         { label: 'renderToDOM', type: 'function', info: 'Render component to DOM element' },
         
         // JavaScript patterns

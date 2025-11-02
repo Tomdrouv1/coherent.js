@@ -47,10 +47,10 @@ export const Greeting = ({ name = 'World' }) => ({
 
 ```javascript
 // server.js
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 import { Greeting } from './components/Greeting.js';
 
-const html = renderToString(Greeting({ name: 'Developer' }));
+const html = render(Greeting({ name: 'Developer' }));
 console.log(html);
 // Output: <div class="greeting"><h1>Hello, Developer!</h1><p>Welcome to Coherent.js</p></div>
 ```
@@ -185,7 +185,7 @@ export const appPage = {
 ```javascript
 // server.js
 import express from 'express';
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 import { appPage } from './pages/app.js';
 
 const app = express();
@@ -195,7 +195,7 @@ app.use(express.static('public'));
 
 // Serve the main page
 app.get('/', (req, res) => {
-  const html = renderToString(appPage);
+  const html = render(appPage);
   res.send(html);
 });
 
@@ -417,13 +417,13 @@ const UserProfile = ({ user }) => ({
 
 ```javascript
 import express from 'express';
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 
 const app = express();
 
 app.get('*', (req, res) => {
   const component = getComponentForRoute(req.path);
-  const html = renderToString(component);
+  const html = render(component);
   res.send(html);
 });
 ```
@@ -432,11 +432,11 @@ app.get('*', (req, res) => {
 
 ```javascript
 // pages/index.js
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 import { HomePage } from '../components/HomePage.js';
 
 export default function Page(props) {
-  const html = renderToString(HomePage(props));
+  const html = render(HomePage(props));
   return <div dangerouslySetInnerHTML={{ __html: html }} />;
 }
 ```

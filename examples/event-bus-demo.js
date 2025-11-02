@@ -5,7 +5,7 @@
  * centralized event handling, and component communication.
  */
 
-import { renderToString } from '../packages/core/src/index.js';
+import { render } from '../packages/core/src/index.js';
 import eventSystem, { withEventBus, createActionHandlers } from '../packages/core/src/events/index.js';
 
 // Example: Todo Application with Event-Driven Architecture
@@ -421,12 +421,12 @@ function runDemo() {
 
     // Render todo app
     console.log('📝 Todo Application:');
-    const todoHTML = renderToString(TodoApp());
+    const todoHTML = render(TodoApp());
     console.log('Rendered HTML length:', todoHTML.length, 'characters');
 
     // Render product catalog
     console.log('\n🛍️ Product Catalog:');
-    const catalogHTML = renderToString(ProductCatalog({
+    const catalogHTML = render(ProductCatalog({
         products: [
             { id: 1, name: 'Coherent.js Book', price: 29.99 },
             { id: 2, name: 'Event Bus Guide', price: 19.99 }

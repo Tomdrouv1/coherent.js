@@ -2,7 +2,7 @@
  * Astro Integration for Coherent.js
  */
 
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 
 export function createAstroIntegration(_options = {}) {
   return {
@@ -19,5 +19,5 @@ export function createAstroIntegration(_options = {}) {
 }
 
 export async function renderComponent(Component, props) {
-  return renderToString(Component, props);
+  return render(Component, props);
 }

@@ -34,9 +34,9 @@ export interface RenderOptions {
 }
 
 // Core rendering functions
-export function renderToString(node: CoherentNode, options?: RenderOptions): string;
-export function renderHTML(node: CoherentNode, options?: RenderOptions): Promise<string>;
-export function renderHTMLSync(node: CoherentNode, options?: RenderOptions): string | Promise<string>;
+export function render(node: CoherentNode, options?: RenderOptions): string;
+export function render(node: CoherentNode, options?: RenderOptions): Promise<string>;
+export function renderSync(node: CoherentNode, options?: RenderOptions): string | Promise<string>;
 export function render(node: CoherentNode, options?: RenderOptions): Promise<string>;
 export function renderToStream(node: CoherentNode, options?: RenderOptions): ReadableStream;
 export function renderBatch(nodes: CoherentNode[], options?: RenderOptions): string[];
@@ -152,7 +152,7 @@ export class Coherent {
   
   // Rendering methods
   render(component: CoherentNode, options?: RenderOptions): string;
-  renderToString(component: CoherentNode, options?: RenderOptions): string;
+  render(component: CoherentNode, options?: RenderOptions): string;
   renderBatch(components: CoherentNode[], options?: RenderOptions): string[];
   stream(component: CoherentNode, options?: RenderOptions): ReadableStream;
   
@@ -206,7 +206,7 @@ export default Coherent;
 
 // Named exports for specific functionality
 export const server: {
-  render: typeof renderToString;
+  render: typeof render;
   renderBatch: typeof renderBatch;
   stream: typeof renderToStream;
   createStreamingRenderer: Function;

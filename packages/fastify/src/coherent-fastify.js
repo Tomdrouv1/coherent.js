@@ -91,7 +91,7 @@ export function coherentFastify(fastify, options, done) {
  * @param {Object} options - Handler options
  * @returns {Function} Fastify route handler
  */
-export function createCoherentFastifyHandler(componentFactory, options = {}) {
+export function createHandler(componentFactory, options = {}) {
   return async (request, reply) => {
     try {
       // Use shared rendering utility
@@ -117,7 +117,7 @@ export function createCoherentFastifyHandler(componentFactory, options = {}) {
  * @param {Object} fastify - Fastify instance
  * @param {Object} options - Setup options
  */
-export function setupCoherentFastify(fastify, options = {}) {
+export function setupCoherent(fastify, options = {}) {
   fastify.register(coherentFastify, options);
 }
 

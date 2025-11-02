@@ -68,7 +68,7 @@ export function coherentFastify(
  * @param options Configuration options
  * @returns Fastify route handler
  */
-export function createCoherentFastifyHandler(
+export function createHandler(
   componentFactory: (request: FastifyRequest, reply: FastifyReply) => CoherentNode | Promise<CoherentNode>,
   options?: CoherentFastifyHandlerOptions
 ): (request: FastifyRequest, reply: FastifyReply) => Promise<any>;
@@ -79,7 +79,7 @@ export function createCoherentFastifyHandler(
  * @param fastify Fastify instance
  * @param options Configuration options
  */
-export function setupCoherentFastify(
+export function setupCoherent(
   fastify: FastifyInstance,
   options?: CoherentFastifyOptions
 ): void;

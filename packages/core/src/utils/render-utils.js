@@ -3,7 +3,7 @@
  * Eliminates code duplication across Express, Fastify, Koa, Next.js integrations
  */
 
-import { renderToString } from '../rendering/html-renderer.js';
+import { render } from '../rendering/html-renderer.js';
 import { performanceMonitor } from '../performance/monitor.js';
 
 /**
@@ -25,10 +25,10 @@ export function renderWithMonitoring(component, options = {}) {
 
   if (enablePerformanceMonitoring) {
     const renderId = performanceMonitor.startRender();
-    html = renderToString(component);
+    html = render(component);
     performanceMonitor.endRender(renderId);
   } else {
-    html = renderToString(component);
+    html = render(component);
   }
 
   return html;

@@ -34,7 +34,7 @@ pnpm add @coherentjs/core
 ### 2. Your First Component
 
 ```javascript
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 
 // Define a component as a pure JavaScript object
 const WelcomeComponent = {
@@ -48,7 +48,7 @@ const WelcomeComponent = {
 };
 
 // Render to HTML string
-const html = renderToString(WelcomeComponent);
+const html = render(WelcomeComponent);
 console.log(html);
 // Output: <div class="welcome"><h1>Welcome to Coherent.js!</h1><p>Build with pure JavaScript objects</p></div>
 ```
@@ -75,7 +75,7 @@ const Greeting = ({ name = 'World', mood = 'happy' }) => ({
 });
 
 // Use the component
-const html = renderToString(Greeting({ name: 'Developer', mood: 'fantastic' }));
+const html = render(Greeting({ name: 'Developer', mood: 'fantastic' }));
 ```
 
 ## Core Concepts
@@ -154,14 +154,14 @@ Coherent.js emphasizes factory functions for a pure object approach:
 
 ```javascript
 // ✅ Recommended: Factory functions
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 
-const db = renderToString({ type: 'sqlite', database: ':memory:' });
-const query = renderToString({ table: 'users', select: ['*'] });
+const db = render({ type: 'sqlite', database: ':memory:' });
+const query = render({ table: 'users', select: ['*'] });
 
 // ✅ Also available: Direct class access (for advanced use)
-import { renderToString } from '@coherentjs/core';
-const db = new renderToString(config);
+import { render } from '@coherentjs/core';
+const db = new render(config);
 ```
 
 ## Framework Features Overview

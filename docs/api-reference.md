@@ -6,7 +6,7 @@ This document provides a comprehensive reference for all public APIs available i
 
 ## Core Rendering
 
-### `renderToString(component, context?)`
+### `render(component, context?)`
 
 Renders a Coherent.js component to an HTML string.
 
@@ -18,7 +18,7 @@ Renders a Coherent.js component to an HTML string.
 
 **Example:**
 ```javascript
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 
 const component = {
   div: {
@@ -29,11 +29,11 @@ const component = {
   }
 };
 
-const html = renderToString(component);
+const html = render(component);
 // Output: <div class="greeting"><h1>Hello, World!</h1></div>
 ```
 
-### `renderHTML(component, options?)`
+### `render(component, options?)`
 
 Renders a Coherent.js component to a complete HTML document with DOCTYPE and CSS support.
 
@@ -53,7 +53,7 @@ Renders a Coherent.js component to a complete HTML document with DOCTYPE and CSS
 
 **Example:**
 ```javascript
-import { renderHTML } from 'coherent';
+import { render } from 'coherent';
 
 const App = () => ({
   html: {
@@ -78,7 +78,7 @@ const App = () => ({
   }
 });
 
-const html = await renderHTML(App(), {
+const html = await render(App(), {
   cssFiles: ['./styles/main.css', './styles/components.css'],
   cssLinks: ['https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap'],
   cssInline: '.custom { color: red; }',
@@ -86,9 +86,9 @@ const html = await renderHTML(App(), {
 });
 ```
 
-### `renderHTMLSync(component, options?)`
+### `renderSync(component, options?)`
 
-Synchronous version of `renderHTML` for cases without CSS files.
+Synchronous version of `render` for cases without CSS files.
 
 **Parameters:**
 - `component` (CoherentNode): The component to render
@@ -98,16 +98,16 @@ Synchronous version of `renderHTML` for cases without CSS files.
 
 **Example:**
 ```javascript
-import { renderHTMLSync } from 'coherent';
+import { renderSync } from 'coherent';
 
-const html = renderHTMLSync(App(), {
+const html = renderSync(App(), {
   cssInline: '.app { margin: 0; padding: 20px; }'
 });
 ```
 
 ### `render(component, options?)`
 
-Alias for `renderHTML()` - provides semantic naming for complete HTML rendering.
+Alias for `render()` - provides semantic naming for complete HTML rendering.
 
 **Example:**
 ```javascript
@@ -795,7 +795,7 @@ Creates an Express route handler for Coherent.js components.
 - `componentFactory` (Function): Function that returns a Coherent component
 - `options` (Object, optional): Handler options
 
-#### `express.setupCoherentExpress(app, options?)`
+#### `express.setupCoherent(app, options?)`
 
 Sets up Coherent.js with Express app.
 
@@ -814,7 +814,7 @@ Fastify plugin for Coherent.js.
 - `options` (Object): Plugin options
 - `done` (Function): Callback to signal plugin registration completion
 
-#### `fastify.createCoherentFastifyHandler(componentFactory, options?)`
+#### `fastify.createHandler(componentFactory, options?)`
 
 Creates a Fastify route handler for Coherent.js components.
 
@@ -822,7 +822,7 @@ Creates a Fastify route handler for Coherent.js components.
 - `componentFactory` (Function): Function that returns a Coherent component
 - `options` (Object, optional): Handler options
 
-#### `fastify.setupCoherentFastify(fastify, options?)`
+#### `fastify.setupCoherent(fastify, options?)`
 
 Sets up Coherent.js with Fastify instance.
 

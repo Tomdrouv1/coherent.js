@@ -46,7 +46,7 @@ When you visit `http://localhost:3000`, the server:
 ```javascript
 // server.js
 const page = createPage();
-const html = renderToString(page);  // ← SSR happens here
+const html = render(page);  // ← SSR happens here
 res.end(html);
 ```
 
@@ -131,7 +131,7 @@ export const Counter = withState({ count: 0 })(({ state, setState }) => ({
 **server.js**
 - Creates HTTP server
 - Serves `/hydration.js` bundle
-- Renders page with `renderToString`
+- Renders page with `render`
 - Includes hydration script
 
 **components/Counter.js**
@@ -213,7 +213,7 @@ Create different page functions and route them:
 
 ```javascript
 if (req.url === '/about') {
-  const html = renderToString(aboutPage());
+  const html = render(aboutPage());
   res.end(html);
 }
 ```

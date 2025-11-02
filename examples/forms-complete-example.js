@@ -11,7 +11,7 @@
  * - Success/failure states
  */
 
-import { html, renderToString } from '@coherentjs/core';
+import { html, render } from '@coherentjs/core';
 import { 
   createFormValidator, 
   validators, 
@@ -981,7 +981,7 @@ console.log('   Errors found:', Object.keys(invalidResult.errors).length);
 
 // Render the form
 console.log('\n📝 Rendering Registration Form...\n');
-const renderedForm = renderToString(App());
+const renderedForm = render(App());
 console.log('✅ Form rendered successfully');
 console.log(`   Length: ${renderedForm.length} characters`);
 

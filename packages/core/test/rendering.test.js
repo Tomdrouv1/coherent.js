@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { renderToString } from '../src/index.js';
+import { render } from '../src/index.js';
 
 describe('Component Rendering', () => {
   it('renders basic component correctly', () => {
@@ -10,7 +10,7 @@ describe('Component Rendering', () => {
       }
     };
 
-    const html = renderToString(BasicComponent, {
+    const html = render(BasicComponent, {
       enableCache: true,
       enableMonitoring: false,
       encapsulate: false
@@ -30,7 +30,7 @@ describe('Component Rendering', () => {
       }
     };
 
-    const html = renderToString(ComponentWithChildren, {
+    const html = render(ComponentWithChildren, {
       enableCache: true,
       enableMonitoring: false,
       encapsulate: false
@@ -49,7 +49,7 @@ describe('Component Rendering', () => {
       }
     };
 
-    const html = renderToString(ComponentWithBooleans, {
+    const html = render(ComponentWithBooleans, {
       enableCache: true,
       enableMonitoring: false,
       encapsulate: false
@@ -83,7 +83,7 @@ describe('Component Rendering', () => {
       }
     };
 
-    const html = renderToString(ComplexComponent);
+    const html = render(ComplexComponent);
     expect(html).toContain('class="post"');
     expect(html).toContain('Article Title');
     expect(html).toContain('First paragraph');

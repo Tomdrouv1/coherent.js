@@ -17,7 +17,7 @@ Server-side rendering provides several benefits:
 ### Simple Server-Side Rendering
 
 ```javascript
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 import http from 'http';
 
 // Define your component
@@ -48,7 +48,7 @@ const server = http.createServer((req, res) => {
     user: { name: 'John Doe' }
   });
   
-  const html = renderToString(component);
+  const html = render(component);
   
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(`<!DOCTYPE html>${html}`);
@@ -213,7 +213,7 @@ async function renderBlogPost(slug) {
   
   // Render component with data
   const component = BlogPostWithComments({ post, comments });
-  return renderToString(component);
+  return render(component);
 }
 
 // Usage in server
@@ -662,7 +662,7 @@ async function generateSitemap() {
     }
   };
   
-  return renderToString(sitemap);
+  return render(sitemap);
 }
 ```
 

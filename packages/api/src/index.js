@@ -3,14 +3,14 @@
  * @fileoverview Core utilities for building APIs with Coherent.js
  */
 
-import { createObjectRouter } from './router.js';
+import { createRouter } from './router.js';
 import { ApiError, ValidationError, AuthenticationError, AuthorizationError, NotFoundError, ConflictError, withErrorHandling, createErrorHandler } from './errors.js';
 import { validateAgainstSchema, validateField, withValidation, withQueryValidation, withParamsValidation } from './validation.js';
 import { serializeDate, deserializeDate, serializeMap, deserializeMap, serializeSet, deserializeSet, withSerialization, serializeForJSON } from './serialization.js';
 import { withAuth, withRole, hashPassword, verifyPassword, generateToken, withInputValidation } from './security.js';
 
 export {
-  createObjectRouter,
+  createRouter,
   ApiError,
   ValidationError,
   AuthenticationError,
@@ -41,7 +41,7 @@ export {
 };
 
 export default {
-  createObjectRouter,
+  createRouter,
   ApiError,
   ValidationError,
   AuthenticationError,

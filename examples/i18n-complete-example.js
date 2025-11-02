@@ -10,7 +10,7 @@
  * - Nested translations
  */
 
-import { html, renderToString } from '@coherentjs/core';
+import { html, render } from '@coherentjs/core';
 import { createTranslator, formatters } from '@coherentjs/i18n';
 
 // ============================================================================
@@ -669,25 +669,25 @@ console.log('='.repeat(80));
 
 // Render in English
 console.log('\n📝 Rendering in English...\n');
-const htmlEn = renderToString(App({ locale: 'en' }));
+const htmlEn = render(App({ locale: 'en' }));
 console.log('✅ English version rendered successfully');
 console.log(`   Length: ${htmlEn.length} characters`);
 
 // Render in French
 console.log('\n📝 Rendering in French...\n');
-const htmlFr = renderToString(App({ locale: 'fr' }));
+const htmlFr = render(App({ locale: 'fr' }));
 console.log('✅ French version rendered successfully');
 console.log(`   Length: ${htmlFr.length} characters`);
 
 // Render in Spanish
 console.log('\n📝 Rendering in Spanish...\n');
-const htmlEs = renderToString(App({ locale: 'es' }));
+const htmlEs = render(App({ locale: 'es' }));
 console.log('✅ Spanish version rendered successfully');
 console.log(`   Length: ${htmlEs.length} characters`);
 
 // Render in Arabic (RTL)
 console.log('\n📝 Rendering in Arabic (RTL)...\n');
-const htmlAr = renderToString(App({ locale: 'ar' }));
+const htmlAr = render(App({ locale: 'ar' }));
 console.log('✅ Arabic version rendered successfully');
 console.log(`   Length: ${htmlAr.length} characters`);
 console.log('   Direction: RTL (Right-to-Left)');

@@ -3,7 +3,7 @@
  * Works in browsers, Electron, and Tauri
  */
 
-import { renderToString, withState, memo } from '@coherentjs/core';
+import { render, withState, memo } from '@coherentjs/core';
 import { hydrate, autoHydrate, makeHydratable } from '@coherentjs/client';
 import { integrateWithWebComponents, defineCoherentElement } from '@coherentjs/web-components';
 
@@ -219,7 +219,7 @@ export class BrowserRuntime {
 
       // Render component
       const vdom = resolvedComponent(props);
-      const html = renderToString(vdom);
+      const html = render(vdom);
 
       // Find or create target element
       let targetElement = target;

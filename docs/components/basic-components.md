@@ -237,10 +237,10 @@ const Layout = ({ title, subtitle, navLinks, children }) => ({
 ### Server-Side Rendering
 
 ```javascript
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 
 const component = Greeting({ name: 'Server User', mood: 'excited' });
-const html = renderToString(component);
+const html = render(component);
 console.log(html);
 // Output: <div class="greeting greeting--excited">...</div>
 ```

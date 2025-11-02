@@ -49,9 +49,9 @@ export function renderApp(component, props = {}, target = null) {
 if (typeof window !== 'undefined') {
   window.Coherent = {
     // Core functionality
-    renderToString: async (obj) => {
-      const { renderToString } = await import('@coherentjs/core');
-      return renderToString(obj);
+    render: async (obj) => {
+      const { render } = await import('@coherentjs/core');
+      return render(obj);
     },
     
     // Hydration

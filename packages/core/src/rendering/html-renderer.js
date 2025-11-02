@@ -106,14 +106,14 @@ class HTMLRenderer extends BaseRenderer {
 
             // Performance monitoring
             this.endTiming();
-            this.recordPerformance('renderToString', this.metrics.startTime, false, { 
+            this.recordPerformance('render', this.metrics.startTime, false, {
                 cacheEnabled: config.enableCache 
             });
 
             return finalHtml;
 
         } catch (_error) {
-            this.recordError('renderToString', _error);
+            this.recordError('render', _error);
             throw _error;
         }
     }
@@ -298,7 +298,7 @@ class HTMLRenderer extends BaseRenderer {
 /**
  * Main render function - converts object components to HTML
  */
-export function renderToString(component, options = {}) {
+export function render(component, options = {}) {
     // Merge default options with provided options
     const mergedOptions = {
         enableCache: true,
@@ -316,7 +316,7 @@ export function renderToString(component, options = {}) {
  * Supports CSS file inclusion and inline styles
  */
 export async function renderHTML(component, options = {}) {
-    const htmlContent = renderToString(component, options);
+    const htmlContent = render(component, options);
     
     // Process CSS options
     const cssOptions = cssUtils.processCSSOptions(options);
@@ -355,7 +355,7 @@ ${htmlContent}
 }
 
 /**
- * Synchronous version of renderHTML for cases without CSS files
+ * Synchronous version of render for cases without CSS files
  * Falls back to async if CSS files are detected
  */
 export function renderHTMLSync(component, options = {}) {
@@ -363,11 +363,11 @@ export function renderHTMLSync(component, options = {}) {
     
     // If CSS files are specified, return a promise
     if (cssOptions.files.length > 0) {
-        console.warn('CSS files detected, use renderHTML() (async) instead of renderHTMLSync()');
-        return renderHTML(component, options);
+        console.warn('CSS files detected, use render() (async) instead of renderSync()');
+        return render(component, options);
     }
     
-    const htmlContent = renderToString(component, options);
+    const htmlContent = render(component, options);
     
     // Handle inline CSS and external links only
     let cssHtml = '';
@@ -403,12 +403,6 @@ ${htmlContent}
     return `<!DOCTYPE html>\n${htmlContent}`;
 }
 
-/**
- * Alias for renderHTML - more semantic name for HTML rendering
- */
-export function render(component, options = {}) {
-    return renderHTML(component, options);
-}
 
 // Old functions removed - now part of HTMLRenderer class
 
@@ -446,20 +440,11 @@ export function* renderToChunks(component, options = {}) {
         chunkSize: options.chunkSize || 1024 // Default 1KB chunks
     };
     
-    const html = renderToString(component, mergedOptions);
+    const html = render(component, mergedOptions);
     
     for (let i = 0; i < html.length; i += mergedOptions.chunkSize) {
         yield html.slice(i, i + mergedOptions.chunkSize);
     }
-}
-
-/**
- * @deprecated Use renderToChunks instead. This function will be removed in a future version.
- * For true progressive streaming, use the streaming-renderer.js renderToStream function.
- */
-export async function* renderToStream(component, options = {}) {
-    console.warn('renderToStream from html-renderer is deprecated. Use renderToChunks for chunking or streaming-renderer.js renderToStream for true streaming.');
-    return yield* renderToChunks(component, options);
 }
 
 /**
@@ -496,7 +481,7 @@ export function precompileComponent(component, options = {}) {
         throw new Error('Can only precompile static components');
     }
 
-    const html = renderToString(component, { ...options, enableCache: false });
+    const html = render(component, { ...options, enableCache: false });
 
     return {
         html,
@@ -510,7 +495,7 @@ export function precompileComponent(component, options = {}) {
  */
 export function renderWithTiming(component, options = {}) {
     const start = performance.now();
-    const html = renderToString(component, { ...options, enableMonitoring: true });
+    const html = render(component, { ...options, enableMonitoring: true });
     const end = performance.now();
 
     return {

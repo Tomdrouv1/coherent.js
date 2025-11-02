@@ -638,13 +638,6 @@ export function createPerformanceMonitor(options = {}) {
 
   return {
     recordMetric,
-    // Backward compatibility aliases
-    recordRender(type, duration, metadata = {}) {
-      recordMetric('renderTime', duration, { type, ...metadata });
-    },
-    recordError(type, error, metadata = {}) {
-      recordMetric('errorCount', 1, { type, error: error?.message || error, ...metadata });
-    },
     measure,
     measureAsync,
     addMetric,
@@ -669,12 +662,3 @@ export function createPerformanceMonitor(options = {}) {
 
 // Export default instance
 export const performanceMonitor = createPerformanceMonitor();
-
-// Backward compatibility: Export as class
-export class PerformanceMonitor {
-  constructor(options = {}) {
-    const monitor = createPerformanceMonitor(options);
-    // Copy all methods to this instance
-    Object.assign(this, monitor);
-  }
-}

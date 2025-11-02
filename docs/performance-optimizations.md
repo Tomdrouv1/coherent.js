@@ -82,7 +82,7 @@ const fastHash = (obj) => {
 ### 3. Framework Cache (Built-in)
 ```javascript
 // Coherent.js built-in caching system
-renderToString(component, { enableCache: true })
+render(component, { enableCache: true })
 ```
 
 **Purpose**: Leverage Coherent.js's built-in caching mechanisms for comprehensive component caching.

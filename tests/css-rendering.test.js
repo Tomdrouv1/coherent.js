@@ -8,8 +8,8 @@ import { promises as fs } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import {
-  renderHTML,
-  renderHTMLSync,
+  render,
+  renderSync,
   render
 } from '../packages/core/src/rendering/html-renderer.js';
 
@@ -173,9 +173,9 @@ describe('CSS Rendering Integration', () => {
     vi.clearAllMocks();
   });
 
-  describe('renderHTML with CSS files', () => {
+  describe('render with CSS files', () => {
     it('should render HTML with single CSS file', async () => {
-      const html = await renderHTML(SimpleComponent(), {
+      const html = await render(SimpleComponent(), {
         cssFiles: [mainCSSPath]
       });
 
@@ -188,7 +188,7 @@ describe('CSS Rendering Integration', () => {
     });
 
     it('should render HTML with multiple CSS files', async () => {
-      const html = await renderHTML(ComplexComponent(), {
+      const html = await render(ComplexComponent(), {
         cssFiles: [mainCSSPath, componentCSSPath]
       });
 
@@ -201,7 +201,7 @@ describe('CSS Rendering Integration', () => {
     });
 
     it('should handle CSS files with external links', async () => {
-      const html = await renderHTML(SimpleComponent(), {
+      const html = await render(SimpleComponent(), {
         cssFiles: [mainCSSPath],
         cssLinks: [
           'https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap',
@@ -228,7 +228,7 @@ describe('CSS Rendering Integration', () => {
         }
       `;
 
-      const html = await renderHTML(SimpleComponent(), {
+      const html = await render(SimpleComponent(), {
         cssFiles: [mainCSSPath],
         cssInline: inlineCSS
       });
@@ -239,7 +239,7 @@ describe('CSS Rendering Integration', () => {
     });
 
     it('should inject CSS into existing head element', async () => {
-      const html = await renderHTML(ComplexComponent(), {
+      const html = await render(ComplexComponent(), {
         cssFiles: [mainCSSPath],
         cssInline: '.test { color: red; }'
       });
@@ -256,7 +256,7 @@ describe('CSS Rendering Integration', () => {
     });
 
     it('should create head element when none exists', async () => {
-      const html = await renderHTML(SimpleComponent(), {
+      const html = await render(SimpleComponent(), {
         cssFiles: [mainCSSPath]
       });
 
@@ -268,7 +268,7 @@ describe('CSS Rendering Integration', () => {
     });
 
     it('should minify CSS when requested', async () => {
-      const html = await renderHTML(SimpleComponent(), {
+      const html = await render(SimpleComponent(), {
         cssFiles: [mainCSSPath],
         cssMinify: true
       });
@@ -280,15 +280,15 @@ describe('CSS Rendering Integration', () => {
     });
 
     it('should handle non-existent CSS files gracefully', async () => {
-      await expect(renderHTML(SimpleComponent(), {
+      await expect(render(SimpleComponent(), {
         cssFiles: ['/non/existent/file.css']
       })).rejects.toThrow();
     });
   });
 
-  describe('renderHTMLSync with CSS', () => {
+  describe('renderSync with CSS', () => {
     it('should render synchronously with CSS links only', () => {
-      const html = renderHTMLSync(SimpleComponent(), {
+      const html = renderSync(SimpleComponent(), {
         cssLinks: ['https://example.com/style.css'],
         cssInline: '.test { color: blue; }'
       });
@@ -302,19 +302,19 @@ describe('CSS Rendering Integration', () => {
     it('should warn and return promise when CSS files are detected', () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       
-      const result = renderHTMLSync(SimpleComponent(), {
+      const result = renderSync(SimpleComponent(), {
         cssFiles: [mainCSSPath]
       });
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('CSS files detected, use renderHTML()')
+        expect.stringContaining('CSS files detected, use render()')
       );
       expect(result).toBeInstanceOf(Promise);
     });
   });
 
   describe('render alias function', () => {
-    it('should work as alias for renderHTML', async () => {
+    it('should work as alias for render', async () => {
       const html = await render(SimpleComponent(), {
         cssFiles: [mainCSSPath],
         cssInline: '.alias-test { color: green; }'
@@ -328,7 +328,7 @@ describe('CSS Rendering Integration', () => {
 
   describe('CSS order and precedence', () => {
     it('should maintain correct CSS loading order', async () => {
-      const html = await renderHTML(SimpleComponent(), {
+      const html = await render(SimpleComponent(), {
         cssFiles: [mainCSSPath, componentCSSPath],
         cssLinks: ['https://example.com/reset.css'],
         cssInline: '.override { color: red; }'
@@ -361,7 +361,7 @@ describe('CSS Rendering Integration', () => {
         }
       `);
 
-      const html = await renderHTML(SimpleComponent(), {
+      const html = await render(SimpleComponent(), {
         cssFiles: [mainCSSPath, conflictCSSPath],
         cssInline: '.title { color: red; }'  // Should override due to cascade
       });
@@ -378,9 +378,9 @@ describe('CSS Rendering Integration', () => {
       const readFileSpy = vi.spyOn(fs, 'readFile');
       
       // Render same component multiple times
-      await renderHTML(SimpleComponent(), { cssFiles: [mainCSSPath] });
-      await renderHTML(SimpleComponent(), { cssFiles: [mainCSSPath] });
-      await renderHTML(SimpleComponent(), { cssFiles: [mainCSSPath] });
+      await render(SimpleComponent(), { cssFiles: [mainCSSPath] });
+      await render(SimpleComponent(), { cssFiles: [mainCSSPath] });
+      await render(SimpleComponent(), { cssFiles: [mainCSSPath] });
 
       // CSS file should only be read once due to caching
       const cssReadCalls = readFileSpy.mock.calls.filter(call => 
@@ -399,7 +399,7 @@ describe('CSS Rendering Integration', () => {
       await fs.writeFile(largeCSSPath, largeCSS);
 
       const startTime = performance.now();
-      const html = await renderHTML(SimpleComponent(), {
+      const html = await render(SimpleComponent(), {
         cssFiles: [largeCSSPath],
         cssMinify: true
       });
@@ -416,7 +416,7 @@ describe('CSS Rendering Integration', () => {
       const emptyCSSPath = join(testStylesDir, 'empty.css');
       await fs.writeFile(emptyCSSPath, '');
 
-      const html = await renderHTML(SimpleComponent(), {
+      const html = await render(SimpleComponent(), {
         cssFiles: [emptyCSSPath]
       });
 
@@ -433,7 +433,7 @@ describe('CSS Rendering Integration', () => {
       `);
 
       // Should still load the file but keep invalid CSS as-is
-      const html = await renderHTML(SimpleComponent(), {
+      const html = await render(SimpleComponent(), {
         cssFiles: [invalidCSSPath]
       });
 
@@ -450,7 +450,7 @@ describe('CSS Rendering Integration', () => {
         .symbols { background: url("data:image/svg+xml;utf8,<svg>...</svg>"); }
       `);
 
-      const html = await renderHTML(SimpleComponent(), {
+      const html = await render(SimpleComponent(), {
         cssFiles: [specialCSSPath]
       });
 
@@ -461,7 +461,7 @@ describe('CSS Rendering Integration', () => {
 
     it('should handle concurrent CSS loading', async () => {
       const promises = Array.from({ length: 10 }, () =>
-        renderHTML(SimpleComponent(), {
+        render(SimpleComponent(), {
           cssFiles: [mainCSSPath, componentCSSPath],
           cssInline: '.concurrent-test { color: orange; }'
         })

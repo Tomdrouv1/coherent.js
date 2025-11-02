@@ -65,7 +65,7 @@ const WelcomeCard = (name) => ({
 });
 
 // Render anywhere
-const html = renderToString(WelcomeCard('Developer'));
+const html = render(WelcomeCard('Developer'));
 ```
 
 ## 🏆 Key Advantages
@@ -160,7 +160,7 @@ const html = renderToString(WelcomeCard('Developer'));
 Want to see Coherent.js in action? Here's a complete example:
 
 ```javascript
-import { renderToString, createComponent } from '@coherentjs/core';
+import { render, createComponent } from '@coherentjs/core';
 
 // Define a reusable component
 const TodoItem = createComponent(({ task, completed }) => ({
@@ -190,7 +190,7 @@ const TodoApp = {
 };
 
 // Render to HTML
-const html = renderToString(TodoApp);
+const html = render(TodoApp);
 ```
 
 ## 🌟 Community & Support

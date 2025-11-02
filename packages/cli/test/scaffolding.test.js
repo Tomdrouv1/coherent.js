@@ -37,7 +37,6 @@ test('scaffoldProject should create basic project structure', async () => {
       'src',
       'src/components',
       'src/pages',
-      'src/api',
       'src/utils',
       'public',
       'tests'
@@ -55,6 +54,7 @@ test('scaffoldProject should create basic project structure', async () => {
       '.gitignore',
       'src/index.js',
       'src/components/Button.js',
+      'src/components/HomePage.js',
       'tests/basic.test.js'
     ];
     
@@ -110,28 +110,29 @@ test('scaffoldProject should create correct package.json for basic template', as
 
 test('scaffoldProject should create Express template correctly', async () => {
   const tempDir = await createTempDir();
-  
+
   try {
     await scaffoldProject(tempDir, {
       name: 'express-app',
-      template: 'express',
+      template: 'basic',
+      runtime: 'express',
       skipInstall: true,
       skipGit: true
     });
-    
+
     // Check package.json has Express dependencies
     const packageJsonPath = join(tempDir, 'package.json');
     const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
-    
+
     assert(packageJson.dependencies.express);
     assert(packageJson.dependencies['@coherentjs/express']);
-    
+
     // Check main index.js has Express setup
     const indexPath = join(tempDir, 'src/index.js');
     const indexContent = readFileSync(indexPath, 'utf-8');
-    
+
     assert(indexContent.includes('express'));
-    assert(indexContent.includes('setupCoherentExpress'));
+    assert(indexContent.includes('setupCoherent'));
     assert(indexContent.includes('app.listen'));
     
     
@@ -210,7 +211,7 @@ test('scaffoldProject should create basic test file', async () => {
     const testContent = readFileSync(testPath, 'utf-8');
     
     assert(testContent.includes("import { test } from 'node:test'"));
-    assert(testContent.includes("import { renderToString } from '@coherentjs/core'"));
+    assert(testContent.includes("import { render } from '@coherentjs/core'"));
     assert(testContent.includes("test('renders basic component'"));
     assert(testContent.includes("Hello, World!"));
     
@@ -223,7 +224,7 @@ test('scaffoldProject should create basic test file', async () => {
 
 test('scaffoldProject should create working Button component', async () => {
   const tempDir = await createTempDir();
-  
+
   try {
     await scaffoldProject(tempDir, {
       name: 'button-test',
@@ -231,15 +232,14 @@ test('scaffoldProject should create working Button component', async () => {
       skipInstall: true,
       skipGit: true
     });
-    
+
     const buttonPath = join(tempDir, 'src/components/Button.js');
     const buttonContent = readFileSync(buttonPath, 'utf-8');
-    
-    assert(buttonContent.includes("import { createComponent } from '@coherentjs/core'"));
-    assert(buttonContent.includes('export const Button'));
-    assert(buttonContent.includes('createComponent'));
+
+    assert(buttonContent.includes('export function Button'));
     assert(buttonContent.includes('onClick'));
     assert(buttonContent.includes('className'));
+    assert(buttonContent.includes('button:'));
     
     
     
@@ -250,7 +250,7 @@ test('scaffoldProject should create working Button component', async () => {
 
 test('scaffoldProject should handle different templates', async () => {
   const tempDir = await createTempDir();
-  
+
   try {
     // Test basic template
     const basicDir = join(tempDir, 'basic');
@@ -260,18 +260,19 @@ test('scaffoldProject should handle different templates', async () => {
       skipInstall: true,
       skipGit: true
     });
-    
+
     assert(existsSync(join(basicDir, 'src/index.js')));
-    
-    // Test express template
+
+    // Test express runtime
     const expressDir = join(tempDir, 'express');
     await scaffoldProject(expressDir, {
-      name: 'express-app', 
-      template: 'express',
+      name: 'express-app',
+      template: 'basic',
+      runtime: 'express',
       skipInstall: true,
       skipGit: true
     });
-    
+
     const expressPackageJson = JSON.parse(
       readFileSync(join(expressDir, 'package.json'), 'utf-8')
     );
@@ -286,7 +287,7 @@ test('scaffoldProject should handle different templates', async () => {
 
 test('scaffoldProject should create valid main index.js', async () => {
   const tempDir = await createTempDir();
-  
+
   try {
     await scaffoldProject(tempDir, {
       name: 'main-index-test',
@@ -294,22 +295,16 @@ test('scaffoldProject should create valid main index.js', async () => {
       skipInstall: true,
       skipGit: true
     });
-    
+
     const indexPath = join(tempDir, 'src/index.js');
     const indexContent = readFileSync(indexPath, 'utf-8');
-    
-    // Check basic structure
-    assert(indexContent.includes("import { renderToString, createComponent } from '@coherentjs/core'"));
-    assert(indexContent.includes("import { createServer } from 'http'"));
-    assert(indexContent.includes('const App = createComponent'));
+
+    // Check basic structure (built-in HTTP server)
+    assert(indexContent.includes("import http from 'http'"));
+    assert(indexContent.includes("import { render } from '@coherentjs/core'"));
+    assert(indexContent.includes("import { HomePage } from './components/HomePage.js'"));
     assert(indexContent.includes('server.listen'));
-    assert(indexContent.includes('main-index-test'));
-    
-    // Check HTML structure
-    assert(indexContent.includes('html:'));
-    assert(indexContent.includes('head:'));
-    assert(indexContent.includes('body:'));
-    assert(indexContent.includes('title:'));
+    assert(indexContent.includes('PORT'));
     
     
     

@@ -3,7 +3,7 @@
  * Pre-renders components to static HTML files
  */
 
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 
 export class StaticRuntime {
   constructor(options = {}) {
@@ -244,7 +244,7 @@ export class StaticRuntime {
 
     // Render component to HTML
     const vdom = component(options.props || {});
-    const content = renderToString(vdom);
+    const content = render(vdom);
     
     // Wrap in HTML document
     const html = this.generateHtmlDocument(content, {

@@ -65,7 +65,7 @@ export const Counter = ({ initialCount = 0 }) => {
 
 ```javascript
 // server.js
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 import { Counter } from './shared/components.js';
 
 const server = http.createServer((req, res) => {
@@ -94,7 +94,7 @@ const server = http.createServer((req, res) => {
       }
     };
     
-    const html = renderToString(component);
+    const html = render(component);
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(`<!DOCTYPE html>${html}`);
   }

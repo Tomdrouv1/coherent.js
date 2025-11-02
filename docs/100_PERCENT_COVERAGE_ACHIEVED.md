@@ -135,7 +135,7 @@ npm install @coherentjs/nextjs next react
 ### Imports (100% Correct)
 ```javascript
 // Core framework - ALL CORRECT
-import { renderToString, withState, createComponent } from '@coherentjs/core';
+import { render, withState, createComponent } from '@coherentjs/core';
 import { createCoherent, performanceMonitor } from '@coherentjs/core';
 import { when, forEach, memo, compose } from '@coherentjs/core';
 
@@ -174,7 +174,7 @@ import {
 } from '@coherentjs/client';
 
 // Framework integrations - ALL CORRECT
-import { setupCoherentExpress } from '@coherentjs/express';
+import { setupCoherent } from '@coherentjs/express';
 import { coherentFastify } from '@coherentjs/fastify';
 import { coherentKoaMiddleware } from '@coherentjs/koa';
 import { createCoherentNextHandler } from '@coherentjs/nextjs';

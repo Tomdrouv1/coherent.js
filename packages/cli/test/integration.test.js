@@ -65,9 +65,8 @@ test('Generated code should be syntactically valid', async () => {
         const closeBraces = (content.match(/\\}/g) || []).length;
         assert.strictEqual(openBraces, closeBraces, `${file} should have balanced braces`);
         
-        // Check for proper imports
+        // Check for proper exports
         if (file.includes('components') || file.includes('pages') || file.includes('api')) {
-          assert(content.includes('import'), `${file} should have import statements`);
           assert(content.includes('export'), `${file} should have export statements`);
         }
       }

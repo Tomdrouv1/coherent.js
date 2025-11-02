@@ -396,7 +396,7 @@ test('component test templates should be valid', async () => {
     // Check test imports
     assert(content.includes("import { test } from 'node:test'"));
     assert(content.includes(""));
-    assert(content.includes("import { renderToString } from '@coherentjs/core'"));
+    assert(content.includes("import { render } from '@coherentjs/core'"));
     assert(content.includes("import { TestableComponent } from './TestableComponent.js'"));
     
     // Check test cases
@@ -405,7 +405,7 @@ test('component test templates should be valid', async () => {
     assert(content.includes("test('TestableComponent renders children correctly'"));
     
     // Check test logic
-    assert(content.includes('const html = renderToString(component)'));
+    assert(content.includes('const html = render(component)'));
     assert(content.includes('assert(html.includes('));
     
     

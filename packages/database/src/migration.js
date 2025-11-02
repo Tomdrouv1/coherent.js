@@ -23,7 +23,6 @@ import { join } from 'path';
  * 
  * await migration.run();
  */
-// Stub classes for test compatibility  
 export class Migration {
   constructor(db, config = {}) {
     this.db = db;

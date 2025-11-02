@@ -3,7 +3,7 @@
  * Demonstrates how to use external CSS files with Coherent.js
  */
 
-import { renderHTML, renderHTMLSync } from "../packages/core/src/index.js";
+import { render, renderSync } from "../packages/core/src/index.js";
 
 // Simple component using CSS classes
 const Button = ({ variant = 'primary', size = 'medium', children, onClick }) => ({
@@ -123,7 +123,7 @@ const App = () => ({
 
 // Example 1: Basic CSS file loading
 export async function basicExample() {
-  const html = await renderHTML(App(), {
+  const html = await render(App(), {
     cssFiles: [
       './examples/css-file-usage/styles/main.css',
       './examples/css-file-usage/styles/components.css'
@@ -135,7 +135,7 @@ export async function basicExample() {
 
 // Example 2: CSS files with external CDN links
 export async function cdnExample() {
-  const html = await renderHTML(App(), {
+  const html = await render(App(), {
     cssFiles: [
       './examples/css-file-usage/styles/custom.css'
     ],
@@ -150,7 +150,7 @@ export async function cdnExample() {
 
 // Example 3: CSS files with inline overrides
 export async function mixedExample() {
-  const html = await renderHTML(App(), {
+  const html = await render(App(), {
     cssFiles: [
       './examples/css-file-usage/styles/main.css'
     ],
@@ -177,7 +177,7 @@ export async function mixedExample() {
 
 // Example 4: Production build with minification
 export async function productionExample() {
-  const html = await renderHTML(App(), {
+  const html = await render(App(), {
     cssFiles: [
       './examples/css-file-usage/styles/main.css',
       './examples/css-file-usage/styles/components.css',
@@ -192,7 +192,7 @@ export async function productionExample() {
 
 // Example 5: Synchronous rendering (no CSS files)
 export function synchronousExample() {
-  const html = renderHTMLSync(App(), {
+  const html = renderSync(App(), {
     cssLinks: [
       'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css'
     ],

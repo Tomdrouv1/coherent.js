@@ -3,7 +3,7 @@
  * Provides server-side rendering with Express, Fastify, Koa support
  */
 
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 import { createServer } from 'http';
 
 export class NodeRuntime {
@@ -119,7 +119,7 @@ export class NodeRuntime {
 
       // Render component
       const vdom = resolvedComponent(props);
-      const html = renderToString(vdom);
+      const html = render(vdom);
 
       // Cache result
       if (this.options.caching && options.cacheable !== false) {

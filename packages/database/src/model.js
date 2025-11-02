@@ -4,15 +4,11 @@
  * @fileoverview Core model system using pure JavaScript objects for consistency
  */
 
-import { QueryBuilder } from './query-builder.js';
+import { executeQuery } from './query-builder.js';
 
 /**
- * Create model instance
- * 
- * @param {DatabaseManager} db - Database manager instance
- * @returns {Object} Model instance
+ * Model base class for database operations
  */
-// Stub class for test compatibility
 export class Model {
   constructor(attributes = {}) {
     this.attributes = attributes || {};
@@ -697,14 +693,14 @@ export function createModel(db) {
         if (!config.from && definition.tableName) {
           config.from = definition.tableName;
         }
-        
-        const result = await QueryBuilder.execute(db, config);
-        
+
+        const result = await executeQuery(db, config);
+
         // Convert results to model instances for SELECT queries
         if (config.select && result.rows) {
           return result.rows.map(row => createInstance(name, row));
         }
-        
+
         return result;
       },
 

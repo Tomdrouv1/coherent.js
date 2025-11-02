@@ -120,7 +120,7 @@ import { createServer } from 'http';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { renderToString, dangerouslySetInnerContent } from '@coherentjs/core';
+import { render, dangerouslySetInnerContent } from '@coherentjs/core';
 import { Counter } from './components/Counter.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -193,7 +193,7 @@ const server = createServer((req, res) => {
   
   // Serve main page
   res.setHeader('Content-Type', 'text/html');
-  const html = renderToString(createPage());
+  const html = render(createPage());
   res.end(html);
 });
 
@@ -204,7 +204,7 @@ server.listen(3000, () => {
 
 ### Key Points:
 
-1. **`renderToString()`** - Renders components to HTML (SSR)
+1. **`render()`** - Renders components to HTML (SSR)
 2. **`dangerouslySetInnerContent()`** - Prevents HTML escaping for scripts/styles
 3. **`/hydration.js`** - Serves the client-side hydration bundle
 4. **`autoHydrate()`** - Makes server-rendered HTML interactive
@@ -234,7 +234,7 @@ Browser Request → Server
                   ↓
           Counter Component
                   ↓
-          renderToString()
+          render()
                   ↓
           Complete HTML
                   ↓
@@ -424,9 +424,9 @@ export const TodoList = withState({
 ```javascript
 const server = createServer((req, res) => {
   if (req.url === '/') {
-    res.end(renderToString(homePage()));
+    res.end(render(homePage()));
   } else if (req.url === '/about') {
-    res.end(renderToString(aboutPage()));
+    res.end(render(aboutPage()));
   } else {
     res.writeHead(404);
     res.end('Not found');

@@ -3,7 +3,7 @@
  * Provides middleware and utilities for using Coherent.js with Express
  */
 
-import { renderHTML } from '../../core/src/index.js';
+import { render } from '../../core/src/index.js';
 import { importPeerDependency } from '../../core/src/utils/dependency-utils.js';
 import { 
   renderWithTemplate, 
@@ -92,7 +92,7 @@ export function createCoherentHandler(componentFactory, options = {}) {
 export function enhancedExpressEngine(filePath, options, callback) {
   try {
     // Render Coherent.js component from options
-    const html = renderHTML(options);
+    const html = render(options);
     callback(null, html);
   } catch (_error) {
     callback(_error);
@@ -105,7 +105,7 @@ export function enhancedExpressEngine(filePath, options, callback) {
  * @param {Object} app - Express app instance
  * @param {Object} options - Setup options
  */
-export function setupCoherentExpress(app, options = {}) {
+export function setupCoherent(app, options = {}) {
   const {
     useMiddleware = true,
     useEngine = true,
@@ -142,7 +142,7 @@ export async function createExpressIntegration(options = {}) {
         throw new Error('Invalid Express app instance provided');
       }
       
-      setupCoherentExpress(app, options);
+      setupCoherent(app, options);
       return app;
     };
   } catch (_error) {
@@ -155,6 +155,6 @@ export default {
   coherentMiddleware,
   createCoherentHandler,
   enhancedExpressEngine,
-  setupCoherentExpress,
+  setupCoherent,
   createExpressIntegration
 };

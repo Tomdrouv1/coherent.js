@@ -345,6 +345,3 @@ export function createCacheManager(options = {}) {
 
 // Create a default instance for convenience
 export const cacheManager = createCacheManager();
-
-// For backward compatibility
-export const CacheManager = { create: createCacheManager };

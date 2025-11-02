@@ -146,8 +146,8 @@ async function handlePlaygroundRun(req, res) {
 
     // Transform relative imports in user code to absolute file URLs
     const defaultExample = `// Example: Hello World with Coherent.js
-const { renderToString } = await import('file://${path.join(repoRoot, 'packages/core/src/index.js')}');
-const html = renderToString({ div: { text: 'Hello, Coherent.js! 👋' } });
+const { render } = await import('file://${path.join(repoRoot, 'packages/core/src/index.js')}');
+const html = render({ div: { text: 'Hello, Coherent.js! 👋' } });
 console.log(html);`;
     
     const processedUserCode = transformImports(userCode.trim() || defaultExample, repoRoot);

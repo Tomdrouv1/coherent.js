@@ -217,23 +217,21 @@ function renderRaw(obj) {
   return '';
 }
 
-// Core rendering function with optional encapsulation (default: enabled)
-export function renderToString(obj, options = { encapsulate: true }) {
-  // Use scoped rendering by default for better isolation
-  if (options.encapsulate !== false) {
+// Main rendering function
+export function render(obj, options = {}) {
+  const { scoped = false } = options;
+
+  // Scoped mode - use CSS encapsulation
+  if (scoped) {
     return renderScopedComponent(obj);
   }
-  
+
+  // Default: unscoped rendering
   return renderRaw(obj);
 }
 
-// Explicit unsafe rendering (opt-out of encapsulation)
-export function renderUnsafe(obj) {
-  return renderRaw(obj);
-}
-
-// Scoped rendering with CSS encapsulation
-export function renderScopedComponent(component) {
+// Internal: Scoped rendering with CSS encapsulation
+function renderScopedComponent(component) {
   const scopeId = generateScopeId();
   
   // Handle style elements specially
@@ -275,21 +273,6 @@ export function renderScopedComponent(component) {
   const scopedComponent = applyScopeToElement(processedComponent, scopeId);
   
   return renderRaw(scopedComponent);
-}
-
-// Alias for renderToString
-export function renderHTML(obj) {
-  return renderToString(obj);
-}
-
-// Synchronous version (same as renderHTML for now)
-export function renderHTMLSync(obj) {
-  return renderToString(obj);
-}
-
-// Scoped version
-export function renderScopedHTML(obj) {
-  return renderScopedComponent(obj);
 }
 
 // Component system - Re-export from component-system for unified API
@@ -431,15 +414,8 @@ export {
 
 // Default export
 const coherent = {
-  // Core rendering (encapsulated by default)
-  renderToString,
-  renderHTML,
-  renderHTMLSync,
-
-  // Explicit encapsulation control
-  renderScopedComponent,
-  renderScopedHTML,
-  renderUnsafe,
+  // Core rendering
+  render,
 
   // Shadow DOM (client-side only)
   shadowDOM,

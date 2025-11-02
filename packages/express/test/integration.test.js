@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 // import express from 'express';
-// import { setupCoherentExpress } from '../src/index.js';
+// import { setupCoherent } from '../src/index.js';
 
 describe('Express.js integration', () => {
   it('sets up Coherent middleware', () => {
     // const app = express();
-    // setupCoherentExpress(app);
+    // setupCoherent(app);
     expect(true).toBe(true); // Test placeholder - implement Express middleware setup
   });
 

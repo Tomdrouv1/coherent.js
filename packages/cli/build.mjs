@@ -30,9 +30,7 @@ const buildConfig = {
     // Node.js built-ins
     'fs', 'path', 'url', 'child_process', 'os', 'util', 'stream', 'events',
     // Dependencies that should remain external
-    'commander', 'inquirer', 'chalk', 'ora', 'fs-extra', 'picocolors', 'prompts',
-    // Peer dependencies
-    '@coherentjs/core'
+    'commander', 'inquirer', 'chalk', 'ora', 'fs-extra', 'picocolors', 'prompts'
   ],
   define: {
     'process.env.NODE_ENV': '"production"'
@@ -48,13 +46,6 @@ async function build() {
       ...buildConfig,
       outfile: join(distDir, 'index.js'),
       format: 'esm'
-    });
-
-    // Build CJS version
-    await esbuild.build({
-      ...buildConfig,
-      outfile: join(distDir, 'index.cjs'),
-      format: 'cjs'
     });
 
     // Copy TypeScript declarations if they exist
@@ -93,7 +84,6 @@ export declare const devCommand: any;
     console.log('✅ Build completed successfully!');
     console.log(`📦 Built files:`);
     console.log(`   - dist/index.js (ESM)`);
-    console.log(`   - dist/index.cjs (CommonJS)`);
     console.log(`   - dist/index.d.ts (TypeScript definitions)`);
 
   } catch (error) {

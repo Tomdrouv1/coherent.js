@@ -7,8 +7,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // Mock all external dependencies
 vi.mock('@coherentjs/core', () => ({
-  renderToString: vi.fn(),
-  renderHTML: vi.fn(),
+  render: vi.fn(),
+  render: vi.fn(),
   VERSION: '1.1.1'
 }));
 
@@ -41,7 +41,7 @@ describe('Runtime Index', () => {
 
       expect(mockWindow.Coherent).toBeDefined();
       expect(mockWindow.Coherent.VERSION).toBe('1.1.1');
-      expect(typeof mockWindow.Coherent.renderToString).toBe('function');
+      expect(typeof mockWindow.Coherent.render).toBe('function');
       expect(typeof mockWindow.Coherent.hydrate).toBe('function');
       expect(typeof mockWindow.Coherent.defineComponent).toBe('function');
       expect(typeof mockWindow.Coherent.createApp).toBe('function');
@@ -166,12 +166,12 @@ describe('Runtime Index', () => {
   });
 
   describe('Window.Coherent methods', () => {
-    it('should lazily load renderToString', async () => {
+    it('should lazily load render', async () => {
       const mockWindow = {
         Coherent: {
-          renderToString: async (obj) => {
-            const { renderToString } = await import('@coherentjs/core');
-            return renderToString(obj);
+          render: async (obj) => {
+            const { render } = await import('@coherentjs/core');
+            return render(obj);
           }
         }
       };
@@ -181,13 +181,13 @@ describe('Runtime Index', () => {
         addEventListener: vi.fn()
       });
 
-      const { renderToString } = await import('@coherentjs/core');
-      renderToString.mockResolvedValue('<div>Test</div>');
+      const { render } = await import('@coherentjs/core');
+      render.mockResolvedValue('<div>Test</div>');
 
-      const result = await mockWindow.Coherent.renderToString({ div: { text: 'Test' } });
+      const result = await mockWindow.Coherent.render({ div: { text: 'Test' } });
       
       expect(result).toBe('<div>Test</div>');
-      expect(renderToString).toHaveBeenCalledWith({ div: { text: 'Test' } });
+      expect(render).toHaveBeenCalledWith({ div: { text: 'Test' } });
     });
 
     it('should lazily load hydrate', async () => {

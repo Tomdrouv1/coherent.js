@@ -7,8 +7,8 @@ function getCoverageClass(percentage) {
   return 'coverage-poor';
 }
 
-// Simple browser-compatible renderToString function
-function renderToString(component) {
+// Simple browser-compatible render function
+function render(component) {
   if (!component || typeof component !== 'object') return '';
 
   function renderElement(element) {
@@ -115,7 +115,7 @@ async function loadCoverageData() {
         }
       };
 
-      summaryEl.innerHTML = renderToString(summaryComponent);
+      summaryEl.innerHTML = render(summaryComponent);
     }
 
     // Update package coverage table using Coherent.js
@@ -231,7 +231,7 @@ async function loadCoverageData() {
           }
         };
 
-        tableEl.innerHTML = renderToString(packageComponent);
+        tableEl.innerHTML = render(packageComponent);
       } else {
         // Hide the package section if it's just duplicating the global data
         const noteComponent = {
@@ -240,7 +240,7 @@ async function loadCoverageData() {
             text: 'Package-level coverage data is the same as the overall project coverage shown above.'
           }
         };
-        tableEl.innerHTML = renderToString(noteComponent);
+        tableEl.innerHTML = render(noteComponent);
       }
     }
   } catch (error) {
@@ -253,7 +253,7 @@ async function loadCoverageData() {
           text: 'Failed to load coverage data. Please try again later.'
         }
       };
-      summaryEl.innerHTML = renderToString(errorComponent);
+      summaryEl.innerHTML = render(errorComponent);
     }
   }
 }

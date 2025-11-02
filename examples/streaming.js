@@ -3,9 +3,9 @@
  * Demonstrates streaming capabilities for large datasets and real-time updates
  */
 
-import { renderToString } from '../packages/core/src/index.js';
+import { render } from '../packages/core/src/index.js';
 
-// Note: Streaming renderer is a separate feature - using renderToString for now
+// Note: Streaming renderer is a separate feature - using render for now
 // For true streaming, use the streaming-renderer package when available
 
 // Large list component optimized for streaming

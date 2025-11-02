@@ -172,10 +172,10 @@ hydrate(Counter({ initialCount: 0 }), document.getElementById('app'));
 
 ```js
 // server.js
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 import { Counter } from './App.js';
 
-const html = renderToString(Counter({ initialCount: 5 }));
+const html = render(Counter({ initialCount: 5 }));
 // Send this HTML to the client
 ```
 
@@ -244,7 +244,7 @@ export const HelloWorld = createComponent(() => ({
 ```js
 // server.js
 import express from 'express';
-import { renderToString } from '@coherentjs/core/ssr';
+import { render } from '@coherentjs/core/ssr';
 import { HelloWorld } from './components/HelloWorld';
 
 const app = express();
@@ -257,7 +257,7 @@ app.get('/', (req, res) => {
         <title>Coherent.js App</title>
       </head>
       <body>
-        <div id="root">${renderToString(HelloWorld())}</div>
+        <div id="root">${render(HelloWorld())}</div>
         <script src="/client.js" type="module"></script>
       </body>
     </html>
@@ -612,7 +612,7 @@ stream.on('end', () => {
 Coherent.js uses a pure object syntax for defining components, making it intuitive and powerful:
 
 ```javascript
-import { createComponent, renderToString } from '@coherent/core';
+import { createComponent, render } from '@coherent/core';
 
 // Create a simple component
 const Greeting = createComponent(({ name = 'World' }) => ({
@@ -626,7 +626,7 @@ const Greeting = createComponent(({ name = 'World' }) => ({
 }));
 
 // Render the component
-const html = renderToString(Greeting({ name: 'Developer' }));
+const html = render(Greeting({ name: 'Developer' }));
 console.log(html);
 ```
 
@@ -676,13 +676,13 @@ export default router;
 import express from 'express';
 import apiRouter from './api.js';
 import { createErrorHandler } from '@coherentjs/api';
-import { setupCoherentExpress, createCoherentHandler } from '@coherentjs/express';
+import { setupCoherent, createCoherentHandler } from '@coherentjs/express';
 
 const app = express();
 app.use(express.json());
 
 // Setup Coherent.js with Express
-setupCoherentExpress(app);
+setupCoherent(app);
 
 // Mount API routes
 app.use('/api', apiRouter.toExpress());
@@ -701,12 +701,12 @@ app.listen(3000, () => {
 // server.js
 import fastify from 'fastify';
 import apiRouter from './api.js';
-import { setupCoherentFastify, createCoherentFastifyHandler } from '@coherentjs/fastify';
+import { setupCoherent, createHandler } from '@coherentjs/fastify';
 
 const app = fastify();
 
 // Setup Coherent.js with Fastify
-setupCoherentFastify(app);
+setupCoherent(app);
 
 // Register API routes
 app.register(apiRouter.toFastify());
@@ -733,7 +733,7 @@ To use Coherent.js in your own project:
 2. **Import and use components**
 
    ```javascript
-   import { createComponent, renderToString } from '@coherentjs/core';
+   import { createComponent, render } from '@coherentjs/core';
    
    const MyComponent = createComponent(({ message }) => ({
      div: {
@@ -745,7 +745,7 @@ To use Coherent.js in your own project:
      }
    }));
    
-   const html = renderToString(MyComponent({ message: 'Hello from Coherent.js!' }));
+   const html = render(MyComponent({ message: 'Hello from Coherent.js!' }));
    ```
 
 3. **API usage**
@@ -768,10 +768,10 @@ To use Coherent.js in your own project:
 
    ```javascript
    import express from 'express';
-   import { setupCoherentExpress } from '@coherent/express';
+   import { setupCoherent } from '@coherent/express';
    
    const app = express();
-   setupCoherentExpress(app);
+   setupCoherent(app);
    
    // Now you can return Coherent.js components directly from routes
    app.get('/', (req, res) => {
@@ -791,10 +791,10 @@ To use Coherent.js in your own project:
 
    ```javascript
    import fastify from 'fastify';
-   import { setupCoherentFastify } from '@coherent/fastify';
+   import { setupCoherent } from '@coherent/fastify';
    
    const app = fastify();
-   setupCoherentFastify(app);
+   setupCoherent(app);
    
    // Now you can return Coherent.js components directly from routes
    app.get('/', (req, res) => {

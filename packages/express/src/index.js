@@ -1,11 +1,11 @@
 // src/express/index.js
-import { renderHTML } from '../../core/src/index.js';
+import { render } from '../../core/src/index.js';
 
 export function expressEngine() {
     return (filePath, options, callback) => {
         try {
             // options contains the Coherent object structure
-            const html = renderHTML(options);
+            const html = render(options);
             callback(null, html);
         } catch (_error) {
             callback(_error);

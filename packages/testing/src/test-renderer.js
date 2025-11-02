@@ -7,7 +7,7 @@
  * @module testing/test-renderer
  */
 
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 
 /**
  * Test renderer result
@@ -216,7 +216,7 @@ export class TestRendererResult {
  * expect(getByTestId('my-div').text).toBe('Hello World');
  */
 export function renderComponent(component, options = {}) {
-  const html = renderToString(component, options);
+  const html = render(component, options);
   return new TestRendererResult(component, html);
 }
 
@@ -234,7 +234,7 @@ export async function renderComponentAsync(component, props = {}, options = {}) 
     ? await component(props)
     : component;
   
-  const html = renderToString(resolvedComponent, options);
+  const html = render(resolvedComponent, options);
   return new TestRendererResult(resolvedComponent, html);
 }
 
@@ -256,7 +256,7 @@ export class TestRenderer {
    */
   render() {
     this.renderCount++;
-    const html = renderToString(this.component, this.options);
+    const html = render(this.component, this.options);
     this.result = new TestRendererResult(this.component, html);
     return this.result;
   }

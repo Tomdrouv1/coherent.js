@@ -48,10 +48,10 @@ PORT=8080 node website/coherent-master-demo.js
 ### Option 3: Import Components
 ```javascript
 import { MasterShowcase, ContactForm, LiveDataDashboard } from './MasterExample.js';
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 
 // Use in your application
-const html = renderToString(MasterShowcase());
+const html = render(MasterShowcase());
 ```
 
 ## ✨ Features Demonstrated
@@ -188,11 +188,11 @@ The examples include interactive demonstrations:
 ### Testing Patterns
 ```javascript
 // Component testing with Vitest
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 import { ContactForm } from './MasterExample.js';
 
 test('renders contact form', () => {
-  const html = renderToString(ContactForm());
+  const html = render(ContactForm());
   expect(html).toContain('contact-form');
 });
 ```

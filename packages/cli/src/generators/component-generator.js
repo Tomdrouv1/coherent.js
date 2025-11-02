@@ -360,12 +360,12 @@ export const ${name} = createComponent(({
 function generateTestContent(name) {
   return `import { test } from 'node:test';
 import assert from 'node:assert';
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 import { ${name} } from './${name}.js';
 
 test('${name} renders correctly', () => {
   const component = ${name}({});
-  const html = renderToString(component);
+  const html = render(component);
   
   assert(typeof html === 'string');
   assert(html.length > 0);
@@ -374,7 +374,7 @@ test('${name} renders correctly', () => {
 
 test('${name} accepts className prop', () => {
   const component = ${name}({ className: 'test-class' });
-  const html = renderToString(component);
+  const html = render(component);
   
   assert(html.includes('test-class'));
 });
@@ -385,7 +385,7 @@ test('${name} renders children correctly', () => {
   ];
   
   const component = ${name}({ children });
-  const html = renderToString(component);
+  const html = render(component);
   
   assert(html.includes('Test child content'));
 });

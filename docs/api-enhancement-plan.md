@@ -5,7 +5,7 @@
 ### Implemented Features
 
 1. **Object-Based Routing**
-   - `createObjectRouter(routes)` - Pure object-to-route transformation
+   - `createRouter(routes)` - Pure object-to-route transformation
    - Nested route definitions using JavaScript objects
    - All HTTP methods supported (GET, POST, PUT, DELETE, PATCH)
 
@@ -181,7 +181,7 @@ const graphqlApi = createGraphqlAdapter({
 ## Object Router Example
 
 ```javascript
-import { createObjectRouter } from 'coherent/api';
+import { createRouter } from 'coherent/api';
 
 const routes = {
   api: {
@@ -210,7 +210,7 @@ const routes = {
   }
 };
 
-const router = createObjectRouter(routes);
+const router = createRouter(routes);
 ```
 
 ## Benefits of Object-Only Approach
@@ -328,10 +328,10 @@ router.post('/users',
 
 // Integration with Express
 import express from 'express';
-import { setupCoherentExpress } from '@coherentjs/express';
+import { setupCoherent } from '@coherentjs/express';
 
 const app = express();
-setupCoherentExpress(app);
+setupCoherent(app);
 
 app.use('/api', router.toExpress());
 

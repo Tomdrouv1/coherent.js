@@ -2,11 +2,11 @@
  * Remix Adapter for Coherent.js
  */
 
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 
 export function createRemixAdapter(_options = {}) {
   return {
-    renderComponent: (component, props) => renderToString(component, props),
+    renderComponent: (component, props) => render(component, props),
     createLoader: (component) => {
       return async ({ request, params }) => {
         return {
@@ -20,6 +20,6 @@ export function createRemixAdapter(_options = {}) {
 
 export function withCoherent(Component) {
   return function CoherentRemixComponent(props) {
-    return renderToString(Component, props);
+    return render(Component, props);
   };
 }

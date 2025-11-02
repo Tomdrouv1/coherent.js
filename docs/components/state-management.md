@@ -719,11 +719,11 @@ const PersistentState = withState({
 ### Unit Testing
 
 ```javascript
-import { renderToString } from 'coherent-js';
+import { render } from 'coherent-js';
 
 // Test initial render
 test('renders with initial state', () => {
-  const html = renderToString(Counter());
+  const html = render(Counter());
   expect(html).toContain('Count: 0');
 });
 

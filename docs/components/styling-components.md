@@ -132,7 +132,7 @@ Coherent.js supports loading CSS files separately from your JavaScript code, mak
 Use the `cssFiles` option in render functions to automatically load and inject CSS files:
 
 ```javascript
-import { renderHTML } from 'coherent';
+import { render } from 'coherent';
 
 const App = () => ({
   div: {
@@ -145,7 +145,7 @@ const App = () => ({
 });
 
 // Automatically load CSS files
-const html = await renderHTML(App(), {
+const html = await render(App(), {
   cssFiles: [
     './styles/main.css',
     './styles/components.css',
@@ -223,7 +223,7 @@ Example `styles/components/button.css`:
 You can also use external CSS links and inline styles:
 
 ```javascript
-const html = await renderHTML(App(), {
+const html = await render(App(), {
   // External CDN stylesheets
   cssLinks: [
     'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css',
@@ -248,7 +248,7 @@ const html = await renderHTML(App(), {
 Enable CSS minification for production builds:
 
 ```javascript
-const html = await renderHTML(App(), {
+const html = await render(App(), {
   cssFiles: ['./styles/main.css'],
   cssMinify: process.env.NODE_ENV === 'production'
 });

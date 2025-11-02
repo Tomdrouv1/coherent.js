@@ -19,7 +19,7 @@ The object router provides a pure object-oriented approach to define API routes 
 ### Basic Usage
 
 ```javascript
-import { createObjectRouter } from '@coherentjs/api';
+import { createRouter } from '@coherentjs/api';
 
 const routes = {
   api: {
@@ -39,7 +39,7 @@ const routes = {
   }
 };
 
-const router = createObjectRouter(routes);
+const router = createRouter(routes);
 export default router;
 ```
 
@@ -140,10 +140,10 @@ For Express integration, the object router handles errors automatically:
 
 ```javascript
 import express from 'express';
-import { createObjectRouter } from '@coherentjs/api';
+import { createRouter } from '@coherentjs/api';
 
 const app = express();
-const router = createObjectRouter(routes);
+const router = createRouter(routes);
 
 app.use(router.toExpress());
 ```
@@ -476,7 +476,7 @@ const routes = {
 The object router creates a pure Node.js HTTP server without external dependencies:
 
 ```javascript
-import { createObjectRouter } from '@coherentjs/api';
+import { createRouter } from '@coherentjs/api';
 
 const routes = {
   api: {
@@ -497,7 +497,7 @@ const routes = {
   }
 };
 
-const router = createObjectRouter(routes);
+const router = createRouter(routes);
 const server = router.createServer();
 
 server.listen(3000, () => {

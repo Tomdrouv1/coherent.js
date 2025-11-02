@@ -4,13 +4,13 @@
  */
 
 import express from 'express';
-import { createCoherentHandler, setupCoherentExpress } from '../packages/express/src/coherent-express.js';
+import { createCoherentHandler, setupCoherent } from '../packages/express/src/coherent-express.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Setup Coherent.js with Express
-setupCoherentExpress(app, {
+setupCoherent(app, {
   useMiddleware: true,
   useEngine: false,
   enablePerformanceMonitoring: true
@@ -274,9 +274,9 @@ const ExpressIntegrationDemo = () => {
                           { p: { text: 'Install the Express integration:' } },
                           { pre: { text: 'npm install @coherent/express' } },
                           { p: { text: 'Configure your Express app:' } },
-                          { pre: { text: `import { setupCoherentExpress } from '@coherent/express';
+                          { pre: { text: `import { setupCoherent } from '@coherent/express';
 
-setupCoherentExpress(app, {
+setupCoherent(app, {
   useMiddleware: true,
   enablePerformanceMonitoring: true
 });` } }

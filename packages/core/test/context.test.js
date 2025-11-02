@@ -1,4 +1,4 @@
-import { renderToString } from '../src/index.js';
+import { render } from '../src/index.js';
 import { createContextProvider, useContext, clearAllContexts } from '../src/state/state-manager.js';
 import { describe, it, expect } from 'vitest';
 
@@ -49,7 +49,7 @@ describe('Context Provider', () => {
   it('should handle nested context providers correctly', () => {
     // Run the test
     clearAllContexts();
-    const html = renderToString(NestedContextApp);
+    const html = render(NestedContextApp);
 
     // Verify the output contains the expected class names in correct quantities
     const darkButtonCount = (html.match(/btn-dark/g) || []).length;

@@ -20,7 +20,7 @@
  * ✅ Integration Patterns
  */
 
-import { renderToString, withState, memo } from '@coherentjs/core';
+import { render, withState, memo } from '@coherentjs/core';
 
 // ===== UTILITY COMPONENTS =====
 

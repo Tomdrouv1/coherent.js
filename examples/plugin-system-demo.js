@@ -4,7 +4,7 @@
  * Demonstrates how to use the plugin system to extend framework functionality.
  */
 
-import { renderToString } from '../packages/core/src/index.js';
+import { render } from '../packages/core/src/index.js';
 import {
   createPluginManager,
   createPlugin,
@@ -121,7 +121,7 @@ async function demonstrateHooks() {
   );
   
   console.log('\n--- Rendering Component ---');
-  const html = renderToString(transformed);
+  const html = render(transformed);
   
   console.log('\n--- After Render Hook ---');
   await pluginManager.callHook(PluginHooks.AFTER_RENDER, html);
@@ -271,7 +271,7 @@ const enhancedComponent = await pluginManager.callHook(
 );
 
 console.log('\nEnhanced HTML:');
-console.log(renderToString(enhancedComponent));
+console.log(render(enhancedComponent));
 
 console.log('\n=== Demo Complete ===\n');
 console.log('The plugin system provides a powerful way to extend Coherent.js!');

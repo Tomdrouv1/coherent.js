@@ -222,14 +222,8 @@ export function createMongoDBAdapter() {
     disconnect,
     getConnection,
     ping,
-    escape,
-    
-    // Alias for backward compatibility
-    run: execute
+    escape
   };
 
   return instance;
 }
-
-// For backward compatibility
-export const MongoDBAdapter = { create: createMongoDBAdapter };

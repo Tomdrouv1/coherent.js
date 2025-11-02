@@ -3,7 +3,7 @@
  * Demonstrates CSS file loading, external links, and inline styles
  */
 
-import { renderHTML } from "../../../packages/core/src/index.js";
+import { render } from "../../../packages/core/src/index.js";
 
 // Demo components
 const Button = ({ variant = 'primary', size = 'medium', children, onClick, disabled = false }) => ({
@@ -161,7 +161,7 @@ const CSSIntegrationDemo = () => ({
                               }
                             ]
                           }),
-                          code: `const html = await renderHTML(Component(), {
+                          code: `const html = await render(Component(), {
   cssFiles: [
     './styles/main.css',
     './styles/components.css'
@@ -180,7 +180,7 @@ const CSSIntegrationDemo = () => ({
                             ],
                             className: 'external-demo'
                           }),
-                          code: `const html = await renderHTML(Component(), {
+                          code: `const html = await render(Component(), {
   cssLinks: [
     'https://fonts.googleapis.com/css2?family=Inter:wght@400;600',
     'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css'
@@ -203,7 +203,7 @@ const CSSIntegrationDemo = () => ({
                             ],
                             className: 'inline-styled-card'
                           }),
-                          code: `const html = await renderHTML(Component(), {
+                          code: `const html = await render(Component(), {
   cssFiles: ['./styles/base.css'],
   cssInline: \`
     .inline-styled-card {
@@ -245,7 +245,7 @@ const CSSIntegrationDemo = () => ({
                               ]
                             }
                           },
-                          code: `const html = await renderHTML(Component(), {
+                          code: `const html = await render(Component(), {
   cssFiles: ['./styles/grid.css'],
   cssLinks: ['https://fonts.googleapis.com/css2?family=Inter'],
   cssInline: '.grid-card:hover { transform: scale(1.05); }',
@@ -281,7 +281,7 @@ const CSSIntegrationDemo = () => ({
                               }
                             ]
                           }),
-                          code: `const html = await renderHTML(Component(), {
+                          code: `const html = await render(Component(), {
   cssFiles: ['./styles/main.css', './styles/components.css'],
   cssMinify: process.env.NODE_ENV === 'production',
   minify: process.env.NODE_ENV === 'production'
@@ -385,7 +385,7 @@ const CSSIntegrationDemo = () => ({
 
 // Export different demo variations
 export async function basicCSSDemo() {
-  return await renderHTML(CSSIntegrationDemo(), {
+  return await render(CSSIntegrationDemo(), {
     cssFiles: [
       './website/styles/demo-base.css',
       './website/styles/demo-components.css'
@@ -394,7 +394,7 @@ export async function basicCSSDemo() {
 }
 
 export async function advancedCSSDemo() {
-  return await renderHTML(CSSIntegrationDemo(), {
+  return await render(CSSIntegrationDemo(), {
     cssFiles: [
       './website/styles/demo-base.css',
       './website/styles/demo-components.css',
@@ -432,7 +432,7 @@ export async function advancedCSSDemo() {
 }
 
 export async function productionCSSDemo() {
-  return await renderHTML(CSSIntegrationDemo(), {
+  return await render(CSSIntegrationDemo(), {
     cssFiles: [
       './website/styles/demo-base.css',
       './website/styles/demo-components.css',

@@ -52,7 +52,7 @@ export function coherentKoaMiddleware(options = {}) {
  * @param {Object} options - Handler options
  * @returns {Function} Koa route handler
  */
-export function createCoherentKoaHandler(componentFactory, options = {}) {
+export function createHandler(componentFactory, options = {}) {
   return async (ctx, next) => {
     try {
       // Use shared rendering utility
@@ -78,7 +78,7 @@ export function createCoherentKoaHandler(componentFactory, options = {}) {
  * @param {Object} app - Koa app instance
  * @param {Object} options - Setup options
  */
-export function setupCoherentKoa(app, options = {}) {
+export function setupCoherent(app, options = {}) {
   const {
     useMiddleware = true,
     enablePerformanceMonitoring = false
@@ -107,7 +107,7 @@ export async function createKoaIntegration(options = {}) {
         throw new Error('Invalid Koa app instance provided');
       }
       
-      setupCoherentKoa(app, options);
+      setupCoherent(app, options);
       return app;
     };
   } catch (_error) {
@@ -118,7 +118,7 @@ export async function createKoaIntegration(options = {}) {
 // Export all utilities
 export default {
   coherentKoaMiddleware,
-  createCoherentKoaHandler,
-  setupCoherentKoa,
+  createHandler,
+  setupCoherent,
   createKoaIntegration
 };

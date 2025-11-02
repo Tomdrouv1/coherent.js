@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { coherentFastify, createCoherentFastifyHandler, setupCoherentFastify } from '../src/coherent-fastify.js';
-import { renderToString } from '../../core/src/index.js';
+import { coherentFastify, createHandler, setupCoherent } from '../src/coherent-fastify.js';
+import { render } from '../../core/src/index.js';
 
 describe('Fastify Integration', () => {
   it('should create coherentFastify plugin', () => {
@@ -28,7 +28,7 @@ describe('Fastify Integration', () => {
   });
 
   it('should create coherent fastify handler', () => {
-    const handler = createCoherentFastifyHandler(() => ({}));
+    const handler = createHandler(() => ({}));
     expect(typeof handler).toBe('function');
   });
 
@@ -39,7 +39,7 @@ describe('Fastify Integration', () => {
     };
     
     expect(() => {
-      setupCoherentFastify(mockFastify);
+      setupCoherent(mockFastify);
     }).not.toThrow();
   });
 
@@ -51,7 +51,7 @@ describe('Fastify Integration', () => {
       }
     };
     
-    const html = renderToString(testComponent);
+    const html = render(testComponent);
     expect(html).toContain('Hello Coherent.js!');
   });
 

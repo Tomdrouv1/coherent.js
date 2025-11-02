@@ -92,12 +92,12 @@ There are multiple rendering entry points depending on your use case:
 
 ```javascript
 // Standard rendering (with CSS scoping by default)
-import { renderToString } from '@coherentjs/core';
-const html = renderToString(component);
+import { render } from '@coherentjs/core';
+const html = render(component);
 
 // Full HTML document with DOCTYPE
-import { renderHTML } from '@coherentjs/core';
-const html = await renderHTML(component, {
+import { render } from '@coherentjs/core';
+const html = await render(component, {
   cssFiles: ['styles.css'],
   cssInline: 'body { margin: 0; }'
 });
@@ -112,7 +112,7 @@ const stream = renderToStream(component);
 ```
 Component Object
     ↓
-renderToString() / renderHTML()
+render() / render()
     ↓
 HTMLRenderer (html-renderer.js)
     ↓
@@ -148,7 +148,7 @@ By default, Coherent.js applies CSS scoping similar to Angular's View Encapsulat
 
 To disable scoping:
 ```javascript
-renderToString(component, { encapsulate: false });
+render(component, { encapsulate: false });
 ```
 
 ## State Management
@@ -384,7 +384,7 @@ const ExpensiveList = memo(
 );
 
 // ✅ Good: Enable caching for repeated renders
-renderToString(component, { enableCache: true });
+render(component, { enableCache: true });
 ```
 
 ### 4. **Error Handling**
@@ -452,7 +452,7 @@ The API is backward compatible, so existing code will continue to work!
 
 ```javascript
 // Enable caching for production
-const html = renderToString(component, {
+const html = render(component, {
   enableCache: true,
   cacheSize: 1000,  // Max cached items
   cacheTTL: 3600000 // 1 hour in ms
@@ -492,7 +492,7 @@ const Component = withState(initialState, {
 })(MyComponent);
 
 // For rendering
-const html = renderToString(component, {
+const html = render(component, {
   enableMonitoring: true,
   enableDevTools: true
 });

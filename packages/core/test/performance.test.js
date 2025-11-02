@@ -7,11 +7,11 @@ import { describe, test, assert } from 'vitest';
 describe('Performance tests completed', () => {
 test('Performance monitoring setup', async () => {
   try {
-    const { PerformanceMonitor } = await import('../../core/src/performance/monitor.js');
-    
+    const { createPerformanceMonitor } = await import('../../core/src/performance/monitor.js');
+
     // Test monitor creation
-    const monitor = new PerformanceMonitor();
-    
+    const monitor = createPerformanceMonitor();
+
     assert.ok(typeof monitor === 'object', 'Should create monitor object');
     assert.ok(typeof monitor.start === 'function', 'Should have start method');
     assert.ok(typeof monitor.stop === 'function', 'Should have stop method');

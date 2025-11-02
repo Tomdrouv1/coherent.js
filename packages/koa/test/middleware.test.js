@@ -89,10 +89,10 @@ test('Koa context handling', async () => {
 
 test('Koa _error handling middleware', async () => {
   try {
-    const { createCoherentKoaHandler } = await import('../../../src/koa/coherent-koa.js');
+    const { createHandler } = await import('../../../src/koa/coherent-koa.js');
     
-    if (typeof createCoherentKoaHandler === 'function') {
-      const handler = createCoherentKoaHandler(() => ({ div: 'test' }));
+    if (typeof createHandler === 'function') {
+      const handler = createHandler(() => ({ div: 'test' }));
       assert.strictEqual(typeof handler, 'function', 'Should create handler function');
       
     } else {

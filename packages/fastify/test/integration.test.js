@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 // import fastify from 'fastify';
-// import { setupCoherentFastify } from '../src/index.js';
+// import { setupCoherent } from '../src/index.js';
 
 describe('Fastify integration', () => {
   it('registers Coherent plugin', () => {
     // const app = fastify();
-    // await app.register(setupCoherentFastify);
+    // await app.register(setupCoherent);
     expect(true).toBe(true); // Test placeholder - implement Fastify plugin registration
   });
 

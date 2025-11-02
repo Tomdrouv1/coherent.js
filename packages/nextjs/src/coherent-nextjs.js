@@ -3,7 +3,7 @@
  * Provides utilities for using Coherent.js with Next.js
  */
 
-import { renderToString } from '../../core/src/index.js';
+import { render } from '../../core/src/index.js';
 import { importPeerDependency } from '../../core/src/utils/dependency-utils.js';
 import {
   renderComponentFactory
@@ -110,10 +110,10 @@ export async function createCoherentServerComponent(componentFactory, options = 
       let html;
       if (enablePerformanceMonitoring) {
         const renderId = performanceMonitor.startRender();
-        html = renderToString(component);
+        html = render(component);
         performanceMonitor.endRender(renderId);
       } else {
-        html = renderToString(component);
+        html = render(component);
       }
       
       // Return dangerouslySetInnerHTML to render HTML
@@ -169,10 +169,10 @@ export async function createCoherentClientComponent(componentFactory, options = 
           let renderedHtml;
           if (enablePerformanceMonitoring) {
             const renderId = performanceMonitor.startRender();
-            renderedHtml = renderToString(component);
+            renderedHtml = render(component);
             performanceMonitor.endRender(renderId);
           } else {
-            renderedHtml = renderToString(component);
+            renderedHtml = render(component);
           }
           
           setHtml(renderedHtml);

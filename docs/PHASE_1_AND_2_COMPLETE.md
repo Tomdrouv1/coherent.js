@@ -121,7 +121,7 @@ npm install @coherentjs/client
 ✅ **Working Code Examples**
 ```javascript
 // All examples now use correct imports
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 import { createApiRouter } from '@coherentjs/api';
 import { makeHydratable } from '@coherentjs/client';
 ```
@@ -191,7 +191,7 @@ import { makeHydratable } from '@coherentjs/client';
 ### Correct Package Names
 ```javascript
 // Core framework
-import { renderToString, withState } from '@coherentjs/core';
+import { render, withState } from '@coherentjs/core';
 
 // API framework
 import { createApiRouter } from '@coherentjs/api';
@@ -200,7 +200,7 @@ import { createApiRouter } from '@coherentjs/api';
 import { makeHydratable, autoHydrate } from '@coherentjs/client';
 
 // Framework integrations
-import { setupCoherentExpress } from '@coherentjs/express';
+import { setupCoherent } from '@coherentjs/express';
 import { coherentFastify } from '@coherentjs/fastify';
 import { coherentKoaMiddleware } from '@coherentjs/koa';
 import { createCoherentNextHandler } from '@coherentjs/nextjs';

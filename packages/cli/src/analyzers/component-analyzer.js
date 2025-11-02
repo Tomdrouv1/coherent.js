@@ -211,7 +211,7 @@ function analyzeSyntax(content, _filePath) {
   metrics.usesModernSyntax = /const\s+|let\s+|arrow functions|\.\.\.|async\s+|await\s+/.test(content);
 
   // Check for Coherent.js patterns
-  metrics.usesCoherentPatterns = /renderToString|withState|memo/.test(content);
+  metrics.usesCoherentPatterns = /render|withState|memo/.test(content);
 
   return metrics;
 }

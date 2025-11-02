@@ -2,7 +2,7 @@ import express from 'express';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readFileSync, readdirSync, statSync } from 'fs';
-import { renderToString } from '../packages/core/src/rendering/html-renderer.js';
+import { render } from '../packages/core/src/rendering/html-renderer.js';
 import { Examples } from './src/pages/Examples.js';
 import { Home } from './src/pages/Home.js';
 import { DocsPage } from './src/pages/DocsPage.js';
@@ -113,7 +113,7 @@ function renderPage(content, title = 'Coherent.js', scripts = []) {
 // Routes
 app.get('/', (req, res) => {
   try {
-    const content = renderToString(Layout({ 
+    const content = render(Layout({
       currentPath: '/', 
       children: [Home()] 
     }));
@@ -127,7 +127,7 @@ app.get('/', (req, res) => {
 app.get('/examples', (req, res) => {
   try {
     const examples = getExamplesList();
-    const content = renderToString(Layout({ 
+    const content = render(Layout({
       currentPath: '/examples', 
       children: [Examples({ items: examples })] 
     }));
@@ -140,7 +140,7 @@ app.get('/examples', (req, res) => {
 
 app.get('/docs', (req, res) => {
   try {
-    const content = renderToString(Layout({ 
+    const content = render(Layout({
       currentPath: '/docs', 
       children: [DocsPage()] 
     }));
@@ -153,7 +153,7 @@ app.get('/docs', (req, res) => {
 
 app.get('/playground', (req, res) => {
   try {
-    const content = renderToString(Layout({ 
+    const content = render(Layout({
       currentPath: '/playground', 
       children: [Playground()] 
     }));
@@ -166,7 +166,7 @@ app.get('/playground', (req, res) => {
 
 app.get('/performance', (req, res) => {
   try {
-    const content = renderToString(Layout({ 
+    const content = render(Layout({
       currentPath: '/performance', 
       children: [Performance()] 
     }));
@@ -179,7 +179,7 @@ app.get('/performance', (req, res) => {
 
 app.get('/coverage', (req, res) => {
   try {
-    const content = renderToString(Layout({ 
+    const content = render(Layout({
       currentPath: '/coverage', 
       children: [Coverage()] 
     }));
@@ -193,7 +193,7 @@ app.get('/coverage', (req, res) => {
 app.get('/starter-app', (req, res) => {
   console.log('Rendering starter app...');
   try {
-    const content = renderToString(Layout({ 
+    const content = render(Layout({
       currentPath: '/starter-app', 
       children: [StarterAppPage()] 
     }));

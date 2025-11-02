@@ -483,7 +483,7 @@ Resources:
 
 ```javascript
 // api/app.js - Serverless entry point
-import { createCoherent, renderToString } from '@coherentjs/core';
+import { createCoherent, render } from '@coherentjs/core';
 import { HomePage } from '../components/HomePage.js';
 
 const coherent = createCoherent({
@@ -909,7 +909,7 @@ export const setupMonitoring = (app) => {
       }
     };
     
-    res.send(renderToString(dashboard));
+    res.send(render(dashboard));
   });
 };
 ```

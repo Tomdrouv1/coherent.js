@@ -176,7 +176,7 @@ npm install @coherentjs/client
 ### Imports (100% Correct)
 ```javascript
 // Core framework
-import { renderToString, withState, createComponent } from '@coherentjs/core';
+import { render, withState, createComponent } from '@coherentjs/core';
 
 // API framework
 import { createApiRouter, withValidation } from '@coherentjs/api';
@@ -185,7 +185,7 @@ import { createApiRouter, withValidation } from '@coherentjs/api';
 import { makeHydratable, autoHydrate } from '@coherentjs/client';
 
 // Framework integrations
-import { setupCoherentExpress } from '@coherentjs/express';
+import { setupCoherent } from '@coherentjs/express';
 import { coherentFastify } from '@coherentjs/fastify';
 import { coherentKoaMiddleware } from '@coherentjs/koa';
 import { createCoherentNextHandler } from '@coherentjs/nextjs';

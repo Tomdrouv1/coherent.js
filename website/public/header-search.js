@@ -77,19 +77,19 @@ const documentationData = [
   },
   // API Reference entries - @coherentjs/core
   {
-    title: 'renderToString()',
+    title: 'render()',
     url: 'docs/api-reference#rendertostring',
     content: 'Main server-side rendering function. Converts component objects to HTML strings',
     type: 'api'
   },
   {
-    title: 'renderHTML()',
+    title: 'render()',
     url: 'docs/api-reference#renderhtml',
-    content: 'Alias for renderToString. Renders component objects to HTML',
+    content: 'Alias for render. Renders component objects to HTML',
     type: 'api'
   },
   {
-    title: 'renderHTMLSync()',
+    title: 'renderSync()',
     url: 'docs/api-reference#renderhtmlsync',
     content: 'Synchronous HTML rendering without promises or async operations',
     type: 'api'
@@ -171,7 +171,7 @@ const documentationData = [
   
   // API Reference - @coherentjs/api
   {
-    title: 'createObjectRouter()',
+    title: 'createRouter()',
     url: 'docs/api-reference#createobjectrouter',
     content: 'Create object-based API router with validation',
     type: 'api'

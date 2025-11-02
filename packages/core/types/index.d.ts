@@ -371,13 +371,13 @@ export interface PerformanceMetrics {
 // ============================================================================
 
 /** Render a Coherent node to HTML string */
-export function renderToString(obj: CoherentNode): string;
+export function render(obj: CoherentNode): string;
 
-/** Alias for renderToString */
-export function renderHTML(obj: CoherentNode): string;
+/** Alias for render */
+export function render(obj: CoherentNode): string;
 
-/** Synchronous version of renderHTML */
-export function renderHTMLSync(obj: CoherentNode): string;
+/** Synchronous version of render */
+export function renderSync(obj: CoherentNode): string;
 
 /** Escape HTML characters in text */
 export function escapeHtml(text: string): string;
@@ -719,9 +719,9 @@ export const componentUtils: ComponentUtils;
 
 /** Default export with all core functionality */
 declare const coherent: {
-  renderToString: typeof renderToString;
-  renderHTML: typeof renderHTML;
-  renderHTMLSync: typeof renderHTMLSync;
+  render: typeof render;
+  render: typeof render;
+  renderSync: typeof renderSync;
   withState: typeof withState;
   memo: typeof memo;
   validateComponent: typeof validateComponent;

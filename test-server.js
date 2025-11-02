@@ -2,7 +2,7 @@ import express from 'express';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readFileSync } from 'fs';
-import { renderToString } from './packages/core/src/rendering/html-renderer.js';
+import { render } from './packages/core/src/rendering/html-renderer.js';
 import { Performance } from './website/src/pages/Performance.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -20,7 +20,7 @@ app.use(express.static(join(__dirname, 'website/public')));
 app.get('/', async (req, res) => {
   try {
     const performanceComponent = Performance();
-    const html = renderToString(performanceComponent);
+    const html = render(performanceComponent);
     
     // Using performance.js from public directory instead
     

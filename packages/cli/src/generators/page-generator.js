@@ -220,7 +220,7 @@ ${name}.description = '${name} page description';
 
 // Usage in router:
 // app.get('/${routeName}', (req, res) => {
-//   const html = renderToString(${name}({ 
+//   const html = render(${name}({ 
 //     params: req.params, 
 //     query: req.query,
 //     request: req 
@@ -564,12 +564,12 @@ export const ${name} = createComponent(({ initialData = {}, errors = {} }) => {
 function generateTestContent(name) {
   return `import { test } from 'node:test';
 import assert from 'node:assert';
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 import { ${name} } from './${name}.js';
 
 test('${name} page renders correctly', () => {
   const page = ${name}({});
-  const html = renderToString(page);
+  const html = render(page);
   
   assert(typeof html === 'string');
   assert(html.length > 0);
@@ -579,7 +579,7 @@ test('${name} page renders correctly', () => {
 
 test('${name} page includes proper head elements', () => {
   const page = ${name}({});
-  const html = renderToString(page);
+  const html = render(page);
   
   assert(html.includes('<title>'));
   assert(html.includes('<meta'));
@@ -593,7 +593,7 @@ test('${name} page renders with custom props', () => {
   };
   
   const page = ${name}(props);
-  const html = renderToString(page);
+  const html = render(page);
   
   assert(html.includes('${name}'));
 });

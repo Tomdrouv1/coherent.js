@@ -6,7 +6,7 @@
 import { test, assert } from 'vitest';
 import { DatabaseManager } from '../src/connection-manager.js';
 import { createModel } from '../src/model.js';
-import { QueryBuilder } from '../src/query-builder.js';
+import { executeQuery } from '../src/query-builder.js';
 
 // Mock adapter for testing
 class MockAdapter {
@@ -219,7 +219,7 @@ test('QueryBuilder with object configuration', async () => {
     limit: 10
   };
 
-  const result = await QueryBuilder.execute(dbManager, queryConfig);
+  const result = await executeQuery(dbManager, queryConfig);
   assert.ok(result, 'Should return query result');
 
   await dbManager.close();

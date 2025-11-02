@@ -7,7 +7,7 @@ import { createServer } from 'http';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { renderToString, dangerouslySetInnerContent } from '../../packages/core/src/index.js';
+import { render, dangerouslySetInnerContent } from '../../packages/core/src/index.js';
 import { Counter } from './components/Counter.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -238,7 +238,7 @@ const server = createServer((req, res) => {
   
   try {
     const page = createPage();
-    const html = renderToString(page);
+    const html = render(page);
     res.writeHead(200);
     res.end(html);
   } catch (error) {

@@ -28,7 +28,7 @@ pnpm add express @coherentjs/core
 
 ```javascript
 import express from 'express';
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 
 const app = express();
 
@@ -56,7 +56,7 @@ app.get('/', (req, res) => {
     }
   };
   
-  res.send(renderToString(component));
+  res.send(render(component));
 });
 
 app.listen(3000, () => {
@@ -68,7 +68,7 @@ app.listen(3000, () => {
 
 ```javascript
 import express from 'express';
-import { renderToString, createCoherent } from '@coherentjs/core';
+import { render, createCoherent } from '@coherentjs/core';
 
 const app = express();
 const coherent = createCoherent({
@@ -178,7 +178,7 @@ app.get('/api/users/:id/profile', (req, res) => {
   });
   
   res.json({
-    html: renderToString(UserProfile({ user })),
+    html: render(UserProfile({ user })),
     data: user
   });
 });
@@ -266,7 +266,7 @@ pnpm add fastify @coherentjs/core
 
 ```javascript
 import Fastify from 'fastify';
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 
 const fastify = Fastify({ logger: true });
 
@@ -295,7 +295,7 @@ fastify.get('/', async (request, reply) => {
   };
   
   reply.type('text/html');
-  return renderToString(component);
+  return render(component);
 });
 
 const start = async () => {
@@ -315,7 +315,7 @@ start();
 
 ```javascript
 import Fastify from 'fastify';
-import { renderToString, createCoherent } from '@coherentjs/core';
+import { render, createCoherent } from '@coherentjs/core';
 
 const fastify = Fastify({ logger: true });
 
@@ -424,7 +424,7 @@ fastify.get('/api/users/:id', {
   
   return {
     user,
-    html: renderToString(UserCard({ user }))
+    html: render(UserCard({ user }))
   };
 });
 ```
@@ -571,7 +571,7 @@ export const GET = createCoherentAppRouterHandler((request) => {
 All integrations support performance monitoring when enabled:
 
 ```javascript
-setupCoherentExpress(app, {
+setupCoherent(app, {
   enablePerformanceMonitoring: true
 });
 
@@ -628,7 +628,7 @@ npm install @coherentjs/core
 
 ```javascript
 import http from 'node:http';
-import { renderToString, createCoherent } from '@coherentjs/core';
+import { render, createCoherent } from '@coherentjs/core';
 
 const coherent = createCoherent({
   enableCache: true,
@@ -704,7 +704,7 @@ npm install koa @coherentjs/core
 
 ```javascript
 import Koa from 'koa';
-import { renderToString, createCoherent } from '@coherentjs/core';
+import { render, createCoherent } from '@coherentjs/core';
 
 const app = new Koa();
 const coherent = createCoherent({
@@ -799,7 +799,7 @@ npm install hono @coherentjs/core
 
 ```javascript
 import { Hono } from 'hono';
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 
 const app = new Hono();
 
@@ -837,7 +837,7 @@ const EdgePage = ({ region, timestamp }) => Layout({
 });
 
 app.get('/', (c) => {
-  const html = renderToString(EdgePage({
+  const html = render(EdgePage({
     region: c.env?.CF_RAY || 'local',
     timestamp: new Date().toISOString()
   }));
@@ -866,7 +866,7 @@ app.get('/api/status', (c) => {
   
   const accept = c.req.header('accept');
   if (accept?.includes('text/html')) {
-    return c.html(renderToString(StatusCard({ status })));
+    return c.html(render(StatusCard({ status })));
   } else {
     return c.json(status);
   }
@@ -909,7 +909,7 @@ const HomePage = () => Layout({ title: 'Home', children: [...] });
 // ❌ Avoid - Recreating components
 app.get('/', (req, res) => {
   const component = { html: { /* recreated every time */ } };
-  res.send(renderToString(component));
+  res.send(render(component));
 });
 ```
 

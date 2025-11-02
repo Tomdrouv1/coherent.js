@@ -608,7 +608,7 @@ export interface OpenAPIServerVariable {
 // ============================================================================
 
 /** Create an object-based router */
-export function createObjectRouter(routes: RouteObject, config?: RouterConfig): ObjectRouter;
+export function createRouter(routes: RouteObject, config?: RouterConfig): ObjectRouter;
 
 /** Error handling HOC */
 export function withErrorHandling(options?: ErrorHandlerOptions): (handler: RouteHandler) => RouteHandler;
@@ -687,7 +687,7 @@ export function deserializeSet(arr: any[]): Set<any>;
 // ============================================================================
 
 declare const coherentApi: {
-  createObjectRouter: typeof createObjectRouter;
+  createRouter: typeof createRouter;
   ApiError: typeof ApiError;
   ValidationError: typeof ValidationError;
   AuthenticationError: typeof AuthenticationError;

@@ -20,7 +20,7 @@
  * Run this example: node examples/master-showcase.js
  */
 
-import { renderToString, withState, memo, dangerouslySetInnerContent } from '../packages/core/src/index.js';
+import { render, withState, memo, dangerouslySetInnerContent } from '../packages/core/src/index.js';
 import { createServer } from 'http';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
@@ -1374,7 +1374,7 @@ function startServer() {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     
     try {
-      const htmlString = renderToString(masterShowcasePage);
+      const htmlString = render(masterShowcasePage);
       res.writeHead(200);
       res.end(htmlString);
     } catch (error) {

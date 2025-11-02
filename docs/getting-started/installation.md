@@ -26,7 +26,7 @@ yarn add @coherentjs/core
 Create a file called `hello.js`:
 
 ```javascript
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 
 // Define a simple component
 const HelloWorld = {
@@ -40,7 +40,7 @@ const HelloWorld = {
 };
 
 // Render to HTML
-const html = renderToString(HelloWorld);
+const html = render(HelloWorld);
 console.log(html);
 ```
 
@@ -62,7 +62,7 @@ node hello.js
 Create `dynamic.js`:
 
 ```javascript
-import { renderToString, createComponent } from '@coherentjs/core';
+import { render, createComponent } from '@coherentjs/core';
 
 // Component with parameters
 const UserCard = createComponent(({ name, role, avatar }) => ({
@@ -81,7 +81,7 @@ const UserCard = createComponent(({ name, role, avatar }) => ({
 }));
 
 // Use the component
-const userHtml = renderToString(
+const userHtml = render(
   UserCard({ 
     name: 'Jane Doe', 
     role: 'Senior Developer',
@@ -98,7 +98,7 @@ Create `server.js` with Express:
 
 ```javascript
 import express from 'express';
-import { renderHTML } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 
 const app = express();
 
@@ -142,7 +142,7 @@ const HomePage = {
 };
 
 app.get('/', (req, res) => {
-  const html = renderHTML(HomePage); // Includes DOCTYPE automatically
+  const html = render(HomePage); // Includes DOCTYPE automatically
   res.send(html);
 });
 
@@ -192,7 +192,7 @@ Now that you have Coherent.js installed and running:
 Coherent.js includes full TypeScript definitions:
 
 ```typescript
-import { renderToString, ComponentObject } from '@coherentjs/core';
+import { render, ComponentObject } from '@coherentjs/core';
 
 interface UserProps {
   name: string;

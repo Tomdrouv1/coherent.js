@@ -381,7 +381,7 @@ const html = renderWithTemplate(component, { template });
 const html = await renderComponentFactory(factory, args, options);
 
 // ❌ Bad: Mixing concerns
-const html = renderToString(component);
+const html = render(component);
 // Then manually adding template...
 ```
 
@@ -425,20 +425,20 @@ try {
 
 ## Migration Guide
 
-### From Direct renderToString
+### From Direct render
 
 **Before (v1.0.x):**
 ```javascript
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 import { performanceMonitor } from '@coherentjs/core';
 
 let html;
 if (enableMonitoring) {
   const renderId = performanceMonitor.startRender();
-  html = renderToString(component);
+  html = render(component);
   performanceMonitor.endRender(renderId);
 } else {
-  html = renderToString(component);
+  html = render(component);
 }
 
 const finalHtml = template.replace('{{content}}', html);

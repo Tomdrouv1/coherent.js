@@ -3,7 +3,7 @@
  * Provides custom element and web component utilities
  */
 
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 
 /**
  * Define a Coherent.js component as a custom element
@@ -30,7 +30,7 @@ export function defineComponent(name, component, options = {}) {
     }
 
     render() {
-      const html = renderToString(this.component);
+      const html = render(this.component);
       if (this.options.shadow) {
         const shadow = this.attachShadow({ mode: 'open' });
         shadow.innerHTML = html;

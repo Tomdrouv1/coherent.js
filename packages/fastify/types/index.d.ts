@@ -256,13 +256,13 @@ export interface FastifyHMRConfig {
 export const coherentFastify: CoherentFastifyPlugin;
 
 /** Setup Coherent.js with Fastify instance */
-export function setupCoherentFastify(
+export function setupCoherent(
   fastify: FastifyInstance,
   options?: CoherentFastifyOptions
 ): void;
 
 /** Create a Fastify route handler for Coherent.js components */
-export function createCoherentFastifyHandler(
+export function createHandler(
   componentFactory: ComponentFactory,
   options?: CoherentHandlerOptions
 ): CoherentRouteHandler;
@@ -340,8 +340,8 @@ export function isCoherentInstance(fastify: FastifyInstance): fastify is Coheren
 
 declare const coherentFastifyPlugin: {
   coherentFastify: typeof coherentFastify;
-  setupCoherentFastify: typeof setupCoherentFastify;
-  createCoherentFastifyHandler: typeof createCoherentFastifyHandler;
+  setupCoherent: typeof setupCoherent;
+  createHandler: typeof createHandler;
   registerComponentRoutes: typeof registerComponentRoutes;
   ssrMiddleware: typeof ssrMiddleware;
   createErrorHandler: typeof createErrorHandler;

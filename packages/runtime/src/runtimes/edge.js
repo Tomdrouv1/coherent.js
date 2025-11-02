@@ -3,7 +3,7 @@
  * Provides server-side rendering without Node.js dependencies
  */
 
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherentjs/core';
 
 export class EdgeRuntime {
   constructor(options = {}) {
@@ -125,7 +125,7 @@ export class EdgeRuntime {
 
       // Render component
       const vdom = resolvedComponent(props);
-      const html = renderToString(vdom);
+      const html = render(vdom);
 
       // Cache result
       if (this.options.caching && options.cacheable !== false) {

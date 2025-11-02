@@ -9,7 +9,7 @@ console.log('Loading Coherent.js playground functionality...');
 window.Coherent = window.Coherent || {};
 
 // Core rendering functions
-window.Coherent.renderToString = function(component) {
+window.Coherent.render = function(component) {
   return browserRenderToString(component);
 };
 
@@ -65,8 +65,7 @@ window.Coherent.Fragment = function({ children }) {
 };
 
 // Global aliases for convenience
-window.renderToString = window.Coherent.renderToString;
-window.renderToDOM = window.Coherent.renderToDOM;
+window.render = window.Coherent.render;
 window.component = window.Coherent.component;
 window.useState = window.Coherent.useState;
 window.useEffect = window.Coherent.useEffect;
@@ -150,7 +149,7 @@ function escapeHtmlText(value) {
     .replace(/>/g, '&gt;');
 }
 
-// Simple browser-compatible renderToString function
+// Simple browser-compatible render function
 function browserRenderToString(component) {
   if (!component) return '';
   if (typeof component === 'string') return escapeHtmlText(component);
