@@ -46,6 +46,7 @@ export const devCommand = new Command('dev')
         devProcess = spawn('npm', ['run', 'dev'], {
           stdio: 'inherit',
           cwd: process.cwd(),
+          shell: true,
           env: {
             ...process.env,
             PORT: options.port,
@@ -60,18 +61,21 @@ export const devCommand = new Command('dev')
         if (existsSync('vite.config.js') || existsSync('vite.config.ts')) {
           devProcess = spawn('npx', ['vite', '--port', options.port, '--host', options.host], {
             stdio: 'inherit',
-            cwd: process.cwd()
+            cwd: process.cwd(),
+            shell: true
           });
         } else if (existsSync('webpack.config.js')) {
           devProcess = spawn('npx', ['webpack', 'serve', '--port', options.port, '--host', options.host], {
             stdio: 'inherit',
-            cwd: process.cwd()
+            cwd: process.cwd(),
+            shell: true
           });
         } else if (packageJson.type === 'module' || existsSync('src/index.js')) {
           // Use nodemon for Node.js projects
           devProcess = spawn('npx', ['nodemon', 'src/index.js'], {
             stdio: 'inherit',
             cwd: process.cwd(),
+            shell: true,
             env: {
               ...process.env,
               PORT: options.port,

@@ -51,36 +51,41 @@ export const buildCommand = new Command('build')
       // Check for existing build script
       if (packageJson.scripts && packageJson.scripts.build) {
         spinner.text = 'Running build script...';
-        execSync('npm run build', { 
+        execSync('npm run build', {
           stdio: options.watch ? 'inherit' : 'pipe',
-          cwd: process.cwd()
+          cwd: process.cwd(),
+          shell: true
         });
       } else {
         // Default build process for Coherent.js projects
         spinner.text = 'Building with default configuration...';
-        
+
         // Check for different build tools
         if (existsSync('vite.config.js') || existsSync('vite.config.ts')) {
-          execSync('npx vite build', { 
+          execSync('npx vite build', {
             stdio: options.watch ? 'inherit' : 'pipe',
-            cwd: process.cwd()
+            cwd: process.cwd(),
+            shell: true
           });
         } else if (existsSync('webpack.config.js')) {
-          execSync('npx webpack --mode production', { 
+          execSync('npx webpack --mode production', {
             stdio: options.watch ? 'inherit' : 'pipe',
-            cwd: process.cwd()
+            cwd: process.cwd(),
+            shell: true
           });
         } else if (existsSync('rollup.config.js')) {
-          execSync('npx rollup -c', { 
+          execSync('npx rollup -c', {
             stdio: options.watch ? 'inherit' : 'pipe',
-            cwd: process.cwd()
+            cwd: process.cwd(),
+            shell: true
           });
         } else {
           // Use esbuild as fallback
           spinner.text = 'Building with esbuild (fallback)...';
           execSync(`npx esbuild src/index.js --bundle --minify --outfile=dist/index.js --platform=node --format=esm`, {
             stdio: options.watch ? 'inherit' : 'pipe',
-            cwd: process.cwd()
+            cwd: process.cwd(),
+            shell: true
           });
         }
       }
@@ -91,9 +96,10 @@ export const buildCommand = new Command('build')
         
         try {
           // Try to run bundle analyzer if available
-          execSync('npx webpack-bundle-analyzer dist/stats.json', { 
+          execSync('npx webpack-bundle-analyzer dist/stats.json', {
             stdio: 'inherit',
-            cwd: process.cwd()
+            cwd: process.cwd(),
+            shell: true
           });
         } catch {
           console.log(picocolors.yellow('⚠️  Bundle analyzer not available'));
