@@ -4,19 +4,21 @@ Get up and running with Coherent.js in under 5 minutes.
 
 ## 📦 Installation
 
+> **Note**: Coherent.js is currently in beta (v1.0.0-beta.1). Use the `@beta` tag to install.
+
 ### Using npm
 ```bash
-npm install @coherent.js/core
+npm install @coherentjs/core@beta
 ```
 
 ### Using pnpm (recommended)
 ```bash
-pnpm add @coherent.js/core
+pnpm add @coherentjs/core@beta
 ```
 
 ### Using yarn
 ```bash
-yarn add @coherent.js/core
+yarn add @coherentjs/core@beta
 ```
 
 ## ⚡ Quick Start
@@ -26,7 +28,7 @@ yarn add @coherent.js/core
 Create a file called `hello.js`:
 
 ```javascript
-import { render } from '@coherent.js/core';
+import { render } from '@coherentjs/core';
 
 // Define a simple component
 const HelloWorld = {
@@ -62,7 +64,7 @@ node hello.js
 Create `dynamic.js`:
 
 ```javascript
-import { render, createComponent } from '@coherent.js/core';
+import { render, createComponent } from '@coherentjs/core';
 
 // Component with parameters
 const UserCard = createComponent(({ name, role, avatar }) => ({
@@ -98,7 +100,7 @@ Create `server.js` with Express:
 
 ```javascript
 import express from 'express';
-import { render } from '@coherent.js/core';
+import { render } from '@coherentjs/core';
 
 const app = express();
 
@@ -192,7 +194,7 @@ Now that you have Coherent.js installed and running:
 Coherent.js includes full TypeScript definitions:
 
 ```typescript
-import { render, ComponentObject } from '@coherent.js/core';
+import { render, ComponentObject } from '@coherentjs/core';
 
 interface UserProps {
   name: string;
@@ -216,7 +218,7 @@ For rapid development, Coherent.js includes a dev server:
 
 ```bash
 # Install globally
-npm install -g @coherent.js/core
+npm install -g @coherentjs/core
 
 # Start dev server
 coherent-dev

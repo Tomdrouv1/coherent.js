@@ -1,5 +1,5 @@
-import { render } from '../src/index.js';
-import { createContextProvider, useContext, clearAllContexts } from '../src/state/state-manager.js';
+import { render } from '@coherentjs/core';
+import { createContextProvider, useContext, clearAllContexts } from '../src/state-manager.js';
 import { describe, it, expect } from 'vitest';
 
 // Test component that uses context

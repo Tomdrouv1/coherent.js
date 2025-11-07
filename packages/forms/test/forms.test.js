@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { createForm, formValidators } from '../src/forms/forms.js';
+import { createForm, formValidators } from '../src/forms.js';
 
 describe('Enhanced Form System', () => {
   let form;

@@ -1,0 +1,34 @@
+{
+  "name": "@coherentjs/state",
+  "version": "1.0.0-beta.1",
+  "description": "Reactive state management for Coherent.js applications",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./reactive": "./src/reactive-state.js",
+    "./persistence": "./src/state-persistence.js",
+    "./validation": "./src/state-validation.js",
+    "./manager": "./src/state-manager.js"
+  },
+  "keywords": [
+    "coherent",
+    "state",
+    "reactive",
+    "state-management",
+    "persistence",
+    "validation"
+  ],
+  "author": "Coherent.js Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tomdrouv1/coherent.js.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "@coherentjs/core": "workspace:^"
+  }
+}

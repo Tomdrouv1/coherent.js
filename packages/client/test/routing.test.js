@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { createRouter } from '../src/routing/router.js';
+import { createRouter } from '../src/router.js';
 
 // Mock performance.now
 global.performance = global.performance || { now: () => Date.now() };

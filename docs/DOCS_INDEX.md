@@ -8,15 +8,18 @@ A comprehensive guide to all available documentation in the Coherent.js ecosyste
 Start here to get up and running quickly:
 
 - **[Main Documentation](README.md)** - Overview and philosophy
-- **[Quick Start](getting-started.md)** - 5-minute setup guide  
+- **[Quick Start](getting-started.md)** - 5-minute setup guide
 - **[Installation](getting-started/installation.md)** - Detailed setup
 - **[Migration Guide](migration-guide.md)** - Coming from other frameworks
+- **[Package Reorganization Migration](PACKAGE_REORGANIZATION_MIGRATION.md)** - Migrating to v1.0.0-beta.2
 
 ### 🧩 **Building Components**
 Learn to build powerful, maintainable components:
 
 - **[Basic Components](components/basic-components.md)** - Object syntax fundamentals
-- **[State Management](components/state-management.md)** - Reactive state with `withState`
+- **[State Management](components/state-management.md)** - SSR state with `withState`
+- **[Reactive State](components/reactive-state.md)** - Client-side reactive state (@coherentjs/state)
+- **[Advanced State Management](components/advanced-state-management.md)** - Advanced patterns with withState
 - **[Advanced Components](components/advanced-components.md)** - HOCs, composition, patterns
 - **[Styling Components](components/styling-components.md)** - CSS-in-JS, theming, animations
 
@@ -25,6 +28,7 @@ Making your components interactive and dynamic:
 
 - **[Hydration Guide](client-side-hydration-guide.md)** - Basic hydration concepts
 - **[Advanced Hydration](client-side/hydration.md)** - Complex hydration patterns
+- **[Client Router](client-side/client-router.md)** - Client-side routing with prefetching & transitions
 - **[Event Handling](function-on-element-events.md)** - User interactions and forms
 - **[Hydration Patterns](hydration-guide.md)** - Interactive examples
 

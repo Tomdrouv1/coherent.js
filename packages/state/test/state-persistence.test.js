@@ -4,7 +4,7 @@ import {
   withLocalStorage,
   withSessionStorage,
   withIndexedDB
-} from '../src/state/state-persistence.js';
+} from '../src/state-persistence.js';
 
 // Mock localStorage and sessionStorage for Node.js environment
 const localStorageMock = (() => {

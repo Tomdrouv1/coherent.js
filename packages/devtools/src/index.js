@@ -29,6 +29,11 @@ import {
   createConsoleLogger
 } from './logger.js';
 
+import {
+  DevTools,
+  createDevTools
+} from './dev-tools.js';
+
 // Re-export everything
 export {
   ComponentInspector,
@@ -43,7 +48,9 @@ export {
   LogLevel,
   createLogger,
   createComponentLogger,
-  createConsoleLogger
+  createConsoleLogger,
+  DevTools,
+  createDevTools
 };
 
 // Default export with all utilities
@@ -53,17 +60,21 @@ export default {
   createInspector,
   inspect,
   validateComponent,
-  
+
   // Profiler
   PerformanceProfiler,
   createProfiler,
   measure,
   profile,
-  
+
   // Logger
   DevLogger,
   LogLevel,
   createLogger,
   createComponentLogger,
-  createConsoleLogger
+  createConsoleLogger,
+
+  // DevTools
+  DevTools,
+  createDevTools
 };

@@ -11,9 +11,9 @@
 import { performanceMonitor } from './performance/monitor.js';
 
 // Component system imports
-import { 
-  withState, 
-  withStateUtils, 
+import {
+  withState,
+  withStateUtils,
   createStateManager,
   createComponent,
   defineComponent,
@@ -24,6 +24,30 @@ import {
   isLazy,
   evaluateLazy
 } from './components/component-system.js';
+
+// Component lifecycle imports
+import {
+  ComponentLifecycle,
+  LIFECYCLE_PHASES,
+  withLifecycle,
+  createLifecycleHooks,
+  useHooks,
+  componentUtils as lifecycleUtils
+} from './components/lifecycle.js';
+
+// Object factory imports
+import {
+  createElement,
+  createTextNode,
+  h
+} from './core/object-factory.js';
+
+// Component cache imports
+import {
+  ComponentCache,
+  createComponentCache,
+  memoize
+} from './performance/component-cache.js';
 
 // Error boundary imports
 import {
@@ -276,9 +300,9 @@ function renderScopedComponent(component) {
 }
 
 // Component system - Re-export from component-system for unified API
-export { 
-  withState, 
-  withStateUtils, 
+export {
+  withState,
+  withStateUtils,
   createStateManager,
   createComponent,
   defineComponent,
@@ -289,6 +313,30 @@ export {
   isLazy,
   evaluateLazy
 } from './components/component-system.js';
+
+// Component lifecycle exports
+export {
+  ComponentLifecycle,
+  LIFECYCLE_PHASES,
+  withLifecycle,
+  createLifecycleHooks,
+  useHooks,
+  componentUtils as lifecycleUtils
+} from './components/lifecycle.js';
+
+// Object factory exports
+export {
+  createElement,
+  createTextNode,
+  h
+} from './core/object-factory.js';
+
+// Component cache exports
+export {
+  ComponentCache,
+  createComponentCache,
+  memoize
+} from './performance/component-cache.js';
 
 // Error boundaries
 export {
@@ -404,13 +452,7 @@ export {
     createEventComponent
 };
 
-// Form system imports and exports
-import { createForm, formValidators } from './forms/forms.js';
-
-export {
-    createForm,
-    formValidators
-};
+// Note: Forms have been moved to @coherentjs/forms package
 
 // Default export
 const coherent = {
@@ -429,13 +471,31 @@ const coherent = {
   lazy,
   isLazy,
   evaluateLazy,
-  
+
+  // Component lifecycle
+  ComponentLifecycle,
+  LIFECYCLE_PHASES,
+  withLifecycle,
+  createLifecycleHooks,
+  useHooks,
+  lifecycleUtils,
+
+  // Object factory
+  createElement,
+  createTextNode,
+  h,
+
+  // Component cache
+  ComponentCache,
+  createComponentCache,
+  memoize,
+
   // State management
   withState,
   withStateUtils,
   createStateManager,
   memo,
-  
+
   // Error boundaries
   createErrorBoundary,
   createErrorFallback,
@@ -455,10 +515,6 @@ const coherent = {
   handleAction,
   withEventBus,
   withEventState,
-
-  // Form system
-  createForm,
-  formValidators,
 
   // Utilities
   validateComponent,

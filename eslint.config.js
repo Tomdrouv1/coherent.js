@@ -118,8 +118,8 @@ export default [
         }
     },
     {
-        // Browser-specific rules for client package
-        files: ['packages/client/**/*.js', 'src/client/**/*.js'],
+        // Browser-specific rules for client and state packages
+        files: ['packages/client/**/*.js', 'packages/state/**/*.js', 'src/client/**/*.js'],
         languageOptions: {
             globals: {
                 window: 'readonly',
@@ -127,6 +127,12 @@ export default [
                 navigator: 'readonly',
                 localStorage: 'readonly',
                 sessionStorage: 'readonly',
+                indexedDB: 'readonly',
+                btoa: 'readonly',
+                atob: 'readonly',
+                BroadcastChannel: 'readonly',
+                IntersectionObserver: 'readonly',
+                requestIdleCallback: 'readonly',
                 requestAnimationFrame: 'readonly',
                 cancelAnimationFrame: 'readonly',
                 location: 'readonly',
@@ -158,6 +164,7 @@ export default [
                 AbortController: 'readonly',
                 TextEncoder: 'readonly',
                 TextDecoder: 'readonly',
+                event: 'readonly',
                 // Performance APIs
                 performance: 'readonly',
                 performanceMonitor: 'readonly'

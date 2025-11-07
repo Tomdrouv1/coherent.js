@@ -3,7 +3,7 @@
  * Provides computed properties, watchers, and reactive updates
  */
 
-import { globalErrorHandler, StateError } from '../utils/_error-handler.js';
+import { globalErrorHandler, StateError } from '@coherentjs/core/src/utils/_error-handler.js';
 
 /**
  * Observable wrapper for tracking state changes

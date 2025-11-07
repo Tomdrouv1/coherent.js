@@ -374,7 +374,7 @@ export class FormBuilder {
   }
 
   /**
-   * Build input component
+   * Build input component with validation metadata for hydration
    */
   buildInput(name) {
     const field = this.fields.get(name);
@@ -384,19 +384,42 @@ export class FormBuilder {
     const error = this.errors[name];
     const isTouched = this.touched[name];
 
+    // Build validator names string for data-validators attribute
+    const validatorNames = field.validators
+      .map(v => {
+        if (typeof v === 'function') return v.name || 'custom';
+        if (typeof v === 'string') return v;
+        return null;
+      })
+      .filter(Boolean)
+      .join(',');
+
+    const inputProps = {
+      type: field.type,
+      name: field.name,
+      id: field.name,
+      value: value,
+      placeholder: field.placeholder,
+      'aria-invalid': error ? 'true' : 'false',
+      'aria-describedby': error ? `${name}-error` : undefined,
+      className: error && isTouched ? 'error' : ''
+    };
+
+    // Add validation metadata for client-side hydration
+    if (field.required) {
+      inputProps.required = true;
+      inputProps['data-required'] = 'true';
+    }
+
+    if (validatorNames) {
+      inputProps['data-validators'] = validatorNames;
+    }
+
+    // Note: Event handlers are attached during hydration, not inline
+    // This enables progressive enhancement and CSP compliance
+
     return {
-      input: {
-        type: field.type,
-        name: field.name,
-        id: field.name,
-        value: value,
-        placeholder: field.placeholder,
-        'aria-invalid': error ? 'true' : 'false',
-        'aria-describedby': error ? `${name}-error` : undefined,
-        className: error && isTouched ? 'error' : '',
-        onchange: `handleChange('${name}', event.target.value)`,
-        onblur: `handleBlur('${name}')`
-      }
+      input: inputProps
     };
   }
 
@@ -547,18 +570,20 @@ export function createFormBuilder(options = {}) {
 }
 
 /**
- * Create a form (alias for createFormBuilder)
+ * Create a form with UI builder capabilities (for SSR rendering)
+ * Alias for createFormBuilder - Use createFormBuilder() instead
+ * @deprecated Use createFormBuilder() to avoid conflicts with advanced form system
  */
 export function createForm(options = {}) {
   const form = new FormBuilder(options);
-  
+
   // Add fields if provided
   if (options.fields) {
     options.fields.forEach(fieldConfig => {
       form.addField(fieldConfig.name, fieldConfig);
     });
   }
-  
+
   return form;
 }
 

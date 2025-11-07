@@ -1,6 +1,12 @@
 # 🚀 Coherent.js
 
+[![npm version](https://img.shields.io/npm/v/@coherentjs/core/beta.svg)](https://www.npmjs.com/package/@coherentjs/core)
+[![Beta Status](https://img.shields.io/badge/status-beta-orange.svg)](https://github.com/Tomdrouv1/coherent.js)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+
 A high-performance JavaScript framework for building modern web applications with a focus on speed, simplicity, and developer experience.
+
+> **⚠️ Beta Release**: Coherent.js is currently in beta (v1.0.0-beta.1). The API is stable, but we're collecting feedback before the v1.0.0 stable release. Install with `npm install @coherentjs/core@beta`
 
 ## ✨ Features
 
@@ -14,7 +20,7 @@ A high-performance JavaScript framework for building modern web applications wit
 - **Routing**: Declarative client-side routing
 - **Build Tooling**: Works with modern build tools like Vite and Webpack
 
-### 🎯 New Features (v2.0)
+### 🎯 Features (v1.0.0-beta.1)
 
 #### **Plugin System**
 - Extensible plugin architecture with lifecycle hooks
@@ -83,26 +89,26 @@ A high-performance JavaScript framework for building modern web applications wit
 Coherent.js is distributed as a collection of packages:
 
 ### Core Packages
-- `@coherent.js/core`: Core framework with component system and state management
-- `@coherent.js/router`: Client-side routing solution
-- `@coherent.js/ssr`: Server-side rendering utilities
-- `@coherent.js/hmr`: Hot Module Replacement support
+- `@coherentjs/core`: Core framework with component system and state management
+- `@coherentjs/router`: Client-side routing solution
+- `@coherentjs/ssr`: Server-side rendering utilities
+- `@coherentjs/hmr`: Hot Module Replacement support
 
-### New Packages (v2.0)
-- `@coherent.js/plugins`: Plugin system with 7 built-in plugins
-- `@coherent.js/testing`: Complete testing utilities and matchers
-- `@coherent.js/devtools`: Developer tools (inspector, profiler, logger)
-- `@coherent.js/runtime`: Enhanced runtimes (Node.js, Edge)
-- `@coherent.js/i18n`: Full internationalization support
-- `@coherent.js/forms`: Form utilities and validation
-- `@coherent.js/seo`: SEO optimization tools
-- `@coherent.js/performance`: Performance optimization utilities
+### Additional Packages
+- `@coherentjs/plugins`: Plugin system with 7 built-in plugins
+- `@coherentjs/testing`: Complete testing utilities and matchers
+- `@coherentjs/devtools`: Developer tools (inspector, profiler, logger)
+- `@coherentjs/runtime`: Enhanced runtimes (Node.js, Edge)
+- `@coherentjs/i18n`: Full internationalization support
+- `@coherentjs/forms`: Form utilities and validation
+- `@coherentjs/seo`: SEO optimization tools
+- `@coherentjs/performance`: Performance optimization utilities
 
 ### Integration Packages
-- `@coherent.js/api`: API framework with validation and OpenAPI
-- `@coherent.js/express`: Express.js integration
-- `@coherent.js/fastify`: Fastify integration
-- `@coherent.js/koa`: Koa.js integration
+- `@coherentjs/api`: API framework with validation and OpenAPI
+- `@coherentjs/express`: Express.js integration
+- `@coherentjs/fastify`: Fastify integration
+- `@coherentjs/koa`: Koa.js integration
 
 ## 🚀 Getting Started
 
@@ -110,16 +116,16 @@ Coherent.js is distributed as a collection of packages:
 
 ```bash
 # Using npm
-npm install @coherent.js/core
+npm install @coherentjs/core@beta
 
-# Using yarn  
-yarn add @coherent.js/core
+# Using yarn
+yarn add @coherentjs/core@beta
 
 # Using pnpm
-pnpm add @coherent.js/core
+pnpm add @coherentjs/core@beta
 ```
 
-> **Note**: Coherent.js is currently in development. Once published to npm, you can install individual packages as needed.
+> **Note**: Coherent.js is currently in beta (v1.0.0-beta.1). Use the `@beta` tag to install the latest beta version.
 
 ### Development Installation
 
@@ -137,7 +143,7 @@ pnpm test
 
 ```javascript
 // App.js - Using pure JavaScript objects (no JSX needed!)
-import { createComponent } from '@coherent.js/core';
+import { createComponent } from '@coherentjs/core';
 
 export const Counter = createComponent(({ initialCount = 0 }) => {
   let count = initialCount;
@@ -162,7 +168,7 @@ export const Counter = createComponent(({ initialCount = 0 }) => {
 });
 
 // Client-side hydration
-import { hydrate } from '@coherent.js/client';
+import { hydrate } from '@coherentjs/client';
 import { Counter } from './App.js';
 
 hydrate(Counter({ initialCount: 0 }), document.getElementById('app'));
@@ -172,7 +178,7 @@ hydrate(Counter({ initialCount: 0 }), document.getElementById('app'));
 
 ```js
 // server.js
-import { render } from '@coherent.js/core';
+import { render } from '@coherentjs/core';
 import { Counter } from './App.js';
 
 const html = render(Counter({ initialCount: 5 }));
@@ -195,30 +201,30 @@ Coherent.js includes a comprehensive API framework for building REST, RPC, and G
 
 ```bash
 # Core package (required)
-npm install @coherent.js/core
+npm install @coherentjs/core@beta
 
 # Framework integrations (choose what you need)
-npm install @coherent.js/express      # Express.js integration
-npm install @coherent.js/fastify      # Fastify integration  
-npm install @coherent.js/koa          # Koa integration
-npm install @coherent.js/nextjs       # Next.js integration
+npm install @coherentjs/express@beta      # Express.js integration
+npm install @coherentjs/fastify@beta      # Fastify integration
+npm install @coherentjs/koa@beta          # Koa integration
+npm install @coherentjs/nextjs@beta       # Next.js integration
 
 # Additional packages
-npm install @coherent.js/api          # API framework utilities
-npm install @coherent.js/database     # Database layer with multiple adapters
-npm install @coherent.js/client       # Client-side hydration
+npm install @coherentjs/api@beta          # API framework utilities
+npm install @coherentjs/database@beta     # Database layer with multiple adapters
+npm install @coherentjs/client@beta       # Client-side hydration
 ```
 
 ### Available Packages
 
-- `@coherent.js/core` - Core framework with component system and state management
-- `@coherent.js/api` - API framework with validation, OpenAPI generation, and error handling
-- `@coherent.js/database` - Database layer with PostgreSQL, MySQL, SQLite, MongoDB adapters
-- `@coherent.js/client` - Client-side hydration and progressive enhancement
-- `@coherent.js/express` - Express.js integration
-- `@coherent.js/fastify` - Fastify integration
-- `@coherent.js/koa` - Koa.js integration
-- `@coherent.js/nextjs` - Next.js integration
+- `@coherentjs/core` - Core framework with component system and state management
+- `@coherentjs/api` - API framework with validation, OpenAPI generation, and error handling
+- `@coherentjs/database` - Database layer with PostgreSQL, MySQL, SQLite, MongoDB adapters
+- `@coherentjs/client` - Client-side hydration and progressive enhancement
+- `@coherentjs/express` - Express.js integration
+- `@coherentjs/fastify` - Fastify integration
+- `@coherentjs/koa` - Koa.js integration
+- `@coherentjs/nextjs` - Next.js integration
 
 ## 🚀 Quick Start
 
@@ -226,7 +232,7 @@ npm install @coherent.js/client       # Client-side hydration
 
 ```javascript
 // components/HelloWorld.js
-import { createComponent } from '@coherent.js/core';
+import { createComponent } from '@coherentjs/core';
 
 export const HelloWorld = createComponent(() => ({
   div: {
@@ -244,7 +250,7 @@ export const HelloWorld = createComponent(() => ({
 ```js
 // server.js
 import express from 'express';
-import { render } from '@coherent.js/core/ssr';
+import { render } from '@coherentjs/core/ssr';
 import { HelloWorld } from './components/HelloWorld';
 
 const app = express();
@@ -275,7 +281,7 @@ app.listen(3000, () => {
 
 ```jsx
 // client.js
-import { hydrate, makeHydratable, autoHydrate } from '@coherent.js/client';
+import { hydrate, makeHydratable, autoHydrate } from '@coherentjs/client';
 import { HelloWorld } from './components/HelloWorld';
 
 // Method 1: Direct hydration
@@ -297,7 +303,7 @@ Coherent.js provides powerful client-side hydration capabilities to make server-
 For simple cases, directly hydrate a single component:
 
 ```javascript
-import { hydrate } from '@coherent.js/client';
+import { hydrate } from '@coherentjs/client';
 import { MyComponent } from './components/MyComponent.js';
 
 // Hydrate a component on page load
@@ -315,7 +321,7 @@ For components with state management using `withState`:
 
 ```javascript
 // components/Counter.js
-import { withState } from '@coherent.js/core';
+import { withState } from '@coherentjs/core';
 
 const CounterComponent = withState({
   count: 0
@@ -358,7 +364,7 @@ For pages with multiple interactive components:
 
 ```javascript
 // hydration.js
-import { makeHydratable, autoHydrate } from '@coherent.js/client';
+import { makeHydratable, autoHydrate } from '@coherentjs/client';
 import { Counter } from './components/Counter.js';
 import { TodoList } from './components/TodoList.js';
 
@@ -503,7 +509,7 @@ const ComponentWithDebug = withState({
 
 ```js
 // api/users.js
-import { createApiRouter, withValidation } from '@coherent.js/api';
+import { createApiRouter, withValidation } from '@coherentjs/api';
 
 const router = createApiRouter();
 
@@ -561,7 +567,7 @@ app.listen(3000, () => {
 ### Built-in Monitoring
 
 ```javascript
-import { performanceMonitor } from '@coherent.js/core';
+import { performanceMonitor } from '@coherentjs/core';
 
 performanceMonitor.start();
 
@@ -635,7 +641,7 @@ console.log(html);
 Coherent.js includes a powerful API framework for building REST APIs:
 
 ```javascript
-import { createApiRouter, withValidation } from '@coherent.js/api';
+import { createApiRouter, withValidation } from '@coherentjs/api';
 
 // Create an API router
 const router = createApiRouter();
@@ -675,8 +681,8 @@ export default router;
 // server.js
 import express from 'express';
 import apiRouter from './api.js';
-import { createErrorHandler } from '@coherent.js/api';
-import { setupCoherent, createCoherentHandler } from '@coherent.js/express';
+import { createErrorHandler } from '@coherentjs/api';
+import { setupCoherent, createCoherentHandler } from '@coherentjs/express';
 
 const app = express();
 app.use(express.json());
@@ -701,7 +707,7 @@ app.listen(3000, () => {
 // server.js
 import fastify from 'fastify';
 import apiRouter from './api.js';
-import { setupCoherent, createHandler } from '@coherent.js/fastify';
+import { setupCoherent, createHandler } from '@coherentjs/fastify';
 
 const app = fastify();
 
@@ -727,13 +733,13 @@ To use Coherent.js in your own project:
 1. **Install the package**
 
    ```bash
-   npm install @coherent.js/core
+   npm install @coherentjs/core
    ```
 
 2. **Import and use components**
 
    ```javascript
-   import { createComponent, render } from '@coherent.js/core';
+   import { createComponent, render } from '@coherentjs/core';
    
    const MyComponent = createComponent(({ message }) => ({
      div: {
@@ -751,7 +757,7 @@ To use Coherent.js in your own project:
 3. **API usage**
 
    ```javascript
-   import { createApiRouter } from '@coherent.js/api';
+   import { createApiRouter } from '@coherentjs/api';
    
    // Create a new API router
    const router = createApiRouter();
@@ -1002,30 +1008,40 @@ Coherent.js is designed for speed:
 
 ## 🗺️ Roadmap
 
-### Phase 1 (Completed)
+### Current Status: Beta (v1.0.0-beta.1)
 
+**What's Complete:**
 - [x] Core object-to-HTML rendering
 - [x] Performance monitoring system
 - [x] Streaming support
 - [x] Component utilities (memo, compose, etc.)
-
-### Phase 2 (Current Focus)
-
 - [x] TypeScript definitions - Full type safety
 - [x] Client-side hydration - Progressive enhancement
-- [x] Hot reload development server - Faster development
 - [x] Framework integrations - Express, Fastify, Next.js adapters
 - [x] Comprehensive API documentation
-- [x] Migration guides and examples
-- [x] Prepare for npm publication
-- [ ] Collect early user/developer feedback
+- [x] Plugin system with 7 built-in plugins
+- [x] Testing utilities and matchers
+- [x] Developer tools (inspector, profiler, logger)
+- [x] Internationalization (i18n) support
+- [x] Form utilities and validation
+- [x] SEO optimization tools
 
-### Phase 3 (Future)
+**In Progress:**
+- [ ] Collect beta user feedback
+- [ ] Performance optimizations based on real-world usage
+- [ ] Additional examples and tutorials
 
+**Planned for v1.0.0 Stable:**
+- [ ] Production-ready stability
+- [ ] Comprehensive test coverage (>95%)
+- [ ] Performance benchmarks against other frameworks
+- [ ] Migration tools from React/Vue
+
+**Future (v1.1.0+):**
 - [ ] IDE plugins - Syntax highlighting and autocomplete
 - [ ] Component library ecosystem - Reusable UI components
 - [ ] Advanced optimizations - Tree shaking, code splitting
-- [ ] Testing utilities - Component testing framework
+- [ ] Visual development tools
 
 ## 🤝 Contributing
 

@@ -3,8 +3,8 @@
  * Provides comprehensive form handling with reactive validation
  */
 
-import { ReactiveState, observable, computed } from '../state/reactive-state.js';
-import { globalErrorHandler } from '../utils/_error-handler.js';
+import { ReactiveState, observable, computed } from '@coherentjs/state/src/reactive-state.js';
+import { globalErrorHandler } from '@coherentjs/core/src/utils/_error-handler.js';
 
 /**
  * Built-in validation rules

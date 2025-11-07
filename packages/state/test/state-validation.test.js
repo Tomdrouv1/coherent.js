@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createValidatedState, validators } from '../src/state/state-validation.js';
+import { createValidatedState, validators } from '../src/state-validation.js';
 
 describe('State Validation', () => {
   describe('createValidatedState', () => {

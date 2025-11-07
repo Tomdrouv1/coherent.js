@@ -3,8 +3,9 @@
  * Provides hooks and events for component lifecycle management
  */
 
-import { globalErrorHandler } from '../utils/_error-handler.js';
-import { ReactiveState } from '../state/reactive-state.js';
+import { globalErrorHandler } from '../utils/error-handler.js';
+// Note: ReactiveState moved to @coherentjs/state package
+// Lifecycle hooks are SSR-compatible and don't require reactive state
 
 /**
  * Lifecycle phases
@@ -37,7 +38,7 @@ export class ComponentLifecycle {
         this.options = options;
         this.phase = null;
         this.hooks = new Map();
-        this.state = new ReactiveState();
+        this.state = new Map(); // Simple Map for SSR compatibility
         this.props = {};
         this.context = {};
         this.isMounted = false;
