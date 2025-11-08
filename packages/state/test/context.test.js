@@ -1,4 +1,4 @@
-import { render } from '@coherentjs/core';
+import { render } from '@coherent.js/core';
 import { createContextProvider, useContext, clearAllContexts } from '../src/state-manager.js';
 import { describe, it, expect } from 'vitest';
 
