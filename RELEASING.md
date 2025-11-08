@@ -14,6 +14,8 @@ pnpm run release
 
 ## Release Types
 
+### Using Interactive Script
+
 | Command | Version Change | npm Tag | Use Case |
 |---------|---------------|---------|----------|
 | `pnpm run release` → Option 1 | 1.0.0-beta.1 → 1.0.0-beta.2 | `@beta` | Bug fixes in beta |
@@ -21,6 +23,19 @@ pnpm run release
 | `pnpm run release` → Option 3 | 1.0.0-beta.1 → 2.0.0-beta.1 | `@beta` | Breaking changes |
 | `pnpm run release` → Option 4 | 1.0.0-beta.1 → 1.0.0 | `@latest` | Stable release |
 | `pnpm run release` → Option 5 | Custom | Auto-detect | Custom version |
+
+### Using Direct Version Commands
+
+| Command | Version Change | Use Case |
+|---------|---------------|----------|
+| `pnpm run version:patch-beta` | 1.0.0-beta.1 → 1.0.0-beta.2 | Bug fixes in beta |
+| `pnpm run version:minor-beta` | 1.0.0-beta.1 → 1.1.0-beta.1 | New features in beta |
+| `pnpm run version:major-beta` | 1.0.0-beta.1 → 2.0.0-beta.1 | Breaking changes |
+| `pnpm run version:patch` | 1.0.0 → 1.0.1 | Bug fixes (stable) |
+| `pnpm run version:minor` | 1.0.0 → 1.1.0 | New features (stable) |
+| `pnpm run version:major` | 1.0.0 → 2.0.0 | Breaking changes (stable) |
+
+**Note**: Direct version commands only update package.json files. You still need to commit, tag, and create the GitHub Release manually.
 
 ## Users Install With
 
@@ -49,8 +64,12 @@ git add .
 git commit -m "fix: your changes"
 git push
 
-# 3. Run release
+# 3. Run release (interactive with prompts)
 pnpm run release
+
+# OR manually bump version then commit
+pnpm run version:patch-beta  # Bump beta patch
+git add . && git commit -m "chore: bump version"
 ```
 
 ## What Happens

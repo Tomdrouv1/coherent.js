@@ -57,34 +57,36 @@ echo -e "Current version: ${GREEN}$CURRENT_VERSION${NC}\n"
 
 # Ask for release type
 echo "Select release type:"
-echo "  1) Patch (1.0.0-beta.1 → 1.0.0-beta.2)"
-echo "  2) Minor (1.0.0-beta.1 → 1.1.0-beta.1)"
-echo "  3) Major (1.0.0-beta.1 → 2.0.0-beta.1)"
-echo "  4) Remove beta (1.0.0-beta.1 → 1.0.0)"
+echo "  1) Patch beta (1.0.0-beta.1 → 1.0.0-beta.2)"
+echo "  2) Minor beta (1.0.0-beta.1 → 1.1.0-beta.1)"
+echo "  3) Major beta (1.0.0-beta.1 → 2.0.0-beta.1)"
+echo "  4) Remove beta (1.0.0-beta.5 → 1.0.0)"
 echo "  5) Custom version"
 read -p "Choice (1-5): " CHOICE
 
+VERSION_CMD=""
+IS_PRERELEASE=true
+
 case $CHOICE in
     1)
-        NEW_VERSION=$(node -p "require('semver').inc('$CURRENT_VERSION', 'prerelease', 'beta')")
-        IS_PRERELEASE=true
+        VERSION_CMD="prerelease --preid=beta"
         ;;
     2)
-        NEW_VERSION=$(node -p "require('semver').inc('$CURRENT_VERSION', 'preminor', 'beta')")
-        IS_PRERELEASE=true
+        VERSION_CMD="preminor --preid=beta"
         ;;
     3)
-        NEW_VERSION=$(node -p "require('semver').inc('$CURRENT_VERSION', 'premajor', 'beta')")
-        IS_PRERELEASE=true
+        VERSION_CMD="premajor --preid=beta"
         ;;
     4)
-        # Remove prerelease tag
-        NEW_VERSION=$(echo "$CURRENT_VERSION" | sed -E 's/-beta\.[0-9]+//')
+        # Remove beta - extract base version
+        BASE_VERSION=$(echo "$CURRENT_VERSION" | sed -E 's/-beta\.[0-9]+//')
+        VERSION_CMD="$BASE_VERSION"
         IS_PRERELEASE=false
         ;;
     5)
-        read -p "Enter version (e.g., 1.0.0-beta.2): " NEW_VERSION
-        if [[ $NEW_VERSION == *"beta"* ]] || [[ $NEW_VERSION == *"rc"* ]] || [[ $NEW_VERSION == *"alpha"* ]]; then
+        read -p "Enter version (e.g., 1.0.0-beta.2): " CUSTOM_VERSION
+        VERSION_CMD="$CUSTOM_VERSION"
+        if [[ $CUSTOM_VERSION == *"beta"* ]] || [[ $CUSTOM_VERSION == *"rc"* ]] || [[ $CUSTOM_VERSION == *"alpha"* ]]; then
             IS_PRERELEASE=true
         else
             IS_PRERELEASE=false
@@ -95,6 +97,18 @@ case $CHOICE in
         exit 1
         ;;
 esac
+
+# Update versions using pnpm version
+echo -e "\n${BLUE}📝 Updating package versions...${NC}"
+
+# Update all packages (use --git-tag-version=false to prevent auto-tagging)
+pnpm -r exec npm version $VERSION_CMD --git-tag-version=false --allow-same-version=false
+
+# Update root package.json
+pnpm version $VERSION_CMD --git-tag-version=false --allow-same-version=false
+
+# Get the new version
+NEW_VERSION=$(node -p "require('./package.json').version")
 
 echo -e "\n${GREEN}New version: $NEW_VERSION${NC}"
 if [[ "$IS_PRERELEASE" == "true" ]]; then
@@ -109,17 +123,6 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo "Cancelled"
     exit 0
 fi
-
-# Update package versions using jq
-echo -e "\n${BLUE}📝 Updating package versions...${NC}"
-find packages -name "package.json" -type f | while read -r pkg; do
-    jq ".version = \"$NEW_VERSION\"" "$pkg" > "$pkg.tmp" && mv "$pkg.tmp" "$pkg"
-    echo "  ✓ Updated $(dirname "$pkg")"
-done
-
-# Update root package.json
-jq ".version = \"$NEW_VERSION\"" package.json > package.json.tmp && mv package.json.tmp package.json
-echo "  ✓ Updated root package.json"
 
 # Commit version changes
 echo -e "\n${BLUE}📝 Committing version changes...${NC}"

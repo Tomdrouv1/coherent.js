@@ -27,6 +27,28 @@ This interactive script will:
 - Create GitHub Release
 - Trigger CI to publish to npm and deploy website
 
+### Using Direct Version Commands
+
+For quick version bumps without the full release process:
+
+```bash
+# Beta releases
+pnpm run version:patch-beta  # 1.0.0-beta.1 → 1.0.0-beta.2
+pnpm run version:minor-beta  # 1.0.0-beta.1 → 1.1.0-beta.1
+pnpm run version:major-beta  # 1.0.0-beta.1 → 2.0.0-beta.1
+
+# Stable releases
+pnpm run version:patch  # 1.0.0 → 1.0.1
+pnpm run version:minor  # 1.0.0 → 1.1.0
+pnpm run version:major  # 1.0.0 → 2.0.0
+```
+
+**Note**: These commands only update version numbers in package.json files. You still need to:
+1. Commit the changes: `git add . && git commit -m "chore: bump version"`
+2. Tag the release: `git tag -a v1.0.0-beta.2 -m "Release v1.0.0-beta.2"`
+3. Push: `git push && git push --tags`
+4. Create GitHub Release: `gh release create v1.0.0-beta.2 --generate-notes --prerelease`
+
 ### Manual Release
 
 If you prefer to do it manually:
@@ -194,14 +216,6 @@ on:
 ```
 
 ## Troubleshooting
-
-### Release script fails with "semver not found"
-
-The script uses Node's built-in version bumping, but if you see this error:
-
-```bash
-npm install -g semver
-```
 
 ### GitHub Release created but npm publish failed
 
