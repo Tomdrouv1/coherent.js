@@ -523,7 +523,9 @@ describe('Enhanced Performance Monitor', () => {
 
       const report = monitor.generateReport();
       expect(report.metrics.renderTime.count).toBe(1);
-      expect(report.metrics.renderTime.avg).toBeGreaterThanOrEqual(10);
+      // setTimeout is not precise - allow ±2ms variance
+      expect(report.metrics.renderTime.avg).toBeGreaterThanOrEqual(8);
+      expect(report.metrics.renderTime.avg).toBeLessThan(20);
     });
 
     it('should record errors during measurement', () => {

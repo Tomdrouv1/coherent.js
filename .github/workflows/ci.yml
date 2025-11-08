@@ -44,6 +44,9 @@ jobs:
 
       - name: Unit tests with coverage
         run: pnpm run test:coverage
+        continue-on-error: false
+        env:
+          CI: true
 
       - name: Generate coverage report
         run: pnpm run coverage:report
