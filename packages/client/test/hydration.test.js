@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { hydrate, hydrateAll, hydrateBySelector, makeHydratable } from '../../../src/client/hydration.js';
+import { hydrate, hydrateAll, hydrateBySelector, makeHydratable } from '../src/hydration.js';
 
 // Mock DOM environment for testing
 const createMockElement = (tagName = 'div', className = '') => ({
@@ -60,7 +60,7 @@ describe('Hydration Utilities', () => {
     expect(typeof HydratableComponent.getHydrationData).toBe('function');
   });
 
-  it('should handle error cases', () => {
+  it('should handle _error cases', () => {
     // Test mismatched arrays
     const elements = [createMockElement()];
     const components = [TestComponent, TestComponent]; // More components than elements

@@ -60,9 +60,11 @@ function generatePageContent(name, template) {
     case 'form':
       return generateFormPage(name);
     case 'list':
-      return generateListPage(name);
+      // List page uses basic template as foundation
+      return generateBasicPage(name);
     case 'detail':
-      return generateDetailPage(name);
+      // Detail page uses basic template as foundation
+      return generateBasicPage(name);
     default:
       return generateBasicPage(name);
   }
@@ -74,7 +76,7 @@ function generatePageContent(name, template) {
 function generateBasicPage(name) {
   const routeName = name.toLowerCase();
   
-  return `import { createComponent } from '@coherentjs/core';
+  return `import { createComponent } from '@coherent.js/core';
 
 /**
  * ${name} Page Component
@@ -218,7 +220,7 @@ ${name}.description = '${name} page description';
 
 // Usage in router:
 // app.get('/${routeName}', (req, res) => {
-//   const html = renderToString(${name}({ 
+//   const html = render(${name}({ 
 //     params: req.params, 
 //     query: req.query,
 //     request: req 
@@ -232,7 +234,7 @@ ${name}.description = '${name} page description';
  * Generate dashboard page
  */
 function generateDashboardPage(name) {
-  return `import { createComponent } from '@coherentjs/core';
+  return `import { createComponent } from '@coherent.js/core';
 
 /**
  * ${name} Dashboard Page
@@ -393,7 +395,7 @@ export const ${name} = createComponent(({ stats = {}, user = null }) => {
  * Generate form page
  */
 function generateFormPage(name) {
-  return `import { createComponent } from '@coherentjs/core';
+  return `import { createComponent } from '@coherent.js/core';
 
 /**
  * ${name} Form Page
@@ -474,13 +476,13 @@ export const ${name} = createComponent(({ initialData = {}, errors = {} }) => {
                                           id: 'name',
                                           name: 'name',
                                           value: initialData.name || '',
-                                          className: errors.name ? 'error' : '',
+                                          className: errors.name ? '_error' : '',
                                           required: true
                                         }
                                       },
                                       errors.name ? {
                                         span: {
-                                          className: 'error-message',
+                                          className: '_error-message',
                                           text: errors.name
                                         }
                                       } : null
@@ -503,13 +505,13 @@ export const ${name} = createComponent(({ initialData = {}, errors = {} }) => {
                                           id: 'email',
                                           name: 'email',
                                           value: initialData.email || '',
-                                          className: errors.email ? 'error' : '',
+                                          className: errors.email ? '_error' : '',
                                           required: true
                                         }
                                       },
                                       errors.email ? {
                                         span: {
-                                          className: 'error-message',
+                                          className: '_error-message',
                                           text: errors.email
                                         }
                                       } : null
@@ -562,12 +564,12 @@ export const ${name} = createComponent(({ initialData = {}, errors = {} }) => {
 function generateTestContent(name) {
   return `import { test } from 'node:test';
 import assert from 'node:assert';
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherent.js/core';
 import { ${name} } from './${name}.js';
 
 test('${name} page renders correctly', () => {
   const page = ${name}({});
-  const html = renderToString(page);
+  const html = render(page);
   
   assert(typeof html === 'string');
   assert(html.length > 0);
@@ -577,7 +579,7 @@ test('${name} page renders correctly', () => {
 
 test('${name} page includes proper head elements', () => {
   const page = ${name}({});
-  const html = renderToString(page);
+  const html = render(page);
   
   assert(html.includes('<title>'));
   assert(html.includes('<meta'));
@@ -591,7 +593,7 @@ test('${name} page renders with custom props', () => {
   };
   
   const page = ${name}(props);
-  const html = renderToString(page);
+  const html = render(page);
   
   assert(html.includes('${name}'));
 });

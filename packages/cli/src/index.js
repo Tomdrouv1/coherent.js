@@ -14,6 +14,7 @@ import { createCommand } from './commands/create.js';
 import { generateCommand } from './commands/generate.js';
 import { buildCommand } from './commands/build.js';
 import { devCommand } from './commands/dev.js';
+import { debugCommand } from './commands/debug.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -24,7 +25,7 @@ try {
   const packagePath = join(__dirname, '..', 'package.json');
   const packageJson = JSON.parse(readFileSync(packagePath, 'utf-8'));
   version = packageJson.version;
-} catch (error) {
+} catch {
   // Use fallback version
 }
 
@@ -49,7 +50,8 @@ ${picocolors.cyan('  ╚══════════════════�
     .addCommand(createCommand)
     .addCommand(generateCommand)
     .addCommand(buildCommand)
-    .addCommand(devCommand);
+    .addCommand(devCommand)
+    .addCommand(debugCommand);
 
   // Custom help
   program.configureHelp({
@@ -61,6 +63,8 @@ ${picocolors.gray('Examples:')}
   ${picocolors.green('coherent generate page Home')}       Generate a page
   ${picocolors.green('coherent build')}                   Build for production
   ${picocolors.green('coherent dev')}                     Start development server
+  ${picocolors.green('coherent debug component')}         Analyze component performance
+  ${picocolors.green('coherent debug performance')}       Profile application performance
 
 ${picocolors.gray('Learn more:')} ${picocolors.blue('https://github.com/Tomdrouv1/coherent.js')}
 `
@@ -83,4 +87,4 @@ ${picocolors.gray('Learn more:')} ${picocolors.blue('https://github.com/Tomdrouv
 }
 
 // Export for direct usage
-export { createCommand, generateCommand, buildCommand, devCommand };
+export { createCommand, generateCommand, buildCommand, devCommand, debugCommand };

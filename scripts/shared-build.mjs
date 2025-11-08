@@ -180,16 +180,19 @@ export async function buildAll() {
   for (const pkg of buildOrder) {
     try {
       const packagePath = `packages/${pkg}`;
+      const entryPoint = `${packagePath}/${getEntryPoint(pkg)}`;
       
       if (pkg === 'client') {
         await buildBrowserPackage({
-          packageName: `@coherentjs/${pkg}`,
-          entryPoint: getEntryPoint(pkg),
+          packageName: `@coherent.js/${pkg}`,
+          entryPoint: entryPoint,
+          outDir: `${packagePath}/dist`
         });
       } else {
         await buildPackage({
-          packageName: `@coherentjs/${pkg}`,
-          entryPoint: getEntryPoint(pkg),
+          packageName: `@coherent.js/${pkg}`,
+          entryPoint: entryPoint,
+          outDir: `${packagePath}/dist`,
           external: getPackageExternals(pkg)
         });
       }
@@ -218,17 +221,17 @@ export async function buildAll() {
  */
 function getEntryPoint(packageName) {
   const entryPoints = {
-    'core': '../../src/coherent.js',
-    'api': '../../src/api/index.js',
-    'database': '../../src/database/index.js', 
-    'client': '../../src/client/hydration.js',
-    'express': '../../src/express/index.js',
-    'fastify': '../../src/fastify/index.js',
-    'koa': '../../src/koa/index.js',
-    'nextjs': '../../src/nextjs/index.js'
+    'core': 'src/index.js',
+    'api': 'src/index.js',
+    'database': 'src/index.js', 
+    'client': 'src/hydration.js',
+    'express': 'src/index.js',
+    'fastify': 'src/index.js',
+    'koa': 'src/index.js',
+    'nextjs': 'src/index.js'
   };
   
-  return entryPoints[packageName] || `../../src/${packageName}/index.js`;
+  return entryPoints[packageName] || `src/index.js`;
 }
 
 /**
@@ -237,13 +240,13 @@ function getEntryPoint(packageName) {
 function getPackageExternals(packageName) {
   const externals = {
     'core': [],
-    'api': ['@coherentjs/core'],
-    'database': ['@coherentjs/core'],
-    'client': ['@coherentjs/core'],
-    'express': ['@coherentjs/core'],
-    'fastify': ['@coherentjs/core'],
-    'koa': ['@coherentjs/core'],
-    'nextjs': ['@coherentjs/core']
+    'api': ['@coherent.js/core'],
+    'database': ['@coherent.js/core'],
+    'client': ['@coherent.js/core'],
+    'express': ['@coherent.js/core'],
+    'fastify': ['@coherent.js/core'],
+    'koa': ['@coherent.js/core'],
+    'nextjs': ['@coherent.js/core']
   };
   
   return externals[packageName] || [];

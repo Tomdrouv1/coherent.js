@@ -2,131 +2,205 @@
 
 ## Supported Versions
 
-We support the current major version of Coherent.js with security updates. 
+We take security seriously and provide security updates for the following versions:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.2.x   | ✅ (Current)       |
-| < 0.2   | ❌ (Not supported) |
+| 1.0.x-beta   | :white_check_mark: |
+| < 1.0.0 | :x:                |
 
-## Security Features
-
-Coherent.js includes several built-in security features:
-
-### HTML Escaping
-- **Automatic HTML escaping**: All text content is automatically escaped to prevent XSS attacks
-- **Safe attribute handling**: Attributes are properly escaped and validated
-- **Void element validation**: Prevents malformed HTML that could lead to security issues
-
-### Input Validation
-- **Schema-based validation**: API endpoints use JSON Schema validation
-- **Type checking**: TypeScript definitions help prevent type-related vulnerabilities
-- **Parameter sanitization**: Input parameters are validated and sanitized
-
-### Dependencies
-- **Minimal dependencies**: Core package has zero runtime dependencies
-- **Regular updates**: Dependencies are regularly updated to latest secure versions
-- **Peer dependency management**: Optional dependencies reduce attack surface
+Currently, only the latest beta version receives security updates. Once we reach stable 1.0.0, we will support the latest stable release.
 
 ## Reporting a Vulnerability
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-Instead, please report security vulnerabilities to:
-- **Email**: thomas.drouvin@gmail.com
-- **Subject**: [SECURITY] Coherent.js Security Report
+Instead, please report security vulnerabilities by emailing:
 
-Please include:
-- Description of the vulnerability
-- Steps to reproduce
-- Potential impact
-- Any suggested fixes
+**[thomas.drouvin@collektivs.com](mailto:thomas.drouvin@collektivs.com)**
 
-## Response Timeline
+Or create a private security advisory:
+1. Go to https://github.com/Tomdrouv1/coherent.js/security/advisories
+2. Click "Report a vulnerability"
+3. Fill out the form with details
 
-- **Initial response**: Within 48 hours
-- **Status update**: Within 7 days
-- **Fix timeline**: Depends on severity
-  - Critical: Within 24-48 hours
-  - High: Within 1 week
-  - Medium: Within 2 weeks
-  - Low: Next regular release
+### What to Include
+
+When reporting a vulnerability, please include:
+
+- **Description** - A clear description of the vulnerability
+- **Impact** - What kind of vulnerability is it? (XSS, injection, etc.)
+- **Steps to Reproduce** - Detailed steps to reproduce the issue
+- **Affected Versions** - Which versions are affected
+- **Proof of Concept** - Sample code or payload demonstrating the issue
+- **Suggested Fix** - If you have a suggested fix, please include it
+
+### What to Expect
+
+After submitting a vulnerability report:
+
+- **Initial Response**: Within 48 hours
+- **Status Update**: Within 5 business days with our assessment
+- **Fix Timeline**: Critical issues will be addressed within 7-14 days
+- **Disclosure**: We will coordinate disclosure with you after the fix is released
 
 ## Security Best Practices
 
-### For Users
+When using Coherent.js:
 
-1. **Keep Updated**: Always use the latest version of Coherent.js
-2. **Validate Input**: Always validate user input before processing
-3. **Escape Output**: Use the built-in text property for user content
-4. **Review Dependencies**: Regularly audit your dependencies
-5. **Use HTTPS**: Always serve your applications over HTTPS
+### Input Sanitization
 
-### For Developers
+Always sanitize user input before rendering:
 
-1. **Code Review**: All changes go through code review
-2. **Security Testing**: Include security tests in your test suite
-3. **Static Analysis**: Use ESLint rules to catch common security issues
-4. **Dependency Scanning**: Regularly scan dependencies for vulnerabilities
+```javascript
+import { sanitizeHtml } from '@coherent.js/core';
 
-## Common Vulnerabilities Prevention
+// ❌ DON'T: Never use raw user input with html property
+const unsafe = {
+  div: { html: userInput }  // DANGEROUS!
+};
+
+// ✅ DO: Use text property for user input
+const safe = {
+  div: { text: userInput }  // Automatically escaped
+};
+
+// ✅ DO: Sanitize if you must use HTML
+const sanitized = {
+  div: { html: sanitizeHtml(userInput) }
+};
+```
 
 ### XSS Prevention
-```javascript
-// ✅ Safe - automatically escaped
-{ p: { text: userInput } }
 
-// ❌ Unsafe - raw HTML
-{ p: { html: userInput } } // Only use with trusted content
+The framework provides automatic XSS protection:
+
+- `text` property - Always HTML-escaped
+- `html` property - Use with caution, sanitize first
+- `className` - Automatically escaped
+- Attribute values - Automatically escaped
+
+### SQL Injection (Database Package)
+
+When using `@coherent.js/database`:
+
+```javascript
+// ❌ DON'T: Never concatenate user input
+const bad = await db.query(`SELECT * FROM users WHERE id = ${userId}`);
+
+// ✅ DO: Use parameterized queries
+const good = await db.query('SELECT * FROM users WHERE id = ?', [userId]);
 ```
 
-### SQL Injection Prevention
-```javascript
-// ✅ Safe - parameterized queries
-const user = await db.query('SELECT * FROM users WHERE id = ?', [userId]);
+### Command Injection (CLI Package)
 
-// ❌ Unsafe - string concatenation
-const user = await db.query(`SELECT * FROM users WHERE id = ${userId}`);
-```
+Never pass unsanitized user input to shell commands:
 
-### Path Traversal Prevention
 ```javascript
-// ✅ Safe - validate paths
-const safePath = path.join(publicDir, path.normalize(userPath));
-if (!safePath.startsWith(publicDir)) {
-  throw new Error('Invalid path');
+// ❌ DON'T
+exec(`build --output ${userInput}`);
+
+// ✅ DO: Validate and sanitize
+const allowedPaths = ['/dist', '/build'];
+if (allowedPaths.includes(userInput)) {
+  exec(`build --output ${userInput}`);
 }
-
-// ❌ Unsafe - direct path usage
-const unsafePath = publicDir + userPath;
 ```
 
-## Security Headers
+### Server-Side Request Forgery (SSRF)
 
-When deploying Coherent.js applications, consider these security headers:
+When fetching external resources:
 
 ```javascript
-// Express.js example
-app.use((req, res, next) => {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-  res.setHeader('Content-Security-Policy', "default-src 'self'");
-  next();
-});
+// ✅ DO: Validate URLs
+import { isValidUrl, isSafeUrl } from '@coherent.js/core';
+
+if (isValidUrl(url) && isSafeUrl(url)) {
+  const response = await fetch(url);
+}
 ```
 
-## Acknowledgments
+## Dependency Security
 
-We thank the security research community for responsible disclosure of vulnerabilities. Contributors will be acknowledged unless they prefer to remain anonymous.
+We actively monitor dependencies for vulnerabilities:
 
-## Contact
+- Regular `pnpm audit` checks in CI/CD
+- Automated dependency updates via Dependabot
+- Minimal dependency footprint to reduce attack surface
 
-For security-related questions or concerns:
-- Email: thomas.drouvin@gmail.com
-- GitHub: [@Tomdrouv1](https://github.com/Tomdrouv1)
+To check your installation:
+
+```bash
+pnpm audit
+```
+
+## Security Updates
+
+Security updates are released as:
+
+- **Patch versions** for backward-compatible security fixes (1.0.1, 1.0.2)
+- **GitHub Security Advisories** for critical vulnerabilities
+- **Release notes** clearly marked with `[SECURITY]` tag
+
+Subscribe to releases to get notified:
+- Watch the repository on GitHub
+- Follow releases: https://github.com/Tomdrouv1/coherent.js/releases
+
+## Scope
+
+### In Scope
+
+The following are in scope for security reports:
+
+- ✅ Cross-Site Scripting (XSS)
+- ✅ SQL Injection
+- ✅ Command Injection
+- ✅ Path Traversal
+- ✅ Server-Side Request Forgery (SSRF)
+- ✅ Authentication/Authorization bypass
+- ✅ Prototype pollution
+- ✅ Regular Expression Denial of Service (ReDoS)
+- ✅ Sensitive data exposure
+
+### Out of Scope
+
+The following are NOT considered security vulnerabilities:
+
+- ❌ Issues requiring physical access to a user's device
+- ❌ Social engineering attacks
+- ❌ Denial of Service (DoS) attacks requiring significant resources
+- ❌ Issues in third-party dependencies (report to the dependency maintainer)
+- ❌ Theoretical vulnerabilities without proof of concept
+- ❌ Issues in outdated or unsupported versions
+
+## Responsible Disclosure
+
+We kindly ask security researchers to:
+
+- Give us reasonable time to fix the issue before public disclosure
+- Make a good faith effort to avoid privacy violations and data destruction
+- Not exploit the vulnerability beyond what is necessary to demonstrate it
+- Keep the vulnerability confidential until we've released a fix
+
+We commit to:
+
+- Respond to your report within 48 hours
+- Keep you updated on our progress
+- Credit you in the security advisory (if you wish)
+- Not take legal action against researchers who follow this policy
+
+## Security Contact
+
+- **Email**: thomas.drouvin@collektivs.com
+- **GitHub Security Advisories**: https://github.com/Tomdrouv1/coherent.js/security/advisories
+- **Response Time**: Within 48 hours
+
+## Hall of Fame
+
+We appreciate security researchers who help keep Coherent.js safe. Contributors who report valid vulnerabilities will be listed here (with permission):
+
+<!-- Security researchers will be listed here -->
 
 ---
 
-*This security policy is effective as of January 2025 and may be updated periodically.*
+Thank you for helping keep Coherent.js and its users safe!

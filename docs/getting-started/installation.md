@@ -4,19 +4,21 @@ Get up and running with Coherent.js in under 5 minutes.
 
 ## 📦 Installation
 
+> **Note**: Coherent.js is currently in beta (v1.0.0-beta.1). Use the `@beta` tag to install.
+
 ### Using npm
 ```bash
-npm install @coherentjs/core
+npm install @coherent.js/core@beta
 ```
 
 ### Using pnpm (recommended)
 ```bash
-pnpm add @coherentjs/core
+pnpm add @coherent.js/core@beta
 ```
 
 ### Using yarn
 ```bash
-yarn add @coherentjs/core
+yarn add @coherent.js/core@beta
 ```
 
 ## ⚡ Quick Start
@@ -26,7 +28,7 @@ yarn add @coherentjs/core
 Create a file called `hello.js`:
 
 ```javascript
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherent.js/core';
 
 // Define a simple component
 const HelloWorld = {
@@ -40,7 +42,7 @@ const HelloWorld = {
 };
 
 // Render to HTML
-const html = renderToString(HelloWorld);
+const html = render(HelloWorld);
 console.log(html);
 ```
 
@@ -62,7 +64,7 @@ node hello.js
 Create `dynamic.js`:
 
 ```javascript
-import { renderToString, createComponent } from '@coherentjs/core';
+import { render, createComponent } from '@coherent.js/core';
 
 // Component with parameters
 const UserCard = createComponent(({ name, role, avatar }) => ({
@@ -81,7 +83,7 @@ const UserCard = createComponent(({ name, role, avatar }) => ({
 }));
 
 // Use the component
-const userHtml = renderToString(
+const userHtml = render(
   UserCard({ 
     name: 'Jane Doe', 
     role: 'Senior Developer',
@@ -98,7 +100,7 @@ Create `server.js` with Express:
 
 ```javascript
 import express from 'express';
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherent.js/core';
 
 const app = express();
 
@@ -142,7 +144,7 @@ const HomePage = {
 };
 
 app.get('/', (req, res) => {
-  const html = '<!DOCTYPE html>' + renderToString(HomePage);
+  const html = render(HomePage); // Includes DOCTYPE automatically
   res.send(html);
 });
 
@@ -192,7 +194,7 @@ Now that you have Coherent.js installed and running:
 Coherent.js includes full TypeScript definitions:
 
 ```typescript
-import { renderToString, ComponentObject } from '@coherentjs/core';
+import { render, ComponentObject } from '@coherent.js/core';
 
 interface UserProps {
   name: string;
@@ -216,7 +218,7 @@ For rapid development, Coherent.js includes a dev server:
 
 ```bash
 # Install globally
-npm install -g @coherentjs/core
+npm install -g @coherent.js/core
 
 # Start dev server
 coherent-dev

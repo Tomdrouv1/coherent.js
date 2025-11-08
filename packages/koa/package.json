@@ -1,11 +1,11 @@
 {
-  "name": "@coherentjs/koa",
-  "version": "1.0.1",
+  "name": "@coherent.js/koa",
+  "version": "1.0.0-beta.1",
   "description": "Koa adapter for Coherent.js",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
-  "types": "../../src/koa/index.d.ts",
+  "types": "./types/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -23,6 +23,7 @@
     "test:node": "node --test test/*.test.js"
   },
   "files": [
+    "types/",
     "dist/",
     "README.md",
     "LICENSE"
@@ -37,7 +38,7 @@
   },
   "peerDependencies": {
     "koa": ">=2.13.0 < 4.0.0",
-    "@coherentjs/core": "^1.0.1"
+    "@coherent.js/core": "workspace:^"
   },
   "publishConfig": {
     "access": "public"

@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { Model } from '../../../../src/database/model.js';
+import { Model } from '../../src/model.js';
 
 // Mock QueryBuilder
 vi.mock('../../src/database/query-builder.js', () => ({
@@ -363,7 +363,7 @@ describe('Model', () => {
       expect(mockDb.query).not.toHaveBeenCalled();
     });
 
-    it('should fail validation and throw error', async () => {
+    it('should fail validation and throw _error', async () => {
       const model = new TestModel({ email: 'invalid-email' });
       
       await expect(model.save()).rejects.toThrow('Validation failed');
@@ -415,7 +415,7 @@ describe('Model', () => {
       expect(result).toBe(true);
     });
 
-    it('should throw error if no primary key', async () => {
+    it('should throw _error if no primary key', async () => {
       const model = new TestModel({ name: 'John' });
       
       await expect(model.delete()).rejects.toThrow('Cannot delete model without primary key');
@@ -455,7 +455,7 @@ describe('Model', () => {
         expect(model).toBeInstanceOf(TestModel);
       });
 
-      it('should throw error if not found', async () => {
+      it('should throw _error if not found', async () => {
         mockDb.query.mockResolvedValue(null);
         
         await expect(TestModel.findOrFail(999)).rejects.toThrow('TestUser with id 999 not found');
@@ -548,7 +548,7 @@ describe('Model', () => {
       expect(posts).toHaveLength(2);
     });
 
-    it('should throw error for undefined relationship', async () => {
+    it('should throw _error for undefined relationship', async () => {
       const model = new TestModel({ id: 1 });
       
       await expect(model.getRelation('undefined_relation')).rejects.toThrow(

@@ -3,7 +3,7 @@
  */
 
 import { writeFileSync, existsSync, mkdirSync } from 'fs';
-import { join, dirname } from 'path';
+import { join } from 'path';
 
 /**
  * Generate a new component
@@ -77,7 +77,7 @@ function generateComponentContent(name, template) {
  * Generate basic component
  */
 function generateBasicComponent(name) {
-  return `import { createComponent } from '@coherentjs/core';
+  return `import { createComponent } from '@coherent.js/core';
 
 /**
  * ${name} component
@@ -108,7 +108,7 @@ export const ${name} = createComponent(({ className = '', children, ...props }) 
  * Generate functional component with business logic
  */
 function generateFunctionalComponent(name) {
-  return `import { createComponent } from '@coherentjs/core';
+  return `import { createComponent } from '@coherent.js/core';
 
 /**
  * ${name} - Functional component with business logic
@@ -177,7 +177,7 @@ export const ${name} = createComponent(({ items = [], onItemClick, className = '
  * Generate interactive component with state
  */
 function generateInteractiveComponent(name) {
-  return `import { createComponent } from '@coherentjs/core';
+  return `import { createComponent } from '@coherent.js/core';
 
 /**
  * ${name} - Interactive component with state management
@@ -268,7 +268,7 @@ export const ${name} = createComponent(({
  * Generate layout component
  */
 function generateLayoutComponent(name) {
-  return `import { createComponent } from '@coherentjs/core';
+  return `import { createComponent } from '@coherent.js/core';
 
 /**
  * ${name} - Layout component for page structure
@@ -360,12 +360,12 @@ export const ${name} = createComponent(({
 function generateTestContent(name) {
   return `import { test } from 'node:test';
 import assert from 'node:assert';
-import { renderToString } from '@coherentjs/core';
+import { render } from '@coherent.js/core';
 import { ${name} } from './${name}.js';
 
 test('${name} renders correctly', () => {
   const component = ${name}({});
-  const html = renderToString(component);
+  const html = render(component);
   
   assert(typeof html === 'string');
   assert(html.length > 0);
@@ -374,7 +374,7 @@ test('${name} renders correctly', () => {
 
 test('${name} accepts className prop', () => {
   const component = ${name}({ className: 'test-class' });
-  const html = renderToString(component);
+  const html = render(component);
   
   assert(html.includes('test-class'));
 });
@@ -385,7 +385,7 @@ test('${name} renders children correctly', () => {
   ];
   
   const component = ${name}({ children });
-  const html = renderToString(component);
+  const html = render(component);
   
   assert(html.includes('Test child content'));
 });

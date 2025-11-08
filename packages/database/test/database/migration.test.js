@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Migration, SchemaBuilder, TableBuilder } from '../../../../src/database/migration.js';
+import { Migration, SchemaBuilder, TableBuilder } from '../../src/migration.js';
 import * as fs from 'fs/promises';
 
 // Mock fs operations
@@ -121,9 +121,9 @@ describe('Migration', () => {
     });
 
     it('should handle missing directory', async () => {
-      const error = new Error('Directory not found');
-      error.code = 'ENOENT';
-      fs.readdir.mockRejectedValue(error);
+      const _error = new Error('Directory not found');
+      _error.code = 'ENOENT';
+      fs.readdir.mockRejectedValue(_error);
       
       await migration.loadMigrationFiles();
       
@@ -209,7 +209,7 @@ describe('Migration', () => {
     //   expect(mockTx.rollback).toHaveBeenCalled();
     // });
 
-    it('should continue on error when configured', async () => {
+    it('should continue on _error when configured', async () => {
       const mockUp1 = vi.fn().mockRejectedValue(new Error('Migration 1 failed'));
       const mockUp2 = vi.fn().mockResolvedValue();
       const mockTx = {

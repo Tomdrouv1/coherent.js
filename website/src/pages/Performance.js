@@ -1,8 +1,33 @@
-// Performance.js - Interactive performance testing page
-export function Performance() {
+import { withState } from "../../../packages/core/src/index.js";
+
+// Performance.js - Interactive performance testing page with Coherent.js state management
+const PerformanceComponent = withState({
+  performanceResults: null,
+  isRunning: false,
+  currentTest: '',
+  progress: 0
+}, {
+  debug: true
+});
+
+const PerformanceView = (props) => {
+  const { state, stateUtils } = props;
+  const { setState } = stateUtils;
+
+  // Event handlers are now string-based and will call the global functions
+  // loaded by performance.js when the page loads
+
+  // Make setState available globally for performance.js to update component state
+  if (typeof window !== 'undefined') {
+    window.updatePerformanceState = (performanceResults) => {
+      setState({ performanceResults });
+    };
+  }
+
   return {
     div: {
       className: 'performance-page',
+      'data-coherent-component': 'performance',
       children: [
         // Header
         {
@@ -98,10 +123,38 @@ export function Performance() {
           div: {
             id: 'results-section',
             className: 'results-section',
-            style: 'display: none;',
+            style: state.performanceResults ? 'display: block;' : 'display: none;',
             children: [
               { h2: { text: '📈 Test Results' } },
-              { div: { id: 'test-results', className: 'test-results' } }
+              { 
+                div: { 
+                  id: 'test-results', 
+                  className: 'test-results',
+                  children: state.performanceResults ? [
+                    {
+                      div: {
+                        className: 'test-results-container',
+                        children: [
+                          {
+                            div: {
+                              className: 'test-result',
+                              children: [
+                                { h3: { text: '📊 Performance Test Results' } },
+                                { p: { text: `Performance improvement: ${state.performanceResults.performanceImprovement}%` } },
+                                { p: { text: `Cache speedup: ${state.performanceResults.cacheSpeedup}x` } },
+                                { p: { text: `Average render time: ${state.performanceResults.avgRenderTime}ms` } },
+                                { p: { text: `Cache hit rate: ${state.performanceResults.hitRate}%` } },
+                                { p: { text: `Components: ${state.performanceResults.usedComponents}` } },
+                                { p: { text: `Bundle size: ${state.performanceResults.bundleSize}` } }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ] : []
+                }
+              }
             ]
           }
         },
@@ -117,7 +170,14 @@ export function Performance() {
                   className: 'metric-card',
                   children: [
                     { h3: { text: '🏃 Rendering Speed' } },
-                    { div: { id: 'render-metrics', text: 'No data yet - run tests to see results' } }
+                    { 
+                      div: { 
+                        id: 'render-metrics',
+                        text: state.performanceResults 
+                          ? `${state.performanceResults.avgRenderTime}ms avg (${state.performanceResults.totalRenders} renders)`
+                          : 'No data yet - run tests to see results'
+                      }
+                    }
                   ]
                 }
               },
@@ -128,7 +188,14 @@ export function Performance() {
                   className: 'metric-card',
                   children: [
                     { h3: { text: '💾 Cache Performance' } },
-                    { div: { id: 'cache-metrics', text: 'No data yet - run tests to see results' } }
+                    { 
+                      div: { 
+                        id: 'cache-metrics',
+                        text: state.performanceResults 
+                          ? `${state.performanceResults.hitRate}% hit rate (${state.performanceResults.totalHits} hits, ${state.performanceResults.totalMisses} misses)`
+                          : 'No data yet - run tests to see results'
+                      }
+                    }
                   ]
                 }
               },
@@ -139,7 +206,14 @@ export function Performance() {
                   className: 'metric-card',
                   children: [
                     { h3: { text: '🧠 Memory Efficiency' } },
-                    { div: { id: 'memory-metrics', text: 'No data yet - run tests to see results' } }
+                    { 
+                      div: { 
+                        id: 'memory-metrics',
+                        text: state.performanceResults 
+                          ? `${state.performanceResults.usedComponents} components (${state.performanceResults.bundleSize})`
+                          : 'No data yet - run tests to see results'
+                      }
+                    }
                   ]
                 }
               }
@@ -250,40 +324,40 @@ export function Performance() {
                     {
                       div: {
                         className: 'tip-card',
-                        style: 'background: #e8f5e8; border-left: 4px solid #4CAF50; padding: 15px;',
+                        style: 'background: rgba(67, 233, 123, 0.1); border: 1px solid rgba(67, 233, 123, 0.3); border-radius: 12px; padding: 20px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);',
                         children: [
-                          { h4: { text: '⚡ Enable Caching', style: 'margin-top: 0; color: #2E7D32;' } },
-                          { p: { text: 'Use framework caching for frequently rendered components to achieve up to 200x performance improvements.' } }
+                          { h4: { text: '⚡ Enable Caching', style: 'margin-top: 0; color: #3bf77d; font-weight: 600;' } },
+                          { p: { text: 'Use framework caching for frequently rendered components to achieve up to 200x performance improvements.', style: 'color: #e6edf3; margin-bottom: 0;' } }
                         ]
                       }
                     },
                     {
                       div: {
                         className: 'tip-card',
-                        style: 'background: #e3f2fd; border-left: 4px solid #2196F3; padding: 15px;',
+                        style: 'background: rgba(79, 172, 254, 0.1); border: 1px solid rgba(79, 172, 254, 0.3); border-radius: 12px; padding: 20px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);',
                         children: [
-                          { h4: { text: '🗂️ Static Components', style: 'margin-top: 0; color: #1976D2;' } },
-                          { p: { text: 'Pre-render static components and cache them for ultra-fast rendering of unchanging UI elements.' } }
+                          { h4: { text: '🗂️ Static Components', style: 'margin-top: 0; color: #7cc4ff; font-weight: 600;' } },
+                          { p: { text: 'Pre-render static components and cache them for ultra-fast rendering of unchanging UI elements.', style: 'color: #e6edf3; margin-bottom: 0;' } }
                         ]
                       }
                     },
                     {
                       div: {
                         className: 'tip-card',
-                        style: 'background: #fff3e0; border-left: 4px solid #FF9800; padding: 15px;',
+                        style: 'background: rgba(255, 152, 0, 0.1); border: 1px solid rgba(255, 152, 0, 0.3); border-radius: 12px; padding: 20px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);',
                         children: [
-                          { h4: { text: '📦 Bundle Optimization', style: 'margin-top: 0; color: #F57C00;' } },
-                          { p: { text: 'Use the bundle optimizer to identify and remove unused components from your production builds.' } }
+                          { h4: { text: '📦 Bundle Optimization', style: 'margin-top: 0; color: #ff9800; font-weight: 600;' } },
+                          { p: { text: 'Use the bundle optimizer to identify and remove unused components from your production builds.', style: 'color: #e6edf3; margin-bottom: 0;' } }
                         ]
                       }
                     },
                     {
                       div: {
                         className: 'tip-card',
-                        style: 'background: #fce4ec; border-left: 4px solid #E91E63; padding: 15px;',
+                        style: 'background: rgba(233, 30, 99, 0.1); border: 1px solid rgba(233, 30, 99, 0.3); border-radius: 12px; padding: 20px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);',
                         children: [
-                          { h4: { text: '🧠 Memory Management', style: 'margin-top: 0; color: #C2185B;' } },
-                          { p: { text: 'Monitor memory usage and implement cleanup strategies for long-running applications.' } }
+                          { h4: { text: '🧠 Memory Management', style: 'margin-top: 0; color: #ff6b9d; font-weight: 600;' } },
+                          { p: { text: 'Monitor memory usage and implement cleanup strategies for long-running applications.', style: 'color: #e6edf3; margin-bottom: 0;' } }
                         ]
                       }
                     }
@@ -296,4 +370,11 @@ export function Performance() {
       ]
     }
   };
+};
+
+// Create the stateful component
+const StatefulPerformanceComponent = PerformanceComponent(PerformanceView);
+
+export function Performance() {
+  return StatefulPerformanceComponent();
 }

@@ -1,6 +1,6 @@
 import http from 'http';
 import express from 'express';
-import { createApiRouter } from '../src/api/index.js';
+import { createApiRouter } from '../packages/api/src/index.js';
 import { performance } from 'perf_hooks';
 
 // Simple HTTP server benchmark

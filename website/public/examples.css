@@ -1,0 +1,241 @@
+/* Examples Page Specific Styles */
+
+/* Enhanced Examples page with glassmorphism */
+.examples-grid {
+  list-style: none;
+  margin: 32px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 24px;
+}
+
+.examples-grid li {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 24px;
+  backdrop-filter: var(--blur);
+  box-shadow: 0 8px 32px var(--glass-shadow);
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.examples-grid li::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--gradient-accent);
+  opacity: 0;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  z-index: -1;
+}
+
+.examples-grid li:hover::before {
+  transform: scaleX(1);
+}
+
+.examples-grid li:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 48px var(--glass-shadow);
+}
+
+.examples-grid .card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.examples-grid .card-header h4 {
+  margin: 0;
+  font-size: 1.25rem;
+  background: var(--gradient-accent);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 600;
+}
+
+.examples-grid .card-desc {
+  margin: 12px 0 16px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.examples-grid .code-inline {
+  margin: 0;
+}
+
+.examples-grid .code-inline code {
+  background: var(--glass-bg);
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+  display: inline-block;
+  font-family: ui-monospace, 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+  font-size: 0.85em;
+  color: var(--accent);
+}
+
+.examples-grid .actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 16px 0 12px;
+}
+
+.examples-grid .example-code {
+  display: none;
+  margin-top: 16px;
+}
+
+/* When code is shown, force the parent li to span full width */
+.examples-grid li.code-visible {
+  grid-column: 1 / -1;
+}
+
+.examples-grid .example-code.open {
+  display: block;
+}
+
+.examples-grid .example-code code {
+  display: block;
+  white-space: pre;
+  overflow: auto;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 20px;
+  color: var(--text);
+  font-family: ui-monospace, 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  max-height: 400px;
+}
+
+/* Enhanced Examples page styling */
+.examples-hero {
+  text-align: center;
+  padding: 60px 0 40px;
+  position: relative;
+}
+
+.examples-hero::before {
+  content: '';
+  position: absolute;
+  inset: -20px 0 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(120, 196, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 70% 80%, rgba(199, 125, 255, 0.1) 0%, transparent 50%);
+}
+
+.examples-hero h1 {
+  font-size: 2.5rem;
+  margin: 0 0 20px;
+  background: var(--gradient-text);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 700;
+}
+
+.examples-lead {
+  font-size: 1.125rem;
+  color: var(--muted);
+  margin: 0 0 30px;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
+}
+
+.examples-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 20px;
+  margin: 60px 0;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Responsive Examples Styles */
+@media (max-width: 968px) {
+  .examples-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .examples {
+    overflow-x: hidden;
+    padding: 0 8px;
+    margin: 0;
+  }
+
+  .examples-hero {
+    padding: 16px 8px;
+    text-align: center;
+    width: 100%;
+    margin: 0;
+  }
+
+  .examples-hero h1 {
+    font-size: 1.8rem;
+    margin: 0 0 12px 0;
+    word-wrap: break-word;
+  }
+
+  .examples-lead {
+    font-size: 0.95rem;
+    line-height: 1.4;
+    margin: 0;
+    word-wrap: break-word;
+  }
+
+  .examples-stats {
+    display: none; /* Hide stats on mobile to save space */
+  }
+
+  .examples-grid {
+    display: block; /* Change from grid to block */
+    padding: 0 8px;
+    width: 100%;
+    margin: 0;
+  }
+
+  .examples-grid li {
+    display: block;
+    width: 100%;
+    margin: 0 0 12px 0;
+    padding: 12px;
+    overflow: hidden;
+  }
+}
+
+@media (max-width: 480px) {
+  .examples-hero {
+    padding: 12px 4px;
+  }
+
+  .examples-hero h1 {
+    font-size: 1.5rem;
+  }
+
+  .examples-lead {
+    font-size: 0.9rem;
+  }
+
+  .examples-grid li {
+    padding: 12px;
+  }
+}

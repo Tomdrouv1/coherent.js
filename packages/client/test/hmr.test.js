@@ -42,9 +42,9 @@ test('HMR setup function', () => {
     expect(result).toBe(null); // setupHMR should return null in test environment
     
     
-  } catch (error) {
+  } catch (_error) {
     // This should not happen with our mock
-    assert.fail(`HMR setup should not throw: ${error.message}`);
+    assert.fail(`HMR setup should not throw: ${_error.message}`);
   }
 });
 
@@ -87,13 +87,13 @@ test('Hot reload functionality', () => {
     expect(result.moduleName).toBe(mockModule.name); // Should return correct module name
     
     
-  } catch (error) {
-    assert.fail(`Hot reload should not fail: ${error.message}`);
+  } catch (_error) {
+    assert.fail(`Hot reload should not fail: ${_error.message}`);
   }
 });
 
-test('HMR error handling', () => {
-  // Mock hot reload function with error handling
+test('HMR _error handling', () => {
+  // Mock hot reload function with _error handling
   const hotReload = (moduleName, module) => {
     if (!moduleName || typeof moduleName !== 'string') {
       throw new Error('Module name must be a non-empty string');
@@ -112,24 +112,24 @@ test('HMR error handling', () => {
   try {
     hotReload(null, {});
     assert.fail('Should have thrown for null module name');
-  } catch (error) {
-    assert.ok(error instanceof Error, 'Should throw proper Error objects');
+  } catch (_error) {
+    assert.ok(_error instanceof Error, 'Should throw proper Error objects');
     errorCount++;
   }
   
   try {
     hotReload('', null);
     assert.fail('Should have thrown for null module');
-  } catch (error) {
-    assert.ok(error instanceof Error, 'Should throw proper Error objects');
+  } catch (_error) {
+    assert.ok(_error instanceof Error, 'Should throw proper Error objects');
     errorCount++;
   }
   
   try {
     hotReload(undefined, undefined);
     assert.fail('Should have thrown for undefined parameters');
-  } catch (error) {
-    assert.ok(error instanceof Error, 'Should throw proper Error objects');
+  } catch (_error) {
+    assert.ok(_error instanceof Error, 'Should throw proper Error objects');
     errorCount++;
   }
   
@@ -152,8 +152,8 @@ test('HMR WebSocket message handling', () => {
       // In test environment, we just verify they don't crash
       const messageStr = JSON.stringify(message);
       expect(typeof messageStr).toBe('string'); // Message should serialize properly
-    } catch (error) {
-      assert.fail(`Message handling should not fail: ${error.message}`);
+    } catch (_error) {
+      assert.fail(`Message handling should not fail: ${_error.message}`);
     }
   }
   

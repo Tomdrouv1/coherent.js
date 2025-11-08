@@ -12,7 +12,7 @@ export function Examples({ items = [] } = {}) {
               {
                 p: {
                   className: 'examples-lead',
-                  text: 'Discover the power of Coherent.js through practical examples. From basic components to advanced integrations, see how pure object syntax makes building UIs intuitive and performant.',
+                  text: 'Discover the power of Coherent.js through interactive playground examples. From basic components to advanced patterns, see how pure object syntax makes building UIs intuitive and performant.',
                 },
               },
               {
@@ -52,7 +52,7 @@ export function Examples({ items = [] } = {}) {
                       },
                     },
                     {
-                      span: { className: 'stat-label', text: 'Live Examples' },
+                      span: { className: 'stat-label', text: 'Playground Examples' },
                     },
                   ],
                 },
@@ -62,7 +62,7 @@ export function Examples({ items = [] } = {}) {
                   className: 'stat-item',
                   children: [
                     { span: { className: 'stat-number', text: '100%' } },
-                    { span: { className: 'stat-label', text: 'Runnable' } },
+                    { span: { className: 'stat-label', text: 'Interactive' } },
                   ],
                 },
               },
@@ -147,12 +147,15 @@ export function Examples({ items = [] } = {}) {
                                 text: '👀 View Code',
                                 id: `view-code-${ex.file.replace('.js', '')}`,
                                 onclick: `
-                                  const codeBlock = this.closest('li').querySelector('.example-code');
+                                  const parentLi = this.closest('li');
+                                  const codeBlock = parentLi.querySelector('.example-code');
                                   if (codeBlock.style.display === 'block') {
                                     codeBlock.style.display = 'none';
+                                    parentLi.classList.remove('code-visible');
                                     this.textContent = '👀 View Code';
                                   } else {
                                     codeBlock.style.display = 'block';
+                                    parentLi.classList.add('code-visible');
                                     this.textContent = '🙈 Hide Code';
                                     codeBlock.scrollIntoView({behavior:'smooth',block:'nearest'});
                                   }

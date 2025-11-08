@@ -1,10 +1,10 @@
 {
   "name": "coherentjs-monorepo",
-  "version": "1.1.1",
+  "version": "1.0.0-beta.1",
   "private": true,
   "description": "A lightweight, high-performance server-side rendering framework using pure JavaScript objects. Features include streaming renderer, performance monitoring, component composition, memoization, and integrations with Express.js, Fastify, and Next.js.",
   "type": "module",
-  "packageManager": "pnpm@10.15.0",
+  "packageManager": "pnpm@10.20.0",
   "engines": {
     "node": ">=20.0.0",
     "pnpm": ">=8.0.0"
@@ -20,11 +20,21 @@
     "test:packages": "pnpm -r run test",
     "test:coverage": "vitest run --coverage",
     "coverage:report": "node scripts/generate-coverage-report.js",
-    "build": "pnpm run build:packages && pnpm run build:types",
+    "build": "pnpm run build:packages",
     "build:packages": "pnpm -r --stream run build",
     "build:types": "tsc --build",
+    "publish:beta": "pnpm publish -r --access public --tag beta --no-git-checks",
+    "publish:latest": "pnpm publish -r --access public --no-git-checks",
+    "release": "bash scripts/release.sh",
+    "version:patch-beta": "pnpm -r exec npm version prerelease --preid=beta --git-tag-version=false && pnpm version prerelease --preid=beta --git-tag-version=false",
+    "version:minor-beta": "pnpm -r exec npm version preminor --preid=beta --git-tag-version=false && pnpm version preminor --preid=beta --git-tag-version=false",
+    "version:major-beta": "pnpm -r exec npm version premajor --preid=beta --git-tag-version=false && pnpm version premajor --preid=beta --git-tag-version=false",
+    "version:patch": "pnpm -r exec npm version patch --git-tag-version=false && pnpm version patch --git-tag-version=false",
+    "version:minor": "pnpm -r exec npm version minor --git-tag-version=false && pnpm version minor --git-tag-version=false",
+    "version:major": "pnpm -r exec npm version major --git-tag-version=false && pnpm version major --git-tag-version=false",
     "dev": "pnpm run build && pnpm run website:dev",
     "clean": "pnpm -r run clean && rm -rf dist/",
+    "demo": "node examples/master-showcase.js",
     "example:basic": "node examples/basic-usage.js",
     "example:components": "node examples/components-test.js",
     "example:performance": "node examples/performance-test.js",
@@ -34,18 +44,17 @@
     "example:hydration": "node examples/hydration-test.js",
     "example:memoization": "node examples/memoization-test.js",
     "example:composition": "node examples/component-composition.js",
-    "lint": "eslint src/ packages/*/test/ examples/ scripts/ --max-warnings=0",
-    "lint:fix": "eslint src/ packages/*/test/ examples/ scripts/ --fix",
-    "format": "prettier --write src/ tests/ examples/ packages/",
-    "format:check": "prettier --check src/ tests/ examples/ packages/",
+    "lint": "eslint packages/*/src/ packages/*/test/ examples/ scripts/ --max-warnings=0",
+    "lint:fix": "eslint packages/*/src/ packages/*/test/ examples/ scripts/ --fix",
+    "format": "prettier --write packages/ tests/ examples/",
+    "format:check": "prettier --check packages/ tests/ examples/",
     "typecheck": "tsc --noEmit",
     "typecheck:strict": "tsc --noEmit --strict",
     "typecheck:packages": "pnpm -r run typecheck",
-    "website:build": "pnpm --filter @coherentjs/client run build && node scripts/build-website.js",
+    "website:build": "pnpm --filter @coherent.js/client run build && node scripts/build-website.js",
     "website:serve": "node scripts/serve-website.js",
     "website:start": "pnpm run website:build && node scripts/serve-website.js",
     "website:dev": "node scripts/dev-website.js",
-    "release": "pnpm run build && pnpm run test && pnpm changeset publish",
     "version": "pnpm changeset version",
     "prepare": "husky",
     "prepack": "pnpm run build",
@@ -157,5 +166,6 @@
     "onlyBuiltDependencies": [
       "esbuild"
     ]
-  }
+  },
+  "dependencies": {}
 }

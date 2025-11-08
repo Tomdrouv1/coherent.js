@@ -1,11 +1,11 @@
 {
-  "name": "@coherentjs/api",
-  "version": "1.0.1",
+  "name": "@coherent.js/api",
+  "version": "1.0.0-beta.1",
   "description": "API framework for Coherent.js (REST/RPC/GraphQL).",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
-  "types": "./dist/api/index.d.ts",
+  "types": "./types/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -23,6 +23,7 @@
     "test:node": "node --test test/*.test.js"
   },
   "files": [
+    "types/",
     "dist/",
     "README.md",
     "LICENSE"
@@ -36,9 +37,10 @@
     "url": "git+https://github.com/Tomdrouv1/coherent.js.git"
   },
   "peerDependencies": {
-    "@coherentjs/core": "^1.0.1"
+    "@coherent.js/core": "workspace:^"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }

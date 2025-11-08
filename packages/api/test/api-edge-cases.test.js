@@ -3,24 +3,24 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { createObjectRouter } from '../../../src/api/router.js';
-import { withInputValidation } from '../../../src/api/security.js';
+import { createRouter } from '../src/router.js';
+import { withInputValidation } from '../src/security.js';
 
 describe('API Edge Cases', () => {
   it('should handle router errors gracefully', () => {
     const errorRoutes = {
       api: {
-        error: {
+        _error: {
           get: {
             handler: () => {
-              throw new Error('Test error');
+              throw new Error('Test _error');
             }
           }
         }
       }
     };
 
-    const router = createObjectRouter(errorRoutes);
+    const router = createRouter(errorRoutes);
     expect(typeof router).toBe('object');
     expect(typeof router.handle).toBe('function');
   });
@@ -36,7 +36,7 @@ describe('API Edge Cases', () => {
     };
 
     expect(() => {
-      createObjectRouter(malformedRoutes);
+      createRouter(malformedRoutes);
     }).not.toThrow();
   });
 
@@ -57,17 +57,17 @@ describe('API Edge Cases', () => {
   it('should handle empty routes object', () => {
     const emptyRoutes = {};
     
-    const router = createObjectRouter(emptyRoutes);
+    const router = createRouter(emptyRoutes);
     expect(typeof router).toBe('object');
   });
 
   it('should handle null and undefined inputs', () => {
     expect(() => {
-      createObjectRouter(null);
+      createRouter(null);
     }).not.toThrow();
 
     expect(() => {
-      createObjectRouter(undefined);
+      createRouter(undefined);
     }).not.toThrow();
   });
 });

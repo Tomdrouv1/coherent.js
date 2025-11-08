@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 // import Koa from 'koa';
-// import { coherentKoa } from '../../../src/koa/index.js';
+// import { coherentKoa } from '../src/index.js';
 
 describe('Koa.js integration', () => {
   it('creates Koa middleware', () => {

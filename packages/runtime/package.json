@@ -1,0 +1,92 @@
+{
+  "name": "@coherent.js/runtime",
+  "version": "1.0.0-beta.1",
+  "description": "Runtime for Coherent.js - works in browsers, edge workers, and any JavaScript environment",
+  "type": "module",
+  "main": "dist/coherent-universal.js",
+  "module": "dist/coherent-universal.js",
+  "browser": "dist/coherent-universal.js",
+  "unpkg": "dist/coherent-universal.min.js",
+  "jsdelivr": "dist/coherent-universal.min.js",
+  "exports": {
+    ".": {
+      "browser": "./dist/coherent-universal.js",
+      "import": "./dist/coherent-universal.js",
+      "types": "./types/index.d.ts"
+    },
+    "./browser": {
+      "import": "./dist/coherent-browser.js",
+      "types": "./types/browser.d.ts"
+    },
+    "./edge": {
+      "import": "./dist/coherent-edge.js",
+      "types": "./types/edge.d.ts"
+    },
+    "./static": {
+      "import": "./dist/coherent-static.js",
+      "types": "./types/static.d.ts"
+    },
+    "./desktop": {
+      "import": "./dist/coherent-desktop.js",
+      "types": "./types/desktop.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:browser": "playwright test",
+    "clean": "rm -rf dist/ types/",
+    "prepublishOnly": "npm run build",
+    "dev": "node src/dev-server.js",
+    "serve": "python -m http.server 8080",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@coherent.js/core": "workspace:^",
+    "@coherent.js/client": "workspace:*",
+    "@coherent.js/web-components": "workspace:*"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.9",
+    "vitest": "^3.2.4",
+    "@playwright/test": "^1.40.0",
+    "jsdom": "^25.0.0",
+    "vite": "^6.4.1"
+  },
+  "keywords": [
+    "coherentjs",
+    "universal",
+    "runtime",
+    "browser",
+    "edge-workers",
+    "cloudflare",
+    "deno",
+    "bun",
+    "static-site",
+    "desktop",
+    "electron",
+    "standalone",
+    "spa"
+  ],
+  "author": "Thomas Drouvin <thomas.drouvin@example.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tomdrouv1/coherent.js.git",
+    "directory": "packages/runtime"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "browserslist": [
+    "defaults",
+    "not IE 11"
+  ],
+  "files": [
+    "dist/",
+    "types/",
+    "README.md",
+    "LICENSE"
+  ]
+}

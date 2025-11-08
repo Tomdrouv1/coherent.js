@@ -1,15 +1,19 @@
 {
-  "name": "@coherentjs/client",
-  "version": "1.0.1",
+  "name": "@coherent.js/client",
+  "version": "1.0.0-beta.1",
   "description": "Client-side hydration/HMR utilities for Coherent.js",
   "type": "module",
+  "main": "src/hydration.js",
   "module": "dist/index.js",
   "exports": {
     ".": {
+      "development": "./src/hydration.js",
       "import": "./dist/index.js"
-    }
+    },
+    "./router": "./src/router.js",
+    "./hmr": "./src/hmr.js"
   },
-  "types": "./dist/client/hydration.d.ts",
+  "types": "./types/index.d.ts",
   "scripts": {
     "build": "node build.mjs",
     "clean": "rm -rf dist/",
@@ -21,6 +25,7 @@
     "test:node": "node --test test/*.test.js"
   },
   "files": [
+    "types/",
     "dist/",
     "README.md",
     "LICENSE"
@@ -34,6 +39,7 @@
     "url": "git+https://github.com/Tomdrouv1/coherent.js.git"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }

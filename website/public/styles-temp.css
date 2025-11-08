@@ -1,0 +1,73 @@
+/* Modern glassmorphism theme with gradient accents */
+
+/* Enable smooth scrolling for anchor links */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Base layout - allow normal scrolling */
+html, body {
+  height: 100%;
+}
+
+/* Main layout structure - flexbox for playground only */
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+/* Header takes only needed space */
+header {
+  flex-shrink: 0;
+}
+
+/* Main content area - normal behavior by default */
+main {
+  flex: 1;
+}
+
+/* Footer anchored at bottom */
+footer {
+  flex-shrink: 0;
+}
+
+/* Playground-specific layout using dynamic viewport height approach */
+.playground-container {
+  height: calc(100dvh - 120px); /* Account for header/footer space */
+  max-height: calc(100dvh - 120px);
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow: hidden; /* Prevent container overflow */
+}
+
+/* Playground content - header elements take minimal space */
+.playground-container > h1 {
+  flex-shrink: 0;
+  margin: 0 0 12px 0;
+  font-size: 2rem;
+}
+
+.playground-container > p {
+  flex-shrink: 0;
+  margin: 0 0 16px 0;
+}
+
+.playground-controls {
+  flex-shrink: 0;
+  margin-bottom: 20px; /* Space before grid */
+}
+
+/* Playground grid fills ALL remaining space */
+.playground-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  flex: 1;
+  min-height: 0; /* Allow shrinking */
+  overflow: hidden; /* Prevent grid overflow */
+  box-sizing: border-box;
+}
+

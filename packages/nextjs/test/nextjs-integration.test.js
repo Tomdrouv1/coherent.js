@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { createCoherentNextHandler, createCoherentAppRouterHandler } from '../../../src/nextjs/coherent-nextjs.js';
-import { renderToString } from '../../../src/rendering/html-renderer.js';
+import { createCoherentNextHandler, createCoherentAppRouterHandler } from '../src/coherent-nextjs.js';
+import { render } from '../../core/src/rendering/html-renderer.js';
 
 describe('Next.js Integration', () => {
   it('should create coherent next handler', () => {
@@ -40,7 +40,7 @@ describe('Next.js Integration', () => {
       }
     };
     
-    const html = renderToString(testComponent);
+    const html = render(testComponent);
     expect(html).toContain('Hello Coherent.js!');
   });
 

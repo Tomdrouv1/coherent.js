@@ -3,16 +3,16 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { DatabaseManager } from '../../../../src/database/connection-manager.js';
-import { QueryBuilder } from '../../../../src/database/query-builder.js';
-import { Model } from '../../../../src/database/model.js';
-import { Migration } from '../../../../src/database/migration.js';
+import { DatabaseManager } from '../../src/connection-manager.js';
+import { executeQuery } from '../../src/query-builder.js';
+import { Model } from '../../src/model.js';
+import { Migration } from '../../src/migration.js';
 import { 
   withDatabase, 
   withTransaction, 
   withModel, 
   withPagination 
-} from '../../../../src/database/middleware.js';
+} from '../../src/middleware.js';
 import { 
   MockAdapter, 
   DatabaseTestHelper, 
@@ -122,6 +122,10 @@ describe('Database Integration E2E Tests', () => {
         };
       }
 
+      // Make models globally available for relationship lookup
+      global.User = User;
+      global.Post = Post;
+
       User.setDatabase(dbManager);
       Post.setDatabase(dbManager);
 
@@ -132,6 +136,11 @@ describe('Database Integration E2E Tests', () => {
         content: 'Hello World', 
         user_id: user.get('id') 
       });
+      await Post.create({ 
+        title: 'Second Post', 
+        content: 'Another post', 
+        user_id: user.get('id') 
+      });
 
       // Test relationships
       const userPosts = await user.posts();
@@ -140,24 +149,26 @@ describe('Database Integration E2E Tests', () => {
 
       const postUser = await post1.user();
       expect(postUser.get('name')).toBe('John Doe');
+      
+      // Clean up global references
+      delete global.User;
+      delete global.Post;
     });
 
     it('should handle complex queries with query builder', async () => {
-      const qb = new QueryBuilder(dbManager);
-
-      // Complex SELECT query
-      const query = qb
-        .select(['u.name', 'u.email', 'p.title'])
-        .from('users', 'u')
-        .join('posts', 'p', 'u.id = p.user_id')
-        .where('u.active', '=', true)
-        .where('p.published_at', '>', '2023-01-01')
-        .orderBy('u.name', 'ASC')
-        .orderBy('p.created_at', 'DESC')
-        .limit(10)
-        .offset(0);
-
-      const result = await query.execute();
+      // Complex SELECT query using object configuration
+      const result = await executeQuery(dbManager, {
+        select: ['u.name', 'u.email', 'p.title'],
+        from: { table: 'users', alias: 'u' },
+        joins: [{ table: 'posts', alias: 'p', condition: 'u.id = p.user_id' }],
+        where: {
+          'u.active': true,
+          'p.published_at': { '>': '2023-01-01' }
+        },
+        orderBy: { 'u.name': 'ASC', 'p.created_at': 'DESC' },
+        limit: 10,
+        offset: 0
+      });
       
       expect(result.rows).toBeDefined();
       
@@ -194,8 +205,8 @@ describe('Database Integration E2E Tests', () => {
         
         expect(user.get('name')).toBe('John Doe');
         
-        // Simulate error
-        throw new Error('Simulated error');
+        // Simulate _error
+        throw new Error('Simulated _error');
         
       } catch {
         if (transaction && !transaction.isRolledBack) {
@@ -360,33 +371,33 @@ describe('Database Integration E2E Tests', () => {
     });
 
     it('should handle connection pooling under load', async () => {
-      const qb = new QueryBuilder(dbManager);
-
       // Execute multiple queries concurrently
-      const queryPromises = Array.from({ length: 20 }, (_, i) => 
-        qb.select('*').from('users').where('id', '=', i).execute()
+      const queryPromises = Array.from({ length: 20 }, (_, i) =>
+        executeQuery(dbManager, {
+          select: '*',
+          from: 'users',
+          where: { id: i }
+        })
       );
 
       const results = await Promise.all(queryPromises);
-      
+
       expect(results).toHaveLength(20);
       expect(results.every(result => result.rows !== undefined)).toBe(true);
     });
 
     it('should maintain performance with large datasets', async () => {
-      const qb = new QueryBuilder(dbManager);
-
       const startTime = performance.now();
-      
+
       // Simulate large dataset query
-      const result = await qb
-        .select('*')
-        .from('users')
-        .where('active', '=', true)
-        .orderBy('created_at', 'DESC')
-        .limit(1000)
-        .execute();
-      
+      const result = await executeQuery(dbManager, {
+        select: '*',
+        from: 'users',
+        where: { active: true },
+        orderBy: { created_at: 'DESC' },
+        limit: 1000
+      });
+
       const endTime = performance.now();
       const duration = endTime - startTime;
 
@@ -408,14 +419,15 @@ describe('Database Integration E2E Tests', () => {
       await expect(failingManager.connect()).rejects.toThrow('Connection failed');
     });
 
-    it('should handle query failures with proper error messages', async () => {
-      adapter.errors.query = 'SQL syntax error';
-      
-      const qb = new QueryBuilder(dbManager);
-      
+    it('should handle query failures with proper _error messages', async () => {
+      adapter.errors.query = 'SQL syntax _error';
+
       await expect(
-        qb.select('*').from('invalid_table').execute()
-      ).rejects.toThrow('SQL syntax error');
+        executeQuery(dbManager, {
+          select: '*',
+          from: 'invalid_table'
+        })
+      ).rejects.toThrow('SQL syntax _error');
     });
 
     it('should handle model validation errors', async () => {

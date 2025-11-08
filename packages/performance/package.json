@@ -1,0 +1,36 @@
+{
+  "name": "@coherent.js/performance",
+  "version": "1.0.0-beta.1",
+  "description": "Performance optimization utilities for Coherent.js",
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./code-splitting": "./dist/code-splitting.js",
+    "./cache": "./dist/cache.js",
+    "./lazy-loading": "./dist/lazy-loading.js"
+  },
+  "keywords": [
+    "coherent",
+    "performance",
+    "code-splitting",
+    "caching",
+    "lazy-loading"
+  ],
+  "author": "Coherent.js Team",
+  "license": "MIT",
+  "scripts": {
+    "build": "node build.mjs",
+    "clean": "rm -rf dist"
+  },
+  "peerDependencies": {
+    "@coherent.js/core": "workspace:^"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tomdrouv1/coherent.js.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

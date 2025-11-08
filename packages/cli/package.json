@@ -1,19 +1,18 @@
 {
-  "name": "@coherentjs/cli",
-  "version": "1.0.1",
+  "name": "@coherent.js/cli",
+  "version": "1.0.0-beta.1",
   "description": "Command-line interface for Coherent.js projects",
   "type": "module",
-  "main": "dist/index.cjs",
+  "main": "dist/index.js",
   "module": "dist/index.js",
-  "types": "./dist/cli/index.d.ts",
+  "types": "./types/index.d.ts",
   "bin": {
     "coherent": "./bin/coherent.js",
     "coherentjs": "./bin/coherent.js"
   },
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.js"
     },
     "./templates": "./templates/"
   },
@@ -28,6 +27,7 @@
     "test:node": "node --test test/*.test.js"
   },
   "files": [
+    "types/",
     "dist/",
     "bin/",
     "templates/",
@@ -38,16 +38,14 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "commander": "^12.1.0",
-    "inquirer": "^10.2.2",
     "chalk": "^5.3.0",
-    "ora": "^8.1.0",
+    "commander": "^12.1.0",
     "fs-extra": "^11.2.0",
+    "glob": "11.0.3",
+    "inquirer": "^10.2.2",
+    "ora": "^8.1.0",
     "picocolors": "^1.1.1",
     "prompts": "^2.4.2"
-  },
-  "peerDependencies": {
-    "@coherentjs/core": "^1.0.1"
   },
   "license": "MIT",
   "repository": {
@@ -55,6 +53,7 @@
     "url": "git+https://github.com/Tomdrouv1/coherent.js.git"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }

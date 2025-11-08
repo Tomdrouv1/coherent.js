@@ -36,8 +36,14 @@ export function Layout({
                 },
               },
               { link: { rel: 'stylesheet', href: './styles.css' } },
+              { script: { src: './theme-init.js' } },
+              { script: { src: './header-search.js', defer: true } },
+              { script: { src: './toc-active.js', defer: true } },
               ...(currentPath === 'playground'
-                ? [{ script: { src: './playground.js', defer: true } }]
+                ? [
+                    { script: { src: './codemirror-editor.js', type: 'module', defer: true } },
+                    { script: { src: './playground.js', defer: true } }
+                  ]
                 : []),
               ...(currentPath === 'performance'
                 ? [{ script: { src: './performance.js', defer: true } }]
@@ -99,6 +105,15 @@ export function Layout({
                           },
                           {
                             a: {
+                              href: 'starter-app',
+                              className: currentPath.startsWith('starter-app')
+                                ? 'active'
+                                : '',
+                              text: '🚀 Starter App',
+                            },
+                          },
+                          {
+                            a: {
                               href: 'examples',
                               className: currentPath.startsWith('examples')
                                 ? 'active'
@@ -150,23 +165,41 @@ export function Layout({
                         className: 'header-tools',
                         children: [
                           {
-                            input: {
-                              type: 'search',
-                              placeholder: 'Search docs…',
-                              className: 'search',
-                            },
+                            div: {
+                              className: 'search-container',
+                              children: [
+                                {
+                                  input: {
+                                    type: 'search',
+                                    id: 'header-search',
+                                    placeholder: 'Search docs…',
+                                    className: 'search',
+                                    oninput: 'handleHeaderSearch(this.value)'
+                                  },
+                                },
+                                {
+                                  div: {
+                                    id: 'header-search-results',
+                                    className: 'header-search-results',
+                                    style: 'display: none;'
+                                  }
+                                }
+                              ]
+                            }
                           },
                           {
                             button: {
-                              className: 'button',
+                              className: 'button theme-toggle',
                               id: 'theme-toggle',
-                              text: 'Theme',
+                              'aria-label': 'Toggle theme',
                               onclick: `
                     var current = document.documentElement.getAttribute('data-theme') || 'dark';
                     var next = current === 'light' ? 'dark' : 'light';
                     document.documentElement.setAttribute('data-theme', next);
+                    this.innerHTML = next === 'dark' ? '🌙' : '☀️';
                     try { localStorage.setItem('theme', next); } catch(e) {}
                   `,
+                              text: '🌙', // Default to dark theme (moon icon)
                             },
                           },
                         ],
@@ -200,7 +233,7 @@ export function Layout({
                       article: {
                         className: 'content',
                         children: [
-                          isDocs
+                          isDocs && currentPath !== 'docs'
                             ? {
                                 nav: {
                                   className: 'breadcrumbs',
@@ -217,7 +250,7 @@ export function Layout({
                         ].filter(Boolean),
                       },
                     });
-                    if (isDocs) {
+                    if (isDocs && currentPath !== 'docs') {
                       nodes.push({
                         aside: {
                           className: 'toc',
@@ -226,6 +259,33 @@ export function Layout({
                               div: {
                                 id: 'coherent-toc-placeholder',
                                 text: '[[[COHERENT_TOC_PLACEHOLDER]]]',
+                              },
+                            },
+                          ],
+                        },
+                      });
+                    } else if (isDocs && currentPath === 'docs') {
+                      // Show helpful message for docs index page
+                      nodes.push({
+                        aside: {
+                          className: 'toc toc-empty',
+                          children: [
+                            {
+                              div: {
+                                className: 'toc-placeholder-message',
+                                children: [
+                                  {
+                                    div: {
+                                      className: 'toc-icon',
+                                      text: '📖'
+                                    }
+                                  },
+                                  {
+                                    p: {
+                                      text: 'Table of contents will appear here when you navigate to a specific documentation page.'
+                                    }
+                                  }
+                                ]
                               },
                             },
                           ],

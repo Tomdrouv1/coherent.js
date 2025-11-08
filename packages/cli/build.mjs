@@ -1,5 +1,5 @@
 /**
- * Build script for @coherentjs/cli package
+ * Build script for @coherent.js/cli package
  */
 
 import esbuild from 'esbuild';
@@ -30,9 +30,7 @@ const buildConfig = {
     // Node.js built-ins
     'fs', 'path', 'url', 'child_process', 'os', 'util', 'stream', 'events',
     // Dependencies that should remain external
-    'commander', 'inquirer', 'chalk', 'ora', 'fs-extra', 'picocolors', 'prompts',
-    // Peer dependencies
-    '@coherentjs/core'
+    'commander', 'inquirer', 'chalk', 'ora', 'fs-extra', 'picocolors', 'prompts'
   ],
   define: {
     'process.env.NODE_ENV': '"production"'
@@ -40,7 +38,7 @@ const buildConfig = {
 };
 
 async function build() {
-  console.log('🏗️  Building @coherentjs/cli...');
+  console.log('🏗️  Building @coherent.js/cli...');
 
   try {
     // Build ESM version
@@ -48,13 +46,6 @@ async function build() {
       ...buildConfig,
       outfile: join(distDir, 'index.js'),
       format: 'esm'
-    });
-
-    // Build CJS version
-    await esbuild.build({
-      ...buildConfig,
-      outfile: join(distDir, 'index.cjs'),
-      format: 'cjs'
     });
 
     // Copy TypeScript declarations if they exist
@@ -65,7 +56,7 @@ async function build() {
     } else {
       // Generate basic TypeScript declarations
       const dtsContent = `/**
- * @coherentjs/cli TypeScript definitions
+ * @coherent.js/cli TypeScript definitions
  */
 
 export interface CreateOptions {
@@ -93,7 +84,6 @@ export declare const devCommand: any;
     console.log('✅ Build completed successfully!');
     console.log(`📦 Built files:`);
     console.log(`   - dist/index.js (ESM)`);
-    console.log(`   - dist/index.cjs (CommonJS)`);
     console.log(`   - dist/index.d.ts (TypeScript definitions)`);
 
   } catch (error) {

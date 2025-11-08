@@ -1,7 +1,7 @@
 import { buildPackage } from '../../scripts/shared-build.mjs';
 
 await buildPackage({
-  packageName: '@coherentjs/core',
-  entryPoint: '../../src/coherent.js',
+  packageName: '@coherent.js/core',
+  entryPoint: './src/index.js',
   external: []
 });

@@ -1,4 +1,5 @@
-import { withState } from '../src/coherent.js';
+import { withState } from "../packages/core/src/index.js";
+import { makeHydratable, autoHydrate } from '../packages/client/src/hydration.js';
 
 // Example 1: Basic component composition
 export const Header = ({ title, subtitle }) => ({
@@ -112,78 +113,124 @@ export const SimpleCard = ({ title, content }) => ({
 // Compose multiple HOCs
 export const EnhancedCard = withBorder(withTimestamp(SimpleCard));
 
-// Example 4: Form component with state management
-export const ContactForm = withState({
+// Example 4: Form component with state management and hydration support
+const ContactFormComponent = withState({
   name: '',
   email: '',
-  message: ''
-})(({ state, setState }) => ({
-  form: {
-    className: 'contact-form',
-    children: [
-      { h2: { text: 'Contact Us' } },
-      {
-        div: {
-          className: 'form-field',
-          children: [
-            { label: { text: 'Name' } },
-            {
-              input: {
-                type: 'text',
-                value: state.name,
-                placeholder: 'Your name',
-                oninput: typeof window !== 'undefined' ? (e) => setState({ name: e.target.value }) : null,
+  message: '',
+  submitted: false
+})(({ state, stateUtils }) => {
+  const { setState } = stateUtils;
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    console.log('Form submitted:', { name: state.name, email: state.email, message: state.message });
+    setState({ submitted: true });
+    
+    // Reset form after 2 seconds
+    setTimeout(() => {
+      setState({ name: '', email: '', message: '', submitted: false });
+    }, 2000);
+  };
+
+  const updateField = (field) => (event) => {
+    setState({ [field]: event.target.value });
+  };
+
+  return {
+    div: {
+      'data-coherent-component': 'contact-form',
+      children: [
+        {
+          form: {
+            className: 'contact-form',
+            onsubmit: handleSubmit,
+            children: [
+              { h2: { text: 'Contact Us' } },
+              state.submitted ? {
+                div: {
+                  className: 'success-message',
+                  children: [
+                    { p: { text: '✓ Message sent successfully!' } }
+                  ]
+                }
+              } : null,
+              {
+                div: {
+                  className: 'form-field',
+                  children: [
+                    { label: { text: 'Name', htmlFor: 'contact-name' } },
+                    {
+                      input: {
+                        id: 'contact-name',
+                        type: 'text',
+                        value: state.name,
+                        placeholder: 'Your name',
+                        oninput: updateField('name'),
+                        required: true
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                div: {
+                  className: 'form-field',
+                  children: [
+                    { label: { text: 'Email', htmlFor: 'contact-email' } },
+                    {
+                      input: {
+                        id: 'contact-email',
+                        type: 'email',
+                        value: state.email,
+                        placeholder: 'your@email.com',
+                        oninput: updateField('email'),
+                        required: true
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                div: {
+                  className: 'form-field',
+                  children: [
+                    { label: { text: 'Message', htmlFor: 'contact-message' } },
+                    {
+                      textarea: {
+                        id: 'contact-message',
+                        value: state.message,
+                        placeholder: 'Your message here...',
+                        oninput: updateField('message'),
+                        rows: 4,
+                        required: true
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                button: {
+                  className: 'btn btn--primary',
+                  type: 'submit',
+                  text: state.submitted ? 'Sent!' : 'Send Message',
+                  disabled: state.submitted
+                }
               }
-            }
-          ]
+            ].filter(Boolean)
+          }
         }
-      },
-      {
-        div: {
-          className: 'form-field',
-          children: [
-            { label: { text: 'Email' } },
-            {
-              input: {
-                type: 'email',
-                value: state.email,
-                placeholder: 'your@email.com',
-                oninput: typeof window !== 'undefined' ? (e) => setState({ email: e.target.value }) : null,
-              }
-            }
-          ]
-        }
-      },
-      {
-        div: {
-          className: 'form-field',
-          children: [
-            { label: { text: 'Message' } },
-            {
-             textarea: {
-               value: state.message,
-               placeholder: 'Your message here...',
-               oninput: typeof window !== 'undefined'
-                 ? (e) => setState({ message: e.target.value })
-                 : null,
-             }
-           }
-          ]
-        }
-      },
-      {
-        button: {
-          className: 'btn btn--primary',
-          text: 'Send Message',
-          onclick: typeof window !== 'undefined' ? () => {
-            console.log('Form submitted:', state);
-            setState({ name: '', email: '', message: '' });
-          } : null,
-        }
-      }
-    ]
-  }
-}));
+      ]
+    }
+  };
+});
+
+export const ContactForm = ContactFormComponent;
+
+// Make the contact form hydratable
+export const HydratableContactForm = makeHydratable(ContactForm, {
+  componentName: 'contact-form'
+});
 
 // Complete page demonstrating all composition patterns
 export const demoPage = {
@@ -265,6 +312,19 @@ export const demoPage = {
                 .btn--primary:hover { 
                   background: #0056b3; 
                 }
+                .btn:disabled {
+                  background: #6c757d;
+                  cursor: not-allowed;
+                  opacity: 0.6;
+                }
+                .success-message {
+                  background: #d4edda;
+                  color: #155724;
+                  padding: 10px;
+                  border-radius: 4px;
+                  margin: 10px 0;
+                  border: 1px solid #c3e6cb;
+                }
                 `
               }
             }
@@ -289,8 +349,8 @@ export const demoPage = {
                 }),
                 
                 { h2: { text: 'Interactive Form with State' } },
-                { p: { text: 'This form demonstrates state management and event handling:' } },
-                ContactForm()
+                { p: { text: 'This form demonstrates state management, event handling, and client-side hydration:' } },
+                HydratableContactForm.renderWithHydration()
               ]
             })
           ]
@@ -299,6 +359,22 @@ export const demoPage = {
     ]
   }
 };
+
+// Set up client-side hydration (browser only)
+if (typeof window !== 'undefined') {
+  // Component registry for hydration
+  window.componentRegistry = {
+    'contact-form': HydratableContactForm
+  };
+  
+  // Auto-hydrate when DOM is ready
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+      autoHydrate(window.componentRegistry);
+      console.log('✅ Component composition hydration complete!');
+    }, 100);
+  });
+}
 
 // Export the demo page as default for live preview
 export default demoPage;

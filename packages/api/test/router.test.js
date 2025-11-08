@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { createObjectRouter } from '../../../src/api/router.js';
+import { createRouter } from '../src/router.js';
 
 // Mock request and response objects for Node.js HTTP server
 function createMockReq(method = 'GET', url = '/', body = {}) {
@@ -61,7 +61,7 @@ describe('Enhanced Object Router', () => {
       }
     };
 
-    const router = createObjectRouter(simpleRoutes);
+    const router = createRouter(simpleRoutes);
     
     expect(typeof router.addRoute).toBe('function');
     expect(typeof router.handle).toBe('function');
@@ -72,7 +72,7 @@ describe('Enhanced Object Router', () => {
   });
 
   it('should support enhanced router features', async () => {
-    const testRouter = createObjectRouter({}, { enableMetrics: true });
+    const testRouter = createRouter({}, { enableMetrics: true });
     testRouter.addRoute('GET', '/test', () => ({ test: true }), { name: 'test-route' });
     
     // Test named routes
@@ -117,7 +117,7 @@ describe('Enhanced Object Router', () => {
       }
     };
 
-    const router = createObjectRouter(routes);
+    const router = createRouter(routes);
 
     // Test simple route
     const req1 = createMockReq('GET', '/');
@@ -142,7 +142,7 @@ describe('Enhanced Object Router', () => {
   });
 
   it('should handle metrics collection', () => {
-    const testRouter = createObjectRouter({}, { enableMetrics: true });
+    const testRouter = createRouter({}, { enableMetrics: true });
     testRouter.addRoute('GET', '/test', () => ({ test: true }));
     
     const metrics = testRouter.getMetrics();

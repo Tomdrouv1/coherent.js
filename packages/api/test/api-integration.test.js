@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { createObjectRouter } from '../../../src/api/router.js';
-import { withAuth, withInputValidation, generateJWT } from '../../../src/api/security.js';
+import { createRouter } from '../src/router.js';
+import { withAuth, withInputValidation, generateJWT } from '../src/security.js';
 
 describe('API Integration Features', () => {
   it('should create router with security middleware', () => {
@@ -19,7 +19,7 @@ describe('API Integration Features', () => {
       }
     };
 
-    const secureRouter = createObjectRouter(secureRoutes);
+    const secureRouter = createRouter(secureRoutes);
     expect(typeof secureRouter).toBe('object');
     expect(typeof secureRouter.handle).toBe('function');
   });
@@ -38,7 +38,7 @@ describe('API Integration Features', () => {
       }
     };
 
-    const router = createObjectRouter(validatedRoutes);
+    const router = createRouter(validatedRoutes);
     expect(typeof router).toBe('object');
     expect(typeof router.handle).toBe('function');
   });

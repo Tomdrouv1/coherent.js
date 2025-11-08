@@ -4,13 +4,13 @@
  */
 
 import express from 'express';
-import { createCoherentHandler, setupCoherentExpress } from '../src/express/coherent-express.js';
+import { createCoherentHandler, setupCoherent } from '../packages/express/src/coherent-express.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Setup Coherent.js with Express
-setupCoherentExpress(app, {
+setupCoherent(app, {
   useMiddleware: true,
   useEngine: false,
   enablePerformanceMonitoring: true
@@ -23,7 +23,7 @@ function ExpressHomePage({ name = 'Express Developer' }) {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       max-width: 900px; margin: 0 auto; padding: 40px 20px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh; color: white;
+      min-height: 100dvh; color: white;
     }
     .container { background: rgba(255,255,255,0.1); border-radius: 20px; padding: 40px; backdrop-filter: blur(10px); }
     .header { text-align: center; margin-bottom: 40px; }
@@ -139,7 +139,7 @@ function ExpressUserPage(req) {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       max-width: 800px; margin: 0 auto; padding: 40px 20px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh; color: white;
+      min-height: 100dvh; color: white;
     }
     .profile { background: rgba(255,255,255,0.1); border-radius: 20px; padding: 40px; backdrop-filter: blur(10px); }
     .profile h1 { text-align: center; margin-bottom: 30px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
@@ -228,8 +228,8 @@ app.use((err, req, res) => {
   });
 });
 
-// Start server only if not imported as module
-if (process.env.NODE_ENV !== 'test') {
+// Start server only if run directly (not imported as module)
+if (import.meta.url === `file://${process.argv[1]}`) {
   app.listen(PORT, () => {
     if (process.env.NODE_ENV !== 'production') {
       console.log(`Express + Coherent.js server: http://localhost:${PORT}`);
@@ -274,9 +274,9 @@ const ExpressIntegrationDemo = () => {
                           { p: { text: 'Install the Express integration:' } },
                           { pre: { text: 'npm install @coherent/express' } },
                           { p: { text: 'Configure your Express app:' } },
-                          { pre: { text: `import { setupCoherentExpress } from '@coherent/express';
+                          { pre: { text: `import { setupCoherent } from '@coherent/express';
 
-setupCoherentExpress(app, {
+setupCoherent(app, {
   useMiddleware: true,
   enablePerformanceMonitoring: true
 });` } }

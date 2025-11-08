@@ -5,7 +5,7 @@
 ### Implemented Features
 
 1. **Object-Based Routing**
-   - `createObjectRouter(routes)` - Pure object-to-route transformation
+   - `createRouter(routes)` - Pure object-to-route transformation
    - Nested route definitions using JavaScript objects
    - All HTTP methods supported (GET, POST, PUT, DELETE, PATCH)
 
@@ -32,7 +32,7 @@
 A lightweight routing system similar to Express Router but designed for API endpoints:
 
 ```javascript
-import { createApiRouter } from 'coherent-js/api';
+import { createApiRouter } from '@coherent.js/api';
 
 const router = createApiRouter();
 
@@ -57,7 +57,7 @@ router.post('/users', (req, res) => {
 Built-in validation using a schema-based approach:
 
 ```javascript
-import { withValidation } from 'coherent-js/api';
+import { withValidation } from '@coherent.js/api';
 
 const userSchema = {
   type: 'object',
@@ -79,7 +79,7 @@ const validatedHandler = withValidation(userSchema, (req, res) => {
 Automatic serialization of complex objects, dates, and custom types:
 
 ```javascript
-import { withSerialization } from 'coherent-js/api';
+import { withSerialization } from '@coherent.js/api';
 
 const apiHandler = withSerialization((req, res) => {
   return {
@@ -95,7 +95,7 @@ const apiHandler = withSerialization((req, res) => {
 Standardized error handling with automatic HTTP status codes:
 
 ```javascript
-import { withErrorHandling } from 'coherent-js/api';
+import { withErrorHandling } from '@coherent.js/api';
 
 const errorHandler = withErrorHandling((req, res) => {
   if (!req.user) {
@@ -111,7 +111,7 @@ const errorHandler = withErrorHandling((req, res) => {
 Automatic generation of OpenAPI documentation:
 
 ```javascript
-import { withOpenApi } from 'coherent-js/api';
+import { withOpenApi } from '@coherent.js/api';
 
 const documentedHandler = withOpenApi({
   summary: 'Get all users',
@@ -139,7 +139,7 @@ const documentedHandler = withOpenApi({
 API-specific middleware for common concerns:
 
 ```javascript
-import { createApiMiddleware } from 'coherent-js/api';
+import { createApiMiddleware } from '@coherent.js/api';
 
 const authMiddleware = createApiMiddleware((req, res, next) => {
   const token = req.headers.authorization;
@@ -161,7 +161,7 @@ Adapters for different API patterns:
 
 ```javascript
 // REST Adapter
-import { createRestAdapter } from 'coherent-js/api';
+import { createRestAdapter } from '@coherent.js/api';
 
 const restApi = createRestAdapter({
   resource: 'users',
@@ -170,7 +170,7 @@ const restApi = createRestAdapter({
 });
 
 // GraphQL Adapter
-import { createGraphqlAdapter } from 'coherent-js/api';
+import { createGraphqlAdapter } from '@coherent.js/api';
 
 const graphqlApi = createGraphqlAdapter({
   schema: userSchema,
@@ -181,7 +181,7 @@ const graphqlApi = createGraphqlAdapter({
 ## Object Router Example
 
 ```javascript
-import { createObjectRouter } from 'coherent/api';
+import { createRouter } from 'coherent/api';
 
 const routes = {
   api: {
@@ -210,7 +210,7 @@ const routes = {
   }
 };
 
-const router = createObjectRouter(routes);
+const router = createRouter(routes);
 ```
 
 ## Benefits of Object-Only Approach
@@ -305,7 +305,7 @@ The new API modules integrate seamlessly with existing Coherent.js features:
 
 ```javascript
 // Basic API endpoint
-import { createApiRouter, withValidation, withErrorHandling } from 'coherent-js/api';
+import { createApiRouter, withValidation, withErrorHandling } from '@coherent.js/api';
 
 const router = createApiRouter();
 
@@ -328,10 +328,10 @@ router.post('/users',
 
 // Integration with Express
 import express from 'express';
-import { setupCoherentExpress } from 'coherent-js/express';
+import { setupCoherent } from '@coherent.js/express';
 
 const app = express();
-setupCoherentExpress(app);
+setupCoherent(app);
 
 app.use('/api', router.toExpress());
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-// import { QueryBuilder } from '../../../src/database/query-builder.js';
+// import { QueryBuilder } from '../src/query-builder.js';
 
 describe('Database Query Builder', () => {
   it('builds SELECT query', () => {

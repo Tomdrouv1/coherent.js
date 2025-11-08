@@ -3,7 +3,10 @@
  * Demonstrates streaming capabilities for large datasets and real-time updates
  */
 
-import { renderToStream } from '../src/rendering/streaming-renderer.js';
+import { render } from '../packages/core/src/index.js';
+
+// Note: Streaming renderer is a separate feature - using render for now
+// For true streaming, use the streaming-renderer package when available
 
 // Large list component optimized for streaming
 const StreamingList = ({ itemCount = 100, title = 'Streaming List' }) => ({

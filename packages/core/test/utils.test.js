@@ -27,8 +27,8 @@ test('Normalization utilities', async () => {
       
     }
     
-  } catch (error) {
-    if (error.code === 'ERR_MODULE_NOT_FOUND') {
+  } catch (_error) {
+    if (_error.code === 'ERR_MODULE_NOT_FOUND') {
       console.log('⚠️  Normalization module not found - testing normalization concepts');
       
       // Test mock normalization functions
@@ -64,7 +64,7 @@ test('Normalization utilities', async () => {
       
       
     } else {
-      throw error;
+      throw _error;
     }
   }
 });
@@ -87,7 +87,7 @@ test('Validation utilities', async () => {
           const reserved = ['key', 'ref'];
           for (const reservedProp of reserved) {
             if (reservedProp in props) {
-              return { valid: false, error: `Reserved prop: ${reservedProp}` };
+              return { valid: false, _error: `Reserved prop: ${reservedProp}` };
             }
           }
           
@@ -145,8 +145,8 @@ test('Dependency utilities', async () => {
       
     }
     
-  } catch (error) {
-    if (error.code === 'ERR_MODULE_NOT_FOUND') {
+  } catch (_error) {
+    if (_error.code === 'ERR_MODULE_NOT_FOUND') {
       console.log('⚠️  Dependency utilities module not found - testing dependency concepts');
       
       // Test mock dependency utilities
@@ -180,7 +180,7 @@ test('Dependency utilities', async () => {
             total: deps.length,
             scoped: deps.filter(d => d.startsWith('@')).length,
             local: deps.filter(d => d.startsWith('./') || d.startsWith('../')).length,
-            external: deps.filter(d => !d.startsWith('./') && !d.startsWith('../')).length
+            external: deps.filter(d => !d.startsWith('./') && !d.startsWith('../') && !d.startsWith('@')).length
           };
         }
       };
@@ -211,7 +211,7 @@ test('Dependency utilities', async () => {
       
       
     } else {
-      throw error;
+      throw _error;
     }
   }
 });

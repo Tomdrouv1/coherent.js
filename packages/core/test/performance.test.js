@@ -7,11 +7,11 @@ import { describe, test, assert } from 'vitest';
 describe('Performance tests completed', () => {
 test('Performance monitoring setup', async () => {
   try {
-    const { PerformanceMonitor } = await import('../../../src/performance/monitor.js');
-    
+    const { createPerformanceMonitor } = await import('../../core/src/performance/monitor.js');
+
     // Test monitor creation
-    const monitor = new PerformanceMonitor();
-    
+    const monitor = createPerformanceMonitor();
+
     assert.ok(typeof monitor === 'object', 'Should create monitor object');
     assert.ok(typeof monitor.start === 'function', 'Should have start method');
     assert.ok(typeof monitor.stop === 'function', 'Should have stop method');
@@ -19,8 +19,8 @@ test('Performance monitoring setup', async () => {
     
     
     
-  } catch (error) {
-    if (error.code === 'ERR_MODULE_NOT_FOUND') {
+  } catch (_error) {
+    if (_error.code === 'ERR_MODULE_NOT_FOUND') {
       console.log('⚠️  Performance monitor module not found - testing with mock');
       
       // Test mock performance monitoring
@@ -42,7 +42,7 @@ test('Performance monitoring setup', async () => {
       
       
     } else {
-      throw error;
+      throw _error;
     }
   }
 });
@@ -72,8 +72,8 @@ test('Cache manager functionality', async () => {
     
     
     
-  } catch (error) {
-    if (error.code === 'ERR_MODULE_NOT_FOUND') {
+  } catch (_error) {
+    if (_error.code === 'ERR_MODULE_NOT_FOUND') {
       console.log('⚠️  Cache manager module not found - testing with mock');
       
       // Test mock cache implementation
@@ -98,7 +98,7 @@ test('Cache manager functionality', async () => {
       
       
     } else {
-      throw error;
+      throw _error;
     }
   }
 });
@@ -122,8 +122,8 @@ test('Bundle optimizer functionality', async () => {
     
     
     
-  } catch (error) {
-    if (error.code === 'ERR_MODULE_NOT_FOUND') {
+  } catch (_error) {
+    if (_error.code === 'ERR_MODULE_NOT_FOUND') {
       console.log('⚠️  Bundle optimizer module not found - testing optimization concepts');
       
       // Test mock bundle optimization concepts
@@ -158,58 +158,38 @@ test('Bundle optimizer functionality', async () => {
       
       
     } else {
-      throw error;
+      throw _error;
     }
   }
 });
 
 test('Streaming renderer performance', async () => {
-  try {
-    const { createStreamingRenderer } = await import('../../../src/rendering/streaming-renderer.js');
-    
-    // Test streaming renderer creation
-    const renderer = createStreamingRenderer();
-    
-    assert.ok(typeof renderer === 'object', 'Should create streaming renderer');
-    assert.ok(typeof renderer.render === 'function', 'Should have render method');
-    
-    
-    
-  } catch (error) {
-    if (error.code === 'ERR_MODULE_NOT_FOUND') {
-      console.log('⚠️  Streaming renderer module not found - testing streaming concepts');
-      
-      // Test mock streaming concepts
-      const mockStreamingRenderer = {
-        renderToStream: function*(component) {
-          yield '<!DOCTYPE html><html>';
-          yield '<head><title>Test</title></head>';
-          yield '<body>';
-          yield JSON.stringify(component);
-          yield '</body></html>';
-        },
-        
-        async renderAsync(component) {
-          const chunks = [];
-          for (const chunk of this.renderToStream(component)) {
-            chunks.push(chunk);
-          }
-          return chunks.join('');
-        }
-      };
-      
-      const testComponent = { div: { text: 'Hello World' } };
-      const result = await mockStreamingRenderer.renderAsync(testComponent);
-      
-      assert.ok(typeof result === 'string');
-      assert.ok(result.includes('Hello World'));
-      assert.ok(result.includes('<!DOCTYPE html>'));
-      
-      
-    } else {
-      throw error;
+  const { renderToStream, streamingUtils } = await import('../src/rendering/html-renderer.js');
+
+  // Test streaming functionality
+  const testComponent = {
+    div: {
+      children: [
+        { h1: { text: 'Hello World' } },
+        { p: { text: 'Testing streaming render' } }
+      ]
     }
+  };
+
+  // Test renderToStream exists and works
+  const chunks = [];
+  for await (const chunk of renderToStream(testComponent)) {
+    chunks.push(chunk);
   }
+
+  const html = chunks.join('');
+  assert.ok(typeof html === 'string', 'Should produce HTML string');
+  assert.ok(html.includes('Hello World'), 'Should contain component content');
+  assert.ok(html.includes('Testing streaming render'), 'Should contain all content');
+
+  // Test streamingUtils
+  assert.ok(typeof streamingUtils.collectChunks === 'function', 'Should have collectChunks utility');
+  assert.ok(typeof streamingUtils.streamToResponse === 'function', 'Should have streamToResponse utility');
 });
 
 test('Performance measurement utilities', () => {

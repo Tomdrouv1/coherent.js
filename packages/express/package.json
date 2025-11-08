@@ -1,11 +1,11 @@
 {
-  "name": "@coherentjs/express",
-  "version": "1.0.1",
+  "name": "@coherent.js/express",
+  "version": "1.0.0-beta.1",
   "description": "Express adapter for Coherent.js",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
-  "types": "./dist/express/index.d.ts",
+  "types": "./types/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -23,6 +23,7 @@
     "test:node": "node --test test/*.test.js"
   },
   "files": [
+    "types/",
     "dist/",
     "README.md",
     "LICENSE"
@@ -37,7 +38,7 @@
   },
   "peerDependencies": {
     "express": ">=4.18.0 < 6.0.0",
-    "@coherentjs/core": "^1.0.1"
+    "@coherent.js/core": "workspace:^"
   },
   "publishConfig": {
     "access": "public"

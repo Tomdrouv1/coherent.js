@@ -2,15 +2,15 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "../../src",
-    "baseUrl": "../../",
+    "rootDir": "./src",
+    "baseUrl": "./",
     "paths": {
-      "@coherentjs/core": ["./packages/core/dist"],
-      "@coherentjs/nextjs": ["./packages/nextjs/dist"]
+      "@coherent.js/core": ["../core/dist"],
+      "@coherent.js/nextjs": ["./dist"]
     }
   },
   "include": [
-    "../../src/nextjs/**/*"
+    "src/**/*"
   ],
   "references": [
     { "path": "../core" }

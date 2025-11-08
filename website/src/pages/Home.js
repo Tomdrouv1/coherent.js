@@ -9,21 +9,21 @@ export function Home() {
           { h1: { className: 'title', text: 'Coherent.js' } },
           { p: { className: 'lead', text: 'Fast SSR and hydration with plain JS objects. Minimal API. Maximum clarity.' } },
           { div: { className: 'badges', children: [
-            { img: { src: 'https://img.shields.io/endpoint?url=https://coherent.js.org/coverage/badge.json&label=coverage', alt: 'Coverage', className: 'badge' } },
-            { img: { src: 'https://img.shields.io/npm/v/@coherentjs/core', alt: 'npm version', className: 'badge' } },
+            { img: { src: 'https://img.shields.io/endpoint?url=https://coherentjs.dev/coverage/badge.json&label=coverage', alt: 'Coverage', className: 'badge' } },
+            { img: { src: 'https://img.shields.io/badge/version-1.0.0--beta.1-blue', alt: 'version', className: 'badge' } },
             { img: { src: 'https://img.shields.io/github/actions/workflow/status/Tomdrouv1/coherent.js/ci.yml?branch=main', alt: 'CI Status', className: 'badge' } }
           ] } },
           { div: { className: 'cta', children: [
-            { a: { className: 'button primary', href: 'docs', text: 'Get Started' } },
-            { a: { className: 'button', href: 'examples', text: 'Examples' } },
-            { a: { className: 'button', href: 'performance', text: 'Performance' } }
+            { a: { className: 'button primary', href: 'starter-app', text: '🚀 Starter App' } },
+            { a: { className: 'button', href: 'docs', text: 'Docs' } },
+            { a: { className: 'button', href: 'examples', text: 'Examples' } }
           ] } }
         ] } },
 
         // Install
         { section: { className: 'install', children: [
           { h3: { text: 'Install' } },
-          { pre: { className: 'code-block', children: [ { code: { text: 'pnpm add @coherentjs/core' } } ] } }
+          { pre: { className: 'code-block', children: [ { code: { text: 'pnpm add @coherent.js/core' } } ] } }
         ] } },
 
         // Key features

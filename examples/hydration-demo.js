@@ -3,8 +3,8 @@
  * Demonstrates client-side hydration of server-rendered components with interactivity
  */
 
-import { makeHydratable, autoHydrate } from '../src/client/hydration.js';
-import { withState } from '../src/coherent.js';
+import { makeHydratable, autoHydrate } from '../packages/client/src/hydration.js';
+import { withState } from "../packages/core/src/index.js";
 
 // Interactive counter with hydration support
 // Create a simple counter component that works with hydration
@@ -431,7 +431,7 @@ export const hydrationDemo = {
                   margin: 0;
                   padding: 20px;
                   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                  min-height: 100vh;
+                  min-height: 100dvh;
                   color: #2d3748;
                 }
                 .demo-container {

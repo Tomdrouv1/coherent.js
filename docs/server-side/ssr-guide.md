@@ -17,7 +17,7 @@ Server-side rendering provides several benefits:
 ### Simple Server-Side Rendering
 
 ```javascript
-import { renderToString } from 'coherent-js';
+import { render } from '@coherent.js/core';
 import http from 'http';
 
 // Define your component
@@ -48,7 +48,7 @@ const server = http.createServer((req, res) => {
     user: { name: 'John Doe' }
   });
   
-  const html = renderToString(component);
+  const html = render(component);
   
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(`<!DOCTYPE html>${html}`);
@@ -62,7 +62,7 @@ server.listen(3000, () => {
 ### Using Coherent Factory
 
 ```javascript
-import { createCoherent } from 'coherent-js';
+import { createCoherent } from '@coherent.js/core';
 import http from 'http';
 
 // Create Coherent instance with SSR optimizations
@@ -179,7 +179,7 @@ const BlogPost = ({ post, baseUrl }) => {
 ### Async Data Loading
 
 ```javascript
-import { createDatabaseManager, createQuery, executeQuery } from 'coherent-js';
+import { createDatabaseManager, createQuery, executeQuery } from '@coherent.js/core';
 
 const db = createDatabaseManager({
   type: 'postgresql',
@@ -213,7 +213,7 @@ async function renderBlogPost(slug) {
   
   // Render component with data
   const component = BlogPostWithComments({ post, comments });
-  return renderToString(component);
+  return render(component);
 }
 
 // Usage in server
@@ -238,7 +238,7 @@ const server = http.createServer(async (req, res) => {
 ### Caching SSR Results
 
 ```javascript
-import { createCoherent } from 'coherent-js';
+import { createCoherent } from '@coherent.js/core';
 
 const coherent = createCoherent({
   enableCache: true,
@@ -284,7 +284,7 @@ async function handleBlogPost(slug) {
 ### Streaming Large Pages
 
 ```javascript
-import { createStreamingRenderer } from 'coherent-js';
+import { createStreamingRenderer } from '@coherent.js/core';
 
 const streamRenderer = createStreamingRenderer({
   enableChunking: true,
@@ -519,7 +519,7 @@ const RobustComponent = ({ data, fallback }) => {
 ### Component Precompilation
 
 ```javascript
-import { precompileComponent } from 'coherent-js';
+import { precompileComponent } from '@coherent.js/core';
 
 // Precompile static components
 const precompiledHeader = precompileComponent({
@@ -556,7 +556,7 @@ const HomePage = ({ content }) => ({
 ### Memory Usage Optimization
 
 ```javascript
-import { createCoherent, performanceMonitor } from 'coherent-js';
+import { createCoherent, performanceMonitor } from '@coherent.js/core';
 
 const coherent = createCoherent({
   enableCache: true,
@@ -662,7 +662,7 @@ async function generateSitemap() {
     }
   };
   
-  return renderToString(sitemap);
+  return render(sitemap);
 }
 ```
 

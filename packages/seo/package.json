@@ -1,0 +1,36 @@
+{
+  "name": "@coherent.js/seo",
+  "version": "1.0.0-beta.1",
+  "description": "SEO utilities for Coherent.js applications",
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./meta": "./dist/meta.js",
+    "./sitemap": "./dist/sitemap.js",
+    "./structured-data": "./dist/structured-data.js"
+  },
+  "keywords": [
+    "coherent",
+    "seo",
+    "meta-tags",
+    "sitemap",
+    "structured-data"
+  ],
+  "author": "Coherent.js Team",
+  "license": "MIT",
+  "scripts": {
+    "build": "node build.mjs",
+    "clean": "rm -rf dist"
+  },
+  "peerDependencies": {
+    "@coherent.js/core": "workspace:^"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tomdrouv1/coherent.js.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

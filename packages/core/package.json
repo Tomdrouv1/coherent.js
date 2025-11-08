@@ -1,18 +1,18 @@
 {
-  "name": "@coherentjs/core",
-  "version": "1.0.1",
+  "name": "@coherent.js/core",
+  "version": "1.0.0-beta.1",
   "description": "Core runtime for Coherent.js (SSR framework).",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
-  "types": "./dist/coherent.d.ts",
+  "types": "./types/index.d.ts",
   "exports": {
     ".": {
+      "development": "./src/index.js",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     }
   },
-  "bin": {},
   "scripts": {
     "build": "node build.mjs",
     "clean": "rm -rf dist/",
@@ -25,6 +25,7 @@
   },
   "files": [
     "dist/",
+    "types/",
     "README.md",
     "LICENSE"
   ],
@@ -37,6 +38,7 @@
     "url": "git+https://github.com/Tomdrouv1/coherent.js.git"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }

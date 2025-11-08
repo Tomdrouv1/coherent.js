@@ -16,6 +16,10 @@ pids
 coverage/
 *.lcov
 
+# Test results
+test-results/
+junit.xml
+
 # nyc test coverage
 .nyc_output
 
@@ -81,3 +85,4 @@ temp/
 # Personal notes
 TODO.md
 NOTES.md
+.mcp.json

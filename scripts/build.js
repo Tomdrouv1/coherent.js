@@ -4,7 +4,7 @@ import { build } from 'esbuild';
 const builds = [
     // Core server framework (ESM)
     {
-        entryPoints: ['src/coherent.js'],
+        entryPoints: ['packages/core/src/index.js'],
         format: 'esm',
         outfile: 'dist/coherent.js',
         platform: 'node',
@@ -13,7 +13,7 @@ const builds = [
 
     // Core server framework (CJS for compatibility)
     {
-        entryPoints: ['src/coherent.js'],
+        entryPoints: ['packages/core/src/index.js'],
         format: 'cjs',
         outfile: 'dist/coherent.cjs',
         platform: 'node',
@@ -110,7 +110,7 @@ const builds = [
 
     // Optional client-side hydration
     {
-        entryPoints: ['src/client/hydration.js'],
+        entryPoints: ['packages/client/src/hydration.js'],
         format: 'esm',
         outfile: 'dist/client.js',
         platform: 'browser',

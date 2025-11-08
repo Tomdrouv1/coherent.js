@@ -1,0 +1,36 @@
+{
+  "name": "@coherent.js/devtools",
+  "version": "1.0.0-beta.1",
+  "description": "Developer tools for Coherent.js applications",
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./inspector": "./dist/inspector.js",
+    "./profiler": "./dist/profiler.js",
+    "./logger": "./dist/logger.js"
+  },
+  "keywords": [
+    "coherent",
+    "devtools",
+    "debugging",
+    "profiling",
+    "inspector"
+  ],
+  "author": "Coherent.js Team",
+  "license": "MIT",
+  "scripts": {
+    "build": "node build.mjs",
+    "clean": "rm -rf dist"
+  },
+  "peerDependencies": {
+    "@coherent.js/core": "workspace:^"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tomdrouv1/coherent.js.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -56,7 +56,7 @@ test('generateComponent should create basic component files', async () => {
     // Check test content
     const testContent = readFileSync(testPath, 'utf-8');
     assert(testContent.includes('TestButton'));
-    assert(testContent.includes('renderToString'));
+    assert(testContent.includes('render'));
     
     
     

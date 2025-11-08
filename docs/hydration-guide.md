@@ -89,10 +89,10 @@ const HydratableCounter = makeHydratable(Counter);
 
 ## Server-Side Rendering
 
-When rendering on the server, use `renderToString` with hydratable components:
+When rendering on the server, use `render` with hydratable components:
 
 ```javascript
-import { renderToString } from 'coherent/rendering/html-renderer';
+import { render } from 'coherent/rendering/html-renderer';
 import { makeHydratable } from 'coherent/client/hydration';
 
 function Counter(props) {
@@ -118,7 +118,7 @@ function Counter(props) {
 }
 
 const HydratableCounter = makeHydratable(Counter);
-const html = renderToString(HydratableCounter, { count: 5 });
+const html = render(HydratableCounter, { count: 5 });
 ```
 
 ## Client-Side Hydration
@@ -200,7 +200,7 @@ Here's a complete example showing server-side rendering and client-side hydratio
 ### Server-side (Node.js)
 
 ```javascript
-import { renderToString } from 'coherent/rendering/html-renderer';
+import { render } from 'coherent/rendering/html-renderer';
 import { makeHydratable } from 'coherent/client/hydration';
 
 function Counter(props) {
@@ -239,7 +239,7 @@ function Counter(props) {
 const HydratableCounter = makeHydratable(Counter);
 
 // Render to HTML
-const html = renderToString(HydratableCounter, { count: 0 });
+const html = render(HydratableCounter, { count: 0 });
 
 // Send HTML to client
 res.send(`

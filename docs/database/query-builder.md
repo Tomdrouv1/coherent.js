@@ -11,7 +11,7 @@ Coherent.js database layer uses **pure JavaScript objects** instead of chained m
 ### Creating a Database Manager
 
 ```javascript
-import { createDatabaseManager } from 'coherent-js';
+import { createDatabaseManager } from '@coherent.js/core';
 
 // ✅ Recommended: Factory function approach
 const db = createDatabaseManager({
@@ -33,7 +33,7 @@ const pgDb = createDatabaseManager({
 ### Creating Queries
 
 ```javascript
-import { createQuery, executeQuery } from 'coherent-js';
+import { createQuery, executeQuery } from '@coherent.js/core';
 
 // ✅ Pure object query
 const query = createQuery({
@@ -521,7 +521,7 @@ const activeAdminQuery = createQuery(
 ### Transaction Support
 
 ```javascript
-import { createDatabaseManager, createQuery, executeQuery } from 'coherent-js';
+import { createDatabaseManager, createQuery, executeQuery } from '@coherent.js/core';
 
 const db = createDatabaseManager({ type: 'sqlite', database: 'app.db' });
 
@@ -621,7 +621,7 @@ const mongoQuery = createQuery({
 ## Error Handling
 
 ```javascript
-import { createQuery, executeQuery, createDatabaseManager } from 'coherent-js';
+import { createQuery, executeQuery, createDatabaseManager } from '@coherent.js/core';
 
 const db = createDatabaseManager({ type: 'sqlite', database: 'app.db' });
 
@@ -676,7 +676,7 @@ console.log('Parameters:', params);
 
 ```javascript
 // ✅ Recommended
-import { createDatabaseManager, createQuery, executeQuery } from 'coherent-js';
+import { createDatabaseManager, createQuery, executeQuery } from '@coherent.js/core';
 
 const db = createDatabaseManager(config);
 const query = createQuery(queryConfig);

@@ -3,7 +3,7 @@
  */
 
 import { describe, it, beforeEach, expect } from 'vitest';
-import { createQuery, executeQuery } from '../../../../src/database/query-builder.js';
+import { createQuery, executeQuery } from '../../src/query-builder.js';
 
 // Simple mock implementation
 function createMockDb() {
@@ -127,7 +127,7 @@ describe('QueryBuilder', { concurrency: false }, () => {
     });
   });
 
-  describe('error handling', () => {
+  describe('_error handling', () => {
     it('should handle empty queries gracefully', async () => {
       // Test that an empty query object still creates a basic SELECT query
       const query = createQuery({ table: 'users' });
@@ -147,8 +147,8 @@ describe('QueryBuilder', { concurrency: false }, () => {
         const [sql] = mockDb.getLastCall();
         expect(sql).toBe('SELECT * FROM undefined');
       } catch {
-        // This is acceptable - missing table should cause an error
-        expect(true).toBe(true); // Expected error for missing table
+        // This is acceptable - missing table should cause an _error
+        expect(true).toBe(true); // Expected _error for missing table
       }
     });
   });

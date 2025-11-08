@@ -12,7 +12,7 @@ import {
   verifyToken,
   hashPassword, 
   verifyPassword
-} from '../../../src/api/security.js';
+} from '../src/security.js';
 
 describe('API Security Functions', () => {
   it('should generate random tokens', () => {

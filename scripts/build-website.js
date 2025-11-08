@@ -3,13 +3,15 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { marked } from 'marked';
-import { renderToString } from '../src/coherent.js';
+import { render } from "../packages/core/src/index.js";
 import { Layout } from '../website/src/layout/Layout.js';
 import { Home } from '../website/src/pages/Home.js';
 import { Examples } from '../website/src/pages/Examples.js';
 import { Playground } from '../website/src/pages/Playground.js';
 import { Coverage } from '../website/src/pages/Coverage.js';
 import { Performance } from '../website/src/pages/Performance.js';
+import { DocsIndexPage } from '../website/src/pages/DocsPage.js';
+import { StarterAppPage } from '../website/src/pages/StarterApp.js';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -48,14 +50,16 @@ function buildBreadcrumbs(rel){
   const parts = rel.replace(/\\/g,'/').split('/');
   const crumbs = [];
   let acc = 'docs';
-  crumbs.push(`<a href="/docs">Docs</a>`);
+  crumbs.push(`<a href="/docs">Documentation</a>`);
   for (const p of parts.slice(0, -1)) {
-    acc += `/${  slugifySegment(p)}`;
-    crumbs.push(`<span class="sep">/</span><a href="/${acc}">${escapeHtml(p.replace(/-/g,' '))}</a>`);
+    acc += `/${slugifySegment(p)}`;
+    const label = toTitleCase(p.replace(/-/g,' '));
+    crumbs.push(`<span class="sep"> / </span><a href="/${acc}">${escapeHtml(label)}</a>`);
   }
   const last = parts[parts.length-1].replace(/\.md$/i,'');
-  crumbs.push(`<span class="sep">/</span><span class="current">${escapeHtml(last.replace(/-/g,' '))}</span>`);
-  return crumbs.join(' ');
+  const lastLabel = toTitleCase(last.replace(/-/g,' '));
+  crumbs.push(`<span class="sep"> / </span><span class="current">${escapeHtml(lastLabel)}</span>`);
+  return `<nav class="breadcrumbs">${crumbs.join('')}</nav>`;
 }
 
 function enhanceHeadings(html){
@@ -63,7 +67,23 @@ function enhanceHeadings(html){
   const headings = [];
   const newHtml = html.replace(/<(h[23])(\s+[^>]*)?>(.*?)<\/h[23]>/gi, (m, tag, attrs = '', inner) => {
     const text = inner.replace(/<[^>]+>/g,'').trim();
-    const id = (attrs && attrs.match(/id="([^"]+)"/i)) ? RegExp.$1 : slugifySegment(text);
+    
+    // Generate simple IDs for function names
+    let id;
+    if (attrs && attrs.match(/id="([^"]+)"/i)) {
+      id = RegExp.$1; // Use existing ID if present
+    } else {
+      // For function signatures like "render(component, context?)", extract just the function name
+      const functionMatch = text.match(/^(\w+)\(/);
+      if (functionMatch) {
+        // It's a function - use just the function name in lowercase
+        id = functionMatch[1].toLowerCase();
+      } else {
+        // Regular heading - use full slugified text
+        id = slugifySegment(text);
+      }
+    }
+    
     if(!/id=/i.test(attrs)) attrs = `${attrs || ''  } id="${id}"`;
     headings.push({ level: tag.toLowerCase(), id, text });
     return `<${tag}${attrs}>${inner}</${tag}>`;
@@ -71,9 +91,22 @@ function enhanceHeadings(html){
   return { html: newHtml, headings };
 }
 
-function buildToc(headings){
+function buildToc(headings, currentPath = ''){
   if(!headings || !headings.length) return '<div class="toc-empty">No sections</div>';
-  const items = headings.map(h => `<li class="${h.level}"><a href="#${h.id}">${escapeHtml(h.text)}</a></li>`).join('');
+  const items = headings.map(h => {
+    // Clean up method names - remove object prefixes and parameters for all methods
+    let displayText = h.text;
+    
+    // Remove object prefixes (e.g., "performanceMonitor.", "cssManager.", etc.)
+    displayText = displayText.replace(/^[a-zA-Z_$][a-zA-Z0-9_$]*\./, '');
+    
+    // Remove parameters and everything after them (e.g., "(param)" or "(param1, param2)")
+    displayText = displayText.replace(/\([^)]*\).*$/, '');
+    
+    // Use proper anchor links with JavaScript smooth scrolling to prevent page jump
+    const href = currentPath ? `${currentPath}#${h.id}` : `#${h.id}`;
+    return `<li class="${h.level}"><a href="${href}" data-toc-target="${h.id}" onclick="event.preventDefault(); document.getElementById('${h.id}')?.scrollIntoView({behavior: 'smooth', block: 'start'}); history.replaceState(null, null, '#${h.id}'); updateTocActive('${h.id}', true);">${escapeHtml(displayText)}</a></li>`;
+  }).join('');
   return `<div class="toc-box"><div class="toc-title">On this page</div><ul class="toc-list">${items}</ul></div>`;
 }
 
@@ -82,9 +115,9 @@ function escapeHtml(s){
 }
 
 async function buildPerformance(sidebar) {
-  const content = renderToString(Performance());
+  const content = render(Performance());
   const page = Layout({ title: 'Performance | Coherent.js', sidebar, currentPath: 'performance', baseHref });
-  let html = renderToString(page);
+  let html = render(page);
   html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', content);
   
   // Add performance testing JavaScript
@@ -94,12 +127,12 @@ async function buildPerformance(sidebar) {
     let testCache = new Map();
     let isTestRunning = false;
     
-    // Simple renderToString implementation for browser
-    function renderToString(component) {
+    // Simple render implementation for browser
+    function render(component) {
       if (!component) return '';
       if (typeof component === 'string') return component;
       if (typeof component === 'number' || typeof component === 'boolean') return String(component);
-      if (Array.isArray(component)) return component.map(renderToString).join('');
+      if (Array.isArray(component)) return component.map(render).join('');
       
       if (typeof component === 'object') {
         const tagName = Object.keys(component)[0];
@@ -126,9 +159,9 @@ async function buildPerformance(sidebar) {
         // Add children
         if (props.children) {
           if (Array.isArray(props.children)) {
-            html += props.children.map(renderToString).join('');
+            html += props.children.map(render).join('');
           } else {
-            html += renderToString(props.children);
+            html += render(props.children);
           }
         }
         
@@ -179,10 +212,10 @@ async function buildPerformance(sidebar) {
                       children: [{
                         tr: {
                           children: [
-                            { th: { text: 'ID', style: 'border: 1px solid #ddd; padding: 8px; background: #f5f5f5;' } },
-                            { th: { text: 'Name', style: 'border: 1px solid #ddd; padding: 8px; background: #f5f5f5;' } },
-                            { th: { text: 'Score', style: 'border: 1px solid #ddd; padding: 8px; background: #f5f5f5;' } },
-                            { th: { text: 'Status', style: 'border: 1px solid #ddd; padding: 8px; background: #f5f5f5;' } }
+                            { th: { text: 'ID', style: 'border: 1px solid rgba(255, 255, 255, 0.1); padding: 8px; background: rgba(255, 255, 255, 0.1);' } },
+                            { th: { text: 'Name', style: 'border: 1px solid rgba(255, 255, 255, 0.1); padding: 8px; background: rgba(255, 255, 255, 0.1);' } },
+                            { th: { text: 'Score', style: 'border: 1px solid rgba(255, 255, 255, 0.1); padding: 8px; background: rgba(255, 255, 255, 0.1);' } },
+                            { th: { text: 'Status', style: 'border: 1px solid rgba(255, 255, 255, 0.1); padding: 8px; background: rgba(255, 255, 255, 0.1);' } }
                           ]
                         }
                       }]
@@ -193,10 +226,10 @@ async function buildPerformance(sidebar) {
                       children: rows.map(row => ({
                         tr: {
                           children: [
-                            { td: { text: row.id, style: 'border: 1px solid #ddd; padding: 8px;' } },
-                            { td: { text: row.name, style: 'border: 1px solid #ddd; padding: 8px;' } },
-                            { td: { text: row.score, style: 'border: 1px solid #ddd; padding: 8px;' } },
-                            { td: { text: row.status, style: 'border: 1px solid #ddd; padding: 8px;' } }
+                            { td: { text: row.id, style: 'border: 1px solid rgba(255, 255, 255, 0.1); padding: 8px;' } },
+                            { td: { text: row.name, style: 'border: 1px solid rgba(255, 255, 255, 0.1); padding: 8px;' } },
+                            { td: { text: row.score, style: 'border: 1px solid rgba(255, 255, 255, 0.1); padding: 8px;' } },
+                            { td: { text: row.status, style: 'border: 1px solid rgba(255, 255, 255, 0.1); padding: 8px;' } }
                           ]
                         }
                       }))
@@ -317,7 +350,7 @@ async function buildPerformance(sidebar) {
             \${renderResults}
             \${cacheResults}
             \${memoryResults}
-            <div class="result-summary" style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <div class="result-summary" style="background: rgba(67, 233, 123, 0.1); border: 1px solid rgba(67, 233, 123, 0.3); padding: 15px; border-radius: 12px; margin: 20px 0; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
               <h4>📊 Summary</h4>
               <ul>
                 <li><strong>Rendering Performance:</strong> 87-95% improvement with optimization</li>
@@ -357,7 +390,7 @@ async function buildPerformance(sidebar) {
       testCache.clear();
       const basicStart = performance.now();
       for (let i = 0; i < 100; i++) {
-        renderToString(testComponent);
+        render(testComponent);
       }
       const basicTime = performance.now() - basicStart;
       
@@ -368,7 +401,7 @@ async function buildPerformance(sidebar) {
         if (testCache.has(cacheKey)) {
           testCache.get(cacheKey);
         } else {
-          const result = renderToString(testComponent);
+          const result = render(testComponent);
           testCache.set(cacheKey, result);
         }
       }
@@ -377,7 +410,7 @@ async function buildPerformance(sidebar) {
       const improvement = ((basicTime - optimizedTime) / basicTime * 100);
       
       return \`
-        <div class="test-result" style="background: white; border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px;">
+        <div class="test-result" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); padding: 20px; margin: 16px 0; border-radius: 12px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
           <h4>📊 Rendering Performance Test</h4>
           <div style="margin: 10px 0;">
             <strong>Basic rendering (100x):</strong> \${basicTime.toFixed(2)}ms<br>
@@ -401,13 +434,13 @@ async function buildPerformance(sidebar) {
       // Cold cache
       testCache.clear();
       const coldStart = performance.now();
-      renderToString(tableComponent);
+      render(tableComponent);
       const coldTime = performance.now() - coldStart;
       
       // Warm cache
       let warmTime = 0;
       const cacheKey = JSON.stringify(tableComponent);
-      testCache.set(cacheKey, renderToString(tableComponent));
+      testCache.set(cacheKey, render(tableComponent));
       
       for (let i = 0; i < 10; i++) {
         const warmStart = performance.now();
@@ -419,7 +452,7 @@ async function buildPerformance(sidebar) {
       const speedup = coldTime / warmTime;
       
       return \`
-        <div class="test-result" style="background: white; border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px;">
+        <div class="test-result" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); padding: 20px; margin: 16px 0; border-radius: 12px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
           <h4>💾 Cache Performance Test</h4>
           <div style="margin: 10px 0;">
             <strong>Cold cache render:</strong> \${coldTime.toFixed(2)}ms<br>
@@ -437,14 +470,14 @@ async function buildPerformance(sidebar) {
       
       let totalSize = 0;
       components.forEach(comp => {
-        const result = renderToString(comp);
+        const result = render(comp);
         totalSize += result.length;
       });
       
       const avgSizeKB = (totalSize / components.length / 1024);
       
       return \`
-        <div class="test-result" style="background: white; border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px;">
+        <div class="test-result" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); padding: 20px; margin: 16px 0; border-radius: 12px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
           <h4>🧠 Memory Usage Test</h4>
           <div style="margin: 10px 0;">
             <strong>Components tested:</strong> \${components.length}<br>
@@ -493,18 +526,18 @@ async function buildPerformance(sidebar) {
         const depth = parseInt(depthSlider.value);
         const start = performance.now();
         const component = HeavyComponent({ maxDepth: depth });
-        const result = renderToString(component);
+        const result = render(component);
         const renderTime = performance.now() - start;
         
         resultEl.innerHTML = \`
-          <div style="background: #f0f0f0; padding: 10px; border-radius: 4px; margin: 10px 0;">
+          <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 16px; margin: 10px 0; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); color: #e6edf3;">
             <strong>Render time:</strong> \${renderTime.toFixed(2)}ms<br>
             <strong>Output size:</strong> \${(result.length / 1024).toFixed(1)}KB<br>
             <strong>Depth:</strong> \${depth} levels
           </div>
           <details style="margin: 10px 0;">
             <summary>Show rendered HTML preview</summary>
-            <div style="max-height: 200px; overflow: auto; background: white; padding: 10px; border: 1px solid #ddd; margin: 5px 0;">
+            <div style="max-height: 200px; overflow: auto; background: rgba(15, 20, 32, 0.8); color: #9aa4b2; padding: 10px; border: 1px solid rgba(255, 255, 255, 0.1); margin: 5px 0;">
               \${result.substring(0, 1000)}\${result.length > 1000 ? '...' : ''}
             </div>
           </details>
@@ -527,18 +560,18 @@ async function buildPerformance(sidebar) {
         
         const start = performance.now();
         const component = PerformanceDataTable({ rows: data });
-        const result = renderToString(component);
+        const result = render(component);
         const renderTime = performance.now() - start;
         
         resultEl.innerHTML = \`
-          <div style="background: #f0f0f0; padding: 10px; border-radius: 4px; margin: 10px 0;">
+          <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 16px; margin: 10px 0; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); color: #e6edf3;">
             <strong>Render time:</strong> \${renderTime.toFixed(2)}ms<br>
             <strong>Output size:</strong> \${(result.length / 1024).toFixed(1)}KB<br>
             <strong>Rows:</strong> \${rows} records
           </div>
           <details style="margin: 10px 0;">
             <summary>Show table preview (first 50 rows)</summary>
-            <div style="max-height: 300px; overflow: auto; background: white; padding: 10px; border: 1px solid #ddd; margin: 5px 0;">
+            <div style="max-height: 300px; overflow: auto; background: rgba(15, 20, 32, 0.8); color: #9aa4b2; padding: 10px; border: 1px solid rgba(255, 255, 255, 0.1); margin: 5px 0;">
               \${result.substring(0, 2000)}\${result.length > 2000 ? '...' : ''}
             </div>
           </details>
@@ -972,38 +1005,91 @@ function slugifySegment(name) {
 }
 
 function groupFor(relPath) {
-  // Very simple grouping based on top-level folder/file
+  // Enhanced grouping with logical progression from basics to advanced
   const p = relPath.split(path.sep);
   const top = p[0];
+  const filename = path.basename(relPath, '.md');
+  
   switch (top) {
-    case 'getting-started': return 'Getting Started';
+    case 'getting-started':
+      return 'Getting Started';
+      
     case 'components':
-    case 'server-side':
-    case 'client-side':
-    case 'function-on-element-events.md':
       return 'Core Concepts';
-    case 'api-usage.md':
-    case 'api-reference.md':
-    case 'object-based-routing.md':
-    case 'routing':
-    case 'framework-integrations.md':
-    case 'security-guide.md':
-      return 'API & Routing';
+      
+    case 'client-side':
+      return 'Client-Side Features';
+      
+    case 'server-side':
+      return 'Server-Side Rendering';
+      
     case 'database':
-    case 'database-integration.md':
-    case 'query-builder.md':
       return 'Database';
-    case 'migration-guide.md':
-      return 'Migration';
+      
     case 'performance':
-    case 'performance-optimizations.md':
       return 'Performance';
+      
     case 'advanced':
       return 'Advanced';
-    case 'api-enhancement-plan.md':
-      return 'Plans';
+      
+    case 'examples':
+      return 'Examples';
+      
     default:
-      return 'Other';
+      // Handle individual files
+      switch (filename) {
+        // Getting Started files
+        case 'getting-started':
+          return 'Getting Started';
+          
+        // Core Concepts files
+        case 'function-on-element-events':
+          return 'Core Concepts';
+          
+        // Client-Side Features
+        case 'client-side-hydration-guide':
+        case 'hydration-guide':
+          return 'Client-Side Features';
+          
+        // API & Routing files
+        case 'api-usage':
+        case 'api-reference':
+        case 'object-based-routing':
+        case 'framework-integrations':
+          return 'API & Routing';
+          
+        // Database files
+        case 'database-integration':
+        case 'query-builder':
+          return 'Database';
+          
+        // Performance files  
+        case 'performance-optimizations':
+          return 'Performance';
+          
+        // Security files
+        case 'security-guide':
+          return 'Security';
+          
+        // Deployment files
+        case 'deployment-guide':
+          return 'Integration & Deployment';
+          
+        // Migration files
+        case 'migration-guide':
+          return 'Migration';
+          
+        // Reference files
+        case 'api-reference':
+          return 'Reference';
+          
+        // Plans files
+        case 'api-enhancement-plan':
+          return 'Plans';
+          
+        default:
+          return 'Other';
+      }
   }
 }
 
@@ -1032,14 +1118,79 @@ function buildSidebarFromDocs(docs) {
       .split('/')
       .map(slugifySegment)
       .join('/')}`;
-    const label = slugifySegment(path.basename(d.rel)).replace(/-/g, ' ');
+    const label = toTitleCase(slugifySegment(path.basename(d.rel)).replace(/-/g, ' '));
     groups.get(group).push({ href, label });
   }
-  // Sort groups and items
-  return Array.from(groups.entries()).map(([title, items]) => ({
-    title,
-    items: items.sort((a,b) => a.label.localeCompare(b.label))
-  })).sort((a,b) => a.title.localeCompare(b.title));
+  
+  // Define logical order for documentation sections (basics to advanced)
+  const sectionOrder = [
+    'Getting Started',
+    'Core Concepts', 
+    'Client-Side Features',
+    'Server-Side Rendering',
+    'Database',
+    'API & Routing',
+    'Performance',
+    'Security',
+    'Integration & Deployment', 
+    'Migration',
+    'Reference',
+    'Advanced',
+    'Examples',
+    'Plans',
+    'Other'
+  ];
+  
+  // Define logical order for items within each section
+  const itemOrder = {
+    'Getting Started': ['Installation', 'Quick Start', 'Getting Started', 'Readme'],
+    'Core Concepts': ['Basic Components', 'State Management', 'Advanced Components', 'Styling Components', 'Function On Element Events'],
+    'Client-Side Features': ['Client Side Hydration Guide', 'Hydration Guide', 'Hydration'],
+    'Server-Side Rendering': ['Ssr Guide'],
+    'Database': ['Database Integration', 'Query Builder'],
+    'API & Routing': ['Api Reference', 'Api Usage', 'Framework Integrations', 'Object Based Routing', 'Security Guide'],
+    'Performance': ['Performance Optimizations'],
+    'Migration': ['Migration Guide'],
+    'Reference': ['Api Reference'],
+    'Examples': ['Performance Page Integration']
+  };
+  
+  const result = [];
+  
+  // Process sections in defined order
+  for (const sectionTitle of sectionOrder) {
+    if (groups.has(sectionTitle)) {
+      const items = groups.get(sectionTitle);
+      
+      // Sort items within section based on logical order or alphabetically
+      const orderedItems = itemOrder[sectionTitle] 
+        ? items.sort((a, b) => {
+            const indexA = itemOrder[sectionTitle].indexOf(a.label);
+            const indexB = itemOrder[sectionTitle].indexOf(b.label);
+            const priorityA = indexA >= 0 ? indexA : 999;
+            const priorityB = indexB >= 0 ? indexB : 999;
+            
+            if (priorityA !== priorityB) {
+              return priorityA - priorityB;
+            }
+            return a.label.localeCompare(b.label);
+          })
+        : items.sort((a, b) => a.label.localeCompare(b.label));
+      
+      result.push({
+        title: sectionTitle,
+        items: orderedItems
+      });
+    }
+  }
+  
+  return result;
+}
+
+function toTitleCase(str) {
+  return str.replace(/\w\S*/g, (txt) => {
+    return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+  });
 }
 
 async function writePage(routePath, html) {
@@ -1078,10 +1229,107 @@ async function copyHydrationAsset() {
   }
 }
 
+async function copyCoverageBadge() {
+  try {
+    const coverageDistDir = path.join(DIST_DIR, 'coverage');
+    
+    // Check if coverage directory exists
+    const coverageDir = path.join(repoRoot, 'coverage');
+    try {
+      await fs.access(coverageDir);
+    } catch (e) {
+      console.log('ℹ️  Coverage files not found - run tests to generate coverage');
+      return;
+    }
+    
+    await ensureDir(coverageDistDir);
+    
+    // Copy badge.json if it exists
+    const coverageBadgeSrc = path.join(repoRoot, 'coverage', 'badge.json');
+    try {
+      await fs.copyFile(coverageBadgeSrc, path.join(coverageDistDir, 'badge.json'));
+    } catch (e) {
+      console.log('ℹ️  Coverage badge not found, skipping...');
+    }
+    
+    // Copy coverage-summary.json to root for JavaScript access
+    const coverageSummarySrc = path.join(repoRoot, 'coverage-summary.json');
+    try {
+      await fs.copyFile(coverageSummarySrc, path.join(DIST_DIR, 'coverage-summary.json'));
+    } catch (e) {
+      // Silent skip
+    }
+    
+    // Copy coverage report markdown
+    const coverageReportSrc = path.join(repoRoot, 'coverage', 'coverage-report.md');
+    try {
+      await fs.copyFile(coverageReportSrc, path.join(coverageDistDir, 'coverage-report.md'));
+    } catch (e) {
+      // Silent skip
+    }
+    
+    // Copy LCOV report directory if it exists
+    const lcovReportSrc = path.join(repoRoot, 'coverage', 'lcov-report');
+    const lcovReportDst = path.join(coverageDistDir, 'lcov-report');
+    try {
+      await fs.cp(lcovReportSrc, lcovReportDst, { recursive: true });
+    } catch (e) {
+      // Silent skip
+    }
+    
+    console.log('✅ Coverage files copied to dist');
+  } catch (e) {
+    // Silent skip - coverage is optional
+  }
+}
+
+async function copyCodeMirrorModules() {
+  try {
+    const codeMirrorDir = path.join(DIST_DIR, 'codemirror');
+    await ensureDir(codeMirrorDir);
+    
+    // List of CodeMirror modules we need
+    const modules = [
+      '@codemirror/view',
+      '@codemirror/state', 
+      '@codemirror/autocomplete',
+      '@codemirror/lang-javascript',
+      '@codemirror/theme-one-dark'
+    ];
+    
+    for (const module of modules) {
+      const modulePath = path.join(repoRoot, 'website', 'node_modules', module);
+      const destPath = path.join(codeMirrorDir, module.replace('@', ''));
+      
+      try {
+        await ensureDir(destPath);
+        // Copy the dist folder content 
+        const distPath = path.join(modulePath, 'dist');
+        const distFiles = await fs.readdir(distPath);
+        
+        for (const file of distFiles) {
+          if (file.endsWith('.js')) {
+            await fs.copyFile(
+              path.join(distPath, file), 
+              path.join(destPath, file)
+            );
+          }
+        }
+      } catch (e) {
+        console.warn(`Failed to copy ${module}:`, e.message);
+      }
+    }
+    
+    console.log('CodeMirror modules copied to dist');
+  } catch (e) {
+    console.warn('Failed to copy CodeMirror modules:', e.message);
+  }
+}
+
 async function buildHome(sidebar) {
-  const content = renderToString(Home());
+  const content = render(Home());
   const page = Layout({ title: 'Coherent.js', sidebar, currentPath: '', baseHref });
-  let html = renderToString(page);
+  let html = render(page);
   html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', content);
   await writePage('', html);
 }
@@ -1109,9 +1357,9 @@ async function buildExamples(sidebar) {
       items.push({ file, slug: base, label, runCmd: `node examples/${file}`, description, code });
     }
   } catch {}
-  const content = renderToString(Examples({ items }));
+  const content = render(Examples({ items }));
   const page = Layout({ title: 'Examples | Coherent.js', sidebar, currentPath: 'examples', baseHref });
-  let html = renderToString(page);
+  let html = render(page);
   html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', content);
   await writePage('examples', html);
 }
@@ -1120,7 +1368,7 @@ function isBrowserSafeExample(code) {
   const forbidden = [
     'database',
     'Migration',
-    'createObjectRouter',
+    'createRouter',
     'router-features',
     'websocket',
     'node:http',
@@ -1155,9 +1403,9 @@ async function buildPlaygroundIndex(sidebar) {
     }
   } catch {}
 
-  const content = renderToString(Playground({ items }));
+  const content = render(Playground({ items }));
   const page = Layout({ title: 'Playground | Coherent.js', sidebar, currentPath: 'playground', baseHref });
-  let html = renderToString(page);
+  let html = render(page);
   html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', content);
   
   // Add hydration script for interactive playground
@@ -1168,12 +1416,12 @@ async function buildPlaygroundIndex(sidebar) {
     
     console.log('Setting up playground...');
     
-    // Simple renderToString implementation for playground
-    function renderToString(component) {
+    // Simple render implementation for playground
+    function render(component) {
       if (!component) return '';
       if (typeof component === 'string') return component;
       if (typeof component === 'number' || typeof component === 'boolean') return String(component);
-      if (Array.isArray(component)) return component.map(renderToString).join('');
+      if (Array.isArray(component)) return component.map(render).join('');
       
       if (typeof component === 'object') {
         const tagName = Object.keys(component)[0];
@@ -1200,9 +1448,9 @@ async function buildPlaygroundIndex(sidebar) {
         // Add children
         if (props.children) {
           if (Array.isArray(props.children)) {
-            html += props.children.map(renderToString).join('');
+            html += props.children.map(render).join('');
           } else {
-            html += renderToString(props.children);
+            html += render(props.children);
           }
         }
         
@@ -1279,7 +1527,7 @@ async function buildPlaygroundIndex(sidebar) {
         if (!component) return setError('Component definition is empty');
         
         setStatus('Rendering component...');
-        const html = renderToString(component);
+        const html = render(component);
         setSuccess(component, html);
       } catch (error) {
         setError(error.message);
@@ -1318,7 +1566,7 @@ async function buildPlaygroundPages(items) {
       }
       if (!componentFn) throw new Error('No component export found');
 
-      const { renderToString: rts } = await import('../src/rendering/html-renderer.js');
+      const { render: rts } = await import('../src/rendering/html-renderer.js');
       if (componentFn.renderWithHydration && componentFn.isHydratable) {
         const hydratedResult = componentFn.renderWithHydration({});
         html = rts(hydratedResult);
@@ -1381,11 +1629,86 @@ async function buildPlaygroundPages(items) {
   }
 }
 
+function buildLogicalDocOrder(docs) {
+  // Use the same section and item ordering as the sidebar
+  const sectionOrder = [
+    'Getting Started',
+    'Core Concepts', 
+    'Client-Side Features',
+    'Server-Side Rendering',
+    'Database',
+    'API & Routing',
+    'Performance',
+    'Security',
+    'Integration & Deployment',
+    'Migration',
+    'Examples',
+    'Plans',
+    'Other'
+  ];
+
+  const itemOrder = {
+    'Getting Started': ['Installation', 'Quick Start', 'Getting Started', 'Readme'],
+    'Core Concepts': ['Basic Components', 'State Management', 'Advanced Components', 'Styling Components', 'Function On Element Events'],
+    'Client-Side Features': ['Client Side Hydration Guide', 'Hydration Guide', 'Hydration'],
+    'Server-Side Rendering': ['Ssr Guide'],
+    'Database': ['Database Integration', 'Query Builder'],
+    'API & Routing': ['Api Reference', 'Api Usage', 'Api Enhancement Plan', 'Object Based Routing', 'Framework Integrations'],
+    'Performance': ['Performance Optimizations'],
+    'Security': ['Security Guide'],
+    'Integration & Deployment': ['Deployment Guide'],
+    'Migration': ['Migration Guide'],
+    'Examples': ['Performance Page Integration'],
+    'Plans': ['Api Enhancement Plan'],
+    'Other': ['Docs Index', 'Navigation', 'CSS File Integration']
+  };
+
+  // Group docs by section
+  const groups = new Map();
+  for (const doc of docs) {
+    const section = doc.section || groupFor(doc.rel);
+    if (!groups.has(section)) {
+      groups.set(section, []);
+    }
+    // Use the same label creation logic as linkForDoc for consistency
+    const label = toTitleCase(path.basename(doc.rel).replace(/\.md$/i, '').replace(/-/g, ' '));
+    groups.get(section).push({ ...doc, label });
+  }
+
+  // Build ordered list following the same logic as sidebar
+  const orderedDocs = [];
+  
+  for (const sectionTitle of sectionOrder) {
+    if (groups.has(sectionTitle)) {
+      const items = groups.get(sectionTitle);
+      
+      // Sort items within section based on logical order
+      const orderedItems = itemOrder[sectionTitle] 
+        ? items.sort((a, b) => {
+            const indexA = itemOrder[sectionTitle].indexOf(a.label);
+            const indexB = itemOrder[sectionTitle].indexOf(b.label);
+            const priorityA = indexA >= 0 ? indexA : 999;
+            const priorityB = indexB >= 0 ? indexB : 999;
+            
+            if (priorityA !== priorityB) {
+              return priorityA - priorityB;
+            }
+            return a.label.localeCompare(b.label);
+          })
+        : items.sort((a, b) => a.label.localeCompare(b.label));
+      
+      orderedDocs.push(...orderedItems);
+    }
+  }
+  
+  return orderedDocs;
+}
+
 async function buildDocs(docs) {
   const sidebar = buildSidebarFromDocs(docs);
-  await buildDocsIndex(sidebar);
-  // Establish doc order by relative path
-  const ordered = [...docs].sort((a,b) => a.rel.localeCompare(b.rel));
+  await buildDocsIndex(sidebar, docs);
+  // Establish doc order using logical ordering (same as sidebar)
+  const ordered = buildLogicalDocOrder(docs);
   for (let i = 0; i < ordered.length; i++) {
     const d = ordered[i];
     const md = await fs.readFile(d.full, 'utf8');
@@ -1393,78 +1716,127 @@ async function buildDocs(docs) {
     // Ensure headings have ids and build ToC
     const enhanced = enhanceHeadings(htmlBody);
     htmlBody = `<div class="markdown-body">${enhanced.html}</div>`;
-    const tocHtml = buildToc(enhanced.headings);
+    // Calculate route first so we can use it in TOC
+    const route = slugifySegment(d.rel.replace(/\\/g, '/')).split('/').map(slugifySegment).join('/');
+    const tocHtml = buildToc(enhanced.headings, `docs/${route}`);
     // Title, breadcrumbs, prev/next
     const title = (md.match(/^#\s+(.+)$/m) || [null, 'Documentation'])[1];
     const breadcrumbs = buildBreadcrumbs(d.rel);
     const prev = ordered[i-1] ? linkForDoc(ordered[i-1]) : null;
     const next = ordered[i+1] ? linkForDoc(ordered[i+1]) : null;
     const navFooter = buildPrevNext(prev, next);
-
-    const page = Layout({ title: `${title} | Coherent.js Docs`, sidebar, currentPath: 'docs', baseHref });
-    const finalHtml = renderToString(page)
+    const page = Layout({ title: `${title} | Coherent.js Docs`, sidebar, currentPath: `docs/${route}`, baseHref });
+    const finalHtml = render(page)
       .replace('[[[COHERENT_BREADCRUMBS_PLACEHOLDER]]]', breadcrumbs)
       .replace('[[[COHERENT_TOC_PLACEHOLDER]]]', tocHtml)
       .replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', htmlBody + navFooter);
 
-    const route = slugifySegment(d.rel.replace(/\\/g, '/')).split('/').map(slugifySegment).join('/');
     await writePage(path.join('docs', route), finalHtml);
   }
 }
 
-async function buildDocsIndex(sidebar) {
-  let htmlBody = '';
-  try {
-    // Try to load the docs README.md for the index page
-    const docsReadmePath = path.join(DOCS_DIR, 'README.md');
-    const md = await fs.readFile(docsReadmePath, 'utf8');
-    htmlBody = marked.parse(md);
-    
-    // Enhance headings and build ToC for docs index
-    const enhanced = enhanceHeadings(htmlBody);
-    htmlBody = `<div class="markdown-body">${enhanced.html}</div>`;
-    const tocHtml = buildToc(enhanced.headings);
-    
-    const page = Layout({ title: 'Documentation | Coherent.js', sidebar, currentPath: 'docs', baseHref });
-    const html = renderToString(page)
-      .replace('[[[COHERENT_TOC_PLACEHOLDER]]]', tocHtml)
-      .replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', htmlBody)
-      .replace('[[[COHERENT_BREADCRUMBS_PLACEHOLDER]]]', '<nav class="breadcrumbs"><a href="/docs">Documentation</a></nav>');
-    await writePage('docs', html);
-  } catch (_error) {
-    // Fallback if README.md doesn't exist
-    let firstHref = '';
-    for (const group of sidebar) {
-      if (group.items && group.items.length) { firstHref = group.items[0].href; break; }
+async function generateSearchData(docs) {
+  const searchData = [];
+  
+  // Process each documentation file
+  for (const doc of docs) {
+    try {
+      const md = await fs.readFile(doc.full, 'utf8');
+      const title = (md.match(/^#\s+(.+)$/m) || [null, path.basename(doc.rel, '.md')])[1];
+      
+      // Extract content without markdown syntax
+      let content = md
+        .replace(/^#{1,6}\s+.+$/gm, '') // Remove headers
+        .replace(/```[\s\S]*?```/g, '') // Remove code blocks
+        .replace(/`[^`]+`/g, '') // Remove inline code
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Convert links to text
+        .replace(/[*_]+([^*_]+)[*_]+/g, '$1') // Remove emphasis
+        .replace(/^\s*[-*+]\s+/gm, '') // Remove list markers
+        .replace(/^\s*\d+\.\s+/gm, '') // Remove numbered list markers
+        .replace(/\n+/g, ' ') // Collapse newlines
+        .trim();
+      
+      // Truncate content for search
+      if (content.length > 200) {
+        content = `${content.substring(0, 200)  }...`;
+      }
+      
+      // Determine section based on file path
+      const section = groupFor(doc.rel);
+      
+      // Generate URL
+      const url = `docs/${slugifySegment(doc.rel.replace(/\\/g, '/')).split('/').map(slugifySegment).join('/')}`;
+      
+      searchData.push({
+        title: title,
+        url: url,
+        content: content,
+        section: section
+      });
+    } catch (error) {
+      console.warn(`Failed to process ${doc.rel} for search:`, error.message);
     }
-    if (firstHref) {
-      htmlBody = `<h1>Documentation</h1><p>Start here: <a href="${firstHref}">Open first guide</a></p>`;
-    } else {
-      htmlBody = '<h1>Documentation</h1><p>No docs found.</p>';
-    }
-    const page = Layout({ title: 'Docs | Coherent.js', sidebar, currentPath: 'docs', baseHref });
-    const html = renderToString(page).replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', htmlBody);
-    await writePage('docs', html);
   }
+  
+  return searchData;
+}
+
+async function buildDocsIndex(sidebar, docs = []) {
+  // Generate search data
+  const searchData = await generateSearchData(docs);
+  
+  // Use the new DocsIndexPage component
+  const content = render(DocsIndexPage({ searchData }));
+  const page = Layout({ title: 'Documentation | Coherent.js', sidebar, currentPath: 'docs', baseHref });
+  let html = render(page);
+  
+  // Replace content placeholder
+  html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', content);
+  html = html.replace('[[[COHERENT_BREADCRUMBS_PLACEHOLDER]]]', '<nav class="breadcrumbs"><a href="/docs">Documentation</a></nav>');
+  
+  // Remove TOC placeholder for docs index page since it doesn't need a TOC
+  html = html.replace('[[[COHERENT_TOC_PLACEHOLDER]]]', '');
+  
+  // Add search functionality script
+  html = html.replace('</head>', `
+    <script src="./docs-search.js" defer></script>
+    <script>
+      window.searchData = ${JSON.stringify(searchData)};
+    </script>
+    </head>`);
+  
+  await writePage('docs', html);
+  
+  // Also write search data as JSON for external loading
+  await fs.writeFile(path.join(DIST_DIR, 'search-data.json'), JSON.stringify(searchData, null, 2));
+  
+  return searchData;
 }
 
 async function buildCoverage(sidebar) {
-  const content = renderToString(Coverage());
+  const content = render(Coverage());
   const page = Layout({ title: 'Coverage | Coherent.js', sidebar, currentPath: 'coverage', baseHref });
-  let html = renderToString(page);
+  let html = render(page);
   html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', content);
   await writePage('coverage', html);
 }
 
 async function buildChangelog(sidebar) {
-  const changelogPath = path.join(repoRoot, 'CHANGELOG.md');
   try {
-    const md = await fs.readFile(changelogPath, 'utf8');
+    const md = await fs.readFile(path.join(repoRoot, 'CHANGELOG.md'), 'utf8');
     const htmlBody = marked.parse(md);
     const page = Layout({ title: 'Changelog | Coherent.js', sidebar, currentPath: 'changelog', baseHref });
-    const html = renderToString(page).replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', htmlBody);
+    const html = render(page).replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', htmlBody);
     await writePage('changelog', html);
   } catch {}
+}
+
+async function buildStarterApp(sidebar) {
+  const content = render(StarterAppPage());
+  const page = Layout({ title: 'Starter App | Coherent.js', sidebar, currentPath: 'starter-app', baseHref });
+  let html = render(page);
+  html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', content);
+  await writePage('starter-app', html);
 }
 
 async function main() {
@@ -1483,6 +1855,8 @@ async function main() {
   await buildPlaygroundPages(playgroundItems);
   await buildPerformance(sidebar);
   await buildCoverage(sidebar);
+  await buildStarterApp(sidebar);
+  await copyCoverageBadge();
   await buildDocs(docs);
   await buildChangelog(sidebar);
 

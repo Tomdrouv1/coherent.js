@@ -12,21 +12,35 @@ This guide explains how to set up and contribute to the Coherent.js monorepo.
 
 ```
 coherent.js/
-├── packages/                     # Individual packages
-│   ├── core/                    # @coherentjs/core - Core framework
-│   ├── api/                     # @coherentjs/api - API framework
-│   ├── database/                # @coherentjs/database - Database layer
-│   ├── client/                  # @coherentjs/client - Client-side utilities
-│   ├── express/                 # @coherentjs/express - Express integration
-│   ├── fastify/                 # @coherentjs/fastify - Fastify integration
-│   ├── koa/                     # @coherentjs/koa - Koa integration
-│   └── nextjs/                  # @coherentjs/nextjs - Next.js integration
-├── src/                         # Source code (shared across packages)
-├── scripts/                     # Build and utility scripts
-├── tests/                       # Integration tests
-├── examples/                    # Example applications
-├── website/                     # Documentation website
-└── docs/                       # Documentation files
+├── packages/                            # Individual packages
+│   ├── core/                           # @coherent.js/core - Core rendering engine
+│   ├── client/                         # @coherent.js/client - Client-side hydration
+│   ├── api/                            # @coherent.js/api - API framework
+│   │
+│   ├── express/                        # @coherent.js/express - Express.js integration
+│   ├── fastify/                        # @coherent.js/fastify - Fastify integration
+│   ├── koa/                            # @coherent.js/koa - Koa.js integration
+│   ├── nextjs/                         # @coherent.js/nextjs - Next.js integration
+│   │
+│   ├── database/                       # @coherent.js/database - Database adapters
+│   ├── forms/                          # @coherent.js/forms - Form utilities
+│   ├── i18n/                           # @coherent.js/i18n - Internationalization
+│   ├── seo/                            # @coherent.js/seo - SEO tools
+│   ├── testing/                        # @coherent.js/testing - Testing utilities
+│   ├── devtools/                       # @coherent.js/devtools - Developer tools
+│   ├── performance/                    # @coherent.js/performance - Performance utilities
+│   ├── performance-profiler/           # @coherent.js/performance-profiler - Profiling
+│   │
+│   ├── cli/                            # @coherent.js/cli - CLI tools
+│   ├── build-tools/                    # @coherent.js/build-tools - Build utilities
+│   ├── runtime/                        # @coherent.js/runtime - Runtime enhancements
+│   ├── adapters/                       # @coherent.js/adapters - Framework adapters
+│   └── web-components/                 # @coherent.js/web-components - Web components
+│
+├── scripts/                            # Build and utility scripts
+├── examples/                           # Example applications
+├── website/                            # Documentation website
+└── docs/                               # Documentation files
 ```
 
 ## Getting Started
@@ -66,7 +80,7 @@ coherent.js/
 - **Run all tests**: `pnpm test`
 - **Run unit tests only**: `pnpm test:unit`
 - **Run integration tests**: `pnpm test:integration`
-- **Test a specific package**: `pnpm --filter @coherentjs/core test`
+- **Test a specific package**: `pnpm --filter @coherent.js/core test`
 
 ### Code Quality
 
@@ -95,8 +109,8 @@ coherent.js/
 
 ### Package Dependencies
 
-- **Core package** (`@coherentjs/core`) should be dependency-free
-- **Integration packages** depend on `@coherentjs/core` + their respective framework
+- **Core package** (`@coherent.js/core`) should be dependency-free
+- **Integration packages** depend on `@coherent.js/core` + their respective framework
 - **Use peer dependencies** for optional framework integrations
 - **External dependencies** should be marked as external in build config
 
@@ -109,9 +123,9 @@ Each package uses the shared build system in `scripts/shared-build.mjs`:
 import { buildPackage } from '../../scripts/shared-build.mjs';
 
 await buildPackage({
-  packageName: '@coherentjs/example',
+  packageName: '@coherent.js/example',
   entryPoint: '../../src/example/index.js',
-  external: ['@coherentjs/core', 'external-dep']
+  external: ['@coherent.js/core', 'external-dep']
 });
 ```
 

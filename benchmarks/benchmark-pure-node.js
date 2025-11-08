@@ -1,5 +1,5 @@
 import http from 'http';
-import { createApiRouter } from '../src/api/index.js';
+import { createApiRouter } from '../packages/api/src/index.js';
 import { performance } from 'perf_hooks';
 
 // Pure Node.js server with Coherent.js API router

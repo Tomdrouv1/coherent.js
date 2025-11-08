@@ -6,7 +6,7 @@ This document provides a comprehensive reference for all public APIs available i
 
 ## Core Rendering
 
-### `renderToString(component, context?)`
+### `render(component, context?)`
 
 Renders a Coherent.js component to an HTML string.
 
@@ -18,7 +18,7 @@ Renders a Coherent.js component to an HTML string.
 
 **Example:**
 ```javascript
-import { renderToString } from 'coherent-js';
+import { render } from '@coherent.js/core';
 
 const component = {
   div: {
@@ -29,8 +29,93 @@ const component = {
   }
 };
 
-const html = renderToString(component);
+const html = render(component);
 // Output: <div class="greeting"><h1>Hello, World!</h1></div>
+```
+
+### `render(component, options?)`
+
+Renders a Coherent.js component to a complete HTML document with DOCTYPE and CSS support.
+
+**Parameters:**
+- `component` (CoherentNode): The component to render
+- `options` (Object, optional): Rendering options including CSS configuration
+
+**Options:**
+- `cssFiles` (Array<string>): CSS files to load and inject
+- `cssLinks` (Array<string>): External CSS URLs to link
+- `cssInline` (string): Inline CSS to inject
+- `cssMinify` (boolean): Whether to minify CSS
+- `minify` (boolean): Whether to minify HTML
+- `enableCache` (boolean): Whether to enable caching
+
+**Returns:** Promise<string> - The complete HTML document with DOCTYPE
+
+**Example:**
+```javascript
+import { render } from 'coherent';
+
+const App = () => ({
+  html: {
+    children: [
+      {
+        head: {
+          children: [
+            { title: { text: 'My App' } },
+            { meta: { charset: 'utf-8' } }
+          ]
+        }
+      },
+      {
+        body: {
+          className: 'app',
+          children: [
+            { h1: { text: 'Welcome!' } }
+          ]
+        }
+      }
+    ]
+  }
+});
+
+const html = await render(App(), {
+  cssFiles: ['./styles/main.css', './styles/components.css'],
+  cssLinks: ['https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap'],
+  cssInline: '.custom { color: red; }',
+  minify: true
+});
+```
+
+### `renderSync(component, options?)`
+
+Synchronous version of `render` for cases without CSS files.
+
+**Parameters:**
+- `component` (CoherentNode): The component to render
+- `options` (Object, optional): Rendering options (CSS files will trigger warning)
+
+**Returns:** string | Promise<string> - HTML document (promise if CSS files detected)
+
+**Example:**
+```javascript
+import { renderSync } from 'coherent';
+
+const html = renderSync(App(), {
+  cssInline: '.app { margin: 0; padding: 20px; }'
+});
+```
+
+### `render(component, options?)`
+
+Alias for `render()` - provides semantic naming for complete HTML rendering.
+
+**Example:**
+```javascript
+import { render } from 'coherent';
+
+const html = await render(App(), {
+  cssFiles: ['./styles/main.css']
+});
 ```
 
 ### `renderToStream(component, context?)`
@@ -45,7 +130,7 @@ Renders a Coherent.js component to a Node.js Readable stream.
 
 **Example:**
 ```javascript
-import { renderToStream } from 'coherent-js';
+import { renderToStream } from '@coherent.js/core';
 
 const stream = renderToStream(largeComponent, context);
 
@@ -71,7 +156,7 @@ Creates a component from a render function.
 
 **Example:**
 ```javascript
-import { createComponent } from 'coherent-js';
+import { createComponent } from '@coherent.js/core';
 
 const Greeting = createComponent(({ name }) => ({
   div: {
@@ -82,33 +167,123 @@ const Greeting = createComponent(({ name }) => ({
 }));
 ```
 
-### `withState(initialState)`
+### `withState(initialState, options?)`
 
-Adds state management to a component.
+Adds reactive state management to a component with automatic re-rendering on state changes.
 
 **Parameters:**
 - `initialState` (Object): The initial state object
+- `options` (Object, optional): State management options
+  - `debug` (Boolean): Enable debug logging for state changes
+  - `middleware` (Array): Array of middleware functions to apply to state changes
+  - `validator` (Function): Function to validate state changes
 
-**Returns:** Function - A higher-order component function
+**Returns:** Function - A higher-order component function that wraps the component with state
 
 **Example:**
 ```javascript
-import { withState } from 'coherent-js';
+import { withState } from '@coherent.js/core';
 
-const Counter = withState({ count: 0 })(({ state, setState }) => ({
-  div: {
-    children: [
-      { p: { text: `Count: ${state.count}` } },
-      { 
-        button: { 
-          text: 'Increment', 
-          onclick: () => setState({ count: state.count + 1 })
+// Basic state management
+const Counter = withState({ count: 0 })((props) => {
+  const { state, stateUtils } = props;
+  const { setState } = stateUtils;
+  
+  return {
+    div: {
+      'data-coherent-component': 'counter',
+      children: [
+        { p: { text: `Count: ${state.count}` } },
+        { 
+          button: { 
+            text: 'Increment', 
+            onclick: () => setState({ count: state.count + 1 })
+          }
+        },
+        { 
+          button: { 
+            text: 'Reset', 
+            onclick: () => setState({ count: 0 })
+          }
         }
-      }
-    ]
+      ]
+    }
+  };
+});
+
+// With options and debugging
+const TodoApp = withState({
+  todos: [],
+  filter: 'all',
+  newTodo: ''
+}, {
+  debug: true, // Logs all state changes
+  validator: (newState) => {
+    if (newState.todos && !Array.isArray(newState.todos)) {
+      throw new Error('todos must be an array');
+    }
+    return true;
   }
-}));
+})((props) => {
+  const { state, stateUtils } = props;
+  const { setState } = stateUtils;
+  
+  const addTodo = () => {
+    if (state.newTodo.trim()) {
+      setState({
+        todos: [...state.todos, {
+          id: Date.now(),
+          text: state.newTodo.trim(),
+          completed: false
+        }],
+        newTodo: ''
+      });
+    }
+  };
+  
+  return {
+    div: {
+      'data-coherent-component': 'todo-app',
+      children: [
+        {
+          input: {
+            type: 'text',
+            value: state.newTodo,
+            placeholder: 'Add new todo...',
+            oninput: (e) => setState({ newTodo: e.target.value })
+          }
+        },
+        {
+          button: {
+            text: 'Add Todo',
+            onclick: addTodo
+          }
+        },
+        {
+          ul: {
+            children: state.todos.map(todo => ({
+              li: { 
+                text: todo.text,
+                className: todo.completed ? 'completed' : ''
+              }
+            }))
+          }
+        }
+      ]
+    }
+  };
+});
 ```
+
+**State Management API:**
+
+The component receives the following props:
+- `state` (Object): Current state object
+- `stateUtils` (Object): State management utilities
+  - `setState(newState)`: Update state (triggers re-render)
+  - `getState()`: Get current state
+  - `resetState()`: Reset to initial state
+  - `subscribe(callback)`: Subscribe to state changes
 
 ### `memo(component, keyFunction?)`
 
@@ -122,7 +297,7 @@ Memoizes a component to prevent unnecessary re-renders.
 
 **Example:**
 ```javascript
-import { memo } from 'coherent-js';
+import { memo } from '@coherent.js/core';
 
 const ExpensiveComponent = memo(
   (context) => {
@@ -144,7 +319,7 @@ Composes multiple components into a single component.
 
 **Example:**
 ```javascript
-import { compose } from 'coherent-js';
+import { compose } from '@coherent.js/core';
 
 const Header = () => ({ header: { /* ... */ } });
 const Main = () => ({ main: { /* ... */ } });
@@ -168,7 +343,7 @@ Renders one of two components based on a condition.
 
 **Example:**
 ```javascript
-import { when } from 'coherent-js';
+import { when } from '@coherent.js/core';
 
 const UserProfile = (context) => ({
   div: {
@@ -194,7 +369,7 @@ Renders an array of items using a render function.
 
 **Example:**
 ```javascript
-import { forEach } from 'coherent-js';
+import { forEach } from '@coherent.js/core';
 
 const TodoList = (context) => ({
   ul: {
@@ -207,6 +382,110 @@ const TodoList = (context) => ({
   }
 });
 ```
+
+## CSS Management
+
+### `createCSSManager(options?)`
+
+Creates a CSS manager instance for loading and processing CSS files.
+
+**Parameters:**
+- `options` (Object, optional): CSS manager configuration
+  - `baseDir` (string): Base directory for resolving relative CSS paths
+  - `enableCache` (boolean): Whether to cache loaded CSS files
+  - `minify` (boolean): Whether to minify CSS by default
+
+**Returns:** CSSManager instance
+
+**Example:**
+```javascript
+import { createCSSManager } from 'coherent';
+
+const cssManager = createCSSManager({
+  baseDir: './src/styles',
+  enableCache: true,
+  minify: process.env.NODE_ENV === 'production'
+});
+
+const css = await cssManager.loadCSSFile('components/button.css');
+```
+
+### `defaultCSSManager`
+
+The default CSS manager instance used by render functions.
+
+**Example:**
+```javascript
+import { defaultCSSManager } from 'coherent';
+
+// Load CSS file using default manager
+const css = await defaultCSSManager.loadCSSFile('./styles/main.css');
+
+// Generate CSS links
+const links = defaultCSSManager.generateCSSLinks([
+  'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css'
+]);
+```
+
+### `cssUtils`
+
+Utilities for processing CSS options and generating CSS HTML.
+
+**Methods:**
+- `processCSSOptions(options)`: Process render options to extract CSS configuration
+- `generateCSSHtml(cssOptions, cssManager)`: Generate HTML for CSS injection
+
+**Example:**
+```javascript
+import { cssUtils, defaultCSSManager } from 'coherent';
+
+const options = {
+  cssFiles: ['./main.css'],
+  cssInline: '.custom { color: red; }'
+};
+
+const cssOptions = cssUtils.processCSSOptions(options);
+const cssHtml = await cssUtils.generateCSSHtml(cssOptions, defaultCSSManager);
+```
+
+### CSS Manager Methods
+
+#### `loadCSSFile(filePath)`
+
+Load and return CSS content from a file.
+
+**Parameters:**
+- `filePath` (string): Path to the CSS file
+
+**Returns:** Promise<string> - The CSS content
+
+#### `generateCSSLinks(filePaths, baseUrl?)`
+
+Generate HTML link tags for CSS files.
+
+**Parameters:**
+- `filePaths` (Array<string>): CSS file paths or URLs
+- `baseUrl` (string, optional): Base URL for relative paths
+
+**Returns:** string - HTML link tags
+
+#### `generateInlineStyles(css)`
+
+Generate HTML style tag for inline CSS.
+
+**Parameters:**
+- `css` (string): CSS content to inline
+
+**Returns:** string - HTML style tag
+
+#### `minifyCSS(css)`
+
+Minify CSS content by removing whitespace and comments.
+
+**Parameters:**
+- `css` (string): CSS content to minify
+
+**Returns:** string - Minified CSS
 
 ## Performance Monitoring
 
@@ -254,7 +533,7 @@ Gets performance optimization recommendations.
 
 **Example:**
 ```javascript
-import { createDatabaseManager } from 'coherent-js';
+import { createDatabaseManager } from '@coherent.js/core';
 
 // Recommended approach
 const db = createDatabaseManager({
@@ -274,7 +553,7 @@ const db = createDatabaseManager({
 
 **Example:**
 ```javascript
-import { createQuery } from 'coherent-js';
+import { createQuery } from '@coherent.js/core';
 
 // Pure object approach
 const query = createQuery({
@@ -296,7 +575,7 @@ const query = createQuery({
 
 **Example:**
 ```javascript
-import { createQuery, executeQuery, createDatabaseManager } from 'coherent-js';
+import { createQuery, executeQuery, createDatabaseManager } from '@coherent.js/core';
 
 const db = createDatabaseManager({ type: 'sqlite', database: ':memory:' });
 const query = createQuery({ table: 'users', select: ['*'] });
@@ -317,19 +596,37 @@ const results = await executeQuery(query, db);
 
 ## Client-side Hydration
 
-### `client.hydrate(element, component, props?, options?)`
+### `hydrate(element, component, props?, options?)`
 
-Hydrates a DOM element with a Coherent component.
+Hydrates a DOM element with a Coherent component to enable client-side interactivity.
 
 **Parameters:**
 - `element` (HTMLElement): The DOM element to hydrate
 - `component` (Function): The Coherent component function
 - `props` (Object, optional): Component props
 - `options` (Object, optional): Hydration options
+  - `initialState` (Object): Initial state for stateful components
+  - `enableCache` (Boolean): Enable component caching (default: true)
+  - `validateInput` (Boolean): Enable input validation (default: false)
 
-**Returns:** Object - Hydrated component instance
+**Returns:** HydratedComponentInstance - Hydrated component instance with methods
 
-### `client.hydrateAll(elements, components, propsArray?)`
+**Example:**
+```javascript
+import { hydrate } from '@coherent.js/client';
+import { Counter } from './components/Counter.js';
+
+// Basic hydration
+const element = document.getElementById('counter');
+const instance = hydrate(element, Counter, { initialCount: 5 });
+
+// With state initialization
+const instance = hydrate(element, Counter, {}, {
+  initialState: { count: 10, step: 2 }
+});
+```
+
+### `hydrateAll(elements, components, propsArray?)`
 
 Hydrates multiple elements with their corresponding components.
 
@@ -340,9 +637,22 @@ Hydrates multiple elements with their corresponding components.
 
 **Returns:** Array - Array of hydrated component instances
 
-### `client.hydrateBySelector(selector, component, props?)`
+**Example:**
+```javascript
+import { hydrateAll } from '@coherent.js/client';
+import { Header, Footer } from './components/Layout.js';
 
-Finds and hydrates elements by CSS selector.
+const elements = [
+  document.getElementById('header'),
+  document.getElementById('footer')
+];
+const components = [Header, Footer];
+const instances = hydrateAll(elements, components);
+```
+
+### `hydrateBySelector(selector, component, props?)`
+
+Finds and hydrates all elements matching a CSS selector.
 
 **Parameters:**
 - `selector` (String): CSS selector to find elements
@@ -351,21 +661,120 @@ Finds and hydrates elements by CSS selector.
 
 **Returns:** Array - Array of hydrated component instances
 
-### `client.enableClientEvents(rootElement?)`
+**Example:**
+```javascript
+import { hydrateBySelector } from '@coherent.js/client';
+import { TodoItem } from './components/TodoItem.js';
 
-Enables client-side interactivity for event handlers.
+// Hydrate all todo items
+const instances = hydrateBySelector('[data-coherent-component="todoitem"]', TodoItem);
+```
 
-**Parameters:**
-- `rootElement` (HTMLElement, optional): Root element to enable events on
+### `makeHydratable(component, options?)`
 
-### `client.makeHydratable(component)`
-
-Creates a hydratable component.
+Creates a hydratable version of a component with metadata for auto-hydration.
 
 **Parameters:**
 - `component` (Function): The component function to make hydratable
+- `options` (Object, optional): Hydration metadata
+  - `componentName` (String): Name for component registry
+  - `initialState` (Object): Default initial state
 
-**Returns:** Function - A hydratable component function
+**Returns:** Function - A hydratable component function with additional metadata
+
+**Example:**
+```javascript
+import { makeHydratable } from '@coherent.js/client';
+import { Counter } from './components/Counter.js';
+
+const HydratableCounter = makeHydratable(Counter, {
+  componentName: 'counter',
+  initialState: { count: 0 }
+});
+
+// Can be used in auto-hydration
+export { HydratableCounter };
+```
+
+### `autoHydrate(componentRegistry)`
+
+Automatically hydrates all components on a page based on data-coherent-component attributes.
+
+**Parameters:**
+- `componentRegistry` (Object): Registry mapping component names to hydratable components
+
+**Example:**
+```javascript
+import { autoHydrate, makeHydratable } from '@coherent.js/client';
+import { Counter } from './components/Counter.js';
+import { TodoList } from './components/TodoList.js';
+
+const componentRegistry = {
+  counter: makeHydratable(Counter),
+  todolist: makeHydratable(TodoList)
+};
+
+// Auto-hydrate when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  autoHydrate(componentRegistry);
+});
+```
+
+### `enableClientEvents(rootElement?)`
+
+Enables client-side interactivity for elements with data-action attributes.
+
+**Parameters:**
+- `rootElement` (HTMLElement, optional): Root element to enable events on (default: document)
+
+**Example:**
+```javascript
+import { enableClientEvents } from '@coherent.js/client';
+
+// Enable events for entire document
+enableClientEvents();
+
+// Enable events for specific container
+const container = document.getElementById('interactive-section');
+enableClientEvents(container);
+```
+
+### `extractInitialState(element, options?)`
+
+Extracts initial state from DOM element data attributes.
+
+**Parameters:**
+- `element` (HTMLElement): The DOM element
+- `options` (Object, optional): Extraction options
+
+**Returns:** Object|null - The extracted state or null
+
+**Example:**
+```javascript
+import { extractInitialState } from '@coherent.js/client';
+
+const element = document.getElementById('counter');
+// <div id="counter" data-coherent-state='{"count": 5}'>
+const state = extractInitialState(element);
+// Returns: { count: 5 }
+```
+
+### `registerEventHandler(id, handler)`
+
+Registers a global event handler for use with data-action attributes.
+
+**Parameters:**
+- `id` (String): Unique identifier for the event handler
+- `handler` (Function): The event handler function
+
+**Example:**
+```javascript
+import { registerEventHandler } from '@coherent.js/client';
+
+registerEventHandler('my-click-handler', (event, state, setState) => {
+  console.log('Button clicked!', { event, state });
+});
+```
 
 ## Framework Integrations
 
@@ -386,7 +795,7 @@ Creates an Express route handler for Coherent.js components.
 - `componentFactory` (Function): Function that returns a Coherent component
 - `options` (Object, optional): Handler options
 
-#### `express.setupCoherentExpress(app, options?)`
+#### `express.setupCoherent(app, options?)`
 
 Sets up Coherent.js with Express app.
 
@@ -405,7 +814,7 @@ Fastify plugin for Coherent.js.
 - `options` (Object): Plugin options
 - `done` (Function): Callback to signal plugin registration completion
 
-#### `fastify.createCoherentFastifyHandler(componentFactory, options?)`
+#### `fastify.createHandler(componentFactory, options?)`
 
 Creates a Fastify route handler for Coherent.js components.
 
@@ -413,7 +822,7 @@ Creates a Fastify route handler for Coherent.js components.
 - `componentFactory` (Function): Function that returns a Coherent component
 - `options` (Object, optional): Handler options
 
-#### `fastify.setupCoherentFastify(fastify, options?)`
+#### `fastify.setupCoherent(fastify, options?)`
 
 Sets up Coherent.js with Fastify instance.
 

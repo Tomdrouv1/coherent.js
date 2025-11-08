@@ -3,7 +3,7 @@
   "changelog": "@changesets/cli/changelog",
   "commit": false,
   "fixed": [
-    ["@coherentjs/*"]
+    ["@coherent.js/*"]
   ],
   "linked": [],
   "access": "public",

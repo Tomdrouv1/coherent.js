@@ -8,7 +8,7 @@
  * - Performance monitoring
  */
 
-import { createCoherentNextHandler } from '../src/nextjs/coherent-nextjs.js';
+import { createCoherentNextHandler } from '../packages/nextjs/src/coherent-nextjs.js';
 
 // Enhanced Next.js home page component
 export const NextHomePage = ({ name = 'World', timestamp = new Date().toISOString() }) => ({

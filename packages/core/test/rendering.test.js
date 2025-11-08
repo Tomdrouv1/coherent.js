@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { renderToString } from '../../../src/coherent.js';
+import { render } from '../src/index.js';
 
 describe('Component Rendering', () => {
   it('renders basic component correctly', () => {
@@ -10,9 +10,10 @@ describe('Component Rendering', () => {
       }
     };
 
-    const html = renderToString(BasicComponent, {
+    const html = render(BasicComponent, {
       enableCache: true,
-      enableMonitoring: false
+      enableMonitoring: false,
+      encapsulate: false
     });
     
     expect(html).toBe('<div class="test">Hello, World!</div>');
@@ -29,9 +30,10 @@ describe('Component Rendering', () => {
       }
     };
 
-    const html = renderToString(ComponentWithChildren, {
+    const html = render(ComponentWithChildren, {
       enableCache: true,
-      enableMonitoring: false
+      enableMonitoring: false,
+      encapsulate: false
     });
 
     expect(html).toMatch(/<div class="parent"><h1>Title<\/h1><p>Content<\/p><\/div>/);
@@ -47,9 +49,10 @@ describe('Component Rendering', () => {
       }
     };
 
-    const html = renderToString(ComponentWithBooleans, {
+    const html = render(ComponentWithBooleans, {
       enableCache: true,
-      enableMonitoring: false
+      enableMonitoring: false,
+      encapsulate: false
     });
 
     expect(html).toMatch(/<div><span>true<\/span><span>false<\/span><\/div>/);
@@ -80,7 +83,7 @@ describe('Component Rendering', () => {
       }
     };
 
-    const html = renderToString(ComplexComponent);
+    const html = render(ComplexComponent);
     expect(html).toContain('class="post"');
     expect(html).toContain('Article Title');
     expect(html).toContain('First paragraph');

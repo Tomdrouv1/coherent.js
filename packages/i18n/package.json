@@ -1,0 +1,36 @@
+{
+  "name": "@coherent.js/i18n",
+  "version": "1.0.0-beta.1",
+  "description": "Internationalization support for Coherent.js applications",
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./translator": "./dist/translator.js",
+    "./formatters": "./dist/formatters.js",
+    "./locale": "./dist/locale.js"
+  },
+  "keywords": [
+    "coherent",
+    "i18n",
+    "internationalization",
+    "localization",
+    "translation"
+  ],
+  "author": "Coherent.js Team",
+  "license": "MIT",
+  "scripts": {
+    "build": "node build.mjs",
+    "clean": "rm -rf dist"
+  },
+  "peerDependencies": {
+    "@coherent.js/core": "workspace:^"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tomdrouv1/coherent.js.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

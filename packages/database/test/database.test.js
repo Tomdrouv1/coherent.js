@@ -4,9 +4,9 @@
  */
 
 import { test, assert } from 'vitest';
-import { DatabaseManager } from '../../../src/database/connection-manager.js';
-import { createModel } from '../../../src/database/model.js';
-import { QueryBuilder } from '../../../src/database/query-builder.js';
+import { DatabaseManager } from '../src/connection-manager.js';
+import { createModel } from '../src/model.js';
+import { executeQuery } from '../src/query-builder.js';
 
 // Mock adapter for testing
 class MockAdapter {
@@ -64,9 +64,9 @@ class MockAdapter {
       const result = await callback(tx);
       await tx.commit();
       return result;
-    } catch (error) {
+    } catch (_error) {
       await tx.rollback();
-      throw error;
+      throw _error;
     }
   }
 }
@@ -219,7 +219,7 @@ test('QueryBuilder with object configuration', async () => {
     limit: 10
   };
 
-  const result = await QueryBuilder.execute(dbManager, queryConfig);
+  const result = await executeQuery(dbManager, queryConfig);
   assert.ok(result, 'Should return query result');
 
   await dbManager.close();
@@ -298,14 +298,14 @@ test('Transaction handling', async () => {
       // Simulate some database operations
       await tx.query('SELECT 1 as test', []);
       
-      // Force an error to test rollback
-      throw new Error('Simulated error');
+      // Force an _error to test rollback
+      throw new Error('Simulated _error');
     });
   } catch {
     rollbackOccurred = true;
   }
 
-  assert.strictEqual(rollbackOccurred, true, 'Rollback should occur on error');
+  assert.strictEqual(rollbackOccurred, true, 'Rollback should occur on _error');
 
   await dbManager.close();
 });

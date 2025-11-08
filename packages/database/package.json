@@ -1,6 +1,6 @@
 {
-  "name": "@coherentjs/database",
-  "version": "1.0.1",
+  "name": "@coherent.js/database",
+  "version": "1.0.0-beta.1",
   "description": "Database utilities and adapters for Coherent.js",
   "type": "module",
   "main": "dist/index.cjs",
@@ -22,6 +22,7 @@
     "test:node": "node --test test/*.test.js"
   },
   "files": [
+    "types/",
     "dist/",
     "README.md",
     "LICENSE"
@@ -36,7 +37,7 @@
   },
   "peerDependencies": {
     "sqlite3": "^5.0.0",
-    "@coherentjs/core": "^1.0.1"
+    "@coherent.js/core": "workspace:^"
   },
   "peerDependenciesMeta": {
     "sqlite3": {
@@ -44,6 +45,7 @@
     }
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }

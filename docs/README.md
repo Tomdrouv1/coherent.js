@@ -65,7 +65,7 @@ const WelcomeCard = (name) => ({
 });
 
 // Render anywhere
-const html = renderToString(WelcomeCard('Developer'));
+const html = render(WelcomeCard('Developer'));
 ```
 
 ## 🏆 Key Advantages
@@ -111,20 +111,56 @@ const html = renderToString(WelcomeCard('Developer'));
 | **Bundle size** | ✅ Tiny footprint | ❌ Large runtime |
 | **TypeScript** | ✅ Full support | ✅ Good support |
 
-## 🚦 Getting Started Journey
+## 📚 Complete Documentation
 
-1. **[Installation](/docs/getting-started/)** - Get up and running in 5 minutes
-2. **[Basic Components](/docs/components/basic-components)** - Learn the object syntax
-3. **[Server Integration](/docs/framework-integrations)** - Connect with your backend
-4. **[Performance Guide](/docs/performance-optimizations)** - Optimize for production
-5. **[API Reference](/docs/api-reference)** - Complete function documentation
+> **📖 Looking for something specific?** Check out the **[Complete Documentation Index](DOCS_INDEX.md)** for organized access to all guides and references.
+
+
+### 🚀 **Getting Started**
+- **[Quick Start Guide](getting-started.md)** - Get up and running in 5 minutes
+- **[Installation Guide](getting-started/installation.md)** - Detailed setup instructions
+- **[Migration Guide](migration-guide.md)** - Moving from other frameworks
+
+### 🧩 **Component System**
+- **[Basic Components](components/basic-components.md)** - Learn the object syntax
+- **[State Management](components/state-management.md)** - Reactive components with `withState`
+- **[Advanced Components](components/advanced-components.md)** - HOCs, composition, and complex patterns
+- **[Styling Components](components/styling-components.md)** - CSS-in-JS and styling patterns
+
+### 🌊 **Client-Side Features**
+- **[Hydration Guide](client-side-hydration-guide.md)** - Making components interactive
+- **[Advanced Hydration](client-side/hydration.md)** - Deep dive into hydration patterns
+- **[Event Handling](function-on-element-events.md)** - User interactions and forms
+
+### 🏗️ **Server-Side Rendering**
+- **[SSR Guide](server-side/ssr-guide.md)** - Server-side rendering essentials
+- **[Framework Integrations](framework-integrations.md)** - Express, Fastify, Next.js, Koa
+- **[Performance Optimizations](performance-optimizations.md)** - Caching and optimization
+- **[Deployment Guide](deployment-guide.md)** - Production deployment strategies
+
+### 🗄️ **Database & Data**
+- **[Database Integration](database-integration.md)** - Working with databases
+- **[Query Builder](database/query-builder.md)** - SQL query building utilities
+- **[Query Builder API](query-builder.md)** - Alternative query builder reference
+
+### 🛠️ **Advanced Topics**
+- **[Object-Based Routing](object-based-routing.md)** - Advanced routing patterns
+- **[Security Guide](security-guide.md)** - Security best practices
+- **[API Reference](api-reference.md)** - Complete function documentation
+- **[API Usage Guide](api-usage.md)** - Practical API examples
+- **[API Enhancement Plan](api-enhancement-plan.md)** - Future API roadmap
+
+### 📖 **Examples & Patterns**
+- **[Real-World Examples](examples/)** - Production-ready implementations
+- **[Performance Patterns](examples/performance-page-integration.md)** - Optimization techniques
+- **[Hydration Patterns](hydration-guide.md)** - Interactive component examples
 
 ## 💡 Quick Taste
 
 Want to see Coherent.js in action? Here's a complete example:
 
 ```javascript
-import { renderToString, createComponent } from '@coherentjs/core';
+import { render, createComponent } from '@coherent.js/core';
 
 // Define a reusable component
 const TodoItem = createComponent(({ task, completed }) => ({
@@ -154,7 +190,7 @@ const TodoApp = {
 };
 
 // Render to HTML
-const html = renderToString(TodoApp);
+const html = render(TodoApp);
 ```
 
 ## 🌟 Community & Support
