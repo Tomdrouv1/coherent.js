@@ -10,9 +10,30 @@ async function buildAndServe() {
   try {
     console.log('🔨 Building website...');
     await new Promise((resolve, reject) => {
-      const buildProc = spawn('pnpm', ['run', 'website:build'], { stdio: 'inherit' });
+      const buildProc = spawn('pnpm', ['run', 'website:build'], {
+        stdio: 'pipe', // Capture output instead of inheriting
+        env: { ...process.env, QUIET: 'true' }
+      });
+
+      let errorOutput = '';
+
+      // Only show errors
+      buildProc.stderr.on('data', (data) => {
+        errorOutput += data.toString();
+      });
+
       buildProc.on('error', reject);
-      buildProc.on('exit', (code) => code === 0 ? resolve() : reject(new Error(`website:build exited with code ${code}`)));
+      buildProc.on('exit', (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          // Show error output only on failure
+          if (errorOutput) {
+            console.error(errorOutput);
+          }
+          reject(new Error(`website:build exited with code ${code}`));
+        }
+      });
     });
     console.log('✅ Website built successfully!');
     

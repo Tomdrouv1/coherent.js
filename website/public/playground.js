@@ -1,5 +1,4 @@
 // Coherent.js Playground with Browser Runtime
-console.log('Loading Coherent.js playground functionality...');
 
 // ================================
 // COHERENT.JS BROWSER RUNTIME
@@ -34,7 +33,6 @@ window.Coherent.useState = function(initialValue) {
   const setValue = (newValue) => {
     value = typeof newValue === 'function' ? newValue(value) : newValue;
     // In a real implementation, this would trigger re-renders
-    console.log('State updated:', value);
     return value;
   };
   return [() => value, setValue];
@@ -43,11 +41,10 @@ window.Coherent.useState = function(initialValue) {
 // Effect hook (simplified)
 window.Coherent.useEffect = function(effect, dependencies) {
   // In a real implementation, this would handle side effects and cleanup
-  console.log('Effect registered');
   try {
     return effect();
   } catch (error) {
-    console.error('Effect error:', error);
+    // Silent error handling
   }
 };
 
@@ -70,8 +67,6 @@ window.component = window.Coherent.component;
 window.useState = window.Coherent.useState;
 window.useEffect = window.Coherent.useEffect;
 window.createElement = window.Coherent.createElement;
-
-console.log('Coherent.js browser runtime loaded - functions available globally');
 
 // Safe component parser - converts JSON to Coherent.js components
 function parseComponentJSON(jsonString) {
@@ -207,16 +202,13 @@ function browserRenderToString(component) {
 // Simple DOM renderer
 function browserRenderToDOM(component, container) {
   if (!container) {
-    console.error('browserRenderToDOM: No container element provided');
     return;
   }
-  
+
   try {
     const html = browserRenderToString(component);
-    console.log('Generated HTML for DOM:', html);
     container.innerHTML = html;
   } catch (error) {
-    console.error('browserRenderToDOM: Error rendering component to DOM:', error);
     container.innerHTML = `<div style="color: red; padding: 16px; border: 1px solid red; border-radius: 4px;">
       <strong>Rendering Error:</strong><br>
       ${escapeHtmlText(error.message)}
@@ -263,13 +255,6 @@ async function runJavaScriptCode(code) {
   const setSuccess = (stdout, stderr) => {
     // Check if stdout contains HTML (detect <html> specifically)
     const isHTML = stdout && stdout.trim().startsWith('<html') && stdout.trim().includes('</html>');
-    
-    console.log('JavaScript execution result analysis:', {
-      stdout: stdout ? `${stdout.substring(0, 100)  }...` : '(no stdout)',
-      isHTML: isHTML,
-      startsWithHtml: stdout ? stdout.trim().startsWith('<html') : false,
-      includesEndHtml: stdout ? stdout.trim().includes('</html>') : false
-    });
     
     if (outputEl) {
       outputEl.innerHTML = `
@@ -349,16 +334,14 @@ ${stderr || '(no errors)'}`;
     }
     
     const result = await response.json();
-    console.log('JavaScript execution result:', result);
-    
+
     if (result.code !== 0) {
       setError(`Execution failed with exit code ${result.code}:\n${result.stderr || 'Unknown error'}`);
     } else {
       setSuccess(result.stdout, result.stderr);
     }
-    
+
   } catch (error) {
-    console.error('JavaScript execution error:', error);
     setError(error.message);
   }
 }
@@ -455,7 +438,6 @@ function tryLocalCoherentExecution(code) {
           sourceEl.textContent = html;
         }
       } catch (renderError) {
-        console.error('Component render error:', renderError);
         if (previewEl) {
           previewEl.innerHTML = `<div style="color: #dc3545; padding: 16px;">
             <strong>Render Error:</strong><br>
@@ -511,23 +493,17 @@ ${logs.length > 0 ? `// Console Output:\n${  logs.map(log =>
     }
     
     return true; // Successfully executed locally
-    
+
   } catch (error) {
-    console.error('Local execution failed:', error);
     return false; // Let server handle it
   }
 }
 
 // Global playground function
 window.runPlaygroundComponent = function() {
-  console.log('runPlaygroundComponent called!');
-  
   const outputEl = document.getElementById('output');
   const previewEl = document.getElementById('preview');
   const sourceEl = document.getElementById('source');
-  
-  console.log('Elements found:', { outputEl, previewEl, sourceEl });
-  console.log('Editor available:', !!window.getEditorContent);
   
   const setStatus = (message) => {
     if (outputEl) {
@@ -546,33 +522,23 @@ window.runPlaygroundComponent = function() {
   };
 
   const setSuccess = (component, html) => {
-    console.log('setSuccess called with:', { component, html });
-    
     if (outputEl) {
       outputEl.textContent = 'Component rendered successfully!';
       outputEl.className = 'output-success';
     }
-    
+
     // Clear and render the preview
     if (previewEl) {
-      console.log('Rendering to preview element:', previewEl);
       try {
         browserRenderToDOM(component, previewEl);
-        console.log('Preview element after rendering:', previewEl.innerHTML);
       } catch (domError) {
-        console.error('DOM render error, using HTML fallback:', domError);
         previewEl.innerHTML = html; // Fallback to HTML
       }
-    } else {
-      console.error('Preview element not found!');
     }
-    
+
     // Show the generated HTML source
     if (sourceEl) {
       sourceEl.textContent = html;
-      console.log('Source element updated with HTML');
-    } else {
-      console.error('Source element not found!');
     }
   };
 
@@ -585,8 +551,6 @@ window.runPlaygroundComponent = function() {
       setError('No component definition provided');
       return;
     }
-
-    console.log('User input:', userInput);
 
     // Enhanced JavaScript detection and execution
     const isJavaScript = 
@@ -620,22 +584,19 @@ window.runPlaygroundComponent = function() {
 
     // Parse the JSON component definition safely
     const component = parseComponentJSON(userInput);
-    console.log('Parsed component:', component);
-    
+
     if (!component) {
       setError('Component definition is empty');
       return;
     }
-    
+
     setStatus('Rendering component...');
-    
+
     // Render to HTML string using browser-compatible function
     const html = browserRenderToString(component);
-    console.log('Generated HTML:', html);
     setSuccess(component, html);
-    
+
   } catch (error) {
-    console.error('Playground execution error:', error);
     setError(error.message);
   }
 };
@@ -644,61 +605,40 @@ window.runPlaygroundComponent = function() {
 function loadExampleFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
   const fileName = urlParams.get('file');
-  
-  console.log('Current URL:', window.location.href);
-  console.log('URL search params:', window.location.search);
-  console.log('Parsed fileName:', fileName);
-  
+
   if (fileName) {
-    console.log('Loading example file:', fileName);
     loadExampleFile(fileName);
-  } else {
-    console.log('No file parameter found in URL');
   }
 }
 
 async function loadExampleFile(fileName) {
   const outputEl = document.getElementById('output');
-  
-  console.log('loadExampleFile called with:', fileName);
-  console.log('Editor available:', !!window.setEditorContent);
-  console.log('Output element found:', !!outputEl);
-  
+
   if (!window.setEditorContent) {
-    console.error('CodeMirror editor not available when loading example');
     return;
   }
-  
+
   try {
     if (outputEl) {
       outputEl.textContent = `Loading example: ${fileName}...`;
       outputEl.className = 'output-status';
     }
-    
+
     const apiUrl = `/api/example/${fileName}`;
-    console.log('Fetching from URL:', apiUrl);
-    
+
     let response = await fetch(apiUrl);
-    console.log('Response status:', response.status);
-    console.log('Response ok:', response.ok);
-    
+
     // If API fails, try direct static file access as fallback
     if (!response.ok) {
-      console.log('API failed, trying direct static file access...');
       const staticUrl = `/examples/${fileName}`;
-      console.log('Trying static URL:', staticUrl);
       response = await fetch(staticUrl);
-      console.log('Static response status:', response.status);
     }
-    
+
     if (!response.ok) {
-      const errorText = await response.text();
-      console.log('Final error response text:', errorText);
       throw new Error(`Failed to load ${fileName}: ${response.statusText}. Make sure the server is running.`);
     }
-    
+
     const exampleCode = await response.text();
-    console.log('Loaded example code length:', exampleCode.length);
     
     // Paste the actual example code directly into the CodeMirror editor
     window.setEditorContent(exampleCode);
@@ -726,9 +666,8 @@ async function loadExampleFile(fileName) {
       }
       outputEl.className = 'output-status';
     }
-    
+
   } catch (error) {
-    console.error('Error loading example file:', error);
     if (outputEl) {
       outputEl.textContent = `Error loading ${fileName}: ${error.message}`;
       outputEl.className = 'output-error';
@@ -747,8 +686,6 @@ if (document.readyState === 'loading') {
   // Just load example if needed (editor initializes itself)
   setTimeout(() => loadExampleFromURL(), 200);
 }
-
-console.log('Playground functionality loaded successfully!');
 
 // Add dropdown close functionality when DOM is ready
 setTimeout(() => {

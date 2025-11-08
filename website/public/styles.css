@@ -148,6 +148,45 @@ footer {
   resize: none !important; /* Disable manual resize since it auto-sizes */
 }
 
+/* Syntax highlight layer - must match textarea styles exactly */
+.highlight-layer {
+  font-family: ui-monospace, 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Droid Sans Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow: auto;
+  tab-size: 2;
+  word-wrap: normal;
+  overflow-wrap: normal;
+}
+
+/* Syntax editor textarea - inherits font styles but overrides visual styles */
+.syntax-editor-textarea {
+  position: absolute;
+  left: 50px;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  font-family: ui-monospace, 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Droid Sans Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow: auto;
+  tab-size: 2;
+  white-space: pre;
+  resize: none;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  -webkit-text-fill-color: transparent;
+  caret-color: #ffffffcc;
+  z-index: 0;
+}
+
 .playground-grid textarea::placeholder {
   color: var(--muted);
 }
@@ -158,9 +197,15 @@ footer {
   outline: none !important;
 }
 
-/* Live preview styling */
+/* Live preview styling - adapts to theme */
 #preview {
-  background: var(--glass-bg) !important;
+  background: #ffffff;
+  color: #0b0e14;
+}
+
+[data-theme="dark"] #preview {
+  background: #1e1e1e;
+  color: #d4d4d4;
   border: 1px solid var(--glass-border) !important;
   border-radius: 12px !important;
   padding: 20px !important;
@@ -1918,12 +1963,35 @@ a:hover{text-decoration:underline}
 
 
 /* Playground template dropdown styles */
+#templates-menu {
+  background: white;
+  border: 1px solid #ddd;
+}
+
 .template-option:hover {
-  background: #f8f9fa !important;
+  background: #f8f9fa;
 }
 
 .template-option:active {
-  background: #e9ecef !important;
+  background: #e9ecef;
+}
+
+/* Dark theme support for template dropdown */
+[data-theme="dark"] #templates-menu {
+  background: #1e1e1e;
+  border-color: #3e3e42;
+}
+
+[data-theme="dark"] .template-option {
+  border-bottom-color: #3e3e42;
+}
+
+[data-theme="dark"] .template-option:hover {
+  background: #2a2a2a;
+}
+
+[data-theme="dark"] .template-option:active {
+  background: #3a3a3a;
 }
 
 /* Hide template menu when clicking outside */

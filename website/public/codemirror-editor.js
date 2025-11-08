@@ -1,113 +1,135 @@
-// Real CodeMirror 6 editor with JavaScript language support and autocomplete
-// Loads CodeMirror 6 via dynamic imports for better compatibility
-
-let codeMirrorLoaded = false;
+// Coherent.js Playground Editor - Enhanced with Syntax Highlighting
+// Textarea-based JavaScript editor with syntax highlighting, autocomplete, and auto-formatting
 
 // Global variable to hold the editor instance
 window.playgroundEditor = null;
 
-// Coherent.js-specific autocomplete completions
-function coherentJsCompletions(context) {
-  const word = context.matchBefore(/\w*/);
-  if (!word) return null;
-  
-  const coherentCompletions = [
-    // Component structure
-    { label: 'div', type: 'keyword', info: 'HTML div element with Coherent.js structure' },
-    { label: 'span', type: 'keyword', info: 'HTML span element' },
-    { label: 'p', type: 'keyword', info: 'HTML paragraph element' },
-    { label: 'h1', type: 'keyword', info: 'HTML heading 1 element' },
-    { label: 'h2', type: 'keyword', info: 'HTML heading 2 element' },
-    { label: 'h3', type: 'keyword', info: 'HTML heading 3 element' },
-    { label: 'button', type: 'keyword', info: 'HTML button element' },
-    { label: 'input', type: 'keyword', info: 'HTML input element' },
-    { label: 'ul', type: 'keyword', info: 'HTML unordered list element' },
-    { label: 'li', type: 'keyword', info: 'HTML list item element' },
-    
-    // Common properties
-    { label: 'children', type: 'property', info: 'Array of child components' },
-    { label: 'text', type: 'property', info: 'Text content of the element' },
-    { label: 'className', type: 'property', info: 'CSS class name(s)' },
-    { label: 'style', type: 'property', info: 'Inline CSS styles' },
-    { label: 'onclick', type: 'property', info: 'Click event handler' },
-    { label: 'href', type: 'property', info: 'Link destination' },
-    { label: 'src', type: 'property', info: 'Source URL for images/media' },
-    { label: 'alt', type: 'property', info: 'Alternative text for images' },
-    
-    // Coherent.js functions (when browser runtime is available)
-    { label: 'render', type: 'function', info: 'Render component to HTML string' },
-    { label: 'renderToDOM', type: 'function', info: 'Render component to DOM element' },
-    { label: 'useState', type: 'function', info: 'Create stateful component' },
-    { label: 'useEffect', type: 'function', info: 'Add side effects to component' },
-  ];
-  
-  return {
-    from: word.from,
-    options: coherentCompletions.filter(comp => 
-      comp.label.toLowerCase().includes(word.text.toLowerCase())
-    )
-  };
-}
-
-// Component structure snippets
-function coherentJsSnippets() {
-  return [
-    {
-      label: 'component',
-      detail: 'Basic component structure',
-      type: 'snippet',
-      apply: `const Component = () => ({
-  div: {
-    className: 'container',
-    children: [
-      { h1: { text: 'Hello World' } },
-      { p: { text: 'Component content here' } }
-    ]
+// Main playground editor with syntax highlighting
+function createPlaygroundEditor(container, initialContent = '') {
+  if (!container) {
+    return null;
   }
-});`
-    },
-    {
-      label: 'page',
-      detail: 'Full page component',
-      type: 'snippet', 
-      apply: `const Page = () => ({
-  html: {
+
+  // Default initial content
+  const defaultCode = `// 🎯 Coherent.js Interactive Playground
+// Try editing this code and click Execute (Ctrl+Enter) to see the result!
+
+// Component: User Card with Avatar
+const UserCard = ({ name, role, avatar }) => ({
+  div: {
+    className: 'user-card',
+    style: 'display: flex; align-items: center; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);',
     children: [
       {
-        head: {
-          children: [
-            { title: { text: 'Page Title' } },
-            { style: { text: 'body { font-family: system-ui; }' } }
-          ]
+        div: {
+          style: 'width: 60px; height: 60px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-right: 16px;',
+          text: avatar
         }
       },
       {
-        body: {
+        div: {
           children: [
-            { h1: { text: 'Page Heading' } },
-            { main: { 
-              children: [
-                { p: { text: 'Page content here' } }
-              ]
-            }}
+            {
+              h2: {
+                text: name,
+                style: 'margin: 0 0 4px 0; font-size: 20px; font-weight: 600;'
+              }
+            },
+            {
+              p: {
+                text: role,
+                style: 'margin: 0; opacity: 0.9; font-size: 14px;'
+              }
+            }
           ]
         }
       }
     ]
   }
-});`
-    }
-  ];
-}
+});
 
-// Enhanced textarea editor with JavaScript support for Coherent.js (Original Working Version)
-function createAdvancedJavaScriptEditor(container, initialContent = '') {
-  if (!container) {
-    console.error('Container element not found for JavaScript editor');
-    return null;
+// Component: Feature Card
+const FeatureCard = ({ icon, title, description }) => ({
+  div: {
+    style: 'background: rgba(102, 126, 234, 0.08); padding: 24px; border-radius: 8px; border: 1px solid rgba(102, 126, 234, 0.3); margin-bottom: 16px;',
+    children: [
+      {
+        div: {
+          style: 'font-size: 32px; margin-bottom: 12px;',
+          text: icon
+        }
+      },
+      {
+        h3: {
+          text: title,
+          style: 'margin: 0 0 8px 0; color: #667eea; font-size: 18px; font-weight: 600;'
+        }
+      },
+      {
+        p: {
+          text: description,
+          style: 'margin: 0; opacity: 0.8; line-height: 1.6;'
+        }
+      }
+    ]
   }
+});
 
-  console.log('Creating enhanced JavaScript editor');
+// Main Application
+const App = () => ({
+  div: {
+    style: 'font-family: system-ui, -apple-system, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;',
+    children: [
+      {
+        h1: {
+          text: '🚀 Welcome to Coherent.js',
+          style: 'margin-bottom: 8px; font-size: 32px;'
+        }
+      },
+      {
+        p: {
+          text: 'Build beautiful UIs with pure JavaScript objects',
+          style: 'opacity: 0.7; margin-bottom: 32px; font-size: 16px;'
+        }
+      },
+      UserCard({
+        name: 'Alice Johnson',
+        role: 'Senior Developer',
+        avatar: '👩‍💻'
+      }),
+      UserCard({
+        name: 'Bob Smith',
+        role: 'UX Designer',
+        avatar: '🎨'
+      }),
+      {
+        h2: {
+          text: '✨ Key Features',
+          style: 'margin: 32px 0 16px 0; font-size: 24px;'
+        }
+      },
+      FeatureCard({
+        icon: '⚡',
+        title: 'Fast & Lightweight',
+        description: 'No virtual DOM overhead. Pure JavaScript object rendering for maximum performance.'
+      }),
+      FeatureCard({
+        icon: '🎨',
+        title: 'Component-Based',
+        description: 'Build reusable components with simple function calls and object composition.'
+      }),
+      FeatureCard({
+        icon: '🔧',
+        title: 'No Build Step Required',
+        description: 'Works directly in the browser. No compilation, no transpilation needed.'
+      })
+    ]
+  }
+});
+
+return App();`;
+
+  const code = initialContent || defaultCode;
 
   // Create the editor wrapper
   const editorWrapper = document.createElement('div');
@@ -115,6 +137,7 @@ function createAdvancedJavaScriptEditor(container, initialContent = '') {
     position: relative;
     width: 100%;
     height: 100%;
+    min-height: 400px;
     border: 1px solid var(--border-color, #ddd);
     border-radius: 8px;
     background: #1e1e1e;
@@ -132,43 +155,329 @@ function createAdvancedJavaScriptEditor(container, initialContent = '') {
     height: 100%;
     background: #252526;
     border-right: 1px solid #3e3e42;
-    padding: 16px 8px;
-    font-size: 14px;
-    line-height: 1.5;
+    padding: 20px 8px;
+    font-size: 13px;
+    line-height: 1.6;
     color: #858585;
+    text-align: right;
+    white-space: pre;
     user-select: none;
     pointer-events: none;
     overflow: hidden;
     box-sizing: border-box;
+    font-family: ui-monospace, 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Droid Sans Mono', monospace;
   `;
 
-  // Create the textarea
-  const textarea = document.createElement('textarea');
-  textarea.id = 'js-code-editor';
-  textarea.style.cssText = `
+  // Create syntax highlighting layer (rendered behind textarea)
+  const highlightLayer = document.createElement('pre');
+  highlightLayer.className = 'highlight-layer';
+  highlightLayer.style.cssText = `
     position: absolute;
     left: 50px;
     top: 0;
     right: 0;
     bottom: 0;
-    width: calc(100% - 50px);
-    height: 100%;
-    min-height: 300px;
-    padding: 16px;
+    margin: 0;
     border: none;
-    outline: none;
-    resize: none;
-    font-family: inherit;
-    font-size: 14px;
-    line-height: 1.5;
-    background: #1e1e1e;
+    background: transparent;
     color: #d4d4d4;
-    tab-size: 2;
     white-space: pre;
-    overflow: auto;
-    box-sizing: border-box;
+    pointer-events: none;
+    user-select: none;
+    z-index: 1;
   `;
-  textarea.value = initialContent;
+
+  // Create error tooltip
+  const errorTooltip = document.createElement('div');
+  errorTooltip.style.cssText = `
+    position: absolute;
+    display: none;
+    background: #f44336;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    z-index: 1000;
+    max-width: 300px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    pointer-events: none;
+  `;
+  errorTooltip.id = 'error-tooltip';
+
+  // Create the textarea (transparent text, visible caret)
+  const textarea = document.createElement('textarea');
+  textarea.id = 'js-code-editor';
+  textarea.className = 'syntax-editor-textarea';
+  textarea.spellcheck = false;
+  textarea.autocomplete = 'off';
+  textarea.autocorrect = 'off';
+  textarea.autocapitalize = 'off';
+  textarea.value = code;
+
+  // Sync scrolling between textarea, highlight layer, and line numbers
+  function syncScroll() {
+    highlightLayer.scrollTop = textarea.scrollTop;
+    highlightLayer.scrollLeft = textarea.scrollLeft;
+    lineNumbers.scrollTop = textarea.scrollTop;
+  }
+
+  textarea.addEventListener('scroll', syncScroll);
+
+  // Syntax highlighting function
+  function highlightSyntax(code) {
+    // Store strings and comments to protect them during highlighting
+    const strings = [];
+    const comments = [];
+
+    // Extract and protect strings
+    let protectedStrings = code.replace(/(["'`])(?:(?=(\\?))\2.)*?\1/g, (match) => {
+      strings.push(match);
+      return `___STRING_${strings.length - 1}___`;
+    });
+
+    // Extract and protect comments
+    protectedStrings = protectedStrings.replace(/\/\/.*$/gm, (match) => {
+      comments.push(match);
+      return `___COMMENT_${comments.length - 1}___`;
+    });
+
+    protectedStrings = protectedStrings.replace(/\/\*[\s\S]*?\*\//g, (match) => {
+      comments.push(match);
+      return `___COMMENT_${comments.length - 1}___`;
+    });
+
+    // Escape HTML
+    const escapeHtml = (str) => str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+    let highlighted = escapeHtml(protectedStrings);
+
+    // Keywords
+    highlighted = highlighted.replace(
+      /\b(const|let|var|function|return|if|else|for|while|do|switch|case|break|continue|try|catch|finally|throw|new|class|extends|import|export|from|default|async|await|typeof|instanceof|delete|void|in|of|this|super|static|get|set|yield|null|undefined|true|false)\b/g,
+      '<span style="color: #569cd6;">$1</span>'
+    );
+
+    // Numbers
+    highlighted = highlighted.replace(
+      /\b(\d+\.?\d*)\b/g,
+      '<span style="color: #b5cea8;">$1</span>'
+    );
+
+    // Function names and method calls
+    highlighted = highlighted.replace(
+      /\b([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(/g,
+      '<span style="color: #dcdcaa;">$1</span>('
+    );
+
+    // Arrow functions
+    highlighted = highlighted.replace(
+      /=&gt;/g,
+      '<span style="color: #c586c0;">=&gt;</span>'
+    );
+
+    // HTML/Coherent.js element names (div, h1, etc.) - but NOT span to avoid conflicts
+    highlighted = highlighted.replace(
+      /\b(div|p|h1|h2|h3|h4|h5|h6|button|input|select|textarea|a|img|ul|ol|li|table|tr|td|th|form|label|section|article|header|footer|nav|main|aside|html|head|body|title|meta|link|script)\s*:/g,
+      '<span style="color: #4ec9b0;">$1</span>:'
+    );
+
+    // Common properties (text, children, className, style, etc.)
+    highlighted = highlighted.replace(
+      /\b(children|text|className|style|onclick|href|src|alt|id|key|value|placeholder|type|name)\s*:/g,
+      '<span style="color: #9cdcfe;">$1</span>:'
+    );
+
+    // Restore strings with highlighting
+    highlighted = highlighted.replace(/___STRING_(\d+)___/g, (match, index) => {
+      return `<span style="color: #ce9178;">${escapeHtml(strings[index])}</span>`;
+    });
+
+    // Restore comments with highlighting
+    highlighted = highlighted.replace(/___COMMENT_(\d+)___/g, (match, index) => {
+      return `<span style="color: #6a9955;">${escapeHtml(comments[index])}</span>`;
+    });
+
+    return highlighted;
+  }
+
+  // Check for syntax errors and common JavaScript issues
+  function checkSyntaxErrors(code) {
+    const errors = [];
+
+    // Check for syntax errors first (parsing only)
+    try {
+      // First check syntax without execution
+      const wrappedCode = `(function() { ${code}\n })`;
+      const fn = new Function(wrappedCode);
+
+      // Now try to execute it to catch runtime errors like undefined variables
+      // This is safe because it's wrapped in a function that doesn't modify global scope
+      try {
+        fn();
+      } catch (runtimeError) {
+        // This catches ReferenceError, TypeError, etc.
+        throw runtimeError;
+      }
+    } catch (error) {
+      // Extract line and column information
+      let line = null;
+      let column = null;
+
+      // Firefox provides lineNumber and columnNumber
+      if (error.lineNumber !== undefined) {
+        line = error.lineNumber;
+        // Adjust for wrapper function
+        if (line > 0) line = line - 1;
+      }
+      if (error.columnNumber !== undefined) {
+        column = error.columnNumber;
+      }
+
+      // For Chrome/Edge, try parsing stack trace
+      // Since errors come from new Function(), we can't extract line numbers from the stack
+      // The stack only shows "at new Function (<anonymous>)" without line info
+      // We need a different approach - parse the code manually to find the error location
+      if (!line) {
+        // Try to find the error by re-parsing the code line by line
+        const codeLines = code.split('\n');
+        for (let i = 0; i < codeLines.length; i++) {
+          try {
+            const testCode = `(function() { ${codeLines.slice(0, i + 1).join('\n')}\n })`;
+            new Function(testCode);
+          } catch (testError) {
+            // If this throws the same error message, we found the line
+            if (testError.message === error.message) {
+              line = i + 1;
+
+              // Try to find the exact column by testing progressively shorter versions of the line
+              const currentLine = codeLines[i];
+              column = currentLine.length;
+
+              // Binary search to find the exact column where the error occurs
+              for (let col = 0; col < currentLine.length; col++) {
+                try {
+                  const testLines = [...codeLines.slice(0, i), currentLine.substring(0, col + 1)];
+                  const testCode2 = `(function() { ${testLines.join('\n')}\n })`;
+                  new Function(testCode2);
+                } catch (colError) {
+                  if (colError.message === error.message) {
+                    column = col + 1;
+                    break;
+                  }
+                }
+              }
+
+              break;
+            }
+          }
+        }
+      }
+
+      // If still no line number, try to parse it from the error message itself
+      if (!line) {
+        // Some errors include position info like "Unexpected token '}' at position 42"
+        const posMatch = error.message.match(/position (\d+)/);
+        if (posMatch) {
+          const pos = parseInt(posMatch[1], 10);
+          // Convert position to line/column
+          const beforeError = code.substring(0, pos);
+          line = (beforeError.match(/\n/g) || []).length + 1;
+          const lastNewline = beforeError.lastIndexOf('\n');
+          column = pos - lastNewline;
+        }
+      }
+
+      // Build error message with location
+      let message = error.message;
+
+      // Always show line/column if we have them
+      const locationPrefix = line && column
+        ? `[Line ${line}, Col ${column}] `
+        : line
+        ? `[Line ${line}] `
+        : '';
+
+      errors.push({
+        message: locationPrefix + message,
+        line,
+        column,
+        type: error.name.toLowerCase(),
+        original: error.message
+      });
+    }
+
+    // Static analysis for common issues
+    const lines = code.split('\n');
+    lines.forEach((line, index) => {
+      const lineNum = index + 1;
+
+      // Check for variable assignment without const/let/var (only at start of line or after {)
+      const assignmentMatch = line.match(/^(\s*|\s*\{[\s\S]*?)\b([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*[^=]/);
+      if (assignmentMatch) {
+        const varName = assignmentMatch[2];
+        // Skip if it's a property assignment (has . before it) or destructuring
+        if (!line.includes('.') && !line.includes(':') &&
+            !['const', 'let', 'var', 'function', 'class', 'return', 'if', 'for', 'while'].some(kw => line.includes(kw))) {
+          const column = line.indexOf(varName) + 1;
+          errors.push({
+            message: `[Line ${lineNum}, Col ${column}] Variable '${varName}' used without declaration (missing const/let/var)`,
+            line: lineNum,
+            column,
+            type: 'undeclared'
+          });
+        }
+      }
+
+      // Check for missing semicolons on return/const/let/var statements
+      if (/^\s*(return|const|let|var)\s+.*[^;{}\s]$/.test(line) && !line.trim().endsWith(',')) {
+        const column = line.length;
+        errors.push({
+          message: `[Line ${lineNum}, Col ${column}] Missing semicolon`,
+          line: lineNum,
+          column,
+          type: 'semicolon'
+        });
+      }
+    });
+
+    return errors.length > 0 ? errors[0] : null; // Return first error
+  }
+
+  // Highlight errors in the code
+  function highlightWithErrors(code) {
+    const error = checkSyntaxErrors(code);
+    let highlighted = highlightSyntax(code);
+
+    if (error && error.line) {
+      // Highlight the error line with a red background
+      const lines = highlighted.split('\n');
+      if (lines[error.line - 1]) {
+        lines[error.line - 1] = `<span style="background: rgba(244, 67, 54, 0.1); border-bottom: 2px wave #f44336; display: inline-block; width: 100%;">${lines[error.line - 1]}</span>`;
+      }
+      highlighted = lines.join('\n');
+    }
+
+    return { highlighted, error };
+  }
+
+  // Update syntax highlighting
+  function updateHighlighting() {
+    const result = highlightWithErrors(textarea.value);
+    highlightLayer.innerHTML = result.highlighted;
+
+    // Show/hide error tooltip
+    if (result.error) {
+      errorTooltip.textContent = `⚠️ ${result.error.message}`;
+      errorTooltip.style.display = 'block';
+      errorTooltip.style.top = '10px';
+      errorTooltip.style.right = '10px';
+    } else {
+      errorTooltip.style.display = 'none';
+    }
+  }
 
   // Update line numbers
   function updateLineNumbers() {
@@ -177,200 +486,121 @@ function createAdvancedJavaScriptEditor(container, initialContent = '') {
     lineNumbers.textContent = lineNumbersText;
   }
 
-  // Handle tab key for proper indentation
-  textarea.addEventListener('keydown', (e) => {
-    // Handle autocomplete dropdown navigation first
-    if (autocompleteDropdown) {
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        const options = autocompleteDropdown.querySelectorAll('.autocomplete-option');
-        selectedIndex = Math.min(selectedIndex + 1, options.length - 1);
-        updateSelection();
-        return;
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        selectedIndex = Math.max(selectedIndex - 1, 0);
-        updateSelection();
-        return;
-      } else if (e.key === 'Enter' || e.key === 'Tab') {
-        e.preventDefault();
-        const options = autocompleteDropdown.querySelectorAll('.autocomplete-option');
-        if (options[selectedIndex]) {
-          const cursorPos = textarea.selectionStart;
-          const textBeforeCursor = textarea.value.substring(0, cursorPos);
-          const lastWord = textBeforeCursor.split(/[\s:,\(\)\{\}]+/).pop();
-          insertSuggestion(options[selectedIndex].querySelector('span').textContent, lastWord, cursorPos);
-        }
-        return;
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        hideAutocomplete();
-        return;
-      }
-    }
-    
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const value = textarea.value;
-      
-      if (e.shiftKey) {
-        // Shift+Tab: unindent
-        const lineStart = value.lastIndexOf('\n', start - 1) + 1;
-        const line = value.substring(lineStart, value.indexOf('\n', start));
-        if (line.startsWith('  ')) {
-          textarea.value = value.substring(0, lineStart) + line.substring(2) + value.substring(lineStart + line.length);
-          textarea.selectionStart = Math.max(lineStart, start - 2);
-          textarea.selectionEnd = end - 2;
-        }
-      } else {
-        // Tab: indent
-        textarea.value = `${value.substring(0, start)  }  ${  value.substring(end)}`;
-        textarea.selectionStart = textarea.selectionEnd = start + 2;
-      }
-      updateLineNumbers();
-    } else if (e.key === 'Enter') {
-      // Auto-indent on new line
-      setTimeout(() => {
-        try {
-          const cursorPos = textarea.selectionStart;
-          if (cursorPos === undefined || cursorPos === null) return;
-          
-          const lineStart = textarea.value.lastIndexOf('\n', cursorPos - 1) + 1;
-          const prevLine = textarea.value.substring(lineStart, Math.max(lineStart, cursorPos - 1));
-          const indentMatch = prevLine.match(/^\s*/);
-          const indent = indentMatch ? indentMatch[0] : '';
-          
-          if (prevLine.trim().endsWith('{') || prevLine.trim().endsWith('[') || prevLine.trim().endsWith('(')) {
-            textarea.value = `${textarea.value.substring(0, cursorPos) + indent  }  ${  textarea.value.substring(cursorPos)}`;
-            textarea.selectionStart = textarea.selectionEnd = cursorPos + indent.length + 2;
-          } else if (indent.length > 0) {
-            textarea.value = textarea.value.substring(0, cursorPos) + indent + textarea.value.substring(cursorPos);
-            textarea.selectionStart = textarea.selectionEnd = cursorPos + indent.length;
-          }
-          updateLineNumbers();
-        } catch (error) {
-          console.warn('Auto-indent error:', error);
-          updateLineNumbers();
-        }
-      }, 0);
-    } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-      // Ctrl/Cmd+Enter: run component
-      e.preventDefault();
-      if (window.runPlaygroundComponent) {
-        window.runPlaygroundComponent();
-      }
-    } else if ((e.ctrlKey || e.metaKey) && e.key === ' ') {
-      // Ctrl/Cmd+Space: show autocomplete suggestions
-      e.preventDefault();
-      showAutocompleteSuggestions();
-    } else if (autocompleteDropdown) {
-      // Handle autocomplete dropdown navigation
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        const options = autocompleteDropdown.querySelectorAll('.autocomplete-option');
-        selectedIndex = Math.min(selectedIndex + 1, options.length - 1);
-        updateSelection();
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        selectedIndex = Math.max(selectedIndex - 1, 0);
-        updateSelection();
-      } else if (e.key === 'Enter' || e.key === 'Tab') {
-        e.preventDefault();
-        const options = autocompleteDropdown.querySelectorAll('.autocomplete-option');
-        if (options[selectedIndex]) {
-          const selectedItem = coherentCompletions.find((_, index) => index === selectedIndex);
-          const cursorPos = textarea.selectionStart;
-          const textBeforeCursor = textarea.value.substring(0, cursorPos);
-          const lastWord = textBeforeCursor.split(/[\s:,\(\)\{\}]+/).pop();
-          insertSuggestion(options[selectedIndex].querySelector('span').textContent, lastWord, cursorPos);
-        }
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        hideAutocomplete();
-      }
-    }
-  });
+  // Update both highlighting and line numbers
+  function updateEditor() {
+    updateHighlighting();
+    updateLineNumbers();
+    syncScroll();
+  }
 
-  // Autocomplete dropdown element
+  // Auto-formatting function (basic prettifier)
+  function formatCode() {
+    const code = textarea.value;
+    let formatted = code;
+    let indent = 0;
+    const lines = code.split('\n');
+    const formattedLines = [];
+
+    for (let line of lines) {
+      const trimmed = line.trim();
+
+      // Decrease indent for closing brackets
+      if (trimmed.startsWith('}') || trimmed.startsWith(']') || trimmed.startsWith(')')) {
+        indent = Math.max(0, indent - 1);
+      }
+
+      // Add indentation
+      const spaces = '  '.repeat(indent);
+      formattedLines.push(spaces + trimmed);
+
+      // Increase indent for opening brackets
+      if (trimmed.endsWith('{') || trimmed.endsWith('[') || trimmed.endsWith('(')) {
+        indent++;
+      }
+      // Decrease indent after closing bracket on same line
+      if ((trimmed.includes('{') && trimmed.includes('}')) ||
+          (trimmed.includes('[') && trimmed.includes(']')) ||
+          (trimmed.includes('(') && trimmed.includes(')'))) {
+        // Don't change indent for complete single-line blocks
+      }
+    }
+
+    formatted = formattedLines.join('\n');
+    textarea.value = formatted;
+    updateEditor();
+  }
+
+  // Autocomplete dropdown
   let autocompleteDropdown = null;
   let selectedIndex = -1;
 
   // Comprehensive Coherent.js completions
   const coherentCompletions = [
-    // HTML tags
-    { label: 'div', type: 'element', info: 'HTML div container element' },
-    { label: 'span', type: 'element', info: 'HTML inline span element' },
-    { label: 'p', type: 'element', info: 'HTML paragraph element' },
-    { label: 'h1', type: 'element', info: 'HTML heading 1 element' },
-    { label: 'h2', type: 'element', info: 'HTML heading 2 element' },
-    { label: 'h3', type: 'element', info: 'HTML heading 3 element' },
-    { label: 'h4', type: 'element', info: 'HTML heading 4 element' },
-    { label: 'h5', type: 'element', info: 'HTML heading 5 element' },
-    { label: 'h6', type: 'element', info: 'HTML heading 6 element' },
-    { label: 'button', type: 'element', info: 'HTML button element' },
-    { label: 'input', type: 'element', info: 'HTML input element' },
-    { label: 'textarea', type: 'element', info: 'HTML textarea element' },
-    { label: 'select', type: 'element', info: 'HTML select dropdown element' },
-    { label: 'option', type: 'element', info: 'HTML option element for select' },
-    { label: 'ul', type: 'element', info: 'HTML unordered list' },
-    { label: 'ol', type: 'element', info: 'HTML ordered list' },
-    { label: 'li', type: 'element', info: 'HTML list item' },
-    { label: 'a', type: 'element', info: 'HTML anchor/link element' },
-    { label: 'img', type: 'element', info: 'HTML image element' },
-    { label: 'form', type: 'element', info: 'HTML form element' },
-    { label: 'header', type: 'element', info: 'HTML header element' },
-    { label: 'main', type: 'element', info: 'HTML main content element' },
-    { label: 'footer', type: 'element', info: 'HTML footer element' },
-    { label: 'section', type: 'element', info: 'HTML section element' },
-    { label: 'article', type: 'element', info: 'HTML article element' },
-    { label: 'nav', type: 'element', info: 'HTML navigation element' },
-    { label: 'aside', type: 'element', info: 'HTML aside element' },
-    { label: 'table', type: 'element', info: 'HTML table element' },
-    { label: 'tr', type: 'element', info: 'HTML table row' },
-    { label: 'td', type: 'element', info: 'HTML table cell' },
-    { label: 'th', type: 'element', info: 'HTML table header cell' },
-    
-    // Common properties
-    { label: 'children', type: 'property', info: 'Array of child components' },
-    { label: 'text', type: 'property', info: 'Text content of element' },
-    { label: 'html', type: 'property', info: 'Raw HTML content (use carefully)' },
-    { label: 'className', type: 'property', info: 'CSS class name(s)' },
+    // HTML elements
+    { label: 'div', type: 'element', info: 'Container element' },
+    { label: 'span', type: 'element', info: 'Inline element' },
+    { label: 'p', type: 'element', info: 'Paragraph' },
+    { label: 'h1', type: 'element', info: 'Heading 1' },
+    { label: 'h2', type: 'element', info: 'Heading 2' },
+    { label: 'h3', type: 'element', info: 'Heading 3' },
+    { label: 'h4', type: 'element', info: 'Heading 4' },
+    { label: 'h5', type: 'element', info: 'Heading 5' },
+    { label: 'h6', type: 'element', info: 'Heading 6' },
+    { label: 'button', type: 'element', info: 'Button element' },
+    { label: 'input', type: 'element', info: 'Input field' },
+    { label: 'textarea', type: 'element', info: 'Multi-line text input' },
+    { label: 'select', type: 'element', info: 'Dropdown selector' },
+    { label: 'a', type: 'element', info: 'Link element' },
+    { label: 'img', type: 'element', info: 'Image element' },
+    { label: 'ul', type: 'element', info: 'Unordered list' },
+    { label: 'ol', type: 'element', info: 'Ordered list' },
+    { label: 'li', type: 'element', info: 'List item' },
+    { label: 'table', type: 'element', info: 'Table element' },
+    { label: 'tr', type: 'element', info: 'Table row' },
+    { label: 'td', type: 'element', info: 'Table cell' },
+    { label: 'th', type: 'element', info: 'Table header cell' },
+    { label: 'section', type: 'element', info: 'Section element' },
+    { label: 'article', type: 'element', info: 'Article element' },
+    { label: 'header', type: 'element', info: 'Header element' },
+    { label: 'footer', type: 'element', info: 'Footer element' },
+    { label: 'nav', type: 'element', info: 'Navigation element' },
+    { label: 'main', type: 'element', info: 'Main content element' },
+
+    // Properties
+    { label: 'children', type: 'property', info: 'Array of child elements' },
+    { label: 'text', type: 'property', info: 'Text content (escaped)' },
+    { label: 'html', type: 'property', info: 'Raw HTML content' },
+    { label: 'className', type: 'property', info: 'CSS class name' },
     { label: 'style', type: 'property', info: 'Inline CSS styles' },
-    { label: 'id', type: 'property', info: 'Element ID attribute' },
-    
-    // Event handlers
-    { label: 'onclick', type: 'event', info: 'Click event handler function' },
-    { label: 'onchange', type: 'event', info: 'Change event handler function' },
-    { label: 'onsubmit', type: 'event', info: 'Form submit event handler' },
-    { label: 'onload', type: 'event', info: 'Load event handler' },
-    { label: 'onmouseover', type: 'event', info: 'Mouse over event handler' },
-    { label: 'onmouseout', type: 'event', info: 'Mouse out event handler' },
-    
-    // Form attributes
-    { label: 'href', type: 'attribute', info: 'Link destination URL' },
-    { label: 'src', type: 'attribute', info: 'Source URL for images/media' },
-    { label: 'alt', type: 'attribute', info: 'Alternative text for images' },
-    { label: 'title', type: 'attribute', info: 'Tooltip text' },
-    { label: 'type', type: 'attribute', info: 'Input type attribute' },
-    { label: 'name', type: 'attribute', info: 'Form element name' },
-    { label: 'value', type: 'attribute', info: 'Input/form element value' },
-    { label: 'placeholder', type: 'attribute', info: 'Input placeholder text' },
-    { label: 'disabled', type: 'attribute', info: 'Disable form element' },
-    { label: 'required', type: 'attribute', info: 'Mark field as required' },
-    
-    // Coherent.js functions
-    { label: 'render', type: 'function', info: 'Render component to HTML string' },
-    { label: 'renderToDOM', type: 'function', info: 'Render component to DOM element' },
-    
-    // JavaScript patterns
-    { label: 'const', type: 'keyword', info: 'Declare constant variable' },
+    { label: 'id', type: 'property', info: 'Element ID' },
+    { label: 'onclick', type: 'property', info: 'Click event handler' },
+    { label: 'onchange', type: 'property', info: 'Change event handler' },
+    { label: 'onsubmit', type: 'property', info: 'Submit event handler' },
+    { label: 'href', type: 'property', info: 'Link destination' },
+    { label: 'src', type: 'property', info: 'Source URL' },
+    { label: 'alt', type: 'property', info: 'Alternative text' },
+    { label: 'placeholder', type: 'property', info: 'Placeholder text' },
+    { label: 'value', type: 'property', info: 'Input value' },
+    { label: 'type', type: 'property', info: 'Input type' },
+    { label: 'name', type: 'property', info: 'Input name' },
+    { label: 'key', type: 'property', info: 'Unique key for lists' },
+
+    // JavaScript keywords
+    { label: 'const', type: 'keyword', info: 'Constant declaration' },
+    { label: 'let', type: 'keyword', info: 'Variable declaration' },
+    { label: 'var', type: 'keyword', info: 'Variable declaration (legacy)' },
     { label: 'function', type: 'keyword', info: 'Function declaration' },
     { label: 'return', type: 'keyword', info: 'Return statement' },
-    { label: '() => ({', type: 'snippet', info: 'Arrow function returning object' },
-    { label: 'const Component = () => ({', type: 'snippet', info: 'Component function pattern' },
-    { label: 'return Component();', type: 'snippet', info: 'Return component call' }
+    { label: 'if', type: 'keyword', info: 'Conditional statement' },
+    { label: 'else', type: 'keyword', info: 'Else clause' },
+    { label: 'for', type: 'keyword', info: 'For loop' },
+    { label: 'map', type: 'method', info: 'Array map method' },
+    { label: 'filter', type: 'method', info: 'Array filter method' },
+    { label: 'reduce', type: 'method', info: 'Array reduce method' },
+
+    // Coherent.js functions
+    { label: 'render', type: 'function', info: 'Render component to HTML' },
+    { label: 'renderToDOM', type: 'function', info: 'Render to DOM element' },
   ];
 
   // Show autocomplete dropdown
@@ -378,589 +608,280 @@ function createAdvancedJavaScriptEditor(container, initialContent = '') {
     const cursorPos = textarea.selectionStart;
     const textBeforeCursor = textarea.value.substring(0, cursorPos);
     const lastWord = textBeforeCursor.split(/[\s:,\(\)\{\}]+/).pop();
-    
+
     if (lastWord.length === 0) return;
-    
-    const matchingSuggestions = coherentCompletions.filter(item => 
+
+    const matchingSuggestions = coherentCompletions.filter(item =>
       item.label.toLowerCase().startsWith(lastWord.toLowerCase())
     );
-    
+
     if (matchingSuggestions.length === 0) {
       hideAutocomplete();
       return;
     }
-    
-    createAutocompleteDropdown(matchingSuggestions, lastWord, cursorPos);
-  }
 
-  // Create autocomplete dropdown
-  function createAutocompleteDropdown(suggestions, word, cursorPos) {
-    hideAutocomplete();
-    
-    autocompleteDropdown = document.createElement('div');
-    autocompleteDropdown.className = 'autocomplete-dropdown';
-    autocompleteDropdown.style.cssText = `
-      position: absolute;
-      background: #2d2d30;
-      border: 1px solid #3e3e42;
-      border-radius: 6px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      max-height: 200px;
-      overflow-y: auto;
-      z-index: 1000;
-      font-family: inherit;
-      font-size: 13px;
-    `;
-    
-    // Calculate position
-    const rect = textarea.getBoundingClientRect();
-    const lineHeight = 21; // Approximate line height
-    const lines = textarea.value.substring(0, cursorPos).split('\n');
-    const currentLine = lines.length - 1;
-    const currentColumn = lines[lines.length - 1].length;
-    
-    const top = rect.top + (currentLine * lineHeight) + 32;
-    const left = rect.left + 50 + (currentColumn * 8.4); // Approximate char width
-    
-    autocompleteDropdown.style.top = `${Math.min(top, window.innerHeight - 250)}px`;
-    autocompleteDropdown.style.left = `${Math.min(left, window.innerWidth - 300)}px`;
-    
-    suggestions.forEach((item, index) => {
+    // Create dropdown if doesn't exist
+    if (!autocompleteDropdown) {
+      autocompleteDropdown = document.createElement('div');
+      autocompleteDropdown.style.cssText = `
+        position: fixed;
+        background: #1e1e1e;
+        border: 1px solid #3e3e42;
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        font-family: inherit;
+        font-size: 13px;
+      `;
+      document.body.appendChild(autocompleteDropdown);
+    }
+
+    // Populate dropdown
+    autocompleteDropdown.innerHTML = '';
+    selectedIndex = 0;
+
+    matchingSuggestions.forEach((item, index) => {
       const option = document.createElement('div');
       option.className = 'autocomplete-option';
       option.style.cssText = `
-        padding: 8px 12px;
+        padding: 6px 12px;
         cursor: pointer;
         display: flex;
         align-items: center;
         gap: 8px;
-        border-bottom: 1px solid #3e3e42;
-        color: #d4d4d4;
+        background: ${index === 0 ? '#094771' : 'transparent'};
       `;
-      
-      if (index === suggestions.length - 1) {
-        option.style.borderBottom = 'none';
-      }
-      
+
       const typeColor = {
-        'element': '#569cd6',
-        'property': '#9cdcfe', 
-        'event': '#dcdcaa',
-        'attribute': '#92c5f7',
-        'function': '#c586c0',
-        'keyword': '#569cd6',
-        'snippet': '#ce9178'
+        element: '#4ec9b0',
+        property: '#9cdcfe',
+        keyword: '#569cd6',
+        function: '#dcdcaa',
+        method: '#dcdcaa',
       }[item.type] || '#d4d4d4';
-      
+
       option.innerHTML = `
-        <span style="color: ${typeColor}; font-weight: 500; min-width: 100px;">${item.label}</span>
-        <span style="color: #6a9955; font-size: 11px; opacity: 0.8;">${item.info}</span>
+        <span style="color: ${typeColor}; font-weight: 500;">${item.label}</span>
+        <span style="color: #858585; font-size: 11px;">${item.type}</span>
+        <span style="color: #858585; margin-left: auto; font-size: 11px; max-width: 150px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${item.info}</span>
       `;
-      
+
       option.addEventListener('mouseenter', () => {
         selectedIndex = index;
         updateSelection();
       });
-      
+
       option.addEventListener('click', () => {
-        insertSuggestion(item.label, word, cursorPos);
+        insertSuggestion(item.label, lastWord, cursorPos);
       });
-      
+
       autocompleteDropdown.appendChild(option);
     });
-    
-    document.body.appendChild(autocompleteDropdown);
-    selectedIndex = 0;
-    updateSelection();
+
+    // Position dropdown
+    const rect = textarea.getBoundingClientRect();
+    const lineHeight = 21;
+    const lines = textarea.value.substring(0, cursorPos).split('\n');
+    const currentLine = lines.length - 1;
+    const currentColumn = lines[lines.length - 1].length;
+
+    const top = rect.top + (currentLine * lineHeight) + 32;
+    const left = rect.left + 50 + (currentColumn * 8.4);
+
+    autocompleteDropdown.style.top = `${top}px`;
+    autocompleteDropdown.style.left = `${left}px`;
+    autocompleteDropdown.style.display = 'block';
   }
 
-  // Update selection highlighting
   function updateSelection() {
-    if (!autocompleteDropdown) return;
-    
-    const options = autocompleteDropdown.querySelectorAll('.autocomplete-option');
+    const options = autocompleteDropdown?.querySelectorAll('.autocomplete-option');
+    if (!options) return;
+
     options.forEach((option, index) => {
-      if (index === selectedIndex) {
-        option.style.background = '#094771';
-      } else {
-        option.style.background = 'transparent';
-      }
+      option.style.background = index === selectedIndex ? '#094771' : 'transparent';
     });
+
+    // Scroll selected item into view
+    if (options[selectedIndex]) {
+      options[selectedIndex].scrollIntoView({ block: 'nearest' });
+    }
   }
 
-  // Insert selected suggestion
   function insertSuggestion(suggestion, word, cursorPos) {
     const beforeWord = textarea.value.substring(0, cursorPos - word.length);
     const afterCursor = textarea.value.substring(cursorPos);
-    
+
     textarea.value = beforeWord + suggestion + afterCursor;
     textarea.selectionStart = textarea.selectionEnd = cursorPos - word.length + suggestion.length;
-    
+
     hideAutocomplete();
-    updateLineNumbers();
+    updateEditor();
     textarea.focus();
   }
 
-  // Hide autocomplete dropdown
   function hideAutocomplete() {
     if (autocompleteDropdown) {
-      autocompleteDropdown.remove();
-      autocompleteDropdown = null;
-      selectedIndex = -1;
+      autocompleteDropdown.style.display = 'none';
     }
+    selectedIndex = -1;
   }
 
-  // Update line numbers on input and trigger autocomplete
+  // Event listeners
   textarea.addEventListener('input', (e) => {
-    updateLineNumbers();
-    
-    // Auto-trigger autocomplete when typing letters
-    const char = e.inputType === 'insertText' ? e.data : '';
-    if (char && /[a-zA-Z]/.test(char)) {
-      setTimeout(() => {
-        const cursorPos = textarea.selectionStart;
-        const textBeforeCursor = textarea.value.substring(0, cursorPos);
-        const lastWord = textBeforeCursor.split(/[\s:,\(\)\{\}]+/).pop();
-        
-        if (lastWord.length >= 2) { // Start suggesting after 2 characters
-          showAutocompleteSuggestions();
+    updateEditor();
+  });
+
+  textarea.addEventListener('keydown', (e) => {
+    // Handle autocomplete navigation
+    if (autocompleteDropdown && autocompleteDropdown.style.display === 'block') {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        const options = autocompleteDropdown.querySelectorAll('.autocomplete-option');
+        selectedIndex = Math.min(selectedIndex + 1, options.length - 1);
+        updateSelection();
+        return;
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        selectedIndex = Math.max(selectedIndex - 1, 0);
+        updateSelection();
+        return;
+      } else if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        const options = autocompleteDropdown.querySelectorAll('.autocomplete-option');
+        if (options[selectedIndex]) {
+          const cursorPos = textarea.selectionStart;
+          const textBeforeCursor = textarea.value.substring(0, cursorPos);
+          const lastWord = textBeforeCursor.split(/[\s:,\(\)\{\}]+/).pop();
+          const label = options[selectedIndex].querySelector('span').textContent;
+          insertSuggestion(label, lastWord, cursorPos);
         }
-      }, 100); // Small delay to let the input settle
-    } else if (e.inputType === 'deleteContentBackward') {
-      // Hide autocomplete when deleting
-      hideAutocomplete();
+        return;
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        hideAutocomplete();
+        return;
+      }
     }
-  });
-  textarea.addEventListener('scroll', () => {
-    lineNumbers.scrollTop = textarea.scrollTop;
-  });
 
-  // Assemble the editor
-  editorWrapper.appendChild(lineNumbers);
-  editorWrapper.appendChild(textarea);
-  container.appendChild(editorWrapper);
-
-  // Initial line numbers
-  updateLineNumbers();
-
-  // Hide autocomplete when clicking outside
-  document.addEventListener('click', (e) => {
-    if (autocompleteDropdown && !autocompleteDropdown.contains(e.target) && e.target !== textarea) {
-      hideAutocomplete();
-    }
-  });
-
-  // Hide autocomplete when textarea loses focus
-  textarea.addEventListener('blur', () => {
-    setTimeout(() => hideAutocomplete(), 150); // Small delay to allow clicking on suggestions
-  });
-
-  // Store reference and create API
-  const editor = {
-    container: editorWrapper,
-    textarea: textarea,
-    getValue: () => textarea.value,
-    setValue: (content) => {
-      textarea.value = content;
-      updateLineNumbers();
-    },
-    focus: () => textarea.focus(),
-    getSelection: () => {
+    // Tab handling
+    if (e.key === 'Tab') {
+      e.preventDefault();
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
-      return textarea.value.substring(start, end);
-    }
-  };
+      const value = textarea.value;
 
-  window.playgroundEditor = editor;
-  console.log('Enhanced JavaScript editor initialized');
-  return editor;
-}
-
-// Load CodeMirror 6 dynamically and create editor with autocomplete (DISABLED)
-async function createCodeMirror6Editor(container, initialContent = '') {
-  if (!container) {
-    console.error('Container element not found for CodeMirror editor');
-    return null;
-  }
-
-  console.log('Creating CodeMirror 6 editor with autocomplete...');
-
-  try {
-    // Load CodeMirror modules via dynamic import from ESM CDN
-    const [
-      viewModule,
-      { EditorState },
-      { javascript },
-      { autocompletion, completionKeymap },
-      { oneDark },
-      { lineNumbers }
-    ] = await Promise.all([
-      import('https://esm.sh/@codemirror/view@6'),
-      import('https://esm.sh/@codemirror/state@6'),
-      import('https://esm.sh/@codemirror/lang-javascript@6'),
-      import('https://esm.sh/@codemirror/autocomplete@6'),
-      import('https://esm.sh/@codemirror/theme-one-dark@6'),
-      import('https://esm.sh/@codemirror/view@6')
-    ]);
-
-    const { EditorView, basicSetup, keymap } = viewModule;
-
-    console.log('CodeMirror modules loaded successfully');
-
-    // Coherent.js specific autocompletion source
-    const coherentCompletions = (context) => {
-      const word = context.matchBefore(/\w*/);
-      if (word.from === word.to && !context.explicit) return null;
-
-      const options = [
-        // HTML tags
-        { label: 'div', type: 'keyword', info: 'HTML div element' },
-        { label: 'span', type: 'keyword', info: 'HTML span element' }, 
-        { label: 'p', type: 'keyword', info: 'HTML paragraph element' },
-        { label: 'h1', type: 'keyword', info: 'HTML heading 1' },
-        { label: 'h2', type: 'keyword', info: 'HTML heading 2' },
-        { label: 'h3', type: 'keyword', info: 'HTML heading 3' },
-        { label: 'button', type: 'keyword', info: 'HTML button element' },
-        { label: 'input', type: 'keyword', info: 'HTML input element' },
-        { label: 'ul', type: 'keyword', info: 'HTML unordered list' },
-        { label: 'li', type: 'keyword', info: 'HTML list item' },
-        { label: 'a', type: 'keyword', info: 'HTML anchor/link element' },
-        { label: 'img', type: 'keyword', info: 'HTML image element' },
-        { label: 'form', type: 'keyword', info: 'HTML form element' },
-        { label: 'header', type: 'keyword', info: 'HTML header element' },
-        { label: 'main', type: 'keyword', info: 'HTML main element' },
-        { label: 'footer', type: 'keyword', info: 'HTML footer element' },
-        { label: 'section', type: 'keyword', info: 'HTML section element' },
-        { label: 'article', type: 'keyword', info: 'HTML article element' },
-        
-        // Common properties
-        { label: 'children', type: 'property', info: 'Array of child components' },
-        { label: 'text', type: 'property', info: 'Text content of element' },
-        { label: 'className', type: 'property', info: 'CSS class name(s)' },
-        { label: 'style', type: 'property', info: 'Inline CSS styles' },
-        { label: 'onclick', type: 'property', info: 'Click event handler' },
-        { label: 'href', type: 'property', info: 'Link destination' },
-        { label: 'src', type: 'property', info: 'Source URL for images/media' },
-        { label: 'alt', type: 'property', info: 'Alternative text for images' },
-        { label: 'id', type: 'property', info: 'Element ID attribute' },
-        { label: 'type', type: 'property', info: 'Input type attribute' },
-        { label: 'placeholder', type: 'property', info: 'Input placeholder text' },
-        { label: 'value', type: 'property', info: 'Input value' },
-        
-        // Coherent.js functions
-        { label: 'render', type: 'function', info: 'Render component to HTML string' },
-        { label: 'renderToDOM', type: 'function', info: 'Render component to DOM element' },
-        
-        // JavaScript patterns
-        { label: 'const Component = () => ({', type: 'snippet', info: 'Component function pattern' },
-        { label: '() => ({', type: 'snippet', info: 'Arrow function returning object' },
-        { label: 'return Component();', type: 'snippet', info: 'Return component call' }
-      ];
-
-      return {
-        from: word.from,
-        options: options.filter(option => 
-          option.label.toLowerCase().includes(word.text.toLowerCase())
-        )
-      };
-    };
-
-    // Log what we have available for debugging
-    console.log('Available CodeMirror modules:', { 
-      EditorView: !!EditorView, 
-      basicSetup: !!basicSetup, 
-      javascript: !!javascript, 
-      autocompletion: !!autocompletion, 
-      completionKeymap: !!completionKeymap,
-      oneDark: !!oneDark,
-      keymap: !!keymap
-    });
-
-    // Build extensions array with error checking
-    const extensions = [];
-    
-    if (basicSetup) extensions.push(basicSetup);
-    if (javascript) extensions.push(javascript());
-    if (autocompletion) {
-      extensions.push(autocompletion({
-        override: [coherentCompletions],
-        activateOnTyping: true,
-        maxRenderedOptions: 20
-      }));
-    }
-    if (oneDark) extensions.push(oneDark);
-    if (lineNumbers) extensions.push(lineNumbers());
-    
-    // Add theme with strict containment
-    extensions.push(EditorView.theme({
-      '&': {
-        height: '100% !important',
-        width: '100% !important',
-        maxWidth: '100% !important',
-        minWidth: '0 !important',
-        fontSize: '14px',
-        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace',
-        boxSizing: 'border-box !important',
-        overflow: 'hidden !important',
-        position: 'relative !important'
-      },
-      '.cm-editor': {
-        height: '100% !important',
-        width: '100% !important',
-        maxWidth: '100% !important',
-        minWidth: '0 !important',
-        boxSizing: 'border-box !important',
-        overflow: 'hidden !important',
-        position: 'relative !important'
-      },
-      '.cm-scroller': {
-        height: '100% !important',
-        maxHeight: '100% !important',
-        width: '100% !important',
-        maxWidth: '100% !important',
-        minWidth: '0 !important',
-        boxSizing: 'border-box !important',
-        overflow: 'auto !important'
-      },
-      '.cm-content': {
-        width: '100% !important',
-        maxWidth: '100% !important',
-        minWidth: '0 !important',
-        boxSizing: 'border-box !important',
-        padding: '16px !important'
-      },
-      '.cm-focused': {
-        outline: 'none !important'
-      },
-      '&.cm-focused .cm-selectionBackground': {
-        backgroundColor: '#094771 !important'
-      }
-    }));
-    
-    // Add keyboard shortcuts if available
-    if (keymap && completionKeymap) {
-      extensions.push(keymap.of([
-        ...completionKeymap,
-        {
-          key: 'Ctrl-Enter',
-          mac: 'Cmd-Enter',
-          run: () => {
-            if (window.runPlaygroundComponent) {
-              window.runPlaygroundComponent();
-            }
-            return true;
-          }
+      if (e.shiftKey) {
+        // Unindent
+        const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+        const line = value.substring(lineStart, value.indexOf('\n', start) === -1 ? value.length : value.indexOf('\n', start));
+        if (line.startsWith('  ')) {
+          textarea.value = value.substring(0, lineStart) + line.substring(2) + value.substring(lineStart + line.length);
+          textarea.selectionStart = Math.max(lineStart, start - 2);
+          textarea.selectionEnd = end - 2;
         }
-      ]));
-    }
-
-    console.log('Extensions to be loaded:', extensions.length);
-
-    // Create the editor state
-    const state = EditorState.create({
-      doc: initialContent,
-      extensions: extensions
-    });
-
-    // Create the editor view
-    const view = new EditorView({
-      state,
-      parent: container
-    });
-
-    // Create editor API
-    const editor = {
-      container: container,
-      view: view,
-      getValue: () => view.state.doc.toString(),
-      setValue: (content) => {
-        view.dispatch({
-          changes: {
-            from: 0,
-            to: view.state.doc.length,
-            insert: content
-          }
-        });
-      },
-      focus: () => view.focus(),
-      getSelection: () => {
-        const { from, to } = view.state.selection.main;
-        return view.state.doc.sliceString(from, to);
+      } else {
+        // Indent
+        textarea.value = value.substring(0, start) + '  ' + value.substring(end);
+        textarea.selectionStart = textarea.selectionEnd = start + 2;
       }
-    };
+      updateEditor();
+    }
+    // Auto-indent on Enter
+    else if (e.key === 'Enter') {
+      setTimeout(() => {
+        const cursorPos = textarea.selectionStart;
+        const lineStart = textarea.value.lastIndexOf('\n', cursorPos - 1) + 1;
+        const prevLine = textarea.value.substring(lineStart, Math.max(lineStart, cursorPos - 1));
+        const indentMatch = prevLine.match(/^\s*/);
+        const indent = indentMatch ? indentMatch[0] : '';
 
-    window.playgroundEditor = editor;
-    codeMirrorLoaded = true;
-    console.log('CodeMirror 6 editor with autocomplete initialized successfully');
-    return editor;
-
-  } catch (error) {
-    console.error('Failed to load CodeMirror:', error);
-    throw error;
-  }
-}
-
-// Fallback textarea editor if CodeMirror fails to load
-function createFallbackTextarea(container, initialContent) {
-  console.warn('Using fallback textarea editor');
-  
-  const textarea = document.createElement('textarea');
-  textarea.id = 'code-editor-fallback';
-  textarea.style.cssText = `
-    width: 100%;
-    height: 400px;
-    min-height: 400px;
-    padding: 16px;
-    border: 1px solid var(--border-color, #ddd);
-    border-radius: 8px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
-    font-size: 14px;
-    line-height: 1.5;
-    resize: vertical;
-    outline: none;
-  `;
-  textarea.value = initialContent;
-  
-  // Basic keyboard shortcuts
-  textarea.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        if (prevLine.trim().endsWith('{') || prevLine.trim().endsWith('[') || prevLine.trim().endsWith('(')) {
+          textarea.value = textarea.value.substring(0, cursorPos) + indent + '  ' + textarea.value.substring(cursorPos);
+          textarea.selectionStart = textarea.selectionEnd = cursorPos + indent.length + 2;
+        } else if (indent.length > 0) {
+          textarea.value = textarea.value.substring(0, cursorPos) + indent + textarea.value.substring(cursorPos);
+          textarea.selectionStart = textarea.selectionEnd = cursorPos + indent.length;
+        }
+        updateEditor();
+      }, 0);
+    }
+    // Ctrl/Cmd+Enter to run
+    else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault();
       if (window.runPlaygroundComponent) {
         window.runPlaygroundComponent();
       }
     }
+    // Ctrl/Cmd+Space for autocomplete
+    else if ((e.ctrlKey || e.metaKey) && e.key === ' ') {
+      e.preventDefault();
+      showAutocompleteSuggestions();
+    }
+    // Shift+Alt+F to format
+    else if (e.shiftKey && e.altKey && e.key === 'f') {
+      e.preventDefault();
+      formatCode();
+    }
   });
-  
-  container.appendChild(textarea);
-  
-  const editor = {
-    textarea: textarea,
-    getValue: () => textarea.value,
-    setValue: (content) => textarea.value = content,
-    focus: () => textarea.focus()
+
+  // Close autocomplete when clicking outside
+  document.addEventListener('click', (e) => {
+    if (autocompleteDropdown && !textarea.contains(e.target) && !autocompleteDropdown.contains(e.target)) {
+      hideAutocomplete();
+    }
+  });
+
+  // Assemble editor - order matters! Highlight layer MUST come before textarea
+  editorWrapper.appendChild(lineNumbers);
+  editorWrapper.appendChild(highlightLayer);
+  editorWrapper.appendChild(textarea);
+  editorWrapper.appendChild(errorTooltip);
+  container.appendChild(editorWrapper);
+
+  // Force initial render to ensure highlight layer has content
+  highlightLayer.innerHTML = highlightSyntax(textarea.value);
+
+  // Initial update
+  updateEditor();
+
+  // Global functions for external access
+  window.getEditorContent = () => textarea.value;
+  window.setEditorContent = (content) => {
+    textarea.value = content;
+    updateEditor();
   };
-  
-  window.playgroundEditor = editor;
-  return editor;
+  window.formatEditorCode = formatCode;
+
+  // Store editor instance
+  window.playgroundEditor = {
+    getValue: () => textarea.value,
+    setValue: (value) => {
+      textarea.value = value;
+      updateEditor();
+    },
+    format: formatCode,
+    focus: () => textarea.focus(),
+  };
+
+  return window.playgroundEditor;
 }
 
-// Helper functions for playground.js integration
-window.getEditorContent = function() {
-  return window.playgroundEditor ? window.playgroundEditor.getValue() : '';
-};
-
-window.setEditorContent = function(content) {
-  if (window.playgroundEditor) {
-    window.playgroundEditor.setValue(content);
-  }
-};
-
-window.initializePlaygroundEditor = async function() {
-  // Prevent multiple initialization attempts
-  if (window.playgroundEditorInitialized || window.playgroundEditor) {
-    console.log('Editor already initialized, skipping...');
-    return;
-  }
-  
-  console.log('Initializing playground editor (first time)...');
-  window.playgroundEditorInitialized = true;
-  
-  const container = document.getElementById('editor-container');
-  
-  // Clear container first to avoid duplicates
-  if (container) {
-    container.innerHTML = '';
-  }
-  
-  if (container) {
-    // Default JavaScript component instead of JSON
-    const defaultContent = `// Welcome to Coherent.js Playground! 🚀
-// Write Coherent.js components using pure JavaScript objects
-
-const WelcomeComponent = () => ({
-  div: {
-    style: 'padding: 24px; font-family: system-ui, sans-serif; max-width: 600px;',
-    children: [
-      { 
-        h1: { 
-          text: 'Welcome to Coherent.js! 🚀',
-          style: 'color: #7cc4ff; margin-bottom: 16px; font-weight: 700;'
-        } 
-      },
-      { 
-        p: { 
-          text: 'This is a JavaScript playground for Coherent.js components. Edit this code and click Run!',
-          style: 'color: #e6edf3; margin-bottom: 20px; line-height: 1.6;'
-        } 
-      },
-      {
-        div: {
-          style: 'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 20px;',
-          children: [
-            { h3: { text: 'JavaScript Editor', style: 'margin-bottom: 8px; font-weight: 600;' } },
-            { p: { text: 'Full IDE features: autocomplete, syntax highlighting, and Ctrl+Enter to run!' } }
-          ]
-        }
-      },
-      {
-        div: {
-          style: 'padding: 20px; background: rgba(59, 247, 125, 0.1); border: 1px solid rgba(59, 247, 125, 0.3); border-radius: 12px;',
-          children: [
-            { strong: { text: 'Editor Features:', style: 'color: #3bf77d; font-size: 16px;' } },
-            { ul: {
-              style: 'margin: 12px 0 0 0; padding-left: 20px; color: #e6edf3;',
-              children: [
-                { li: { text: 'Real CodeMirror 6 with JavaScript support', style: 'margin-bottom: 8px;' } },
-                { li: { text: 'Coherent.js-specific autocomplete and snippets', style: 'margin-bottom: 8px;' } },
-                { li: { text: 'Live preview and HTML generation' } }
-              ]
-            } }
-          ]
-        }
-      }
-    ]
-  }
-});
-
-// Export or render the component
-console.log('Component ready!');
-return WelcomeComponent();`;
-    
-    try {
-      await createCodeMirror6Editor(container, defaultContent);
-      console.log('CodeMirror 6 playground editor with autocomplete initialized');
-    } catch (error) {
-      console.error('Failed to initialize CodeMirror 6 editor:', error);
-      // Fallback to working textarea
-      createAdvancedJavaScriptEditor(container, defaultContent);
+// Auto-initialize when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    const container = document.getElementById('editor-container');
+    if (container) {
+      createPlaygroundEditor(container);
     }
-  }
-};
-
-console.log('CodeMirror editor module loaded');
-
-// Initialize when DOM is ready (single initialization)
-function initializeOnce() {
-  if (window.playgroundEditorInitialized) {
-    return; // Already initialized
-  }
-  
-  setTimeout(async () => {
-    if (window.initializePlaygroundEditor && !window.playgroundEditorInitialized) {
-      console.log('Calling initializePlaygroundEditor...');
-      await window.initializePlaygroundEditor();
+  });
+} else {
+  // DOM already loaded
+  setTimeout(() => {
+    const container = document.getElementById('editor-container');
+    if (container) {
+      createPlaygroundEditor(container);
     }
   }, 100);
-}
-
-if (document.readyState !== 'loading') {
-  console.log('DOM ready, attempting editor initialization');
-  initializeOnce();
-} else {
-  console.log('DOM still loading, will wait for DOMContentLoaded');
-  document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOMContentLoaded fired, attempting editor initialization');
-    initializeOnce();
-  });
 }

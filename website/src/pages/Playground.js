@@ -43,7 +43,7 @@ export function Playground() {
                                         {
                                             div: {
                                                 id: 'templates-menu',
-                                                style: 'display: none; position: absolute; top: 100%; left: 0; background: white; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 100; min-width: 200px;',
+                                                style: 'display: none; position: absolute; top: 100%; left: 0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 100; min-width: 200px;',
                                                 children: [
                                                     {
                                                         button: {
@@ -331,7 +331,7 @@ return Demo();\`;
                             {
                                 span: {
                                     style: 'margin-left: 12px; font-size: 14px; color: #666;',
-                                    text: '💡 Tip: Press Ctrl+Enter to execute • Autocomplete with Ctrl+Space'
+                                    text: '💡 Tip: Ctrl+Enter to execute • Ctrl+Space for autocomplete • Shift+Alt+F to format'
                                 }
                             }
                         ]
@@ -438,7 +438,7 @@ return Demo();\`;
                                                                             {
                                                                                 div: {
                                                                                     id: 'preview',
-                                                                                    style: 'border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; background: white; height: 100%; overflow: auto;',
+                                                                                    style: 'border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; height: 100%; overflow: auto;',
                                                                                     text: 'Component preview will appear here...'
                                                                                 }
                                                                             }

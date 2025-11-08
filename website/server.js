@@ -1,4 +1,5 @@
-import express from 'express';
+import { createRouter } from '../packages/api/src/router.js';
+import { createServer } from 'http';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readFileSync, readdirSync, statSync } from 'fs';
@@ -15,29 +16,17 @@ import { Layout } from './src/layout/Layout.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const app = express();
 const port = process.env.PORT || 3000;
 
-// Serve static files
-app.use('/examples', express.static(join(__dirname, '../examples')));
-app.use(express.static(join(__dirname, 'public')));
-app.use('/dist', express.static(join(__dirname, 'dist')));
-
-// Helper function to scan examples directory - only playground-compatible examples
+// Helper function to scan examples directory - show all examples
 function getExamplesList() {
   const examplesDir = join(__dirname, '../examples');
-  
-  // Playground-compatible examples (no import statements - exports are okay)
-  const playgroundCompatible = [
-    // Only examples that actually work in playground (no imports)
-    'basic-usage.js'
-  ];
-  
+
   const files = readdirSync(examplesDir).filter(file => {
     const filePath = join(examplesDir, file);
-    return statSync(filePath).isFile() && 
-           file.endsWith('.js') && 
-           playgroundCompatible.includes(file);
+    return statSync(filePath).isFile() &&
+           file.endsWith('.js') &&
+           !file.endsWith('.test.js'); // Exclude test files
   });
 
   return files.map(file => {
@@ -48,7 +37,7 @@ function getExamplesList() {
 
     try {
       code = readFileSync(filePath, 'utf-8');
-      
+
       // Extract description from first comment or JSDoc comment
       const commentMatch = code.match(/\/\*\*(.*?)\*\//s) || code.match(/\/\*(.*?)\*\//s);
       if (commentMatch) {
@@ -59,7 +48,7 @@ function getExamplesList() {
       }
 
       // Generate label from filename
-      label = file.replace('.js', '').split('-').map(word => 
+      label = file.replace('.js', '').split('-').map(word =>
         word.charAt(0).toUpperCase() + word.slice(1)
       ).join(' ');
 
@@ -94,167 +83,319 @@ function getExamplesList() {
 }
 
 // Base HTML template
-function renderPage(content, title = 'Coherent.js', scripts = []) {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${title}</title>
-  <link rel="stylesheet" href="/styles.css">
-</head>
-<body>
-  ${content}
-  ${scripts.map(script => `<script src="${script}"></script>`).join('\n  ')}
-</body>
-</html>`;
+function renderPage(layoutHtml, pageContent, title = 'Coherent.js', scripts = []) {
+  // Replace the content placeholder with actual page content
+  let html = layoutHtml.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', pageContent);
+
+  // Add scripts if provided
+  if (scripts.length > 0) {
+    const scriptTags = scripts.map(script => `<script src="${script}"></script>`).join('\n  ');
+    html = html.replace('</body>', `  ${scriptTags}\n</body>`);
+  }
+
+  return html;
 }
 
-// Routes
-app.get('/', (req, res) => {
-  try {
-    const content = render(Layout({
-      currentPath: '/', 
-      children: [Home()] 
-    }));
-    res.send(renderPage(content, 'Coherent.js - Modern Object-Based UI Framework'));
-  } catch (error) {
-    console.error('Error rendering home:', error);
-    res.status(500).send(`Error: ${error.message}`);
-  }
-});
+// Static file serving middleware
+function staticFileMiddleware(req, res) {
+  const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+  const pathname = parsedUrl.pathname;
 
-app.get('/examples', (req, res) => {
-  try {
-    const examples = getExamplesList();
-    const content = render(Layout({
-      currentPath: '/examples', 
-      children: [Examples({ items: examples })] 
-    }));
-    res.send(renderPage(content, 'Examples - Coherent.js'));
-  } catch (error) {
-    console.error('Error rendering examples:', error);
-    res.status(500).send(`Error: ${error.message}`);
-  }
-});
+  // Define static directories
+  const staticPaths = [
+    { prefix: '/examples/', dir: join(__dirname, '../examples') },
+    { prefix: '/dist/', dir: join(__dirname, 'dist') },
+    { prefix: '/', dir: join(__dirname, 'public') }
+  ];
 
-app.get('/docs', (req, res) => {
-  try {
-    const content = render(Layout({
-      currentPath: '/docs', 
-      children: [DocsPage()] 
-    }));
-    res.send(renderPage(content, 'Documentation - Coherent.js'));
-  } catch (error) {
-    console.error('Error rendering docs:', error);
-    res.status(500).send(`Error: ${error.message}`);
-  }
-});
+  for (const { prefix, dir } of staticPaths) {
+    if (pathname.startsWith(prefix)) {
+      const filePath = join(dir, pathname.slice(prefix.length));
 
-app.get('/playground', (req, res) => {
-  try {
-    const content = render(Layout({
-      currentPath: '/playground', 
-      children: [Playground()] 
-    }));
-    res.send(renderPage(content, 'Playground - Coherent.js', ['/codemirror-editor.js', '/playground.js']));
-  } catch (error) {
-    console.error('Error rendering playground:', error);
-    res.status(500).send(`Error: ${error.message}`);
-  }
-});
+      try {
+        const stat = statSync(filePath);
+        if (stat.isFile()) {
+          const content = readFileSync(filePath);
 
-app.get('/performance', (req, res) => {
-  try {
-    const content = render(Layout({
-      currentPath: '/performance', 
-      children: [Performance()] 
-    }));
-    res.send(renderPage(content, 'Performance - Coherent.js', ['/performance.js']));
-  } catch (error) {
-    console.error('Error rendering performance:', error);
-    res.status(500).send(`Error: ${error.message}`);
-  }
-});
+          // Determine content type
+          const ext = filePath.split('.').pop();
+          const contentTypes = {
+            'html': 'text/html',
+            'css': 'text/css',
+            'js': 'application/javascript',
+            'json': 'application/json',
+            'png': 'image/png',
+            'jpg': 'image/jpeg',
+            'jpeg': 'image/jpeg',
+            'gif': 'image/gif',
+            'svg': 'image/svg+xml',
+            'ico': 'image/x-icon',
+            'woff': 'font/woff',
+            'woff2': 'font/woff2',
+            'ttf': 'font/ttf',
+            'eot': 'application/vnd.ms-fontobject'
+          };
 
-app.get('/coverage', (req, res) => {
-  try {
-    const content = render(Layout({
-      currentPath: '/coverage', 
-      children: [Coverage()] 
-    }));
-    res.send(renderPage(content, 'Coverage - Coherent.js'));
-  } catch (error) {
-    console.error('Error rendering coverage:', error);
-    res.status(500).send(`Error: ${error.message}`);
-  }
-});
-
-app.get('/starter-app', (req, res) => {
-  console.log('Rendering starter app...');
-  try {
-    const content = render(Layout({
-      currentPath: '/starter-app', 
-      children: [StarterAppPage()] 
-    }));
-    res.send(renderPage(content, 'Starter App - Coherent.js'));
-  } catch (error) {
-    console.error('Error rendering starter app:', error);
-    res.status(500).send(`Error: ${error.message}`);
-  }
-});
-
-// API endpoint to get examples data
-app.get('/api/examples', (req, res) => {
-  try {
-    const examples = getExamplesList();
-    res.json(examples);
-  } catch (error) {
-    console.error('Error getting examples:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// API endpoint to get individual example file content
-app.get('/api/example/:filename', (req, res) => {
-  try {
-    const filename = req.params.filename;
-    const filePath = join(__dirname, '../examples', filename);
-    
-    // Security check - ensure filename doesn't contain path traversal
-    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
-      return res.status(400).json({ error: 'Invalid filename' });
-    }
-    
-    // Check if file exists and read it
-    if (!statSync(filePath).isFile()) {
-      return res.status(404).json({ error: 'Example file not found' });
-    }
-    
-    const content = readFileSync(filePath, 'utf-8');
-    res.type('text/plain').send(content);
-    
-  } catch (error) {
-    console.error('Error getting example file:', error);
-    if (error.code === 'ENOENT') {
-      res.status(404).json({ error: 'Example file not found' });
-    } else {
-      res.status(500).json({ error: error.message });
+          res.writeHead(200, {
+            'Content-Type': contentTypes[ext] || 'application/octet-stream',
+            'Cache-Control': 'public, max-age=3600'
+          });
+          res.end(content);
+          return true; // Response handled, stop middleware chain
+        }
+      } catch (error) {
+        // File not found, continue
+      }
     }
   }
+
+  return null; // Not a static file, continue to routes
+}
+
+// Page render helper
+function renderPageRoute(currentPath, PageComponent, title, scripts = []) {
+  return (req, res) => {
+    try {
+      const layoutHtml = render(Layout({
+        currentPath,
+        children: []
+      }));
+      const pageContent = typeof PageComponent === 'function'
+        ? render(PageComponent())
+        : PageComponent;
+
+      const html = renderPage(layoutHtml, pageContent, title, scripts);
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(html);
+    } catch (error) {
+      console.error(`Error rendering ${currentPath}:`, error);
+      res.writeHead(500, { 'Content-Type': 'text/html' });
+      res.end(`<h1>Error</h1><p>${error.message}</p>`);
+    }
+  };
+}
+
+// Create router with object-based route definitions
+const router = createRouter({
+  // Root route
+  '/': {
+    GET: {
+      handler: renderPageRoute('/', Home, 'Coherent.js - Modern Object-Based UI Framework')
+    }
+  },
+
+  // Examples route
+  '/examples': {
+    GET: {
+      handler: (req, res) => {
+        const examples = getExamplesList();
+        return renderPageRoute('/examples',
+          () => Examples({ items: examples }),
+          'Examples - Coherent.js'
+        )(req, res);
+      }
+    }
+  },
+
+  // Docs route
+  '/docs': {
+    GET: {
+      handler: renderPageRoute('/docs',
+        () => DocsPage({ title: 'Documentation', html: '' }),
+        'Documentation - Coherent.js')
+    }
+  },
+
+  // Playground route
+  '/playground': {
+    GET: {
+      handler: renderPageRoute('/playground', Playground, 'Playground - Coherent.js',
+        ['/codemirror-editor.js', '/playground.js'])
+    }
+  },
+
+  // Performance route
+  '/performance': {
+    GET: {
+      handler: renderPageRoute('/performance', Performance, 'Performance - Coherent.js',
+        ['/performance.js'])
+    }
+  },
+
+  // Coverage route
+  '/coverage': {
+    GET: {
+      handler: renderPageRoute('/coverage', Coverage, 'Coverage - Coherent.js')
+    }
+  },
+
+  // Starter app route
+  '/starter-app': {
+    GET: {
+      handler: renderPageRoute('/starter-app', StarterAppPage, 'Starter App - Coherent.js')
+    }
+  },
+
+  // Changelog route
+  '/changelog': {
+    GET: {
+      handler: renderPageRoute('/changelog',
+        '<div class="content"><h1>Changelog</h1><p>Version history and release notes coming soon...</p></div>',
+        'Changelog - Coherent.js')
+    }
+  },
+
+  // Playground execution endpoint
+  '/__playground': {
+    run: {
+      POST: {
+        handler: async (req, res) => {
+          return new Promise((resolve) => {
+            try {
+              const { code } = req.body;
+
+              if (!code) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ code: 1, stderr: 'No code provided' }));
+                resolve();
+                return;
+              }
+
+              // Wrap code in an async IIFE to allow top-level return/await
+              const wrappedCode = `(async () => {\n${code}\n})().catch(console.error);`;
+
+              // Execute code in a child process for security
+              import('child_process').then(({ spawn }) => {
+                const child = spawn('node', ['--input-type=module'], {
+                  timeout: 5000 // 5 second timeout
+                });
+
+                let stdout = '';
+                let stderr = '';
+
+                child.stdout.on('data', (data) => {
+                  stdout += data.toString();
+                });
+
+                child.stderr.on('data', (data) => {
+                  stderr += data.toString();
+                });
+
+                child.on('close', (exitCode) => {
+                  res.writeHead(200, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({
+                    code: exitCode || 0,
+                    stdout,
+                    stderr
+                  }));
+                  resolve();
+                });
+
+                child.on('error', (error) => {
+                  if (!res.headersSent) {
+                    res.writeHead(500, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({
+                      code: 1,
+                      stdout: '',
+                      stderr: error.message
+                    }));
+                    resolve();
+                  }
+                });
+
+                // Write wrapped code to stdin
+                child.stdin.write(wrappedCode);
+                child.stdin.end();
+              });
+
+            } catch (error) {
+              if (!res.headersSent) {
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                  code: 1,
+                  stdout: '',
+                  stderr: error.message
+                }));
+              }
+              resolve();
+            }
+          });
+        }
+      }
+    }
+  },
+
+  // API routes
+  '/api': {
+    examples: {
+      GET: {
+        handler: (req, res) => {
+          const examples = getExamplesList();
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(examples));
+        }
+      },
+
+      // Dynamic route with parameter
+      ':filename': {
+        GET: {
+          handler: (req, res) => {
+            const { filename } = req.params;
+            const filePath = join(__dirname, '../examples', filename);
+
+            // Security check - ensure filename doesn't contain path traversal
+            if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Invalid filename' }));
+              return;
+            }
+
+            try {
+              // Check if file exists and read it
+              if (!statSync(filePath).isFile()) {
+                res.writeHead(404, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Example file not found' }));
+                return;
+              }
+
+              const content = readFileSync(filePath, 'utf-8');
+              res.writeHead(200, { 'Content-Type': 'text/plain' });
+              res.end(content);
+
+            } catch (error) {
+              if (error.code === 'ENOENT') {
+                res.writeHead(404, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Example file not found' }));
+              } else {
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: error.message }));
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 });
 
-// Handle 404
-app.use((req, res) => {
-  res.status(404).send(renderPage(
-    '<div style="text-align: center; padding: 50px;"><h1>404 - Page Not Found</h1><a href="/">Go Home</a></div>',
-    '404 - Coherent.js'
-  ));
+// Create HTTP server with custom handler that runs static files first, then router
+const server = createServer(async (req, res) => {
+  // Try static files first
+  const staticHandled = staticFileMiddleware(req, res);
+  if (staticHandled) {
+    return; // Static file was served
+  }
+
+  // Fall back to router for dynamic routes
+  await router.handle(req, res);
 });
 
-app.listen(port, () => {
+// Start server
+server.listen(port, () => {
   console.log(`🚀 Coherent.js website running at http://localhost:${port}`);
+  console.log('   Using Coherent.js API Router (Object-based routing)!');
   console.log('📚 Examples:', `http://localhost:${port}/examples`);
   console.log('🧪 Playground:', `http://localhost:${port}/playground`);
   console.log('📖 Docs:', `http://localhost:${port}/docs`);
+  console.log('\n✨ Pure Coherent.js stack: API Router + Core SSR!');
 });

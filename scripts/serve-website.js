@@ -52,52 +52,52 @@ async function exists(p) {
 function transformImports(code, repoRoot) {
   // Transform relative imports to absolute file URLs
   let transformedCode = code;
-  
+
   // Common import patterns to transform
   const importTransforms = [
     // From packages (most common in examples)
-    { 
-      from: /from ['"]\.\.\/packages\/([^'"]+)['"]/g, 
+    {
+      from: /from ['"]\.\.\/packages\/([^'"]+)['"]/g,
       to: (match, packagePath) => `from 'file://${path.join(repoRoot, 'packages', packagePath)}'`
     },
     // From src directory
-    { 
-      from: /from ['"]\.\.\/src\/([^'"]+)['"]/g, 
+    {
+      from: /from ['"]\.\.\/src\/([^'"]+)['"]/g,
       to: (match, srcPath) => `from 'file://${path.join(repoRoot, 'src', srcPath)}'`
     },
     // Direct core imports
-    { 
-      from: /from ['"]@coherent.js\/core['"]/g, 
+    {
+      from: /from ['"]@coherent.js\/core['"]/g,
       to: () => `from 'file://${path.join(repoRoot, 'packages/core/src/index.js')}'`
     },
     // Direct imports from current directory
-    { 
-      from: /from ['"]\.\/([^'"]+)['"]/g, 
+    {
+      from: /from ['"]\.\/([^'"]+)['"]/g,
       to: (match, localPath) => `from 'file://${path.join(repoRoot, 'examples', localPath)}'`
     }
   ];
-  
+
   // Apply all transformations
   for (const transform of importTransforms) {
     transformedCode = transformedCode.replace(transform.from, transform.to);
   }
-  
+
   // Also handle dynamic imports
   const dynamicImportTransforms = [
-    { 
-      from: /import\(['"]\.\.\/packages\/([^'"]+)['"]\)/g, 
+    {
+      from: /import\(['"]\.\.\/packages\/([^'"]+)['"]\)/g,
       to: (match, packagePath) => `import('file://${path.join(repoRoot, 'packages', packagePath)}')`
     },
-    { 
-      from: /import\(['"]\.\.\/src\/([^'"]+)['"]\)/g, 
+    {
+      from: /import\(['"]\.\.\/src\/([^'"]+)['"]\)/g,
       to: (match, srcPath) => `import('file://${path.join(repoRoot, 'src', srcPath)}')`
     }
   ];
-  
+
   for (const transform of dynamicImportTransforms) {
     transformedCode = transformedCode.replace(transform.from, transform.to);
   }
-  
+
   return transformedCode;
 }
 
@@ -106,12 +106,12 @@ function injectHMR(html) {
     // Only inject once
     if (html.includes('__coherent_hmr_initialized')) return html;
     let tags = '\n<script type="module" src="/__coherent/hmr.js"></script>\n';
-    
+
     // Also inject CodeMirror editor for playground pages
     if (html.includes('playground-container') || html.includes('editor-container')) {
       tags += '<script src="/codemirror-editor.js"></script>\n<script src="/playground.js"></script>\n';
     }
-    
+
     if (html.includes('</body>')) return html.replace('</body>', `${tags}</body>`);
     return html + tags;
   } catch {
@@ -149,7 +149,7 @@ async function handlePlaygroundRun(req, res) {
 const { render } = await import('file://${path.join(repoRoot, 'packages/core/src/index.js')}');
 const html = render({ div: { text: 'Hello, Coherent.js! 👋' } });
 console.log(html);`;
-    
+
     const processedUserCode = transformImports(userCode.trim() || defaultExample, repoRoot);
 
     // Extract imports from the code and move them to top level
@@ -157,7 +157,7 @@ console.log(html);`;
     const lines = processedUserCode.split('\n');
     const importLines = [];
     const executableLines = [];
-    
+
     for (const line of lines) {
       const trimmed = line.trim();
       if (trimmed.startsWith('import ')) {
@@ -179,9 +179,9 @@ console.log(html);`;
     // Check if code has explicit console.log or if we need to auto-render
     const hasConsoleLog = executableLines.some(line => line.includes('console.log'));
     const hasDefaultExport = executableLines.some(line => line.includes('const __default ='));
-    
+
     let wrapperCode = executableLines.join('\n');
-    
+
     // If no console.log and has default export, auto-render the default export with scoping
     if (!hasConsoleLog && hasDefaultExport) {
       wrapperCode += `\n\n// Auto-render default export with CSS scoping
@@ -272,7 +272,7 @@ const server = http.createServer(async (req, res) => {
         res.end('Invalid filename');
         return;
       }
-      
+
       const examplePath = path.join(EXAMPLES_DIR, exampleFile);
       try {
         const content = await fs.readFile(examplePath, 'utf-8');
@@ -304,7 +304,7 @@ const server = http.createServer(async (req, res) => {
         res.end(JSON.stringify({ error: 'Invalid filename' }));
         return;
       }
-      
+
       const examplePath = path.join(EXAMPLES_DIR, exampleFile);
       try {
         const content = await fs.readFile(examplePath, 'utf-8');

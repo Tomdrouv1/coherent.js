@@ -652,5 +652,3 @@ document.addEventListener('click', function(event) {
 // Check for stored anchor when page loads
 document.addEventListener('DOMContentLoaded', checkForStoredAnchor);
 window.addEventListener('load', checkForStoredAnchor);
-
-console.log('Header search functionality loaded');

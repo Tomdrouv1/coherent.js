@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Error Test</title>
+</head>
+<body>
+  <h1>Testing JavaScript Error Format</h1>
+  <pre id="output"></pre>
+
+  <script>
+    const output = document.getElementById('output');
+
+    function testError(code, label) {
+      output.textContent += `\n\n=== ${label} ===\n`;
+      try {
+        new Function(code);
+      } catch (error) {
+        output.textContent += `Message: ${error.message}\n`;
+        output.textContent += `Name: ${error.name}\n`;
+        output.textContent += `lineNumber: ${error.lineNumber}\n`;
+        output.textContent += `columnNumber: ${error.columnNumber}\n`;
+        output.textContent += `Stack:\n${error.stack}\n`;
+      }
+    }
+
+    // Test different error types
+    testError('dfsklf', 'Simple identifier (ReferenceError)');
+    testError('const x =', 'Syntax Error - incomplete');
+    testError('function() {', 'Syntax Error - unclosed');
+    testError('x = 5', 'Assignment without declaration');
+    testError('const x = 5\nconst y = {', 'Multi-line syntax error');
+  </script>
+</body>
+</html>

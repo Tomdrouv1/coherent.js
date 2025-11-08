@@ -10,15 +10,7 @@
   },
   "dependencies": {
     "@coherent.js/core": "workspace:^",
-    "@codemirror/view": "^6.0.0",
-    "@codemirror/state": "^6.0.0",
-    "@codemirror/autocomplete": "^6.0.0",
-    "@codemirror/lang-javascript": "^6.0.0",
-    "@codemirror/lang-html": "^6.0.0",
-    "@codemirror/lint": "^6.0.0",
-    "@codemirror/search": "^6.0.0",
-    "cors": "^2.8.5",
-    "express": "^4.18.2"
+    "@coherent.js/runtime": "workspace:^"
   },
   "devDependencies": {
     "vite": "^5.0.0"
