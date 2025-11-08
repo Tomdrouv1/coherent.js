@@ -3,7 +3,7 @@
  * A pure JavaScript framework for server-side rendering using natural object syntax
  *
  * @version 2.0.0
- * @author Coherent Framework Team  
+ * @author Coherent Framework Team
  * @license MIT
  */
 
@@ -11,9 +11,9 @@
 import { performanceMonitor } from './performance/monitor.js';
 
 // Component system imports
-import { 
-  withState, 
-  withStateUtils, 
+import {
+  withState,
+  withStateUtils,
   createStateManager,
   createComponent,
   defineComponent,
@@ -24,6 +24,30 @@ import {
   isLazy,
   evaluateLazy
 } from './components/component-system.js';
+
+// Component lifecycle imports
+import {
+  ComponentLifecycle,
+  LIFECYCLE_PHASES,
+  withLifecycle,
+  createLifecycleHooks,
+  useHooks,
+  componentUtils as lifecycleUtils
+} from './components/lifecycle.js';
+
+// Object factory imports
+import {
+  createElement,
+  createTextNode,
+  h
+} from './core/object-factory.js';
+
+// Component cache imports
+import {
+  ComponentCache,
+  createComponentCache,
+  memoize
+} from './performance/component-cache.js';
 
 // Error boundary imports
 import {
@@ -44,7 +68,7 @@ function generateScopeId() {
 
 function scopeCSS(css, scopeId) {
   if (!css || typeof css !== 'string') return css;
-  
+
   // Add scope attribute to all selectors
   return css
     .replace(/([^{}]*)\s*{/g, (match, selector) => {
@@ -52,16 +76,16 @@ function scopeCSS(css, scopeId) {
       const selectors = selector.split(',').map(s => {
         const trimmed = s.trim();
         if (!trimmed) return s;
-        
+
         // Handle pseudo-selectors and complex selectors
         if (trimmed.includes(':')) {
           return trimmed.replace(/([^:]+)(:.*)?/, `$1[${scopeId}]$2`);
         }
-        
+
         // Simple selector scoping
         return `${trimmed}[${scopeId}]`;
       });
-      
+
       return `${selectors.join(', ')} {`;
     });
 }
@@ -70,26 +94,26 @@ function applyScopeToElement(element, scopeId) {
   if (typeof element === 'string' || typeof element === 'number' || !element) {
     return element;
   }
-  
+
   if (Array.isArray(element)) {
     return element.map(item => applyScopeToElement(item, scopeId));
   }
-  
+
   if (typeof element === 'object') {
     const scoped = {};
-    
+
     for (const [tagName, props] of Object.entries(element)) {
       if (typeof props === 'object' && props !== null) {
         const scopedProps = { ...props };
-        
+
         // Add scope attribute to the element
         scopedProps[scopeId] = '';
-        
+
         // Recursively scope children
         if (scopedProps.children) {
           scopedProps.children = applyScopeToElement(scopedProps.children, scopeId);
         }
-        
+
         scoped[tagName] = scopedProps;
       } else {
         // For simple text content elements, keep them as is
@@ -97,10 +121,10 @@ function applyScopeToElement(element, scopeId) {
         scoped[tagName] = props;
       }
     }
-    
+
     return scoped;
   }
-  
+
   return element;
 }
 
@@ -119,7 +143,7 @@ function escapeHtml(text) {
  * Mark content as safe/trusted to skip HTML escaping
  * USE WITH EXTREME CAUTION - only for developer-controlled content
  * NEVER use with user input!
- * 
+ *
  * @param {string} content - Trusted content (e.g., inline scripts/styles)
  * @returns {Object} Marked safe content
  */
@@ -147,7 +171,7 @@ function isVoidElement(tagName) {
 
 function formatAttributes(attrs) {
   if (!attrs || typeof attrs !== 'object') return '';
-  
+
   return Object.entries(attrs)
     .filter(([, value]) => value !== null && value !== undefined && value !== false)
     .map(([key, value]) => {
@@ -155,7 +179,7 @@ function formatAttributes(attrs) {
       if (typeof value === 'function') {
         value = value();
       }
-      
+
       // Convert className to class
       const attrName = key === 'className' ? 'class' : key;
       if (value === true) return attrName;
@@ -169,13 +193,13 @@ function renderRaw(obj) {
   if (obj === null || obj === undefined) return '';
   if (typeof obj === 'string' || typeof obj === 'number') return escapeHtml(String(obj));
   if (Array.isArray(obj)) return obj.map(renderRaw).join('');
-  
+
   // Handle functions (like context providers)
   if (typeof obj === 'function') {
     const result = obj(renderRaw);
     return renderRaw(result);
   }
-  
+
   if (typeof obj !== 'object') return escapeHtml(String(obj));
 
   // Handle text content
@@ -189,11 +213,11 @@ function renderRaw(obj) {
       const { children, text, ...attributes } = props;
       const attrsStr = formatAttributes(attributes);
       const openTag = attrsStr ? `<${tagName} ${attrsStr}>` : `<${tagName}>`;
-      
+
       if (isVoidElement(tagName)) {
         return openTag.replace('>', ' />');
       }
-      
+
       let content = '';
       if (text !== undefined) {
         // Check if content is explicitly marked as trusted
@@ -205,7 +229,7 @@ function renderRaw(obj) {
       } else if (children) {
         content = renderRaw(children);
       }
-      
+
       return `${openTag}${content}</${tagName}>`;
     } else if (typeof props === 'string') {
       // Simple text content - always escape unless explicitly marked as trusted
@@ -233,19 +257,19 @@ export function render(obj, options = {}) {
 // Internal: Scoped rendering with CSS encapsulation
 function renderScopedComponent(component) {
   const scopeId = generateScopeId();
-  
+
   // Handle style elements specially
   function processScopedElement(element) {
     if (!element || typeof element !== 'object') {
       return element;
     }
-    
+
     if (Array.isArray(element)) {
       return element.map(processScopedElement);
     }
-    
+
     const result = {};
-    
+
     for (const [tagName, props] of Object.entries(element)) {
       if (tagName === 'style' && typeof props === 'object' && props.text) {
         // Scope CSS within style tags
@@ -264,21 +288,21 @@ function renderScopedComponent(component) {
         result[tagName] = props;
       }
     }
-    
+
     return result;
   }
-  
+
   // First process styles, then apply scope attributes
   const processedComponent = processScopedElement(component);
   const scopedComponent = applyScopeToElement(processedComponent, scopeId);
-  
+
   return renderRaw(scopedComponent);
 }
 
 // Component system - Re-export from component-system for unified API
-export { 
-  withState, 
-  withStateUtils, 
+export {
+  withState,
+  withStateUtils,
   createStateManager,
   createComponent,
   defineComponent,
@@ -289,6 +313,30 @@ export {
   isLazy,
   evaluateLazy
 } from './components/component-system.js';
+
+// Component lifecycle exports
+export {
+  ComponentLifecycle,
+  LIFECYCLE_PHASES,
+  withLifecycle,
+  createLifecycleHooks,
+  useHooks,
+  componentUtils as lifecycleUtils
+} from './components/lifecycle.js';
+
+// Object factory exports
+export {
+  createElement,
+  createTextNode,
+  h
+} from './core/object-factory.js';
+
+// Component cache exports
+export {
+  ComponentCache,
+  createComponentCache,
+  memoize
+} from './performance/component-cache.js';
 
 // Error boundaries
 export {
@@ -306,20 +354,20 @@ const memoCache = new Map();
 export function memo(component, keyGenerator) {
   return function MemoizedComponent(props = {}) {
     const key = keyGenerator ? keyGenerator(props) : JSON.stringify(props);
-    
+
     if (memoCache.has(key)) {
       return memoCache.get(key);
     }
-    
+
     const result = component(props);
     memoCache.set(key, result);
-    
+
     // Simple cache cleanup - keep only last 100 items
     if (memoCache.size > 100) {
       const firstKey = memoCache.keys().next().value;
       memoCache.delete(firstKey);
     }
-    
+
     return result;
   };
 }
@@ -340,7 +388,7 @@ export function deepClone(obj) {
   if (obj === null || typeof obj !== 'object') return obj;
   if (obj instanceof Date) return new Date(obj);
   if (Array.isArray(obj)) return obj.map(deepClone);
-  
+
   const cloned = {};
   for (const [key, value] of Object.entries(obj)) {
     cloned[key] = deepClone(value);
@@ -404,13 +452,7 @@ export {
     createEventComponent
 };
 
-// Form system imports and exports
-import { createForm, formValidators } from './forms/forms.js';
-
-export {
-    createForm,
-    formValidators
-};
+// Note: Forms have been moved to @coherent.js/forms package
 
 // Default export
 const coherent = {
@@ -429,13 +471,31 @@ const coherent = {
   lazy,
   isLazy,
   evaluateLazy,
-  
+
+  // Component lifecycle
+  ComponentLifecycle,
+  LIFECYCLE_PHASES,
+  withLifecycle,
+  createLifecycleHooks,
+  useHooks,
+  lifecycleUtils,
+
+  // Object factory
+  createElement,
+  createTextNode,
+  h,
+
+  // Component cache
+  ComponentCache,
+  createComponentCache,
+  memoize,
+
   // State management
   withState,
   withStateUtils,
   createStateManager,
   memo,
-  
+
   // Error boundaries
   createErrorBoundary,
   createErrorFallback,
@@ -455,10 +515,6 @@ const coherent = {
   handleAction,
   withEventBus,
   withEventState,
-
-  // Form system
-  createForm,
-  formValidators,
 
   // Utilities
   validateComponent,

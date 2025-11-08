@@ -26,10 +26,12 @@ const component = {
 ### 1. Installation
 
 ```bash
-npm install @coherent.js/core
+npm install @coherent.js/core@beta
 # or
-pnpm add @coherent.js/core
+pnpm add @coherent.js/core@beta
 ```
+
+> **Note**: Coherent.js is currently in beta (v1.0.0-beta.1).
 
 ### 2. Your First Component
 

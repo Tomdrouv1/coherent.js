@@ -10,7 +10,7 @@ export function Home() {
           { p: { className: 'lead', text: 'Fast SSR and hydration with plain JS objects. Minimal API. Maximum clarity.' } },
           { div: { className: 'badges', children: [
             { img: { src: 'https://img.shields.io/endpoint?url=https://coherentjs.dev/coverage/badge.json&label=coverage', alt: 'Coverage', className: 'badge' } },
-            { img: { src: 'https://img.shields.io/badge/version-2.0.0-blue', alt: 'version', className: 'badge' } },
+            { img: { src: 'https://img.shields.io/badge/version-1.0.0--beta.1-blue', alt: 'version', className: 'badge' } },
             { img: { src: 'https://img.shields.io/github/actions/workflow/status/Tomdrouv1/coherent.js/ci.yml?branch=main', alt: 'CI Status', className: 'badge' } }
           ] } },
           { div: { className: 'cta', children: [

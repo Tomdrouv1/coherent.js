@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "baseUrl": "./",
+    "paths": {
+      "@coherent.js/core": ["../core/dist"],
+      "@coherent.js/api": ["./dist"]
+    }
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "references": [
+    { "path": "../core" }
+  ]
+}

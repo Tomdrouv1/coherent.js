@@ -164,52 +164,32 @@ test('Bundle optimizer functionality', async () => {
 });
 
 test('Streaming renderer performance', async () => {
-  try {
-    const { createStreamingRenderer } = await import('../../../src/rendering/streaming-renderer.js');
-    
-    // Test streaming renderer creation
-    const renderer = createStreamingRenderer();
-    
-    assert.ok(typeof renderer === 'object', 'Should create streaming renderer');
-    assert.ok(typeof renderer.render === 'function', 'Should have render method');
-    
-    
-    
-  } catch (_error) {
-    if (_error.code === 'ERR_MODULE_NOT_FOUND') {
-      console.log('⚠️  Streaming renderer module not found - testing streaming concepts');
-      
-      // Test mock streaming concepts
-      const mockStreamingRenderer = {
-        renderToStream: function*(component) {
-          yield '<!DOCTYPE html><html>';
-          yield '<head><title>Test</title></head>';
-          yield '<body>';
-          yield JSON.stringify(component);
-          yield '</body></html>';
-        },
-        
-        async renderAsync(component) {
-          const chunks = [];
-          for (const chunk of this.renderToStream(component)) {
-            chunks.push(chunk);
-          }
-          return chunks.join('');
-        }
-      };
-      
-      const testComponent = { div: { text: 'Hello World' } };
-      const result = await mockStreamingRenderer.renderAsync(testComponent);
-      
-      assert.ok(typeof result === 'string');
-      assert.ok(result.includes('Hello World'));
-      assert.ok(result.includes('<!DOCTYPE html>'));
-      
-      
-    } else {
-      throw _error;
+  const { renderToStream, streamingUtils } = await import('../src/rendering/html-renderer.js');
+
+  // Test streaming functionality
+  const testComponent = {
+    div: {
+      children: [
+        { h1: { text: 'Hello World' } },
+        { p: { text: 'Testing streaming render' } }
+      ]
     }
+  };
+
+  // Test renderToStream exists and works
+  const chunks = [];
+  for await (const chunk of renderToStream(testComponent)) {
+    chunks.push(chunk);
   }
+
+  const html = chunks.join('');
+  assert.ok(typeof html === 'string', 'Should produce HTML string');
+  assert.ok(html.includes('Hello World'), 'Should contain component content');
+  assert.ok(html.includes('Testing streaming render'), 'Should contain all content');
+
+  // Test streamingUtils
+  assert.ok(typeof streamingUtils.collectChunks === 'function', 'Should have collectChunks utility');
+  assert.ok(typeof streamingUtils.streamToResponse === 'function', 'Should have streamToResponse utility');
 });
 
 test('Performance measurement utilities', () => {

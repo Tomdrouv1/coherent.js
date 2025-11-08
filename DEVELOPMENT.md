@@ -12,21 +12,35 @@ This guide explains how to set up and contribute to the Coherent.js monorepo.
 
 ```
 coherent.js/
-├── packages/                     # Individual packages
-│   ├── core/                    # @coherent.js/core - Core framework
-│   ├── api/                     # @coherent.js/api - API framework
-│   ├── database/                # @coherent.js/database - Database layer
-│   ├── client/                  # @coherent.js/client - Client-side utilities
-│   ├── express/                 # @coherent.js/express - Express integration
-│   ├── fastify/                 # @coherent.js/fastify - Fastify integration
-│   ├── koa/                     # @coherent.js/koa - Koa integration
-│   └── nextjs/                  # @coherent.js/nextjs - Next.js integration
-├── src/                         # Source code (shared across packages)
-├── scripts/                     # Build and utility scripts
-├── tests/                       # Integration tests
-├── examples/                    # Example applications
-├── website/                     # Documentation website
-└── docs/                       # Documentation files
+├── packages/                            # Individual packages
+│   ├── core/                           # @coherent.js/core - Core rendering engine
+│   ├── client/                         # @coherent.js/client - Client-side hydration
+│   ├── api/                            # @coherent.js/api - API framework
+│   │
+│   ├── express/                        # @coherent.js/express - Express.js integration
+│   ├── fastify/                        # @coherent.js/fastify - Fastify integration
+│   ├── koa/                            # @coherent.js/koa - Koa.js integration
+│   ├── nextjs/                         # @coherent.js/nextjs - Next.js integration
+│   │
+│   ├── database/                       # @coherent.js/database - Database adapters
+│   ├── forms/                          # @coherent.js/forms - Form utilities
+│   ├── i18n/                           # @coherent.js/i18n - Internationalization
+│   ├── seo/                            # @coherent.js/seo - SEO tools
+│   ├── testing/                        # @coherent.js/testing - Testing utilities
+│   ├── devtools/                       # @coherent.js/devtools - Developer tools
+│   ├── performance/                    # @coherent.js/performance - Performance utilities
+│   ├── performance-profiler/           # @coherent.js/performance-profiler - Profiling
+│   │
+│   ├── cli/                            # @coherent.js/cli - CLI tools
+│   ├── build-tools/                    # @coherent.js/build-tools - Build utilities
+│   ├── runtime/                        # @coherent.js/runtime - Runtime enhancements
+│   ├── adapters/                       # @coherent.js/adapters - Framework adapters
+│   └── web-components/                 # @coherent.js/web-components - Web components
+│
+├── scripts/                            # Build and utility scripts
+├── examples/                           # Example applications
+├── website/                            # Documentation website
+└── docs/                               # Documentation files
 ```
 
 ## Getting Started

@@ -48,40 +48,63 @@ optional peer dependencies.
 ## Package Structure
 
 ```
-coherent/
+coherent.js/
 ├── packages/
-│   ├── core/                 # Core rendering engine
+│   ├── core/                           # @coherent.js/core - Core rendering engine
 │   │   ├── src/
 │   │   │   ├── index.js                    # Main entry point
+│   │   │   ├── core/                       # Core utilities
+│   │   │   │   ├── object-factory.js       # Object creation helpers (h, createElement)
+│   │   │   │   └── object-utils.js         # Object validation and utilities
 │   │   │   ├── components/                 # Component system
-│   │   │   │   └── component-system.js     # Advanced component features
+│   │   │   │   ├── component-system.js     # Advanced component features
+│   │   │   │   ├── lifecycle.js            # Component lifecycle hooks
+│   │   │   │   ├── error-boundary.js       # Error handling
+│   │   │   │   └── lazy-loading.js         # Code splitting support
 │   │   │   ├── rendering/                  # Rendering engines
-│   │   │   │   ├── html-renderer.js        # Main HTML renderer
-│   │   │   │   └── streaming-renderer.js   # Streaming renderer
-│   │   │   ├── state/                      # State management
-│   │   │   │   └── state-manager.js        # Global state
+│   │   │   │   ├── html-renderer.js        # Main HTML + streaming renderer
+│   │   │   │   ├── base-renderer.js        # Shared renderer base class
+│   │   │   │   └── css-manager.js          # CSS injection utilities
 │   │   │   ├── performance/                # Performance tools
-│   │   │   │   └── monitor.js              # Performance monitoring
+│   │   │   │   ├── monitor.js              # Performance monitoring
+│   │   │   │   ├── component-cache.js      # Component caching
+│   │   │   │   └── cache-manager.js        # Cache management
 │   │   │   ├── events/                     # Event system
 │   │   │   │   ├── event-bus.js            # Event bus
 │   │   │   │   └── component-integration.js
 │   │   │   └── utils/                      # Utilities
-│   │   │       ├── render-utils.js         # Shared rendering utilities
-│   │   │       └── dependency-utils.js     # Dependency management
+│   │   │       ├── _error-handler.js       # Error handling
+│   │   │       └── render-utils.js         # Shared rendering utilities
 │   │   └── types/                          # TypeScript definitions
 │   │
-│   ├── client/               # Client-side hydration
-│   │   └── src/
-│   │       └── hydration.js                # Hydration system
+│   ├── client/                         # @coherent.js/client - Client-side hydration & routing
+│   ├── api/                            # @coherent.js/api - API framework
+│   ├── state/                          # @coherent.js/state - Reactive state management
 │   │
-│   ├── api/                  # API framework
-│   ├── database/             # Database adapters
-│   ├── express/              # Express.js integration
-│   ├── fastify/              # Fastify integration
-│   ├── koa/                  # Koa integration
-│   └── nextjs/               # Next.js integration
+│   ├── express/                        # @coherent.js/express - Express.js integration
+│   ├── fastify/                        # @coherent.js/fastify - Fastify integration
+│   ├── koa/                            # @coherent.js/koa - Koa.js integration
+│   ├── nextjs/                         # @coherent.js/nextjs - Next.js integration
+│   │
+│   ├── database/                       # @coherent.js/database - Database adapters
+│   ├── forms/                          # @coherent.js/forms - Form utilities & validation
+│   ├── i18n/                           # @coherent.js/i18n - Internationalization
+│   ├── seo/                            # @coherent.js/seo - SEO tools
+│   ├── testing/                        # @coherent.js/testing - Testing utilities
+│   ├── devtools/                       # @coherent.js/devtools - Developer tools & debugging
+│   ├── performance/                    # @coherent.js/performance - Performance utilities
+│   ├── performance-profiler/           # @coherent.js/performance-profiler - Profiling
+│   │
+│   ├── cli/                            # @coherent.js/cli - CLI tools
+│   ├── build-tools/                    # @coherent.js/build-tools - Build utilities
+│   ├── runtime/                        # @coherent.js/runtime - Runtime enhancements
+│   ├── adapters/                       # @coherent.js/adapters - Framework adapters
+│   └── web-components/                 # @coherent.js/web-components - Web components
 │
-└── docs/                     # Documentation
+├── scripts/                            # Build and utility scripts
+├── examples/                           # Example applications
+├── website/                            # Documentation website
+└── docs/                               # Documentation files
 ```
 
 ## Rendering Pipeline

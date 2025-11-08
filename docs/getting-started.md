@@ -19,14 +19,16 @@ Coherent.js is a modern server-side rendering framework that uses pure JavaScrip
 
 ```bash
 # Using npm
-npm install @coherent.js/core
+npm install @coherent.js/core@beta
 
 # Using pnpm (recommended)
-pnpm add @coherent.js/core
+pnpm add @coherent.js/core@beta
 
 # Using yarn
-yarn add @coherent.js/core
+yarn add @coherent.js/core@beta
 ```
+
+> **Note**: Coherent.js is currently in beta (v1.0.0-beta.1). The `@beta` tag ensures you get the latest beta release.
 
 ### Your First Component
 

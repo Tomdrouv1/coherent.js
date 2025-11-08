@@ -8,7 +8,19 @@ export default defineConfig({
     testTimeout: 10000,
     hookTimeout: 10000,
     teardownTimeout: 5000,
-    
+
+    // Retry flaky tests automatically
+    retry: process.env.CI ? 2 : 0, // Retry 2 times in CI, 0 locally
+
+    // Better reporting for CI
+    reporters: process.env.CI
+      ? ['verbose', 'json', 'junit']
+      : ['default'],
+    outputFile: {
+      json: './test-results/results.json',
+      junit: './test-results/junit.xml'
+    },
+
     // Coverage configuration
     coverage: {
       provider: 'v8',

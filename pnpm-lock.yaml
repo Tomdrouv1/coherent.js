@@ -128,8 +128,8 @@ importers:
   packages/api:
     dependencies:
       '@coherent.js/core':
-        specifier: ^1.0.0-beta.1
-        version: 1.0.0-beta.1
+        specifier: workspace:^
+        version: link:../core
 
   packages/build-tools:
     dependencies:
@@ -184,8 +184,8 @@ importers:
   packages/database:
     dependencies:
       '@coherent.js/core':
-        specifier: ^1.0.0-beta.1
-        version: 1.0.0-beta.1
+        specifier: workspace:^
+        version: link:../core
       sqlite3:
         specifier: ^5.0.0
         version: 5.1.7
@@ -193,14 +193,14 @@ importers:
   packages/devtools:
     dependencies:
       '@coherent.js/core':
-        specifier: ^1.0.0-beta.1
-        version: 1.0.0-beta.1
+        specifier: workspace:^
+        version: link:../core
 
   packages/express:
     dependencies:
       '@coherent.js/core':
-        specifier: ^1.0.0-beta.1
-        version: 1.0.0-beta.1
+        specifier: workspace:^
+        version: link:../core
       express:
         specifier: '>=4.18.0 < 6.0.0'
         version: 5.1.0
@@ -208,8 +208,8 @@ importers:
   packages/fastify:
     dependencies:
       '@coherent.js/core':
-        specifier: ^1.0.0-beta.1
-        version: 1.0.0-beta.1
+        specifier: workspace:^
+        version: link:../core
       fastify:
         specifier: '>=4.0.0 < 6.0.0'
         version: 5.5.0
@@ -217,20 +217,23 @@ importers:
   packages/forms:
     dependencies:
       '@coherent.js/core':
-        specifier: ^1.0.0-beta.1
-        version: 1.0.0-beta.1
+        specifier: workspace:^
+        version: link:../core
+      '@coherent.js/state':
+        specifier: workspace:^
+        version: link:../state
 
   packages/i18n:
     dependencies:
       '@coherent.js/core':
-        specifier: ^1.0.0-beta.1
-        version: 1.0.0-beta.1
+        specifier: workspace:^
+        version: link:../core
 
   packages/koa:
     dependencies:
       '@coherent.js/core':
-        specifier: ^1.0.0-beta.1
-        version: 1.0.0-beta.1
+        specifier: workspace:^
+        version: link:../core
       koa:
         specifier: '>=2.13.0 < 4.0.0'
         version: 3.0.1
@@ -238,8 +241,8 @@ importers:
   packages/nextjs:
     dependencies:
       '@coherent.js/core':
-        specifier: ^1.0.0-beta.1
-        version: 1.0.0-beta.1
+        specifier: workspace:^
+        version: link:../core
       next:
         specifier: '>=13.0.0 < 16.0.0'
         version: 15.4.5(@playwright/test@1.55.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
@@ -250,8 +253,8 @@ importers:
   packages/performance:
     dependencies:
       '@coherent.js/core':
-        specifier: ^1.0.0-beta.1
-        version: 1.0.0-beta.1
+        specifier: workspace:^
+        version: link:../core
 
   packages/profiler:
     dependencies:
@@ -269,7 +272,7 @@ importers:
         specifier: workspace:*
         version: link:../client
       '@coherent.js/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
       '@coherent.js/web-components':
         specifier: workspace:*
@@ -294,14 +297,20 @@ importers:
   packages/seo:
     dependencies:
       '@coherent.js/core':
-        specifier: ^1.0.0-beta.1
-        version: 1.0.0-beta.1
+        specifier: workspace:^
+        version: link:../core
+
+  packages/state:
+    dependencies:
+      '@coherent.js/core':
+        specifier: workspace:^
+        version: link:../core
 
   packages/testing:
     dependencies:
       '@coherent.js/core':
-        specifier: ^1.0.0-beta.1
-        version: 1.0.0-beta.1
+        specifier: workspace:^
+        version: link:../core
     devDependencies:
       vitest:
         specifier: ^1.0.0
@@ -430,10 +439,6 @@ packages:
 
   '@codemirror/view@6.38.2':
     resolution: {integrity: sha512-bTWAJxL6EOFLPzTx+O5P5xAO3gTqpatQ2b/ARQ8itfU/v2LlpS3pH2fkL0A3E/Fx8Y2St2KES7ZEV0sHTsSW/A==}
-
-  '@coherent.js/core@1.0.0-beta.1':
-    resolution: {integrity: sha512-O+HTsGO3sYulBUAZkVNqJkKonZEnw3fjcZAUB7n/g/VV7f2qd74nitjlwf0n9cfZsz4/MzprqTLxlRs3YRFLmA==}
-    engines: {node: '>=20.0.0'}
 
   '@commitlint/cli@19.8.1':
     resolution: {integrity: sha512-LXUdNIkspyxrlV6VDHWBmCZRtkEVRpBKxi2Gtw3J54cGWhLCTouVD/Q6ZSaSvd2YaDObWK8mDjrz3TIKtaQMAA==}
@@ -4628,8 +4633,6 @@ snapshots:
       crelt: 1.0.6
       style-mod: 4.1.2
       w3c-keyname: 2.2.8
-
-  '@coherent.js/core@1.0.0-beta.1': {}
 
   '@commitlint/cli@19.8.1(@types/node@24.3.0)(typescript@5.9.2)':
     dependencies:

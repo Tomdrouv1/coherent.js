@@ -1,6 +1,12 @@
 # 🚀 Coherent.js
 
+[![npm version](https://img.shields.io/npm/v/@coherent.js/core/beta.svg)](https://www.npmjs.com/package/@coherent.js/core)
+[![Beta Status](https://img.shields.io/badge/status-beta-orange.svg)](https://github.com/Tomdrouv1/coherent.js)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+
 A high-performance JavaScript framework for building modern web applications with a focus on speed, simplicity, and developer experience.
+
+> **⚠️ Beta Release**: Coherent.js is currently in beta (v1.0.0-beta.1). The API is stable, but we're collecting feedback before the v1.0.0 stable release. Install with `npm install @coherent.js/core@beta`
 
 ## ✨ Features
 
@@ -14,7 +20,7 @@ A high-performance JavaScript framework for building modern web applications wit
 - **Routing**: Declarative client-side routing
 - **Build Tooling**: Works with modern build tools like Vite and Webpack
 
-### 🎯 New Features (v2.0)
+### 🎯 Features (v1.0.0-beta.1)
 
 #### **Plugin System**
 - Extensible plugin architecture with lifecycle hooks
@@ -88,7 +94,7 @@ Coherent.js is distributed as a collection of packages:
 - `@coherent.js/ssr`: Server-side rendering utilities
 - `@coherent.js/hmr`: Hot Module Replacement support
 
-### New Packages (v2.0)
+### Additional Packages
 - `@coherent.js/plugins`: Plugin system with 7 built-in plugins
 - `@coherent.js/testing`: Complete testing utilities and matchers
 - `@coherent.js/devtools`: Developer tools (inspector, profiler, logger)
@@ -110,16 +116,16 @@ Coherent.js is distributed as a collection of packages:
 
 ```bash
 # Using npm
-npm install @coherent.js/core
+npm install @coherent.js/core@beta
 
-# Using yarn  
-yarn add @coherent.js/core
+# Using yarn
+yarn add @coherent.js/core@beta
 
 # Using pnpm
-pnpm add @coherent.js/core
+pnpm add @coherent.js/core@beta
 ```
 
-> **Note**: Coherent.js is currently in development. Once published to npm, you can install individual packages as needed.
+> **Note**: Coherent.js is currently in beta (v1.0.0-beta.1). Use the `@beta` tag to install the latest beta version.
 
 ### Development Installation
 
@@ -195,18 +201,18 @@ Coherent.js includes a comprehensive API framework for building REST, RPC, and G
 
 ```bash
 # Core package (required)
-npm install @coherent.js/core
+npm install @coherent.js/core@beta
 
 # Framework integrations (choose what you need)
-npm install @coherent.js/express      # Express.js integration
-npm install @coherent.js/fastify      # Fastify integration  
-npm install @coherent.js/koa          # Koa integration
-npm install @coherent.js/nextjs       # Next.js integration
+npm install @coherent.js/express@beta      # Express.js integration
+npm install @coherent.js/fastify@beta      # Fastify integration
+npm install @coherent.js/koa@beta          # Koa integration
+npm install @coherent.js/nextjs@beta       # Next.js integration
 
 # Additional packages
-npm install @coherent.js/api          # API framework utilities
-npm install @coherent.js/database     # Database layer with multiple adapters
-npm install @coherent.js/client       # Client-side hydration
+npm install @coherent.js/api@beta          # API framework utilities
+npm install @coherent.js/database@beta     # Database layer with multiple adapters
+npm install @coherent.js/client@beta       # Client-side hydration
 ```
 
 ### Available Packages
@@ -1002,30 +1008,40 @@ Coherent.js is designed for speed:
 
 ## 🗺️ Roadmap
 
-### Phase 1 (Completed)
+### Current Status: Beta (v1.0.0-beta.1)
 
+**What's Complete:**
 - [x] Core object-to-HTML rendering
 - [x] Performance monitoring system
 - [x] Streaming support
 - [x] Component utilities (memo, compose, etc.)
-
-### Phase 2 (Current Focus)
-
 - [x] TypeScript definitions - Full type safety
 - [x] Client-side hydration - Progressive enhancement
-- [x] Hot reload development server - Faster development
 - [x] Framework integrations - Express, Fastify, Next.js adapters
 - [x] Comprehensive API documentation
-- [x] Migration guides and examples
-- [x] Prepare for npm publication
-- [ ] Collect early user/developer feedback
+- [x] Plugin system with 7 built-in plugins
+- [x] Testing utilities and matchers
+- [x] Developer tools (inspector, profiler, logger)
+- [x] Internationalization (i18n) support
+- [x] Form utilities and validation
+- [x] SEO optimization tools
 
-### Phase 3 (Future)
+**In Progress:**
+- [ ] Collect beta user feedback
+- [ ] Performance optimizations based on real-world usage
+- [ ] Additional examples and tutorials
 
+**Planned for v1.0.0 Stable:**
+- [ ] Production-ready stability
+- [ ] Comprehensive test coverage (>95%)
+- [ ] Performance benchmarks against other frameworks
+- [ ] Migration tools from React/Vue
+
+**Future (v1.1.0+):**
 - [ ] IDE plugins - Syntax highlighting and autocomplete
 - [ ] Component library ecosystem - Reusable UI components
 - [ ] Advanced optimizations - Tree shaking, code splitting
-- [ ] Testing utilities - Component testing framework
+- [ ] Visual development tools
 
 ## 🤝 Contributing
 

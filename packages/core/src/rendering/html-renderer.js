@@ -428,20 +428,185 @@ export function renderBatch(components, options = {}) {
 }
 
 /**
- * Render to chunks for large output (fake streaming - renders full HTML then chunks it)
- * For true progressive streaming, use the streaming-renderer.js renderToStream function
+ * Real streaming render - yields chunks progressively as HTML is generated
+ * Ideal for large component trees or memory-constrained environments
+ */
+export async function* renderToStream(component, options = {}) {
+    const config = {
+        chunkSize: 8192, // 8KB default chunk size
+        maxDepth: 1000,
+        yieldThreshold: 100, // Yield control every 100 elements
+        encoding: 'utf8',
+        ...options
+    };
+
+    let buffer = '';
+    let elementCount = 0;
+
+    // Helper to flush buffer when it reaches chunk size
+    async function* flushBuffer(force = false) {
+        if (force || buffer.length >= config.chunkSize) {
+            if (buffer.length > 0) {
+                yield buffer;
+                buffer = '';
+            }
+        }
+    }
+
+    // Helper to add to buffer
+    async function* write(text) {
+        buffer += text;
+        yield* flushBuffer();
+    }
+
+    // Recursive streaming component renderer
+    async function* streamComponent(comp, depth = 0) {
+        if (depth > config.maxDepth) {
+            throw new Error(`Maximum nesting depth exceeded: ${config.maxDepth}`);
+        }
+
+        // Handle null/undefined
+        if (comp === null || comp === undefined) return;
+
+        // Handle primitives
+        if (typeof comp === 'string' || typeof comp === 'number') {
+            yield* write(escapeHtml(String(comp)));
+            return;
+        }
+
+        // Handle arrays
+        if (Array.isArray(comp)) {
+            for (const child of comp) {
+                yield* streamComponent(child, depth);
+
+                // Yield control periodically
+                if (elementCount++ % config.yieldThreshold === 0) {
+                    await new Promise(resolve => setImmediate(resolve));
+                }
+            }
+            return;
+        }
+
+        // Handle functions
+        if (typeof comp === 'function') {
+            const result = comp();
+            yield* streamComponent(result, depth);
+            return;
+        }
+
+        // Handle objects (HTML elements)
+        if (typeof comp === 'object') {
+            for (const [tagName, props] of Object.entries(comp)) {
+                if (typeof props === 'object' && props !== null) {
+                    const { children, text, ...attributes } = props;
+                    const attrsStr = formatAttributes(attributes);
+                    const openTag = attrsStr ? `<${tagName} ${attrsStr}>` : `<${tagName}>`;
+
+                    if (isVoidElement(tagName)) {
+                        yield* write(openTag.replace('>', ' />'));
+                        elementCount++;
+                        return;
+                    }
+
+                    yield* write(openTag);
+
+                    if (text !== undefined) {
+                        yield* write(escapeHtml(String(text)));
+                    } else if (children) {
+                        yield* streamComponent(children, depth + 1);
+                    }
+
+                    yield* write(`</${tagName}>`);
+                    elementCount++;
+                } else if (typeof props === 'string') {
+                    const content = escapeHtml(props);
+                    if (isVoidElement(tagName)) {
+                        yield* write(`<${tagName} />`);
+                    } else {
+                        yield* write(`<${tagName}>${content}</${tagName}>`);
+                    }
+                    elementCount++;
+                }
+            }
+        }
+    }
+
+    // Start streaming
+    try {
+        yield* streamComponent(component);
+        yield* flushBuffer(true); // Force flush remaining buffer
+    } catch (error) {
+        // Stream error as HTML comment
+        yield `<!-- Streaming Error: ${error.message} -->`;
+    }
+}
+
+/**
+ * Streaming utilities for common use cases
+ */
+export const streamingUtils = {
+    /**
+     * Collect all chunks into a single string
+     */
+    async collectChunks(chunkGenerator) {
+        let html = '';
+        for await (const chunk of chunkGenerator) {
+            html += chunk;
+        }
+        return html;
+    },
+
+    /**
+     * Stream directly to a Node.js response
+     */
+    async streamToResponse(chunkGenerator, response) {
+        let totalBytes = 0;
+        response.setHeader('Content-Type', 'text/html; charset=utf-8');
+        response.setHeader('Transfer-Encoding', 'chunked');
+
+        for await (const chunk of chunkGenerator) {
+            response.write(chunk);
+            totalBytes += Buffer.byteLength(chunk);
+        }
+
+        response.end();
+        return totalBytes;
+    },
+
+    /**
+     * Stream with progress callback
+     */
+    async* streamWithProgress(chunkGenerator, onProgress) {
+        let totalBytes = 0;
+        let chunkCount = 0;
+
+        for await (const chunk of chunkGenerator) {
+            totalBytes += Buffer.byteLength(chunk);
+            chunkCount++;
+
+            if (onProgress) {
+                onProgress({ chunkCount, totalBytes, chunk });
+            }
+
+            yield chunk;
+        }
+    }
+};
+
+/**
+ * Render to chunks (legacy - kept for backward compatibility)
+ * For true streaming, use renderToStream() instead
  */
 export function* renderToChunks(component, options = {}) {
-    // Merge default options with provided options
     const mergedOptions = {
         enableCache: true,
         enableMonitoring: false,
         ...options,
         chunkSize: options.chunkSize || 1024 // Default 1KB chunks
     };
-    
+
     const html = render(component, mergedOptions);
-    
+
     for (let i = 0; i < html.length; i += mergedOptions.chunkSize) {
         yield html.slice(i, i + mergedOptions.chunkSize);
     }

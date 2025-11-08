@@ -170,10 +170,10 @@ function generatePackageJson(name, options) {
       test: 'node --test tests/*.test.js'
     },
     dependencies: {
-      '@coherent.js/core': '^1.0.1'
+      '@coherent.js/core': '^1.0.0-beta.1'
     },
     devDependencies: {
-      '@coherent.js/cli': '^1.0.1'
+      '@coherent.js/cli': '^1.0.0-beta.1'
     }
   };
 
@@ -396,7 +396,7 @@ test('renders basic component', () => {
       text: 'Hello, World!'
     }
   };
-  
+
   const html = render(component);
   assert(html.includes('Hello, World!'));
 });

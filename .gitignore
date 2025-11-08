@@ -16,6 +16,10 @@ pids
 coverage/
 *.lcov
 
+# Test results
+test-results/
+junit.xml
+
 # nyc test coverage
 .nyc_output
 
