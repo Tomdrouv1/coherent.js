@@ -123,14 +123,14 @@ pnpm commitlint --edit "$1"
     };
 
     for (const [pkg, description] of Object.entries(packageReadmes)) {
-      await writeFile(`packages/${pkg}/README.md`, `# @coherentjs/${pkg}
+      await writeFile(`packages/${pkg}/README.md`, `# @coherent.js/${pkg}
 
 ${description}
 
 ## Installation
 
 \`\`\`bash
-npm install @coherentjs/${pkg}
+npm install @coherent.js/${pkg}
 \`\`\`
 
 ## Documentation

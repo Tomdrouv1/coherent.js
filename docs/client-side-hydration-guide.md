@@ -19,7 +19,7 @@ This guide covers how to set up and use client-side hydration in Coherent.js to 
 The simplest way to hydrate a Coherent.js component:
 
 ```javascript
-import { hydrate } from '@coherentjs/client';
+import { hydrate } from '@coherent.js/client';
 import { MyComponent } from './components/MyComponent.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -50,7 +50,7 @@ export function Greeting({ name = 'World' }) {
 }
 
 // client.js
-import { hydrate } from '@coherentjs/client';
+import { hydrate } from '@coherent.js/client';
 import { Greeting } from './components/Greeting.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -67,7 +67,7 @@ For better organization, make components explicitly hydratable:
 
 ```javascript
 // components/Greeting.js
-import { makeHydratable } from '@coherentjs/client';
+import { makeHydratable } from '@coherent.js/client';
 
 function GreetingComponent({ name = 'World' }) {
   return {
@@ -87,7 +87,7 @@ export const Greeting = makeHydratable(GreetingComponent, {
 });
 
 // client.js
-import { autoHydrate } from '@coherentjs/client';
+import { autoHydrate } from '@coherent.js/client';
 import { Greeting } from './components/Greeting.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -105,7 +105,7 @@ Components created with `withState` require special handling for hydration:
 
 ```javascript
 // components/Counter.js
-import { withState } from '@coherentjs/core';
+import { withState } from '@coherent.js/core';
 
 const CounterComponent = withState({
   count: 0,
@@ -180,7 +180,7 @@ export const Counter = CounterComponent(CounterView);
 
 ```javascript
 // client.js
-import { hydrate, makeHydratable } from '@coherentjs/client';
+import { hydrate, makeHydratable } from '@coherent.js/client';
 import { Counter } from './components/Counter.js';
 
 // Method 1: Direct hydration
@@ -215,7 +215,7 @@ For pages with multiple interactive components:
 
 ```javascript
 // hydration.js
-import { autoHydrate, makeHydratable } from '@coherentjs/client';
+import { autoHydrate, makeHydratable } from '@coherent.js/client';
 import { Counter } from './components/Counter.js';
 import { TodoList } from './components/TodoList.js';
 import { ContactForm } from './components/ContactForm.js';
@@ -275,7 +275,7 @@ During server-side rendering, Coherent.js converts function event handlers to da
 The hydration system automatically reconnects these handlers:
 
 ```javascript
-import { hydrate } from '@coherentjs/client';
+import { hydrate } from '@coherent.js/client';
 
 // The hydration system will:
 // 1. Find all elements with data-action attributes
@@ -390,7 +390,7 @@ Enhance server-rendered forms with client-side features:
 
 ```javascript
 // form-enhancement.js
-import { hydrate } from '@coherentjs/client';
+import { hydrate } from '@coherent.js/client';
 
 function enhanceForm(formElement) {
   // Add client-side validation

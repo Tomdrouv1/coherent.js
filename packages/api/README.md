@@ -1,6 +1,6 @@
-# @coherentjs/api
+# @coherent.js/api
 
-[![npm version](https://img.shields.io/npm/v/@coherentjs/api.svg)](https://www.npmjs.com/package/@coherentjs/api)
+[![npm version](https://img.shields.io/npm/v/@coherent.js/api.svg)](https://www.npmjs.com/package/@coherent.js/api)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](../../LICENSE)
 [![Node >= 20](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
 
@@ -15,7 +15,7 @@ For a high-level overview and repository-wide instructions, see the root README:
 ## Installation
 
 ```bash
-pnpm add @coherentjs/api
+pnpm add @coherent.js/api
 ```
 
 Requirements:
@@ -26,7 +26,7 @@ Requirements:
 
 JavaScript (ESM):
 ```js
-import { createRouter, withValidation, ApiError } from '@coherentjs/api';
+import { createRouter, withValidation, ApiError } from '@coherent.js/api';
 
 const router = createRouter({
   'GET /health': () => ({ status: 'ok' }),
@@ -38,7 +38,7 @@ const router = createRouter({
 
 TypeScript:
 ```ts
-import { createRouter, withValidation, ApiError } from '@coherentjs/api';
+import { createRouter, withValidation, ApiError } from '@coherent.js/api';
 
 type EchoBody = { message: string };
 
@@ -68,22 +68,22 @@ Tip: Combine `withValidation`, `withAuth`, and `withErrorHandling` to build robu
 
 Run tests for this package:
 ```bash
-pnpm --filter @coherentjs/api run test
+pnpm --filter @coherent.js/api run test
 ```
 
 Watch mode:
 ```bash
-pnpm --filter @coherentjs/api run test:watch
+pnpm --filter @coherent.js/api run test:watch
 ```
 
 Type check:
 ```bash
-pnpm --filter @coherentjs/api run typecheck
+pnpm --filter @coherent.js/api run typecheck
 ```
 
 Build:
 ```bash
-pnpm --filter @coherentjs/api run build
+pnpm --filter @coherent.js/api run build
 ```
 
 ## License

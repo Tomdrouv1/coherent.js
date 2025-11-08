@@ -1,8 +1,8 @@
 /**
  * Coherent.js Database Types
  * TypeScript definitions for the database integration layer
- * 
- * @version 1.1.1
+ *
+ * @version 1.0.0-beta.1
  */
 
 // ============================================================================
@@ -47,7 +47,7 @@ export interface PoolConfig {
 export interface DatabaseConnection {
   readonly isConnected: boolean;
   readonly config: DatabaseConfig;
-  
+
   connect(): Promise<void>;
   disconnect(): Promise<void>;
   query<T = any>(sql: string, parameters?: any[]): Promise<T>;
@@ -72,7 +72,7 @@ export interface DatabaseManager {
   readonly connections: Map<string, DatabaseConnection>;
   readonly config: DatabaseConfig;
   initialized: boolean;
-  
+
   connect(): Promise<void>;
   disconnect(): Promise<void>;
   getConnection(name?: string): DatabaseConnection;
@@ -87,8 +87,8 @@ export interface DatabaseManager {
 // ============================================================================
 
 /** SQL operators for where conditions */
-export type SqlOperator = 
-  | '=' | '!=' | '<>' | '>' | '>=' | '<' | '<=' 
+export type SqlOperator =
+  | '=' | '!=' | '<>' | '>' | '>=' | '<' | '<='
   | 'LIKE' | 'NOT LIKE' | 'ILIKE' | 'NOT ILIKE'
   | 'IN' | 'NOT IN' | 'BETWEEN' | 'NOT BETWEEN'
   | 'IS NULL' | 'IS NOT NULL'
@@ -96,7 +96,7 @@ export type SqlOperator =
   | 'REGEXP' | 'NOT REGEXP';
 
 /** Where condition value */
-export type WhereValue = 
+export type WhereValue =
   | string | number | boolean | Date | null
   | any[]
   | { [K in SqlOperator]?: any }
@@ -290,7 +290,7 @@ export interface ModelInstance {
   readonly $original: Record<string, any>;
   readonly $attributes: Record<string, any>;
   readonly $relations: Record<string, any>;
-  
+
   get<K extends keyof this>(key: K): this[K];
   set<K extends keyof this>(key: K, value: this[K]): this;
   setAttribute(key: string, value: any): this;
@@ -322,7 +322,7 @@ export interface ModelInstance {
 /** Model query builder interface */
 export interface ModelQuery<T extends ModelInstance = ModelInstance> {
   readonly model: Model;
-  
+
   find(id: any): Promise<T | null>;
   findOrFail(id: any): Promise<T>;
   findMany(ids: any[]): Promise<T[]>;
@@ -336,7 +336,7 @@ export interface ModelQuery<T extends ModelInstance = ModelInstance> {
   avg(column: string): Promise<number>;
   min(column: string): Promise<number>;
   max(column: string): Promise<number>;
-  
+
   where(conditions: WhereConditions): ModelQuery<T>;
   where(column: string, value: any): ModelQuery<T>;
   where(column: string, operator: SqlOperator, value: any): ModelQuery<T>;
@@ -345,39 +345,39 @@ export interface ModelQuery<T extends ModelInstance = ModelInstance> {
   whereBetween(column: string, values: [any, any]): ModelQuery<T>;
   whereNull(column: string): ModelQuery<T>;
   whereNotNull(column: string): ModelQuery<T>;
-  
+
   orderBy(column: string, direction?: OrderDirection): ModelQuery<T>;
   orderByDesc(column: string): ModelQuery<T>;
   latest(column?: string): ModelQuery<T>;
   oldest(column?: string): ModelQuery<T>;
-  
+
   limit(count: number): ModelQuery<T>;
   take(count: number): ModelQuery<T>;
   offset(count: number): ModelQuery<T>;
   skip(count: number): ModelQuery<T>;
-  
+
   with(relations: string | string[]): ModelQuery<T>;
   withCount(relations: string | string[]): ModelQuery<T>;
   has(relation: string, operator?: string, count?: number): ModelQuery<T>;
   whereHas(relation: string, callback?: (query: ModelQuery) => void): ModelQuery<T>;
   doesntHave(relation: string): ModelQuery<T>;
   whereDoesntHave(relation: string, callback?: (query: ModelQuery) => void): ModelQuery<T>;
-  
+
   create(attributes: Record<string, any>): Promise<T>;
   insert(records: Record<string, any>[]): Promise<void>;
   update(attributes: Record<string, any>): Promise<number>;
   delete(): Promise<number>;
   forceDelete(): Promise<number>;
-  
+
   paginate(page: number, perPage: number): Promise<PaginationResult<T>>;
   simplePaginate(page: number, perPage: number): Promise<SimplePaginationResult<T>>;
-  
+
   chunk(size: number, callback: (items: T[]) => void | Promise<void>): Promise<void>;
   each(callback: (item: T) => void | Promise<void>): Promise<void>;
-  
+
   toSql(): string;
   explain(): Promise<any[]>;
-  
+
   clone(): ModelQuery<T>;
 }
 
@@ -388,7 +388,7 @@ export interface Model {
   readonly schema: ModelSchema;
   readonly config: ModelConfig;
   readonly connection: DatabaseConnection;
-  
+
   query(): ModelQuery;
   newInstance(attributes?: Record<string, any>, exists?: boolean): ModelInstance;
   create(attributes: Record<string, any>): Promise<ModelInstance>;
@@ -403,13 +403,13 @@ export interface Model {
   update(attributes: Record<string, any>, conditions?: WhereConditions): Promise<number>;
   delete(conditions?: WhereConditions): Promise<number>;
   count(conditions?: WhereConditions): Promise<number>;
-  
+
   validateSchema(): boolean;
   getTableName(): string;
   getPrimaryKey(): string;
   getSchema(): ModelSchema;
   getRelations(): Record<string, RelationDefinition>;
-  
+
   on(event: string, listener: (...args: any[]) => void): Model;
   off(event: string, listener?: (...args: any[]) => void): Model;
   emit(event: string, ...args: any[]): boolean;
@@ -482,12 +482,12 @@ export interface TableBuilder {
   jsonb(name: string): ColumnBuilder;
   uuid(name: string): ColumnBuilder;
   enum(name: string, values: string[]): ColumnBuilder;
-  
+
   primary(columns: string | string[]): void;
   index(columns: string | string[], options?: IndexOptions): void;
   unique(columns: string | string[], options?: IndexOptions): void;
   foreign(columns: string | string[]): ForeignKeyBuilder;
-  
+
   dropColumn(name: string): void;
   dropColumns(...names: string[]): void;
   renameColumn(oldName: string, newName: string): void;
@@ -495,7 +495,7 @@ export interface TableBuilder {
   dropIndex(indexName: string): void;
   dropUnique(indexName: string): void;
   dropForeign(keyName: string): void;
-  
+
   comment(text: string): void;
   engine(engine: string): void;
   charset(charset: string): void;
@@ -543,7 +543,7 @@ export interface Migration {
   readonly version: string;
   readonly description?: string;
   readonly config: MigrationConfig;
-  
+
   up(): Promise<void>;
   down(): Promise<void>;
   validate(): boolean;
@@ -558,7 +558,7 @@ export interface Migration {
 export interface DatabaseAdapter {
   readonly type: string;
   readonly connection: DatabaseConnection;
-  
+
   connect(config: DatabaseConfig): Promise<DatabaseConnection>;
   disconnect(): Promise<void>;
   query<T = any>(sql: string, params?: any[]): Promise<QueryResult<T>>;
@@ -571,14 +571,14 @@ export interface DatabaseAdapter {
 }
 
 /** Database features */
-export type DatabaseFeature = 
-  | 'transactions' 
-  | 'savepoints' 
-  | 'foreignKeys' 
-  | 'json' 
-  | 'arrays' 
-  | 'cte' 
-  | 'window' 
+export type DatabaseFeature =
+  | 'transactions'
+  | 'savepoints'
+  | 'foreignKeys'
+  | 'json'
+  | 'arrays'
+  | 'cte'
+  | 'window'
   | 'upsert'
   | 'returning';
 
@@ -603,7 +603,7 @@ export interface TransactionMiddlewareOptions {
 }
 
 /** Transaction isolation levels */
-export type TransactionIsolation = 
+export type TransactionIsolation =
   | 'READ UNCOMMITTED'
   | 'READ COMMITTED'
   | 'REPEATABLE READ'
@@ -673,8 +673,8 @@ export function createConnection(config: DatabaseConfig): Promise<DatabaseConnec
 
 /** Run migrations */
 export function runMigrations(
-  connection: DatabaseConnection, 
-  migrations: Migration[], 
+  connection: DatabaseConnection,
+  migrations: Migration[],
   options?: { target?: string }
 ): Promise<MigrationStatus[]>;
 

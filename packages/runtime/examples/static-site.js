@@ -1,4 +1,4 @@
-import { StaticRuntime } from '@coherentjs/runtime/static';
+import { StaticRuntime } from '@coherent.js/runtime/static';
 
 // Create components
 const Layout = ({ title, children }) => ({

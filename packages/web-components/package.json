@@ -1,6 +1,6 @@
 {
-  "name": "@coherentjs/web-components",
-  "version": "1.2.1",
+  "name": "@coherent.js/web-components",
+  "version": "1.0.0-beta.1",
   "description": "Web Components integration for Coherent.js",
   "type": "module",
   "main": "src/index.js",
@@ -11,11 +11,16 @@
     "build": "node build.mjs",
     "test": "vitest"
   },
-  "keywords": ["web-components", "custom-elements", "coherent", "ssr"],
+  "keywords": [
+    "web-components",
+    "custom-elements",
+    "coherent",
+    "ssr"
+  ],
   "author": "Coherent.js Team",
   "license": "MIT",
   "dependencies": {
-    "@coherentjs/core": "workspace:*"
+    "@coherent.js/core": "workspace:*"
   },
   "devDependencies": {
     "vitest": "^3.2.4"

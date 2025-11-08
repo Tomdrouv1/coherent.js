@@ -1,7 +1,7 @@
 /**
  * @fileoverview Rendering Pipeline Hooks for Coherent.js
  * Provides customizable rendering pipeline with hooks and middleware
- * @module @coherentjs/core/rendering/render-pipeline
+ * @module @coherent.js/core/rendering/render-pipeline
  */
 
 /**

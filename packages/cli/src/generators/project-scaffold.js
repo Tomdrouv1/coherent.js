@@ -170,10 +170,10 @@ function generatePackageJson(name, options) {
       test: 'node --test tests/*.test.js'
     },
     dependencies: {
-      '@coherentjs/core': '^1.0.1'
+      '@coherent.js/core': '^1.0.1'
     },
     devDependencies: {
-      '@coherentjs/cli': '^1.0.1'
+      '@coherent.js/cli': '^1.0.1'
     }
   };
 
@@ -388,7 +388,7 @@ logs
   // Basic test file
   const testFile = `import { test } from 'node:test';
 import assert from 'node:assert';
-import { render } from '@coherentjs/core';
+import { render } from '@coherent.js/core';
 
 test('renders basic component', () => {
   const component = {

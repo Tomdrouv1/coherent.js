@@ -36,12 +36,12 @@ export const buildCommand = new Command('build')
 
     // Check for Coherent.js dependencies
     const hasCoherentDeps = packageJson.dependencies && 
-      (packageJson.dependencies['@coherentjs/core'] || 
+      (packageJson.dependencies['@coherent.js/core'] || 
        packageJson.dependencies['coherentjs']);
 
     if (!hasCoherentDeps) {
       console.error(picocolors.red('❌ This doesn\'t appear to be a Coherent.js project'));
-      console.error(picocolors.gray('   Missing @coherentjs/core dependency'));
+      console.error(picocolors.gray('   Missing @coherent.js/core dependency'));
       process.exit(1);
     }
 

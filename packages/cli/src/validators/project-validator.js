@@ -112,7 +112,7 @@ function validatePackageJson() {
 
     // Check for Coherent.js dependencies
     const dependencies = { ...packageJson.dependencies, ...packageJson.devDependencies };
-    const hasCoherentDeps = Object.keys(dependencies).some(dep => dep.startsWith('@coherentjs/'));
+    const hasCoherentDeps = Object.keys(dependencies).some(dep => dep.startsWith('@coherent.js/'));
     
     checks.push({
       name: 'coherent-dependencies',
@@ -126,7 +126,7 @@ function validatePackageJson() {
       recommendations.push({
         type: 'dependencies',
         priority: 'medium',
-        message: 'No Coherent.js dependencies found. Install with: npm install @coherentjs/core'
+        message: 'No Coherent.js dependencies found. Install with: npm install @coherent.js/core'
       });
     }
 

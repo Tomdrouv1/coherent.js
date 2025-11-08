@@ -6,18 +6,18 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // Mock all external dependencies
-vi.mock('@coherentjs/core', () => ({
+vi.mock('@coherent.js/core', () => ({
   render: vi.fn(),
   render: vi.fn(),
   VERSION: '1.1.1'
 }));
 
-vi.mock('@coherentjs/client', () => ({
+vi.mock('@coherent.js/client', () => ({
   hydrate: vi.fn(),
   autoHydrate: vi.fn()
 }));
 
-vi.mock('@coherentjs/web-components', () => ({
+vi.mock('@coherent.js/web-components', () => ({
   defineComponent: vi.fn()
 }));
 
@@ -170,7 +170,7 @@ describe('Runtime Index', () => {
       const mockWindow = {
         Coherent: {
           render: async (obj) => {
-            const { render } = await import('@coherentjs/core');
+            const { render } = await import('@coherent.js/core');
             return render(obj);
           }
         }
@@ -181,7 +181,7 @@ describe('Runtime Index', () => {
         addEventListener: vi.fn()
       });
 
-      const { render } = await import('@coherentjs/core');
+      const { render } = await import('@coherent.js/core');
       render.mockResolvedValue('<div>Test</div>');
 
       const result = await mockWindow.Coherent.render({ div: { text: 'Test' } });
@@ -194,7 +194,7 @@ describe('Runtime Index', () => {
       const mockWindow = {
         Coherent: {
           hydrate: async (element, component, props) => {
-            const { hydrate } = await import('@coherentjs/client');
+            const { hydrate } = await import('@coherent.js/client');
             return hydrate(element, component, props);
           }
         }
@@ -205,7 +205,7 @@ describe('Runtime Index', () => {
         addEventListener: vi.fn()
       });
 
-      const { hydrate } = await import('@coherentjs/client');
+      const { hydrate } = await import('@coherent.js/client');
       hydrate.mockResolvedValue({ hydrated: true });
 
       const element = { tagName: 'div' };
@@ -222,7 +222,7 @@ describe('Runtime Index', () => {
       const mockWindow = {
         Coherent: {
           defineComponent: async (name, component, options) => {
-            const { defineComponent } = await import('@coherentjs/web-components');
+            const { defineComponent } = await import('@coherent.js/web-components');
             return defineComponent(name, component, options);
           }
         }
@@ -233,7 +233,7 @@ describe('Runtime Index', () => {
         addEventListener: vi.fn()
       });
 
-      const { defineComponent } = await import('@coherentjs/web-components');
+      const { defineComponent } = await import('@coherent.js/web-components');
       defineComponent.mockResolvedValue({ defined: true });
 
       const result = await mockWindow.Coherent.defineComponent(

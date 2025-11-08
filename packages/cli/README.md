@@ -1,4 +1,4 @@
-# @coherentjs/cli
+# @coherent.js/cli
 
 Command-line interface for Coherent.js projects. Scaffold new applications, generate components, and streamline your development workflow.
 
@@ -6,7 +6,7 @@ Command-line interface for Coherent.js projects. Scaffold new applications, gene
 
 ```bash
 # Install globally
-npm install -g @coherentjs/cli
+npm install -g @coherent.js/cli
 
 # Create a new project
 coherent create my-app
@@ -23,21 +23,21 @@ coherent dev
 ### Global Installation (Recommended)
 
 ```bash
-npm install -g @coherentjs/cli
+npm install -g @coherent.js/cli
 # or
-yarn global add @coherentjs/cli
+yarn global add @coherent.js/cli
 # or  
-pnpm add -g @coherentjs/cli
+pnpm add -g @coherent.js/cli
 ```
 
 ### Local Installation
 
 ```bash
-npm install --save-dev @coherentjs/cli
+npm install --save-dev @coherent.js/cli
 # or
-yarn add --dev @coherentjs/cli
+yarn add --dev @coherent.js/cli
 # or
-pnpm add -D @coherentjs/cli
+pnpm add -D @coherent.js/cli
 
 # Use with npx
 npx coherent create my-app
@@ -86,14 +86,14 @@ When you create a project, the CLI will guide you through:
    - None
 
 3. **Optional Packages** (all templates):
-   - `@coherentjs/api` - API framework with validation & OpenAPI
-   - `@coherentjs/database` - Database adapters and query builder
-   - `@coherentjs/client` - Client-side hydration
-   - `@coherentjs/i18n` - Internationalization
-   - `@coherentjs/forms` - Form handling
-   - `@coherentjs/devtools` - Development tools
-   - `@coherentjs/seo` - SEO utilities
-   - `@coherentjs/testing` - Testing helpers
+   - `@coherent.js/api` - API framework with validation & OpenAPI
+   - `@coherent.js/database` - Database adapters and query builder
+   - `@coherent.js/client` - Client-side hydration
+   - `@coherent.js/i18n` - Internationalization
+   - `@coherent.js/forms` - Form handling
+   - `@coherent.js/devtools` - Development tools
+   - `@coherent.js/seo` - SEO utilities
+   - `@coherent.js/testing` - Testing helpers
 
 4. **Authentication Scaffolding** (when database or API selected):
    - JWT Authentication (token-based)
@@ -283,7 +283,7 @@ Button({
 
 ```javascript
 // src/pages/Home.js
-import { createComponent } from '@coherentjs/core';
+import { createComponent } from '@coherent.js/core';
 
 export const Home = createComponent(({ title = 'Home' }) => ({
   html: {
@@ -320,7 +320,7 @@ export const Home = createComponent(({ title = 'Home' }) => ({
 
 ```javascript
 // src/api/users.js
-import { createApiRouter, withValidation } from '@coherentjs/api';
+import { createApiRouter, withValidation } from '@coherent.js/api';
 
 const usersAPI = createApiRouter();
 
@@ -367,7 +367,7 @@ Generated components and pages include test files:
 // Button.test.js
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { render } from '@coherentjs/core';
+import { render } from '@coherent.js/core';
 import { Button } from './Button.js';
 
 test('Button renders correctly', () => {

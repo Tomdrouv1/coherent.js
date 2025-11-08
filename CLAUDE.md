@@ -47,15 +47,15 @@ integrations and utilities.
 ### Monorepo Structure
 The project uses pnpm workspaces with packages in `/packages/`:
 
-- **`@coherentjs/core`** - Core framework with component system, rendering engines, and state management
-- **`@coherentjs/api`** - API framework with validation, routing, and OpenAPI generation  
-- **`@coherentjs/database`** - Database layer with adapters for PostgreSQL, MySQL, SQLite, MongoDB
-- **`@coherentjs/client`** - Client-side hydration and progressive enhancement utilities
-- **`@coherentjs/express`** - Express.js integration adapter
-- **`@coherentjs/fastify`** - Fastify integration adapter  
-- **`@coherentjs/koa`** - Koa.js integration adapter
-- **`@coherentjs/nextjs`** - Next.js integration adapter
-- **`@coherentjs/cli`** - CLI tools for development and scaffolding
+- **`@coherent.js/core`** - Core framework with component system, rendering engines, and state management
+- **`@coherent.js/api`** - API framework with validation, routing, and OpenAPI generation  
+- **`@coherent.js/database`** - Database layer with adapters for PostgreSQL, MySQL, SQLite, MongoDB
+- **`@coherent.js/client`** - Client-side hydration and progressive enhancement utilities
+- **`@coherent.js/express`** - Express.js integration adapter
+- **`@coherent.js/fastify`** - Fastify integration adapter  
+- **`@coherent.js/koa`** - Koa.js integration adapter
+- **`@coherent.js/nextjs`** - Next.js integration adapter
+- **`@coherent.js/cli`** - CLI tools for development and scaffolding
 
 ### Core Concepts
 

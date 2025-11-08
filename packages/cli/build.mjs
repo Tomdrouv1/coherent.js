@@ -1,5 +1,5 @@
 /**
- * Build script for @coherentjs/cli package
+ * Build script for @coherent.js/cli package
  */
 
 import esbuild from 'esbuild';
@@ -38,7 +38,7 @@ const buildConfig = {
 };
 
 async function build() {
-  console.log('🏗️  Building @coherentjs/cli...');
+  console.log('🏗️  Building @coherent.js/cli...');
 
   try {
     // Build ESM version
@@ -56,7 +56,7 @@ async function build() {
     } else {
       // Generate basic TypeScript declarations
       const dtsContent = `/**
- * @coherentjs/cli TypeScript definitions
+ * @coherent.js/cli TypeScript definitions
  */
 
 export interface CreateOptions {

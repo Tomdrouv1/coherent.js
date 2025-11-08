@@ -1,7 +1,7 @@
 /**
  * @fileoverview State Persistence for Coherent.js
  * Provides persistent state management with multiple storage backends
- * @module @coherentjs/core/state/state-persistence
+ * @module @coherent.js/core/state/state-persistence
  */
 
 /**

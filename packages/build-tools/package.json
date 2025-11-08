@@ -1,13 +1,13 @@
 {
-  "name": "@coherentjs/build-tools",
-  "version": "1.2.1",
+  "name": "@coherent.js/build-tools",
+  "version": "1.0.0-beta.1",
   "description": "Build tools and bundler integrations for Coherent.js (Vite, Webpack, Rollup)",
   "type": "module",
   "main": "src/index.js",
   "exports": {
     ".": "./src/index.js",
     "./vite": "./src/vite.js",
-    "./webpack": "./src/webpack.js", 
+    "./webpack": "./src/webpack.js",
     "./rollup": "./src/rollup.js",
     "./loader": "./src/coherent-loader.js"
   },
@@ -15,11 +15,19 @@
     "build": "node build.mjs",
     "test": "vitest"
   },
-  "keywords": ["build", "bundler", "vite", "webpack", "rollup", "coherent", "ssr"],
+  "keywords": [
+    "build",
+    "bundler",
+    "vite",
+    "webpack",
+    "rollup",
+    "coherent",
+    "ssr"
+  ],
   "author": "Coherent.js Team",
   "license": "MIT",
   "dependencies": {
-    "@coherentjs/core": "workspace:*"
+    "@coherent.js/core": "workspace:*"
   },
   "devDependencies": {
     "vitest": "^3.2.4"
@@ -30,8 +38,14 @@
     "rollup": "^4.0.0"
   },
   "peerDependenciesMeta": {
-    "vite": { "optional": true },
-    "webpack": { "optional": true },
-    "rollup": { "optional": true }
+    "vite": {
+      "optional": true
+    },
+    "webpack": {
+      "optional": true
+    },
+    "rollup": {
+      "optional": true
+    }
   }
 }

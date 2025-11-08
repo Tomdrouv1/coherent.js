@@ -40,7 +40,7 @@ test('basic component template should generate correct content', async () => {
     const content = readFileSync(componentPath, 'utf-8');
     
     // Check imports
-    assert(content.includes("import { createComponent } from '@coherentjs/core'"));
+    assert(content.includes("import { createComponent } from '@coherent.js/core'"));
     
     // Check component structure
     assert(content.includes('export const TestCard = createComponent'));
@@ -307,7 +307,7 @@ test('REST API template should generate correct content', async () => {
     const content = readFileSync(apiPath, 'utf-8');
     
     // Check imports and setup
-    assert(content.includes("import { createApiRouter, withValidation } from '@coherentjs/api'"));
+    assert(content.includes("import { createApiRouter, withValidation } from '@coherent.js/api'"));
     assert(content.includes('const productsAPI = createApiRouter'));
     
     // Check validation schema
@@ -396,7 +396,7 @@ test('component test templates should be valid', async () => {
     // Check test imports
     assert(content.includes("import { test } from 'node:test'"));
     assert(content.includes(""));
-    assert(content.includes("import { render } from '@coherentjs/core'"));
+    assert(content.includes("import { render } from '@coherent.js/core'"));
     assert(content.includes("import { TestableComponent } from './TestableComponent.js'"));
     
     // Check test cases

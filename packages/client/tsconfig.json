@@ -7,8 +7,8 @@
     "lib": ["ES2020", "DOM"],
     "baseUrl": "./",
     "paths": {
-      "@coherentjs/core": ["../core/dist"],
-      "@coherentjs/client": ["./dist"]
+      "@coherent.js/core": ["../core/dist"],
+      "@coherent.js/client": ["./dist"]
     }
   },
   "include": [

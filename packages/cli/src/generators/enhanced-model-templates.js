@@ -18,7 +18,7 @@ export function generateSoftDeleteModel(modelName, tableName, fields) {
     return fieldLines.join('\n');
   }).join(',\n');
 
-  return `import { createModel as createModelFactory } from '@coherentjs/database';
+  return `import { createModel as createModelFactory } from '@coherent.js/database';
 
 /**
  * ${modelName} model with soft delete support
@@ -79,7 +79,7 @@ export function generateTimestampedModel(modelName, tableName, fields) {
     })
     .join(',\n');
 
-  return `import { createModel as createModelFactory } from '@coherentjs/database';
+  return `import { createModel as createModelFactory } from '@coherent.js/database';
 
 /**
  * ${modelName} model with automatic timestamps

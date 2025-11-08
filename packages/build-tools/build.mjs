@@ -18,10 +18,10 @@ for (const entry of entries) {
     format: 'esm',
     platform: 'node',
     outfile,
-    external: ['@coherentjs/core', 'vite', 'webpack', 'rollup'],
+    external: ['@coherent.js/core', 'vite', 'webpack', 'rollup'],
     minify: false,
     sourcemap: true
   });
 }
 
-console.log('✅ @coherentjs/build-tools built successfully');
+console.log('✅ @coherent.js/build-tools built successfully');

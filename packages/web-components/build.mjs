@@ -6,9 +6,9 @@ await build({
   format: 'esm',
   platform: 'neutral',
   outfile: 'dist/index.js',
-  external: ['@coherentjs/core'],
+  external: ['@coherent.js/core'],
   minify: false,
   sourcemap: true
 });
 
-console.log('✅ @coherentjs/web-components built successfully');
+console.log('✅ @coherent.js/web-components built successfully');

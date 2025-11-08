@@ -7,7 +7,7 @@
  * @module testing/test-renderer
  */
 
-import { render } from '@coherentjs/core';
+import { render } from '@coherent.js/core';
 
 /**
  * Test renderer result

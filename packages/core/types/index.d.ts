@@ -1,8 +1,8 @@
 /**
  * Coherent.js Core Types
  * TypeScript definitions for the core Coherent.js framework
- * 
- * @version 1.1.1
+ *
+ * @version 1.0.0-beta.1
  */
 
 // ============================================================================
@@ -53,7 +53,7 @@ export interface CoherentElement {
 }
 
 /** Valid nodes that can be rendered */
-export type CoherentNode = 
+export type CoherentNode =
   | Primitive
   | CoherentElement
   | CoherentNode[]
@@ -231,7 +231,7 @@ export interface WithStateProps<P extends ComponentProps, S extends ComponentSta
 /** HOC that adds state to a component */
 export interface WithStateHOC {
   <P extends ComponentProps, S extends ComponentState>(
-    initialStateOrComponent: S | CoherentComponent<P>, 
+    initialStateOrComponent: S | CoherentComponent<P>,
     maybeInitialState?: S
   ): CoherentComponent<WithStateProps<P, S>>;
   <S extends ComponentState>(initialState: S): <P extends ComponentProps>(
@@ -311,7 +311,7 @@ export interface LazyWrapper<T> {
   __isLazy: true;
   __factory: (...args: any[]) => T;
   __options: LazyOptions;
-  
+
   evaluate(...args: any[]): T;
   invalidate(): LazyWrapper<T>;
   isEvaluated(): boolean;
@@ -437,7 +437,7 @@ export function lazyComponent<P extends ComponentProps>(
 /** Component class constructor */
 export class Component implements ComponentInstance {
   constructor(definition?: ComponentDefinition);
-  
+
   name: string;
   props: ComponentProps;
   state: ComponentStateManager;

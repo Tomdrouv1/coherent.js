@@ -1,8 +1,8 @@
 /**
  * Coherent.js Koa Integration Types
  * TypeScript definitions for Koa.js framework integration
- * 
- * @version 1.1.1
+ *
+ * @version 1.0.0-beta.1
  */
 
 import Koa, { Context, Middleware, Next } from 'koa';
@@ -31,7 +31,7 @@ export interface CoherentContext extends Context {
   renderCoherent(component: CoherentNode, options?: any): void;
   sendComponent<P = any>(component: (props: P) => CoherentNode, props?: P): void;
   getComponent<P = any>(name: string, props?: P): CoherentNode | undefined;
-  
+
   // State management
   coherentState: any;
   setCoherentState(state: any): void;

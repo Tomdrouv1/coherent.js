@@ -3,7 +3,7 @@
  * Pre-renders components to static HTML files
  */
 
-import { render } from '@coherentjs/core';
+import { render } from '@coherent.js/core';
 
 export class StaticRuntime {
   constructor(options = {}) {

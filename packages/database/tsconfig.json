@@ -5,8 +5,8 @@
     "rootDir": "./src",
     "baseUrl": "./",
     "paths": {
-      "@coherentjs/core": ["../core/dist"],
-      "@coherentjs/database": ["./dist"]
+      "@coherent.js/core": ["../core/dist"],
+      "@coherent.js/database": ["./dist"]
     }
   },
   "include": [

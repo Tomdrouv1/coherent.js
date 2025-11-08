@@ -67,7 +67,7 @@ function transformImports(code, repoRoot) {
     },
     // Direct core imports
     { 
-      from: /from ['"]@coherentjs\/core['"]/g, 
+      from: /from ['"]@coherent.js\/core['"]/g, 
       to: () => `from 'file://${path.join(repoRoot, 'packages/core/src/index.js')}'`
     },
     // Direct imports from current directory

@@ -18,7 +18,7 @@ Renders a Coherent.js component to an HTML string.
 
 **Example:**
 ```javascript
-import { render } from '@coherentjs/core';
+import { render } from '@coherent.js/core';
 
 const component = {
   div: {
@@ -130,7 +130,7 @@ Renders a Coherent.js component to a Node.js Readable stream.
 
 **Example:**
 ```javascript
-import { renderToStream } from '@coherentjs/core';
+import { renderToStream } from '@coherent.js/core';
 
 const stream = renderToStream(largeComponent, context);
 
@@ -156,7 +156,7 @@ Creates a component from a render function.
 
 **Example:**
 ```javascript
-import { createComponent } from '@coherentjs/core';
+import { createComponent } from '@coherent.js/core';
 
 const Greeting = createComponent(({ name }) => ({
   div: {
@@ -182,7 +182,7 @@ Adds reactive state management to a component with automatic re-rendering on sta
 
 **Example:**
 ```javascript
-import { withState } from '@coherentjs/core';
+import { withState } from '@coherent.js/core';
 
 // Basic state management
 const Counter = withState({ count: 0 })((props) => {
@@ -297,7 +297,7 @@ Memoizes a component to prevent unnecessary re-renders.
 
 **Example:**
 ```javascript
-import { memo } from '@coherentjs/core';
+import { memo } from '@coherent.js/core';
 
 const ExpensiveComponent = memo(
   (context) => {
@@ -319,7 +319,7 @@ Composes multiple components into a single component.
 
 **Example:**
 ```javascript
-import { compose } from '@coherentjs/core';
+import { compose } from '@coherent.js/core';
 
 const Header = () => ({ header: { /* ... */ } });
 const Main = () => ({ main: { /* ... */ } });
@@ -343,7 +343,7 @@ Renders one of two components based on a condition.
 
 **Example:**
 ```javascript
-import { when } from '@coherentjs/core';
+import { when } from '@coherent.js/core';
 
 const UserProfile = (context) => ({
   div: {
@@ -369,7 +369,7 @@ Renders an array of items using a render function.
 
 **Example:**
 ```javascript
-import { forEach } from '@coherentjs/core';
+import { forEach } from '@coherent.js/core';
 
 const TodoList = (context) => ({
   ul: {
@@ -533,7 +533,7 @@ Gets performance optimization recommendations.
 
 **Example:**
 ```javascript
-import { createDatabaseManager } from '@coherentjs/core';
+import { createDatabaseManager } from '@coherent.js/core';
 
 // Recommended approach
 const db = createDatabaseManager({
@@ -553,7 +553,7 @@ const db = createDatabaseManager({
 
 **Example:**
 ```javascript
-import { createQuery } from '@coherentjs/core';
+import { createQuery } from '@coherent.js/core';
 
 // Pure object approach
 const query = createQuery({
@@ -575,7 +575,7 @@ const query = createQuery({
 
 **Example:**
 ```javascript
-import { createQuery, executeQuery, createDatabaseManager } from '@coherentjs/core';
+import { createQuery, executeQuery, createDatabaseManager } from '@coherent.js/core';
 
 const db = createDatabaseManager({ type: 'sqlite', database: ':memory:' });
 const query = createQuery({ table: 'users', select: ['*'] });
@@ -613,7 +613,7 @@ Hydrates a DOM element with a Coherent component to enable client-side interacti
 
 **Example:**
 ```javascript
-import { hydrate } from '@coherentjs/client';
+import { hydrate } from '@coherent.js/client';
 import { Counter } from './components/Counter.js';
 
 // Basic hydration
@@ -639,7 +639,7 @@ Hydrates multiple elements with their corresponding components.
 
 **Example:**
 ```javascript
-import { hydrateAll } from '@coherentjs/client';
+import { hydrateAll } from '@coherent.js/client';
 import { Header, Footer } from './components/Layout.js';
 
 const elements = [
@@ -663,7 +663,7 @@ Finds and hydrates all elements matching a CSS selector.
 
 **Example:**
 ```javascript
-import { hydrateBySelector } from '@coherentjs/client';
+import { hydrateBySelector } from '@coherent.js/client';
 import { TodoItem } from './components/TodoItem.js';
 
 // Hydrate all todo items
@@ -684,7 +684,7 @@ Creates a hydratable version of a component with metadata for auto-hydration.
 
 **Example:**
 ```javascript
-import { makeHydratable } from '@coherentjs/client';
+import { makeHydratable } from '@coherent.js/client';
 import { Counter } from './components/Counter.js';
 
 const HydratableCounter = makeHydratable(Counter, {
@@ -705,7 +705,7 @@ Automatically hydrates all components on a page based on data-coherent-component
 
 **Example:**
 ```javascript
-import { autoHydrate, makeHydratable } from '@coherentjs/client';
+import { autoHydrate, makeHydratable } from '@coherent.js/client';
 import { Counter } from './components/Counter.js';
 import { TodoList } from './components/TodoList.js';
 
@@ -729,7 +729,7 @@ Enables client-side interactivity for elements with data-action attributes.
 
 **Example:**
 ```javascript
-import { enableClientEvents } from '@coherentjs/client';
+import { enableClientEvents } from '@coherent.js/client';
 
 // Enable events for entire document
 enableClientEvents();
@@ -751,7 +751,7 @@ Extracts initial state from DOM element data attributes.
 
 **Example:**
 ```javascript
-import { extractInitialState } from '@coherentjs/client';
+import { extractInitialState } from '@coherent.js/client';
 
 const element = document.getElementById('counter');
 // <div id="counter" data-coherent-state='{"count": 5}'>
@@ -769,7 +769,7 @@ Registers a global event handler for use with data-action attributes.
 
 **Example:**
 ```javascript
-import { registerEventHandler } from '@coherentjs/client';
+import { registerEventHandler } from '@coherent.js/client';
 
 registerEventHandler('my-click-handler', (event, state, setState) => {
   console.log('Button clicked!', { event, state });

@@ -152,43 +152,43 @@ All critical, high-priority, and medium-priority documentation updates have been
 ### Installation (100% Working)
 ```bash
 # Core framework
-npm install @coherentjs/core
+npm install @coherent.js/core
 
 # With Express
-npm install @coherentjs/core @coherentjs/express express
+npm install @coherent.js/core @coherent.js/express express
 
 # With Fastify
-npm install @coherentjs/core @coherentjs/fastify fastify
+npm install @coherent.js/core @coherent.js/fastify fastify
 
 # With Koa
-npm install @coherentjs/core @coherentjs/koa koa
+npm install @coherent.js/core @coherent.js/koa koa
 
 # With Next.js
-npm install @coherentjs/core @coherentjs/nextjs next react
+npm install @coherent.js/core @coherent.js/nextjs next react
 
 # API framework
-npm install @coherentjs/api
+npm install @coherent.js/api
 
 # Client-side hydration
-npm install @coherentjs/client
+npm install @coherent.js/client
 ```
 
 ### Imports (100% Correct)
 ```javascript
 // Core framework
-import { render, withState, createComponent } from '@coherentjs/core';
+import { render, withState, createComponent } from '@coherent.js/core';
 
 // API framework
-import { createApiRouter, withValidation } from '@coherentjs/api';
+import { createApiRouter, withValidation } from '@coherent.js/api';
 
 // Client-side hydration
-import { makeHydratable, autoHydrate } from '@coherentjs/client';
+import { makeHydratable, autoHydrate } from '@coherent.js/client';
 
 // Framework integrations
-import { setupCoherent } from '@coherentjs/express';
-import { coherentFastify } from '@coherentjs/fastify';
-import { coherentKoaMiddleware } from '@coherentjs/koa';
-import { createCoherentNextHandler } from '@coherentjs/nextjs';
+import { setupCoherent } from '@coherent.js/express';
+import { coherentFastify } from '@coherent.js/fastify';
+import { coherentKoaMiddleware } from '@coherent.js/koa';
+import { createCoherentNextHandler } from '@coherent.js/nextjs';
 
 // Shared utilities (v1.1.0)
 import { 
@@ -197,14 +197,14 @@ import {
   renderComponentFactory,
   isCoherentComponent,
   createErrorResponse
-} from '@coherentjs/core/utils/render-utils';
+} from '@coherent.js/core/utils/render-utils';
 
 // Advanced state management (v1.1.0)
 import { 
   withState,
   withStateUtils,
   createStateManager
-} from '@coherentjs/core';
+} from '@coherent.js/core';
 ```
 
 ---
@@ -221,7 +221,7 @@ import {
 ❌ 68% documentation coverage  
 
 ### After Updates
-✅ Users can install correctly (`@coherentjs/core`)  
+✅ Users can install correctly (`@coherent.js/core`)  
 ✅ All code examples work (correct imports)  
 ✅ v1.1.0 features fully documented  
 ✅ Consistent naming in 100% of core docs  

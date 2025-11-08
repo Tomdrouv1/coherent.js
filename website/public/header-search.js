@@ -75,7 +75,7 @@ const documentationData = [
     content: 'Coming from React, Vue, or another framework? Migration guide and comparison',
     type: 'docs'
   },
-  // API Reference entries - @coherentjs/core
+  // API Reference entries - @coherent.js/core
   {
     title: 'render()',
     url: 'docs/api-reference#rendertostring',
@@ -137,7 +137,7 @@ const documentationData = [
     type: 'api'
   },
   
-  // API Reference - @coherentjs/client
+  // API Reference - @coherent.js/client
   {
     title: 'hydrate()',
     url: 'docs/api-reference#hydrate',
@@ -169,7 +169,7 @@ const documentationData = [
     type: 'api'
   },
   
-  // API Reference - @coherentjs/api
+  // API Reference - @coherent.js/api
   {
     title: 'createRouter()',
     url: 'docs/api-reference#createobjectrouter',
@@ -213,7 +213,7 @@ const documentationData = [
     type: 'api'
   },
   
-  // API Reference - @coherentjs/database
+  // API Reference - @coherent.js/database
   {
     title: 'setupDatabase()',
     url: 'docs/api-reference#setupdatabase',

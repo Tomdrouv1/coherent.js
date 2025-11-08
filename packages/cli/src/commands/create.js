@@ -148,13 +148,13 @@ export const createCommand = new Command('create')
         name: 'packages',
         message: 'Select optional packages (space to select, enter to confirm):',
         choices: [
-          { title: '@coherentjs/api', value: 'api', description: 'API framework with validation & OpenAPI', selected: template === 'fullstack' },
-          { title: '@coherentjs/client', value: 'client', description: 'Client-side hydration & progressive enhancement' },
-          { title: '@coherentjs/i18n', value: 'i18n', description: 'Internationalization utilities' },
-          { title: '@coherentjs/forms', value: 'forms', description: 'Form handling utilities' },
-          { title: '@coherentjs/devtools', value: 'devtools', description: 'Development tools & debugging' },
-          { title: '@coherentjs/seo', value: 'seo', description: 'SEO optimization utilities' },
-          { title: '@coherentjs/testing', value: 'testing', description: 'Testing utilities & helpers' }
+          { title: '@coherent.js/api', value: 'api', description: 'API framework with validation & OpenAPI', selected: template === 'fullstack' },
+          { title: '@coherent.js/client', value: 'client', description: 'Client-side hydration & progressive enhancement' },
+          { title: '@coherent.js/i18n', value: 'i18n', description: 'Internationalization utilities' },
+          { title: '@coherent.js/forms', value: 'forms', description: 'Form handling utilities' },
+          { title: '@coherent.js/devtools', value: 'devtools', description: 'Development tools & debugging' },
+          { title: '@coherent.js/seo', value: 'seo', description: 'SEO optimization utilities' },
+          { title: '@coherent.js/testing', value: 'testing', description: 'Testing utilities & helpers' }
         ]
       });
 
@@ -183,10 +183,10 @@ export const createCommand = new Command('create')
         name: 'packages',
         message: 'Select optional packages (space to select, enter to confirm):',
         choices: [
-          { title: '@coherentjs/client', value: 'client', description: 'Client-side hydration' },
-          { title: '@coherentjs/i18n', value: 'i18n', description: 'Internationalization' },
-          { title: '@coherentjs/forms', value: 'forms', description: 'Form handling' },
-          { title: '@coherentjs/seo', value: 'seo', description: 'SEO utilities' }
+          { title: '@coherent.js/client', value: 'client', description: 'Client-side hydration' },
+          { title: '@coherent.js/i18n', value: 'i18n', description: 'Internationalization' },
+          { title: '@coherent.js/forms', value: 'forms', description: 'Form handling' },
+          { title: '@coherent.js/seo', value: 'seo', description: 'SEO utilities' }
         ]
       });
 

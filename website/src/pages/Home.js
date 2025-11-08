@@ -23,7 +23,7 @@ export function Home() {
         // Install
         { section: { className: 'install', children: [
           { h3: { text: 'Install' } },
-          { pre: { className: 'code-block', children: [ { code: { text: 'pnpm add @coherentjs/core' } } ] } }
+          { pre: { className: 'code-block', children: [ { code: { text: 'pnpm add @coherent.js/core' } } ] } }
         ] } },
 
         // Key features

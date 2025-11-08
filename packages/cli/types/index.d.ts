@@ -1,8 +1,8 @@
 /**
  * Coherent.js CLI Types
  * TypeScript definitions for the CLI tools
- * 
- * @version 1.1.1
+ *
+ * @version 1.0.0-beta.1
  */
 
 // ============================================================================
@@ -213,7 +213,7 @@ export interface CoherentConfig {
   name: string;
   version: string;
   description?: string;
-  
+
   // Build settings
   build: {
     entry: string;
@@ -223,7 +223,7 @@ export interface CoherentConfig {
     sourceMaps: boolean;
     minify: boolean;
   };
-  
+
   // Development settings
   dev: {
     port: number;
@@ -233,13 +233,13 @@ export interface CoherentConfig {
     hmr: boolean;
     overlay: boolean;
   };
-  
+
   // Framework settings
   framework?: {
     type: 'express' | 'koa' | 'fastify' | 'nextjs' | 'none';
     config?: any;
   };
-  
+
   // Database settings
   database?: {
     type: 'postgresql' | 'mysql' | 'sqlite' | 'mongodb';
@@ -247,21 +247,21 @@ export interface CoherentConfig {
     migrations: string;
     models: string;
   };
-  
+
   // Testing settings
   testing?: {
     framework: 'jest' | 'vitest';
     coverage: boolean;
     watchMode: boolean;
   };
-  
+
   // Linting and formatting
   linting?: {
     eslint: boolean;
     prettier: boolean;
     rules?: any;
   };
-  
+
   // Directories
   directories: {
     src: string;
@@ -381,7 +381,7 @@ export interface Logger {
   warn(message: string, ...args: any[]): void;
   error(message: string, ...args: any[]): void;
   success(message: string, ...args: any[]): void;
-  
+
   startSpinner(message: string): void;
   stopSpinner(success?: boolean): void;
   updateSpinner(message: string): void;
@@ -459,20 +459,20 @@ export function validateProject(path: string): Promise<ValidationResult>;
 declare const coherentCli: {
   // Project creation
   createProject: typeof createProject;
-  
+
   // Generators
   generateComponent: typeof generateComponent;
   generatePage: typeof generatePage;
   generateApi: typeof generateApi;
   generateModel: typeof generateModel;
-  
+
   // Development
   startDevServer: typeof startDevServer;
   buildProject: typeof buildProject;
   runTests: typeof runTests;
   lintProject: typeof lintProject;
   formatProject: typeof formatProject;
-  
+
   // Utilities
   parseArgs: typeof parseArgs;
   loadConfig: typeof loadConfig;

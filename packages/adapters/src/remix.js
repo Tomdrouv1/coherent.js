@@ -2,7 +2,7 @@
  * Remix Adapter for Coherent.js
  */
 
-import { render } from '@coherentjs/core';
+import { render } from '@coherent.js/core';
 
 export function createRemixAdapter(_options = {}) {
   return {

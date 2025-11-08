@@ -1,14 +1,14 @@
 /**
  * Package Scaffolding Generator
- * Generates basic scaffolding for optional @coherentjs packages
+ * Generates basic scaffolding for optional @coherent.js packages
  */
 
 /**
- * Generate @coherentjs/api scaffolding
+ * Generate @coherent.js/api scaffolding
  */
 export function generateApiScaffolding() {
   const routes = `
-import { createRouter } from '@coherentjs/api';
+import { createRouter } from '@coherent.js/api';
 
 const router = createRouter();
 
@@ -43,17 +43,17 @@ export default router;
   return {
     'src/api/routes.js': routes,
     dependencies: {
-      '@coherentjs/api': '^1.0.0'
+      '@coherent.js/api': '^1.0.0'
     }
   };
 }
 
 /**
- * Generate @coherentjs/client scaffolding
+ * Generate @coherent.js/client scaffolding
  */
 export function generateClientScaffolding() {
   const hydration = `
-import { hydrate } from '@coherentjs/client';
+import { hydrate } from '@coherent.js/client';
 
 // Hydrate interactive components on page load
 document.addEventListener('DOMContentLoaded', () => {
@@ -138,17 +138,17 @@ if (typeof window !== 'undefined') {
     'public/js/hydration.js': hydration,
     'src/components/InteractiveCounter.js': interactiveExample,
     dependencies: {
-      '@coherentjs/client': '^1.0.0'
+      '@coherent.js/client': '^1.0.0'
     }
   };
 }
 
 /**
- * Generate @coherentjs/i18n scaffolding
+ * Generate @coherent.js/i18n scaffolding
  */
 export function generateI18nScaffolding() {
   const config = `
-import { createI18n } from '@coherentjs/i18n';
+import { createI18n } from '@coherent.js/i18n';
 
 export const i18n = createI18n({
   defaultLocale: 'en',
@@ -207,17 +207,17 @@ export const i18n = createI18n({
     'src/i18n/locales/fr.json': frLocale,
     'src/i18n/locales/es.json': esLocale,
     dependencies: {
-      '@coherentjs/i18n': '^1.0.0'
+      '@coherent.js/i18n': '^1.0.0'
     }
   };
 }
 
 /**
- * Generate @coherentjs/forms scaffolding
+ * Generate @coherent.js/forms scaffolding
  */
 export function generateFormsScaffolding() {
   const exampleForm = `
-import { createForm, validators } from '@coherentjs/forms';
+import { createForm, validators } from '@coherent.js/forms';
 
 export function ContactForm(props = {}) {
   const form = createForm({
@@ -270,17 +270,17 @@ export function ContactForm(props = {}) {
   return {
     'src/components/ContactForm.js': exampleForm,
     dependencies: {
-      '@coherentjs/forms': '^1.0.0'
+      '@coherent.js/forms': '^1.0.0'
     }
   };
 }
 
 /**
- * Generate @coherentjs/devtools scaffolding
+ * Generate @coherent.js/devtools scaffolding
  */
 export function generateDevtoolsScaffolding() {
   const config = `
-import { setupDevtools } from '@coherentjs/devtools';
+import { setupDevtools } from '@coherent.js/devtools';
 
 export function initDevtools(app) {
   if (process.env.NODE_ENV === 'development') {
@@ -303,17 +303,17 @@ export function initDevtools(app) {
   return {
     'src/utils/devtools.js': config,
     dependencies: {
-      '@coherentjs/devtools': '^1.0.0'
+      '@coherent.js/devtools': '^1.0.0'
     }
   };
 }
 
 /**
- * Generate @coherentjs/seo scaffolding
+ * Generate @coherent.js/seo scaffolding
  */
 export function generateSeoScaffolding() {
   const metaHelper = `
-import { createMetaTags, generateSitemap } from '@coherentjs/seo';
+import { createMetaTags, generateSitemap } from '@coherent.js/seo';
 
 export function getPageMeta(page, data = {}) {
   const baseUrl = process.env.BASE_URL || 'https://example.com';
@@ -338,7 +338,7 @@ export function getPageMeta(page, data = {}) {
   return createMetaTags({
     ...config,
     siteName: 'Coherent.js',
-    twitterHandle: '@coherentjs',
+    twitterHandle: '@coherent.js',
     type: 'website',
     locale: 'en_US',
     ...data
@@ -357,17 +357,17 @@ export function getSitemap() {
   return {
     'src/utils/seo.js': metaHelper,
     dependencies: {
-      '@coherentjs/seo': '^1.0.0'
+      '@coherent.js/seo': '^1.0.0'
     }
   };
 }
 
 /**
- * Generate @coherentjs/testing scaffolding
+ * Generate @coherent.js/testing scaffolding
  */
 export function generateTestingScaffolding() {
   const testHelper = `
-import { render, createTestContext } from '@coherentjs/testing';
+import { render, createTestContext } from '@coherent.js/testing';
 import { describe, it, expect } from 'vitest';
 
 /**
@@ -411,7 +411,7 @@ export function createMockContext(overrides = {}) {
 
   const exampleTest = `
 import { describe, it, expect } from 'vitest';
-import { render } from '@coherentjs/testing';
+import { render } from '@coherent.js/testing';
 import { HomePage } from '../src/components/HomePage.js';
 
 describe('HomePage', () => {
@@ -431,7 +431,7 @@ describe('HomePage', () => {
     'tests/helpers/testing.js': testHelper,
     'tests/components/HomePage.test.js': exampleTest,
     dependencies: {
-      '@coherentjs/testing': '^1.0.0'
+      '@coherent.js/testing': '^1.0.0'
     }
   };
 }

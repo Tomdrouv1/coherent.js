@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-The documentation audit revealed **critical inconsistencies** in package naming and several missing documentation files. The primary issue is that all documentation uses `coherent-js` as the package name, but the actual published packages use the `@coherentjs/*` scoped naming convention.
+The documentation audit revealed **critical inconsistencies** in package naming and several missing documentation files. The primary issue is that all documentation uses `coherent-js` as the package name, but the actual published packages use the `@coherent.js/*` scoped naming convention.
 
 ---
 
@@ -14,7 +14,7 @@ The documentation audit revealed **critical inconsistencies** in package naming 
 
 ### 1. **Incorrect Package Names Throughout Documentation**
 
-**Issue:** All documentation files use `coherent-js` instead of `@coherentjs/core`
+**Issue:** All documentation files use `coherent-js` instead of `@coherent.js/core`
 
 **Impact:** HIGH - Users cannot install or use the framework with documented commands
 
@@ -29,11 +29,11 @@ The documentation audit revealed **critical inconsistencies** in package naming 
 - And many more...
 
 **Correct Package Names:**
-- ❌ `coherent-js` → ✅ `@coherentjs/core`
-- ❌ `coherent-js/api` → ✅ `@coherentjs/api`
-- ❌ `coherent-js/client` → ✅ `@coherentjs/client`
-- ❌ `coherent-js/express` → ✅ `@coherentjs/express`
-- ❌ `coherent-js/fastify` → ✅ `@coherentjs/fastify`
+- ❌ `coherent-js` → ✅ `@coherent.js/core`
+- ❌ `coherent-js/api` → ✅ `@coherent.js/api`
+- ❌ `coherent-js/client` → ✅ `@coherent.js/client`
+- ❌ `coherent-js/express` → ✅ `@coherent.js/express`
+- ❌ `coherent-js/fastify` → ✅ `@coherent.js/fastify`
 
 ---
 
@@ -105,7 +105,7 @@ The documentation audit revealed **critical inconsistencies** in package naming 
 **Priority:** MEDIUM
 
 **Should Document:**
-- `@coherentjs/cli` package
+- `@coherent.js/cli` package
 - Available commands
 - Debug tools
 - Project validation
@@ -151,7 +151,7 @@ The documentation audit revealed **critical inconsistencies** in package naming 
 
 ### 1. **getting-started.md**
 **Issues:**
-- Uses `coherent-js` instead of `@coherentjs/core`
+- Uses `coherent-js` instead of `@coherent.js/core`
 - Missing information about new state management features
 - Missing HMR setup instructions
 
@@ -167,7 +167,7 @@ The documentation audit revealed **critical inconsistencies** in package naming 
 
 ### 3. **framework-integrations.md**
 **Issues:**
-- Uses `coherent-js` instead of `@coherentjs/*`
+- Uses `coherent-js` instead of `@coherent.js/*`
 - Missing information about shared rendering utilities
 - Outdated integration examples
 
@@ -219,14 +219,14 @@ The documentation audit revealed **critical inconsistencies** in package naming 
 ### Phase 1: Critical Fixes (Immediate)
 
 1. **Global Find & Replace**
-   - Replace all `coherent-js` → `@coherentjs/core`
-   - Replace all `coherent-js/api` → `@coherentjs/api`
-   - Replace all `coherent-js/client` → `@coherentjs/client`
-   - Replace all `coherent-js/express` → `@coherentjs/express`
-   - Replace all `coherent-js/fastify` → `@coherentjs/fastify`
+   - Replace all `coherent-js` → `@coherent.js/core`
+   - Replace all `coherent-js/api` → `@coherent.js/api`
+   - Replace all `coherent-js/client` → `@coherent.js/client`
+   - Replace all `coherent-js/express` → `@coherent.js/express`
+   - Replace all `coherent-js/fastify` → `@coherent.js/fastify`
 
 2. **Update Installation Instructions**
-   - Change `npm install coherent-js` → `npm install @coherentjs/core`
+   - Change `npm install coherent-js` → `npm install @coherent.js/core`
    - Update all package.json examples
 
 ### Phase 2: Add Missing Documentation (High Priority)
@@ -284,13 +284,13 @@ A script should be created to automatically fix package names:
 # fix-package-names.sh
 
 find docs -type f -name "*.md" -exec sed -i '' \
-  -e 's/coherent-js\/api/@coherentjs\/api/g' \
-  -e 's/coherent-js\/client/@coherentjs\/client/g' \
-  -e 's/coherent-js\/express/@coherentjs\/express/g' \
-  -e 's/coherent-js\/fastify/@coherentjs\/fastify/g' \
-  -e 's/from '\''coherent-js'\''/from '\''@coherentjs\/core'\''/g' \
-  -e 's/install coherent-js/install @coherentjs\/core/g' \
-  -e 's/add coherent-js/add @coherentjs\/core/g' \
+  -e 's/coherent-js\/api/@coherent.js\/api/g' \
+  -e 's/coherent-js\/client/@coherent.js\/client/g' \
+  -e 's/coherent-js\/express/@coherent.js\/express/g' \
+  -e 's/coherent-js\/fastify/@coherent.js\/fastify/g' \
+  -e 's/from '\''coherent-js'\''/from '\''@coherent.js\/core'\''/g' \
+  -e 's/install coherent-js/install @coherent.js\/core/g' \
+  -e 's/add coherent-js/add @coherent.js\/core/g' \
   {} \;
 
 echo "✅ Package names updated in all documentation files"
@@ -302,7 +302,7 @@ echo "✅ Package names updated in all documentation files"
 
 Documentation will be considered up-to-date when:
 
-- ✅ 0 occurrences of `coherent-js` (should be `@coherentjs/core`)
+- ✅ 0 occurrences of `coherent-js` (should be `@coherent.js/core`)
 - ✅ All new features documented (shared utilities, advanced state, router, HMR)
 - ✅ All code examples are tested and working
 - ✅ Installation instructions are accurate
@@ -315,7 +315,7 @@ Documentation will be considered up-to-date when:
 
 Going forward, all documentation should:
 
-1. Use correct scoped package names (`@coherentjs/*`)
+1. Use correct scoped package names (`@coherent.js/*`)
 2. Include working code examples
 3. Reference the ARCHITECTURE.md for design decisions
 4. Include TypeScript examples where applicable

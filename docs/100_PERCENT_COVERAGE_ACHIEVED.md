@@ -123,21 +123,21 @@ All documentation files in the Coherent.js project now have correct package name
 ### Installation (100% Working)
 ```bash
 # All package names correct
-npm install @coherentjs/core
-npm install @coherentjs/api
-npm install @coherentjs/client
-npm install @coherentjs/express express
-npm install @coherentjs/fastify fastify
-npm install @coherentjs/koa koa
-npm install @coherentjs/nextjs next react
+npm install @coherent.js/core
+npm install @coherent.js/api
+npm install @coherent.js/client
+npm install @coherent.js/express express
+npm install @coherent.js/fastify fastify
+npm install @coherent.js/koa koa
+npm install @coherent.js/nextjs next react
 ```
 
 ### Imports (100% Correct)
 ```javascript
 // Core framework - ALL CORRECT
-import { render, withState, createComponent } from '@coherentjs/core';
-import { createCoherent, performanceMonitor } from '@coherentjs/core';
-import { when, forEach, memo, compose } from '@coherentjs/core';
+import { render, withState, createComponent } from '@coherent.js/core';
+import { createCoherent, performanceMonitor } from '@coherent.js/core';
+import { when, forEach, memo, compose } from '@coherent.js/core';
 
 // Shared utilities (v1.1.0) - ALL CORRECT
 import { 
@@ -146,14 +146,14 @@ import {
   renderComponentFactory,
   isCoherentComponent,
   createErrorResponse
-} from '@coherentjs/core/utils/render-utils';
+} from '@coherent.js/core/utils/render-utils';
 
 // Advanced state management (v1.1.0) - ALL CORRECT
 import { 
   withState,
   withStateUtils,
   createStateManager
-} from '@coherentjs/core';
+} from '@coherent.js/core';
 
 // API framework - ALL CORRECT
 import { 
@@ -162,7 +162,7 @@ import {
   withErrorHandling,
   withSerialization,
   withOpenApi
-} from '@coherentjs/api';
+} from '@coherent.js/api';
 
 // Client-side hydration - ALL CORRECT
 import { 
@@ -171,20 +171,20 @@ import {
   hydrate,
   hydrateAll,
   hydrateBySelector
-} from '@coherentjs/client';
+} from '@coherent.js/client';
 
 // Framework integrations - ALL CORRECT
-import { setupCoherent } from '@coherentjs/express';
-import { coherentFastify } from '@coherentjs/fastify';
-import { coherentKoaMiddleware } from '@coherentjs/koa';
-import { createCoherentNextHandler } from '@coherentjs/nextjs';
+import { setupCoherent } from '@coherent.js/express';
+import { coherentFastify } from '@coherent.js/fastify';
+import { coherentKoaMiddleware } from '@coherent.js/koa';
+import { createCoherentNextHandler } from '@coherent.js/nextjs';
 
 // Database - ALL CORRECT
 import { 
   createDatabaseManager,
   createQuery,
   executeQuery
-} from '@coherentjs/core';
+} from '@coherent.js/core';
 ```
 
 ---
@@ -202,7 +202,7 @@ import {
 ❌ 68% documentation coverage  
 
 ### After Updates
-✅ Users can install correctly (`@coherentjs/core`)  
+✅ Users can install correctly (`@coherent.js/core`)  
 ✅ All code examples work (100% correct imports)  
 ✅ v1.1.0 features fully documented  
 ✅ Consistent naming in 100% of docs  

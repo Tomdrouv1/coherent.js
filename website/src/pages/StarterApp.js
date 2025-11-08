@@ -180,7 +180,7 @@ export const StarterAppPage = () => ({
                       children: [
                         { 
                           pre: { 
-                            text: `import { withState } from '@coherentjs/core';
+                            text: `import { withState } from '@coherent.js/core';
 
 export const Counter = withState({ count: 0 })(({ state, setState }) => ({
   div: {

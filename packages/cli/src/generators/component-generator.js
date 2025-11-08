@@ -77,7 +77,7 @@ function generateComponentContent(name, template) {
  * Generate basic component
  */
 function generateBasicComponent(name) {
-  return `import { createComponent } from '@coherentjs/core';
+  return `import { createComponent } from '@coherent.js/core';
 
 /**
  * ${name} component
@@ -108,7 +108,7 @@ export const ${name} = createComponent(({ className = '', children, ...props }) 
  * Generate functional component with business logic
  */
 function generateFunctionalComponent(name) {
-  return `import { createComponent } from '@coherentjs/core';
+  return `import { createComponent } from '@coherent.js/core';
 
 /**
  * ${name} - Functional component with business logic
@@ -177,7 +177,7 @@ export const ${name} = createComponent(({ items = [], onItemClick, className = '
  * Generate interactive component with state
  */
 function generateInteractiveComponent(name) {
-  return `import { createComponent } from '@coherentjs/core';
+  return `import { createComponent } from '@coherent.js/core';
 
 /**
  * ${name} - Interactive component with state management
@@ -268,7 +268,7 @@ export const ${name} = createComponent(({
  * Generate layout component
  */
 function generateLayoutComponent(name) {
-  return `import { createComponent } from '@coherentjs/core';
+  return `import { createComponent } from '@coherent.js/core';
 
 /**
  * ${name} - Layout component for page structure
@@ -360,7 +360,7 @@ export const ${name} = createComponent(({
 function generateTestContent(name) {
   return `import { test } from 'node:test';
 import assert from 'node:assert';
-import { render } from '@coherentjs/core';
+import { render } from '@coherent.js/core';
 import { ${name} } from './${name}.js';
 
 test('${name} renders correctly', () => {

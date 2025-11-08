@@ -3,7 +3,7 @@
  * Provides server-side rendering without Node.js dependencies
  */
 
-import { render } from '@coherentjs/core';
+import { render } from '@coherent.js/core';
 
 export class EdgeRuntime {
   constructor(options = {}) {

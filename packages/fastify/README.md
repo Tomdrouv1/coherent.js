@@ -1,6 +1,6 @@
-# @coherentjs/fastify
+# @coherent.js/fastify
 
-[![npm version](https://img.shields.io/npm/v/@coherentjs/fastify.svg)](https://www.npmjs.com/package/@coherentjs/fastify)
+[![npm version](https://img.shields.io/npm/v/@coherent.js/fastify.svg)](https://www.npmjs.com/package/@coherent.js/fastify)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](../../LICENSE)
 [![Node >= 20](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
 
@@ -8,28 +8,28 @@ Fastify adapter for Coherent.js.
 
 - ESM-only, Node 20+
 - Works with `fastify@4.x`
-- Designed to pair with `@coherentjs/core`
+- Designed to pair with `@coherent.js/core`
 
 For a high-level overview and repository-wide instructions, see the root README: ../../README.md
 
 ## Installation
 
 ```bash
-pnpm add @coherentjs/fastify fastify @coherentjs/core
+pnpm add @coherent.js/fastify fastify @coherent.js/core
 ```
 
 Peer dependencies:
 - `fastify` >= 4 < 6
-- `@coherentjs/core`
+- `@coherent.js/core`
 
 ## Quick start
 
-You can use `@coherentjs/core` rendering inside Fastify route handlers.
+You can use `@coherent.js/core` rendering inside Fastify route handlers.
 
 JavaScript (ESM):
 ```js
 import Fastify from 'fastify';
-import { renderToString } from '@coherentjs/core';
+import { renderToString } from '@coherent.js/core';
 
 const app = Fastify();
 
@@ -44,7 +44,7 @@ app.listen({ port: 3000 });
 TypeScript:
 ```ts
 import Fastify, { FastifyRequest, FastifyReply } from 'fastify';
-import { renderToString } from '@coherentjs/core';
+import { renderToString } from '@coherent.js/core';
 
 const app = Fastify();
 
@@ -59,10 +59,10 @@ app.listen({ port: 3000 });
 ## Development
 
 ```bash
-pnpm --filter @coherentjs/fastify run test
-pnpm --filter @coherentjs/fastify run test:watch
-pnpm --filter @coherentjs/fastify run typecheck
-pnpm --filter @coherentjs/fastify run build
+pnpm --filter @coherent.js/fastify run test
+pnpm --filter @coherent.js/fastify run test:watch
+pnpm --filter @coherent.js/fastify run typecheck
+pnpm --filter @coherent.js/fastify run build
 ```
 
 ## License

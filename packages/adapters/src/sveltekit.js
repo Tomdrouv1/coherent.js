@@ -2,11 +2,11 @@
  * SvelteKit Adapter for Coherent.js
  */
 
-import { render } from '@coherentjs/core';
+import { render } from '@coherent.js/core';
 
 export function createSvelteKitAdapter(_options = {}) {
   return {
-    name: '@coherentjs/sveltekit',
+    name: '@coherent.js/sveltekit',
     renderComponent: (component, props) => render(component, props)
   };
 }

@@ -21,9 +21,9 @@ Useful root files:
 - `.junie/guidelines.md` – Deep project‑specific runbooks (build/test tips)
 
 Primary packages (examples, not exhaustive):
-- `@coherentjs/core` – Core runtime and rendering
-- `@coherentjs/client` – Client‑side hydration utilities
-- `@coherentjs/testing` – Testing helpers for components
+- `@coherent.js/core` – Core runtime and rendering
+- `@coherent.js/client` – Client‑side hydration utilities
+- `@coherent.js/testing` – Testing helpers for components
 - Integration packages (Express/Fastify/Koa/Next, etc.) may be present
 
 ---
@@ -33,7 +33,7 @@ Primary packages (examples, not exhaustive):
 - Use Node 20+ only.
 - Use pnpm for all installs and scripts; do not use npm/yarn.
 - ESM only: prefer `import`/`export`; avoid `require()` outside of `dist/*` or scripts that explicitly support CJS.
-- Respect conditional exports: `@coherentjs/core` maps `development` to `./src/index.js` and production to `./dist/*`. Dev tooling may import from `src` directly.
+- Respect conditional exports: `@coherent.js/core` maps `development` to `./src/index.js` and production to `./dist/*`. Dev tooling may import from `src` directly.
 
 Install at the repo root:
 ```bash
@@ -96,8 +96,8 @@ pnpm test:coverage    # run with coverage
 
 Focused runs (preferred stability in a monorepo):
 ```bash
-# Run a single test file in @coherentjs/core (most reliable approach)
-pnpm --filter @coherentjs/core run test -- test/example-render.test.js
+# Run a single test file in @coherent.js/core (most reliable approach)
+pnpm --filter @coherent.js/core run test -- test/example-render.test.js
 ```
 
 Notes:
@@ -119,7 +119,7 @@ Coverage output:
 - Keep changes minimal and surgical. Avoid broad refactors unless explicitly requested.
 - Match existing code style: ESM imports, prefer `const`, `eqeqeq`, no `eval` or implied eval, no `new Function`.
 - Do not edit `dist/` artifact files or generated coverage/output directories.
-- Respect conditional exports in `@coherentjs/core`: tests and website dev flows may import `src` via development export mapping.
+- Respect conditional exports in `@coherent.js/core`: tests and website dev flows may import `src` via development export mapping.
 - When adding tests, prefer placing them under `packages/<pkg>/test/` unless there’s a compelling reason to colocate.
 - Reset mocks/state between tests; avoid `global.*` leaks.
 - If touching client-side utilities, add browser shims in tests as needed; default environment is Node.
@@ -133,7 +133,7 @@ Safety/operational constraints:
 
 ---
 
-## @coherentjs/core Specifics
+## @coherent.js/core Specifics
 
 - Conditional exports:
   ```json
@@ -169,7 +169,7 @@ describe('renderToString smoke', () => {
 });
 
 # Run it deterministically (package‑scoped):
-pnpm --filter @coherentjs/core run test -- test/example-render.test.js
+pnpm --filter @coherent.js/core run test -- test/example-render.test.js
 ```
 
 Run all tests:

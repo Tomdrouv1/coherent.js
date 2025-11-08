@@ -8,7 +8,7 @@
  * Or serve with: node -e "const demo = require('./coherent-master-demo.js'); console.log(demo.render());"
  */
 
-import { render, render, withState, memo, VERSION } from '@coherentjs/core';
+import { render, render, withState, memo, VERSION } from '@coherent.js/core';
 import { createServer } from 'http';
 import { parse as parseUrl } from 'url';
 
@@ -566,7 +566,7 @@ export function createCoherentServer(port = 3000) {
               <h1 style="color: #dc2626;">⚠️ Demo Error</h1>
               <p>There was an error rendering the Coherent.js demo:</p>
               <pre style="background: #f3f4f6; padding: 20px; border-radius: 8px; text-align: left; color: #dc2626; font-size: 0.9rem;">${error.message}</pre>
-              <p><strong>Make sure @coherentjs/core is properly installed.</strong></p>
+              <p><strong>Make sure @coherent.js/core is properly installed.</strong></p>
             </div>
           </body>
         </html>

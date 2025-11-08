@@ -1,6 +1,6 @@
 {
-  "name": "@coherentjs/performance",
-  "version": "1.0.0",
+  "name": "@coherent.js/performance",
+  "version": "1.0.0-beta.1",
   "description": "Performance optimization utilities for Coherent.js",
   "type": "module",
   "main": "./src/index.js",
@@ -20,6 +20,6 @@
   "author": "Coherent.js Team",
   "license": "MIT",
   "peerDependencies": {
-    "@coherentjs/core": "^1.0.0"
+    "@coherent.js/core": "^1.0.0-beta.1"
   }
 }

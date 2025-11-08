@@ -160,7 +160,7 @@ const html = render(WelcomeCard('Developer'));
 Want to see Coherent.js in action? Here's a complete example:
 
 ```javascript
-import { render, createComponent } from '@coherentjs/core';
+import { render, createComponent } from '@coherent.js/core';
 
 // Define a reusable component
 const TodoItem = createComponent(({ task, completed }) => ({

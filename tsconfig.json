@@ -8,6 +8,17 @@
     { "path": "./packages/express" },
     { "path": "./packages/fastify" },
     { "path": "./packages/koa" },
-    { "path": "./packages/nextjs" }
+    { "path": "./packages/nextjs" },
+    { "path": "./packages/adapters" },
+    { "path": "./packages/forms" },
+    { "path": "./packages/i18n" },
+    { "path": "./packages/performance" },
+    { "path": "./packages/runtime" },
+    { "path": "./packages/seo" },
+    { "path": "./packages/testing" },
+    { "path": "./packages/devtools" },
+    { "path": "./packages/web-components" },
+    { "path": "./packages/cli" },
+    { "path": "./packages/profiler" },
   ]
 }

@@ -1,6 +1,6 @@
 import { buildBrowserPackage } from '../../scripts/shared-build.mjs';
 
 await buildBrowserPackage({
-  packageName: '@coherentjs/client',
+  packageName: '@coherent.js/client',
   entryPoint: 'src/hydration.js'
 });

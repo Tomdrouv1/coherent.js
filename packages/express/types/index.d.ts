@@ -1,8 +1,8 @@
 /**
  * Coherent.js Express Integration Types
  * TypeScript definitions for Express.js framework integration
- * 
- * @version 1.1.1
+ *
+ * @version 1.0.0-beta.1
  */
 
 import { Application, RequestHandler, Request, Response, NextFunction } from 'express';

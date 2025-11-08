@@ -237,7 +237,7 @@ async function analyzeConfiguration(_options = {}) {
     try {
       const packageJson = JSON.parse(readFileSync('package.json', 'utf-8'));
       const hasCoherentDeps = Object.keys(packageJson.dependencies || {})
-        .some(dep => dep.startsWith('@coherentjs/'));
+        .some(dep => dep.startsWith('@coherent.js/'));
       
       if (!hasCoherentDeps) {
         analysis.summary.issues.push('No Coherent.js dependencies found');

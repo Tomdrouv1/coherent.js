@@ -1,8 +1,8 @@
 /**
  * Coherent.js Fastify Integration Types
  * TypeScript definitions for Fastify framework integration
- * 
- * @version 1.1.1
+ *
+ * @version 1.0.0-beta.1
  */
 
 import { FastifyInstance, FastifyPluginOptions, FastifyRequest, FastifyReply, FastifyPluginCallback } from 'fastify';

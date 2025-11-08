@@ -38,15 +38,15 @@ If you're upgrading from a previous version:
 
 All packages released as version 1.0.0:
 
-- `@coherentjs/core`: 1.0.0 - Core runtime for Coherent.js (SSR framework)
-- `@coherentjs/api`: 1.0.0 - API framework for Coherent.js (REST/RPC/GraphQL)
-- `@coherentjs/client`: 1.0.0 - Client-side hydration/HMR utilities for Coherent.js
-- `@coherentjs/express`: 1.0.0 - Express adapter for Coherent.js
-- `@coherentjs/fastify`: 1.0.0 - Fastify adapter for Coherent.js
-- `@coherentjs/koa`: 1.0.0 - Koa adapter for Coherent.js
-- `@coherentjs/nextjs`: 1.0.0 - Next.js integration for Coherent.js
-- `@coherentjs/database`: 1.0.0 - Database utilities and adapters for Coherent.js
-- `@coherentjs/cli`: 1.0.0 - Command-line interface for Coherent.js projects
+- `@coherent.js/core`: 1.0.0 - Core runtime for Coherent.js (SSR framework)
+- `@coherent.js/api`: 1.0.0 - API framework for Coherent.js (REST/RPC/GraphQL)
+- `@coherent.js/client`: 1.0.0 - Client-side hydration/HMR utilities for Coherent.js
+- `@coherent.js/express`: 1.0.0 - Express adapter for Coherent.js
+- `@coherent.js/fastify`: 1.0.0 - Fastify adapter for Coherent.js
+- `@coherent.js/koa`: 1.0.0 - Koa adapter for Coherent.js
+- `@coherent.js/nextjs`: 1.0.0 - Next.js integration for Coherent.js
+- `@coherent.js/database`: 1.0.0 - Database utilities and adapters for Coherent.js
+- `@coherent.js/cli`: 1.0.0 - Command-line interface for Coherent.js projects
 
 ### 🛣️ Future Roadmap
 
@@ -92,15 +92,15 @@ versions are deprecated and should not be used in new projects.*
 
 All packages updated to version 1.2.1:
 
-- `@coherentjs/core`: 1.2.1 - Core runtime for Coherent.js (SSR framework)
-- `@coherentjs/api`: 1.2.1 - API framework for Coherent.js (REST/RPC/GraphQL)
-- `@coherentjs/client`: 1.2.1 - Client-side hydration/HMR utilities for Coherent.js
-- `@coherentjs/express`: 1.2.1 - Express adapter for Coherent.js
-- `@coherentjs/fastify`: 1.2.1 - Fastify adapter for Coherent.js
-- `@coherentjs/koa`: 1.2.1 - Koa adapter for Coherent.js
-- `@coherentjs/nextjs`: 1.2.1 - Next.js integration for Coherent.js
-- `@coherentjs/database`: 1.2.1 - Database utilities and adapters for Coherent.js
-- `@coherentjs/cli`: 1.2.1 - Command-line interface for Coherent.js projects
+- `@coherent.js/core`: 1.2.1 - Core runtime for Coherent.js (SSR framework)
+- `@coherent.js/api`: 1.2.1 - API framework for Coherent.js (REST/RPC/GraphQL)
+- `@coherent.js/client`: 1.2.1 - Client-side hydration/HMR utilities for Coherent.js
+- `@coherent.js/express`: 1.2.1 - Express adapter for Coherent.js
+- `@coherent.js/fastify`: 1.2.1 - Fastify adapter for Coherent.js
+- `@coherent.js/koa`: 1.2.1 - Koa adapter for Coherent.js
+- `@coherent.js/nextjs`: 1.2.1 - Next.js integration for Coherent.js
+- `@coherent.js/database`: 1.2.1 - Database utilities and adapters for Coherent.js
+- `@coherent.js/cli`: 1.2.1 - Command-line interface for Coherent.js projects
 
 #### Links
 
@@ -122,15 +122,15 @@ All packages updated to version 1.2.1:
 
 All packages updated to version 1.2.0:
 
-- `@coherentjs/core`: 1.2.0
-- `@coherentjs/api`: 1.2.0
-- `@coherentjs/client`: 1.2.0
-- `@coherentjs/express`: 1.2.0
-- `@coherentjs/fastify`: 1.2.0
-- `@coherentjs/koa`: 1.2.0
-- `@coherentjs/nextjs`: 1.2.0
-- `@coherentjs/database`: 1.2.0
-- `@coherentjs/cli`: 1.2.0
+- `@coherent.js/core`: 1.2.0
+- `@coherent.js/api`: 1.2.0
+- `@coherent.js/client`: 1.2.0
+- `@coherent.js/express`: 1.2.0
+- `@coherent.js/fastify`: 1.2.0
+- `@coherent.js/koa`: 1.2.0
+- `@coherent.js/nextjs`: 1.2.0
+- `@coherent.js/database`: 1.2.0
+- `@coherent.js/cli`: 1.2.0
 
 #### Links
 
@@ -147,15 +147,15 @@ All packages updated to version 1.2.0:
 
 All packages updated to version 1.1.1:
 
-- `@coherentjs/core`: 1.1.1
-- `@coherentjs/api`: 1.1.1
-- `@coherentjs/client`: 1.1.1
-- `@coherentjs/express`: 1.1.1
-- `@coherentjs/fastify`: 1.1.1
-- `@coherentjs/koa`: 1.1.1
-- `@coherentjs/nextjs`: 1.1.1
-- `@coherentjs/database`: 1.1.1
-- `@coherentjs/cli`: 1.1.1
+- `@coherent.js/core`: 1.1.1
+- `@coherent.js/api`: 1.1.1
+- `@coherent.js/client`: 1.1.1
+- `@coherent.js/express`: 1.1.1
+- `@coherent.js/fastify`: 1.1.1
+- `@coherent.js/koa`: 1.1.1
+- `@coherent.js/nextjs`: 1.1.1
+- `@coherent.js/database`: 1.1.1
+- `@coherent.js/cli`: 1.1.1
 
 #### Links
 
@@ -172,15 +172,15 @@ All packages updated to version 1.1.1:
 
 All packages updated to version 1.1.0:
 
-- `@coherentjs/core`: 1.1.0
-- `@coherentjs/api`: 1.1.0
-- `@coherentjs/client`: 1.1.0
-- `@coherentjs/express`: 1.1.0
-- `@coherentjs/fastify`: 1.1.0
-- `@coherentjs/koa`: 1.1.0
-- `@coherentjs/nextjs`: 1.1.0
-- `@coherentjs/database`: 1.1.0
-- `@coherentjs/cli`: 1.1.0
+- `@coherent.js/core`: 1.1.0
+- `@coherent.js/api`: 1.1.0
+- `@coherent.js/client`: 1.1.0
+- `@coherent.js/express`: 1.1.0
+- `@coherent.js/fastify`: 1.1.0
+- `@coherent.js/koa`: 1.1.0
+- `@coherent.js/nextjs`: 1.1.0
+- `@coherent.js/database`: 1.1.0
+- `@coherent.js/cli`: 1.1.0
 
 #### Links
 
@@ -201,15 +201,15 @@ All packages updated to version 1.1.0:
 
 All packages updated to version 1.0.1:
 
-- `@coherentjs/core`: 1.0.1
-- `@coherentjs/api`: 1.0.1
-- `@coherentjs/client`: 1.0.1
-- `@coherentjs/express`: 1.0.1
-- `@coherentjs/fastify`: 1.0.1
-- `@coherentjs/koa`: 1.0.1
-- `@coherentjs/nextjs`: 1.0.1
-- `@coherentjs/database`: 1.0.1
-- `@coherentjs/cli`: 1.0.1
+- `@coherent.js/core`: 1.0.1
+- `@coherent.js/api`: 1.0.1
+- `@coherent.js/client`: 1.0.1
+- `@coherent.js/express`: 1.0.1
+- `@coherent.js/fastify`: 1.0.1
+- `@coherent.js/koa`: 1.0.1
+- `@coherent.js/nextjs`: 1.0.1
+- `@coherent.js/database`: 1.0.1
+- `@coherent.js/cli`: 1.0.1
 
 #### Links
 
@@ -227,15 +227,15 @@ All packages updated to version 1.0.1:
 
 All packages updated to version 0.2.5:
 
-- `@coherentjs/core`: 0.2.5
-- `@coherentjs/api`: 0.2.5
-- `@coherentjs/client`: 0.2.5
-- `@coherentjs/express`: 0.2.5
-- `@coherentjs/fastify`: 0.2.5
-- `@coherentjs/koa`: 0.2.5
-- `@coherentjs/nextjs`: 0.2.5
-- `@coherentjs/database`: 0.2.5
-- `@coherentjs/cli`: 0.2.5
+- `@coherent.js/core`: 0.2.5
+- `@coherent.js/api`: 0.2.5
+- `@coherent.js/client`: 0.2.5
+- `@coherent.js/express`: 0.2.5
+- `@coherent.js/fastify`: 0.2.5
+- `@coherent.js/koa`: 0.2.5
+- `@coherent.js/nextjs`: 0.2.5
+- `@coherent.js/database`: 0.2.5
+- `@coherent.js/cli`: 0.2.5
 
 #### Links
 
@@ -273,15 +273,15 @@ All packages updated to version 0.2.5:
 
 All packages updated to version 0.2.4:
 
-- `@coherentjs/core`: 0.2.4
-- `@coherentjs/api`: 0.2.4
-- `@coherentjs/client`: 0.2.4
-- `@coherentjs/express`: 0.2.4
-- `@coherentjs/fastify`: 0.2.4
-- `@coherentjs/koa`: 0.2.4
-- `@coherentjs/nextjs`: 0.2.4
-- `@coherentjs/database`: 0.2.4
-- `@coherentjs/cli`: 0.2.4
+- `@coherent.js/core`: 0.2.4
+- `@coherent.js/api`: 0.2.4
+- `@coherent.js/client`: 0.2.4
+- `@coherent.js/express`: 0.2.4
+- `@coherent.js/fastify`: 0.2.4
+- `@coherent.js/koa`: 0.2.4
+- `@coherent.js/nextjs`: 0.2.4
+- `@coherent.js/database`: 0.2.4
+- `@coherent.js/cli`: 0.2.4
 
 #### Links
 
@@ -297,15 +297,15 @@ All packages updated to version 0.2.4:
 
 All packages updated to version 0.2.3:
 
-- `@coherentjs/core`: 0.2.3
-- `@coherentjs/api`: 0.2.3
-- `@coherentjs/client`: 0.2.3
-- `@coherentjs/express`: 0.2.3
-- `@coherentjs/fastify`: 0.2.3
-- `@coherentjs/koa`: 0.2.3
-- `@coherentjs/nextjs`: 0.2.3
-- `@coherentjs/database`: 0.2.3
-- `@coherentjs/cli`: 0.2.3
+- `@coherent.js/core`: 0.2.3
+- `@coherent.js/api`: 0.2.3
+- `@coherent.js/client`: 0.2.3
+- `@coherent.js/express`: 0.2.3
+- `@coherent.js/fastify`: 0.2.3
+- `@coherent.js/koa`: 0.2.3
+- `@coherent.js/nextjs`: 0.2.3
+- `@coherent.js/database`: 0.2.3
+- `@coherent.js/cli`: 0.2.3
 
 #### Links
 
@@ -321,15 +321,15 @@ All packages updated to version 0.2.3:
 
 All packages updated to version 0.2.2:
 
-- `@coherentjs/core`: 0.2.2
-- `@coherentjs/api`: 0.2.2
-- `@coherentjs/client`: 0.2.2
-- `@coherentjs/express`: 0.2.2
-- `@coherentjs/fastify`: 0.2.2
-- `@coherentjs/koa`: 0.2.2
-- `@coherentjs/nextjs`: 0.2.2
-- `@coherentjs/database`: 0.2.2
-- `@coherentjs/cli`: 0.2.2
+- `@coherent.js/core`: 0.2.2
+- `@coherent.js/api`: 0.2.2
+- `@coherent.js/client`: 0.2.2
+- `@coherent.js/express`: 0.2.2
+- `@coherent.js/fastify`: 0.2.2
+- `@coherent.js/koa`: 0.2.2
+- `@coherent.js/nextjs`: 0.2.2
+- `@coherent.js/database`: 0.2.2
+- `@coherent.js/cli`: 0.2.2
 
 #### Links
 
@@ -345,15 +345,15 @@ All packages updated to version 0.2.2:
 
 All packages updated to version 0.2.1:
 
-- `@coherentjs/core`: 0.2.1
-- `@coherentjs/api`: 0.2.1
-- `@coherentjs/client`: 0.2.1
-- `@coherentjs/express`: 0.2.1
-- `@coherentjs/fastify`: 0.2.1
-- `@coherentjs/koa`: 0.2.1
-- `@coherentjs/nextjs`: 0.2.1
-- `@coherentjs/database`: 0.2.1
-- `@coherentjs/cli`: 0.2.1
+- `@coherent.js/core`: 0.2.1
+- `@coherent.js/api`: 0.2.1
+- `@coherent.js/client`: 0.2.1
+- `@coherent.js/express`: 0.2.1
+- `@coherent.js/fastify`: 0.2.1
+- `@coherent.js/koa`: 0.2.1
+- `@coherent.js/nextjs`: 0.2.1
+- `@coherent.js/database`: 0.2.1
+- `@coherent.js/cli`: 0.2.1
 
 #### Links
 
@@ -376,15 +376,15 @@ All packages updated to version 0.2.1:
 
 All packages updated to version 0.2.0:
 
-- `@coherentjs/core`: 0.2.0
-- `@coherentjs/api`: 0.2.0
-- `@coherentjs/client`: 0.2.0
-- `@coherentjs/express`: 0.2.0
-- `@coherentjs/fastify`: 0.2.0
-- `@coherentjs/koa`: 0.2.0
-- `@coherentjs/nextjs`: 0.2.0
-- `@coherentjs/database`: 0.2.0
-- `@coherentjs/cli`: 0.2.0
+- `@coherent.js/core`: 0.2.0
+- `@coherent.js/api`: 0.2.0
+- `@coherent.js/client`: 0.2.0
+- `@coherent.js/express`: 0.2.0
+- `@coherent.js/fastify`: 0.2.0
+- `@coherent.js/koa`: 0.2.0
+- `@coherent.js/nextjs`: 0.2.0
+- `@coherent.js/database`: 0.2.0
+- `@coherent.js/cli`: 0.2.0
 
 #### Links
 
@@ -401,15 +401,15 @@ All packages updated to version 0.2.0:
 
 All packages updated to version 0.1.3:
 
-- `@coherentjs/core`: 0.1.3
-- `@coherentjs/api`: 0.1.3
-- `@coherentjs/client`: 0.1.3
-- `@coherentjs/express`: 0.1.3
-- `@coherentjs/fastify`: 0.1.3
-- `@coherentjs/koa`: 0.1.3
-- `@coherentjs/nextjs`: 0.1.3
-- `@coherentjs/database`: 0.1.3
-- `@coherentjs/cli`: 0.1.3
+- `@coherent.js/core`: 0.1.3
+- `@coherent.js/api`: 0.1.3
+- `@coherent.js/client`: 0.1.3
+- `@coherent.js/express`: 0.1.3
+- `@coherent.js/fastify`: 0.1.3
+- `@coherent.js/koa`: 0.1.3
+- `@coherent.js/nextjs`: 0.1.3
+- `@coherent.js/database`: 0.1.3
+- `@coherent.js/cli`: 0.1.3
 
 #### Links
 
@@ -430,12 +430,12 @@ All packages updated to version 0.1.3:
 
 All packages updated to version 0.1.0:
 
-- `@coherentjs/core`: 0.1.0
-- `@coherentjs/api`: 0.1.0
-- `@coherentjs/client`: 0.1.0
-- `@coherentjs/express`: 0.1.0
-- `@coherentjs/fastify`: 0.1.0
-- `@coherentjs/koa`: 0.1.0
-- `@coherentjs/nextjs`: 0.1.0
-- `@coherentjs/database`: 0.1.0
-- `@coherentjs/cli`: 0.1.0
+- `@coherent.js/core`: 0.1.0
+- `@coherent.js/api`: 0.1.0
+- `@coherent.js/client`: 0.1.0
+- `@coherent.js/express`: 0.1.0
+- `@coherent.js/fastify`: 0.1.0
+- `@coherent.js/koa`: 0.1.0
+- `@coherent.js/nextjs`: 0.1.0
+- `@coherent.js/database`: 0.1.0
+- `@coherent.js/cli`: 0.1.0

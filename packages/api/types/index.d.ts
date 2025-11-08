@@ -1,8 +1,8 @@
 /**
  * Coherent.js API Types
  * TypeScript definitions for the API framework
- * 
- * @version 1.1.1
+ *
+ * @version 1.0.0-beta.1
  */
 
 import { IncomingMessage, ServerResponse } from 'http';

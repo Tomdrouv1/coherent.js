@@ -8,7 +8,7 @@
  * npm install next react
  * 
  * Usage:
- * import { createNextIntegration } from '@coherentjs/core/nextjs';
+ * import { createNextIntegration } from '@coherent.js/core/nextjs';
  */
 
 export {

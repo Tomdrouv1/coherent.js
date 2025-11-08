@@ -3,7 +3,7 @@
  */
 
 import { defineConfig } from 'vite';
-import { coherentVitePlugin } from '@coherentjs/build-tools/vite';
+import { coherentVitePlugin } from '@coherent.js/build-tools/vite';
 
 export default defineConfig({
   plugins: [
@@ -28,16 +28,16 @@ export default defineConfig({
   // Optimize dependencies for Coherent.js
   optimizeDeps: {
     include: [
-      '@coherentjs/core',
-      '@coherentjs/client'
+      '@coherent.js/core',
+      '@coherent.js/client'
     ]
   },
   
   // Configure SSR
   ssr: {
     noExternal: [
-      '@coherentjs/core',
-      '@coherentjs/client'
+      '@coherent.js/core',
+      '@coherent.js/client'
     ]
   },
   
@@ -45,7 +45,7 @@ export default defineConfig({
   build: {
     target: 'node20',
     rollupOptions: {
-      external: ['@coherentjs/express', '@coherentjs/fastify']
+      external: ['@coherent.js/express', '@coherent.js/fastify']
     }
   },
   

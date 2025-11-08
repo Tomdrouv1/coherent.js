@@ -16,10 +16,10 @@ for (const entry of entries) {
     format: 'esm',
     platform: 'node',
     outfile,
-    external: ['@coherentjs/core', 'astro', '@remix-run/*', '@sveltejs/*'],
+    external: ['@coherent.js/core', 'astro', '@remix-run/*', '@sveltejs/*'],
     minify: false,
     sourcemap: true
   });
 }
 
-console.log('✅ @coherentjs/adapters built successfully');
+console.log('✅ @coherent.js/adapters built successfully');

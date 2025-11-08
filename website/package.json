@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@coherentjs/core": "^0.2.5",
+    "@coherent.js/core": "^1.0.0-beta.1",
     "@codemirror/view": "^6.0.0",
     "@codemirror/state": "^6.0.0",
     "@codemirror/autocomplete": "^6.0.0",

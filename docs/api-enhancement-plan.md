@@ -32,7 +32,7 @@
 A lightweight routing system similar to Express Router but designed for API endpoints:
 
 ```javascript
-import { createApiRouter } from '@coherentjs/api';
+import { createApiRouter } from '@coherent.js/api';
 
 const router = createApiRouter();
 
@@ -57,7 +57,7 @@ router.post('/users', (req, res) => {
 Built-in validation using a schema-based approach:
 
 ```javascript
-import { withValidation } from '@coherentjs/api';
+import { withValidation } from '@coherent.js/api';
 
 const userSchema = {
   type: 'object',
@@ -79,7 +79,7 @@ const validatedHandler = withValidation(userSchema, (req, res) => {
 Automatic serialization of complex objects, dates, and custom types:
 
 ```javascript
-import { withSerialization } from '@coherentjs/api';
+import { withSerialization } from '@coherent.js/api';
 
 const apiHandler = withSerialization((req, res) => {
   return {
@@ -95,7 +95,7 @@ const apiHandler = withSerialization((req, res) => {
 Standardized error handling with automatic HTTP status codes:
 
 ```javascript
-import { withErrorHandling } from '@coherentjs/api';
+import { withErrorHandling } from '@coherent.js/api';
 
 const errorHandler = withErrorHandling((req, res) => {
   if (!req.user) {
@@ -111,7 +111,7 @@ const errorHandler = withErrorHandling((req, res) => {
 Automatic generation of OpenAPI documentation:
 
 ```javascript
-import { withOpenApi } from '@coherentjs/api';
+import { withOpenApi } from '@coherent.js/api';
 
 const documentedHandler = withOpenApi({
   summary: 'Get all users',
@@ -139,7 +139,7 @@ const documentedHandler = withOpenApi({
 API-specific middleware for common concerns:
 
 ```javascript
-import { createApiMiddleware } from '@coherentjs/api';
+import { createApiMiddleware } from '@coherent.js/api';
 
 const authMiddleware = createApiMiddleware((req, res, next) => {
   const token = req.headers.authorization;
@@ -161,7 +161,7 @@ Adapters for different API patterns:
 
 ```javascript
 // REST Adapter
-import { createRestAdapter } from '@coherentjs/api';
+import { createRestAdapter } from '@coherent.js/api';
 
 const restApi = createRestAdapter({
   resource: 'users',
@@ -170,7 +170,7 @@ const restApi = createRestAdapter({
 });
 
 // GraphQL Adapter
-import { createGraphqlAdapter } from '@coherentjs/api';
+import { createGraphqlAdapter } from '@coherent.js/api';
 
 const graphqlApi = createGraphqlAdapter({
   schema: userSchema,
@@ -305,7 +305,7 @@ The new API modules integrate seamlessly with existing Coherent.js features:
 
 ```javascript
 // Basic API endpoint
-import { createApiRouter, withValidation, withErrorHandling } from '@coherentjs/api';
+import { createApiRouter, withValidation, withErrorHandling } from '@coherent.js/api';
 
 const router = createApiRouter();
 
@@ -328,7 +328,7 @@ router.post('/users',
 
 // Integration with Express
 import express from 'express';
-import { setupCoherent } from '@coherentjs/express';
+import { setupCoherent } from '@coherent.js/express';
 
 const app = express();
 setupCoherent(app);

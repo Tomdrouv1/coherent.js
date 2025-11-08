@@ -11,7 +11,7 @@ export function generateBuiltInServer(options = {}) {
 
   const imports = [
     `import http from 'http';`,
-    `import { render } from '@coherentjs/core';`
+    `import { render } from '@coherent.js/core';`
   ];
 
   if (hasApi) imports.push(`import { setupRoutes } from './api/routes.js';`);
@@ -84,7 +84,7 @@ export function generateExpressServer(options = {}) {
 
   const imports = [
     `import express from 'express';`,
-    `import { setupCoherent } from '@coherentjs/express';`
+    `import { setupCoherent } from '@coherent.js/express';`
   ];
 
   if (hasApi) imports.push(`import apiRoutes from './api/routes.js';`);
@@ -140,7 +140,7 @@ export function generateFastifyServer(options = {}) {
 
   const imports = [
     `import Fastify from 'fastify';`,
-    `import { setupCoherent } from '@coherentjs/fastify';`
+    `import { setupCoherent } from '@coherent.js/fastify';`
   ];
 
   if (hasApi) imports.push(`import apiRoutes from './api/routes.js';`);
@@ -200,7 +200,7 @@ export function generateKoaServer(options = {}) {
     `import Router from '@koa/router';`,
     `import { koaBody } from 'koa-body';`,
     `import serve from 'koa-static';`,
-    `import { setupCoherent } from '@coherentjs/koa';`
+    `import { setupCoherent } from '@coherent.js/koa';`
   ];
 
   if (hasApi) imports.push(`import apiRoutes from './api/routes.js';`);
@@ -259,19 +259,19 @@ export function getRuntimeDependencies(runtime) {
     'built-in': {},
     express: {
       express: '^4.18.2',
-      '@coherentjs/express': '^1.0.1'
+      '@coherent.js/express': '^1.0.1'
     },
     fastify: {
       fastify: '^4.28.1',
       '@fastify/static': '^7.0.4',
-      '@coherentjs/fastify': '^1.0.1'
+      '@coherent.js/fastify': '^1.0.1'
     },
     koa: {
       koa: '^2.15.3',
       '@koa/router': '^13.0.1',
       'koa-body': '^6.0.1',
       'koa-static': '^5.0.0',
-      '@coherentjs/koa': '^1.0.1'
+      '@coherent.js/koa': '^1.0.1'
     }
   };
 

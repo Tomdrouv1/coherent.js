@@ -92,18 +92,18 @@ There are multiple rendering entry points depending on your use case:
 
 ```javascript
 // Standard rendering (with CSS scoping by default)
-import { render } from '@coherentjs/core';
+import { render } from '@coherent.js/core';
 const html = render(component);
 
 // Full HTML document with DOCTYPE
-import { render } from '@coherentjs/core';
+import { render } from '@coherent.js/core';
 const html = await render(component, {
   cssFiles: ['styles.css'],
   cssInline: 'body { margin: 0; }'
 });
 
 // Streaming for large documents
-import { renderToStream } from '@coherentjs/core';
+import { renderToStream } from '@coherent.js/core';
 const stream = renderToStream(component);
 ```
 
@@ -177,7 +177,7 @@ Coherent.js provides **two tiers of state management**:
 **Usage:**
 
 ```javascript
-import { withState } from '@coherentjs/core';
+import { withState } from '@coherent.js/core';
 
 // Basic usage
 const Counter = withState({ count: 0 })(({ state, stateUtils }) => ({
@@ -230,7 +230,7 @@ const TodoList = withState({ todos: [] }, {
 ### State Utilities
 
 ```javascript
-import { withStateUtils } from '@coherentjs/core';
+import { withStateUtils } from '@coherent.js/core';
 
 // Simple local state
 withStateUtils.local({ count: 0 });
@@ -307,21 +307,21 @@ export function createCoherentHandler(componentFactory, options = {}) {
 
 ### Available Integrations
 
-1. **Express.js** (`@coherentjs/express`)
+1. **Express.js** (`@coherent.js/express`)
    - Middleware for automatic rendering
    - Route handler factory
    - Error handling
 
-2. **Fastify** (`@coherentjs/fastify`)
+2. **Fastify** (`@coherent.js/fastify`)
    - Plugin system
    - Reply decorators
    - Hook integration
 
-3. **Koa** (`@coherentjs/koa`)
+3. **Koa** (`@coherent.js/koa`)
    - Middleware support
    - Context integration
 
-4. **Next.js** (`@coherentjs/nextjs`)
+4. **Next.js** (`@coherent.js/nextjs`)
    - Server Components
    - Client Components
    - App Router support
@@ -372,7 +372,7 @@ let globalTodos = []; // Don't do this
 
 ```javascript
 // ✅ Good: Use memo for expensive components
-import { memo } from '@coherentjs/core';
+import { memo } from '@coherent.js/core';
 
 const ExpensiveList = memo(
   ({ items }) => ({
@@ -408,7 +408,7 @@ const SafeComponent = withState({ error: null })(({ state, stateUtils }) => {
 ### 5. **TypeScript Usage**
 
 ```typescript
-import { CoherentNode, RenderOptions } from '@coherentjs/core';
+import { CoherentNode, RenderOptions } from '@coherent.js/core';
 
 interface ButtonProps {
   text: string;
@@ -431,11 +431,11 @@ const Button = ({ text, onClick, variant = 'primary' }: ButtonProps): CoherentNo
 
 ```javascript
 // Old (simple state)
-import { withState } from '@coherentjs/core';
+import { withState } from '@coherent.js/core';
 const Counter = withState({ count: 0 })(CounterComponent);
 
 // New (advanced state - same API, more features available)
-import { withState } from '@coherentjs/core';
+import { withState } from '@coherent.js/core';
 const Counter = withState({ count: 0 }, {
   // Now you can add options
   persistent: true,
@@ -463,7 +463,7 @@ const html = render(component, {
 
 ```javascript
 // Use streaming for large component trees
-import { renderToStream } from '@coherentjs/core';
+import { renderToStream } from '@coherent.js/core';
 
 const stream = renderToStream(largeComponent);
 stream.pipe(response);
@@ -472,7 +472,7 @@ stream.pipe(response);
 ### 3. **Performance Monitoring**
 
 ```javascript
-import { performanceMonitor } from '@coherentjs/core';
+import { performanceMonitor } from '@coherent.js/core';
 
 performanceMonitor.start();
 // ... render components

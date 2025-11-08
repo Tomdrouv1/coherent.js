@@ -3,7 +3,7 @@
  * Provides server-side rendering with Express, Fastify, Koa support
  */
 
-import { render } from '@coherentjs/core';
+import { render } from '@coherent.js/core';
 import { createServer } from 'http';
 
 export class NodeRuntime {

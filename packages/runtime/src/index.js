@@ -4,9 +4,9 @@
  */
 
 // Re-export everything from core packages
-export * from '@coherentjs/core';
-export * from '@coherentjs/client';
-export * from '@coherentjs/web-components';
+export * from '@coherent.js/core';
+export * from '@coherent.js/client';
+export * from '@coherent.js/web-components';
 
 // Universal runtime components
 export { BrowserRuntime } from './runtimes/browser.js';
@@ -50,19 +50,19 @@ if (typeof window !== 'undefined') {
   window.Coherent = {
     // Core functionality
     render: async (obj) => {
-      const { render } = await import('@coherentjs/core');
+      const { render } = await import('@coherent.js/core');
       return render(obj);
     },
     
     // Hydration
     hydrate: async (element, component, props) => {
-      const { hydrate } = await import('@coherentjs/client');
+      const { hydrate } = await import('@coherent.js/client');
       return hydrate(element, component, props);
     },
     
     // Web Components
     defineComponent: async (name, component, options) => {
-      const { defineComponent } = await import('@coherentjs/web-components');
+      const { defineComponent } = await import('@coherent.js/web-components');
       return defineComponent(name, component, options);
     },
     
@@ -77,7 +77,7 @@ if (typeof window !== 'undefined') {
   // Auto-initialize if data-coherent-auto is present
   if (document.querySelector('[data-coherent-auto]')) {
     document.addEventListener('DOMContentLoaded', async () => {
-      const { autoHydrate } = await import('@coherentjs/client');
+      const { autoHydrate } = await import('@coherent.js/client');
       autoHydrate(window.componentRegistry || {});
     });
   }

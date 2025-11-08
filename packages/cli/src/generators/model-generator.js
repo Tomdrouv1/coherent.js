@@ -79,7 +79,7 @@ function generateBasicModel(modelName, tableName, fields) {
     })
     .join(',\n');
 
-  return `import { createModel as createModelFactory } from '@coherentjs/database';
+  return `import { createModel as createModelFactory } from '@coherent.js/database';
 
 /**
  * ${modelName} model definition
@@ -136,7 +136,7 @@ function generateAuditedModel(modelName, tableName, fields) {
     })
     .join(',\n');
 
-  return `import { createModel as createModelFactory } from '@coherentjs/database';
+  return `import { createModel as createModelFactory } from '@coherent.js/database';
 
 /**
  * ${modelName} model with audit fields
@@ -194,7 +194,7 @@ function generateRelationalModel(modelName, tableName, fields) {
     ])
     .join(',\n');
 
-  return `import { createModel as createModelFactory } from '@coherentjs/database';
+  return `import { createModel as createModelFactory } from '@coherent.js/database';
 
 /**
  * ${modelName} model with relationships

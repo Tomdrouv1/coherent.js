@@ -8,7 +8,7 @@
  * npm install koa
  * 
  * Usage:
- * import { createKoaIntegration } from '@coherentjs/core/koa';
+ * import { createKoaIntegration } from '@coherent.js/core/koa';
  */
 
 export {

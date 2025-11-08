@@ -1,7 +1,7 @@
 /**
  * @fileoverview Component Lazy Loading with Intersection Observer
  * Provides lazy loading capabilities for Coherent.js components
- * @module @coherentjs/core/components/lazy-loading
+ * @module @coherent.js/core/components/lazy-loading
  */
 
 /**

@@ -16,10 +16,10 @@
 ## 📦 Core Packages
 
 ### Framework Core
-- [@coherentjs/core](./packages/core.md) - Main framework
-- [@coherentjs/router](./packages/router.md) - Client-side routing
-- [@coherentjs/ssr](./packages/ssr.md) - Server-side rendering
-- [@coherentjs/hmr](./packages/hmr.md) - Hot Module Replacement
+- [@coherent.js/core](./packages/core.md) - Main framework
+- [@coherent.js/router](./packages/router.md) - Client-side routing
+- [@coherent.js/ssr](./packages/ssr.md) - Server-side rendering
+- [@coherent.js/hmr](./packages/hmr.md) - Hot Module Replacement
 
 ---
 
@@ -273,7 +273,7 @@
 - **GitHub Issues**: Bug reports and feature requests
 - **GitHub Discussions**: Questions and community support
 - **Email**: thomas.drouvin@gmail.com (security issues)
-- **Twitter**: @coherentjs
+- **Twitter**: @coherent.js
 
 ---
 

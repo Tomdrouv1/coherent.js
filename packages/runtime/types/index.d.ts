@@ -1,11 +1,11 @@
 
 /**
- * Type definitions for @coherentjs/runtime
+ * Type definitions for @coherent.js/runtime
  */
 
-export * from '@coherentjs/core';
-export * from '@coherentjs/client'; 
-export * from '@coherentjs/web-components';
+export * from '@coherent.js/core';
+export * from '@coherent.js/client'; 
+export * from '@coherent.js/web-components';
 
 // Runtime environments
 export enum RuntimeEnvironment {

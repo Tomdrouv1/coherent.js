@@ -13,13 +13,13 @@ Phase 1 of the documentation update has been successfully completed. All critica
 
 ### Core Documentation
 1. ✅ **`docs/api-reference.md`** - Fixed 10+ occurrences
-   - `coherent-js` → `@coherentjs/core`
+   - `coherent-js` → `@coherent.js/core`
    - All import examples updated
 
 2. ✅ **`docs/getting-started.md`** - Fixed 7+ occurrences
    - Installation instructions corrected
    - All code examples updated
-   - Client package imports fixed (`@coherentjs/client`)
+   - Client package imports fixed (`@coherent.js/client`)
 
 3. ✅ **`docs/framework-integrations.md`** - Fixed 10+ occurrences
    - Express integration examples
@@ -104,7 +104,7 @@ Comprehensive guide covering:
 ✅ **Migration path** - Clear upgrade guide from v1.0.x to v1.1.x  
 
 ### Developer Experience
-✅ **Consistent naming** - All docs use `@coherentjs/*` convention  
+✅ **Consistent naming** - All docs use `@coherent.js/*` convention  
 ✅ **Complete API docs** - All new v1.1.0 features documented  
 ✅ **Best practices** - Clear guidance on using new features  
 ✅ **Troubleshooting** - Common issues and solutions provided  
@@ -172,29 +172,29 @@ For remaining files, use this script:
 
 # Fix api-enhancement-plan.md
 sed -i '' \
-  -e "s/from 'coherent-js\/api'/from '@coherentjs\/api'/g" \
-  -e "s/from 'coherent-js'/from '@coherentjs\/core'/g" \
+  -e "s/from 'coherent-js\/api'/from '@coherent.js\/api'/g" \
+  -e "s/from 'coherent-js'/from '@coherent.js\/core'/g" \
   docs/api-enhancement-plan.md
 
 # Fix api-usage.md
 sed -i '' \
-  -e "s/from 'coherent\/api'/from '@coherentjs\/api'/g" \
+  -e "s/from 'coherent\/api'/from '@coherent.js\/api'/g" \
   docs/api-usage.md
 
 # Fix server-side/ssr-guide.md
 sed -i '' \
-  -e "s/from 'coherent-js'/from '@coherentjs\/core'/g" \
+  -e "s/from 'coherent-js'/from '@coherent.js\/core'/g" \
   docs/server-side/ssr-guide.md
 
 # Fix components/basic-components.md
 sed -i '' \
-  -e "s/from 'coherent-js'/from '@coherentjs\/core'/g" \
+  -e "s/from 'coherent-js'/from '@coherent.js\/core'/g" \
   docs/components/basic-components.md
 
 # Fix getting-started directory
 sed -i '' \
-  -e "s/install coherent-js/install @coherentjs\/core/g" \
-  -e "s/add coherent-js/add @coherentjs\/core/g" \
+  -e "s/install coherent-js/install @coherent.js\/core/g" \
+  -e "s/add coherent-js/add @coherent.js\/core/g" \
   docs/getting-started/*.md
 
 echo "✅ Remaining package names fixed"

@@ -1,6 +1,6 @@
-# @coherentjs/client
+# @coherent.js/client
 
-[![npm version](https://img.shields.io/npm/v/@coherentjs/client.svg)](https://www.npmjs.com/package/@coherentjs/client)
+[![npm version](https://img.shields.io/npm/v/@coherent.js/client.svg)](https://www.npmjs.com/package/@coherent.js/client)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](../../LICENSE)
 [![Node >= 20](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
 
@@ -16,7 +16,7 @@ For a high-level overview and repository-wide instructions, see the root README:
 ## Installation
 
 ```bash
-pnpm add @coherentjs/client
+pnpm add @coherent.js/client
 ```
 
 Requirements:
@@ -25,11 +25,11 @@ Requirements:
 
 ## Quick start
 
-The client package pairs with server-rendered HTML produced by `@coherentjs/core`.
+The client package pairs with server-rendered HTML produced by `@coherent.js/core`.
 
 JavaScript (ESM):
 ```js
-import { autoHydrate } from '@coherentjs/client';
+import { autoHydrate } from '@coherent.js/client';
 
 // Hydrate elements that were marked as hydratable on the server
 autoHydrate();
@@ -37,7 +37,7 @@ autoHydrate();
 
 TypeScript:
 ```ts
-import { autoHydrate } from '@coherentjs/client';
+import { autoHydrate } from '@coherent.js/client';
 
 document.addEventListener('DOMContentLoaded', () => {
   autoHydrate();
@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
 The client exposes an event registry you can populate during hydration.
 
 ```js
-import { registerEventHandler } from '@coherentjs/client';
+import { registerEventHandler } from '@coherent.js/client';
 
 registerEventHandler('increment', (el, evt, ctx) => {
   // custom logic using element, DOM event, and context
@@ -58,7 +58,7 @@ registerEventHandler('increment', (el, evt, ctx) => {
 
 TypeScript:
 ```ts
-import { registerEventHandler } from '@coherentjs/client';
+import { registerEventHandler } from '@coherent.js/client';
 
 type Ctx = { state?: unknown };
 
@@ -82,22 +82,22 @@ global.document = { querySelector: vi.fn(), querySelectorAll: vi.fn(() => []) };
 
 Run tests for this package:
 ```bash
-pnpm --filter @coherentjs/client run test
+pnpm --filter @coherent.js/client run test
 ```
 
 Watch mode:
 ```bash
-pnpm --filter @coherentjs/client run test:watch
+pnpm --filter @coherent.js/client run test:watch
 ```
 
 Type check:
 ```bash
-pnpm --filter @coherentjs/client run typecheck
+pnpm --filter @coherent.js/client run typecheck
 ```
 
 Build:
 ```bash
-pnpm --filter @coherentjs/client run build
+pnpm --filter @coherent.js/client run build
 ```
 
 ## License

@@ -72,7 +72,7 @@ describe('Runtime Utilities', () => {
       const { ModuleResolver } = await import('../src/utils/module-resolver.js');
       const resolver = new ModuleResolver();
       
-      const resolved = resolver.resolve('@coherentjs/core', { baseUrl: 'file:///base/path/' });
+      const resolved = resolver.resolve('@coherent.js/core', { baseUrl: 'file:///base/path/' });
       
       expect(resolved).toBeDefined();
       // Module resolution is complex - just verify it returns something
@@ -92,8 +92,8 @@ describe('Runtime Utilities', () => {
       const { ModuleResolver } = await import('../src/utils/module-resolver.js');
       const resolver = new ModuleResolver();
       
-      const first = resolver.resolve('@coherentjs/core', { baseUrl: 'file:///base/' });
-      const second = resolver.resolve('@coherentjs/core', { baseUrl: 'file:///base/' });
+      const first = resolver.resolve('@coherent.js/core', { baseUrl: 'file:///base/' });
+      const second = resolver.resolve('@coherent.js/core', { baseUrl: 'file:///base/' });
       
       expect(first).toBe(second);
     });
@@ -206,7 +206,7 @@ describe('Runtime Utilities', () => {
       detector.reset();
       
       const info = detector.getEnvironmentInfo();
-      const corePath = resolver.resolve('@coherentjs/core');
+      const corePath = resolver.resolve('@coherent.js/core');
       
       expect(info.environment).toBe('browser');
       expect(corePath).toBeDefined();
@@ -226,7 +226,7 @@ describe('Runtime Utilities', () => {
       const resolver = new ModuleResolver({ format: 'commonjs' });
       
       const info = detector.getEnvironmentInfo();
-      const corePath = resolver.resolve('@coherentjs/core');
+      const corePath = resolver.resolve('@coherent.js/core');
       
       expect(info.environment).toBe('node');
       expect(corePath).toBeDefined();

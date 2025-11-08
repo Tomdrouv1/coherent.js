@@ -28,7 +28,7 @@ Create your project structure:
 mkdir my-coherent-app
 cd my-coherent-app
 npm init -y
-npm install @coherentjs/core
+npm install @coherent.js/core
 ```
 
 Create these files:
@@ -48,7 +48,7 @@ my-coherent-app/
 Create `components/Counter.js`:
 
 ```javascript
-import { withState } from '@coherentjs/core';
+import { withState } from '@coherent.js/core';
 
 export const Counter = withState({ count: 0 })(({ state, setState }) => ({
   div: {
@@ -120,7 +120,7 @@ import { createServer } from 'http';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { render, dangerouslySetInnerContent } from '@coherentjs/core';
+import { render, dangerouslySetInnerContent } from '@coherent.js/core';
 import { Counter } from './components/Counter.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -184,7 +184,7 @@ const createPage = () => ({
 const server = createServer((req, res) => {
   // Serve hydration bundle
   if (req.url === '/hydration.js') {
-    const hydrationPath = join(__dirname, 'node_modules/@coherentjs/core/client/hydration.js');
+    const hydrationPath = join(__dirname, 'node_modules/@coherent.js/core/client/hydration.js');
     const hydrationCode = readFileSync(hydrationPath, 'utf-8');
     res.setHeader('Content-Type', 'application/javascript');
     res.end(hydrationCode);

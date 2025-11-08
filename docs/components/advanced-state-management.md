@@ -1,6 +1,6 @@
 # Advanced State Management
 
-**Package:** `@coherentjs/core`  
+**Package:** `@coherent.js/core`  
 **Module:** `/src/components/component-system.js`  
 **Since:** v1.1.0
 
@@ -30,7 +30,7 @@ Coherent.js provides a powerful, feature-rich state management system through th
 ### Simple State
 
 ```javascript
-import { withState } from '@coherentjs/core';
+import { withState } from '@coherent.js/core';
 
 const Counter = withState({ count: 0 })(({ state, stateUtils }) => {
   const { setState } = stateUtils;
@@ -128,7 +128,7 @@ The `withStateUtils` object provides specialized state management utilities:
 ### 1. Local State (Simple)
 
 ```javascript
-import { withStateUtils } from '@coherentjs/core';
+import { withStateUtils } from '@coherent.js/core';
 
 const Component = withStateUtils.local({ count: 0 })(MyComponent);
 ```

@@ -184,13 +184,13 @@ export async function buildAll() {
       
       if (pkg === 'client') {
         await buildBrowserPackage({
-          packageName: `@coherentjs/${pkg}`,
+          packageName: `@coherent.js/${pkg}`,
           entryPoint: entryPoint,
           outDir: `${packagePath}/dist`
         });
       } else {
         await buildPackage({
-          packageName: `@coherentjs/${pkg}`,
+          packageName: `@coherent.js/${pkg}`,
           entryPoint: entryPoint,
           outDir: `${packagePath}/dist`,
           external: getPackageExternals(pkg)
@@ -240,13 +240,13 @@ function getEntryPoint(packageName) {
 function getPackageExternals(packageName) {
   const externals = {
     'core': [],
-    'api': ['@coherentjs/core'],
-    'database': ['@coherentjs/core'],
-    'client': ['@coherentjs/core'],
-    'express': ['@coherentjs/core'],
-    'fastify': ['@coherentjs/core'],
-    'koa': ['@coherentjs/core'],
-    'nextjs': ['@coherentjs/core']
+    'api': ['@coherent.js/core'],
+    'database': ['@coherent.js/core'],
+    'client': ['@coherent.js/core'],
+    'express': ['@coherent.js/core'],
+    'fastify': ['@coherent.js/core'],
+    'koa': ['@coherent.js/core'],
+    'nextjs': ['@coherent.js/core']
   };
   
   return externals[packageName] || [];

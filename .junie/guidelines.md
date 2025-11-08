@@ -25,9 +25,9 @@ This document captures development practices that are particular to this reposit
     ```
   - Build a specific package (example: core):
     ```bash
-    pnpm --filter @coherentjs/core run build
+    pnpm --filter @coherent.js/core run build
     ```
-  - Notes for `@coherentjs/core`:
+  - Notes for `@coherent.js/core`:
     - `exports` maps `development` to `./src/index.js` and production to `./dist/*`. During website/dev flows we often import from `src` directly (see `scripts/serve-website.js`). Be mindful of ESM file URL imports used during dev.
 - Dev website
   - Build and serve the demo website in one step:
@@ -75,17 +75,17 @@ The mono‑repo uses Vitest v3 with a root `vitest.config.js` and several packag
 - Per‑package test runs
   - Example (core):
     ```bash
-    pnpm --filter @coherentjs/core run test
+    pnpm --filter @coherent.js/core run test
     ```
   - Watch mode in a package:
     ```bash
-    pnpm --filter @coherentjs/core run test:watch
+    pnpm --filter @coherent.js/core run test:watch
     ```
 
 - Focus a single test file (most reliable approach in this monorepo)
   - Use the package’s own test script and pass the relative path:
     ```bash
-    pnpm --filter @coherentjs/core run test -- test/some-file.test.js
+    pnpm --filter @coherent.js/core run test -- test/some-file.test.js
     ```
   - Alternatively from the root (Vitest should respect explicit file paths, but depending on config it may still collect the workspace). The package‑scoped approach above avoids surprises.
 
@@ -93,7 +93,7 @@ The mono‑repo uses Vitest v3 with a root `vitest.config.js` and several packag
   - Root config includes both:
     - `packages/*/test/**/*.{test,spec}.{js,ts}`
     - `packages/*/src/**/*.{test,spec}.{js,ts}`
-  - Several packages (e.g., `@coherentjs/core`) also ship their own `vitest.config.js` with `include: ['test/**/*.{test,spec}.{js,ts}']`.
+  - Several packages (e.g., `@coherent.js/core`) also ship their own `vitest.config.js` with `include: ['test/**/*.{test,spec}.{js,ts}']`.
   - Place new tests under the corresponding package’s `test/` directory unless you have a strong reason to colocate under `src/`.
 
 - Runtime environment and isolation
@@ -110,7 +110,7 @@ The mono‑repo uses Vitest v3 with a root `vitest.config.js` and several packag
 
 ### 2.1 Demonstration: adding and executing a new test
 
-We verified that adding a simple test under `@coherentjs/core` is correctly discovered and executed. Example test body (works with the current HEAD):
+We verified that adding a simple test under `@coherent.js/core` is correctly discovered and executed. Example test body (works with the current HEAD):
 
 ```js
 // packages/core/test/example-render.test.js
@@ -127,7 +127,7 @@ describe('renderToString smoke', () => {
 
 Run just this file (package‑scoped):
 ```bash
-pnpm --filter @coherentjs/core run test -- test/example-render.test.js
+pnpm --filter @coherent.js/core run test -- test/example-render.test.js
 ```
 
 Run the full suite (root):
@@ -146,10 +146,10 @@ We executed an equivalent temporary test to validate the flow before writing thi
   - `no-console` is allowed for server‑side code; debugging statements (`debugger`) are errors.
   - Tests and examples may be more permissive; errors and warnings are tuned per package.
 - Package exports and dev mapping
-  - `@coherentjs/core` uses conditional exports. In development, imports may resolve to `src` (see `exports.development`). This is leveraged by website/dev scripts that import via `file://` URLs into `src`.
+  - `@coherent.js/core` uses conditional exports. In development, imports may resolve to `src` (see `exports.development`). This is leveraged by website/dev scripts that import via `file://` URLs into `src`.
   - If your code depends on bundling behavior, test both dev (`src`) and built (`dist`) paths.
 - Performance and streaming
-  - The framework focuses on object‑based rendering and streaming SSR. When adding features in `@coherentjs/core/src/index.js`, prefer stateless helpers; if stateful, ensure they are compatible with streaming and memoization.
+  - The framework focuses on object‑based rendering and streaming SSR. When adding features in `@coherent.js/core/src/index.js`, prefer stateless helpers; if stateful, ensure they are compatible with streaming and memoization.
 - Long‑running/integration tests
   - A root `test-server.js` exists for integration scenarios. Keep such tests isolated and off the critical path for fast unit CI; prefer unit tests under each package.
 - Coverage strategy
@@ -173,6 +173,6 @@ We executed an equivalent temporary test to validate the flow before writing thi
 - Typecheck: `pnpm typecheck`
 - Lint: `pnpm lint`
 - Test all: `pnpm test`
-- Test package only: `pnpm --filter @coherentjs/core run test`
-- Test single file (core): `pnpm --filter @coherentjs/core run test -- test/example-render.test.js`
+- Test package only: `pnpm --filter @coherent.js/core run test`
+- Test single file (core): `pnpm --filter @coherent.js/core run test -- test/example-render.test.js`
 

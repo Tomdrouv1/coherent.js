@@ -1,7 +1,7 @@
 /**
  * @fileoverview State Validation for Coherent.js
  * Provides JSON Schema validation and custom validators for state management
- * @module @coherentjs/core/state/state-validation
+ * @module @coherent.js/core/state/state-validation
  */
 
 /**

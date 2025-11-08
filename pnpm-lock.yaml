@@ -117,7 +117,7 @@ importers:
 
   packages/adapters:
     dependencies:
-      '@coherentjs/core':
+      '@coherent.js/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -127,13 +127,13 @@ importers:
 
   packages/api:
     dependencies:
-      '@coherentjs/core':
-        specifier: ^1.0.1
-        version: 1.0.1
+      '@coherent.js/core':
+        specifier: ^1.0.0-beta.1
+        version: 1.0.0-beta.1
 
   packages/build-tools:
     dependencies:
-      '@coherentjs/core':
+      '@coherent.js/core':
         specifier: workspace:*
         version: link:../core
       rollup:
@@ -183,63 +183,63 @@ importers:
 
   packages/database:
     dependencies:
-      '@coherentjs/core':
-        specifier: ^1.0.1
-        version: 1.0.1
+      '@coherent.js/core':
+        specifier: ^1.0.0-beta.1
+        version: 1.0.0-beta.1
       sqlite3:
         specifier: ^5.0.0
         version: 5.1.7
 
   packages/devtools:
     dependencies:
-      '@coherentjs/core':
-        specifier: ^1.0.0
-        version: 1.0.1
+      '@coherent.js/core':
+        specifier: ^1.0.0-beta.1
+        version: 1.0.0-beta.1
 
   packages/express:
     dependencies:
-      '@coherentjs/core':
-        specifier: ^1.0.1
-        version: 1.0.1
+      '@coherent.js/core':
+        specifier: ^1.0.0-beta.1
+        version: 1.0.0-beta.1
       express:
         specifier: '>=4.18.0 < 6.0.0'
         version: 5.1.0
 
   packages/fastify:
     dependencies:
-      '@coherentjs/core':
-        specifier: ^1.0.1
-        version: 1.0.1
+      '@coherent.js/core':
+        specifier: ^1.0.0-beta.1
+        version: 1.0.0-beta.1
       fastify:
         specifier: '>=4.0.0 < 6.0.0'
         version: 5.5.0
 
   packages/forms:
     dependencies:
-      '@coherentjs/core':
-        specifier: ^1.0.0
-        version: 1.0.1
+      '@coherent.js/core':
+        specifier: ^1.0.0-beta.1
+        version: 1.0.0-beta.1
 
   packages/i18n:
     dependencies:
-      '@coherentjs/core':
-        specifier: ^1.0.0
-        version: 1.0.1
+      '@coherent.js/core':
+        specifier: ^1.0.0-beta.1
+        version: 1.0.0-beta.1
 
   packages/koa:
     dependencies:
-      '@coherentjs/core':
-        specifier: ^1.0.1
-        version: 1.0.1
+      '@coherent.js/core':
+        specifier: ^1.0.0-beta.1
+        version: 1.0.0-beta.1
       koa:
         specifier: '>=2.13.0 < 4.0.0'
         version: 3.0.1
 
   packages/nextjs:
     dependencies:
-      '@coherentjs/core':
-        specifier: ^1.0.1
-        version: 1.0.1
+      '@coherent.js/core':
+        specifier: ^1.0.0-beta.1
+        version: 1.0.0-beta.1
       next:
         specifier: '>=13.0.0 < 16.0.0'
         version: 15.4.5(@playwright/test@1.55.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
@@ -249,13 +249,13 @@ importers:
 
   packages/performance:
     dependencies:
-      '@coherentjs/core':
-        specifier: ^1.0.0
-        version: 1.0.1
+      '@coherent.js/core':
+        specifier: ^1.0.0-beta.1
+        version: 1.0.0-beta.1
 
-  packages/performance-profiler:
+  packages/profiler:
     dependencies:
-      '@coherentjs/core':
+      '@coherent.js/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -265,13 +265,13 @@ importers:
 
   packages/runtime:
     dependencies:
-      '@coherentjs/client':
+      '@coherent.js/client':
         specifier: workspace:*
         version: link:../client
-      '@coherentjs/core':
+      '@coherent.js/core':
         specifier: workspace:*
         version: link:../core
-      '@coherentjs/web-components':
+      '@coherent.js/web-components':
         specifier: workspace:*
         version: link:../web-components
     devDependencies:
@@ -293,15 +293,15 @@ importers:
 
   packages/seo:
     dependencies:
-      '@coherentjs/core':
-        specifier: ^1.0.0
-        version: 1.0.1
+      '@coherent.js/core':
+        specifier: ^1.0.0-beta.1
+        version: 1.0.0-beta.1
 
   packages/testing:
     dependencies:
-      '@coherentjs/core':
-        specifier: ^1.0.0
-        version: 1.0.1
+      '@coherent.js/core':
+        specifier: ^1.0.0-beta.1
+        version: 1.0.0-beta.1
     devDependencies:
       vitest:
         specifier: ^1.0.0
@@ -309,7 +309,7 @@ importers:
 
   packages/web-components:
     dependencies:
-      '@coherentjs/core':
+      '@coherent.js/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -431,8 +431,8 @@ packages:
   '@codemirror/view@6.38.2':
     resolution: {integrity: sha512-bTWAJxL6EOFLPzTx+O5P5xAO3gTqpatQ2b/ARQ8itfU/v2LlpS3pH2fkL0A3E/Fx8Y2St2KES7ZEV0sHTsSW/A==}
 
-  '@coherentjs/core@1.0.1':
-    resolution: {integrity: sha512-YLsTNL896RQPA/v2KuCeuyhK7+uxsY93eJH4zOVeuJS7w0rJSEBMf3sUpDHUXiOFmzDj3P8oJYEVdn17oQEE4w==}
+  '@coherent.js/core@1.0.0-beta.1':
+    resolution: {integrity: sha512-O+HTsGO3sYulBUAZkVNqJkKonZEnw3fjcZAUB7n/g/VV7f2qd74nitjlwf0n9cfZsz4/MzprqTLxlRs3YRFLmA==}
     engines: {node: '>=20.0.0'}
 
   '@commitlint/cli@19.8.1':
@@ -4629,7 +4629,7 @@ snapshots:
       style-mod: 4.1.2
       w3c-keyname: 2.2.8
 
-  '@coherentjs/core@1.0.1': {}
+  '@coherent.js/core@1.0.0-beta.1': {}
 
   '@commitlint/cli@19.8.1(@types/node@24.3.0)(typescript@5.9.2)':
     dependencies:

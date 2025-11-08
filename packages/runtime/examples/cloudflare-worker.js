@@ -1,4 +1,4 @@
-import { EdgeRuntime } from '@coherentjs/runtime/edge';
+import { EdgeRuntime } from '@coherent.js/runtime/edge';
 
 export default {
   async fetch(request) {

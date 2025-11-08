@@ -10,8 +10,8 @@
  * - Nested translations
  */
 
-import { html, render } from '@coherentjs/core';
-import { createTranslator, formatters } from '@coherentjs/i18n';
+import { html, render } from '@coherent.js/core';
+import { createTranslator, formatters } from '@coherent.js/i18n';
 
 // ============================================================================
 // Translation Files

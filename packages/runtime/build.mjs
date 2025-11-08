@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Build script for @coherentjs/runtime
+ * Build script for @coherent.js/runtime
  * Creates optimized bundles for different runtime environments
  */
 
@@ -19,7 +19,7 @@ const nodeBuiltins = [
 ];
 
 async function buildUniversalRuntime() {
-  console.log('🌐 Building @coherentjs/runtime...');
+  console.log('🌐 Building @coherent.js/runtime...');
 
   // Ensure dist directory exists
   await fs.mkdir(path.join(__dirname, 'dist'), { recursive: true });
@@ -30,9 +30,9 @@ async function buildUniversalRuntime() {
     sourcemap: true,
     target: ['es2020'],
     external: [
-      '@coherentjs/core',
-      '@coherentjs/client',
-      '@coherentjs/web-components',
+      '@coherent.js/core',
+      '@coherent.js/client',
+      '@coherent.js/web-components',
       ...nodeBuiltins
     ],
     define: {
@@ -147,7 +147,7 @@ async function buildUniversalRuntime() {
       format: 'iife',
       platform: 'browser',
       globalName: 'Coherent',
-      external: ['@coherentjs/core', '@coherentjs/client', '@coherentjs/web-components'],
+      external: ['@coherent.js/core', '@coherent.js/client', '@coherent.js/web-components'],
       minify: true
     },
 
@@ -158,7 +158,7 @@ async function buildUniversalRuntime() {
       outfile: 'dist/coherent-standalone.esm.js',
       format: 'esm',
       platform: 'browser',
-      external: ['@coherentjs/core', '@coherentjs/client', '@coherentjs/web-components'],
+      external: ['@coherent.js/core', '@coherent.js/client', '@coherent.js/web-components'],
       minify: process.env.NODE_ENV === 'production'
     }
   ];
@@ -203,12 +203,12 @@ async function generateTypeDefinitions() {
   
   const mainTypes = `
 /**
- * Type definitions for @coherentjs/runtime
+ * Type definitions for @coherent.js/runtime
  */
 
-export * from '@coherentjs/core';
-export * from '@coherentjs/client'; 
-export * from '@coherentjs/web-components';
+export * from '@coherent.js/core';
+export * from '@coherent.js/client'; 
+export * from '@coherent.js/web-components';
 
 // Runtime environments
 export enum RuntimeEnvironment {
@@ -349,7 +349,7 @@ async function copyAdditionalFiles() {
     ).catch(() => {
       return fs.writeFile(
         path.join(__dirname, 'README.md'),
-        `# @coherentjs/runtime
+        `# @coherent.js/runtime
 
 Runtime for Coherent.js that works in any JavaScript environment.
 
@@ -367,7 +367,7 @@ Runtime for Coherent.js that works in any JavaScript environment.
 
 ### Browser (Script Tag)
 \`\`\`html
-<script src="https://unpkg.com/@coherentjs/runtime/dist/coherent-standalone.min.js"></script>
+<script src="https://unpkg.com/@coherent.js/runtime/dist/coherent-standalone.min.js"></script>
 <script>
   const app = await Coherent.createApp();
   app.render(() => ({ h1: { text: 'Hello World!' } }), {}, '#app');
@@ -376,7 +376,7 @@ Runtime for Coherent.js that works in any JavaScript environment.
 
 ### ES Modules
 \`\`\`javascript
-import { createCoherentApp } from '@coherentjs/runtime';
+import { createCoherentApp } from '@coherent.js/runtime';
 
 const app = await createCoherentApp();
 await app.mount(() => ({ h1: { text: 'Hello World!' } }));
@@ -384,7 +384,7 @@ await app.mount(() => ({ h1: { text: 'Hello World!' } }));
 
 ### Cloudflare Workers
 \`\`\`javascript
-import { EdgeRuntime } from '@coherentjs/runtime/edge';
+import { EdgeRuntime } from '@coherent.js/runtime/edge';
 
 export default {
   async fetch(request) {
@@ -397,7 +397,7 @@ export default {
 
 ### Static Site Generation
 \`\`\`javascript
-import { StaticRuntime } from '@coherentjs/runtime/static';
+import { StaticRuntime } from '@coherent.js/runtime/static';
 
 const site = StaticRuntime.createApp({
   outputDir: 'dist',
@@ -487,7 +487,7 @@ async function generateExamples() {
   await fs.writeFile(path.join(__dirname, 'examples', 'browser.html'), browserExample);
   
   // Cloudflare Worker example
-  const workerExample = `import { EdgeRuntime } from '@coherentjs/runtime/edge';
+  const workerExample = `import { EdgeRuntime } from '@coherent.js/runtime/edge';
 
 export default {
   async fetch(request) {
@@ -528,7 +528,7 @@ export default {
   await fs.writeFile(path.join(__dirname, 'examples', 'cloudflare-worker.js'), workerExample);
   
   // Static site example
-  const staticExample = `import { StaticRuntime } from '@coherentjs/runtime/static';
+  const staticExample = `import { StaticRuntime } from '@coherent.js/runtime/static';
 
 // Create components
 const Layout = ({ title, children }) => ({

@@ -1,7 +1,7 @@
 import { buildPackage } from '../../scripts/shared-build.mjs';
 
 await buildPackage({
-  packageName: '@coherentjs/nextjs',
+  packageName: '@coherent.js/nextjs',
   entryPoint: 'src/index.js',
-  external: ['@coherentjs/core', 'next', 'react', 'react-dom']
+  external: ['@coherent.js/core', 'next', 'react', 'react-dom']
 });

@@ -113,17 +113,17 @@ Both Phase 1 (Critical) and Phase 2 (High Priority) documentation updates have b
 ✅ **Correct Installation**
 ```bash
 # Now works correctly
-npm install @coherentjs/core
-npm install @coherentjs/api
-npm install @coherentjs/client
+npm install @coherent.js/core
+npm install @coherent.js/api
+npm install @coherent.js/client
 ```
 
 ✅ **Working Code Examples**
 ```javascript
 // All examples now use correct imports
-import { render } from '@coherentjs/core';
-import { createApiRouter } from '@coherentjs/api';
-import { makeHydratable } from '@coherentjs/client';
+import { render } from '@coherent.js/core';
+import { createApiRouter } from '@coherent.js/api';
+import { makeHydratable } from '@coherent.js/client';
 ```
 
 ✅ **Complete Feature Documentation**
@@ -133,7 +133,7 @@ import { makeHydratable } from '@coherentjs/client';
 - Working code examples
 
 ### For Developers
-✅ **Consistent Naming** - All docs use `@coherentjs/*` convention  
+✅ **Consistent Naming** - All docs use `@coherent.js/*` convention  
 ✅ **Complete API Docs** - All new features documented  
 ✅ **Best Practices** - Clear guidance provided  
 ✅ **Troubleshooting** - Common issues addressed  
@@ -191,43 +191,43 @@ import { makeHydratable } from '@coherentjs/client';
 ### Correct Package Names
 ```javascript
 // Core framework
-import { render, withState } from '@coherentjs/core';
+import { render, withState } from '@coherent.js/core';
 
 // API framework
-import { createApiRouter } from '@coherentjs/api';
+import { createApiRouter } from '@coherent.js/api';
 
 // Client-side hydration
-import { makeHydratable, autoHydrate } from '@coherentjs/client';
+import { makeHydratable, autoHydrate } from '@coherent.js/client';
 
 // Framework integrations
-import { setupCoherent } from '@coherentjs/express';
-import { coherentFastify } from '@coherentjs/fastify';
-import { coherentKoaMiddleware } from '@coherentjs/koa';
-import { createCoherentNextHandler } from '@coherentjs/nextjs';
+import { setupCoherent } from '@coherent.js/express';
+import { coherentFastify } from '@coherent.js/fastify';
+import { coherentKoaMiddleware } from '@coherent.js/koa';
+import { createCoherentNextHandler } from '@coherent.js/nextjs';
 ```
 
 ### Installation Commands
 ```bash
 # Core only
-npm install @coherentjs/core
+npm install @coherent.js/core
 
 # With Express
-npm install @coherentjs/core @coherentjs/express express
+npm install @coherent.js/core @coherent.js/express express
 
 # With Fastify
-npm install @coherentjs/core @coherentjs/fastify fastify
+npm install @coherent.js/core @coherent.js/fastify fastify
 
 # With Koa
-npm install @coherentjs/core @coherentjs/koa koa
+npm install @coherent.js/core @coherent.js/koa koa
 
 # With Next.js
-npm install @coherentjs/core @coherentjs/nextjs next react
+npm install @coherent.js/core @coherent.js/nextjs next react
 
 # API framework
-npm install @coherentjs/api
+npm install @coherent.js/api
 
 # Client-side hydration
-npm install @coherentjs/client
+npm install @coherent.js/client
 ```
 
 ---
@@ -242,7 +242,7 @@ npm install @coherentjs/client
 ❌ Missing migration guides  
 
 ### After Updates
-✅ Users can install correctly (`@coherentjs/core`)  
+✅ Users can install correctly (`@coherent.js/core`)  
 ✅ All code examples work (correct imports)  
 ✅ New features fully documented (v1.1.0)  
 ✅ Consistent naming throughout core docs  

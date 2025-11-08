@@ -29,17 +29,17 @@
 ## 📦 Packages to Publish
 
 ### Core Packages (Already Published)
-1. ✅ `@coherentjs/core` - Main framework
+1. ✅ `@coherent.js/core` - Main framework
 
 ### New Packages (v2.0)
-2. `@coherentjs/plugins` - Plugin system
-3. `@coherentjs/testing` - Testing utilities
-4. `@coherentjs/devtools` - Developer tools
-5. `@coherentjs/runtime` - Enhanced runtimes
-6. `@coherentjs/i18n` - Internationalization
-7. `@coherentjs/forms` - Form utilities
-8. `@coherentjs/seo` - SEO optimization
-9. `@coherentjs/performance` - Performance optimization
+2. `@coherent.js/plugins` - Plugin system
+3. `@coherent.js/testing` - Testing utilities
+4. `@coherent.js/devtools` - Developer tools
+5. `@coherent.js/runtime` - Enhanced runtimes
+6. `@coherent.js/i18n` - Internationalization
+7. `@coherent.js/forms` - Form utilities
+8. `@coherent.js/seo` - SEO optimization
+9. `@coherent.js/performance` - Performance optimization
 
 ---
 
@@ -67,7 +67,7 @@ Update version in each package.json:
 
 ```json
 {
-  "name": "@coherentjs/plugins",
+  "name": "@coherent.js/plugins",
   "version": "2.0.0",
   "description": "Plugin system for Coherent.js",
   "main": "./src/index.js",
@@ -95,20 +95,20 @@ coverage/
 Each package should have its own README.md:
 
 ```markdown
-# @coherentjs/plugins
+# @coherent.js/plugins
 
 Plugin system for Coherent.js applications.
 
 ## Installation
 
 \`\`\`bash
-npm install @coherentjs/plugins
+npm install @coherent.js/plugins
 \`\`\`
 
 ## Usage
 
 \`\`\`javascript
-import { createPluginManager, plugins } from '@coherentjs/plugins';
+import { createPluginManager, plugins } from '@coherent.js/plugins';
 
 const manager = createPluginManager();
 manager.register(plugins.performance());
@@ -129,35 +129,35 @@ MIT
 # Login to npm (first time only)
 npm login
 
-# Publish @coherentjs/plugins
+# Publish @coherent.js/plugins
 cd packages/plugins
 npm publish --access public
 
-# Publish @coherentjs/testing
+# Publish @coherent.js/testing
 cd ../testing
 npm publish --access public
 
-# Publish @coherentjs/devtools
+# Publish @coherent.js/devtools
 cd ../devtools
 npm publish --access public
 
-# Publish @coherentjs/runtime
+# Publish @coherent.js/runtime
 cd ../runtime
 npm publish --access public
 
-# Publish @coherentjs/i18n
+# Publish @coherent.js/i18n
 cd ../i18n
 npm publish --access public
 
-# Publish @coherentjs/forms
+# Publish @coherent.js/forms
 cd ../forms
 npm publish --access public
 
-# Publish @coherentjs/seo
+# Publish @coherent.js/seo
 cd ../seo
 npm publish --access public
 
-# Publish @coherentjs/performance
+# Publish @coherent.js/performance
 cd ../performance
 npm publish --access public
 ```
@@ -193,7 +193,7 @@ packages=(
 for package in "${packages[@]}"
 do
   echo ""
-  echo "📦 Publishing @coherentjs/$package..."
+  echo "📦 Publishing @coherent.js/$package..."
   cd "packages/$package"
   
   # Check if package.json exists
@@ -206,9 +206,9 @@ do
   npm publish --access public
   
   if [ $? -eq 0 ]; then
-    echo "✅ @coherentjs/$package published successfully"
+    echo "✅ @coherent.js/$package published successfully"
   else
-    echo "❌ Failed to publish @coherentjs/$package"
+    echo "❌ Failed to publish @coherent.js/$package"
     exit 1
   fi
   
@@ -221,7 +221,7 @@ echo ""
 echo "Published packages:"
 for package in "${packages[@]}"
 do
-  echo "  ✅ @coherentjs/$package"
+  echo "  ✅ @coherent.js/$package"
 done
 ```
 
@@ -245,7 +245,7 @@ Each package should follow this structure:
 
 ```json
 {
-  "name": "@coherentjs/PACKAGE_NAME",
+  "name": "@coherent.js/PACKAGE_NAME",
   "version": "2.0.0",
   "description": "PACKAGE_DESCRIPTION",
   "type": "module",
@@ -270,7 +270,7 @@ Each package should follow this structure:
   },
   "homepage": "https://github.com/Tomdrouv1/coherent.js#readme",
   "peerDependencies": {
-    "@coherentjs/core": "^2.0.0"
+    "@coherent.js/core": "^1.0.0-beta.1"
   }
 }
 ```
@@ -328,14 +328,14 @@ After publishing, verify each package:
 
 ```bash
 # Check package on npm
-npm view @coherentjs/plugins
+npm view @coherent.js/plugins
 
 # Install and test
 mkdir test-install
 cd test-install
 npm init -y
-npm install @coherentjs/plugins
-node -e "import('@coherentjs/plugins').then(m => console.log('✅ Import successful'))"
+npm install @coherent.js/plugins
+node -e "import('@coherent.js/plugins').then(m => console.log('✅ Import successful'))"
 ```
 
 ---
@@ -343,7 +343,7 @@ node -e "import('@coherentjs/plugins').then(m => console.log('✅ Import success
 ## 🚨 Troubleshooting
 
 ### Issue: "You do not have permission to publish"
-**Solution**: Make sure you're logged in and have access to the @coherentjs scope
+**Solution**: Make sure you're logged in and have access to the @coherent.js scope
 ```bash
 npm login
 npm whoami
@@ -384,14 +384,14 @@ cat package.json | jq .  # Validates JSON
 - [ ] Git committed and pushed
 
 ### Publish
-- [ ] @coherentjs/plugins
-- [ ] @coherentjs/testing
-- [ ] @coherentjs/devtools
-- [ ] @coherentjs/runtime
-- [ ] @coherentjs/i18n
-- [ ] @coherentjs/forms
-- [ ] @coherentjs/seo
-- [ ] @coherentjs/performance
+- [ ] @coherent.js/plugins
+- [ ] @coherent.js/testing
+- [ ] @coherent.js/devtools
+- [ ] @coherent.js/runtime
+- [ ] @coherent.js/i18n
+- [ ] @coherent.js/forms
+- [ ] @coherent.js/seo
+- [ ] @coherent.js/performance
 
 ### Post-Publish
 - [ ] Git tags created
@@ -415,13 +415,13 @@ npm whoami
 npm publish --access public
 
 # Unpublish (within 72 hours)
-npm unpublish @coherentjs/PACKAGE@VERSION
+npm unpublish @coherent.js/PACKAGE@VERSION
 
 # Deprecate a version
-npm deprecate @coherentjs/PACKAGE@VERSION "Reason"
+npm deprecate @coherent.js/PACKAGE@VERSION "Reason"
 
 # View package info
-npm view @coherentjs/PACKAGE
+npm view @coherent.js/PACKAGE
 
 # Check package size
 npm pack --dry-run

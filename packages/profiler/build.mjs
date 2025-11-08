@@ -17,10 +17,10 @@ for (const entry of entries) {
     format: 'esm',
     platform: 'node',
     outfile,
-    external: ['@coherentjs/core'],
+    external: ['@coherent.js/core'],
     minify: false,
     sourcemap: true
   });
 }
 
-console.log('✅ @coherentjs/performance-profiler built successfully');
+console.log('✅ @coherent.js/performance-profiler built successfully');

@@ -272,7 +272,7 @@ export const customMatchers = {
  * 
  * @example
  * import { expect } from 'vitest';
- * import { extendExpect } from '@coherentjs/testing/matchers';
+ * import { extendExpect } from '@coherent.js/testing/matchers';
  * 
  * extendExpect(expect);
  * 

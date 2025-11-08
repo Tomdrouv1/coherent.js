@@ -11,12 +11,12 @@
  * - Success/failure states
  */
 
-import { html, render } from '@coherentjs/core';
+import { html, render } from '@coherent.js/core';
 import { 
   createFormValidator, 
   validators, 
   FormBuilder
-} from '@coherentjs/forms';
+} from '@coherent.js/forms';
 
 // ============================================================================
 // Custom Validators

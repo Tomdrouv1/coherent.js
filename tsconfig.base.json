@@ -17,12 +17,15 @@
     "incremental": true,
     "isolatedModules": true,
     "allowSyntheticDefaultImports": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "paths": {
+      "@coherent.js/*": ["packages/*/src/index.js"]
+    }
   },
   "exclude": [
     "node_modules",
     "dist",
     "**/*.test.js",
     "**/*.test.ts"
-  ]
+  ],
 }

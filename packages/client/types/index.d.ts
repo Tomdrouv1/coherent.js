@@ -1,8 +1,8 @@
 /**
  * Coherent.js Client Types
  * TypeScript definitions for client-side functionality
- * 
- * @version 1.1.1
+ *
+ * @version 1.0.0-beta.1
  */
 
 // ============================================================================
@@ -93,20 +93,20 @@ export interface ClientComponent {
   readonly state: SerializableState;
   readonly isHydrated: boolean;
   readonly id: string;
-  
+
   setState(newState: Partial<SerializableState>): void;
   updateState(updater: (state: SerializableState) => Partial<SerializableState>): void;
   getState(): SerializableState;
   resetState(): void;
-  
+
   render(): void;
   destroy(): void;
   refresh(): void;
-  
+
   addEventListener(event: string, handler: EventHandler): void;
   removeEventListener(event: string, handler: EventHandler): void;
   trigger(event: string, data?: any): void;
-  
+
   serialize(): string;
   toJSON(): SerializableState;
 }
@@ -171,15 +171,15 @@ export interface ClientStateManager {
   values(): any[];
   entries(): Array<[string, any]>;
   size(): number;
-  
+
   subscribe(key: string, callback: (value: any, oldValue?: any) => void): () => void;
   unsubscribe(key: string, callback?: Function): void;
-  
+
   persist(key: string, storage?: Storage): void;
   unpersist(key: string): void;
-  
+
   batch(fn: () => void): void;
-  
+
   toJSON(): Record<string, any>;
   fromJSON(data: Record<string, any>): void;
 }
@@ -229,14 +229,14 @@ export interface HMRConfig {
 export interface HMRClient {
   readonly isConnected: boolean;
   readonly config: HMRConfig;
-  
+
   connect(): Promise<void>;
   disconnect(): void;
-  
+
   onUpdate(listener: HMRListener): () => void;
   onError(listener: (error: Error) => void): () => void;
   onReconnect(listener: () => void): () => void;
-  
+
   updateComponent(id: string, factory: ComponentFactory): void;
   updateStyle(id: string, css: string): void;
   reloadPage(): void;
@@ -296,13 +296,13 @@ export interface ExtendedIntersectionObserverEntry extends IntersectionObserverE
 
 /** Extract initial state from DOM element */
 export function extractInitialState(
-  element: HTMLElement, 
+  element: HTMLElement,
   options?: Pick<HydrationOptions, 'initialState' | 'transforms' | 'validators'>
 ): SerializableState | null;
 
 /** Hydrate a single element */
 export function hydrateElement(
-  element: HTMLElement, 
+  element: HTMLElement,
   component?: ComponentFactory,
   options?: HydrationOptions
 ): Promise<HydrationResult>;
@@ -445,50 +445,50 @@ declare const coherentClient: {
   hydrateElement: typeof hydrateElement;
   hydrateAll: typeof hydrateAll;
   autoHydrate: typeof autoHydrate;
-  
+
   // Component registration
   registerComponent: typeof registerComponent;
   unregisterComponent: typeof unregisterComponent;
   getComponent: typeof getComponent;
   getAllComponents: typeof getAllComponents;
   createClientComponent: typeof createClientComponent;
-  
+
   // DOM utilities
   ready: typeof ready;
   $: typeof $;
   $$: typeof $$;
-  
+
   // Event utilities
   on: typeof on;
   off: typeof off;
   trigger: typeof trigger;
   delegate: typeof delegate;
-  
+
   // Animation utilities
   requestAnimationFrame: typeof requestAnimationFrame;
   cancelAnimationFrame: typeof cancelAnimationFrame;
-  
+
   // Utility functions
   debounce: typeof debounce;
   throttle: typeof throttle;
-  
+
   // State management
   createStateManager: typeof createStateManager;
   syncState: typeof syncState;
   globalStateManager: typeof globalStateManager;
-  
+
   // Performance
   createPerformanceMonitor: typeof createPerformanceMonitor;
   globalPerformanceMonitor: typeof globalPerformanceMonitor;
-  
+
   // HMR
   createHMRClient: typeof createHMRClient;
   enableHMR: typeof enableHMR;
-  
+
   // Intersection Observer
   observeVisibility: typeof observeVisibility;
   lazyLoad: typeof lazyLoad;
-  
+
   // Constants
   DEFAULT_HYDRATION_SELECTOR: typeof DEFAULT_HYDRATION_SELECTOR;
   componentRegistry: typeof componentRegistry;

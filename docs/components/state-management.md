@@ -7,7 +7,7 @@ Coherent.js provides powerful state management through the `withState` higher-or
 ### Basic Stateful Component
 
 ```javascript
-import { withState } from '@coherentjs/core';
+import { withState } from '@coherent.js/core';
 
 const CounterComponent = withState({ count: 0 })(({ state, stateUtils }) => {
   const { setState } = stateUtils;

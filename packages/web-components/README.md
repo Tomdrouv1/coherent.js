@@ -1,11 +1,11 @@
-# @coherentjs/web-components
+# @coherent.js/web-components
 
 Web Components integration for Coherent.js, enabling custom elements and Shadow DOM support.
 
 ## Installation
 
 ```bash
-npm install @coherentjs/web-components
+npm install @coherent.js/web-components
 ```
 
 ## Usage
@@ -13,7 +13,7 @@ npm install @coherentjs/web-components
 ### Define Custom Elements
 
 ```js
-import { defineComponent } from '@coherentjs/web-components';
+import { defineComponent } from '@coherent.js/web-components';
 
 const ButtonComponent = {
   button: {
@@ -29,7 +29,7 @@ defineComponent('coherent-button', ButtonComponent);
 ### Shadow DOM Components
 
 ```js
-import { defineComponent } from '@coherentjs/web-components';
+import { defineComponent } from '@coherent.js/web-components';
 
 defineComponent('coherent-card', {
   div: {

@@ -1,6 +1,6 @@
 {
-  "name": "@coherentjs/runtime",
-  "version": "1.2.1",
+  "name": "@coherent.js/runtime",
+  "version": "1.0.0-beta.1",
   "description": "Runtime for Coherent.js - works in browsers, edge workers, and any JavaScript environment",
   "type": "module",
   "main": "dist/coherent-universal.js",
@@ -43,9 +43,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@coherentjs/core": "workspace:*",
-    "@coherentjs/client": "workspace:*",
-    "@coherentjs/web-components": "workspace:*"
+    "@coherent.js/core": "workspace:*",
+    "@coherent.js/client": "workspace:*",
+    "@coherent.js/web-components": "workspace:*"
   },
   "devDependencies": {
     "esbuild": "^0.25.9",

@@ -63,7 +63,7 @@ export const dbConfig = {
 export function generateDatabaseInit(dbType) {
   const inits = {
     postgres: `
-import { setupDatabase } from '@coherentjs/database';
+import { setupDatabase } from '@coherent.js/database';
 import { dbConfig } from './config.js';
 
 let db;
@@ -102,7 +102,7 @@ process.on('SIGINT', async () => {
 });
 `,
     mysql: `
-import { setupDatabase } from '@coherentjs/database';
+import { setupDatabase } from '@coherent.js/database';
 import { dbConfig } from './config.js';
 
 let db;
@@ -141,7 +141,7 @@ process.on('SIGINT', async () => {
 });
 `,
     sqlite: `
-import { setupDatabase } from '@coherentjs/database';
+import { setupDatabase } from '@coherent.js/database';
 import { dbConfig } from './config.js';
 import { mkdirSync } from 'fs';
 import { dirname } from 'path';
@@ -187,7 +187,7 @@ process.on('SIGINT', () => {
 });
 `,
     mongodb: `
-import { setupDatabase } from '@coherentjs/database';
+import { setupDatabase } from '@coherent.js/database';
 import { dbConfig } from './config.js';
 
 let db;
@@ -491,19 +491,19 @@ export function getDatabaseDependencies(dbType) {
   const deps = {
     postgres: {
       pg: '^8.12.0',
-      '@coherentjs/database': '^1.0.1'
+      '@coherent.js/database': '^1.0.1'
     },
     mysql: {
       'mysql2': '^3.11.0',
-      '@coherentjs/database': '^1.0.1'
+      '@coherent.js/database': '^1.0.1'
     },
     sqlite: {
       'better-sqlite3': '^11.3.0',
-      '@coherentjs/database': '^1.0.1'
+      '@coherent.js/database': '^1.0.1'
     },
     mongodb: {
       mongodb: '^6.9.0',
-      '@coherentjs/database': '^1.0.1'
+      '@coherent.js/database': '^1.0.1'
     }
   };
 

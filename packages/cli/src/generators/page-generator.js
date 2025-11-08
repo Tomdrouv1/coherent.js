@@ -76,7 +76,7 @@ function generatePageContent(name, template) {
 function generateBasicPage(name) {
   const routeName = name.toLowerCase();
   
-  return `import { createComponent } from '@coherentjs/core';
+  return `import { createComponent } from '@coherent.js/core';
 
 /**
  * ${name} Page Component
@@ -234,7 +234,7 @@ ${name}.description = '${name} page description';
  * Generate dashboard page
  */
 function generateDashboardPage(name) {
-  return `import { createComponent } from '@coherentjs/core';
+  return `import { createComponent } from '@coherent.js/core';
 
 /**
  * ${name} Dashboard Page
@@ -395,7 +395,7 @@ export const ${name} = createComponent(({ stats = {}, user = null }) => {
  * Generate form page
  */
 function generateFormPage(name) {
-  return `import { createComponent } from '@coherentjs/core';
+  return `import { createComponent } from '@coherent.js/core';
 
 /**
  * ${name} Form Page
@@ -564,7 +564,7 @@ export const ${name} = createComponent(({ initialData = {}, errors = {} }) => {
 function generateTestContent(name) {
   return `import { test } from 'node:test';
 import assert from 'node:assert';
-import { render } from '@coherentjs/core';
+import { render } from '@coherent.js/core';
 import { ${name} } from './${name}.js';
 
 test('${name} page renders correctly', () => {

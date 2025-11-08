@@ -74,7 +74,7 @@ function generateRESTAPI(apiName, originalName) {
   const className = toPascalCase(originalName);
   const camelCaseApiName = toCamelCase(apiName);
   
-  return `import { createApiRouter, withValidation } from '@coherentjs/api';
+  return `import { createApiRouter, withValidation } from '@coherent.js/api';
 
 /**
  * ${className} API Routes
@@ -302,7 +302,7 @@ function generateRPCAPI(apiName, originalName) {
   const className = toPascalCase(originalName);
   const camelCaseApiName = toCamelCase(apiName);
   
-  return `import { createApiRouter, withValidation } from '@coherentjs/api';
+  return `import { createApiRouter, withValidation } from '@coherent.js/api';
 
 /**
  * ${className} RPC API

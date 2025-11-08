@@ -48,7 +48,7 @@ PORT=8080 node website/coherent-master-demo.js
 ### Option 3: Import Components
 ```javascript
 import { MasterShowcase, ContactForm, LiveDataDashboard } from './MasterExample.js';
-import { render } from '@coherentjs/core';
+import { render } from '@coherent.js/core';
 
 // Use in your application
 const html = render(MasterShowcase());
@@ -177,7 +177,7 @@ The examples include interactive demonstrations:
 ### ESLint Configuration
 ```json
 {
-  "extends": ["@coherentjs/eslint-config"],
+  "extends": ["@coherent.js/eslint-config"],
   "rules": {
     "coherent/object-syntax": "error",
     "coherent/state-management": "warn"
@@ -188,7 +188,7 @@ The examples include interactive demonstrations:
 ### Testing Patterns
 ```javascript
 // Component testing with Vitest
-import { render } from '@coherentjs/core';
+import { render } from '@coherent.js/core';
 import { ContactForm } from './MasterExample.js';
 
 test('renders contact form', () => {

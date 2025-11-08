@@ -1,4 +1,4 @@
-# @coherentjs/build-tools
+# @coherent.js/build-tools
 
 Build tool integrations for Coherent.js, providing seamless integration with popular bundlers and build systems.
 
@@ -11,7 +11,7 @@ Build tool integrations for Coherent.js, providing seamless integration with pop
 ## Installation
 
 ```bash
-npm install @coherentjs/build-tools
+npm install @coherent.js/build-tools
 ```
 
 ## Usage
@@ -19,7 +19,7 @@ npm install @coherentjs/build-tools
 ### Vite Integration
 
 ```js
-import { createVitePlugin } from '@coherentjs/build-tools/vite';
+import { createVitePlugin } from '@coherent.js/build-tools/vite';
 
 export default {
   plugins: [
@@ -31,7 +31,7 @@ export default {
 ### Webpack Integration
 
 ```js
-import { CoherentLoader } from '@coherentjs/build-tools/webpack';
+import { CoherentLoader } from '@coherent.js/build-tools/webpack';
 
 export default {
   module: {
@@ -48,7 +48,7 @@ export default {
 ### Rollup Integration
 
 ```js
-import { createRollupPlugin } from '@coherentjs/build-tools/rollup';
+import { createRollupPlugin } from '@coherent.js/build-tools/rollup';
 
 export default {
   plugins: [

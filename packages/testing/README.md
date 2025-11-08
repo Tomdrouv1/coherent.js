@@ -1,11 +1,11 @@
-# @coherentjs/testing
+# @coherent.js/testing
 
 Complete testing utilities for Coherent.js applications.
 
 ## Installation
 
 ```bash
-npm install --save-dev @coherentjs/testing
+npm install --save-dev @coherent.js/testing
 ```
 
 ## Features
@@ -23,7 +23,7 @@ npm install --save-dev @coherentjs/testing
 
 ```javascript
 import { describe, it, expect } from 'vitest';
-import { renderComponent, extendExpect } from '@coherentjs/testing';
+import { renderComponent, extendExpect } from '@coherent.js/testing';
 
 // Extend expect with custom matchers
 extendExpect(expect);
@@ -213,7 +213,7 @@ spy.mockRestore();
 Extend expect with Coherent.js-specific matchers:
 
 ```javascript
-import { extendExpect } from '@coherentjs/testing';
+import { extendExpect } from '@coherent.js/testing';
 extendExpect(expect);
 ```
 
@@ -271,7 +271,7 @@ afterEach(() => {
 ### Testing a Button Component
 
 ```javascript
-import { renderComponent, fireEvent, createMock } from '@coherentjs/testing';
+import { renderComponent, fireEvent, createMock } from '@coherent.js/testing';
 
 it('should handle click events', () => {
   const handleClick = createMock();
@@ -294,7 +294,7 @@ it('should handle click events', () => {
 ### Testing Async Components
 
 ```javascript
-import { renderComponentAsync, waitForElement } from '@coherentjs/testing';
+import { renderComponentAsync, waitForElement } from '@coherent.js/testing';
 
 it('should load data', async () => {
   const AsyncComponent = async () => {
@@ -312,7 +312,7 @@ it('should load data', async () => {
 ### Testing Forms
 
 ```javascript
-import { renderComponent, userEvent } from '@coherentjs/testing';
+import { renderComponent, userEvent } from '@coherent.js/testing';
 
 it('should submit form', async () => {
   const handleSubmit = createMock();
@@ -339,7 +339,7 @@ it('should submit form', async () => {
 ### Snapshot Testing
 
 ```javascript
-import { renderComponent } from '@coherentjs/testing';
+import { renderComponent } from '@coherent.js/testing';
 
 it('should match snapshot', () => {
   const component = {
@@ -414,7 +414,7 @@ await waitFor(() => getByText('Loaded').exists);
 
 ```javascript
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { renderComponent, extendExpect, cleanup } from '@coherentjs/testing';
+import { renderComponent, extendExpect, cleanup } from '@coherent.js/testing';
 
 extendExpect(expect);
 
@@ -430,7 +430,7 @@ describe('MyComponent', () => {
 ### Jest
 
 ```javascript
-import { renderComponent, extendExpect, cleanup } from '@coherentjs/testing';
+import { renderComponent, extendExpect, cleanup } from '@coherent.js/testing';
 
 extendExpect(expect);
 

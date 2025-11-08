@@ -1,8 +1,8 @@
 /**
  * Coherent.js Framework Types
  * Complete TypeScript definitions for the entire Coherent.js framework
- * 
- * @version 1.1.1
+ *
+ * @version 1.0.0-beta.1
  */
 
 // ============================================================================
@@ -40,28 +40,28 @@ export interface CoherentFrameworkConfig {
     development?: boolean;
     strict?: boolean;
   };
-  
+
   // Rendering settings
   rendering?: {
     cache?: boolean;
     pretty?: boolean;
     streaming?: boolean;
   };
-  
+
   // State management
   state?: {
     persistent?: boolean;
     serializable?: boolean;
     devtools?: boolean;
   };
-  
+
   // Client-side settings
   client?: {
     hydration?: boolean;
     hmr?: boolean;
     serviceWorker?: boolean;
   };
-  
+
   // API settings
   api?: {
     validation?: boolean;
@@ -69,7 +69,7 @@ export interface CoherentFrameworkConfig {
     rateLimit?: boolean;
     cors?: boolean;
   };
-  
+
   // Database settings
   database?: {
     enabled?: boolean;
@@ -77,7 +77,7 @@ export interface CoherentFrameworkConfig {
     migrations?: boolean;
     seeding?: boolean;
   };
-  
+
   // Performance settings
   performance?: {
     monitoring?: boolean;
@@ -85,7 +85,7 @@ export interface CoherentFrameworkConfig {
     compression?: boolean;
     bundleAnalysis?: boolean;
   };
-  
+
   // Security settings
   security?: {
     csrf?: boolean;
@@ -93,7 +93,7 @@ export interface CoherentFrameworkConfig {
     sanitization?: boolean;
     audit?: boolean;
   };
-  
+
   // Logging settings
   logging?: {
     level?: 'debug' | 'info' | 'warn' | 'error';
@@ -138,27 +138,27 @@ export interface CoherentPlugin {
   version: string;
   description?: string;
   dependencies?: string[];
-  
+
   // Lifecycle hooks
   install?(framework: any): void | Promise<void>;
   uninstall?(framework: any): void | Promise<void>;
   configure?(config: CoherentFrameworkConfig): CoherentFrameworkConfig;
-  
+
   // Component system extensions
   components?: {
     [name: string]: any;
   };
-  
+
   // Middleware extensions
   middleware?: {
     [name: string]: any;
   };
-  
+
   // CLI extensions
   commands?: {
     [name: string]: any;
   };
-  
+
   // Custom hooks
   hooks?: {
     [event: string]: (...args: any[]) => any;
@@ -174,24 +174,24 @@ export interface CoherentFramework {
   // Version information
   readonly version: string;
   readonly metadata: ApplicationMetadata;
-  
+
   // Configuration
   config: CoherentFrameworkConfig;
   configure(config: Partial<CoherentFrameworkConfig>): void;
-  
+
   // Core modules
   core: typeof import('../packages/core/types/index.js');
   api: typeof import('../packages/api/types/index.js');
   database: typeof import('../packages/database/types/index.js');
   client: typeof import('../packages/client/types/index.js');
-  
+
   // Framework integrations
   integrations: {
     express: typeof import('../packages/express/types/index.js');
     koa: typeof import('../packages/koa/types/index.js');
     nextjs: typeof import('../packages/nextjs/types/index.js');
   };
-  
+
   // Plugin system
   plugins: {
     install(plugin: CoherentPlugin): Promise<void>;
@@ -199,7 +199,7 @@ export interface CoherentFramework {
     get(name: string): CoherentPlugin | undefined;
     list(): CoherentPlugin[];
   };
-  
+
   // Utilities
   utils: {
     getRuntimeInfo(): RuntimeInfo;
@@ -207,7 +207,7 @@ export interface CoherentFramework {
     createLogger(name?: string): any;
     createPerformanceMonitor(): any;
   };
-  
+
   // Event system
   events: {
     on(event: string, listener: (...args: any[]) => void): void;

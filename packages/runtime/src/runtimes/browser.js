@@ -3,9 +3,9 @@
  * Works in browsers, Electron, and Tauri
  */
 
-import { render, withState, memo } from '@coherentjs/core';
-import { hydrate, autoHydrate, makeHydratable } from '@coherentjs/client';
-import { integrateWithWebComponents, defineCoherentElement } from '@coherentjs/web-components';
+import { render, withState, memo } from '@coherent.js/core';
+import { hydrate, autoHydrate, makeHydratable } from '@coherent.js/client';
+import { integrateWithWebComponents, defineCoherentElement } from '@coherent.js/web-components';
 
 export class BrowserRuntime {
   constructor(options = {}) {

@@ -1,8 +1,8 @@
 /**
  * Coherent.js Next.js Integration Types
  * TypeScript definitions for Next.js framework integration
- * 
- * @version 1.1.1
+ *
+ * @version 1.0.0-beta.1
  */
 
 import { NextApiRequest, NextApiResponse, NextPage, GetServerSideProps, GetStaticProps } from 'next';
@@ -57,7 +57,7 @@ export interface CoherentNextConfig {
   reactStrictMode?: boolean;
   swcMinify?: boolean;
   experimental?: any;
-  
+
   // Coherent.js specific
   coherent?: {
     ssr?: boolean;
@@ -78,7 +78,7 @@ export interface CoherentNextConfig {
       overlay?: boolean;
     };
   };
-  
+
   // Webpack configuration
   webpack?: (config: any, options: any) => any;
 }

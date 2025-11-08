@@ -51,7 +51,7 @@ function Counter() {
 
 **Coherent.js with withState:**
 ```javascript
-import { withState } from '@coherentjs/core';
+import { withState } from '@coherent.js/core';
 
 const Counter = withState({ count: 0 })(({ state, setState }) => ({
   div: {
@@ -87,7 +87,7 @@ function UserProfile({ user }) {
 
 **Coherent.js:**
 ```javascript
-import { when } from '@coherentjs/core';
+import { when } from '@coherent.js/core';
 
 function UserProfile({ user }) {
   return {
@@ -122,7 +122,7 @@ function TodoList({ todos }) {
 
 **Coherent.js:**
 ```javascript
-import { forEach } from '@coherentjs/core';
+import { forEach } from '@coherent.js/core';
 
 function TodoList({ todos }) {
   return {
@@ -178,7 +178,7 @@ function Greeting({ name, notifications }) {
 
 **Coherent.js:**
 ```javascript
-import { when } from '@coherentjs/core';
+import { when } from '@coherent.js/core';
 
 function UserProfile({ user }) {
   return {
@@ -209,7 +209,7 @@ function UserProfile({ user }) {
 
 **Coherent.js:**
 ```javascript
-import { forEach } from '@coherentjs/core';
+import { forEach } from '@coherent.js/core';
 
 function TodoList({ todos }) {
   return {
@@ -252,7 +252,7 @@ function Greeting({ name }) {
 }
 
 // Render with:
-import { render } from '@coherentjs/core';
+import { render } from '@coherent.js/core';
 const html = render(Greeting({ name: 'World' }));
 ```
 
@@ -314,7 +314,7 @@ const CounterView = (props) => {
 export const Counter = CounterComponent(CounterView);
 
 // Client-side hydration (hydration.js)
-import { hydrate, autoHydrate } from '@coherentjs/client';
+import { hydrate, autoHydrate } from '@coherent.js/client';
 import { Counter } from './components/Counter.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -579,7 +579,7 @@ const enhancedSubmit = async (event) => {
 
 ### Client-Side Hydration Setup
 
-- [ ] Install `@coherentjs/client` package (when available)
+- [ ] Install `@coherent.js/client` package (when available)
 - [ ] Create hydration entry point (`hydration.js`)
 - [ ] Set up component registry for `autoHydrate`
 - [ ] Add hydration script to HTML pages

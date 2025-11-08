@@ -3,7 +3,7 @@
  * Provides custom element and web component utilities
  */
 
-import { render } from '@coherentjs/core';
+import { render } from '@coherent.js/core';
 
 /**
  * Define a Coherent.js component as a custom element

@@ -2,7 +2,7 @@
  * Astro Integration for Coherent.js
  */
 
-import { render } from '@coherentjs/core';
+import { render } from '@coherent.js/core';
 
 export function createAstroIntegration(_options = {}) {
   return {
@@ -10,8 +10,8 @@ export function createAstroIntegration(_options = {}) {
     hooks: {
       'astro:config:setup': ({ addRenderer }) => {
         addRenderer({
-          name: '@coherentjs/adapters/astro',
-          serverEntrypoint: '@coherentjs/adapters/astro/server.js',
+          name: '@coherent.js/adapters/astro',
+          serverEntrypoint: '@coherent.js/adapters/astro/server.js',
         });
       }
     }

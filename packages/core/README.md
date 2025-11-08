@@ -1,6 +1,6 @@
-# @coherentjs/core
+# @coherent.js/core
 
-[![npm version](https://img.shields.io/npm/v/@coherentjs/core.svg)](https://www.npmjs.com/package/@coherentjs/core)
+[![npm version](https://img.shields.io/npm/v/@coherent.js/core.svg)](https://www.npmjs.com/package/@coherent.js/core)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](../../LICENSE)
 [![Node >= 20](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
 
@@ -16,7 +16,7 @@ For a high-level overview and repository-wide instructions, see the root README:
 ## Installation
 
 ```bash
-pnpm add @coherentjs/core
+pnpm add @coherent.js/core
 ```
 
 Requirements:
@@ -27,7 +27,7 @@ Requirements:
 
 JavaScript (ESM):
 ```js
-import { renderToString } from '@coherentjs/core';
+import { renderToString } from '@coherent.js/core';
 
 const html = await renderToString({
   div: { class: 'greeting', text: 'Hello Coherent' }
@@ -38,7 +38,7 @@ console.log(html);
 
 TypeScript:
 ```ts
-import { renderToString } from '@coherentjs/core';
+import { renderToString } from '@coherent.js/core';
 
 async function main() {
   const html = await renderToString({
@@ -73,7 +73,7 @@ Tip: When working in the monorepo website/dev flow, imports can resolve to `src`
 ## Minimal component example
 
 ```js
-import { createComponent, renderToString } from '@coherentjs/core';
+import { createComponent, renderToString } from '@coherent.js/core';
 
 const Counter = createComponent(({ count = 0 }) => ({
   div: {
@@ -89,7 +89,7 @@ const html = await renderToString(Counter({ count: 2 }));
 
 TypeScript:
 ```ts
-import { createComponent, renderToString } from '@coherentjs/core';
+import { createComponent, renderToString } from '@coherent.js/core';
 
 type Props = { count?: number };
 
@@ -107,22 +107,22 @@ const html = await renderToString(Counter({ count: 2 }));
 
 Run tests for this package:
 ```bash
-pnpm --filter @coherentjs/core run test
+pnpm --filter @coherent.js/core run test
 ```
 
 Watch mode:
 ```bash
-pnpm --filter @coherentjs/core run test:watch
+pnpm --filter @coherent.js/core run test:watch
 ```
 
 Type check:
 ```bash
-pnpm --filter @coherentjs/core run typecheck
+pnpm --filter @coherent.js/core run typecheck
 ```
 
 Build (from package dir or via workspace filter):
 ```bash
-pnpm --filter @coherentjs/core run build
+pnpm --filter @coherent.js/core run build
 ```
 
 ## License

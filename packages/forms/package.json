@@ -1,6 +1,6 @@
 {
-  "name": "@coherentjs/forms",
-  "version": "1.0.0",
+  "name": "@coherent.js/forms",
+  "version": "1.0.0-beta.1",
   "description": "Form utilities and validation for Coherent.js applications",
   "type": "module",
   "main": "./src/index.js",
@@ -18,6 +18,6 @@
   "author": "Coherent.js Team",
   "license": "MIT",
   "peerDependencies": {
-    "@coherentjs/core": "^1.0.0"
+    "@coherent.js/core": "^1.0.0-beta.1"
   }
 }

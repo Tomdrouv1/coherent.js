@@ -1,11 +1,11 @@
-# @coherentjs/performance-profiler
+# @coherent.js/profiler
 
 Advanced performance monitoring and profiling tools for Coherent.js applications.
 
 ## Installation
 
 ```bash
-npm install @coherentjs/performance-profiler
+npm install @coherent.js/profiler
 ```
 
 ## Usage
@@ -13,7 +13,7 @@ npm install @coherentjs/performance-profiler
 ### Basic Profiling
 
 ```js
-import { PerformanceProfiler } from '@coherentjs/performance-profiler';
+import { PerformanceProfiler } from '@coherent.js/profiler';
 
 const profiler = new PerformanceProfiler();
 
@@ -27,7 +27,7 @@ const report = profiler.endProfile(profileId);
 ### Metrics Collection
 
 ```js
-import { MetricsCollector } from '@coherentjs/performance-profiler';
+import { MetricsCollector } from '@coherent.js/performance-profiler';
 
 const collector = new MetricsCollector();
 collector.recordMetric('render-time', 16.5);
@@ -36,7 +36,7 @@ collector.recordMetric('render-time', 16.5);
 ### Performance Dashboard
 
 ```js
-import { createDashboard } from '@coherentjs/performance-profiler';
+import { createDashboard } from '@coherent.js/performance-profiler';
 
 const dashboard = createDashboard(profiler);
 const dashboardHTML = dashboard.render();

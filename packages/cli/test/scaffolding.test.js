@@ -98,8 +98,8 @@ test('scaffoldProject should create correct package.json for basic template', as
     assert(packageJson.scripts.test);
     
     // Check dependencies
-    assert(packageJson.dependencies['@coherentjs/core']);
-    assert(packageJson.devDependencies['@coherentjs/cli']);
+    assert(packageJson.dependencies['@coherent.js/core']);
+    assert(packageJson.devDependencies['@coherent.js/cli']);
     
     
     
@@ -125,7 +125,7 @@ test('scaffoldProject should create Express template correctly', async () => {
     const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
 
     assert(packageJson.dependencies.express);
-    assert(packageJson.dependencies['@coherentjs/express']);
+    assert(packageJson.dependencies['@coherent.js/express']);
 
     // Check main index.js has Express setup
     const indexPath = join(tempDir, 'src/index.js');
@@ -211,7 +211,7 @@ test('scaffoldProject should create basic test file', async () => {
     const testContent = readFileSync(testPath, 'utf-8');
     
     assert(testContent.includes("import { test } from 'node:test'"));
-    assert(testContent.includes("import { render } from '@coherentjs/core'"));
+    assert(testContent.includes("import { render } from '@coherent.js/core'"));
     assert(testContent.includes("test('renders basic component'"));
     assert(testContent.includes("Hello, World!"));
     
@@ -301,7 +301,7 @@ test('scaffoldProject should create valid main index.js', async () => {
 
     // Check basic structure (built-in HTTP server)
     assert(indexContent.includes("import http from 'http'"));
-    assert(indexContent.includes("import { render } from '@coherentjs/core'"));
+    assert(indexContent.includes("import { render } from '@coherent.js/core'"));
     assert(indexContent.includes("import { HomePage } from './components/HomePage.js'"));
     assert(indexContent.includes('server.listen'));
     assert(indexContent.includes('PORT'));
