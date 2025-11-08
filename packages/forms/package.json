@@ -3,15 +3,15 @@
   "version": "1.0.0-beta.1",
   "description": "SSR + Hydration form system for Coherent.js applications",
   "type": "module",
-  "main": "./src/index.js",
+  "main": "./dist/index.js",
   "exports": {
-    ".": "./src/index.js",
-    "./form-builder": "./src/form-builder.js",
-    "./hydration": "./src/form-hydration.js",
-    "./validation": "./src/validation.js",
-    "./validators": "./src/validators.js",
-    "./forms": "./src/forms.js",
-    "./advanced-validation": "./src/advanced-validation.js"
+    ".": "./dist/index.js",
+    "./form-builder": "./dist/form-builder.js",
+    "./hydration": "./dist/form-hydration.js",
+    "./validation": "./dist/validation.js",
+    "./validators": "./dist/validators.js",
+    "./forms": "./dist/forms.js",
+    "./advanced-validation": "./dist/advanced-validation.js"
   },
   "keywords": [
     "coherent",
@@ -21,6 +21,10 @@
   ],
   "author": "Coherent.js Team",
   "license": "MIT",
+  "scripts": {
+    "build": "node build.mjs",
+    "clean": "rm -rf dist"
+  },
   "peerDependencies": {
     "@coherent.js/core": "workspace:^",
     "@coherent.js/state": "workspace:^"

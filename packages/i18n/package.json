@@ -3,12 +3,12 @@
   "version": "1.0.0-beta.1",
   "description": "Internationalization support for Coherent.js applications",
   "type": "module",
-  "main": "./src/index.js",
+  "main": "./dist/index.js",
   "exports": {
-    ".": "./src/index.js",
-    "./translator": "./src/translator.js",
-    "./formatters": "./src/formatters.js",
-    "./locale": "./src/locale.js"
+    ".": "./dist/index.js",
+    "./translator": "./dist/translator.js",
+    "./formatters": "./dist/formatters.js",
+    "./locale": "./dist/locale.js"
   },
   "keywords": [
     "coherent",
@@ -19,6 +19,10 @@
   ],
   "author": "Coherent.js Team",
   "license": "MIT",
+  "scripts": {
+    "build": "node build.mjs",
+    "clean": "rm -rf dist"
+  },
   "peerDependencies": {
     "@coherent.js/core": "workspace:^"
   }

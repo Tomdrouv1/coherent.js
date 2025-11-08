@@ -3,12 +3,12 @@
   "version": "1.0.0-beta.1",
   "description": "Performance optimization utilities for Coherent.js",
   "type": "module",
-  "main": "./src/index.js",
+  "main": "./dist/index.js",
   "exports": {
-    ".": "./src/index.js",
-    "./code-splitting": "./src/code-splitting.js",
-    "./cache": "./src/cache.js",
-    "./lazy-loading": "./src/lazy-loading.js"
+    ".": "./dist/index.js",
+    "./code-splitting": "./dist/code-splitting.js",
+    "./cache": "./dist/cache.js",
+    "./lazy-loading": "./dist/lazy-loading.js"
   },
   "keywords": [
     "coherent",
@@ -19,6 +19,10 @@
   ],
   "author": "Coherent.js Team",
   "license": "MIT",
+  "scripts": {
+    "build": "node build.mjs",
+    "clean": "rm -rf dist"
+  },
   "peerDependencies": {
     "@coherent.js/core": "workspace:^"
   }

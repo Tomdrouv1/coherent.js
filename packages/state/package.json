@@ -3,13 +3,13 @@
   "version": "1.0.0-beta.1",
   "description": "Reactive state management for Coherent.js applications",
   "type": "module",
-  "main": "./src/index.js",
+  "main": "./dist/index.js",
   "exports": {
-    ".": "./src/index.js",
-    "./reactive": "./src/reactive-state.js",
-    "./persistence": "./src/state-persistence.js",
-    "./validation": "./src/state-validation.js",
-    "./manager": "./src/state-manager.js"
+    ".": "./dist/index.js",
+    "./reactive": "./dist/reactive-state.js",
+    "./persistence": "./dist/state-persistence.js",
+    "./validation": "./dist/state-validation.js",
+    "./manager": "./dist/state-manager.js"
   },
   "keywords": [
     "coherent",
@@ -27,6 +27,10 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "clean": "rm -rf dist"
   },
   "peerDependencies": {
     "@coherent.js/core": "workspace:^"

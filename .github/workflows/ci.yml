@@ -3,9 +3,10 @@ name: CI
 on:
   push:
     branches: [ 'main' ]
-    tags: [ 'v*.*.*' ]
   pull_request:
     branches: [ '**' ]
+  release:
+    types: [ published, created ]
 
 permissions:
   contents: read
@@ -76,13 +77,12 @@ jobs:
         run: pnpm run website:build
 
   deploy_website:
-    name: Deploy Website (release branches/tags only)
+    name: Deploy Website
     needs: test
     runs-on: ubuntu-latest
     if: >-
-      github.event_name == 'push' && (
-        startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/tags/v')
-      )
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'release')
     permissions:
       contents: read
       pages: write
@@ -141,11 +141,11 @@ jobs:
           echo "Pages URL: ${{ steps.deployment.outputs.page_url }}"
 
   publish_npm:
-    name: Publish to npm (tags only)
+    name: Publish to npm (releases only)
     needs: test
     runs-on: ubuntu-latest
     if: >-
-      github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') &&
+      github.event_name == 'release' &&
       github.repository == 'Tomdrouv1/coherent.js'
     permissions:
       contents: read
@@ -171,7 +171,23 @@ jobs:
       - name: Build
         run: pnpm run build
 
-      - name: Publish all packages
-        run: pnpm -r publish --provenance --access public --no-git-checks
+      - name: Determine npm tag
+        id: npm-tag
+        run: |
+          if [[ "${{ github.event.release.prerelease }}" == "true" ]]; then
+            echo "tag=beta" >> $GITHUB_OUTPUT
+          else
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Publish all packages (prerelease)
+        if: github.event.release.prerelease == true
+        run: pnpm publish -r --provenance --access public --tag beta --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish all packages (stable)
+        if: github.event.release.prerelease == false
+        run: pnpm publish -r --provenance --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

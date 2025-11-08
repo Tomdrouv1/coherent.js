@@ -3,12 +3,12 @@
   "version": "1.0.0-beta.1",
   "description": "Testing utilities for Coherent.js applications",
   "type": "module",
-  "main": "./src/index.js",
+  "main": "./dist/index.js",
   "exports": {
-    ".": "./src/index.js",
-    "./renderer": "./src/test-renderer.js",
-    "./utils": "./src/test-utils.js",
-    "./matchers": "./src/matchers.js"
+    ".": "./dist/index.js",
+    "./renderer": "./dist/test-renderer.js",
+    "./utils": "./dist/test-utils.js",
+    "./matchers": "./dist/matchers.js"
   },
   "keywords": [
     "coherent",
@@ -25,6 +25,8 @@
     "vitest": "^1.0.0"
   },
   "scripts": {
+    "build": "node build.mjs",
+    "clean": "rm -rf dist",
     "test": "vitest run",
     "test:watch": "vitest"
   }
