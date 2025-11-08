@@ -9,9 +9,14 @@
  */
 export function isPeerDependencyAvailable(packageName) {
   try {
-    // Try to resolve the package
-    import.meta.resolve(packageName);
-    return true;
+    // Try to import the package synchronously using require.resolve
+    // This is more compatible with code analysis tools
+    if (typeof require !== 'undefined' && require.resolve) {
+      require.resolve(packageName);
+      return true;
+    }
+    // Fallback: assume available if require is not available (browser context)
+    return false;
   } catch {
     return false;
   }
