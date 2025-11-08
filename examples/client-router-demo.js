@@ -1,5 +1,5 @@
 /**
- * Client Router Demo - @coherentjs/client/router
+ * Client Router Demo - @coherent.js/client/router
  *
  * This example demonstrates the client-side router with:
  * - Basic routing and navigation
@@ -13,8 +13,8 @@
  * @since v1.0.0-beta.2
  */
 
-import { createRouter } from '@coherentjs/client/router';
-import { render } from '@coherentjs/core';
+import { createRouter } from '@coherent.js/client/router';
+import { render } from '@coherent.js/core';
 
 // =============================================================================
 // Page Components

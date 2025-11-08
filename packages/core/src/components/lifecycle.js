@@ -4,7 +4,7 @@
  */
 
 import { globalErrorHandler } from '../utils/error-handler.js';
-// Note: ReactiveState moved to @coherentjs/state package
+// Note: ReactiveState moved to @coherent.js/state package
 // Lifecycle hooks are SSR-compatible and don't require reactive state
 
 /**
@@ -245,7 +245,7 @@ export class ComponentLifecycle {
         }
 
         const handler = this.eventHandlers.get(element);
-        
+
         if (!handler.events.has(event)) {
             handler.events.set(event, new Set());
         }
@@ -350,19 +350,19 @@ export class ComponentEventSystem {
             if (!this.events.has(componentId)) {
                 this.events.set(componentId, new Map());
             }
-            
+
             const componentEvents = this.events.get(componentId);
             if (!componentEvents.has(eventName)) {
                 componentEvents.set(eventName, new Set());
             }
-            
+
             componentEvents.get(eventName).add(handler);
         } else {
             // Global event
             if (!this.globalHandlers.has(eventName)) {
                 this.globalHandlers.set(eventName, new Set());
             }
-            
+
             this.globalHandlers.get(eventName).add(handler);
         }
 
@@ -378,7 +378,7 @@ export class ComponentEventSystem {
             const componentEvents = this.events.get(componentId);
             if (componentEvents && componentEvents.has(eventName)) {
                 componentEvents.get(eventName).delete(handler);
-                
+
                 // Cleanup empty sets
                 if (componentEvents.get(eventName).size === 0) {
                     componentEvents.delete(eventName);
@@ -419,7 +419,7 @@ export class ComponentEventSystem {
             const handlers = componentEvents.get(event.name);
             for (const handler of handlers) {
                 if (event.stopped) break;
-                
+
                 try {
                     handler(event);
                 } catch (_error) {
@@ -440,7 +440,7 @@ export class ComponentEventSystem {
         if (handlers) {
             for (const handler of handlers) {
                 if (event.stopped) break;
-                
+
                 try {
                     handler(event);
                 } catch (_error) {
@@ -581,16 +581,16 @@ export const componentUtils = {
 export function withLifecycle(component, options = {}) {
     return function LifecycleComponent(props = {}) {
         const instance = componentUtils.getLifecycle(component);
-        
+
         if (!instance) {
             const lifecycle = new ComponentLifecycle(component, options);
             setCurrentInstance(lifecycle);
         }
 
         const result = typeof component === 'function' ? component(props) : component;
-        
+
         setCurrentInstance(null);
-        
+
         return result;
     };
 }

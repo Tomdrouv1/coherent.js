@@ -4,8 +4,8 @@
  * Only active in development environment for zero production overhead
  */
 
-import { performanceMonitor } from '@coherentjs/core/src/performance/monitor.js';
-import { validateComponent, isCoherentObject } from '@coherentjs/core/src/core/object-utils.js';
+import { performanceMonitor } from '@coherent.js/core/src/performance/monitor.js';
+import { validateComponent, isCoherentObject } from '@coherent.js/core/src/core/object-utils.js';
 
 /**
  * Main DevTools class
@@ -691,10 +691,10 @@ export class DevTools {
         this.devPanel.innerHTML = `
       <div style="padding: 15px; border-bottom: 1px solid #333;">
         <strong>🛠️ Coherent.js Dev Tools</strong>
-        <button onclick="this.parentElement.parentElement.style.display='none'" 
+        <button onclick="this.parentElement.parentElement.style.display='none'"
                 style="float: right; background: none; border: none; color: #fff; cursor: pointer;">×</button>
       </div>
-      
+
       <div style="padding: 10px;">
         <h4 style="margin: 0 0 10px 0; color: #4CAF50;">Performance</h4>
         <div style="font-size: 11px;">
@@ -703,7 +703,7 @@ export class DevTools {
           <div>Memory Usage: ${(performance.memory?.usedJSHeapSize / 1024 / 1024 || 0).toFixed(1)}MB</div>
         </div>
       </div>
-      
+
       <div style="padding: 10px;">
         <h4 style="margin: 0 0 10px 0; color: #2196F3;">Recent Renders</h4>
         ${recentRenders.map(r => `
@@ -712,7 +712,7 @@ export class DevTools {
           </div>
         `).join('')}
       </div>
-      
+
       ${recentWarnings.length > 0 ? `
         <div style="padding: 10px;">
           <h4 style="margin: 0 0 10px 0; color: #FF9800;">Warnings</h4>
@@ -723,7 +723,7 @@ export class DevTools {
           `).join('')}
         </div>
       ` : ''}
-      
+
       <div style="padding: 10px; font-size: 10px; color: #888;">
         Press Ctrl+Shift+P for performance details
       </div>

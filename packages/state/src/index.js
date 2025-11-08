@@ -1,5 +1,5 @@
 /**
- * @coherentjs/state - Reactive State Management Package
+ * @coherent.js/state - Reactive State Management Package
  *
  * A comprehensive state management solution for Coherent.js applications
  * providing reactive state, persistence, validation, and SSR-compatible state management.

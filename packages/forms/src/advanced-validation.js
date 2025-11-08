@@ -3,8 +3,8 @@
  * Provides comprehensive form handling with reactive validation
  */
 
-import { ReactiveState, observable, computed } from '@coherentjs/state/src/reactive-state.js';
-import { globalErrorHandler } from '@coherentjs/core/src/utils/_error-handler.js';
+import { ReactiveState, observable, computed } from '@coherent.js/state/src/reactive-state.js';
+import { globalErrorHandler } from '@coherent.js/core/src/utils/_error-handler.js';
 
 /**
  * Built-in validation rules
@@ -12,7 +12,7 @@ import { globalErrorHandler } from '@coherentjs/core/src/utils/_error-handler.js
 export const validationRules = {
     required: (value, params = true) => {
         if (!params) return true;
-        const isEmpty = value === null || value === undefined || value === '' || 
+        const isEmpty = value === null || value === undefined || value === '' ||
                        (Array.isArray(value) && value.length === 0);
         return !isEmpty || 'This field is required';
     },
@@ -134,7 +134,7 @@ class FieldValidator {
         try {
             for (const [ruleName, ruleParams] of Object.entries(this.rules)) {
                 const validator = validationRules[ruleName];
-                
+
                 if (!validator) {
                     console.warn(`Unknown validation rule: ${ruleName}`);
                     continue;
@@ -151,7 +151,7 @@ class FieldValidator {
 
                 if (result !== true) {
                     errors.push(typeof result === 'string' ? result : `Invalid ${this.name}`);
-                    
+
                     // Stop on first _error unless configured otherwise
                     if (!this.options.validateAll) {
                         break;
@@ -287,9 +287,9 @@ export class FormValidator {
         for (const [fieldName, fieldSchema] of Object.entries(this.schema)) {
             const rules = fieldSchema.rules || fieldSchema;
             const options = fieldSchema.options || {};
-            
+
             this.validators.set(fieldName, new FieldValidator(fieldName, rules, options));
-            
+
             // Initialize data
             this.data.set(fieldName, fieldSchema.default || '');
 
@@ -298,7 +298,7 @@ export class FormValidator {
                 this.data.watch(fieldName, (newValue) => {
                     const validator = this.validators.get(fieldName);
                     validator.dirty();
-                    
+
                     if (validator.options.validateOnChange) {
                         validator.validateDebounced(newValue, this.data.toObject());
                     }
@@ -312,7 +312,7 @@ export class FormValidator {
      */
     setField(name, value) {
         this.data.set(name, value);
-        
+
         const validator = this.validators.get(name);
         if (validator) {
             validator.dirty();
@@ -359,7 +359,7 @@ export class FormValidator {
      */
     async validateAll() {
         const validationPromises = [];
-        
+
         for (const [name, validator] of this.validators.entries()) {
             const value = this.data.get(name);
             validationPromises.push(validator.validate(value, this.data.toObject()));
@@ -376,7 +376,7 @@ export class FormValidator {
         const validator = this.validators.get(name);
         if (validator) {
             validator.touch();
-            
+
             if (validator.options.validateOnBlur) {
                 const value = this.data.get(name);
                 validator.validate(value, this.data.toObject());
@@ -568,7 +568,7 @@ export const binding = {
         return {
             value: form.getField(fieldName),
             onchange: (event) => {
-                const value = options.multiple 
+                const value = options.multiple
                     ? Array.from(event.target.selectedOptions, opt => opt.value)
                     : event.target.value;
                 form.setField(fieldName, value);
@@ -631,7 +631,7 @@ export const formComponents = {
                 children: [
                     label ? { label: { text: label, htmlFor: field } } : null,
                     children,
-                    showErrors && state.hasError ? 
+                    showErrors && state.hasError ?
                         formComponents.ValidationError({ form, field }) : null
                 ].filter(Boolean)
             }

@@ -1,7 +1,7 @@
 /**
- * State Management Demo - @coherentjs/state Package
+ * State Management Demo - @coherent.js/state Package
  *
- * This example demonstrates the new @coherentjs/state package features:
+ * This example demonstrates the new @coherent.js/state package features:
  * - Reactive observables and computed properties
  * - State persistence with localStorage
  * - State validation
@@ -10,7 +10,7 @@
  * @since v1.0.0-beta.2
  */
 
-import { render } from '@coherentjs/core';
+import { render } from '@coherent.js/core';
 import {
   observable,
   computed,
@@ -20,7 +20,7 @@ import {
   validators,
   provideContext,
   useContext
-} from '@coherentjs/state';
+} from '@coherent.js/state';
 
 // =============================================================================
 // Example 1: Basic Observables
@@ -286,7 +286,7 @@ console.log('After increments:', render(CounterComponent()));
 // =============================================================================
 
 console.log('\n' + '='.repeat(80));
-console.log('📝 Summary of @coherentjs/state Features:');
+console.log('📝 Summary of @coherent.js/state Features:');
 console.log('='.repeat(80));
 console.log('');
 console.log('✓ Observable values with automatic dependency tracking');
@@ -296,7 +296,7 @@ console.log('✓ LocalStorage/SessionStorage/IndexedDB persistence');
 console.log('✓ Built-in validation with customizable validators');
 console.log('✓ SSR-compatible context API');
 console.log('✓ Type-safe with TypeScript definitions');
-console.log('✓ Zero dependencies (except @coherentjs/core peer)');
+console.log('✓ Zero dependencies (except @coherent.js/core peer)');
 console.log('');
 console.log('🚀 Ready for production use in v1.0.0-beta.2!');
 console.log('='.repeat(80));

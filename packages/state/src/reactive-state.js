@@ -3,7 +3,7 @@
  * Provides computed properties, watchers, and reactive updates
  */
 
-import { globalErrorHandler, StateError } from '@coherentjs/core/src/utils/_error-handler.js';
+import { globalErrorHandler, StateError } from '@coherent.js/core/src/utils/_error-handler.js';
 
 /**
  * Observable wrapper for tracking state changes
@@ -116,7 +116,7 @@ class Computed extends Observable {
 
         try {
             const newValue = this._getter();
-            
+
             if (newValue !== this._value) {
                 const oldValue = this._value;
                 this._value = newValue;
@@ -207,7 +207,7 @@ export class ReactiveState {
             if (config.enableHistory) {
                 this._addToHistory('set', key, observable.value, value);
             }
-            
+
             observable.value = value;
         }
 
@@ -295,7 +295,7 @@ export class ReactiveState {
         }
 
         const unwatch = observable.watch(callback, options);
-        
+
         // Store watcher for cleanup
         if (!this._watchers.has(key)) {
             this._watchers.set(key, new Set());
@@ -311,7 +311,7 @@ export class ReactiveState {
     _watchComputed(expression, callback, options = {}) {
         const computed = new Computed(expression, options);
         const unwatch = computed.watch(callback, options);
-        
+
         return unwatch;
     }
 
@@ -326,12 +326,12 @@ export class ReactiveState {
 
             try {
                 const result = updates(this);
-                
+
                 // Record batch in history
                 if (oldEnableHistory) {
                     this._addToHistory('batch', null, null, this.toObject());
                 }
-                
+
                 return result;
             } finally {
                 this._options.enableHistory = oldEnableHistory;
