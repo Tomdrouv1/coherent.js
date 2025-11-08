@@ -21,40 +21,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Package Reorganization**: Major restructuring for better separation of concerns
-  - Created new **@coherentjs/state** package for reactive state management
-  - Moved client-side router to **@coherentjs/client** package
-  - Consolidated forms validation into **@coherentjs/forms** package
-  - Consolidated dev tools into **@coherentjs/devtools** package
-  - Exported lifecycle hooks, object factory, and component cache from **@coherentjs/core**
+  - Created new **@coherent.js/state** package for reactive state management
+  - Moved client-side router to **@coherent.js/client** package
+  - Consolidated forms validation into **@coherent.js/forms** package
+  - Consolidated dev tools into **@coherent.js/devtools** package
+  - Exported lifecycle hooks, object factory, and component cache from **@coherent.js/core**
   - Removed redundant code and consolidated duplicate features
   - Updated all package dependencies and workspace references
 
 ### Added
-- **@coherentjs/state** - New dedicated package for state management
+- **@coherent.js/state** - New dedicated package for state management
   - Reactive state with observables and computed properties
   - SSR-compatible state management
   - State persistence (LocalStorage, SessionStorage, IndexedDB)
   - State validation with built-in validators
   - Context API for sharing state across components
 
-- **Core exports** - New utilities exported from @coherentjs/core
+- **Core exports** - New utilities exported from @coherent.js/core
   - Lifecycle: `ComponentLifecycle`, `LIFECYCLE_PHASES`, `withLifecycle`, `createLifecycleHooks`, `useHooks`, `lifecycleUtils`
   - Object factory: `h`, `createElement`, `createTextNode`
   - Component cache: `ComponentCache`, `createComponentCache`, `memoize`
 
-- **Client routing** - Router moved to @coherentjs/client
+- **Client routing** - Router moved to @coherent.js/client
   - Enhanced routing with prefetching strategies
   - Page transitions and code splitting
   - Advanced scroll behavior
 
 - **Documentation** - Comprehensive guides for new packages
-  - [Reactive State Guide](/docs/components/reactive-state.md) - Complete @coherentjs/state documentation
+  - [Reactive State Guide](/docs/components/reactive-state.md) - Complete @coherent.js/state documentation
   - [Client Router Guide](/docs/client-side/client-router.md) - Router with prefetching & transitions
   - [Migration Guide](/docs/PACKAGE_REORGANIZATION_MIGRATION.md) - Upgrade guide for v1.0.0-beta.2
   - Updated DOCS_INDEX.md with new documentation
 
 - **Examples** - New demonstration files
-  - `state-management-demo.js` - Comprehensive @coherentjs/state examples
+  - `state-management-demo.js` - Comprehensive @coherent.js/state examples
   - `client-router-demo.js` - Client-side routing with all features
 
 ### Planned for v1.0.0 Stable
@@ -69,7 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 This is the first beta release of Coherent.js after a complete version reset. We've cleaned up the npm registry and started fresh with a clear, professional versioning strategy.
 
-**Installation**: `npm install @coherentjs/core@beta`
+**Installation**: `npm install @coherent.js/core@beta`
 
 ### ✨ Complete Feature Set
 
@@ -94,10 +94,10 @@ This is the first beta release of Coherent.js after a complete version reset. We
 - **Hot Module Replacement**: Fast development with HMR support
 
 #### Framework Integrations
-- Express.js adapter (`@coherentjs/express`)
-- Fastify adapter (`@coherentjs/fastify`)
-- Koa adapter (`@coherentjs/koa`)
-- Next.js integration (`@coherentjs/nextjs`)
+- Express.js adapter (`@coherent.js/express`)
+- Fastify adapter (`@coherent.js/fastify`)
+- Koa adapter (`@coherent.js/koa`)
+- Next.js integration (`@coherent.js/nextjs`)
 
 #### Additional Features
 - **Internationalization**: Complete i18n with pluralization, formatters, RTL support
@@ -111,32 +111,32 @@ This is the first beta release of Coherent.js after a complete version reset. We
 All 20 packages released as version 1.0.0-beta.1:
 
 **Core Packages:**
-- `@coherentjs/core@1.0.0-beta.1` - Core framework
-- `@coherentjs/client@1.0.0-beta.1` - Client-side hydration
-- `@coherentjs/api@1.0.0-beta.1` - API framework
+- `@coherent.js/core@1.0.0-beta.1` - Core framework
+- `@coherent.js/client@1.0.0-beta.1` - Client-side hydration
+- `@coherent.js/api@1.0.0-beta.1` - API framework
 
 **Integration Packages:**
-- `@coherentjs/express@1.0.0-beta.1` - Express.js integration
-- `@coherentjs/fastify@1.0.0-beta.1` - Fastify integration
-- `@coherentjs/koa@1.0.0-beta.1` - Koa integration
-- `@coherentjs/nextjs@1.0.0-beta.1` - Next.js integration
+- `@coherent.js/express@1.0.0-beta.1` - Express.js integration
+- `@coherent.js/fastify@1.0.0-beta.1` - Fastify integration
+- `@coherent.js/koa@1.0.0-beta.1` - Koa integration
+- `@coherent.js/nextjs@1.0.0-beta.1` - Next.js integration
 
 **Feature Packages:**
-- `@coherentjs/database@1.0.0-beta.1` - Database adapters
-- `@coherentjs/forms@1.0.0-beta.1` - Form utilities
-- `@coherentjs/i18n@1.0.0-beta.1` - Internationalization
-- `@coherentjs/seo@1.0.0-beta.1` - SEO tools
-- `@coherentjs/testing@1.0.0-beta.1` - Testing utilities
-- `@coherentjs/devtools@1.0.0-beta.1` - Developer tools
-- `@coherentjs/performance@1.0.0-beta.1` - Performance utilities
-- `@coherentjs/performance-profiler@1.0.0-beta.1` - Performance profiling
+- `@coherent.js/database@1.0.0-beta.1` - Database adapters
+- `@coherent.js/forms@1.0.0-beta.1` - Form utilities
+- `@coherent.js/i18n@1.0.0-beta.1` - Internationalization
+- `@coherent.js/seo@1.0.0-beta.1` - SEO tools
+- `@coherent.js/testing@1.0.0-beta.1` - Testing utilities
+- `@coherent.js/devtools@1.0.0-beta.1` - Developer tools
+- `@coherent.js/performance@1.0.0-beta.1` - Performance utilities
+- `@coherent.js/performance-profiler@1.0.0-beta.1` - Performance profiling
 
 **Build & Runtime:**
-- `@coherentjs/cli@1.0.0-beta.1` - CLI tools
-- `@coherentjs/build-tools@1.0.0-beta.1` - Build utilities
-- `@coherentjs/runtime@1.0.0-beta.1` - Runtime enhancements
-- `@coherentjs/adapters@1.0.0-beta.1` - Framework adapters
-- `@coherentjs/web-components@1.0.0-beta.1` - Web components integration
+- `@coherent.js/cli@1.0.0-beta.1` - CLI tools
+- `@coherent.js/build-tools@1.0.0-beta.1` - Build utilities
+- `@coherent.js/runtime@1.0.0-beta.1` - Runtime enhancements
+- `@coherent.js/adapters@1.0.0-beta.1` - Framework adapters
+- `@coherent.js/web-components@1.0.0-beta.1` - Web components integration
 
 ### 🔄 What Changed
 

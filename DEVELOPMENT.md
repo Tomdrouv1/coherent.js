@@ -13,29 +13,29 @@ This guide explains how to set up and contribute to the Coherent.js monorepo.
 ```
 coherent.js/
 ├── packages/                            # Individual packages
-│   ├── core/                           # @coherentjs/core - Core rendering engine
-│   ├── client/                         # @coherentjs/client - Client-side hydration
-│   ├── api/                            # @coherentjs/api - API framework
+│   ├── core/                           # @coherent.js/core - Core rendering engine
+│   ├── client/                         # @coherent.js/client - Client-side hydration
+│   ├── api/                            # @coherent.js/api - API framework
 │   │
-│   ├── express/                        # @coherentjs/express - Express.js integration
-│   ├── fastify/                        # @coherentjs/fastify - Fastify integration
-│   ├── koa/                            # @coherentjs/koa - Koa.js integration
-│   ├── nextjs/                         # @coherentjs/nextjs - Next.js integration
+│   ├── express/                        # @coherent.js/express - Express.js integration
+│   ├── fastify/                        # @coherent.js/fastify - Fastify integration
+│   ├── koa/                            # @coherent.js/koa - Koa.js integration
+│   ├── nextjs/                         # @coherent.js/nextjs - Next.js integration
 │   │
-│   ├── database/                       # @coherentjs/database - Database adapters
-│   ├── forms/                          # @coherentjs/forms - Form utilities
-│   ├── i18n/                           # @coherentjs/i18n - Internationalization
-│   ├── seo/                            # @coherentjs/seo - SEO tools
-│   ├── testing/                        # @coherentjs/testing - Testing utilities
-│   ├── devtools/                       # @coherentjs/devtools - Developer tools
-│   ├── performance/                    # @coherentjs/performance - Performance utilities
-│   ├── performance-profiler/           # @coherentjs/performance-profiler - Profiling
+│   ├── database/                       # @coherent.js/database - Database adapters
+│   ├── forms/                          # @coherent.js/forms - Form utilities
+│   ├── i18n/                           # @coherent.js/i18n - Internationalization
+│   ├── seo/                            # @coherent.js/seo - SEO tools
+│   ├── testing/                        # @coherent.js/testing - Testing utilities
+│   ├── devtools/                       # @coherent.js/devtools - Developer tools
+│   ├── performance/                    # @coherent.js/performance - Performance utilities
+│   ├── performance-profiler/           # @coherent.js/performance-profiler - Profiling
 │   │
-│   ├── cli/                            # @coherentjs/cli - CLI tools
-│   ├── build-tools/                    # @coherentjs/build-tools - Build utilities
-│   ├── runtime/                        # @coherentjs/runtime - Runtime enhancements
-│   ├── adapters/                       # @coherentjs/adapters - Framework adapters
-│   └── web-components/                 # @coherentjs/web-components - Web components
+│   ├── cli/                            # @coherent.js/cli - CLI tools
+│   ├── build-tools/                    # @coherent.js/build-tools - Build utilities
+│   ├── runtime/                        # @coherent.js/runtime - Runtime enhancements
+│   ├── adapters/                       # @coherent.js/adapters - Framework adapters
+│   └── web-components/                 # @coherent.js/web-components - Web components
 │
 ├── scripts/                            # Build and utility scripts
 ├── examples/                           # Example applications

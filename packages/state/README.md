@@ -1,15 +1,15 @@
-# @coherentjs/state
+# @coherent.js/state
 
 Reactive state management for Coherent.js applications with SSR support, persistence, and validation.
 
 ## Installation
 
 ```bash
-npm install @coherentjs/state@beta
+npm install @coherent.js/state@beta
 # or
-pnpm add @coherentjs/state@beta
+pnpm add @coherent.js/state@beta
 # or
-yarn add @coherentjs/state@beta
+yarn add @coherent.js/state@beta
 ```
 
 ## Features
@@ -19,14 +19,14 @@ yarn add @coherentjs/state@beta
 - **State Persistence**: LocalStorage, SessionStorage, and IndexedDB support
 - **State Validation**: Built-in validation with custom validators
 - **Context API**: Share state across components during SSR
-- **Zero Dependencies**: Uses only @coherentjs/core as peer dependency
+- **Zero Dependencies**: Uses only @coherent.js/core as peer dependency
 
 ## Usage
 
 ### Reactive State (Client-Side)
 
 ```javascript
-import { createReactiveState, observable, computed } from '@coherentjs/state';
+import { createReactiveState, observable, computed } from '@coherent.js/state';
 
 // Create observable values
 const count = observable(0);
@@ -45,7 +45,7 @@ console.log(doubled.value); // 10
 ### SSR-Compatible State
 
 ```javascript
-import { createState, provideContext } from '@coherentjs/state';
+import { createState, provideContext } from '@coherent.js/state';
 
 // Create state container for a request
 const state = createState({ userId: 123, theme: 'dark' });
@@ -54,7 +54,7 @@ const state = createState({ userId: 123, theme: 'dark' });
 provideContext('request', state);
 
 // Access in components
-import { useContext } from '@coherentjs/state';
+import { useContext } from '@coherent.js/state';
 
 function MyComponent() {
   const requestState = useContext('request');
@@ -66,7 +66,7 @@ function MyComponent() {
 ### State Persistence
 
 ```javascript
-import { withLocalStorage, withSessionStorage } from '@coherentjs/state';
+import { withLocalStorage, withSessionStorage } from '@coherent.js/state';
 
 // Auto-persist to localStorage
 const userPrefs = withLocalStorage({ theme: 'dark', lang: 'en' }, 'user-prefs');
@@ -78,7 +78,7 @@ const sessionData = withSessionStorage({ cart: [] }, 'session-data');
 ### State Validation
 
 ```javascript
-import { createValidatedState, validators } from '@coherentjs/state';
+import { createValidatedState, validators } from '@coherent.js/state';
 
 const userForm = createValidatedState(
   { email: '', age: 0 },

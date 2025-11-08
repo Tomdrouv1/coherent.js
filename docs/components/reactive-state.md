@@ -1,20 +1,20 @@
 # Reactive State Management
 
-**Package:** `@coherentjs/state`
+**Package:** `@coherent.js/state`
 **Since:** v1.0.0-beta.2
 
 ## Overview
 
-The `@coherentjs/state` package provides a comprehensive reactive state management solution for Coherent.js applications. It includes reactive observables, computed properties, state persistence, validation, and SSR-compatible state management.
+The `@coherent.js/state` package provides a comprehensive reactive state management solution for Coherent.js applications. It includes reactive observables, computed properties, state persistence, validation, and SSR-compatible state management.
 
 ## Installation
 
 ```bash
-npm install @coherentjs/state@beta
+npm install @coherent.js/state@beta
 # or
-pnpm add @coherentjs/state@beta
+pnpm add @coherent.js/state@beta
 # or
-yarn add @coherentjs/state@beta
+yarn add @coherent.js/state@beta
 ```
 
 ## Table of Contents
@@ -34,7 +34,7 @@ yarn add @coherentjs/state@beta
 Create reactive values that automatically track changes:
 
 ```javascript
-import { observable, computed } from '@coherentjs/state';
+import { observable, computed } from '@coherent.js/state';
 
 // Create observable
 const count = observable(0);
@@ -55,7 +55,7 @@ console.log(doubled.value); // 10
 For more complex state management:
 
 ```javascript
-import { createReactiveState } from '@coherentjs/state';
+import { createReactiveState } from '@coherent.js/state';
 
 const appState = createReactiveState({
   user: { name: 'John', age: 30 },
@@ -80,7 +80,7 @@ console.log(appState.get('user.name')); // 'Jane'
 Create derived values that automatically update:
 
 ```javascript
-import { observable, computed } from '@coherentjs/state';
+import { observable, computed } from '@coherent.js/state';
 
 const firstName = observable('John');
 const lastName = observable('Doe');
@@ -104,7 +104,7 @@ console.log(fullName.value); // 'Jane Doe' (automatically updated)
 For server-side rendering, use non-reactive state that's scoped to a request:
 
 ```javascript
-import { createState } from '@coherentjs/state';
+import { createState } from '@coherent.js/state';
 
 // In your request handler
 function handleRequest(req, res) {
@@ -127,7 +127,7 @@ function handleRequest(req, res) {
 Share state across the application during SSR:
 
 ```javascript
-import { globalStateManager } from '@coherentjs/state';
+import { globalStateManager } from '@coherent.js/state';
 
 // Set global state
 globalStateManager.set('appVersion', '1.0.0');
@@ -146,7 +146,7 @@ globalStateManager.clear('appVersion');
 Share state across components during SSR:
 
 ```javascript
-import { provideContext, useContext } from '@coherentjs/state';
+import { provideContext, useContext } from '@coherent.js/state';
 
 // Provide context during rendering
 function renderApp() {
@@ -180,7 +180,7 @@ function UserProfile() {
 Automatically persist state to localStorage:
 
 ```javascript
-import { withLocalStorage } from '@coherentjs/state';
+import { withLocalStorage } from '@coherent.js/state';
 
 const userPrefs = withLocalStorage(
   { theme: 'dark', lang: 'en' },
@@ -199,7 +199,7 @@ userPrefs.set('theme', 'light'); // Saved to localStorage
 For session-scoped state:
 
 ```javascript
-import { withSessionStorage } from '@coherentjs/state';
+import { withSessionStorage } from '@coherent.js/state';
 
 const sessionData = withSessionStorage(
   { cart: [], checkoutStep: 1 },
@@ -215,7 +215,7 @@ sessionData.set('cart', [{ id: 1, name: 'Product' }]);
 For larger datasets:
 
 ```javascript
-import { withIndexedDB } from '@coherentjs/state';
+import { withIndexedDB } from '@coherent.js/state';
 
 const largeDataset = await withIndexedDB(
   { data: [] },
@@ -232,7 +232,7 @@ await largeDataset.set('data', hugeArray);
 Create your own persistence strategy:
 
 ```javascript
-import { createPersistentState } from '@coherentjs/state';
+import { createPersistentState } from '@coherent.js/state';
 
 const customState = createPersistentState(
   { count: 0 },
@@ -262,7 +262,7 @@ const customState = createPersistentState(
 Validate state changes automatically:
 
 ```javascript
-import { createValidatedState, validators } from '@coherentjs/state';
+import { createValidatedState, validators } from '@coherent.js/state';
 
 const userForm = createValidatedState(
   { email: '', age: 0, username: '' },
@@ -289,7 +289,7 @@ try {
 ### Available Validators
 
 ```javascript
-import { validators } from '@coherentjs/state';
+import { validators } from '@coherent.js/state';
 
 // String validators
 validators.required('Field is required');
@@ -355,7 +355,7 @@ import {
   createValidatedState,
   validators,
   provideContext
-} from '@coherentjs/state';
+} from '@coherent.js/state';
 
 // 1. Create validated, persistent reactive state
 const appState = createValidatedState(
@@ -425,7 +425,7 @@ interface StateManager {
 
 ## Comparison with Core State
 
-The `@coherentjs/core` package includes `withState` for component-level state management during SSR. Use `@coherentjs/state` when you need:
+The `@coherent.js/core` package includes `withState` for component-level state management during SSR. Use `@coherent.js/state` when you need:
 
 - **Reactive state**: Automatic UI updates on state changes (client-side)
 - **Persistence**: LocalStorage, SessionStorage, or IndexedDB
@@ -433,7 +433,7 @@ The `@coherentjs/core` package includes `withState` for component-level state ma
 - **Global state**: Shared state across multiple components
 - **Advanced features**: Computed properties, watchers, async state
 
-Use `withState` from `@coherentjs/core` for:
+Use `withState` from `@coherent.js/core` for:
 - Simple component state during SSR
 - Request-scoped state
 - No need for reactivity or persistence
@@ -442,6 +442,6 @@ Use `withState` from `@coherentjs/core` for:
 
 ## See Also
 
-- [Advanced State Management](/docs/components/advanced-state-management.md) - Using withState from @coherentjs/core
+- [Advanced State Management](/docs/components/advanced-state-management.md) - Using withState from @coherent.js/core
 - [State Management](/docs/components/state-management.md) - Basic state patterns
 - [Forms Package](/docs/components/forms.md) - Form state with validation

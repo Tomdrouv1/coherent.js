@@ -1,29 +1,29 @@
 # Client-Side Router
 
-**Package:** `@coherentjs/client`
+**Package:** `@coherent.js/client`
 **Module:** `/router`
 **Since:** v1.0.0-beta.2
 
 ## Overview
 
-The `@coherentjs/client` package includes a powerful client-side router with advanced features like route prefetching, page transitions, code splitting, and customizable scroll behavior. Perfect for building single-page applications (SPAs) with Coherent.js.
+The `@coherent.js/client` package includes a powerful client-side router with advanced features like route prefetching, page transitions, code splitting, and customizable scroll behavior. Perfect for building single-page applications (SPAs) with Coherent.js.
 
 ## Installation
 
-The router is included in the `@coherentjs/client` package:
+The router is included in the `@coherent.js/client` package:
 
 ```bash
-npm install @coherentjs/client@beta
+npm install @coherent.js/client@beta
 # or
-pnpm add @coherentjs/client@beta
+pnpm add @coherent.js/client@beta
 # or
-yarn add @coherentjs/client@beta
+yarn add @coherent.js/client@beta
 ```
 
 ## Basic Usage
 
 ```javascript
-import { createRouter } from '@coherentjs/client/router';
+import { createRouter } from '@coherent.js/client/router';
 
 // Create router
 const router = createRouter({
@@ -383,8 +383,8 @@ router.on('prefetch:complete', (path) => {
 ## Complete Example
 
 ```javascript
-import { createRouter } from '@coherentjs/client/router';
-import { render } from '@coherentjs/core';
+import { createRouter } from '@coherent.js/client/router';
+import { render } from '@coherent.js/core';
 
 // Create router with all features
 const router = createRouter({
@@ -474,7 +474,7 @@ function requireAuth(to, from, next) {
 ## TypeScript Support
 
 ```typescript
-import { createRouter, Router, Route, RouteConfig } from '@coherentjs/client/router';
+import { createRouter, Router, Route, RouteConfig } from '@coherent.js/client/router';
 
 interface RouteParams {
   id: string;
@@ -496,8 +496,8 @@ const router: Router = createRouter({
 Use with client-side hydration for optimal performance:
 
 ```javascript
-import { hydrate } from '@coherentjs/client';
-import { createRouter } from '@coherentjs/client/router';
+import { hydrate } from '@coherent.js/client';
+import { createRouter } from '@coherent.js/client/router';
 
 // Hydrate server-rendered content
 hydrate('#app', {

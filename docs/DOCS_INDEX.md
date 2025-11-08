@@ -11,14 +11,13 @@ Start here to get up and running quickly:
 - **[Quick Start](getting-started.md)** - 5-minute setup guide
 - **[Installation](getting-started/installation.md)** - Detailed setup
 - **[Migration Guide](migration-guide.md)** - Coming from other frameworks
-- **[Package Reorganization Migration](PACKAGE_REORGANIZATION_MIGRATION.md)** - Migrating to v1.0.0-beta.2
 
 ### 🧩 **Building Components**
 Learn to build powerful, maintainable components:
 
 - **[Basic Components](components/basic-components.md)** - Object syntax fundamentals
 - **[State Management](components/state-management.md)** - SSR state with `withState`
-- **[Reactive State](components/reactive-state.md)** - Client-side reactive state (@coherentjs/state)
+- **[Reactive State](components/reactive-state.md)** - Client-side reactive state (@coherent.js/state)
 - **[Advanced State Management](components/advanced-state-management.md)** - Advanced patterns with withState
 - **[Advanced Components](components/advanced-components.md)** - HOCs, composition, patterns
 - **[Styling Components](components/styling-components.md)** - CSS-in-JS, theming, animations

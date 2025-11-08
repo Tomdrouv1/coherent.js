@@ -5,13 +5,13 @@
 ## 🌊 The Full-Stack Flow
 
 ### 1️⃣ **Server Renders** (SSR)
-The server generates HTML using `@coherentjs/core`:
+The server generates HTML using `@coherent.js/core`:
 
 ```javascript
 // server.js
 import express from 'express';
-import { render } from '@coherentjs/core';
-import { provideContext } from '@coherentjs/state';
+import { render } from '@coherent.js/core';
+import { provideContext } from '@coherent.js/state';
 
 const app = express();
 
@@ -47,7 +47,7 @@ The browser makes the server HTML interactive:
 
 ```javascript
 // client.js
-import { hydrate } from '@coherentjs/client';
+import { hydrate } from '@coherent.js/client';
 
 // Attach event listeners to server-rendered HTML
 hydrate('#app', {
@@ -64,9 +64,9 @@ After hydration, add reactive features:
 
 ```javascript
 // client.js
-import { hydrate } from '@coherentjs/client';
-import { createRouter } from '@coherentjs/client/router';
-import { createReactiveState } from '@coherentjs/state';
+import { hydrate } from '@coherent.js/client';
+import { createRouter } from '@coherent.js/client/router';
+import { createReactiveState } from '@coherent.js/state';
 
 // Hydrate first
 await hydrate('#app');
@@ -104,9 +104,9 @@ router.start('#app');
 ```javascript
 // server/index.js
 import express from 'express';
-import { render } from '@coherentjs/core';
-import { provideContext } from '@coherentjs/state';
-import { createFormBuilder, validators } from '@coherentjs/forms';
+import { render } from '@coherent.js/core';
+import { provideContext } from '@coherent.js/state';
+import { createFormBuilder, validators } from '@coherent.js/forms';
 
 const app = express();
 
@@ -163,10 +163,10 @@ app.listen(3000);
 
 ```javascript
 // client/index.js
-import { hydrate } from '@coherentjs/client';
-import { createRouter } from '@coherentjs/client/router';
-import { createReactiveState, withLocalStorage } from '@coherentjs/state';
-import { hydrateForm } from '@coherentjs/forms';
+import { hydrate } from '@coherent.js/client';
+import { createRouter } from '@coherent.js/client/router';
+import { createReactiveState, withLocalStorage } from '@coherent.js/state';
+import { hydrateForm } from '@coherent.js/forms';
 
 // 1. Hydrate server HTML
 await hydrate('#app');
@@ -238,7 +238,7 @@ router.start('#app');
 
 ```javascript
 // components/ProductsPage.js
-import { useContext } from '@coherentjs/state';
+import { useContext } from '@coherent.js/state';
 
 export function ProductsPage() {
   // On server: reads from context provided during SSR
@@ -348,12 +348,12 @@ await hydrate('#app'); // Conflicts!
 ### **3. Use Reactive State for Client-Only Features**
 ```javascript
 // ✅ Good: Reactive state for UI interactions
-import { observable } from '@coherentjs/state';
+import { observable } from '@coherent.js/state';
 
 const sidebarOpen = observable(false); // Client-only UI state
 
 // ✅ Good: SSR state for data
-import { withState } from '@coherentjs/core';
+import { withState } from '@coherent.js/core';
 
 const Page = withState({ products: [] })(({ state }) => {
   // Rendered on server
@@ -364,7 +364,7 @@ const Page = withState({ products: [] })(({ state }) => {
 ```javascript
 // ✅ Good: Build form once on server, hydrate on client
 // SERVER
-import { createFormBuilder } from '@coherentjs/forms';
+import { createFormBuilder } from '@coherent.js/forms';
 
 const form = createFormBuilder()
   .field('email', { validators: ['email', 'required'] });
@@ -372,7 +372,7 @@ const html = render(form.buildForm());
 // Renders: <input data-validators="email,required" required />
 
 // CLIENT
-import { hydrateForm } from '@coherentjs/forms';
+import { hydrateForm } from '@coherent.js/forms';
 
 hydrateForm('form'); // Reads data-validators, attaches behavior
 
@@ -384,7 +384,7 @@ hydrateForm('form'); // Reads data-validators, attaches behavior
 ### **5. Validate on Both Server and Client (Same Rules)**
 ```javascript
 // Shared validators
-import { validators } from '@coherentjs/forms';
+import { validators } from '@coherent.js/forms';
 
 // Server (REQUIRED for security)
 app.post('/api/form', (req, res) => {
@@ -405,7 +405,7 @@ hydrateForm('form'); // Uses validators from HTML metadata
 // ============================================
 // SERVER: Build form with validation metadata
 // ============================================
-import { createFormBuilder, validators } from '@coherentjs/forms';
+import { createFormBuilder, validators } from '@coherent.js/forms';
 
 app.get('/contact', (req, res) => {
   const contactForm = createFormBuilder({ name: 'contact' })
@@ -458,7 +458,7 @@ app.post('/contact', express.json(), async (req, res) => {
 // ============================================
 // CLIENT: Hydrate server-rendered form
 // ============================================
-import { hydrateForm } from '@coherentjs/forms';
+import { hydrateForm } from '@coherent.js/forms';
 
 // Reads validation metadata from HTML and attaches behavior
 const contactForm = hydrateForm('form[name="contact"]', {
@@ -494,11 +494,11 @@ const contactForm = hydrateForm('form[name="contact"]', {
 
 | Package | Server (SSR) | Client (Hydration) | Client (Enhancement) |
 |---------|--------------|-------------------|---------------------|
-| **@coherentjs/core** | ✅ Rendering | ❌ | ❌ |
-| **@coherentjs/client** | ❌ | ✅ Hydration | ✅ Router, HMR |
-| **@coherentjs/state** | ✅ Context API | ❌ | ✅ Reactive state |
-| **@coherentjs/forms** | ✅ Form builder | ✅ Form hydration | ✅ Client validation |
-| **@coherentjs/express** | ✅ Integration | ❌ | ❌ |
+| **@coherent.js/core** | ✅ Rendering | ❌ | ❌ |
+| **@coherent.js/client** | ❌ | ✅ Hydration | ✅ Router, HMR |
+| **@coherent.js/state** | ✅ Context API | ❌ | ✅ Reactive state |
+| **@coherent.js/forms** | ✅ Form builder | ✅ Form hydration | ✅ Client validation |
+| **@coherent.js/express** | ✅ Integration | ❌ | ❌ |
 
 ## 🚀 Deployment
 
@@ -526,10 +526,10 @@ CLIENT_BUNDLE_URL=/static/bundle.js
 
 ## 🎓 Learning Path
 
-1. **Start with SSR** - Learn `@coherentjs/core` rendering
-2. **Add Hydration** - Make it interactive with `@coherentjs/client`
+1. **Start with SSR** - Learn `@coherent.js/core` rendering
+2. **Add Hydration** - Make it interactive with `@coherent.js/client`
 3. **Enable Routing** - Add SPA navigation with client router
-4. **Add Reactivity** - Enhance UX with `@coherentjs/state`
+4. **Add Reactivity** - Enhance UX with `@coherent.js/state`
 5. **Optimize** - Prefetch routes, cache data, monitor performance
 
 ## 📚 Next Steps

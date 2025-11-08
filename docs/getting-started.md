@@ -19,13 +19,13 @@ Coherent.js is a modern server-side rendering framework that uses pure JavaScrip
 
 ```bash
 # Using npm
-npm install @coherentjs/core@beta
+npm install @coherent.js/core@beta
 
 # Using pnpm (recommended)
-pnpm add @coherentjs/core@beta
+pnpm add @coherent.js/core@beta
 
 # Using yarn
-yarn add @coherentjs/core@beta
+yarn add @coherent.js/core@beta
 ```
 
 > **Note**: Coherent.js is currently in beta (v1.0.0-beta.1). The `@beta` tag ensures you get the latest beta release.
@@ -49,7 +49,7 @@ export const Greeting = ({ name = 'World' }) => ({
 
 ```javascript
 // server.js
-import { render } from '@coherentjs/core';
+import { render } from '@coherent.js/core';
 import { Greeting } from './components/Greeting.js';
 
 const html = render(Greeting({ name: 'Developer' }));
@@ -63,7 +63,7 @@ console.log(html);
 
 ```javascript
 // components/Counter.js
-import { withState } from '@coherentjs/core';
+import { withState } from '@coherent.js/core';
 
 const CounterComponent = withState({ count: 0 })(({ state, stateUtils }) => {
   const { setState } = stateUtils;
@@ -101,7 +101,7 @@ export const Counter = CounterComponent;
 
 ```javascript
 // hydration.js
-import { makeHydratable, autoHydrate } from '@coherentjs/client';
+import { makeHydratable, autoHydrate } from '@coherent.js/client';
 import { Counter } from './components/Counter.js';
 
 // Make the component hydratable
@@ -187,7 +187,7 @@ export const appPage = {
 ```javascript
 // server.js
 import express from 'express';
-import { render } from '@coherentjs/core';
+import { render } from '@coherent.js/core';
 import { appPage } from './pages/app.js';
 
 const app = express();
@@ -249,7 +249,7 @@ export const MyComponent = ({ title, children }) => ({
 Use `withState` for reactive components:
 
 ```javascript
-import { withState } from '@coherentjs/core';
+import { withState } from '@coherent.js/core';
 
 const StatefulComponent = withState({ 
   value: '', 
@@ -282,7 +282,7 @@ Event handlers are functions that become `data-action` attributes during SSR:
 Make server-rendered components interactive:
 
 ```javascript
-import { makeHydratable, autoHydrate } from '@coherentjs/client';
+import { makeHydratable, autoHydrate } from '@coherent.js/client';
 
 // 1. Make component hydratable
 const HydratableComponent = makeHydratable(MyComponent, {
@@ -399,7 +399,7 @@ const TodoList = ({ todos = [] }) => ({
 ### Conditional Rendering
 
 ```javascript
-import { when } from '@coherentjs/core';
+import { when } from '@coherent.js/core';
 
 const UserProfile = ({ user }) => ({
   div: {
@@ -419,7 +419,7 @@ const UserProfile = ({ user }) => ({
 
 ```javascript
 import express from 'express';
-import { render } from '@coherentjs/core';
+import { render } from '@coherent.js/core';
 
 const app = express();
 
@@ -434,7 +434,7 @@ app.get('*', (req, res) => {
 
 ```javascript
 // pages/index.js
-import { render } from '@coherentjs/core';
+import { render } from '@coherent.js/core';
 import { HomePage } from '../components/HomePage.js';
 
 export default function Page(props) {
