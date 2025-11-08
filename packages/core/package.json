@@ -38,6 +38,7 @@
     "url": "git+https://github.com/Tomdrouv1/coherent.js.git"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }

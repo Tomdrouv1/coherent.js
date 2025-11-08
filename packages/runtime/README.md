@@ -1,8 +1,10 @@
 # 🚀 Coherent.js
 
 [![npm version](https://img.shields.io/npm/v/@coherent.js/core/beta.svg)](https://www.npmjs.com/package/@coherent.js/core)
+[![npm downloads](https://img.shields.io/npm/dm/@coherent.js/core.svg)](https://www.npmjs.com/package/@coherent.js/core)
 [![Beta Status](https://img.shields.io/badge/status-beta-orange.svg)](https://github.com/Tomdrouv1/coherent.js)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![GitHub stars](https://img.shields.io/github/stars/Tomdrouv1/coherent.js.svg)](https://github.com/Tomdrouv1/coherent.js/stargazers)
 
 A high-performance JavaScript framework for building modern web applications with a focus on speed, simplicity, and developer experience.
 
@@ -86,29 +88,58 @@ A high-performance JavaScript framework for building modern web applications wit
 
 ## 📦 Packages
 
-Coherent.js is distributed as a collection of packages:
+Coherent.js is distributed as a collection of packages. Click the badges to view on npm:
 
 ### Core Packages
-- `@coherent.js/core`: Core framework with component system and state management
-- `@coherent.js/router`: Client-side routing solution
-- `@coherent.js/ssr`: Server-side rendering utilities
-- `@coherent.js/hmr`: Hot Module Replacement support
 
-### Additional Packages
-- `@coherent.js/plugins`: Plugin system with 7 built-in plugins
-- `@coherent.js/testing`: Complete testing utilities and matchers
-- `@coherent.js/devtools`: Developer tools (inspector, profiler, logger)
-- `@coherent.js/runtime`: Enhanced runtimes (Node.js, Edge)
-- `@coherent.js/i18n`: Full internationalization support
-- `@coherent.js/forms`: Form utilities and validation
-- `@coherent.js/seo`: SEO optimization tools
-- `@coherent.js/performance`: Performance optimization utilities
+| Package | npm | Description |
+|---------|-----|-------------|
+| **@coherent.js/core** | [![npm](https://img.shields.io/npm/v/@coherent.js/core/beta.svg)](https://www.npmjs.com/package/@coherent.js/core) | Core framework with component system and state management |
+| **@coherent.js/client** | [![npm](https://img.shields.io/npm/v/@coherent.js/client/beta.svg)](https://www.npmjs.com/package/@coherent.js/client) | Client-side hydration and browser utilities |
+| **@coherent.js/runtime** | [![npm](https://img.shields.io/npm/v/@coherent.js/runtime/beta.svg)](https://www.npmjs.com/package/@coherent.js/runtime) | Enhanced runtimes (Node.js, Edge) |
 
-### Integration Packages
-- `@coherent.js/api`: API framework with validation and OpenAPI
-- `@coherent.js/express`: Express.js integration
-- `@coherent.js/fastify`: Fastify integration
-- `@coherent.js/koa`: Koa.js integration
+### Framework Integrations
+
+| Package | npm | Description |
+|---------|-----|-------------|
+| **@coherent.js/express** | [![npm](https://img.shields.io/npm/v/@coherent.js/express/beta.svg)](https://www.npmjs.com/package/@coherent.js/express) | Express.js integration |
+| **@coherent.js/fastify** | [![npm](https://img.shields.io/npm/v/@coherent.js/fastify/beta.svg)](https://www.npmjs.com/package/@coherent.js/fastify) | Fastify integration |
+| **@coherent.js/koa** | [![npm](https://img.shields.io/npm/v/@coherent.js/koa/beta.svg)](https://www.npmjs.com/package/@coherent.js/koa) | Koa.js integration |
+| **@coherent.js/nextjs** | [![npm](https://img.shields.io/npm/v/@coherent.js/nextjs/beta.svg)](https://www.npmjs.com/package/@coherent.js/nextjs) | Next.js integration |
+| **@coherent.js/adapters** | [![npm](https://img.shields.io/npm/v/@coherent.js/adapters/beta.svg)](https://www.npmjs.com/package/@coherent.js/adapters) | Adapters for Astro, Remix, SvelteKit |
+
+### Developer Tools
+
+| Package | npm | Description |
+|---------|-----|-------------|
+| **@coherent.js/devtools** | [![npm](https://img.shields.io/npm/v/@coherent.js/devtools/beta.svg)](https://www.npmjs.com/package/@coherent.js/devtools) | Developer tools (inspector, profiler, logger) |
+| **@coherent.js/testing** | [![npm](https://img.shields.io/npm/v/@coherent.js/testing/beta.svg)](https://www.npmjs.com/package/@coherent.js/testing) | Complete testing utilities and matchers |
+| **@coherent.js/cli** | [![npm](https://img.shields.io/npm/v/@coherent.js/cli/beta.svg)](https://www.npmjs.com/package/@coherent.js/cli) | CLI tools for scaffolding and development |
+
+### Feature Packages
+
+| Package | npm | Description |
+|---------|-----|-------------|
+| **@coherent.js/i18n** | [![npm](https://img.shields.io/npm/v/@coherent.js/i18n/beta.svg)](https://www.npmjs.com/package/@coherent.js/i18n) | Full internationalization support |
+| **@coherent.js/forms** | [![npm](https://img.shields.io/npm/v/@coherent.js/forms/beta.svg)](https://www.npmjs.com/package/@coherent.js/forms) | Form utilities and validation |
+| **@coherent.js/seo** | [![npm](https://img.shields.io/npm/v/@coherent.js/seo/beta.svg)](https://www.npmjs.com/package/@coherent.js/seo) | SEO optimization tools |
+| **@coherent.js/performance** | [![npm](https://img.shields.io/npm/v/@coherent.js/performance/beta.svg)](https://www.npmjs.com/package/@coherent.js/performance) | Performance optimization utilities |
+| **@coherent.js/state** | [![npm](https://img.shields.io/npm/v/@coherent.js/state/beta.svg)](https://www.npmjs.com/package/@coherent.js/state) | Reactive state management |
+
+### Backend & Database
+
+| Package | npm | Description |
+|---------|-----|-------------|
+| **@coherent.js/api** | [![npm](https://img.shields.io/npm/v/@coherent.js/api/beta.svg)](https://www.npmjs.com/package/@coherent.js/api) | API framework with validation and OpenAPI |
+| **@coherent.js/database** | [![npm](https://img.shields.io/npm/v/@coherent.js/database/beta.svg)](https://www.npmjs.com/package/@coherent.js/database) | Database layer with multiple adapters |
+
+### Build Tools
+
+| Package | npm | Description |
+|---------|-----|-------------|
+| **@coherent.js/build-tools** | [![npm](https://img.shields.io/npm/v/@coherent.js/build-tools/beta.svg)](https://www.npmjs.com/package/@coherent.js/build-tools) | Build optimization and bundling utilities |
+| **@coherent.js/profiler** | [![npm](https://img.shields.io/npm/v/@coherent.js/profiler/beta.svg)](https://www.npmjs.com/package/@coherent.js/profiler) | Performance profiling and monitoring |
+| **@coherent.js/web-components** | [![npm](https://img.shields.io/npm/v/@coherent.js/web-components/beta.svg)](https://www.npmjs.com/package/@coherent.js/web-components) | Web Components integration |
 
 ## 🚀 Getting Started
 

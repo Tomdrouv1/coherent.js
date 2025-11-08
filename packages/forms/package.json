@@ -28,5 +28,12 @@
   "peerDependencies": {
     "@coherent.js/core": "workspace:^",
     "@coherent.js/state": "workspace:^"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tomdrouv1/coherent.js.git"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
