@@ -1,5 +1,5 @@
 {
-  "name": "coherentjs-monorepo",
+  "name": "@coherent.js/monorepo",
   "version": "1.0.0-beta.1",
   "private": true,
   "description": "A lightweight, high-performance server-side rendering framework using pure JavaScript objects. Features include streaming renderer, performance monitoring, component composition, memoization, and integrations with Express.js, Fastify, and Next.js.",
@@ -81,7 +81,7 @@
     "components",
     "hydration"
   ],
-  "author": "Thomas Drouvin <thomas.drouvin@example.com>",
+  "author": "Thomas Drouvin <thomas.drouvin@collektivs.com> (https://coherentjs.dev)",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -156,7 +156,6 @@
     "vitest": "^3.2.4",
     "ws": "8.18.3"
   },
-  "exports": {},
   "pnpm": {
     "peerDependencyRules": {
       "ignoreMissing": [
