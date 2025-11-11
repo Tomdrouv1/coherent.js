@@ -100,3 +100,4 @@ graph LR
 ## Full Documentation
 
 See [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md) for complete details.
+Also see [PUBLISHING_GUIDE.md](PUBLISHING_GUIDE.md) for detailed publishing instructions.

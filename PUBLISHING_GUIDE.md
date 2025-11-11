@@ -1,4 +1,4 @@
-# 📦 Publishing Guide - Coherent.js v2.0
+# 📦 Publishing Guide - Coherent.js
 
 **Complete guide for publishing all packages to npm**
 
@@ -28,18 +28,26 @@
 
 ## 📦 Packages to Publish
 
-### Core Packages (Already Published)
-1. ✅ `@coherent.js/core` - Main framework
-
-### New Packages (v2.0)
-2. `@coherent.js/plugins` - Plugin system
-3. `@coherent.js/testing` - Testing utilities
-4. `@coherent.js/devtools` - Developer tools
-5. `@coherent.js/runtime` - Enhanced runtimes
-6. `@coherent.js/i18n` - Internationalization
-7. `@coherent.js/forms` - Form utilities
-8. `@coherent.js/seo` - SEO optimization
-9. `@coherent.js/performance` - Performance optimization
+### Core Packages
+1. `@coherent.js/core` - Main framework
+2. `@coherent.js/client` - Client-side hydration
+3. `@coherent.js/api` - API framework
+4. `@coherent.js/database` - Database layer
+5. `@coherent.js/testing` - Testing utilities
+6. `@coherent.js/devtools` - Developer tools
+7. `@coherent.js/runtime` - Enhanced runtimes
+8. `@coherent.js/i18n` - Internationalization
+9. `@coherent.js/forms` - Form utilities
+10. `@coherent.js/seo` - SEO optimization
+11. `@coherent.js/performance` - Performance optimization
+12. `@coherent.js/cli` - CLI tools
+13. `@coherent.js/build-tools` - Build utilities
+14. `@coherent.js/express` - Express.js integration
+15. `@coherent.js/fastify` - Fastify integration
+16. `@coherent.js/koa` - Koa.js integration
+17. `@coherent.js/nextjs` - Next.js integration
+18. `@coherent.js/adapters` - Framework adapters
+19. `@coherent.js/web-components` - Web components
 
 ---
 
@@ -52,27 +60,25 @@
 cd /Users/thomasdrouvin/Perso/coherent
 
 # Ensure all dependencies are installed
-npm install
+pnpm install
 
 # Run tests
-npm test
+pnpm test
 
 # Build if needed
-npm run build
+pnpm build
 ```
 
 ### Step 2: Update Package Versions
 
-Update version in each package.json:
+Update version in each package.json using Changesets:
 
-```json
-{
-  "name": "@coherent.js/plugins",
-  "version": "2.0.0",
-  "description": "Plugin system for Coherent.js",
-  "main": "./src/index.js",
-  "type": "module"
-}
+```bash
+# Create a changeset
+pnpm changeset
+
+# Version packages
+pnpm version
 ```
 
 ### Step 3: Create .npmignore Files
@@ -129,112 +135,32 @@ MIT
 # Login to npm (first time only)
 npm login
 
-# Publish @coherent.js/plugins
-cd packages/plugins
-npm publish --access public
-
-# Publish @coherent.js/testing
-cd ../testing
-npm publish --access public
-
-# Publish @coherent.js/devtools
-cd ../devtools
-npm publish --access public
-
-# Publish @coherent.js/runtime
-cd ../runtime
-npm publish --access public
-
-# Publish @coherent.js/i18n
-cd ../i18n
-npm publish --access public
-
-# Publish @coherent.js/forms
-cd ../forms
-npm publish --access public
-
-# Publish @coherent.js/seo
-cd ../seo
-npm publish --access public
-
-# Publish @coherent.js/performance
-cd ../performance
-npm publish --access public
+# Or use the release script (recommended)
+pnpm run release
 ```
 
 ---
 
 ## 🤖 Automated Publishing Script
 
-Create `scripts/publish-all.sh`:
+The project uses Changesets for automated versioning and publishing:
 
 ```bash
-#!/bin/bash
+# Create a changeset for your changes
+pnpm changeset
 
-# Coherent.js v2.0 Publishing Script
+# Version packages (updates package.json files)
+pnpm version
 
-set -e
-
-echo "🚀 Publishing Coherent.js v2.0 packages..."
-
-# Array of packages to publish
-packages=(
-  "plugins"
-  "testing"
-  "devtools"
-  "runtime"
-  "i18n"
-  "forms"
-  "seo"
-  "performance"
-)
-
-# Publish each package
-for package in "${packages[@]}"
-do
-  echo ""
-  echo "📦 Publishing @coherent.js/$package..."
-  cd "packages/$package"
-  
-  # Check if package.json exists
-  if [ ! -f "package.json" ]; then
-    echo "❌ package.json not found in packages/$package"
-    exit 1
-  fi
-  
-  # Publish
-  npm publish --access public
-  
-  if [ $? -eq 0 ]; then
-    echo "✅ @coherent.js/$package published successfully"
-  else
-    echo "❌ Failed to publish @coherent.js/$package"
-    exit 1
-  fi
-  
-  cd ../..
-done
-
-echo ""
-echo "🎉 All packages published successfully!"
-echo ""
-echo "Published packages:"
-for package in "${packages[@]}"
-do
-  echo "  ✅ @coherent.js/$package"
-done
+# Publish packages to npm
+pnpm release
 ```
 
-Make it executable:
+Or use the interactive release script:
 
 ```bash
-chmod +x scripts/publish-all.sh
-```
-
-Run it:
-
-```bash
-./scripts/publish-all.sh
+# Interactive release process
+pnpm run release
 ```
 
 ---
@@ -246,12 +172,16 @@ Each package should follow this structure:
 ```json
 {
   "name": "@coherent.js/PACKAGE_NAME",
-  "version": "2.0.0",
+  "version": "1.0.0-beta.1",
   "description": "PACKAGE_DESCRIPTION",
   "type": "module",
   "main": "./src/index.js",
   "exports": {
-    ".": "./src/index.js"
+    ".": {
+      "development": "./src/index.js",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
   },
   "keywords": [
     "coherent",
@@ -282,11 +212,11 @@ Each package should follow this structure:
 After publishing, create git tags:
 
 ```bash
-# Create tag for v2.0.0
-git tag -a v2.0.0 -m "Release v2.0.0 - Complete feature implementation"
+# Create tag for v1.0.0-beta.1
+git tag -a v1.0.0-beta.1 -m "Release v1.0.0-beta.1 - Beta release"
 
 # Push tags
-git push origin v2.0.0
+git push origin v1.0.0-beta.1
 
 # Or push all tags
 git push --tags
@@ -316,7 +246,7 @@ git push --tags
 
 ### 4. **Update Documentation Site**
 - [ ] Deploy updated docs
-- [ ] Add v2.0 migration guide
+- [ ] Add migration guide
 - [ ] Update API reference
 - [ ] Add new examples
 
@@ -328,14 +258,14 @@ After publishing, verify each package:
 
 ```bash
 # Check package on npm
-npm view @coherent.js/plugins
+npm view @coherent.js/core
 
 # Install and test
 mkdir test-install
 cd test-install
 npm init -y
-npm install @coherent.js/plugins
-node -e "import('@coherent.js/plugins').then(m => console.log('✅ Import successful'))"
+npm install @coherent.js/core
+node -e "import('@coherent.js/core').then(m => console.log('✅ Import successful'))"
 ```
 
 ---
@@ -350,11 +280,10 @@ npm whoami
 ```
 
 ### Issue: "Package already exists"
-**Solution**: Increment version number
+**Solution**: Increment version number or use beta tag
 ```bash
-npm version patch  # 2.0.0 -> 2.0.1
-npm version minor  # 2.0.0 -> 2.1.0
-npm version major  # 2.0.0 -> 3.0.0
+# Use beta tag for pre-releases
+npm publish --tag beta
 ```
 
 ### Issue: "ENOENT: no such file or directory"
@@ -384,14 +313,8 @@ cat package.json | jq .  # Validates JSON
 - [ ] Git committed and pushed
 
 ### Publish
-- [ ] @coherent.js/plugins
-- [ ] @coherent.js/testing
-- [ ] @coherent.js/devtools
-- [ ] @coherent.js/runtime
-- [ ] @coherent.js/i18n
-- [ ] @coherent.js/forms
-- [ ] @coherent.js/seo
-- [ ] @coherent.js/performance
+- [ ] Run `pnpm release` or manual publish
+- [ ] Verify all packages published
 
 ### Post-Publish
 - [ ] Git tags created
@@ -405,13 +328,19 @@ cat package.json | jq .  # Validates JSON
 ## 🎯 Quick Commands Reference
 
 ```bash
-# Login to npm
-npm login
+# Create changeset
+pnpm changeset
+
+# Version packages
+pnpm version
+
+# Publish packages
+pnpm release
 
 # Check who you're logged in as
 npm whoami
 
-# Publish a package
+# Publish a package manually
 npm publish --access public
 
 # Unpublish (within 72 hours)
@@ -429,27 +358,6 @@ npm pack --dry-run
 
 ---
 
-## 📈 Success Metrics
-
-After publishing, monitor:
-
-1. **Download Stats**
-   - npm downloads per week
-   - GitHub stars
-   - GitHub forks
-
-2. **Community Engagement**
-   - GitHub issues
-   - Pull requests
-   - Discussions
-
-3. **Documentation**
-   - Page views
-   - Search queries
-   - Feedback
-
----
-
 ## 🎉 Publishing Complete!
 
 Once all packages are published:
@@ -460,7 +368,7 @@ Once all packages are published:
 4. ✅ Documentation updated
 5. ✅ Community notified
 
-**Coherent.js v2.0 is now live!** 🚀
+**Coherent.js is now live!** 🚀
 
 ---
 

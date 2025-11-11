@@ -1,0 +1,51 @@
+# Coherent.js Code Owners
+
+# Core framework
+packages/core/ @Tomdrouv1
+packages/client/ @Tomdrouv1
+packages/runtime/ @Tomdrouv1
+
+# API framework
+packages/api/ @Tomdrouv1
+
+# Integrations
+packages/express/ @Tomdrouv1
+packages/fastify/ @Tomdrouv1
+packages/koa/ @Tomdrouv1
+packages/nextjs/ @Tomdrouv1
+packages/adapters/ @Tomdrouv1
+
+# Developer tools
+packages/devtools/ @Tomdrouv1
+packages/testing/ @Tomdrouv1
+packages/cli/ @Tomdrouv1
+
+# Feature packages
+packages/i18n/ @Tomdrouv1
+packages/forms/ @Tomdrouv1
+packages/seo/ @Tomdrouv1
+packages/performance/ @Tomdrouv1
+packages/state/ @Tomdrouv1
+
+# Backend & Database
+packages/database/ @Tomdrouv1
+
+# Build tools
+packages/build-tools/ @Tomdrouv1
+packages/profiler/ @Tomdrouv1
+packages/web-components/ @Tomdrouv1
+
+# Website & Documentation
+website/ @Tomdrouv1
+docs/ @Tomdrouv1
+README.md @Tomdrouv1
+CONTRIBUTING.md @Tomdrouv1
+*.md @Tomdrouv1
+
+# Configuration
+.github/ @Tomdrouv1
+.junie/ @Tomdrouv1
+package.json @Tomdrouv1
+pnpm-lock.yaml @Tomdrouv1
+eslint.config.js @Tomdrouv1
+vitest.config.js @Tomdrouv1

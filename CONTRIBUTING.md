@@ -8,10 +8,16 @@ We love your input! We want to make contributing to Coherent.js as easy and tran
 - Proposing new features
 - Becoming a maintainer
 
-## We Develop with Github
-We use github to host code, to track issues and feature requests, as well as accept pull requests.
+## We Develop with GitHub
 
-## We Use [Github Flow](https://guides.github.com/introduction/flow/index.html), So All Code Changes Happen Through Pull Requests
+We use GitHub to host code, to track issues and feature requests, as well as accept pull requests.
+
+## Code of Conduct
+
+Please note that this project is released with a [Contributor Code of Conduct](CODE_OF_CONDUCT.md). By participating in this project you agree to abide by its terms.
+
+## We Use [GitHub Flow](https://guides.github.com/introduction/flow/index.html), So All Code Changes Happen Through Pull Requests
+
 Pull requests are the best way to propose changes to the codebase. We actively welcome your pull requests:
 
 1. Fork the repo and create your branch from `main`.
@@ -21,13 +27,26 @@ Pull requests are the best way to propose changes to the codebase. We actively w
 5. Make sure your code lints.
 6. Issue that pull request!
 
-## Any contributions you make will be under the MIT Software License
-In short, when you submit code changes, your submissions are understood to be under the same [MIT License](http://choosealicense.com/licenses/mit/) that covers the project. Feel free to contact the maintainers if that's a concern.
+## Getting Started
 
-## Report bugs using Github's [issues](https://github.com/Tomdrouv1/coherent-js/issues)
-We use GitHub issues to track public bugs. Report a bug by [opening a new issue](https://github.com/Tomdrouv1/coherent-js/issues/new); it's that easy!
+1. Ensure you have [Node.js](https://nodejs.org/) (version 20 or higher) and [pnpm](https://pnpm.io/) installed
+2. Fork the repository
+3. Clone your fork: `git clone https://github.com/your-username/coherent.js.git`
+4. Create a branch: `git checkout -b my-branch-name`
+5. Install dependencies: `pnpm install`
+6. Make your changes
+7. Run tests: `pnpm test`
+8. Push and submit a pull request
 
-## Write bug reports with detail, background, and sample code
+## How to Report a Bug
+
+### Security Bugs
+
+Please **do not** report security vulnerabilities through public GitHub issues. Instead, please report them directly to thomas.drouvin@gmail.com. Please see our [security policy](SECURITY.md) for more details.
+
+### Regular Bugs
+
+We use GitHub issues to track public bugs. Report a bug by [opening a new issue](https://github.com/Tomdrouv1/coherent.js/issues/new/choose); it's that easy!
 
 **Great Bug Reports** tend to have:
 
@@ -39,15 +58,92 @@ We use GitHub issues to track public bugs. Report a bug by [opening a new issue]
 - What actually happens
 - Notes (possibly including why you think this might be happening, or stuff you tried that didn't work)
 
-People *love* thorough bug reports. I'm not even kidding.
+## How to Suggest a Feature
 
-## Use a Consistent Coding Style
+If you find yourself wishing for a feature that doesn't exist in Coherent.js, you are probably not alone. [Open an issue](https://github.com/Tomdrouv1/coherent.js/issues/new/choose) on our issues list on GitHub which describes the feature you would like to see, why you need it, and how it should work.
 
-* 2 spaces for indentation rather than tabs
-* You can try running `npm run lint` for style unification
+## Code Review Process
 
-## License
-By contributing, you agree that your contributions will be licensed under its MIT License.
+The core team looks at Pull Requests on a regular basis in a bi-weekly triage meeting. After feedback has been given we expect responses within two weeks. After two weeks we may close the pull request if it isn't showing any activity.
+
+## Style Guide
+
+### Code Style
+
+We use ESLint to enforce code style. You can check your code by running:
+
+```bash
+pnpm run lint
+```
+
+To automatically fix style issues:
+
+```bash
+pnpm run lint:fix
+```
+
+### Git Commit Messages
+
+- Use the present tense ("Add feature" not "Added feature")
+- Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
+- Limit the first line to 72 characters or less
+- Reference issues and pull requests liberally after the first line
+- When only changing documentation, include [ci skip] in the commit title
+
+### JavaScript Style
+
+- Use 2 spaces for indentation rather than tabs
+- Prefer `const` over `let` (avoid `var`)
+- Use strict equality checks (`===` and `!==`)
+- Avoid using `eval()` and implied eval
+- Avoid using `new Function()`
+- Write tests for new features and bug fixes
+
+## Testing
+
+We use [Vitest](https://vitest.dev/) for testing. All new features should include tests.
+
+### Running Tests
+
+```bash
+# Run all tests
+pnpm test
+
+# Run tests in watch mode
+pnpm test:watch
+
+# Run tests with coverage
+pnpm test:coverage
+
+# Run tests for a specific package
+pnpm --filter @coherent.js/core run test
+
+# Run a specific test file
+pnpm --filter @coherent.js/core run test -- test/some-file.test.js
+```
+
+### Writing Tests
+
+- Place test files in the `test/` directory of each package
+- Use clear, descriptive test names
+- Test one thing per test when possible
+- Include both positive and negative test cases
+
+For more details on testing, see our [guidelines](.junie/guidelines.md).
+
+## Documentation
+
+- Update documentation when you change APIs
+- Document new features
+- Follow the existing documentation style
+- Run the documentation locally to verify it renders correctly
+
+## Any Contributions You Make Will Be Under the MIT Software License
+
+In short, when you submit code changes, your submissions are understood to be under the same [MIT License](http://choosealicense.com/licenses/mit/) that covers the project. Feel free to contact the maintainers if that's a concern.
 
 ## References
+
 This document was adapted from common open-source contribution guidelines.
+
+Thank you for contributing to Coherent.js!

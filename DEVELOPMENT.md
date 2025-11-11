@@ -18,7 +18,7 @@ coherent.js/
 │   ├── api/                            # @coherent.js/api - API framework
 │   │
 │   ├── express/                        # @coherent.js/express - Express.js integration
-│   ├── fastify/                        # @coherent.js/fastify - Fastify integration
+│   ├── fastify/                        # @coherent.js/fastify - Fastify integration  
 │   ├── koa/                            # @coherent.js/koa - Koa.js integration
 │   ├── nextjs/                         # @coherent.js/nextjs - Next.js integration
 │   │
@@ -29,7 +29,6 @@ coherent.js/
 │   ├── testing/                        # @coherent.js/testing - Testing utilities
 │   ├── devtools/                       # @coherent.js/devtools - Developer tools
 │   ├── performance/                    # @coherent.js/performance - Performance utilities
-│   ├── performance-profiler/           # @coherent.js/performance-profiler - Profiling
 │   │
 │   ├── cli/                            # @coherent.js/cli - CLI tools
 │   ├── build-tools/                    # @coherent.js/build-tools - Build utilities
@@ -40,6 +39,7 @@ coherent.js/
 ├── scripts/                            # Build and utility scripts
 ├── examples/                           # Example applications
 ├── website/                            # Documentation website
+├── .junie/                             # Project-specific guidelines
 └── docs/                               # Documentation files
 ```
 
@@ -78,9 +78,10 @@ coherent.js/
 ### Testing
 
 - **Run all tests**: `pnpm test`
-- **Run unit tests only**: `pnpm test:unit`
-- **Run integration tests**: `pnpm test:integration`
-- **Test a specific package**: `pnpm --filter @coherent.js/core test`
+- **Run tests in watch mode**: `pnpm test:watch`
+- **Run tests with coverage**: `pnpm test:coverage`
+- **Run tests for a specific package**: `pnpm --filter @coherent.js/core test`
+- **Run a specific test file**: `pnpm --filter @coherent.js/core test -- test/example.test.js`
 
 ### Code Quality
 
@@ -243,3 +244,13 @@ This project uses Changesets for version management:
 - **Minimal Runtime**: Keep client-side runtime small
 - **Caching**: Built-in intelligent caching
 - **Streaming**: Support for streaming large responses
+
+## CI/CD Workflow
+
+This project uses GitHub Actions for continuous integration and deployment:
+
+- **CI**: Runs on every push and pull request with tests on Node.js 20.x and 22.x
+- **Publish**: Triggered manually or on release to publish packages to npm
+- **Deploy**: Automatically deploys website on pushes to main branch
+
+For detailed information about CI/CD, see `.github/workflows/`.

@@ -1,0 +1,73 @@
+# Labeler configuration for Coherent.js
+
+# Core framework labels
+core:
+  - packages/core/**/*
+  - packages/client/**/*
+  - packages/runtime/**/*
+
+# API framework labels
+api:
+  - packages/api/**/*
+
+# Integration labels
+integrations:
+  - packages/express/**/*
+  - packages/fastify/**/*
+  - packages/koa/**/*
+  - packages/nextjs/**/*
+  - packages/adapters/**/*
+
+# Developer tools labels
+devtools:
+  - packages/devtools/**/*
+  - packages/testing/**/*
+  - packages/cli/**/*
+
+# Feature packages labels
+features:
+  - packages/i18n/**/*
+  - packages/forms/**/*
+  - packages/seo/**/*
+  - packages/performance/**/*
+  - packages/state/**/*
+
+# Backend & Database labels
+backend:
+  - packages/database/**/*
+
+# Build tools labels
+build-tools:
+  - packages/build-tools/**/*
+  - packages/profiler/**/*
+  - packages/web-components/**/*
+
+# Documentation labels
+documentation:
+  - docs/**/*
+  - website/**/*
+  - README.md
+  - CONTRIBUTING.md
+  - CODE_OF_CONDUCT.md
+  - SECURITY.md
+  - SUPPORT.md
+  - "*.md"
+
+# GitHub configuration labels
+github-config:
+  - .github/**/*
+  - .junie/**/*
+
+# Test labels
+tests:
+  - packages/*/test/**/*
+  - packages/*/src/**/*.{test,spec}.{js,ts}
+
+# Configuration labels
+configuration:
+  - package.json
+  - pnpm-lock.yaml
+  - eslint.config.js
+  - vitest.config.js
+  - "*.config.*"
+  - "*rc.*"

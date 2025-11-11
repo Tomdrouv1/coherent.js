@@ -40,6 +40,31 @@ jobs:
           node-version: 22
           cache: 'pnpm'
 
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Setup build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache
+            ./packages/*/dist
+            ./website/dist
+          key: ${{ runner.os }}-website-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-website-${{ hashFiles('**/pnpm-lock.yaml') }}-
+            ${{ runner.os }}-website-
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 

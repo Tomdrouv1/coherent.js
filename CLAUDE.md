@@ -55,7 +55,13 @@ The project uses pnpm workspaces with packages in `/packages/`:
 - **`@coherent.js/fastify`** - Fastify integration adapter  
 - **`@coherent.js/koa`** - Koa.js integration adapter
 - **`@coherent.js/nextjs`** - Next.js integration adapter
+- **`@coherent.js/testing`** - Testing utilities and matchers
+- **`@coherent.js/devtools`** - Developer tools (inspector, profiler, logger)
 - **`@coherent.js/cli`** - CLI tools for development and scaffolding
+- **`@coherent.js/i18n`** - Internationalization support
+- **`@coherent.js/forms`** - Form utilities and validation
+- **`@coherent.js/seo`** - SEO optimization tools
+- **`@coherent.js/performance`** - Performance optimization utilities
 
 ### Core Concepts
 
@@ -69,7 +75,7 @@ The project uses pnpm workspaces with packages in `/packages/`:
 - `/packages/core/src/` - Core rendering engine and component system
 - `/examples/` - Comprehensive examples demonstrating framework features
 - `/scripts/` - Development and build scripts
-- `/docs/` - Documentation files
+- `/website/` - Documentation website
 - `vitest.config.js` - Root Vitest configuration for testing
 - `eslint.config.js` - ESLint configuration with specific rules for different file types
 
@@ -101,6 +107,7 @@ Each framework integration package (`/packages/express/`, `/packages/fastify/`, 
 - Tests are located in `packages/*/test/` directories  
 - Global test configuration allows 10s timeout for complex rendering tests
 - Coverage excludes config files, build outputs, and test files themselves
+- Tests run with process isolation (`pool: 'forks'`, `isolate: true`)
 
 ### Performance Focus
 
@@ -109,3 +116,36 @@ The framework includes built-in performance monitoring and optimization:
 - Streaming rendering for large documents  
 - Bundle size optimization and tree-shaking support
 - Performance benchmarking examples in `/examples/performance-test.js`
+
+## Development Guidelines
+
+### Code Style
+- Use ESM imports/exports exclusively
+- Target Node.js 20+ features
+- Prefer `const` over `let`
+- Use strict equality (`===` and `!==`)
+- Avoid `eval()` and `new Function()`
+
+### Testing Practices
+- Place tests in `packages/*/test/` directories
+- Use package-scoped test runs for reliability:
+  ```bash
+  pnpm --filter @coherent.js/core run test -- test/example-render.test.js
+  ```
+- For browser-like tests, create shims:
+  ```js
+  global.window = { __coherentEventRegistry: {}, addEventListener: vi.fn() };
+  global.document = { querySelector: vi.fn(), querySelectorAll: vi.fn(() => []) };
+  ```
+
+### Package Development
+- Each package uses the shared build system in `scripts/shared-build.mjs`
+- Follow the conditional exports pattern for development/production builds
+- Respect the ESM-only policy in `src/` files
+- Add TypeScript definitions where applicable
+
+### Contributing
+- Follow the guidelines in `CONTRIBUTING.md`
+- Ensure all tests pass before submitting PRs
+- Run `pnpm lint` and `pnpm format` on changes
+- Update documentation when changing APIs
