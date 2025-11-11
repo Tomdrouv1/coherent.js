@@ -2,72 +2,94 @@
 
 # Core framework labels
 core:
-  - packages/core/**/*
-  - packages/client/**/*
-  - packages/runtime/**/*
+  - changed-files:
+      - any-glob-to-any-file: 
+          - packages/core/**/*
+          - packages/client/**/*
+          - packages/runtime/**/*
 
 # API framework labels
 api:
-  - packages/api/**/*
+  - changed-files:
+      - any-glob-to-any-file: 
+          - packages/api/**/*
 
 # Integration labels
 integrations:
-  - packages/express/**/*
-  - packages/fastify/**/*
-  - packages/koa/**/*
-  - packages/nextjs/**/*
-  - packages/adapters/**/*
+  - changed-files:
+      - any-glob-to-any-file: 
+          - packages/express/**/*
+          - packages/fastify/**/*
+          - packages/koa/**/*
+          - packages/nextjs/**/*
+          - packages/adapters/**/*
 
 # Developer tools labels
 devtools:
-  - packages/devtools/**/*
-  - packages/testing/**/*
-  - packages/cli/**/*
+  - changed-files:
+      - any-glob-to-any-file: 
+          - packages/devtools/**/*
+          - packages/testing/**/*
+          - packages/cli/**/*
 
 # Feature packages labels
 features:
-  - packages/i18n/**/*
-  - packages/forms/**/*
-  - packages/seo/**/*
-  - packages/performance/**/*
-  - packages/state/**/*
+  - changed-files:
+      - any-glob-to-any-file: 
+          - packages/i18n/**/*
+          - packages/forms/**/*
+          - packages/seo/**/*
+          - packages/performance/**/*
+          - packages/state/**/*
 
 # Backend & Database labels
 backend:
-  - packages/database/**/*
+  - changed-files:
+      - any-glob-to-any-file: 
+          - packages/database/**/*
 
 # Build tools labels
 build-tools:
-  - packages/build-tools/**/*
-  - packages/profiler/**/*
-  - packages/web-components/**/*
+  - changed-files:
+      - any-glob-to-any-file: 
+          - packages/build-tools/**/*
+          - packages/profiler/**/*
+          - packages/web-components/**/*
 
 # Documentation labels
 documentation:
-  - docs/**/*
-  - website/**/*
-  - README.md
-  - CONTRIBUTING.md
-  - CODE_OF_CONDUCT.md
-  - SECURITY.md
-  - SUPPORT.md
-  - "*.md"
+  - changed-files:
+      - any-glob-to-any-file: 
+          - docs/**/*
+          - website/**/*
+          - README.md
+          - CONTRIBUTING.md
+          - CODE_OF_CONDUCT.md
+          - SECURITY.md
+          - SUPPORT.md
+          - "*.md"
 
 # GitHub configuration labels
 github-config:
-  - .github/**/*
-  - .junie/**/*
+  - changed-files:
+      - any-glob-to-any-file: 
+          - .github/**/*
+          - .junie/**/*
 
 # Test labels
 tests:
-  - packages/*/test/**/*
-  - packages/*/src/**/*.{test,spec}.{js,ts}
+  - changed-files:
+      - any-glob-to-any-file: 
+          - packages/*/test/**/*
+          - packages/*/src/**/*.{test,spec}.{js,ts}
 
 # Configuration labels
 configuration:
-  - package.json
-  - pnpm-lock.yaml
-  - eslint.config.js
-  - vitest.config.js
-  - "*.config.*"
-  - "*rc.*"
+  - changed-files:
+      - any-glob-to-any-file: 
+          - package.json
+          - pnpm-lock.yaml
+          - eslint.config.js
+          - vitest.config.js
+          - "*.config.*"
+          - "*rc.*"
