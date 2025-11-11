@@ -121,7 +121,7 @@ importers:
   packages/api:
     dependencies:
       '@coherent.js/core':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../core
 
   packages/build-tools:
@@ -177,7 +177,7 @@ importers:
   packages/database:
     dependencies:
       '@coherent.js/core':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../core
       sqlite3:
         specifier: ^5.0.0
@@ -186,13 +186,13 @@ importers:
   packages/devtools:
     dependencies:
       '@coherent.js/core':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../core
 
   packages/express:
     dependencies:
       '@coherent.js/core':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../core
       express:
         specifier: '>=4.18.0 < 6.0.0'
@@ -201,7 +201,7 @@ importers:
   packages/fastify:
     dependencies:
       '@coherent.js/core':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../core
       fastify:
         specifier: '>=4.0.0 < 6.0.0'
@@ -210,22 +210,22 @@ importers:
   packages/forms:
     dependencies:
       '@coherent.js/core':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../core
       '@coherent.js/state':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../state
 
   packages/i18n:
     dependencies:
       '@coherent.js/core':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../core
 
   packages/koa:
     dependencies:
       '@coherent.js/core':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../core
       koa:
         specifier: '>=2.13.0 < 4.0.0'
@@ -234,7 +234,7 @@ importers:
   packages/nextjs:
     dependencies:
       '@coherent.js/core':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../core
       next:
         specifier: '>=13.0.0 < 16.0.0'
@@ -246,7 +246,7 @@ importers:
   packages/performance:
     dependencies:
       '@coherent.js/core':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../core
 
   packages/profiler:
@@ -265,7 +265,7 @@ importers:
         specifier: workspace:*
         version: link:../client
       '@coherent.js/core':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../core
       '@coherent.js/web-components':
         specifier: workspace:*
@@ -290,19 +290,19 @@ importers:
   packages/seo:
     dependencies:
       '@coherent.js/core':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../core
 
   packages/state:
     dependencies:
       '@coherent.js/core':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../core
 
   packages/testing:
     dependencies:
       '@coherent.js/core':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../core
     devDependencies:
       vitest:

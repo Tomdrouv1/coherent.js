@@ -19,7 +19,7 @@
   "author": "Coherent.js Team",
   "license": "MIT",
   "peerDependencies": {
-    "@coherent.js/core": "1.0.0-beta.2"
+    "@coherent.js/core": "workspace:*"
   },
   "devDependencies": {
     "vitest": "^1.0.0"

@@ -38,7 +38,7 @@
   },
   "peerDependencies": {
     "express": ">=4.18.0 < 6.0.0",
-    "@coherent.js/core": "1.0.0-beta.2"
+    "@coherent.js/core": "workspace:*"
   },
   "publishConfig": {
     "access": "public"
