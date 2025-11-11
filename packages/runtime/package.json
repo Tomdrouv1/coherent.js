@@ -43,7 +43,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@coherent.js/core": "workspace:^",
+    "@coherent.js/core": "1.0.0-beta.2",
     "@coherent.js/client": "workspace:*",
     "@coherent.js/web-components": "workspace:*"
   },

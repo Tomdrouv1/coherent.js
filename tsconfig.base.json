@@ -19,7 +19,7 @@
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "paths": {
-      "@coherent.js/*": ["packages/*/src/index.js"]
+      "@coherent.js/*": ["./packages/*/src/index.js"]
     }
   },
   "exclude": [

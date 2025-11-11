@@ -33,6 +33,6 @@
     "clean": "rm -rf dist"
   },
   "peerDependencies": {
-    "@coherent.js/core": "workspace:^"
+    "@coherent.js/core": "1.0.0-beta.2"
   }
 }
