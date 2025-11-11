@@ -49,9 +49,9 @@
     "@coherent.js/web-components": "workspace:*"
   },
   "devDependencies": {
-    "esbuild": "^0.25.9",
+    "esbuild": "^0.27.0",
     "vitest": "^3.2.4",
-    "@playwright/test": "^1.40.0",
+    "@playwright/test": "^1.56.1",
     "jsdom": "^25.0.0",
     "vite": "^6.4.1"
   },
