@@ -1,6 +1,6 @@
 {
   "name": "@coherent.js/state",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-beta.2",
   "description": "Reactive state management for Coherent.js applications",
   "type": "module",
   "main": "./dist/index.js",

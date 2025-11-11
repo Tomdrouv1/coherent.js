@@ -1,6 +1,6 @@
 {
   "name": "@coherent.js/express",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-beta.2",
   "description": "Express adapter for Coherent.js",
   "type": "module",
   "main": "dist/index.cjs",

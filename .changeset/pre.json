@@ -1,0 +1,30 @@
+{
+  "mode": "pre",
+  "tag": "beta",
+  "initialVersions": {
+    "@coherent.js/adapters": "1.0.0-beta.1",
+    "@coherent.js/api": "1.0.0-beta.1",
+    "@coherent.js/build-tools": "1.0.0-beta.1",
+    "@coherent.js/cli": "1.0.0-beta.1",
+    "@coherent.js/client": "1.0.0-beta.1",
+    "@coherent.js/core": "1.0.0-beta.1",
+    "@coherent.js/database": "1.0.0-beta.1",
+    "@coherent.js/devtools": "1.0.0-beta.1",
+    "@coherent.js/express": "1.0.0-beta.1",
+    "@coherent.js/fastify": "1.0.0-beta.1",
+    "@coherent.js/forms": "1.0.0-beta.1",
+    "@coherent.js/i18n": "1.0.0-beta.1",
+    "@coherent.js/koa": "1.0.0-beta.1",
+    "@coherent.js/nextjs": "1.0.0-beta.1",
+    "@coherent.js/performance": "1.0.0-beta.1",
+    "@coherent.js/profiler": "1.0.0-beta.1",
+    "@coherent.js/runtime": "1.0.0-beta.1",
+    "@coherent.js/seo": "1.0.0-beta.1",
+    "@coherent.js/state": "1.0.0-beta.1",
+    "@coherent.js/testing": "1.0.0-beta.1",
+    "@coherent.js/web-components": "1.0.0-beta.1"
+  },
+  "changesets": [
+    "mean-cows-write"
+  ]
+}

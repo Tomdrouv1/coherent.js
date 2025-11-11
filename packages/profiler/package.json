@@ -1,6 +1,6 @@
 {
   "name": "@coherent.js/profiler",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-beta.2",
   "description": "Performance profiling and monitoring tools for Coherent.js applications",
   "type": "module",
   "main": "src/index.js",
