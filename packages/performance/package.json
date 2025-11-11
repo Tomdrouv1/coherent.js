@@ -32,5 +32,11 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "types": "./types/index.d.ts",
+  "files": [
+    "LICENSE",
+    "README.md",
+    "types/"
+  ]
 }

@@ -182,9 +182,12 @@ describe('Runtime Utilities', () => {
       }
     });
 
-    it('should preload assets efficiently', async () => {
+    it('should preload assets efficiently', { timeout: 20000, retry: 2 }, async () => {
       const { AssetManager } = await import('../src/utils/asset-manager.js');
       const manager = new AssetManager({ baseUrl: 'https://example.com/' });
+
+      // Mock the actual network call to prevent timeout
+      manager.loadAsset = vi.fn().mockResolvedValue({ loaded: true });
 
       const assets = ['/app.js', '/app.css'];
 

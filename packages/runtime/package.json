@@ -5,6 +5,7 @@
   "type": "module",
   "main": "dist/coherent-universal.js",
   "module": "dist/coherent-universal.js",
+  "types": "./types/index.d.ts",
   "browser": "dist/coherent-universal.js",
   "unpkg": "dist/coherent-universal.min.js",
   "jsdelivr": "dist/coherent-universal.min.js",

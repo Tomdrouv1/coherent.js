@@ -5,7 +5,7 @@
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
-  "types": "../../src/fastify/coherent-fastify.d.ts",
+  "types": "./types/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -24,6 +24,7 @@
   },
   "files": [
     "dist/",
+    "types/",
     "README.md",
     "LICENSE"
   ],

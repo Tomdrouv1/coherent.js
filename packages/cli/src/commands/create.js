@@ -90,6 +90,26 @@ export const createCommand = new Command('create')
     let database = null;
     let auth = null;
     let packages = [];
+    let language = 'javascript';
+
+    // Language selection (TypeScript vs JavaScript)
+    const languageResponse = await prompts({
+      type: 'select',
+      name: 'language',
+      message: 'Would you like to use TypeScript or JavaScript?',
+      choices: [
+        { title: '📘 JavaScript', value: 'javascript', description: 'JavaScript with JSDoc type hints (recommended)' },
+        { title: '📕 TypeScript', value: 'typescript', description: 'Full TypeScript with static type checking' }
+      ],
+      initial: 0
+    });
+
+    if (!languageResponse.language) {
+      console.log(picocolors.yellow('👋 Project creation cancelled'));
+      process.exit(0);
+    }
+
+    language = languageResponse.language;
 
     // Runtime selection for applicable templates
     if (template === 'custom' || template === 'basic' || template === 'fullstack' || template === 'components') {
@@ -230,6 +250,7 @@ export const createCommand = new Command('create')
         database,
         auth,
         packages,
+        language,
         packageManager,
         skipInstall: options.skipInstall,
         skipGit: options.skipGit
@@ -244,6 +265,7 @@ export const createCommand = new Command('create')
 
       // Show configuration summary
       console.log(picocolors.cyan('📋 Project Configuration:'));
+      console.log(picocolors.gray('  Language:'), picocolors.bold(language === 'typescript' ? 'TypeScript' : 'JavaScript'));
       console.log(picocolors.gray('  Runtime:'), picocolors.bold(runtime));
       if (database) {
         console.log(picocolors.gray('  Database:'), picocolors.bold(database));

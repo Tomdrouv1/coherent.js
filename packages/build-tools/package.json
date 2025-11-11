@@ -4,6 +4,7 @@
   "description": "Build tools and bundler integrations for Coherent.js (Vite, Webpack, Rollup)",
   "type": "module",
   "main": "src/index.js",
+  "types": "./types/index.d.ts",
   "exports": {
     ".": "./src/index.js",
     "./vite": "./src/vite.js",
@@ -11,6 +12,12 @@
     "./rollup": "./src/rollup.js",
     "./loader": "./src/coherent-loader.js"
   },
+  "files": [
+    "src/",
+    "types/",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "node build.mjs",
     "test": "vitest"

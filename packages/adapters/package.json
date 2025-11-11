@@ -4,12 +4,19 @@
   "description": "Framework adapters for Coherent.js (Astro, Remix, SvelteKit)",
   "type": "module",
   "main": "src/index.js",
+  "types": "./types/index.d.ts",
   "exports": {
     ".": "./src/index.js",
     "./astro": "./src/astro.js",
     "./remix": "./src/remix.js",
     "./sveltekit": "./src/sveltekit.js"
   },
+  "files": [
+    "src/",
+    "types/",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "node build.mjs",
     "test": "vitest"

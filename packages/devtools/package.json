@@ -4,12 +4,19 @@
   "description": "Developer tools for Coherent.js applications",
   "type": "module",
   "main": "./dist/index.js",
+  "types": "./types/index.d.ts",
   "exports": {
     ".": "./dist/index.js",
     "./inspector": "./dist/inspector.js",
     "./profiler": "./dist/profiler.js",
     "./logger": "./dist/logger.js"
   },
+  "files": [
+    "dist/",
+    "types/",
+    "README.md",
+    "LICENSE"
+  ],
   "keywords": [
     "coherent",
     "devtools",

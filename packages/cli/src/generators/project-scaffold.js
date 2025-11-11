@@ -9,6 +9,7 @@ import { generateServerFile, getRuntimeDependencies } from './runtime-scaffold.j
 import { generateDatabaseScaffolding } from './database-scaffold.js';
 import { generateAuthScaffolding } from './auth-scaffold.js';
 import { generatePackageScaffolding } from './package-scaffold.js';
+import { generateTsConfig, generateJsConfig, getTypeScriptDependencies } from './typescript-config.js';
 
 /**
  * Scaffold a new Coherent.js project
@@ -23,8 +24,12 @@ export async function scaffoldProject(projectPath, options) {
     database = null,
     auth = null,
     packages = [],
+    language = 'javascript',
     packageManager = 'npm'
   } = options;
+
+  const isTypeScript = language === 'typescript';
+  const fileExtension = isTypeScript ? '.ts' : '.js';
 
   // Create directory structure
   const dirs = [
@@ -60,8 +65,17 @@ export async function scaffoldProject(projectPath, options) {
   });
 
   // Generate package.json
-  const packageJson = generatePackageJson(name, { template, runtime, database, auth, packages, packageManager });
+  const packageJson = generatePackageJson(name, { template, runtime, database, auth, packages, language, packageManager });
   writeFileSync(join(projectPath, 'package.json'), JSON.stringify(packageJson, null, 2));
+
+  // Generate TypeScript or JavaScript config
+  if (isTypeScript) {
+    const tsConfig = generateTsConfig();
+    writeFileSync(join(projectPath, 'tsconfig.json'), JSON.stringify(tsConfig, null, 2));
+  } else {
+    const jsConfig = generateJsConfig();
+    writeFileSync(join(projectPath, 'jsconfig.json'), JSON.stringify(jsConfig, null, 2));
+  }
 
   // Generate main server file
   const serverContent = generateServerFile(runtime, {
@@ -70,10 +84,10 @@ export async function scaffoldProject(projectPath, options) {
     hasDatabase: !!database,
     hasAuth: !!auth
   });
-  writeFileSync(join(projectPath, 'src/index.js'), serverContent);
+  writeFileSync(join(projectPath, `src/index${fileExtension}`), serverContent);
 
   // Generate HomePage component
-  await generateHomePageComponent(projectPath, name);
+  await generateHomePageComponent(projectPath, name, isTypeScript, fileExtension);
 
   // Generate database scaffolding
   if (database) {
@@ -155,15 +169,24 @@ export async function scaffoldProject(projectPath, options) {
  * Generate package.json based on options
  */
 function generatePackageJson(name, options) {
-  const { runtime = 'built-in', database = null, auth = null, packages = [], packageManager = 'npm' } = options;
+  const { runtime = 'built-in', database = null, auth = null, packages = [], language = 'javascript', packageManager = 'npm' } = options;
+
+  const isTypeScript = language === 'typescript';
+  const fileExt = isTypeScript ? '.ts' : '.js';
 
   const base = {
     name,
     version: '1.0.0',
     description: 'A Coherent.js application',
     type: 'module',
-    main: 'src/index.js',
-    scripts: {
+    main: isTypeScript ? 'dist/index.js' : `src/index${fileExt}`,
+    scripts: isTypeScript ? {
+      dev: 'tsx watch src/index.ts',
+      build: 'tsc',
+      start: 'node dist/index.js',
+      typecheck: 'tsc --noEmit',
+      test: 'tsx tests/*.test.ts'
+    } : {
       dev: 'node src/index.js',
       build: 'coherent build',
       start: 'node src/index.js',
@@ -176,6 +199,13 @@ function generatePackageJson(name, options) {
       '@coherent.js/cli': '^1.0.0-beta.1'
     }
   };
+
+  // Add TypeScript dependencies
+  if (isTypeScript) {
+    const tsDeps = getTypeScriptDependencies();
+    Object.assign(base.devDependencies, tsDeps);
+    base.devDependencies.tsx = '^4.19.2'; // For running TypeScript files directly
+  }
 
   // Add packageManager field (Corepack standard)
   if (packageManager === 'pnpm') {
@@ -212,8 +242,51 @@ function generatePackageJson(name, options) {
 /**
  * Generate HomePage component
  */
-async function generateHomePageComponent(projectPath, name) {
-  const homePage = `/**
+async function generateHomePageComponent(projectPath, name, isTypeScript, fileExtension) {
+  const homePage = isTypeScript ? `/**
+ * HomePage Component
+ */
+interface HomePageProps {
+  title?: string;
+}
+
+export function HomePage(props: HomePageProps = {}): object {
+  const { title = 'Welcome to ${name}!' } = props;
+
+  return {
+    div: {
+      className: 'container',
+      children: [
+        { h1: { text: title } },
+        {
+          p: {
+            text: 'This is a Coherent.js application built with pure JavaScript objects.'
+          }
+        },
+        {
+          div: {
+            className: 'features',
+            children: [
+              { h2: { text: 'Features:' } },
+              {
+                ul: {
+                  children: [
+                    { li: { text: '⚡ Lightning fast SSR' } },
+                    { li: { text: '🎯 Pure JavaScript objects' } },
+                    { li: { text: '🔒 Built-in XSS protection' } },
+                    { li: { text: '📦 Minimal bundle size' } },
+                    { li: { text: '📘 TypeScript support' } }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  };
+}
+` : `/**
  * HomePage Component
  */
 export function HomePage(props = {}) {
@@ -253,10 +326,30 @@ export function HomePage(props = {}) {
 }
 `;
 
-  writeFileSync(join(projectPath, 'src/components/HomePage.js'), homePage);
+  writeFileSync(join(projectPath, `src/components/HomePage${fileExtension}`), homePage);
 
   // Simple Button component example
-  const buttonComponent = `/**
+  const buttonComponent = isTypeScript ? `/**
+ * Button Component
+ */
+interface ButtonProps {
+  text?: string;
+  onClick?: () => void;
+  className?: string;
+}
+
+export function Button(props: ButtonProps = {}): object {
+  const { text = 'Click me', onClick, className = '' } = props;
+
+  return {
+    button: {
+      className: \`btn \${className}\`,
+      onclick: onClick,
+      text
+    }
+  };
+}
+` : `/**
  * Button Component
  */
 export function Button(props = {}) {
@@ -272,7 +365,7 @@ export function Button(props = {}) {
 }
 `;
 
-  writeFileSync(join(projectPath, 'src/components/Button.js'), buttonComponent);
+  writeFileSync(join(projectPath, `src/components/Button${fileExtension}`), buttonComponent);
 }
 
 /**

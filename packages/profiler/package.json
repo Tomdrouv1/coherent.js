@@ -4,12 +4,19 @@
   "description": "Performance profiling and monitoring tools for Coherent.js applications",
   "type": "module",
   "main": "src/index.js",
+  "types": "./types/index.d.ts",
   "exports": {
     ".": "./src/index.js",
     "./profiler": "./src/profiler.js",
     "./server": "./src/server.js",
     "./dashboard": "./src/dashboard/index.js"
   },
+  "files": [
+    "src/",
+    "types/",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "node build.mjs",
     "test": "vitest",
