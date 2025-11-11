@@ -239,12 +239,13 @@ describe('Runtime Factory', () => {
       vi.stubGlobal('document', {});
       
       // Mock the dynamic import
-      vi.doMock('../src/runtimes/browser.js', () => ({
-        BrowserRuntime: vi.fn().mockImplementation(() => ({
-          createApp: vi.fn(),
-          renderApp: vi.fn()
-        }))
-      }));
+      const mockRuntime = {
+        createApp: vi.fn(),
+        renderApp: vi.fn()
+      };
+      
+      const browserModule = await import('../src/runtimes/browser.js');
+      vi.spyOn(browserModule, 'BrowserRuntime').mockImplementation(() => mockRuntime);
       
       const runtime = await createRuntime();
       expect(runtime).toBeDefined();
@@ -254,12 +255,13 @@ describe('Runtime Factory', () => {
       vi.stubGlobal('EdgeRuntime', {});
       
       // Mock the dynamic import
-      vi.doMock('../src/runtimes/edge.js', () => ({
-        EdgeRuntime: vi.fn().mockImplementation(() => ({
-          createApp: vi.fn(),
-          renderApp: vi.fn()
-        }))
-      }));
+      const mockRuntime = {
+        createApp: vi.fn(),
+        renderApp: vi.fn()
+      };
+      
+      const edgeModule = await import('../src/runtimes/edge.js');
+      vi.spyOn(edgeModule, 'EdgeRuntime').mockImplementation(() => mockRuntime);
       
       const runtime = await createRuntime();
       expect(runtime).toBeDefined();
@@ -267,12 +269,13 @@ describe('Runtime Factory', () => {
 
     it('should create static runtime when specified', async () => {
       // Mock the dynamic import
-      vi.doMock('../src/runtimes/static.js', () => ({
-        StaticRuntime: vi.fn().mockImplementation(() => ({
-          createApp: vi.fn(),
-          renderApp: vi.fn()
-        }))
-      }));
+      const mockRuntime = {
+        createApp: vi.fn(),
+        renderApp: vi.fn()
+      };
+      
+      const staticModule = await import('../src/runtimes/static.js');
+      vi.spyOn(staticModule, 'StaticRuntime').mockImplementation(() => mockRuntime);
       
       const runtime = await createRuntime({ 
         environment: RuntimeEnvironment.STATIC 
@@ -291,9 +294,8 @@ describe('Runtime Factory', () => {
       vi.stubGlobal('document', {});
       
       const MockBrowserRuntime = vi.fn();
-      vi.doMock('../src/runtimes/browser.js', () => ({
-        BrowserRuntime: MockBrowserRuntime
-      }));
+      const browserModule = await import('../src/runtimes/browser.js');
+      vi.spyOn(browserModule, 'BrowserRuntime').mockImplementation(MockBrowserRuntime);
       
       const options = { debug: true, customOption: 'test' };
       await createRuntime(options);
