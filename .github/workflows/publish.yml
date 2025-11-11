@@ -1,0 +1,74 @@
+name: Publish to NPM
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'NPM dist-tag (latest or beta)'
+        required: true
+        type: choice
+        options:
+          - beta
+          - latest
+        default: beta
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    name: Publish packages to NPM
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.20.0
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org/
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build all packages
+        run: pnpm run build
+
+      - name: Determine npm tag
+        id: npm-tag
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "tag=${{ inputs.tag }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event.release.prerelease }}" == "true" ]]; then
+            echo "tag=beta" >> $GITHUB_OUTPUT
+          else
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Publish to NPM
+        run: |
+          if [[ "${{ steps.npm-tag.outputs.tag }}" == "latest" ]]; then
+            pnpm publish -r --provenance --access public --no-git-checks
+          else
+            pnpm publish -r --provenance --access public --tag ${{ steps.npm-tag.outputs.tag }} --no-git-checks
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "✅ Published all packages to NPM with tag: ${{ steps.npm-tag.outputs.tag }}"
+          echo "📦 Packages published:"
+          ls -1 packages/*/package.json | xargs -I {} sh -c 'cat {} | grep -m1 "\"name\":" | cut -d\" -f4'

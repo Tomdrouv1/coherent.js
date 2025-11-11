@@ -1,0 +1,79 @@
+name: Deploy Website
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'website/**'
+      - 'packages/client/**'
+      - '.github/workflows/deploy-website.yml'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build and Deploy Website
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.20.0
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build website
+        run: pnpm run website:build
+
+      - name: Download coverage artifacts (if available)
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+          path: ./coverage-temp/
+        continue-on-error: true
+
+      - name: Copy coverage files to website
+        run: |
+          if [ -d "coverage-temp" ]; then
+            mkdir -p website/dist/coverage
+            cp -r coverage-temp/* website/dist/
+            echo "✅ Coverage files copied to website"
+          else
+            echo "⚠️  No coverage files found, creating placeholder badge"
+            mkdir -p website/dist/coverage
+            echo '{"schemaVersion": 1, "label": "coverage", "message": "N/A", "color": "lightgrey"}' > website/dist/coverage/badge.json
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: website/dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Print deployed URL
+        run: |
+          echo "🌐 Website deployed to: ${{ steps.deployment.outputs.page_url }}"
