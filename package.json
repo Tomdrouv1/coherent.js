@@ -138,19 +138,19 @@
     "@eslint/config-helpers": "0.3.1",
     "@eslint/core": "0.15.2",
     "@types/node": "^24.3.0",
-    "@vitest/coverage-v8": "3.2.4",
+    "@vitest/coverage-v8": "4.0.8",
     "chokidar": "4.0.3",
     "concurrently": "^9.2.1",
     "esbuild": "0.25.9",
     "eslint": "^9.34.0",
     "husky": "^9.1.7",
     "marked": "^16.2.1",
-    "next": "15.5.2",
+    "next": "16.0.1",
     "prettier": "^3.6.2",
     "react": "19.1.1",
     "react-dom": "19.1.1",
     "typescript": "^5.9.2",
-    "vitest": "^3.2.4",
+    "vitest": "^4.0.8",
     "ws": "8.18.3"
   },
   "pnpm": {
@@ -168,7 +168,9 @@
       "inflight": "npm:@humanfs/inflight@^1.0.0",
       "npmlog": "npm:proc-log@^5.0.0",
       "are-we-there-yet": "npm:proc-log@^5.0.0",
-      "gauge": "npm:proc-log@^5.0.0"
+      "gauge": "npm:proc-log@^5.0.0",
+      "tar-fs": ">=2.1.4",
+      "tmp": ">=0.2.4"
     }
   }
 }
