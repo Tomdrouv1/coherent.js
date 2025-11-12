@@ -3,6 +3,11 @@
  * Generates database configuration and setup files
  */
 
+import { getCLIVersion } from '../utils/version.js';
+
+// Get current CLI version automatically
+const cliVersion = getCLIVersion();
+
 /**
  * Generate database configuration file
  */
@@ -491,19 +496,19 @@ export function getDatabaseDependencies(dbType) {
   const deps = {
     postgres: {
       pg: '^8.12.0',
-      '@coherent.js/database': '^1.0.0-beta.2'
+      '@coherent.js/database': `^${cliVersion}`
     },
     mysql: {
       'mysql2': '^3.11.0',
-      '@coherent.js/database': '^1.0.0-beta.2'
+      '@coherent.js/database': `^${cliVersion}`
     },
     sqlite: {
       'better-sqlite3': '^11.3.0',
-      '@coherent.js/database': '^1.0.0-beta.2'
+      '@coherent.js/database': `^${cliVersion}`
     },
     mongodb: {
       mongodb: '^6.9.0',
-      '@coherent.js/database': '^1.0.0-beta.2'
+      '@coherent.js/database': `^${cliVersion}`
     }
   };
 

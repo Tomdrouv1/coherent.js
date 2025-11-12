@@ -3,6 +3,11 @@
  * Generates basic scaffolding for optional @coherent.js packages
  */
 
+import { getCLIVersion } from '../utils/version.js';
+
+// Get current CLI version automatically
+const cliVersion = getCLIVersion();
+
 /**
  * Generate @coherent.js/api scaffolding
  */
@@ -43,7 +48,7 @@ export default router;
   return {
     'src/api/routes.js': routes,
     dependencies: {
-      '@coherent.js/api': '^1.0.0-beta.2'
+      '@coherent.js/api': `^${cliVersion}`
     }
   };
 }
@@ -138,7 +143,7 @@ if (typeof window !== 'undefined') {
     'public/js/hydration.js': hydration,
     'src/components/InteractiveCounter.js': interactiveExample,
     dependencies: {
-      '@coherent.js/client': '^1.0.0-beta.2'
+      '@coherent.js/client': `^${cliVersion}`
     }
   };
 }
@@ -207,7 +212,7 @@ export const i18n = createI18n({
     'src/i18n/locales/fr.json': frLocale,
     'src/i18n/locales/es.json': esLocale,
     dependencies: {
-      '@coherent.js/i18n': '^1.0.0-beta.2'
+      '@coherent.js/i18n': `^${cliVersion}`
     }
   };
 }
@@ -270,7 +275,7 @@ export function ContactForm(props = {}) {
   return {
     'src/components/ContactForm.js': exampleForm,
     dependencies: {
-      '@coherent.js/forms': '^1.0.0-beta.2'
+      '@coherent.js/forms': `^${cliVersion}`
     }
   };
 }
@@ -303,7 +308,7 @@ export function initDevtools(app) {
   return {
     'src/utils/devtools.js': config,
     dependencies: {
-      '@coherent.js/devtools': '^1.0.0-beta.2'
+      '@coherent.js/devtools': `^${cliVersion}`
     }
   };
 }
@@ -357,7 +362,7 @@ export function getSitemap() {
   return {
     'src/utils/seo.js': metaHelper,
     dependencies: {
-      '@coherent.js/seo': '^1.0.0-beta.2'
+      '@coherent.js/seo': `^${cliVersion}`
     }
   };
 }
@@ -431,7 +436,7 @@ describe('HomePage', () => {
     'tests/helpers/testing.js': testHelper,
     'tests/components/HomePage.test.js': exampleTest,
     dependencies: {
-      '@coherent.js/testing': '^1.0.0-beta.2'
+      '@coherent.js/testing': `^${cliVersion}`
     }
   };
 }
