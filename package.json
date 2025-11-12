@@ -171,7 +171,8 @@
       "are-we-there-yet": "npm:proc-log@^5.0.0",
       "gauge": "npm:proc-log@^5.0.0",
       "tar-fs": ">=2.1.4",
-      "tmp": ">=0.2.4"
+      "tmp": ">=0.2.4",
+      "esbuild": ">=0.25.9"
     }
   }
 }

@@ -44,6 +44,33 @@ We recommend all users:
 - Follow secure coding practices when building applications
 - Review the security documentation in our guides
 
+## Known Dependency Vulnerabilities
+
+We continuously monitor our dependencies for security vulnerabilities. Below are currently known issues:
+
+### fast-redact (Low Severity) - Accepted Risk
+
+**Status**: No fix available
+**Severity**: Low
+**CVE**: [GHSA-ffrw-9mx8-89p8](https://github.com/advisories/GHSA-ffrw-9mx8-89p8)
+**Affected**: fast-redact <=3.5.0 (transitive dependency via fastify > pino > fast-redact)
+**Description**: Prototype pollution vulnerability in nestedRestore function
+**Impact**: Potential DoS when processing crafted payloads
+**Mitigation**:
+- Latest version (3.5.0) is still affected
+- No patched version available yet ("Patched versions: <0.0.0")
+- Risk is low as it requires crafted input to exploit
+- Fastify/Pino teams are aware and working on a solution
+- We will update as soon as a patched version is released
+
+**Why we accept this risk**:
+- Low severity (requires specific crafted input)
+- Server-side code with controlled inputs
+- No alternative available without removing Fastify support
+- Benefits of Fastify integration outweigh the low risk
+
+To exclude low-severity vulnerabilities from audits, we set `audit-level=moderate` in `.npmrc`.
+
 ## Contact
 
 For any security-related questions or concerns, please contact thomas.drouvin@gmail.com.
