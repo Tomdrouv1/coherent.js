@@ -491,19 +491,19 @@ export function getDatabaseDependencies(dbType) {
   const deps = {
     postgres: {
       pg: '^8.12.0',
-      '@coherent.js/database': '^1.0.1'
+      '@coherent.js/database': '^1.0.0-beta.2'
     },
     mysql: {
       'mysql2': '^3.11.0',
-      '@coherent.js/database': '^1.0.1'
+      '@coherent.js/database': '^1.0.0-beta.2'
     },
     sqlite: {
       'better-sqlite3': '^11.3.0',
-      '@coherent.js/database': '^1.0.1'
+      '@coherent.js/database': '^1.0.0-beta.2'
     },
     mongodb: {
       mongodb: '^6.9.0',
-      '@coherent.js/database': '^1.0.1'
+      '@coherent.js/database': '^1.0.0-beta.2'
     }
   };
 

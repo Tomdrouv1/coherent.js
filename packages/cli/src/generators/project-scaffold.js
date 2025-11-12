@@ -193,10 +193,10 @@ function generatePackageJson(name, options) {
       test: 'node --test tests/*.test.js'
     },
     dependencies: {
-      '@coherent.js/core': '^1.0.0-beta.1'
+      '@coherent.js/core': '^1.0.0-beta.2'
     },
     devDependencies: {
-      '@coherent.js/cli': '^1.0.0-beta.1'
+      '@coherent.js/cli': '^1.0.0-beta.2'
     }
   };
 

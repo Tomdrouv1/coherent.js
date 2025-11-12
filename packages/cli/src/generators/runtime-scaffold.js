@@ -258,20 +258,20 @@ export function getRuntimeDependencies(runtime) {
   const deps = {
     'built-in': {},
     express: {
-      express: '^4.18.2',
-      '@coherent.js/express': '1.0.0-beta.1'
+      express: '^4.19.2',
+      '@coherent.js/express': '^1.0.0-beta.2'
     },
     fastify: {
       fastify: '^4.28.1',
       '@fastify/static': '^7.0.4',
-      '@coherent.js/fastify': '1.0.0-beta.1'
+      '@coherent.js/fastify': '^1.0.0-beta.2'
     },
     koa: {
       koa: '^2.15.3',
       '@koa/router': '^13.0.1',
       'koa-body': '^6.0.1',
       'koa-static': '^5.0.0',
-      '@coherent.js/koa': '1.0.0-beta.1'
+      '@coherent.js/koa': '^1.0.0-beta.2'
     }
   };
 

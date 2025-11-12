@@ -43,7 +43,7 @@ export default router;
   return {
     'src/api/routes.js': routes,
     dependencies: {
-      '@coherent.js/api': '^1.0.0'
+      '@coherent.js/api': '^1.0.0-beta.2'
     }
   };
 }
@@ -138,7 +138,7 @@ if (typeof window !== 'undefined') {
     'public/js/hydration.js': hydration,
     'src/components/InteractiveCounter.js': interactiveExample,
     dependencies: {
-      '@coherent.js/client': '^1.0.0'
+      '@coherent.js/client': '^1.0.0-beta.2'
     }
   };
 }
@@ -207,7 +207,7 @@ export const i18n = createI18n({
     'src/i18n/locales/fr.json': frLocale,
     'src/i18n/locales/es.json': esLocale,
     dependencies: {
-      '@coherent.js/i18n': '^1.0.0'
+      '@coherent.js/i18n': '^1.0.0-beta.2'
     }
   };
 }
@@ -270,7 +270,7 @@ export function ContactForm(props = {}) {
   return {
     'src/components/ContactForm.js': exampleForm,
     dependencies: {
-      '@coherent.js/forms': '^1.0.0'
+      '@coherent.js/forms': '^1.0.0-beta.2'
     }
   };
 }
@@ -303,7 +303,7 @@ export function initDevtools(app) {
   return {
     'src/utils/devtools.js': config,
     dependencies: {
-      '@coherent.js/devtools': '^1.0.0'
+      '@coherent.js/devtools': '^1.0.0-beta.2'
     }
   };
 }
@@ -357,7 +357,7 @@ export function getSitemap() {
   return {
     'src/utils/seo.js': metaHelper,
     dependencies: {
-      '@coherent.js/seo': '^1.0.0'
+      '@coherent.js/seo': '^1.0.0-beta.2'
     }
   };
 }
@@ -431,7 +431,7 @@ describe('HomePage', () => {
     'tests/helpers/testing.js': testHelper,
     'tests/components/HomePage.test.js': exampleTest,
     dependencies: {
-      '@coherent.js/testing': '^1.0.0'
+      '@coherent.js/testing': '^1.0.0-beta.2'
     }
   };
 }
