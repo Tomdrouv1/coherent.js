@@ -5,11 +5,15 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { execSync } from 'node:child_process';
+import { getCLIVersion } from '../utils/version.js';
 import { generateServerFile, getRuntimeDependencies } from './runtime-scaffold.js';
 import { generateDatabaseScaffolding } from './database-scaffold.js';
 import { generateAuthScaffolding } from './auth-scaffold.js';
 import { generatePackageScaffolding } from './package-scaffold.js';
 import { generateTsConfig, generateJsConfig, getTypeScriptDependencies } from './typescript-config.js';
+
+// Get current CLI version automatically
+const cliVersion = getCLIVersion();
 
 /**
  * Scaffold a new Coherent.js project
@@ -193,10 +197,10 @@ function generatePackageJson(name, options) {
       test: 'node --test tests/*.test.js'
     },
     dependencies: {
-      '@coherent.js/core': '^1.0.0-beta.2'
+      '@coherent.js/core': `^${cliVersion}`
     },
     devDependencies: {
-      '@coherent.js/cli': '^1.0.0-beta.2'
+      '@coherent.js/cli': `^${cliVersion}`
     }
   };
 
