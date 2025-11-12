@@ -160,7 +160,8 @@
       ]
     },
     "onlyBuiltDependencies": [
-      "esbuild"
+      "esbuild",
+      "sharp"
     ],
     "overrides": {
       "glob@<8": ">=10.0.0",
