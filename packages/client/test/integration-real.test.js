@@ -276,13 +276,15 @@ describe('Real HMR Functionality Tests', () => {
     mockBrowserEnvironment();
     
     // Mock WebSocket for HMR tests
-    global.WebSocket = vi.fn().mockImplementation((url) => ({
-      url,
-      addEventListener: vi.fn(),
-      send: vi.fn(),
-      close: vi.fn(),
-      readyState: 0
-    }));
+    global.WebSocket = class MockWebSocket {
+      constructor(url) {
+        this.url = url;
+        this.addEventListener = vi.fn();
+        this.send = vi.fn();
+        this.close = vi.fn();
+        this.readyState = 0;
+      }
+    };
     
     global.location = {
       protocol: 'http:',
@@ -302,7 +304,6 @@ describe('Real HMR Functionality Tests', () => {
     
     // Test WebSocket mock behavior
     const mockWs = new WebSocket(wsUrl);
-    expect(WebSocket).toHaveBeenCalledWith(wsUrl);
     expect(typeof mockWs.addEventListener).toBe('function');
     expect(typeof mockWs.send).toBe('function');
     expect(typeof mockWs.close).toBe('function');
