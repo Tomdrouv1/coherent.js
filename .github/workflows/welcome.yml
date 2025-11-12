@@ -43,19 +43,21 @@ jobs:
             const isFirstPR = result.repository.pullRequests.totalCount === 0;
             
             if (isFirstIssue || isFirstPR) {
-              const comment = `Hello @${user}! 👋
+              const comment = [
+                `Hello @${user}! 👋`,
+                '',
+                'Thank you for your first contribution to Coherent.js! 🎉',
+                '',
+                "We're excited to have you as part of our community. Here are a few things that might help you get started:",
+                '',
+                '- Make sure to check out our [Contributing Guide](https://github.com/Tomdrouv1/coherent.js/blob/main/CONTRIBUTING.md)',
+                '- If you have not already, please review our [Code of Conduct](https://github.com/Tomdrouv1/coherent.js/blob/main/CODE_OF_CONDUCT.md)',
+                '- For help, feel free to ask questions in [Discussions](https://github.com/Tomdrouv1/coherent.js/discussions)',
+                '- Check out our [Support Guide](https://github.com/Tomdrouv1/coherent.js/blob/main/SUPPORT.md) if you need assistance',
+                '',
+                'A maintainer will review your contribution soon. Thanks again for helping to make Coherent.js better! 🚀'
+              ].join('\n');
 
-Thank you for your first contribution to Coherent.js! 🎉
-
-We're excited to have you as part of our community. Here are a few things that might help you get started:
-
-- Make sure to check out our [Contributing Guide](https://github.com/Tomdrouv1/coherent.js/blob/main/CONTRIBUTING.md)
-- If you haven't already, please review our [Code of Conduct](https://github.com/Tomdrouv1/coherent.js/blob/main/CODE_OF_CONDUCT.md)
-- For help, feel free to ask questions in [Discussions](https://github.com/Tomdrouv1/coherent.js/discussions)
-- Check out our [Support Guide](https://github.com/Tomdrouv1/coherent.js/blob/main/SUPPORT.md) if you need assistance
-
-A maintainer will review your contribution soon. Thanks again for helping to make Coherent.js better! 🚀`;
-              
               await github.rest.issues.createComment({
                 issue_number: issue.number,
                 owner: context.repo.owner,
