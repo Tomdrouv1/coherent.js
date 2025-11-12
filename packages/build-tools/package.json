@@ -1,6 +1,6 @@
 {
   "name": "@coherent.js/build-tools",
-  "version": "1.0.0-beta.2",
+  "version": "1.0.0-beta.3",
   "description": "Build tools and bundler integrations for Coherent.js (Vite, Webpack, Rollup)",
   "type": "module",
   "main": "src/index.js",
