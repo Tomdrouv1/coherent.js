@@ -46,7 +46,7 @@ jobs:
 
       - name: Check for moderate+ vulnerabilities
         run: |
-          AUDIT_JSON=$(pnpm audit --json)
+          AUDIT_JSON=$(pnpm audit --json 2>&1 || true)
           MODERATE=$(echo "$AUDIT_JSON" | jq -r '.metadata.vulnerabilities.moderate // 0')
           HIGH=$(echo "$AUDIT_JSON" | jq -r '.metadata.vulnerabilities.high // 0')
           CRITICAL=$(echo "$AUDIT_JSON" | jq -r '.metadata.vulnerabilities.critical // 0')
