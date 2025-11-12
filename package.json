@@ -129,27 +129,27 @@
     }
   },
   "devDependencies": {
-    "@changesets/cli": "^2.29.6",
+    "@changesets/cli": "^2.29.7",
     "@commitlint/cli": "19.8.1",
     "@commitlint/config-conventional": "19.8.1",
-    "@eslint-community/eslint-utils": "4.7.0",
-    "@eslint-community/regexpp": "4.12.1",
-    "@eslint/config-array": "0.21.0",
-    "@eslint/config-helpers": "0.3.1",
-    "@eslint/core": "0.15.2",
-    "@types/node": "^24.3.0",
+    "@eslint-community/eslint-utils": "4.9.0",
+    "@eslint-community/regexpp": "4.12.2",
+    "@eslint/config-array": "0.21.1",
+    "@eslint/config-helpers": "0.4.2",
+    "@eslint/core": "0.17.0",
+    "@types/node": "^24.10.1",
     "@vitest/coverage-v8": "4.0.8",
     "chokidar": "4.0.3",
     "concurrently": "^9.2.1",
-    "esbuild": "0.25.9",
-    "eslint": "^9.34.0",
+    "esbuild": "0.27.0",
+    "eslint": "^9.39.1",
     "husky": "^9.1.7",
-    "marked": "^16.2.1",
+    "marked": "^16.4.2",
     "next": "16.0.1",
     "prettier": "^3.6.2",
-    "react": "19.1.1",
-    "react-dom": "19.1.1",
-    "typescript": "^5.9.2",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "typescript": "^5.9.3",
     "vitest": "^4.0.8",
     "ws": "8.18.3"
   },
@@ -171,7 +171,8 @@
       "are-we-there-yet": "npm:proc-log@^5.0.0",
       "gauge": "npm:proc-log@^5.0.0",
       "tar-fs": ">=2.1.4",
-      "tmp": ">=0.2.4"
+      "tmp": ">=0.2.4",
+      "esbuild": ">=0.25.9"
     }
   }
 }

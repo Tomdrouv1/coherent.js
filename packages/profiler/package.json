@@ -31,9 +31,6 @@
   ],
   "author": "Coherent.js Team",
   "license": "MIT",
-  "dependencies": {
-    "@coherent.js/core": "workspace:*"
-  },
   "devDependencies": {
     "vitest": "^3.2.4"
   },
