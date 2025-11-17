@@ -8,16 +8,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Version Timeline
 
 ```
-📅 2025-11-03  →  v1.0.0-beta.1  (CURRENT)
+📅 2025-11-03  →  v1.0.0-beta.1  (RELEASED)
                    ├─ Fresh start with clean npm registry
                    ├─ All 20 packages synchronized
                    └─ Beta release for community feedback
+
+📅 2025-11-10  →  v1.0.0-beta.2  (RELEASED)
+                   ├─ Package reorganization
+                   ├─ New @coherent.js/state package
+                   ├─ Enhanced router and forms
+                   └─ Improved documentation
+
+📅 2025-11-12  →  v1.0.0-beta.3  (CURRENT)
+                   ├─ Documentation refactor
+                   ├─ Scaffold fixes
+                   ├─ API router fixes
+                   └─ Missing package READMEs
 
 📅 Future      →  v1.0.0         (PLANNED)
                    └─ First stable release
 ```
 
 ## [Unreleased]
+
+## [1.0.0-beta.3] - 2025-11-17
+
+### Fixed
+- **API Router Issues**: Resolved critical bugs in @coherent.js/api router
+  - Fixed double slash generation in route compilation
+  - Fixed character class escaping that broke regex patterns
+  - Improved parameter handling logic for complex routes
+
+- **Documentation System**: Comprehensive documentation refactor and cleanup
+  - Reorganized documentation into clean, logical structure
+  - Removed unnecessary status/log files
+  - Fixed all package name references (@coherent.js/*)
+  - Created missing README files for all packages
+
+- **Package Completeness**: Added missing package documentation
+  - `@coherent.js/forms` - Forms handling and validation
+  - `@coherent.js/koa` - Koa.js adapter
+  - `@coherent.js/nextjs` - Next.js integration
+  - `@coherent.js/performance` - Performance monitoring
+  - `@coherent.js/seo` - SEO optimization tools
+
+## [1.0.0-beta.2] - 2025-11-10
 
 ### Changed
 - **Package Reorganization**: Major restructuring for better separation of concerns
@@ -50,18 +85,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Documentation** - Comprehensive guides for new packages
   - [Reactive State Guide](/docs/components/reactive-state.md) - Complete @coherent.js/state documentation
   - [Client Router Guide](/docs/client-side/client-router.md) - Router with prefetching & transitions
-  - [Migration Guide](/docs/PACKAGE_REORGANIZATION_MIGRATION.md) - Upgrade guide for v1.0.0-beta.2
+  - [Package Reorganization Migration Guide](/docs/PACKAGE_REORGANIZATION_MIGRATION.md) - Upgrade guide for v1.0.0-beta.2
   - Updated DOCS_INDEX.md with new documentation
 
 - **Examples** - New demonstration files
   - `state-management-demo.js` - Comprehensive @coherent.js/state examples
   - `client-router-demo.js` - Client-side routing with all features
-
-### Planned for v1.0.0 Stable
-- Production-ready stability improvements
-- Comprehensive test coverage (>95%)
-- Performance benchmarks against other frameworks
-- Migration tools from React/Vue
 
 ## [1.0.0-beta.1] - 2025-11-03
 

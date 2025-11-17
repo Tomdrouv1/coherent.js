@@ -1214,25 +1214,40 @@ class SimpleRouter {
     }
 
     // Handle parameters with constraints and optional parameters
-    regexPattern = regexPattern.replace(/:([^(/]+)(\([^)]+\))?(\?)?/g, (match, paramName, constraint, optional) => {
+    regexPattern = regexPattern.replace(/:([^(/]+)(\([^)]+\))?(\?)?/g, (match, paramName, constraint, optional, offset, fullString) => {
       paramNames.push(paramName);
       
-      if (constraint) {
-        // Use the constraint pattern directly
-        const constraintPattern = constraint.slice(1, -1); // Remove parentheses
-        return optional ? `(?:/(?:${constraintPattern}))?` : `/(${constraintPattern})`;
+      // Check if there's already a slash before this parameter in the full string
+      const hasPrecedingSlash = offset > 0 && fullString[offset - 1] === '/';
+      
+      // NEW_FIX_DEBUG: This is our fix for double slashes
+      if (hasPrecedingSlash) {
+        // When there's already a slash, don't add another one
+        if (constraint) {
+          const constraintPattern = constraint.slice(1, -1);
+          return optional ? `(?:/(?:${constraintPattern}))?` : `(${constraintPattern})`;
+        } else {
+          return optional ? `(?:([^/]+))?` : `([^/]+)`;
+        }
       } else {
-        // Default parameter pattern
-        return optional ? '(?:/([^/]+))?' : '/([^/]+)';
+        // When there's no preceding slash, add one
+        if (constraint) {
+          const constraintPattern = constraint.slice(1, -1);
+          return optional ? `(?:/(?:${constraintPattern}))?` : `/${constraintPattern}`;
+        } else {
+          return optional ? `(?:/([^/]+))?` : `/([^/]+)`;
+        }
       }
     });
 
     // Escape special regex characters except those we want to keep
-    regexPattern = regexPattern
-      .replace(/[.+?^${}|[\]\\]/g, '\\$&')
-      .replace(/\\\(/g, '(')
-      .replace(/\\\)/g, ')')
-      .replace(/\\\?/g, '?');
+    // Be careful not to break character classes like [^/]
+    // Strategy: Escape everything first, then fix character classes
+    regexPattern = regexPattern.replace(/([.+?^${}|\\[\]()]])/g, '\\$1');
+    // Now fix character classes - look for escaped character classes and unescape them
+    regexPattern = regexPattern.replace(/\\\[/g, '[')      // [ becomes [
+                           .replace(/\\\]/g, ']')       // ] becomes ]
+                           .replace(/\\\^/g, '^');      // ^ becomes ^ (only when inside [])
 
     // Ensure exact match
     regexPattern = `^${regexPattern}$`;

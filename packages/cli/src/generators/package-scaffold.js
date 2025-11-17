@@ -42,6 +42,73 @@ router.post('/users', {
   }
 });
 
+// Handler for GET /api/users/:id
+export async function getUsersByIdHandler(req, res) {
+  try {
+    // Extract ID from URL parameters
+    const { id } = req.params;
+    
+    // Call the original handler
+    const result = await router.handle('GET', '/users/:id', { params: { id } }, {});
+    
+    // Send JSON response
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(result));
+  } catch (error) {
+    console.error('API Error:', error);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Internal server error' }));
+  }
+}
+
+// Handler for POST /api/users
+export async function postUsersHandler(req, res) {
+  try {
+    // Parse JSON body
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+    
+    req.on('end', async () => {
+      try {
+        const parsedBody = JSON.parse(body);
+        
+        // Call the original handler
+        const result = await router.handle('POST', '/users', { body: parsedBody }, {});
+        
+        // Send JSON response
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(result));
+      } catch (error) {
+        console.error('API Error:', error);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Internal server error' }));
+      }
+    });
+  } catch (error) {
+    console.error('API Error:', error);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Internal server error' }));
+  }
+}
+
+// For built-in HTTP server compatibility
+export function setupRoutes() {
+  return [
+    {
+      path: '/api/users/:id',
+      method: 'GET',
+      handler: getUsersByIdHandler
+    },
+    {
+      path: '/api/users',
+      method: 'POST',
+      handler: postUsersHandler
+    }
+  ];
+}
+
 export default router;
 `;
 

@@ -384,6 +384,158 @@ router.get('/me', authMiddleware, async (req, res) => {
 
 export default router;
 `,
+    'built-in': `
+// Auth routes for built-in HTTP server
+import { generateToken, verifyToken } from '../middleware/auth.js';
+import { UserModel } from '../db/models/User.js';
+
+// Register handler
+export async function registerHandler(req, res) {
+  try {
+    // Parse JSON body
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+    
+    req.on('end', async () => {
+      try {
+        const { email, name, password } = JSON.parse(body);
+
+        // Validate input
+        if (!email || !name || !password) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'Missing required fields' }));
+        }
+
+        // Check if user exists
+        const existingUser = await UserModel.findByEmail(email);
+        if (existingUser) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'User already exists' }));
+        }
+
+        // Create user (you should hash the password!)
+        const user = await UserModel.create({ email, name });
+
+        // Generate token
+        const token = generateToken({ id: user.id, email: user.email });
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ user: { id: user.id, email: user.email, name: user.name }, token }));
+      } catch (error) {
+        console.error('Register error:', error);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Registration failed' }));
+      }
+    });
+  } catch (error) {
+    console.error('Register error:', error);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Registration failed' }));
+  }
+}
+
+// Login handler
+export async function loginHandler(req, res) {
+  try {
+    // Parse JSON body
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+    
+    req.on('end', async () => {
+      try {
+        const { email, password } = JSON.parse(body);
+
+        // Validate input
+        if (!email || !password) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'Missing required fields' }));
+        }
+
+        // Find user
+        const user = await UserModel.findByEmail(email);
+        if (!user) {
+          res.writeHead(401, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'Invalid credentials' }));
+        }
+
+        // Verify password (you should implement proper password checking!)
+
+        // Generate token
+        const token = generateToken({ id: user.id, email: user.email });
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ user: { id: user.id, email: user.email, name: user.name }, token }));
+      } catch (error) {
+        console.error('Login error:', error);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Login failed' }));
+      }
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Login failed' }));
+  }
+}
+
+// Get current user handler
+export async function meHandler(req, res) {
+  try {
+    // Verify token from Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: 'No token provided' }));
+    }
+
+    const token = authHeader.substring(7);
+    const decoded = verifyToken(token);
+
+    if (!decoded) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: 'Invalid or expired token' }));
+    }
+
+    const user = await UserModel.findById(decoded.id);
+    if (!user) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: 'User not found' }));
+    }
+    
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ user: { id: user.id, email: user.email, name: user.name } }));
+  } catch (error) {
+    console.error('Get user error:', error);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Failed to get user' }));
+  }
+}
+
+// For built-in HTTP server compatibility
+export function setupAuthRoutes() {
+  return [
+    {
+      path: '/api/auth/register',
+      method: 'POST',
+      handler: registerHandler
+    },
+    {
+      path: '/api/auth/login',
+      method: 'POST',
+      handler: loginHandler
+    },
+    {
+      path: '/api/auth/me',
+      method: 'GET',
+      handler: meHandler
+    }
+  ];
+}
+`,
     fastify: `
 import { generateToken } from '../plugins/auth.js';
 import { UserModel } from '../db/models/User.js';

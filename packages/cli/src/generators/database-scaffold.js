@@ -241,7 +241,7 @@ process.on('SIGINT', async () => {
 export function generateExampleModel(dbType) {
   const models = {
     postgres: `
-import { getDatabase } from './index.js';
+import { getDatabase } from '../index.js';
 
 export class UserModel {
   static async createTable() {
@@ -294,7 +294,7 @@ export class UserModel {
 }
 `,
     mysql: `
-import { getDatabase } from './index.js';
+import { getDatabase } from '../index.js';
 
 export class UserModel {
   static async createTable() {
@@ -347,7 +347,7 @@ export class UserModel {
 }
 `,
     sqlite: `
-import { getDatabase } from './index.js';
+import { getDatabase } from '../index.js';
 
 export class UserModel {
   static createTable() {
@@ -397,7 +397,7 @@ export class UserModel {
 }
 `,
     mongodb: `
-import { getDatabase } from './index.js';
+import { getDatabase } from '../index.js';
 
 export class UserModel {
   static collectionName = 'users';

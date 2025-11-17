@@ -241,8 +241,8 @@ npm run dev
 
 - 📖 [Full API Reference](../api-reference.md)
 - 🎯 [Examples Browser](../../examples/)
-- 🐛 [GitHub Issues](https://github.com/coherent-js/coherent/issues)
-- 💬 [Discussions](https://github.com/coherent-js/coherent/discussions)
+- 🐛 [GitHub Issues](https://github.com/@coherent.js/core/coherent/issues)
+- 💬 [Discussions](https://github.com/@coherent.js/core/coherent/discussions)
 
 ---
 

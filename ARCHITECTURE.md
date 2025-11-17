@@ -527,25 +527,9 @@ const html = render(component, {
 2. **"Element is already hydrated"** - Check for duplicate hydration calls
 3. **State not updating** - Verify you're using `setState` from `stateUtils`
 
-## Contributing
-
-When contributing to Coherent.js architecture:
-
-1. **Follow DRY principles** - Use shared utilities instead of duplicating code
-2. **Maintain backward compatibility** - Don't break existing APIs
-3. **Add tests** - All new features must have tests
-4. **Update documentation** - Keep this file and README.md in sync
-5. **Performance first** - Profile changes and avoid regressions
-
-## Version History
-
-- **v1.0.0** - Initial release with core rendering
-- **v1.1.0** - Added advanced state management, consolidated rendering utilities
-- **v1.1.1** - Fixed DRY violations, improved documentation
-
 ---
 
 For more information, see:
 - [README.md](README.md) - Getting started guide
-- [API Reference](docs/api-reference.md) - Complete API documentation
+- [API Reference](https://github.com/Tomdrouv1/coherent.js/tree/main/docs/api-reference.md) - Complete API documentation
 - [Migration Guide](docs/migration-guide.md) - Upgrading between versions

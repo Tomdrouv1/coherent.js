@@ -385,16 +385,16 @@ A Coherent.js application built with pure JavaScript objects.
 
 \`\`\`bash
 # Install dependencies
-npm install
+pnpm install
 
 # Start development server
-npm run dev
+pnpm run dev
 
 # Build for production
-npm run build
+pnpm run build
 
 # Run tests
-npm test
+pnpm test
 \`\`\`
 
 ## Project Structure
@@ -413,7 +413,7 @@ tests/           # Test files
 ## Learn More
 
 - [Coherent.js Documentation](https://github.com/Tomdrouv1/coherent.js)
-- [API Reference](https://github.com/Tomdrouv1/coherent.js/docs/api-reference.md)
+- [API Reference](https://github.com/Tomdrouv1/coherent.js/tree/main/docs/api-reference.md)
 
 ## License
 

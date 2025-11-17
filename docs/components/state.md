@@ -719,7 +719,7 @@ const PersistentState = withState({
 ### Unit Testing
 
 ```javascript
-import { render } from 'coherent-js';
+import { render } from '@coherent.js/core';
 
 // Test initial render
 test('renders with initial state', () => {

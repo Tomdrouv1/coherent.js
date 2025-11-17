@@ -5,7 +5,7 @@ Need help with Coherent.js? Here are some resources to help you out.
 ## Documentation
 
 - [README](README.md) - Get started with Coherent.js
-- [API Reference](docs/api-reference.md) - Complete documentation of all Coherent.js APIs
+- [API Reference](https://github.com/Tomdrouv1/coherent.js/tree/main/docs/api-reference.md) - Complete documentation of all Coherent.js APIs
 - [Migration Guide](docs/migration-guide.md) - Instructions for migrating from other frameworks
 - [Examples](examples/) - Practical examples demonstrating various features
 

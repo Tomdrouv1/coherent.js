@@ -12,7 +12,7 @@ const cliVersion = getCLIVersion();
  * Generate built-in HTTP server setup
  */
 export function generateBuiltInServer(options = {}) {
-  const { port = 3000, hasApi = false, hasDatabase = false } = options;
+  const { port = 3000, hasApi = false, hasDatabase = false, hasAuth = false } = options;
 
   const imports = [
     `import http from 'http';`,
@@ -21,6 +21,7 @@ export function generateBuiltInServer(options = {}) {
 
   if (hasApi) imports.push(`import { setupRoutes } from './api/routes.js';`);
   if (hasDatabase) imports.push(`import { initDatabase } from './db/index.js';`);
+  if (hasAuth) imports.push(`import { setupAuthRoutes } from './api/auth.js';`);
 
   const server = `
 ${imports.join('\n')}
@@ -32,15 +33,21 @@ ${hasDatabase ? `// Initialize database
 await initDatabase();
 ` : ''}${hasApi ? `// Setup API routes
 const apiRoutes = setupRoutes();
+` : ''}${hasAuth ? `// Setup auth routes
+const authRoutes = setupAuthRoutes();
 ` : ''}
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, \`http://\${req.headers.host}\`);
 
-${hasApi ? `  // Handle API routes
+${hasApi || hasAuth ? `  // Handle API routes
   if (url.pathname.startsWith('/api')) {
-    const route = apiRoutes.find(r => r.path === url.pathname && r.method === req.method);
-    if (route) {
-      return route.handler(req, res);
+    const allRoutes = [...${hasApi ? 'apiRoutes' : '[]'}, ...${hasAuth ? 'authRoutes' : '[]'}];
+    for (const route of allRoutes) {
+      const match = matchRoute(route.path, url.pathname, req.method, route.method);
+      if (match) {
+        req.params = match.params;
+        return route.handler(req, res);
+      }
     }
   }
 
@@ -72,6 +79,42 @@ ${hasApi ? `  // Handle API routes
     res.end('Internal Server Error');
   }
 });
+
+// Route matching helper
+function matchRoute(routePattern, urlPath, requestMethod, routeMethod) {
+  // Check HTTP method
+  if (requestMethod !== routeMethod) {
+    return null;
+  }
+  
+  // Split paths into segments
+  const routeSegments = routePattern.split('/').filter(Boolean);
+  const urlSegments = urlPath.split('/').filter(Boolean);
+  
+  // Check if lengths match
+  if (routeSegments.length !== urlSegments.length) {
+    return null;
+  }
+  
+  const params = {};
+  
+  // Match each segment
+  for (let i = 0; i < routeSegments.length; i++) {
+    const routeSegment = routeSegments[i];
+    const urlSegment = urlSegments[i];
+    
+    // Check for parameter (e.g., :id)
+    if (routeSegment.startsWith(':')) {
+      const paramName = routeSegment.substring(1);
+      params[paramName] = urlSegment;
+    } else if (routeSegment !== urlSegment) {
+      // Literal segment doesn't match
+      return null;
+    }
+  }
+  
+  return { params };
+}
 
 server.listen(PORT, () => {
   console.log(\`Server running at http://localhost:\${PORT}\`);

@@ -631,7 +631,7 @@ const ProductPage = ({ product }) => ({
 ### Sitemap Generation
 
 ```javascript
-import { createQuery, executeQuery, createDatabaseManager } from 'coherent-js';
+import { createQuery, executeQuery, createDatabaseManager } from '@coherent.js/core';
 
 const db = createDatabaseManager({ type: 'postgresql', database: 'mysite' });
 

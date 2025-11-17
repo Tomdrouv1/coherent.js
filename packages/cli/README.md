@@ -6,7 +6,7 @@ Command-line interface for Coherent.js projects. Scaffold new applications, gene
 
 ```bash
 # Install globally
-npm install -g @coherent.js/cli
+pnpm add -g @coherent.js/cli
 
 # Create a new project
 coherent create my-app
@@ -23,24 +23,16 @@ coherent dev
 ### Global Installation (Recommended)
 
 ```bash
-npm install -g @coherent.js/cli
-# or
-yarn global add @coherent.js/cli
-# or  
 pnpm add -g @coherent.js/cli
 ```
 
 ### Local Installation
 
 ```bash
-npm install --save-dev @coherent.js/cli
-# or
-yarn add --dev @coherent.js/cli
-# or
 pnpm add -D @coherent.js/cli
 
-# Use with npx
-npx coherent create my-app
+# Use with pnpm
+pnpm exec coherent create my-app
 ```
 
 ## 🛠️ Commands
@@ -381,7 +373,7 @@ test('Button renders correctly', () => {
 
 Run tests with:
 ```bash
-npm test
+pnpm test
 # or if using the CLI
 coherent test
 ```

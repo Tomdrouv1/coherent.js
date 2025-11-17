@@ -404,7 +404,7 @@ module.exports = {
           chunks: 'all',
         },
         coherent: {
-          test: /coherent-js/,
+          test: /@coherent.js/core/,
           name: 'coherent',
           chunks: 'all',
         }
@@ -415,7 +415,7 @@ module.exports = {
   },
   resolve: {
     alias: {
-      'coherent-js': 'coherent-js/dist/coherent.min.js'
+      '@coherent.js/core': '@coherent.js/core/dist/coherent.min.js'
     }
   }
 };

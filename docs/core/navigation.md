@@ -11,6 +11,7 @@ Start here to get up and running quickly:
 - **[Quick Start](getting-started.md)** - 5-minute setup guide
 - **[Installation](getting-started/installation.md)** - Detailed setup
 - **[Migration Guide](migration-guide.md)** - Coming from other frameworks
+- **[Package Reorganization Migration Guide](PACKAGE_REORGANIZATION_MIGRATION.md)** - Upgrading to v1.0.0-beta.2
 
 ### 🧩 **Building Components**
 Learn to build powerful, maintainable components:
