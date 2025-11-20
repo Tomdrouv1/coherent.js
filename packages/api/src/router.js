@@ -1,10 +1,10 @@
 /**
  * Object-based Router for Coherent.js API framework
  * Pure object-oriented approach to backend API routing
- * 
+ *
  * @fileoverview Transforms nested JavaScript objects into API routes with
  * middleware, validation, and _error handling support.
- * 
+ *
  * @author Coherent.js Team
  * @version 1.0.0
  */
@@ -32,10 +32,10 @@ function parseBody(req, maxSize = 1024 * 1024) { // 1MB limit
       resolve({});
       return;
     }
-    
+
     let body = '';
     let size = 0;
-    
+
     req.on('data', chunk => {
       size += chunk.length;
       if (size > maxSize) {
@@ -44,7 +44,7 @@ function parseBody(req, maxSize = 1024 * 1024) { // 1MB limit
       }
       body += chunk.toString();
     });
-    
+
     req.on('end', () => {
       try {
         const contentType = req.headers['content-type'] || '';
@@ -59,7 +59,7 @@ function parseBody(req, maxSize = 1024 * 1024) { // 1MB limit
         reject(new Error('Invalid JSON body'));
       }
     });
-    
+
     req.on('_error', reject);
   });
 }
@@ -70,12 +70,12 @@ function parseBody(req, maxSize = 1024 * 1024) { // 1MB limit
  */
 function sanitizeInput(obj) {
   if (typeof obj !== 'object' || obj === null) return obj;
-  
+
   const sanitized = {};
   for (const [key, value] of Object.entries(obj)) {
     // Remove potentially dangerous keys
     if (key.startsWith('__') || key.includes('prototype')) continue;
-    
+
     if (typeof value === 'string') {
       // Basic XSS prevention
       sanitized[key] = value.replace(/<script[^>]*>.*?<\/script>/gi, '')
@@ -107,24 +107,24 @@ const rateLimitStore = new Map();
 function checkRateLimit(ip, windowMs = 60000, maxRequests = 100) {
   const now = Date.now();
   const key = ip;
-  
+
   if (!rateLimitStore.has(key)) {
     rateLimitStore.set(key, { count: 1, resetTime: now + windowMs });
     return true;
   }
-  
+
   const record = rateLimitStore.get(key);
-  
+
   if (now > record.resetTime) {
     record.count = 1;
     record.resetTime = now + windowMs;
     return true;
   }
-  
+
   if (record.count >= maxRequests) {
     return false;
   }
-  
+
   record.count++;
   return true;
 }
@@ -142,7 +142,7 @@ function addSecurityHeaders(res, corsOrigin = null) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
-  
+
   // Security headers
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
@@ -166,30 +166,30 @@ function extractParams(pattern, path) {
   const patternParts = pattern.split('/');
   const pathParts = path.split('/');
   const params = {};
-  
+
   // Handle wildcard patterns that can match different lengths
   const hasMultiWildcard = patternParts.includes('**');
   const hasSingleWildcard = patternParts.includes('*');
-  
+
   if (!hasMultiWildcard && !hasSingleWildcard && patternParts.length !== pathParts.length) {
     return null;
   }
-  
+
   for (let i = 0; i < patternParts.length; i++) {
     const patternPart = patternParts[i];
     const pathPart = pathParts[i];
-    
+
     if (patternPart.startsWith(':')) {
       // Parse parameter with optional constraint: :name(regex) or :name?
       const match = patternPart.match(/^:([^(]+)(\(([^)]+)\))?(\?)?$/);
       if (match) {
         const [, paramName, , constraint, optional] = match;
-        
+
         // Check if parameter is optional and path part is missing
         if (optional && !pathPart) {
           continue;
         }
-        
+
         // Apply constraint if present
         if (constraint) {
           const regex = new RegExp(`^${constraint}$`);
@@ -197,7 +197,7 @@ function extractParams(pattern, path) {
             return null; // Constraint failed
           }
         }
-        
+
         params[paramName] = pathPart;
       } else {
         // Fallback to simple parameter
@@ -214,14 +214,14 @@ function extractParams(pattern, path) {
       return null;
     }
   }
-  
+
   return params;
 }
 
 
 /**
  * Transforms nested route objects into registered API routes
- * 
+ *
  * @param {Object} routeObj - Route definition object
  * @param {Object} router - Router instance
  * @param {string} basePath - Current path prefix
@@ -255,7 +255,7 @@ function processRoutes(routeObj, router, basePath = '') {
 
 /**
  * Registers a single route with middleware chain
- * 
+ *
  * @param {string} method - HTTP method
  * @param {Object} config - Route configuration
  * @param {Object} router - Router instance
@@ -313,7 +313,7 @@ function registerRoute(method, config, router, path) {
           break;
         }
       }
-      
+
       if (result && typeof result === 'object') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(result));
@@ -331,11 +331,11 @@ function registerRoute(method, config, router, path) {
 
 /**
  * Simple router implementation for object-based routing with WebSocket support
- * 
+ *
  * @class SimpleRouter
  * @description Provides HTTP and WebSocket routing with middleware support, caching,
  * versioning, content negotiation, and performance metrics.
- * 
+ *
  * @param {Object} [options={}] - Router configuration options
  * @param {number} [options.maxCacheSize=1000] - Maximum cache size for route lookups
  * @param {boolean} [options.enableCompilation=true] - Enable route pattern compilation
@@ -346,7 +346,7 @@ function registerRoute(method, config, router, path) {
  * @param {string} [options.defaultContentType='application/json'] - Default response content type
  * @param {boolean} [options.enableWebSockets=false] - Enable WebSocket routing
  * @param {boolean} [options.enableMetrics=false] - Enable performance metrics collection
- * 
+ *
  * @example
  * const router = new SimpleRouter({
  *   enableWebSockets: true,
@@ -362,27 +362,27 @@ class SimpleRouter {
     this.maxCacheSize = options.maxCacheSize || 1000;
     this.routeGroups = [];
     this.globalMiddleware = [];
-    
+
     // Route compilation options
     this.enableCompilation = options.enableCompilation !== false; // Default true
     this.compiledRoutes = new Map(); // Compiled regex patterns
     this.routeCompilationCache = new Map(); // Cache compiled patterns
-    
+
     // Route versioning options
     this.enableVersioning = options.enableVersioning || false;
     this.defaultVersion = options.defaultVersion || 'v1';
     this.versionHeader = options.versionHeader || 'api-version';
     this.versionedRoutes = new Map(); // version -> routes mapping
-    
+
     // Content negotiation options
     this.enableContentNegotiation = options.enableContentNegotiation !== false; // Default true
     this.defaultContentType = options.defaultContentType || 'application/json';
-    
+
     // WebSocket routing options
     this.enableWebSockets = options.enableWebSockets || false;
     this.wsRoutes = [];
     this.wsConnections = new Map(); // Track active WebSocket connections
-    
+
     // Performance metrics
     this.enableMetrics = options.enableMetrics || false;
     if (this.enableMetrics) {
@@ -399,11 +399,15 @@ class SimpleRouter {
         wsMessages: 0 // Track WebSocket messages
       };
     }
+
+    // Security header optimization options
+    this.enableSecurityHeaders = options.enableSecurityHeaders !== false; // Default true for backward compatibility
+    this.enableCORS = options.enableCORS !== false; // Default true for backward compatibility
   }
 
   /**
    * Add an HTTP route to the router
-   * 
+   *
    * @param {string} method - HTTP method (GET, POST, PUT, DELETE, PATCH)
    * @param {string} path - Route path pattern (supports :param and wildcards)
    * @param {Function} handler - Route handler function
@@ -411,7 +415,7 @@ class SimpleRouter {
    * @param {Array} [options.middleware] - Route-specific middleware
    * @param {string} [options.name] - Named route for URL generation
    * @param {string} [options.version] - API version for this route
-   * 
+   *
    * @example
    * router.addRoute('GET', '/users/:id', (req, res) => {
    *   return { user: { id: req.params.id } };
@@ -421,28 +425,28 @@ class SimpleRouter {
     // Apply group prefix
     const prefix = this.getCurrentPrefix();
     const fullPath = prefix + (path.startsWith('/') ? path : `/${path}`);
-    
+
     // Combine group middleware with route middleware
     const groupMiddleware = this.getCurrentGroupMiddleware();
     const routeMiddleware = options.middleware || [];
     const allMiddleware = [...this.globalMiddleware, ...groupMiddleware, ...routeMiddleware];
-    
-    const route = { 
-      method: method.toUpperCase(), 
-      path: fullPath, 
+
+    const route = {
+      method: method.toUpperCase(),
+      path: fullPath,
       handler,
       middleware: allMiddleware,
       name: options.name,
       version: options.version || this.defaultVersion
     };
-    
+
     // Compile route pattern if compilation is enabled
     if (this.enableCompilation) {
       route.compiled = this.compileRoute(fullPath);
     }
-    
+
     this.routes.push(route);
-    
+
     // Store versioned route if versioning is enabled
     if (this.enableVersioning) {
       if (!this.versionedRoutes.has(route.version)) {
@@ -450,7 +454,7 @@ class SimpleRouter {
       }
       this.versionedRoutes.get(route.version).push(route);
     }
-    
+
     // Store named route for URL generation
     if (options.name) {
       this.namedRoutes.set(options.name, { method: route.method, path: fullPath, version: route.version });
@@ -479,26 +483,26 @@ class SimpleRouter {
   addContentNegotiatedRoute(method, path, handlers, options = {}) {
     const negotiationHandler = async (req, res) => {
       const acceptedType = this.negotiateContentType(req, Object.keys(handlers));
-      
+
       if (this.enableMetrics) {
         this.metrics.contentTypeRequests.set(acceptedType, (this.metrics.contentTypeRequests.get(acceptedType) || 0) + 1);
       }
-      
+
       const handler = handlers[acceptedType];
       if (!handler) {
         res.writeHead(406, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ 
+        res.end(JSON.stringify({
           _error: 'Not Acceptable',
           supportedTypes: Object.keys(handlers)
         }));
         return;
       }
-      
+
       const result = await handler(req, res);
-      
+
       if (result && typeof result === 'object') {
         res.writeHead(200, { 'Content-Type': acceptedType });
-        
+
         if (acceptedType === 'application/json') {
           res.end(JSON.stringify(result));
         } else if (acceptedType === 'text/xml' || acceptedType === 'application/xml') {
@@ -512,7 +516,7 @@ class SimpleRouter {
         }
       }
     };
-    
+
     this.addRoute(method, path, negotiationHandler, options);
   }
 
@@ -525,7 +529,7 @@ class SimpleRouter {
    */
   negotiateContentType(req, supportedTypes) {
     const acceptHeader = req.headers.accept || this.defaultContentType;
-    
+
     // Parse Accept header and find best match
     const acceptedTypes = acceptHeader
       .split(',')
@@ -536,17 +540,17 @@ class SimpleRouter {
         return { type: mediaType.trim(), quality };
       })
       .sort((a, b) => b.quality - a.quality);
-    
+
     // Find first supported type
     for (const accepted of acceptedTypes) {
       if (accepted.type === '*/*') {
         return supportedTypes[0] || this.defaultContentType;
       }
-      
+
       const [mainType, subType] = accepted.type.split('/');
       for (const supported of supportedTypes) {
         const [supportedMain, supportedSub] = supported.split('/');
-        
+
         if (accepted.type === supported ||
             (mainType === supportedMain && subType === '*') ||
             (mainType === '*' && subType === supportedSub)) {
@@ -554,7 +558,7 @@ class SimpleRouter {
         }
       }
     }
-    
+
     return supportedTypes[0] || this.defaultContentType;
   }
 
@@ -572,27 +576,27 @@ class SimpleRouter {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
-    
+
     const toXml = (obj, name) => {
       if (obj === null || obj === undefined) {
         return `<${name}/>`;
       }
-      
+
       if (typeof obj !== 'object') {
         return `<${name}>${xmlEscape(obj)}</${name}>`;
       }
-      
+
       if (Array.isArray(obj)) {
         return obj.map(item => toXml(item, 'item')).join('');
       }
-      
+
       const content = Object.entries(obj)
         .map(([key, value]) => toXml(value, key))
         .join('');
-      
+
       return `<${name}>${content}</${name}>`;
     };
-    
+
     return `<?xml version="1.0" encoding="UTF-8"?>${toXml(obj, rootName)}`;
   }
 
@@ -609,7 +613,7 @@ class SimpleRouter {
 
     const prefix = this.getCurrentPrefix();
     const fullPath = prefix + (path.startsWith('/') ? path : `/${path}`);
-    
+
     const wsRoute = {
       path: fullPath,
       handler,
@@ -617,9 +621,9 @@ class SimpleRouter {
       version: options.version || this.defaultVersion,
       compiled: this.enableCompilation ? this.compileRoute(fullPath) : null
     };
-    
+
     this.wsRoutes.push(wsRoute);
-    
+
     if (options.name) {
       this.namedRoutes.set(options.name, { method: 'WS', path: fullPath, version: wsRoute.version });
     }
@@ -639,29 +643,29 @@ class SimpleRouter {
 
     const url = new URL(request.url, `http://${request.headers.host}`);
     const pathname = url.pathname;
-    
+
     // Find matching WebSocket route
     let matchedRoute = null;
     for (const wsRoute of this.wsRoutes) {
       let params = null;
-      
+
       if (this.enableCompilation && wsRoute.compiled) {
         params = this.matchCompiledRoute(wsRoute.compiled, pathname);
       } else {
         params = extractParams(wsRoute.path, pathname);
       }
-      
+
       if (params !== null) {
         matchedRoute = { route: wsRoute, params };
         break;
       }
     }
-    
+
     if (!matchedRoute) {
       socket.end('HTTP/1.1 404 Not Found\r\n\r\n');
       return;
     }
-    
+
     // Create WebSocket connection
     this.createWebSocketConnection(request, socket, head, matchedRoute);
   }
@@ -675,18 +679,18 @@ class SimpleRouter {
    * @private
    */
   createWebSocketConnection(request, socket, head, matchedRoute) {
-    
+
     // WebSocket handshake
     const key = request.headers['sec-websocket-key'];
     if (!key) {
       socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
       return;
     }
-    
+
     const acceptKey = createHash('sha1')
       .update(`${key  }258EAFA5-E914-47DA-95CA-C5AB0DC85B11`)
       .digest('base64');
-    
+
     const responseHeaders = [
       'HTTP/1.1 101 Switching Protocols',
       'Upgrade: websocket',
@@ -694,35 +698,35 @@ class SimpleRouter {
       `Sec-WebSocket-Accept: ${acceptKey}`,
       '', ''
     ].join('\r\n');
-    
+
     socket.write(responseHeaders);
-    
+
     // Create WebSocket wrapper
     const ws = this.createWebSocketWrapper(socket, matchedRoute);
-    
+
     // Track connection
     const connectionId = randomBytes(16).toString('hex');
     this.wsConnections.set(connectionId, ws);
-    
+
     if (this.enableMetrics) {
       this.metrics.wsConnections++;
     }
-    
+
     // Add connection metadata
     ws.id = connectionId;
     ws.params = matchedRoute.params;
     ws.path = matchedRoute.route.path;
-    
+
     // Handle connection cleanup
     socket.on('close', () => {
       // Call the route handler's close callback before cleanup
       if (matchedRoute.route.handler.onClose) {
         matchedRoute.route.handler.onClose(ws);
       }
-      
+
       // Store connection info before deletion for potential use in handlers
       // const connectionInfo = { id: connectionId, path: ws.path };
-      
+
       // Fire any custom close handlers set by the route handler
       if (ws.onclose) {
         try {
@@ -731,13 +735,13 @@ class SimpleRouter {
           console.error('WebSocket onclose handler _error:', _error);
         }
       }
-      
+
       this.wsConnections.delete(connectionId);
       if (this.enableMetrics) {
         this.metrics.wsConnections--;
       }
     });
-    
+
     // Call route handler
     try {
       matchedRoute.route.handler(ws, request);
@@ -758,39 +762,39 @@ class SimpleRouter {
     const ws = {
       socket,
       readyState: 1, // OPEN
-      
+
       send(data) {
         if (this.readyState !== 1) return;
-        
+
         const message = typeof data === 'string' ? data : JSON.stringify(data);
         const frame = this.createFrame(message);
         socket.write(frame);
-        
+
         if (ws.router && ws.router.enableMetrics) {
           ws.router.metrics.wsMessages++;
         }
       },
-      
+
       close(code = 1000, reason = '') {
         if (this.readyState !== 1) return;
-        
+
         this.readyState = 3; // CLOSED
         const frame = this.createCloseFrame(code, reason);
         socket.write(frame);
         socket.destroy(); // Force close the socket to trigger 'close' event
       },
-      
+
       ping(data = Buffer.alloc(0)) {
         if (this.readyState !== 1) return;
-        
+
         const frame = this.createPingFrame(data);
         socket.write(frame);
       },
-      
+
       createFrame(data) {
         const payload = Buffer.from(data, 'utf8');
         const payloadLength = payload.length;
-        
+
         let frame;
         if (payloadLength < 126) {
           frame = Buffer.allocUnsafe(2 + payloadLength);
@@ -811,10 +815,10 @@ class SimpleRouter {
           frame.writeUInt32BE(payloadLength, 6);
           payload.copy(frame, 10);
         }
-        
+
         return frame;
       },
-      
+
       createCloseFrame(code, reason) {
         const reasonBuffer = Buffer.from(reason, 'utf8');
         const frame = Buffer.allocUnsafe(4 + reasonBuffer.length);
@@ -824,7 +828,7 @@ class SimpleRouter {
         reasonBuffer.copy(frame, 4);
         return frame;
       },
-      
+
       createPingFrame(data) {
         const frame = Buffer.allocUnsafe(2 + data.length);
         frame[0] = 0x89; // FIN + ping frame
@@ -833,9 +837,9 @@ class SimpleRouter {
         return frame;
       }
     };
-    
+
     ws.router = this;
-    
+
     // Handle incoming messages
     socket.on('data', (buffer) => {
       try {
@@ -846,13 +850,13 @@ class SimpleRouter {
       } catch {
       }
     });
-    
+
     // Handle socket errors
     socket.on('_error', (err) => {
-      console.log('WebSocket socket _error (connection likely closed):', err.code);
+      console.error('WebSocket socket _error (connection likely closed):', err.code);
       // Don't re-throw the _error, just log it
     });
-    
+
     return ws;
   }
 
@@ -864,26 +868,26 @@ class SimpleRouter {
    */
   parseWebSocketFrame(buffer) {
     if (buffer.length < 2) return null;
-    
+
     const firstByte = buffer[0];
     const secondByte = buffer[1];
-    
+
     const opcode = firstByte & 0x0f;
     const masked = (secondByte & 0x80) === 0x80;
     let payloadLength = secondByte & 0x7f;
-    
+
     // Handle close frame (opcode 8)
     if (opcode === 8) {
       return null; // Close frame, don't process as message
     }
-    
+
     // Only process text frames (opcode 1)
     if (opcode !== 1) {
       return null;
     }
-    
+
     let offset = 2;
-    
+
     if (payloadLength === 126) {
       if (buffer.length < offset + 2) return null;
       payloadLength = buffer.readUInt16BE(offset);
@@ -893,20 +897,20 @@ class SimpleRouter {
       payloadLength = buffer.readUInt32BE(offset + 4); // Ignore high 32 bits
       offset += 8;
     }
-    
+
     if (masked) {
       if (buffer.length < offset + 4 + payloadLength) return null;
       const maskKey = buffer.slice(offset, offset + 4);
       offset += 4;
-      
+
       const payload = buffer.slice(offset, offset + payloadLength);
       for (let i = 0; i < payload.length; i++) {
         payload[i] ^= maskKey[i % 4];
       }
-      
+
       return payload.toString('utf8');
     }
-    
+
     if (buffer.length < offset + payloadLength) return null;
     return buffer.slice(offset, offset + payloadLength).toString('utf8');
   }
@@ -924,7 +928,7 @@ class SimpleRouter {
         try {
           ws.send(message);
         } catch {
-          console.log('Failed to send message to connection:', id);
+          console.error('Failed to send message to connection:', id);
         }
       }
     }
@@ -954,33 +958,33 @@ class SimpleRouter {
     if (req.headers[this.versionHeader]) {
       return req.headers[this.versionHeader];
     }
-    
+
     // Check URL path for version prefix (e.g., /v1/users)
     const pathMatch = req.url.match(/^\/v(\d+)/);
     if (pathMatch) {
       return `v${pathMatch[1]}`;
     }
-    
+
     // Check query parameter
     if (req.query && req.query.version) {
       return req.query.version;
     }
-    
+
     return this.defaultVersion;
   }
 
   /**
    * Generate URL for named route with parameter substitution
-   * 
+   *
    * @param {string} name - Route name (set during route registration)
    * @param {Object} [params={}] - Parameters to substitute in the URL pattern
    * @returns {string} Generated URL with parameters substituted
    * @throws {Error} If named route is not found
-   * 
+   *
    * @example
    * // Route registered as: router.addRoute('GET', '/users/:id', handler, { name: 'getUser' })
    * const url = router.url('getUser', { id: 123 }); // '/users/123'
-   * 
+   *
    * // With constrained parameters
    * const url = router.url('getUserPosts', { userId: 123, postId: 456 }); // '/users/123/posts/456'
    */
@@ -991,24 +995,24 @@ class SimpleRouter {
     }
 
     let url = route.path;
-    
+
     // Replace parameters in the URL
     for (const [key, value] of Object.entries(params)) {
       // Handle both simple params (:key) and constrained params (:key(regex))
       const paramPattern = new RegExp(`:${key}(\\([^)]+\\))?`, 'g');
       url = url.replace(paramPattern, encodeURIComponent(value));
     }
-    
+
     return url;
   }
 
   /**
    * Add routes from configuration object
-   * 
+   *
    * @param {Object} routeConfig - Route configuration object with nested structure
    * @description Processes nested route objects and registers HTTP and WebSocket routes.
    * Supports declarative route definition with automatic method detection.
-   * 
+   *
    * @example
    * router.addRoutes({
    *   'api': {
@@ -1025,17 +1029,17 @@ class SimpleRouter {
 
   /**
    * Add global middleware to the router
-   * 
+   *
    * @param {Function|Object} middleware - Middleware function or conditional middleware object
    * @description Adds middleware that runs before all route handlers. Supports both
    * simple functions and conditional middleware objects.
-   * 
+   *
    * @example
    * // Simple middleware
    * router.use((req, res) => {
    *   console.log(`${req.method} ${req.url}`);
    * });
-   * 
+   *
    * // Conditional middleware
    * router.use({
    *   condition: (req) => req.url.startsWith('/api'),
@@ -1060,11 +1064,11 @@ class SimpleRouter {
    */
   createConditionalMiddleware(config) {
     const { condition, middleware } = config;
-    
+
     return async (req, res) => {
       // Evaluate condition
       let shouldExecute = false;
-      
+
       if (typeof condition === 'function') {
         shouldExecute = await condition(req, res);
       } else if (typeof condition === 'object') {
@@ -1073,11 +1077,11 @@ class SimpleRouter {
       } else {
         shouldExecute = !!condition;
       }
-      
+
       if (shouldExecute) {
         return await middleware(req, res);
       }
-      
+
       return null; // Skip middleware
     };
   }
@@ -1092,41 +1096,41 @@ class SimpleRouter {
    */
   evaluateConditionObject(condition, req) {
     const { method, path, header, query, body, user } = condition;
-    
+
     // Method condition
     if (method && !this.matchCondition(req.method, method)) return false;
-    
+
     // Path condition
     if (path && !this.matchCondition(req.url, path)) return false;
-    
+
     // Header condition
     if (header) {
       for (const [key, value] of Object.entries(header)) {
         if (!this.matchCondition(req.headers[key.toLowerCase()], value)) return false;
       }
     }
-    
+
     // Query condition
     if (query && req.query) {
       for (const [key, value] of Object.entries(query)) {
         if (!this.matchCondition(req.query[key], value)) return false;
       }
     }
-    
+
     // Body condition
     if (body && req.body) {
       for (const [key, value] of Object.entries(body)) {
         if (!this.matchCondition(req.body[key], value)) return false;
       }
     }
-    
+
     // User condition (for auth-based conditions)
     if (user && req.user) {
       for (const [key, value] of Object.entries(user)) {
         if (!this.matchCondition(req.user[key], value)) return false;
       }
     }
-    
+
     return true;
   }
 
@@ -1141,15 +1145,15 @@ class SimpleRouter {
     if (expected instanceof RegExp) {
       return expected.test(String(actual || ''));
     }
-    
+
     if (Array.isArray(expected)) {
       return expected.includes(actual);
     }
-    
+
     if (typeof expected === 'function') {
       return expected(actual);
     }
-    
+
     return actual === expected;
   }
 
@@ -1164,11 +1168,11 @@ class SimpleRouter {
       prefix: prefix.startsWith('/') ? prefix : `/${prefix}`,
       middleware: Array.isArray(middleware) ? middleware : [middleware]
     };
-    
+
     this.routeGroups.push(group);
     callback(this);
     this.routeGroups.pop();
-    
+
     return this;
   }
 
@@ -1216,10 +1220,10 @@ class SimpleRouter {
     // Handle parameters with constraints and optional parameters
     regexPattern = regexPattern.replace(/:([^(/]+)(\([^)]+\))?(\?)?/g, (match, paramName, constraint, optional, offset, fullString) => {
       paramNames.push(paramName);
-      
+
       // Check if there's already a slash before this parameter in the full string
       const hasPrecedingSlash = offset > 0 && fullString[offset - 1] === '/';
-      
+
       // NEW_FIX_DEBUG: This is our fix for double slashes
       if (hasPrecedingSlash) {
         // When there's already a slash, don't add another one
@@ -1297,11 +1301,11 @@ class SimpleRouter {
     if (!this.enableMetrics) {
       throw new Error('Metrics collection is disabled. Enable with { enableMetrics: true }');
     }
-    
-    const avgResponseTime = this.metrics.responseTime.length > 0 
-      ? this.metrics.responseTime.reduce((a, b) => a + b, 0) / this.metrics.responseTime.length 
+
+    const avgResponseTime = this.metrics.responseTime.length > 0
+      ? this.metrics.responseTime.reduce((a, b) => a + b, 0) / this.metrics.responseTime.length
       : 0;
-    
+
     return {
       ...this.metrics,
       averageResponseTime: Math.round(avgResponseTime * 100) / 100,
@@ -1318,7 +1322,7 @@ class SimpleRouter {
     const totalRoutes = this.routes.length;
     const compiledRoutes = this.routes.filter(r => r.compiled).length;
     const compilationCacheSize = this.routeCompilationCache.size;
-    
+
     return {
       totalRoutes,
       compiledRoutes,
@@ -1366,7 +1370,7 @@ class SimpleRouter {
    */
   findRoutes(criteria = {}) {
     const { method, path, name, hasMiddleware } = criteria;
-    
+
     return this.routes.filter(route => {
       if (method && route.method !== method.toUpperCase()) return false;
       if (path && !route.path.includes(path)) return false;
@@ -1389,18 +1393,18 @@ class SimpleRouter {
    */
   testRoute(method, path) {
     const upperMethod = method.toUpperCase();
-    
+
     for (const route of this.routes) {
       if (route.method === upperMethod) {
         let params = null;
-        
+
         // Use compiled route if available
         if (this.enableCompilation && route.compiled) {
           params = this.matchCompiledRoute(route.compiled, path);
         } else {
           params = extractParams(route.path, path);
         }
-        
+
         if (params !== null) {
           return {
             matched: true,
@@ -1416,7 +1420,7 @@ class SimpleRouter {
         }
       }
     }
-    
+
     return { matched: false, route: null, params: null };
   }
 
@@ -1427,7 +1431,7 @@ class SimpleRouter {
   getDebugInfo() {
     const routesByMethod = {};
     const namedRoutes = {};
-    
+
     // Group routes by method
     this.routes.forEach(route => {
       if (!routesByMethod[route.method]) {
@@ -1440,12 +1444,12 @@ class SimpleRouter {
         compiled: !!route.compiled
       });
     });
-    
+
     // Get named routes
     this.namedRoutes.forEach((routeInfo, name) => {
       namedRoutes[name] = routeInfo;
     });
-    
+
     return {
       totalRoutes: this.routes.length,
       routesByMethod,
@@ -1462,24 +1466,33 @@ class SimpleRouter {
 
   async handle(req, res, options = {}) {
     const startTime = Date.now();
-    
+
     // Metrics collection
     if (this.enableMetrics) {
       this.metrics.requests++;
     }
-    
+
     const { corsOrigin, rateLimit = { windowMs: 60000, maxRequests: 100 } } = options;
-    
-    // Add security headers
-    addSecurityHeaders(res, corsOrigin);
-    
+
+    // Add security headers conditionally for performance optimization
+    if (this.enableSecurityHeaders) {
+      addSecurityHeaders(res, corsOrigin);
+    } else if (this.enableCORS) {
+      // Only add CORS headers if security headers are disabled but CORS is enabled
+      const origin = corsOrigin || 'http://localhost:3000';
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+    }
+
     // Handle preflight requests
     if (req.method === 'OPTIONS') {
       res.writeHead(204);
       res.end();
       return;
     }
-    
+
     // Rate limiting
     const clientIP = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
     if (!checkRateLimit(clientIP, rateLimit.windowMs, rateLimit.maxRequests)) {
@@ -1487,12 +1500,14 @@ class SimpleRouter {
       res.end(JSON.stringify({ _error: 'Too Many Requests' }));
       return;
     }
-    
+
     // Parse URL and query parameters
     const parsedUrl = parseUrl(req.url, true);
     const pathname = parsedUrl.pathname;
-    req.query = parsedUrl.query || {};
-    
+    if (!req.query) {
+      req.query = parsedUrl.query || {};
+    }
+
     // Parse request body with size limits
     try {
       req.body = await parseBody(req, options.maxBodySize);
@@ -1503,38 +1518,38 @@ class SimpleRouter {
       res.end(JSON.stringify({ _error: _error.message }));
       return;
     }
-    
+
     // Check route cache first
     const cacheKey = `${req.method}:${pathname}`;
     let matchedRoute = this.routeCache.get(cacheKey);
-    
+
     if (matchedRoute && this.enableMetrics) {
       this.metrics.cacheHits++;
     }
-    
+
     if (!matchedRoute) {
       // Get request version if versioning is enabled
       const requestVersion = this.enableVersioning ? this.getRequestVersion(req) : null;
-      
+
       // Track version requests in metrics
       if (this.enableMetrics && requestVersion) {
         this.metrics.versionRequests.set(requestVersion, (this.metrics.versionRequests.get(requestVersion) || 0) + 1);
       }
-      
+
       // Find matching route using compiled patterns or fallback to extractParams
-      const routesToSearch = this.enableVersioning && this.versionedRoutes.has(requestVersion) 
-        ? this.versionedRoutes.get(requestVersion) 
+      const routesToSearch = this.enableVersioning && this.versionedRoutes.has(requestVersion)
+        ? this.versionedRoutes.get(requestVersion)
         : this.routes;
-      
+
       for (const route of routesToSearch) {
         if (route.method === req.method) {
           // Skip route if versioning is enabled and versions don't match
           if (this.enableVersioning && route.version !== requestVersion) {
             continue;
           }
-          
+
           let params = null;
-          
+
           // Use compiled route if available
           if (this.enableCompilation && route.compiled) {
             params = this.matchCompiledRoute(route.compiled, pathname);
@@ -1542,10 +1557,10 @@ class SimpleRouter {
             // Fallback to original parameter extraction
             params = extractParams(route.path, pathname);
           }
-          
+
           if (params !== null) {
             matchedRoute = { route, params };
-            
+
             // Cache the match if under size limit
             if (this.routeCache.size < this.maxCacheSize) {
               this.routeCache.set(cacheKey, matchedRoute);
@@ -1555,19 +1570,16 @@ class SimpleRouter {
         }
       }
     }
-    
+
     if (matchedRoute) {
       req.params = matchedRoute.params;
-      
+
       // Record route match metrics
       if (this.enableMetrics) {
         const routeKey = `${req.method}:${matchedRoute.route.path}`;
         this.metrics.routeMatches.set(routeKey, (this.metrics.routeMatches.get(routeKey) || 0) + 1);
       }
-      
-      // Log request
-      console.log(`${new Date().toISOString()} ${req.method} ${pathname}`);
-      
+
       try {
         // Execute middleware chain
         if (matchedRoute.route.middleware && matchedRoute.route.middleware.length > 0) {
@@ -1576,25 +1588,37 @@ class SimpleRouter {
             if (result) break; // Middleware handled response
           }
         }
-        
+
         // Execute handler
         const { route } = matchedRoute;
         const result = await route.handler(req, res);
-        
+
         // Only write response if handler returned data and response hasn't been sent
-        if (result && typeof result === 'object' && !res.headersSent) {
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify(result));
+        if (result && !res.headersSent) {
+          if (typeof result === 'object') {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(result));
+          } else if (typeof result === 'string') {
+            res.writeHead(200, { 'Content-Type': 'text/html' });
+            res.end(result);
+          }
         }
-        
-        // Record response time
+
+        // Record response time (thread-safe)
         if (this.enableMetrics) {
           const responseTime = Date.now() - startTime;
-          this.metrics.responseTime.push(responseTime);
-          // Keep only last 1000 response times to prevent memory growth
-          if (this.metrics.responseTime.length > 1000) {
-            this.metrics.responseTime = this.metrics.responseTime.slice(-1000);
+          // Use atomic-like operations to avoid race conditions
+          if (!this._metricsLock) {
+            this._metricsLock = Promise.resolve();
           }
+
+          this._metricsLock = this._metricsLock.then(() => {
+            this.metrics.responseTime.push(responseTime);
+            // Keep only last 1000 response times to prevent memory growth
+            if (this.metrics.responseTime.length > 1000) {
+              this.metrics.responseTime = this.metrics.responseTime.slice(-1000);
+            }
+          });
         }
         return;
       } catch (_error) {
@@ -1606,7 +1630,7 @@ class SimpleRouter {
         return;
       }
     }
-    
+
     // No route found
     if (this.enableMetrics) this.metrics.errors++;
     if (!res.headersSent) {
@@ -1652,24 +1676,24 @@ class SimpleRouter {
 
 /**
  * Creates an object-based router from nested route definitions
- * 
+ *
  * @param {Object} routes - Nested route definition object
  * @param {Object} options - Router options (corsOrigin, rateLimit, maxBodySize)
  * @returns {Object} Configured router instance
- * 
+ *
  * @example
  * const routes = {
  *   api: {
  *     users: {
  *       get: { handler: () => ({ users: [] }) },
- *       post: { 
+ *       post: {
  *         validation: userSchema,
  *         handler: (req) => ({ user: req.body })
  *       }
  *     }
  *   }
  * };
- * 
+ *
  * const router = createRouter(routes, {
  *   corsOrigin: 'https://myapp.com',
  *   rateLimit: { windowMs: 60000, maxRequests: 50 }
@@ -1679,7 +1703,7 @@ class SimpleRouter {
  */
 /**
  * Factory function to create a SimpleRouter instance
- * 
+ *
  * @param {Object} options - Router options
  * @returns {SimpleRouter} Router instance
  */
@@ -1694,7 +1718,7 @@ export function createRouter(routeConfig, options = {}) {
   if (routeConfig) {
     router.addRoutes(routeConfig);
   }
-  
+
   return router;
 }
 
