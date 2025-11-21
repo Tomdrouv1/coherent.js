@@ -473,10 +473,8 @@ class SimpleRouter {
       const staticKey = `${route.method}:${fullPath}`;
       this.staticRoutes.set(staticKey, route);
 
-      // Track static route metrics
-      if (this.enableRouteMetrics) {
-        route.isStatic = true;
-      }
+      // Mark route as static (this is a route characteristic, not a metric)
+      route.isStatic = true;
     }
 
     this.routes.push(route);
