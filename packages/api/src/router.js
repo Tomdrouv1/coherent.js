@@ -385,6 +385,7 @@ class SimpleRouter {
     this.enableCompilation = options.enableCompilation !== false; // Default true
     this.compiledRoutes = new Map(); // Compiled regex patterns
     this.routeCompilationCache = new Map(); // Cache compiled patterns
+    this.maxCompilationCacheSize = options.maxCompilationCacheSize || 1000;
 
     // Route versioning options
     this.enableVersioning = options.enableVersioning || false;
@@ -1231,10 +1232,16 @@ class SimpleRouter {
    * @private
    */
   compileRoute(pattern) {
-    // Check compilation cache first
+    // Check compilation cache first with LRU access
     if (this.routeCompilationCache.has(pattern)) {
       if (this.enableMetrics) this.metrics.compilationHits++;
-      return this.routeCompilationCache.get(pattern);
+
+      // LRU: Move to end (most recently used)
+      const compiled = this.routeCompilationCache.get(pattern);
+      this.routeCompilationCache.delete(pattern);
+      this.routeCompilationCache.set(pattern, compiled);
+
+      return compiled;
     }
 
     const paramNames = [];
@@ -1294,10 +1301,13 @@ class SimpleRouter {
       pattern
     };
 
-    // Cache the compiled route
-    if (this.routeCompilationCache.size < 1000) {
-      this.routeCompilationCache.set(pattern, compiled);
+    // Cache the compiled route with LRU eviction
+    if (this.routeCompilationCache.size >= this.maxCompilationCacheSize) {
+      // LRU: Remove first (least recently used) item
+      const firstKey = this.routeCompilationCache.keys().next().value;
+      this.routeCompilationCache.delete(firstKey);
     }
+    this.routeCompilationCache.set(pattern, compiled);
 
     return compiled;
   }
