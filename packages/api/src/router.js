@@ -330,6 +330,24 @@ function registerRoute(method, config, router, path) {
 }
 
 /**
+ * Detect if a route pattern is static (exact match) or dynamic (contains parameters)
+ * @private
+ * @param {string} pattern - Route pattern to check
+ * @returns {boolean} True if pattern is static (no parameters, wildcards, or regex)
+ */
+function isStaticRoute(pattern) {
+  // Static routes don't contain:
+  // - Route parameters (:param)
+  // - Wildcards (* or **)
+  // - Regex groups (parentheses)
+  // - Optional parameters (?)
+  return !pattern.includes(':') &&
+         !pattern.includes('*') &&
+         !pattern.includes('(') &&
+         !pattern.includes('?');
+}
+
+/**
  * Simple router implementation for object-based routing with WebSocket support
  *
  * @class SimpleRouter
@@ -403,6 +421,11 @@ class SimpleRouter {
     // Security header optimization options
     this.enableSecurityHeaders = options.enableSecurityHeaders !== false; // Default true for backward compatibility
     this.enableCORS = options.enableCORS !== false; // Default true for backward compatibility
+
+    // Smart route matching optimization
+    this.enableSmartRouting = options.enableSmartRouting !== false; // Default true
+    this.staticRoutes = new Map(); // O(1) lookup for exact routes
+    this.enableRouteMetrics = options.enableRouteMetrics || false; // Track route type performance
   }
 
   /**
@@ -443,6 +466,17 @@ class SimpleRouter {
     // Compile route pattern if compilation is enabled
     if (this.enableCompilation) {
       route.compiled = this.compileRoute(fullPath);
+    }
+
+    // Smart routing: store static routes in separate Map for O(1) lookup
+    if (this.enableSmartRouting && isStaticRoute(fullPath)) {
+      const staticKey = `${route.method}:${fullPath}`;
+      this.staticRoutes.set(staticKey, route);
+
+      // Track static route metrics
+      if (this.enableRouteMetrics) {
+        route.isStatic = true;
+      }
     }
 
     this.routes.push(route);
@@ -1536,36 +1570,70 @@ class SimpleRouter {
         this.metrics.versionRequests.set(requestVersion, (this.metrics.versionRequests.get(requestVersion) || 0) + 1);
       }
 
-      // Find matching route using compiled patterns or fallback to extractParams
-      const routesToSearch = this.enableVersioning && this.versionedRoutes.has(requestVersion)
-        ? this.versionedRoutes.get(requestVersion)
-        : this.routes;
+      // Find matching route using smart routing optimization
+      matchedRoute = null; // Reset matchedRoute for smart routing search
 
-      for (const route of routesToSearch) {
-        if (route.method === req.method) {
+      // Smart routing: check static routes first for O(1) lookup
+      if (this.enableSmartRouting) {
+        const staticKey = `${req.method}:${pathname}`;
+        const staticRoute = this.staticRoutes.get(staticKey);
+
+        if (staticRoute) {
           // Skip route if versioning is enabled and versions don't match
-          if (this.enableVersioning && route.version !== requestVersion) {
-            continue;
-          }
+          if (!this.enableVersioning || staticRoute.version === requestVersion) {
+            matchedRoute = { route: staticRoute, params: {} }; // Static routes have no parameters
 
-          let params = null;
-
-          // Use compiled route if available
-          if (this.enableCompilation && route.compiled) {
-            params = this.matchCompiledRoute(route.compiled, pathname);
-          } else {
-            // Fallback to original parameter extraction
-            params = extractParams(route.path, pathname);
-          }
-
-          if (params !== null) {
-            matchedRoute = { route, params };
-
-            // Cache the match if under size limit
-            if (this.routeCache.size < this.maxCacheSize) {
-              this.routeCache.set(cacheKey, matchedRoute);
+            // Track static route performance
+            if (this.enableRouteMetrics && this.enableMetrics) {
+              if (!this.metrics.staticRouteMatches) {
+                this.metrics.staticRouteMatches = 0;
+              }
+              this.metrics.staticRouteMatches++;
             }
-            break;
+          }
+        }
+      }
+
+      // Fallback to dynamic route matching if no static match found
+      if (!matchedRoute) {
+        const routesToSearch = this.enableVersioning && this.versionedRoutes.has(requestVersion)
+          ? this.versionedRoutes.get(requestVersion)
+          : this.routes;
+
+        for (const route of routesToSearch) {
+          if (route.method === req.method) {
+            // Skip route if versioning is enabled and versions don't match
+            if (this.enableVersioning && route.version !== requestVersion) {
+              continue;
+            }
+
+            let params = null;
+
+            // Use compiled route if available
+            if (this.enableCompilation && route.compiled) {
+              params = this.matchCompiledRoute(route.compiled, pathname);
+            } else {
+              // Fallback to original parameter extraction
+              params = extractParams(route.path, pathname);
+            }
+
+            if (params !== null) {
+              matchedRoute = { route, params };
+
+              // Track dynamic route performance
+              if (this.enableRouteMetrics && this.enableMetrics) {
+                if (!this.metrics.dynamicRouteMatches) {
+                  this.metrics.dynamicRouteMatches = 0;
+                }
+                this.metrics.dynamicRouteMatches++;
+              }
+
+              // Cache the match if under size limit
+              if (this.routeCache.size < this.maxCacheSize) {
+                this.routeCache.set(cacheKey, matchedRoute);
+              }
+              break;
+            }
           }
         }
       }
