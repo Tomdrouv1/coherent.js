@@ -72,7 +72,7 @@ jobs:
         run: pnpm run website:build
 
       - name: Download coverage artifacts (if available)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: coverage-report
           path: ./coverage-temp/
