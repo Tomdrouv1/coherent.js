@@ -69,7 +69,7 @@ We continuously monitor our dependencies for security vulnerabilities. Below are
 - No alternative available without removing Fastify support
 - Benefits of Fastify integration outweigh the low risk
 
-To exclude low-severity vulnerabilities from audits, we set `audit-level=moderate` in `.npmrc`.
+To exclude low-severity vulnerabilities from audits, we set `audit-level=high` in `.npmrc`.
 
 ## Contact
 

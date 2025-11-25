@@ -18,6 +18,22 @@ For a high-level overview and repository-wide instructions, see the root README:
 pnpm add @coherent.js/i18n
 ```
 
+
+## Exports
+
+Internationalization utilities
+
+### Modular Imports (Tree-Shakable)
+
+- i18n utilities: `@coherent.js/i18n`
+
+### Example Usage
+
+```javascript
+import { createI18n } from '@coherent.js/i18n';
+```
+
+> **Note**: All exports are tree-shakable. Import only what you need for optimal bundle size.
 ## Quick start
 
 JavaScript (ESM):

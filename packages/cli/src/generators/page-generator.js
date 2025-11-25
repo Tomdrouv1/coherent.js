@@ -10,11 +10,11 @@ import { join } from 'path';
  */
 export async function generatePage(name, options = {}) {
   const { path = 'src/pages', template = 'basic', skipTest = false } = options;
-  
+
   // Ensure page name is PascalCase
   const pageName = toPascalCase(name);
   const fileName = pageName;
-  
+
   // Create output directory
   const outputDir = join(process.cwd(), path);
   if (!existsSync(outputDir)) {
@@ -42,7 +42,7 @@ export async function generatePage(name, options = {}) {
   nextSteps.push(`Import the page: import { ${pageName} } from '${path}/${fileName}.js'`);
   nextSteps.push(`Add route to your router for /${name.toLowerCase()}`);
   nextSteps.push(`Visit http://localhost:3000/${name.toLowerCase()} to see the page`);
-  
+
   if (!skipTest) {
     nextSteps.push('Run tests: npm test');
   }
@@ -75,13 +75,13 @@ function generatePageContent(name, template) {
  */
 function generateBasicPage(name) {
   const routeName = name.toLowerCase();
-  
+
   return `import { createComponent } from '@coherent.js/core';
 
 /**
  * ${name} Page Component
  * Route: /${routeName}
- * 
+ *
  * @param {Object} props - Page properties
  * @param {Object} props.params - Route parameters
  * @param {Object} props.query - Query parameters
@@ -99,17 +99,17 @@ export const ${name} = createComponent(({ params = {}, query = {}, request, ...p
           head: {
             children: [
               { title: { text: pageTitle } },
-              { 
-                meta: { 
+              {
+                meta: {
                   name: 'description',
                   content: pageDescription
-                } 
+                }
               },
-              { 
-                meta: { 
-                  name: 'viewport', 
-                  content: 'width=device-width, initial-scale=1.0' 
-                } 
+              {
+                meta: {
+                  name: 'viewport',
+                  content: 'width=device-width, initial-scale=1.0'
+                }
               }
             ]
           }
@@ -220,10 +220,10 @@ ${name}.description = '${name} page description';
 
 // Usage in router:
 // app.get('/${routeName}', (req, res) => {
-//   const html = render(${name}({ 
-//     params: req.params, 
+//   const html = render(${name}({
+//     params: req.params,
 //     query: req.query,
-//     request: req 
+//     request: req
 //   }));
 //   res.send(html);
 // });
@@ -255,11 +255,11 @@ export const ${name} = createComponent(({ stats = {}, user = null }) => {
           head: {
             children: [
               { title: { text: '${name} Dashboard' } },
-              { 
-                meta: { 
-                  name: 'viewport', 
-                  content: 'width=device-width, initial-scale=1.0' 
-                } 
+              {
+                meta: {
+                  name: 'viewport',
+                  content: 'width=device-width, initial-scale=1.0'
+                }
               }
             ]
           }
@@ -414,11 +414,11 @@ export const ${name} = createComponent(({ initialData = {}, errors = {} }) => {
           head: {
             children: [
               { title: { text: '${name} Form' } },
-              { 
-                meta: { 
-                  name: 'viewport', 
-                  content: 'width=device-width, initial-scale=1.0' 
-                } 
+              {
+                meta: {
+                  name: 'viewport',
+                  content: 'width=device-width, initial-scale=1.0'
+                }
               }
             ]
           }
@@ -562,42 +562,42 @@ export const ${name} = createComponent(({ initialData = {}, errors = {} }) => {
  * Generate test content
  */
 function generateTestContent(name) {
-  return `import { test } from 'node:test';
-import assert from 'node:assert';
+  return `import { describe, it, expect } from 'vitest';
 import { render } from '@coherent.js/core';
 import { ${name} } from './${name}.js';
 
-test('${name} page renders correctly', () => {
-  const page = ${name}({});
-  const html = render(page);
-  
-  assert(typeof html === 'string');
-  assert(html.length > 0);
-  assert(html.includes('<html>'));
-  assert(html.includes('${name}'));
-});
+describe('${name} Page', () => {
+  it('renders correctly', () => {
+    const page = ${name}({});
+    const html = render(page);
 
-test('${name} page includes proper head elements', () => {
-  const page = ${name}({});
-  const html = render(page);
-  
-  assert(html.includes('<title>'));
-  assert(html.includes('<meta'));
-  assert(html.includes('viewport'));
-});
+    expect(typeof html).toBe('string');
+    expect(html.length).toBeGreaterThan(0);
+    expect(html).toContain('<html>');
+    expect(html).toContain('${name}');
+  });
 
-test('${name} page renders with custom props', () => {
-  const props = {
-    params: { id: '123' },
-    query: { search: 'test' }
-  };
-  
+  it('includes proper head elements', () => {
+  const page = ${name}({});
+    const html = render(page);
+
+    expect(html).toContain('<title>');
+    expect(html).toContain('<meta');
+    expect(html).toContain('viewport');
+  });
+
+  it('renders with custom props', () => {
+    const props = {
+      params: { id: '123' },
+      query: { search: 'test' }
+    };
+
   const page = ${name}(props);
-  const html = render(page);
-  
-  assert(html.includes('${name}'));
-});
-`;
+    const html = render(page);
+
+    expect(html).toContain('${name}');
+  });
+});`;
 }
 
 /**

@@ -10,6 +10,22 @@
     ".": {
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./model": {
+      "import": "./dist/model.js",
+      "require": "./dist/model.cjs"
+    },
+    "./migration": {
+      "import": "./dist/migration.js",
+      "require": "./dist/migration.cjs"
+    },
+    "./connection": {
+      "import": "./dist/connection-manager.js",
+      "require": "./dist/connection-manager.cjs"
+    },
+    "./middleware": {
+      "import": "./dist/middleware.js",
+      "require": "./dist/middleware.cjs"
     }
   },
   "scripts": {
@@ -48,5 +64,6 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
-  }
+  },
+  "sideEffects": false
 }

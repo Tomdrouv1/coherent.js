@@ -1331,6 +1331,42 @@ async function buildHome(sidebar) {
   const page = Layout({ title: 'Coherent.js', sidebar, currentPath: '', baseHref });
   let html = render(page);
   html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', content);
+  
+  // Inject the coverage script directly
+  const coverageScript = `
+<script>
+  async function loadCoverageBadge() {
+    try {
+      const response = await fetch('/coverage-summary.json');
+      if (response.ok) {
+        const data = await response.json();
+        const coverage = data.total.lines.pct;
+        const badge = document.getElementById('coverage-badge');
+        if (badge) {
+          // Determine color based on coverage
+          let color = 'red';
+          if (coverage >= 80) color = 'brightgreen';
+          else if (coverage >= 60) color = 'yellow';
+          
+          badge.src = \`https://img.shields.io/badge/coverage-\${coverage}%25-\${color}\`;
+          badge.alt = \`Coverage: \${coverage}%\`;
+        }
+      }
+    } catch (error) {
+      console.log('Could not load coverage badge:', error);
+    }
+  }
+  
+  // Load coverage when page is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadCoverageBadge);
+  } else {
+    loadCoverageBadge();
+  }
+</script>`;
+  
+  html = html.replace('</body>', `${coverageScript}\n</body>`);
+  
   await writePage('', html);
 }
 

@@ -4,7 +4,7 @@ Get up and running with Coherent.js in under 5 minutes.
 
 ## 📦 Installation
 
-> **Note**: Coherent.js is currently in beta (v1.0.0-beta.1). Use the `@beta` tag to install.
+> **Note**: Coherent.js is currently in beta. Use the `@beta` tag to install.
 
 ### Using npm
 ```bash

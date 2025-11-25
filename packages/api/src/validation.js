@@ -13,10 +13,10 @@ import { ValidationError } from './errors.js';
  */
 function validateAgainstSchema(schema, data) {
   const errors = [];
-  
+
   // Simple validation implementation
   // In a real implementation, this would use a proper JSON Schema validator
-  
+
   if (schema.type === 'object') {
     if (typeof data !== 'object' || data === null || Array.isArray(data)) {
       errors.push({
@@ -25,7 +25,7 @@ function validateAgainstSchema(schema, data) {
       });
       return { valid: false, errors };
     }
-    
+
     // Check required fields
     if (schema.required && Array.isArray(schema.required)) {
       for (const field of schema.required) {
@@ -37,19 +37,21 @@ function validateAgainstSchema(schema, data) {
         }
       }
     }
-    
+
     // Validate properties
     if (schema.properties) {
       for (const [field, fieldSchema] of Object.entries(schema.properties)) {
         if (field in data) {
           const fieldValue = data[field];
-          const fieldErrors = validateField(fieldSchema, fieldValue, field);
-          errors.push(...fieldErrors);
+          const fieldResult = validateField(fieldSchema, fieldValue, field);
+          if (!fieldResult.valid) {
+            errors.push(...fieldResult.errors);
+          }
         }
       }
     }
   }
-  
+
   return {
     valid: errors.length === 0,
     errors
@@ -61,11 +63,22 @@ function validateAgainstSchema(schema, data) {
  * @param {Object} schema - Field schema
  * @param {any} value - Field value
  * @param {string} fieldName - Field name
- * @returns {Array} Validation errors
+ * @returns {Object} Validation result with valid and errors properties
  */
 function validateField(schema, value, fieldName) {
   const errors = [];
-  
+
+  // Handle null/undefined values
+  if (value === null || value === undefined) {
+    if (schema.type && schema.type !== 'null') {
+      errors.push({
+        field: fieldName,
+        message: `Expected ${schema.type}, got ${value === null ? 'null' : 'undefined'}`
+      });
+    }
+    return { valid: errors.length === 0, errors };
+  }
+
   // Type validation
   if (schema.type) {
     if (schema.type === 'string' && typeof value !== 'string') {
@@ -90,23 +103,23 @@ function validateField(schema, value, fieldName) {
       });
     }
   }
-  
+
   // String-specific validations
-  if (schema.type === 'string') {
+  if (schema.type === 'string' && typeof value === 'string') {
     if (schema.minLength && value.length < schema.minLength) {
       errors.push({
         field: fieldName,
         message: `String must be at least ${schema.minLength} characters`
       });
     }
-    
+
     if (schema.maxLength && value.length > schema.maxLength) {
       errors.push({
         field: fieldName,
         message: `String must be at most ${schema.maxLength} characters`
       });
     }
-    
+
     if (schema.format === 'email' && !/^[^@]+@[^@]+\.[^@]+$/.test(value)) {
       errors.push({
         field: fieldName,
@@ -114,16 +127,16 @@ function validateField(schema, value, fieldName) {
       });
     }
   }
-  
+
   // Number-specific validations
-  if (schema.type === 'number') {
+  if (schema.type === 'number' && typeof value === 'number') {
     if (schema.minimum !== undefined && value < schema.minimum) {
       errors.push({
         field: fieldName,
         message: `Number must be at least ${schema.minimum}`
       });
     }
-    
+
     if (schema.maximum !== undefined && value > schema.maximum) {
       errors.push({
         field: fieldName,
@@ -131,8 +144,8 @@ function validateField(schema, value, fieldName) {
       });
     }
   }
-  
-  return errors;
+
+  return { valid: errors.length === 0, errors };
 }
 
 /**
@@ -144,11 +157,11 @@ function withValidation(schema) {
   return (req, res, next) => {
     const data = req.body || {};
     const result = validateAgainstSchema(schema, data);
-    
+
     if (!result.valid) {
       throw new ValidationError(result.errors);
     }
-    
+
     next();
   };
 }
@@ -162,11 +175,11 @@ function withQueryValidation(schema) {
   return (req, res, next) => {
     const data = req.query || {};
     const result = validateAgainstSchema(schema, data);
-    
+
     if (!result.valid) {
       throw new ValidationError(result.errors);
     }
-    
+
     next();
   };
 }
@@ -180,11 +193,11 @@ function withParamsValidation(schema) {
   return (req, res, next) => {
     const data = req.params || {};
     const result = validateAgainstSchema(schema, data);
-    
+
     if (!result.valid) {
       throw new ValidationError(result.errors);
     }
-    
+
     next();
   };
 }

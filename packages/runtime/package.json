@@ -89,5 +89,6 @@
     "types/",
     "README.md",
     "LICENSE"
-  ]
+  ],
+  "sideEffects": false
 }

@@ -10,7 +10,7 @@ export function Coverage() {
         { section: { className: 'coverage-badges', children: [
           { h2: { text: 'Current Status' } },
           { div: { className: 'badges-row', children: [
-            { img: { src: 'https://img.shields.io/endpoint?url=https://coherent.js.org/coverage/badge.json&label=overall%20coverage&style=for-the-badge', alt: 'Overall Coverage' } },
+            { img: { src: '/coverage/badge.json', alt: 'Overall Coverage' } },
             { img: { src: 'https://codecov.io/gh/Tomdrouv1/coherent.js/branch/main/graph/badge.svg', alt: 'Codecov Coverage' } }
           ] } }
         ] } },

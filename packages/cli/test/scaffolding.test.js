@@ -23,7 +23,7 @@ async function cleanupTempDir(dir) {
 
 test('scaffoldProject should create basic project structure', async () => {
   const tempDir = await createTempDir();
-  
+
   try {
     await scaffoldProject(tempDir, {
       name: 'test-app',
@@ -31,7 +31,7 @@ test('scaffoldProject should create basic project structure', async () => {
       skipInstall: true,
       skipGit: true
     });
-    
+
     // Check directory structure
     const expectedDirs = [
       'src',
@@ -41,12 +41,12 @@ test('scaffoldProject should create basic project structure', async () => {
       'public',
       'tests'
     ];
-    
+
     for (const dir of expectedDirs) {
       const dirPath = join(tempDir, dir);
       assert(existsSync(dirPath), `Directory ${dir} should exist`);
     }
-    
+
     // Check essential files
     const expectedFiles = [
       'package.json',
@@ -57,14 +57,14 @@ test('scaffoldProject should create basic project structure', async () => {
       'src/components/HomePage.js',
       'tests/basic.test.js'
     ];
-    
+
     for (const file of expectedFiles) {
       const filePath = join(tempDir, file);
       assert(existsSync(filePath), `File ${file} should exist`);
     }
-    
-    
-    
+
+
+
   } finally {
     await cleanupTempDir(tempDir);
   }
@@ -72,7 +72,7 @@ test('scaffoldProject should create basic project structure', async () => {
 
 test('scaffoldProject should create correct package.json for basic template', async () => {
   const tempDir = await createTempDir();
-  
+
   try {
     await scaffoldProject(tempDir, {
       name: 'my-coherent-app',
@@ -80,29 +80,29 @@ test('scaffoldProject should create correct package.json for basic template', as
       skipInstall: true,
       skipGit: true
     });
-    
+
     const packageJsonPath = join(tempDir, 'package.json');
     const packageJsonContent = readFileSync(packageJsonPath, 'utf-8');
     const packageJson = JSON.parse(packageJsonContent);
-    
+
     // Check basic properties
     assert.strictEqual(packageJson.name, 'my-coherent-app');
     assert(packageJson.version);
     assert(packageJson.type === 'module');
     assert(packageJson.main === 'src/index.js');
-    
+
     // Check scripts
     assert(packageJson.scripts.dev);
     assert(packageJson.scripts.build);
     assert(packageJson.scripts.start);
     assert(packageJson.scripts.test);
-    
+
     // Check dependencies
     assert(packageJson.dependencies['@coherent.js/core']);
     assert(packageJson.devDependencies['@coherent.js/cli']);
-    
-    
-    
+
+
+
   } finally {
     await cleanupTempDir(tempDir);
   }
@@ -134,9 +134,9 @@ test('scaffoldProject should create Express template correctly', async () => {
     assert(indexContent.includes('express'));
     assert(indexContent.includes('setupCoherent'));
     assert(indexContent.includes('app.listen'));
-    
-    
-    
+
+
+
   } finally {
     await cleanupTempDir(tempDir);
   }
@@ -144,7 +144,7 @@ test('scaffoldProject should create Express template correctly', async () => {
 
 test('scaffoldProject should create proper README.md', async () => {
   const tempDir = await createTempDir();
-  
+
   try {
     await scaffoldProject(tempDir, {
       name: 'readme-test-app',
@@ -152,18 +152,18 @@ test('scaffoldProject should create proper README.md', async () => {
       skipInstall: true,
       skipGit: true
     });
-    
+
     const readmePath = join(tempDir, 'README.md');
     const readmeContent = readFileSync(readmePath, 'utf-8');
-    
+
     assert(readmeContent.includes('# readme-test-app'));
     assert(readmeContent.includes('Coherent.js'));
     assert(readmeContent.includes('npm install'));
     assert(readmeContent.includes('npm run dev'));
     assert(readmeContent.includes('## Project Structure'));
-    
-    
-    
+
+
+
   } finally {
     await cleanupTempDir(tempDir);
   }
@@ -171,7 +171,7 @@ test('scaffoldProject should create proper README.md', async () => {
 
 test('scaffoldProject should create proper .gitignore', async () => {
   const tempDir = await createTempDir();
-  
+
   try {
     await scaffoldProject(tempDir, {
       name: 'gitignore-test',
@@ -179,18 +179,18 @@ test('scaffoldProject should create proper .gitignore', async () => {
       skipInstall: true,
       skipGit: true
     });
-    
+
     const gitignorePath = join(tempDir, '.gitignore');
     const gitignoreContent = readFileSync(gitignorePath, 'utf-8');
-    
+
     assert(gitignoreContent.includes('node_modules/'));
     assert(gitignoreContent.includes('dist/'));
     assert(gitignoreContent.includes('.env'));
     assert(gitignoreContent.includes('.DS_Store'));
     assert(gitignoreContent.includes('*.log'));
-    
-    
-    
+
+
+
   } finally {
     await cleanupTempDir(tempDir);
   }
@@ -198,7 +198,7 @@ test('scaffoldProject should create proper .gitignore', async () => {
 
 test('scaffoldProject should create basic test file', async () => {
   const tempDir = await createTempDir();
-  
+
   try {
     await scaffoldProject(tempDir, {
       name: 'test-file-test',
@@ -206,17 +206,18 @@ test('scaffoldProject should create basic test file', async () => {
       skipInstall: true,
       skipGit: true
     });
-    
+
     const testPath = join(tempDir, 'tests/basic.test.js');
     const testContent = readFileSync(testPath, 'utf-8');
-    
-    assert(testContent.includes("import { test } from 'node:test'"));
+
+    assert(testContent.includes("import { describe, it, expect } from 'vitest'"));
     assert(testContent.includes("import { render } from '@coherent.js/core'"));
-    assert(testContent.includes("test('renders basic component'"));
+    assert(testContent.includes("describe('Basic Component Rendering'"));
+    assert(testContent.includes("it('renders basic component'"));
     assert(testContent.includes("Hello, World!"));
-    
-    
-    
+
+
+
   } finally {
     await cleanupTempDir(tempDir);
   }
@@ -240,9 +241,9 @@ test('scaffoldProject should create working Button component', async () => {
     assert(buttonContent.includes('onClick'));
     assert(buttonContent.includes('className'));
     assert(buttonContent.includes('button:'));
-    
-    
-    
+
+
+
   } finally {
     await cleanupTempDir(tempDir);
   }
@@ -277,9 +278,9 @@ test('scaffoldProject should handle different templates', async () => {
       readFileSync(join(expressDir, 'package.json'), 'utf-8')
     );
     assert(expressPackageJson.dependencies.express);
-    
-    
-    
+
+
+
   } finally {
     await cleanupTempDir(tempDir);
   }
@@ -305,9 +306,9 @@ test('scaffoldProject should create valid main index.js', async () => {
     assert(indexContent.includes("import { HomePage } from './components/HomePage.js'"));
     assert(indexContent.includes('server.listen'));
     assert(indexContent.includes('PORT'));
-    
-    
-    
+
+
+
   } finally {
     await cleanupTempDir(tempDir);
   }

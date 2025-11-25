@@ -1,8 +1,13 @@
 /**
  * Coherent.js DevTools
- * 
- * Complete developer tools suite for debugging and profiling
- * 
+ *
+ * Tree-shakable developer tools suite for debugging and profiling
+ * Import only what you need:
+ *
+ * import { logComponentTree } from '@coherent.js/devtools/visualizer';
+ * import { createPerformanceDashboard } from '@coherent.js/devtools/performance';
+ * import { handleEnhancedError } from '@coherent.js/devtools/errors';
+ *
  * @module devtools
  */
 
@@ -34,7 +39,27 @@ import {
   createDevTools
 } from './dev-tools.js';
 
-// Re-export everything
+// Import new enhanced developer experience tools
+import {
+  ComponentVisualizer,
+  createComponentVisualizer,
+  visualizeComponent,
+  logComponentTree
+} from './component-visualizer.js';
+
+import {
+  PerformanceDashboard,
+  createPerformanceDashboard,
+  showPerformanceDashboard
+} from './performance-dashboard.js';
+
+import {
+  EnhancedErrorHandler,
+  createEnhancedErrorHandler,
+  handleEnhancedError
+} from './enhanced-errors.js';
+
+// Re-export everything as named exports for proper tree shaking
 export {
   ComponentInspector,
   createInspector,
@@ -50,31 +75,19 @@ export {
   createComponentLogger,
   createConsoleLogger,
   DevTools,
-  createDevTools
+  createDevTools,
+  // Enhanced developer experience tools
+  ComponentVisualizer,
+  createComponentVisualizer,
+  visualizeComponent,
+  logComponentTree,
+  PerformanceDashboard,
+  createPerformanceDashboard,
+  showPerformanceDashboard,
+  EnhancedErrorHandler,
+  createEnhancedErrorHandler,
+  handleEnhancedError
 };
 
-// Default export with all utilities
-export default {
-  // Inspector
-  ComponentInspector,
-  createInspector,
-  inspect,
-  validateComponent,
-
-  // Profiler
-  PerformanceProfiler,
-  createProfiler,
-  measure,
-  profile,
-
-  // Logger
-  DevLogger,
-  LogLevel,
-  createLogger,
-  createComponentLogger,
-  createConsoleLogger,
-
-  // DevTools
-  DevTools,
-  createDevTools
-};
+// Note: No default export to enable proper tree shaking
+// Use named imports: import { logComponentTree } from '@coherent.js/devtools';

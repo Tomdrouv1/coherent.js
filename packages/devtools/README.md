@@ -18,6 +18,29 @@ For a high-level overview and repository-wide instructions, see the root README:
 pnpm add @coherent.js/devtools
 ```
 
+
+## Exports
+
+Tree-shakable developer tools for debugging and performance monitoring
+
+### Modular Imports (Tree-Shakable)
+
+- Component visualizer: `@coherent.js/devtools/visualizer`
+- Performance dashboard: `@coherent.js/devtools/performance`
+- Enhanced errors: `@coherent.js/devtools/errors`
+- Hybrid integration: `@coherent.js/devtools/hybrid`
+- Inspector: `@coherent.js/devtools/inspector`
+- Profiler: `@coherent.js/devtools/profiler`
+- Logger: `@coherent.js/devtools/logger`
+
+### Example Usage
+
+```javascript
+import { logComponentTree } from '@coherent.js/devtools/visualizer';
+import { createPerformanceDashboard } from '@coherent.js/devtools/performance';
+```
+
+> **Note**: All exports are tree-shakable. Import only what you need for optimal bundle size.
 ## Quick start
 
 JavaScript (ESM):

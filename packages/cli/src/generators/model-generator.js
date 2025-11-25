@@ -235,8 +235,7 @@ export default ${modelName};
 
 function generateModelTestContent(modelName, tableName) {
   const camel = toCamelCase(modelName);
-  return `import { test } from 'node:test';
-import assert from 'node:assert/strict';
+  return `import { describe, it, expect } from 'vitest';
 import { register${camel}Model, ${modelName} } from './${modelName}.js';
 
 function createMockDb() {
@@ -247,27 +246,28 @@ function createMockDb() {
   };
 }
 
-test('${modelName} model exposes metadata', () => {
-  assert.equal(${modelName}.tableName, '${tableName}');
-  assert.ok(${modelName}.attributes);
-  assert.ok(${modelName}.attributes.id);
+describe('${modelName} Model', () => {
+  it('exposes metadata', () => {
+    expect(${modelName}.tableName).toBe('${tableName}');
+    expect(${modelName}.attributes).toBeDefined();
+    expect(${modelName}.attributes.id).toBeDefined();
+  });
+
+  it('registers the model', () => {
+    const mockDb = createMockDb();
+    const registeredModel = register${modelName}Model(mockDb);
+    expect(registeredModel.name).toBe('${modelName}');
+    expect(typeof registeredModel.create).toBe('function');
 });
 
-test('register${modelName}Model registers the model', () => {
-  const mockDb = createMockDb();
-  const registeredModel = register${modelName}Model(mockDb);
-  assert.equal(registeredModel.name, '${modelName}');
-  assert.equal(typeof registeredModel.create, 'function');
-});
-
-test('${modelName} methods behave as expected', () => {
-  const instance = { ...${modelName}.methods };
-  if (instance.fullName) {
-    instance.name = 'Example';
-    assert.equal(instance.fullName.call(instance), 'Example');
-  }
-});
-`;
+it('methods behave as expected', () => {
+    const instance = { ...${modelName}.methods };
+    if (instance.fullName) {
+      instance.name = 'Example';
+      expect(instance.fullName.call(instance)).toBe('Example');
+    }
+  });
+});`;
 }
 
 function toPascalCase(str) {

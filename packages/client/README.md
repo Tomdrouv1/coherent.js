@@ -23,6 +23,25 @@ Requirements:
 - Node.js >= 20
 - ESM module system
 
+
+## Exports
+
+Client-side hydration and HMR utilities
+
+### Modular Imports (Tree-Shakable)
+
+- Hydration utilities: `@coherent.js/client`
+- Client router: `@coherent.js/client/router`
+- HMR support: `@coherent.js/client/hmr`
+
+### Example Usage
+
+```javascript
+import { hydrateComponent } from '@coherent.js/client';
+import { createClientRouter } from '@coherent.js/client/router';
+```
+
+> **Note**: All exports are tree-shakable. Import only what you need for optimal bundle size.
 ## Quick start
 
 The client package pairs with server-rendered HTML produced by `@coherent.js/core`.

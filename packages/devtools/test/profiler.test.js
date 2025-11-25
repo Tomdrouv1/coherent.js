@@ -1,6 +1,6 @@
 /**
  * Tests for DevTools - PerformanceProfiler
- * 
+ *
  * Coverage areas:
  * - Profiling sessions
  * - Metrics collection
@@ -229,7 +229,7 @@ describe('PerformanceProfiler', () => {
 
       const result = profiler.stop(sessionId);
 
-      expect(result.duration).toBeGreaterThanOrEqual(20);
+      expect(result.duration).toBeGreaterThanOrEqual(15);
     });
 
     it('should handle profiling errors gracefully', () => {

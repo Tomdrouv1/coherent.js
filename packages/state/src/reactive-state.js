@@ -3,7 +3,23 @@
  * Provides computed properties, watchers, and reactive updates
  */
 
-import { globalErrorHandler, StateError } from '@coherent.js/core/src/utils/_error-handler.js';
+// Simple error handling for this module
+export class StateError extends Error {
+    constructor(message, options = {}) {
+        super(message);
+        this.name = 'StateError';
+        this.type = options.type || 'state';
+        this.component = options.component;
+        this.context = options.context;
+        this.timestamp = Date.now();
+    }
+}
+
+export const globalErrorHandler = {
+    handle(error, context = {}) {
+        console.error('State Error:', error.message, context);
+    }
+};
 
 /**
  * Observable wrapper for tracking state changes

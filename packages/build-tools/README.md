@@ -14,6 +14,22 @@ Build tool integrations for Coherent.js, providing seamless integration with pop
 npm install @coherent.js/build-tools
 ```
 
+
+## Exports
+
+Build and development tools
+
+### Modular Imports (Tree-Shakable)
+
+- Build utilities: `@coherent.js/build-tools`
+
+### Example Usage
+
+```javascript
+import { buildProject } from '@coherent.js/build-tools';
+```
+
+> **Note**: All exports are tree-shakable. Import only what you need for optimal bundle size.
 ## Usage
 
 ### Vite Integration

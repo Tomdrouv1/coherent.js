@@ -8,6 +8,22 @@ Advanced performance monitoring and profiling tools for Coherent.js applications
 npm install @coherent.js/profiler
 ```
 
+
+## Exports
+
+Performance profiling tools
+
+### Modular Imports (Tree-Shakable)
+
+- Profiler utilities: `@coherent.js/profiler`
+
+### Example Usage
+
+```javascript
+import { createProfiler } from '@coherent.js/profiler';
+```
+
+> **Note**: All exports are tree-shakable. Import only what you need for optimal bundle size.
 ## Usage
 
 ### Basic Profiling

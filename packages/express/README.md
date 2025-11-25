@@ -22,6 +22,24 @@ Peer dependencies:
 - `express` >= 4.18 < 6
 - `@coherent.js/core`
 
+
+## Exports
+
+Express.js adapter for Coherent.js
+
+### Modular Imports (Tree-Shakable)
+
+- Express integration: `@coherent.js/express`
+- Middleware setup: `@coherent.js/express`
+
+### Example Usage
+
+```javascript
+import { setupCoherent } from '@coherent.js/express';
+import { renderComponent } from '@coherent.js/express';
+```
+
+> **Note**: All exports are tree-shakable. Import only what you need for optimal bundle size.
 ## Quick start
 
 You can use `@coherent.js/core` rendering inside Express handlers.

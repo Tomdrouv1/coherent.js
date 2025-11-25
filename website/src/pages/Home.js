@@ -9,8 +9,8 @@ export function Home() {
           { h1: { className: 'title', text: 'Coherent.js' } },
           { p: { className: 'lead', text: 'Fast SSR and hydration with plain JS objects. Minimal API. Maximum clarity.' } },
           { div: { className: 'badges', children: [
-            { img: { src: 'https://img.shields.io/endpoint?url=https://coherentjs.dev/coverage/badge.json&label=coverage', alt: 'Coverage', className: 'badge' } },
-            { img: { src: 'https://img.shields.io/badge/version-1.0.0--beta.1-blue', alt: 'version', className: 'badge' } },
+            { img: { id: 'coverage-badge', src: 'https://img.shields.io/badge/coverage-NA-red', alt: 'Coverage', className: 'badge' } },
+            { img: { src: 'https://img.shields.io/badge/version-beta.3-blue', alt: 'version', className: 'badge' } },
             { img: { src: 'https://img.shields.io/github/actions/workflow/status/Tomdrouv1/coherent.js/ci.yml?branch=main', alt: 'CI Status', className: 'badge' } }
           ] } },
           { div: { className: 'cta', children: [
@@ -51,3 +51,39 @@ export function Home() {
     }
   };
 }
+
+// Add script to load coverage badge
+const coverageScript = `
+<script>
+  async function loadCoverageBadge() {
+    try {
+      const response = await fetch('/coverage-summary.json');
+      if (response.ok) {
+        const data = await response.json();
+        const coverage = data.total.lines.pct;
+        const badge = document.getElementById('coverage-badge');
+        if (badge) {
+          // Determine color based on coverage
+          let color = 'red';
+          if (coverage >= 80) color = 'brightgreen';
+          else if (coverage >= 60) color = 'yellow';
+          
+          badge.src = \`https://img.shields.io/badge/coverage-\${coverage}%25-\${color}\`;
+          badge.alt = \`Coverage: \${coverage}%\`;
+        }
+      }
+    } catch (error) {
+      console.log('Could not load coverage badge:', error);
+    }
+  }
+  
+  // Load coverage when page is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadCoverageBadge);
+  } else {
+    loadCoverageBadge();
+  }
+</script>
+`;
+
+export { coverageScript };

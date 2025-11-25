@@ -10,11 +10,11 @@ import { join } from 'path';
  */
 export async function generateAPI(name, options = {}) {
   const { path = 'src/api', template = 'rest', skipTest = false } = options;
-  
+
   // Ensure API name is in lowercase with hyphens
   const apiName = toKebabCase(name);
   const fileName = apiName;
-  
+
   // Create output directory
   const outputDir = join(process.cwd(), path);
   if (!existsSync(outputDir)) {
@@ -42,7 +42,7 @@ export async function generateAPI(name, options = {}) {
   nextSteps.push(`Import the API: import ${toPascalCase(name)}API from '${path}/${fileName}.js'`);
   nextSteps.push(`Mount the API: app.use('/api/${apiName}', ${toPascalCase(name)}API)`);
   nextSteps.push(`Test the API: curl http://localhost:3000/api/${apiName}`);
-  
+
   if (!skipTest) {
     nextSteps.push('Run tests: npm test');
   }
@@ -73,13 +73,13 @@ function generateAPIContent(apiName, originalName, template) {
 function generateRESTAPI(apiName, originalName) {
   const className = toPascalCase(originalName);
   const camelCaseApiName = toCamelCase(apiName);
-  
+
   return `import { createApiRouter, withValidation } from '@coherent.js/api';
 
 /**
  * ${className} API Routes
  * REST API for ${apiName} resources
- * 
+ *
  * Base URL: /api/${apiName}
  */
 
@@ -99,14 +99,14 @@ const sampleData = [
 const ${apiName}Schema = {
   type: 'object',
   properties: {
-    name: { 
-      type: 'string', 
-      minLength: 1,
-      maxLength: 100 
-    },
-    description: { 
+    name: {
       type: 'string',
-      maxLength: 500 
+      minLength: 1,
+      maxLength: 100
+    },
+    description: {
+      type: 'string',
+      maxLength: 500
     }
   },
   required: ['name'],
@@ -116,14 +116,14 @@ const ${apiName}Schema = {
 const ${apiName}UpdateSchema = {
   type: 'object',
   properties: {
-    name: { 
-      type: 'string', 
-      minLength: 1,
-      maxLength: 100 
-    },
-    description: { 
+    name: {
       type: 'string',
-      maxLength: 500 
+      minLength: 1,
+      maxLength: 100
+    },
+    description: {
+      type: 'string',
+      maxLength: 500
     }
   },
   additionalProperties: false,
@@ -138,21 +138,21 @@ const ${apiName}UpdateSchema = {
  */
 ${camelCaseApiName}API.get('/', (req, res) => {
   const { page = 1, limit = 10, search } = req.query;
-  
+
   let data = [...sampleData];
-  
+
   // Apply search filter
   if (search) {
-    data = data.filter(item => 
+    data = data.filter(item =>
       item.name.toLowerCase().includes(search.toLowerCase())
     );
   }
-  
+
   // Apply pagination
   const startIndex = (page - 1) * limit;
   const endIndex = startIndex + parseInt(limit);
   const paginatedData = data.slice(startIndex, endIndex);
-  
+
   return {
     data: paginatedData,
     pagination: {
@@ -171,14 +171,14 @@ ${camelCaseApiName}API.get('/', (req, res) => {
 ${camelCaseApiName}API.get('/:id', (req, res) => {
   const { id } = req.params;
   const item = sampleData.find(item => item.id === id);
-  
+
   if (!item) {
     return res.status(404).json({
       _error: '${className} not found',
       code: 'NOT_FOUND'
     });
   }
-  
+
   return { data: item };
 });
 
@@ -186,11 +186,11 @@ ${camelCaseApiName}API.get('/:id', (req, res) => {
  * POST /${apiName}
  * Create a new ${apiName} item
  */
-${camelCaseApiName}API.post('/', 
+${camelCaseApiName}API.post('/',
   withValidation(${apiName}Schema),
   (req, res) => {
     const { name, description } = req.body;
-    
+
     const newItem = {
       id: String(Date.now()),
       name,
@@ -198,9 +198,9 @@ ${camelCaseApiName}API.post('/',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    
+
     sampleData.push(newItem);
-    
+
     return res.status(201).json({
       data: newItem,
       message: '${className} created successfully'
@@ -217,22 +217,22 @@ ${camelCaseApiName}API.put('/:id',
   (req, res) => {
     const { id } = req.params;
     const itemIndex = sampleData.findIndex(item => item.id === id);
-    
+
     if (itemIndex === -1) {
       return res.status(404).json({
         _error: '${className} not found',
         code: 'NOT_FOUND'
       });
     }
-    
+
     const updatedItem = {
       ...sampleData[itemIndex],
       ...req.body,
       updatedAt: new Date().toISOString()
     };
-    
+
     sampleData[itemIndex] = updatedItem;
-    
+
     return {
       data: updatedItem,
       message: '${className} updated successfully'
@@ -247,16 +247,16 @@ ${camelCaseApiName}API.put('/:id',
 ${camelCaseApiName}API.delete('/:id', (req, res) => {
   const { id } = req.params;
   const itemIndex = sampleData.findIndex(item => item.id === id);
-  
+
   if (itemIndex === -1) {
     return res.status(404).json({
       _error: '${className} not found',
       code: 'NOT_FOUND'
     });
   }
-  
+
   const deletedItem = sampleData.splice(itemIndex, 1)[0];
-  
+
   return {
     data: deletedItem,
     message: '${className} deleted successfully'
@@ -277,7 +277,7 @@ export default ${camelCaseApiName}API;
 // Usage example:
 // import express from 'express';
 // import ${camelCaseApiName}API from './api/${apiName}.js';
-// 
+//
 // const app = express();
 // app.use(express.json());
 // app.use('/api', ${camelCaseApiName}API.toExpress());
@@ -301,13 +301,13 @@ function generateCRUDAPI(apiName, originalName) {
 function generateRPCAPI(apiName, originalName) {
   const className = toPascalCase(originalName);
   const camelCaseApiName = toCamelCase(apiName);
-  
+
   return `import { createApiRouter, withValidation } from '@coherent.js/api';
 
 /**
  * ${className} RPC API
  * Remote Procedure Call API for ${apiName}
- * 
+ *
  * Base URL: /rpc/${apiName}
  */
 
@@ -330,10 +330,10 @@ sampleData.set('2', { id: '2', name: 'Sample ${className} 2', createdAt: new Dat
 ${camelCaseApiName}RPC.post('/list', (req, res) => {
   const { params = {} } = req.body;
   const { limit = 10, offset = 0 } = params;
-  
+
   const items = Array.from(sampleData.values())
     .slice(offset, offset + limit);
-  
+
   return {
     jsonrpc: '2.0',
     result: {
@@ -348,7 +348,7 @@ ${camelCaseApiName}RPC.post('/list', (req, res) => {
  * RPC Method: ${apiName}.get
  * Get a specific ${apiName} item
  */
-${camelCaseApiName}RPC.post('/get', 
+${camelCaseApiName}RPC.post('/get',
   withValidation({
     type: 'object',
     properties: {
@@ -365,7 +365,7 @@ ${camelCaseApiName}RPC.post('/get',
   (req, res) => {
     const { params } = req.body;
     const item = sampleData.get(params.id);
-    
+
     if (!item) {
       return {
         jsonrpc: '2.0',
@@ -376,7 +376,7 @@ ${camelCaseApiName}RPC.post('/get',
         id: req.body.id
       };
     }
-    
+
     return {
       jsonrpc: '2.0',
       result: item,
@@ -407,16 +407,16 @@ ${camelCaseApiName}RPC.post('/create',
   (req, res) => {
     const { params } = req.body;
     const id = String(Date.now());
-    
+
     const newItem = {
       id,
       ...params,
       createdAt: new Date(),
       updatedAt: new Date()
     };
-    
+
     sampleData.set(id, newItem);
-    
+
     return {
       jsonrpc: '2.0',
       result: newItem,
@@ -448,7 +448,7 @@ ${camelCaseApiName}RPC.post('/update',
   (req, res) => {
     const { params } = req.body;
     const existing = sampleData.get(params.id);
-    
+
     if (!existing) {
       return {
         jsonrpc: '2.0',
@@ -459,15 +459,15 @@ ${camelCaseApiName}RPC.post('/update',
         id: req.body.id
       };
     }
-    
+
     const updated = {
       ...existing,
       ...params,
       updatedAt: new Date()
     };
-    
+
     sampleData.set(params.id, updated);
-    
+
     return {
       jsonrpc: '2.0',
       result: updated,
@@ -497,7 +497,7 @@ ${camelCaseApiName}RPC.post('/delete',
   (req, res) => {
     const { params } = req.body;
     const item = sampleData.get(params.id);
-    
+
     if (!item) {
       return {
         jsonrpc: '2.0',
@@ -508,9 +508,9 @@ ${camelCaseApiName}RPC.post('/delete',
         id: req.body.id
       };
     }
-    
+
     sampleData.delete(params.id);
-    
+
     return {
       jsonrpc: '2.0',
       result: { success: true, deleted: item },
@@ -528,18 +528,18 @@ export default ${camelCaseApiName}RPC;
  */
 function generateTestContent(apiName, originalName) {
   const className = toPascalCase(originalName);
-  
-  return `import { test } from 'node:test';
-import assert from 'node:assert';
+
+  return `import { describe, it, expect } from 'vitest';
 import ${apiName}API from './${apiName}.js';
 
-test('${className} API should be defined', () => {
-  assert(typeof ${apiName}API === 'object');
-  assert(typeof ${apiName}API.get === 'function');
-  assert(typeof ${apiName}API.post === 'function');
+describe('${className} API', () => {
+  it('should be defined', () => {
+    expect(typeof ${apiName}API).toBe('object');
+    expect(typeof ${apiName}API.get).toBe('function');
+    expect(typeof ${apiName}API.post).toBe('function');
 });
 
-test('${className} API should handle GET requests', async () => {
+it('should handle GET requests', async () => {
   const mockReq = {
     query: {}
   };
@@ -547,15 +547,15 @@ test('${className} API should handle GET requests', async () => {
     status: (code) => mockRes,
     json: (data) => data
   };
-  
+
   // This is a basic test structure
   // In a real test, you'd use a testing framework like supertest
-  assert(true); // Placeholder
+  expect(true).toBe(true); // Placeholder
 });
 
 // Add more specific tests for your API endpoints
 // Example:
-// test('POST /${apiName} should create new item', async () => {
+// it('POST /${apiName} should create new item', async () => {
 //   // Test implementation
 // });
 //

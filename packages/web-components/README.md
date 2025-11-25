@@ -8,6 +8,22 @@ Web Components integration for Coherent.js, enabling custom elements and Shadow 
 npm install @coherent.js/web-components
 ```
 
+
+## Exports
+
+Web Components integration
+
+### Modular Imports (Tree-Shakable)
+
+- Web Components: `@coherent.js/web-components`
+
+### Example Usage
+
+```javascript
+import { defineComponent } from '@coherent.js/web-components';
+```
+
+> **Note**: All exports are tree-shakable. Import only what you need for optimal bundle size.
 ## Usage
 
 ### Define Custom Elements

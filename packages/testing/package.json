@@ -42,5 +42,6 @@
     "LICENSE",
     "README.md",
     "types/"
-  ]
+  ],
+  "sideEffects": false
 }

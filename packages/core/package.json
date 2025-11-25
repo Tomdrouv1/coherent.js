@@ -11,6 +11,26 @@
       "development": "./src/index.js",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./components": {
+      "development": "./src/components/index.js",
+      "import": "./dist/components/index.js",
+      "require": "./dist/components/index.cjs"
+    },
+    "./rendering": {
+      "development": "./src/rendering/index.js",
+      "import": "./dist/rendering/index.js",
+      "require": "./dist/rendering/index.cjs"
+    },
+    "./performance": {
+      "development": "./src/performance/index.js",
+      "import": "./dist/performance/index.js",
+      "require": "./dist/performance/index.cjs"
+    },
+    "./utils": {
+      "development": "./src/utils/index.js",
+      "import": "./dist/utils/index.js",
+      "require": "./dist/utils/index.cjs"
     }
   },
   "scripts": {
@@ -40,5 +60,6 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
-  }
+  },
+  "sideEffects": false
 }

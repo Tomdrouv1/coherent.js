@@ -331,6 +331,7 @@ describe('Enhanced Performance Monitor', () => {
         enabled: true,
         alerts: {
           enabled: true,
+          debounceMs: 1000, // Shorter debounce for testing
           rules: [
             {
               metric: 'renderTime',
@@ -351,14 +352,14 @@ describe('Enhanced Performance Monitor', () => {
       expect(alertFn).toHaveBeenCalledTimes(1);
 
       // Wait for debounce period
-      await new Promise(resolve => setTimeout(resolve, 5100));
+      await new Promise(resolve => setTimeout(resolve, 1100));
 
       // Should trigger again after debounce
       alertMonitor.recordMetric('renderTime', 20);
       expect(alertFn).toHaveBeenCalledTimes(2);
 
       alertMonitor.stop();
-    });
+    }, 10000); // 10 second timeout
 
     it('should dynamically add alert rules', () => {
       const alertFn = vi.fn();

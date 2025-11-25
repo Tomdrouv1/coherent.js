@@ -10,6 +10,26 @@
     ".": {
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./router": {
+      "import": "./dist/router.js",
+      "require": "./dist/router.cjs"
+    },
+    "./middleware": {
+      "import": "./dist/middleware.js",
+      "require": "./dist/middleware.cjs"
+    },
+    "./security": {
+      "import": "./dist/security.js",
+      "require": "./dist/security.cjs"
+    },
+    "./validation": {
+      "import": "./dist/validation.js",
+      "require": "./dist/validation.cjs"
+    },
+    "./serialization": {
+      "import": "./dist/serialization.js",
+      "require": "./dist/serialization.cjs"
     }
   },
   "scripts": {
@@ -42,5 +62,6 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
-  }
+  },
+  "sideEffects": false
 }

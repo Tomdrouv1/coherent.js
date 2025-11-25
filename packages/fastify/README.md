@@ -22,6 +22,24 @@ Peer dependencies:
 - `fastify` >= 4 < 6
 - `@coherent.js/core`
 
+
+## Exports
+
+Fastify adapter for Coherent.js
+
+### Modular Imports (Tree-Shakable)
+
+- Fastify integration: `@coherent.js/fastify`
+- Handler creation: `@coherent.js/fastify`
+
+### Example Usage
+
+```javascript
+import { setupCoherent } from '@coherent.js/fastify';
+import { createHandler } from '@coherent.js/fastify';
+```
+
+> **Note**: All exports are tree-shakable. Import only what you need for optimal bundle size.
 ## Quick start
 
 You can use `@coherent.js/core` rendering inside Fastify route handlers.

@@ -14,6 +14,22 @@ Framework adapters for Coherent.js, providing seamless integration with popular 
 npm install @coherent.js/adapters
 ```
 
+
+## Exports
+
+Framework adapters
+
+### Modular Imports (Tree-Shakable)
+
+- Adapter utilities: `@coherent.js/adapters`
+
+### Example Usage
+
+```javascript
+import { createAdapter } from '@coherent.js/adapters';
+```
+
+> **Note**: All exports are tree-shakable. Import only what you need for optimal bundle size.
 ## Usage
 
 ### Astro Integration

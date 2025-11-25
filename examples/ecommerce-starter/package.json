@@ -1,0 +1,32 @@
+{
+  "name": "coherent-ecommerce-starter",
+  "version": "1.0.0",
+  "description": "Production-ready e-commerce site showcasing Coherent.js hybrid architecture",
+  "type": "module",
+  "scripts": {
+    "dev": "coherent dev",
+    "build": "coherent build",
+    "start": "coherent start",
+    "analyze": "node ../../scripts/analyze-bundle-size.js",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@coherent.js/core": "workspace:*",
+    "@coherent.js/state": "workspace:*",
+    "@coherent.js/api": "workspace:*"
+  },
+  "devDependencies": {
+    "@coherent.js/devtools": "workspace:*",
+    "vitest": "^1.0.0"
+  },
+  "coherent": {
+    "enableTreeShaking": true,
+    "enableStreaming": true,
+    "enableLRUCaching": true,
+    "devtools": {
+      "enabled": true,
+      "visualizer": true,
+      "performance": true
+    }
+  }
+}

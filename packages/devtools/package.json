@@ -1,15 +1,52 @@
 {
   "name": "@coherent.js/devtools",
   "version": "1.0.0-beta.3",
-  "description": "Developer tools for Coherent.js applications",
+  "description": "Developer tools for Coherent.js applications - tree-shakable modular exports",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./types/index.d.ts",
   "exports": {
-    ".": "./dist/index.js",
-    "./inspector": "./dist/inspector.js",
-    "./profiler": "./dist/profiler.js",
-    "./logger": "./dist/logger.js"
+    ".": {
+      "development": "./src/index.js",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./visualizer": {
+      "development": "./src/component-visualizer.js",
+      "import": "./dist/component-visualizer.js",
+      "require": "./dist/component-visualizer.cjs"
+    },
+    "./performance": {
+      "development": "./src/performance-dashboard.js",
+      "import": "./dist/performance-dashboard.js",
+      "require": "./dist/performance-dashboard.cjs"
+    },
+    "./errors": {
+      "development": "./src/enhanced-errors.js",
+      "import": "./dist/enhanced-errors.js",
+      "require": "./dist/enhanced-errors.cjs"
+    },
+    "./hybrid": {
+      "development": "./src/hybrid-integration-tools.js",
+      "import": "./dist/hybrid-integration-tools.js",
+      "require": "./dist/hybrid-integration-tools.cjs"
+    },
+    "./inspector": {
+      "development": "./src/inspector.js",
+      "import": "./dist/inspector.js",
+      "require": "./dist/inspector.cjs"
+    },
+    "./profiler": {
+      "development": "./src/profiler.js",
+      "import": "./dist/profiler.js",
+      "require": "./dist/profiler.cjs"
+    },
+    "./logger": {
+      "development": "./src/logger.js",
+      "import": "./dist/logger.js",
+      "require": "./dist/logger.cjs"
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "dist/",
@@ -22,7 +59,8 @@
     "devtools",
     "debugging",
     "profiling",
-    "inspector"
+    "inspector",
+    "tree-shakable"
   ],
   "author": "Coherent.js Team",
   "license": "MIT",
@@ -39,5 +77,6 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "sideEffects": false
 }

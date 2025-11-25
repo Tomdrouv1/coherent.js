@@ -483,21 +483,21 @@ logs
   writeFileSync(join(projectPath, '.gitignore'), gitignore);
 
   // Basic test file
-  const testFile = `import { test } from 'node:test';
-import assert from 'node:assert';
+  const testFile = `import { describe, it, expect } from 'vitest';
 import { render } from '@coherent.js/core';
 
-test('renders basic component', () => {
-  const component = {
-    div: {
-      text: 'Hello, World!'
-    }
-  };
+describe('Basic Component Rendering', () => {
+  it('renders basic component', () => {
+    const component = {
+      div: {
+        text: 'Hello, World!'
+      }
+    };
 
-  const html = render(component);
-  assert(html.includes('Hello, World!'));
-});
-`;
+    const html = render(component);
+    expect(html).toContain('Hello, World!');
+  });
+});`;
 
   writeFileSync(join(projectPath, 'tests/basic.test.js'), testFile);
 }

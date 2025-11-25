@@ -175,38 +175,38 @@ export default ${functionName};
 
 function generateMiddlewareTestContent({ middlewareName, functionName, template, fileName }) {
   if (template === 'fastify') {
-    return `import { test } from 'node:test';
-import assert from 'node:assert/strict';
+    return `import { describe, it, expect } from 'vitest';
 import Fastify from 'fastify';
 import ${middlewareName} from './${fileName}.js';
 
-test('${middlewareName} registers fastify hook', async () => {
-  const fastify = Fastify();
-  await fastify.register(${middlewareName});
+describe('${middlewareName}', () => {
+  it('registers fastify hook', async () => {
+    const fastify = Fastify();
+    await fastify.register(${middlewareName});
 
-  assert.ok(fastify.hasDecorator('getContext'));
-});
-`;
+    expect(fastify.hasDecorator('getContext')).toBe(true);
+  });
+});`;
   }
 
-  return `import { test } from 'node:test';
-import assert from 'node:assert/strict';
+  return `import { describe, it, expect } from 'vitest';
 import http from 'node:http';
 import ${functionName} from './${fileName}.js';
 
-test('${middlewareName} executes without errors', (t, done) => {
-  const middleware = typeof ${functionName} === 'function' ? ${functionName}() : ${functionName};
+describe('${middlewareName}', () => {
+  it('executes without errors', (done) => {
+    const middleware = typeof ${functionName} === 'function' ? ${functionName}() : ${functionName};
 
-  const req = new http.IncomingMessage();
-  const res = new http.ServerResponse(req);
-  req.headers = {};
+    const req = new http.IncomingMessage();
+    const res = new http.ServerResponse(req);
+    req.headers = {};
 
-  middleware(req, res, () => {
-    assert.ok(true);
-    done();
+    middleware(req, res, () => {
+      expect(true).toBe(true);
+      done();
+    });
   });
-});
-`;
+});`;
 }
 
 function toPascalCase(str) {

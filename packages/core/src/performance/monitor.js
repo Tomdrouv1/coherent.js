@@ -47,6 +47,7 @@ export function createPerformanceMonitor(options = {}) {
     },
     alerts: {
       enabled: true,
+      debounceMs: 5000,
       rules: []
     },
     resources: {
@@ -263,8 +264,8 @@ export function createPerformanceMonitor(options = {}) {
         const lastTriggered = alertState.triggered.get(alertKey);
         const now = Date.now();
 
-        // Debounce alerts (don't trigger same alert within 5 seconds)
-        if (!lastTriggered || now - lastTriggered > 5000) {
+        // Debounce alerts (don't trigger same alert within debounceMs period)
+        if (!lastTriggered || now - lastTriggered > opts.alerts.debounceMs) {
           alertState.triggered.set(alertKey, now);
           alertState.history.push({
             rule,

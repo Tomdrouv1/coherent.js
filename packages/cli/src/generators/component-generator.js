@@ -10,11 +10,11 @@ import { join } from 'path';
  */
 export async function generateComponent(name, options = {}) {
   const { path = 'src/components', template = 'basic', skipTest = false, skipStory = false } = options;
-  
+
   // Ensure component name is PascalCase
   const componentName = toPascalCase(name);
   const fileName = componentName;
-  
+
   // Create output directory
   const outputDir = join(process.cwd(), path);
   if (!existsSync(outputDir)) {
@@ -49,7 +49,7 @@ export async function generateComponent(name, options = {}) {
   // Add next steps
   nextSteps.push(`Import the component: import { ${componentName} } from '${path}/${fileName}.js'`);
   nextSteps.push(`Use the component: ${componentName}({ /* props */ })`);
-  
+
   if (!skipTest) {
     nextSteps.push('Run tests: npm test');
   }
@@ -81,7 +81,7 @@ function generateBasicComponent(name) {
 
 /**
  * ${name} component
- * 
+ *
  * @param {Object} props - Component properties
  * @param {string} props.className - CSS class name
  * @param {Array|Object} props.children - Child elements
@@ -112,7 +112,7 @@ function generateFunctionalComponent(name) {
 
 /**
  * ${name} - Functional component with business logic
- * 
+ *
  * @param {Object} props - Component properties
  * @param {Array} props.items - Items to display
  * @param {Function} props.onItemClick - Callback for item clicks
@@ -130,11 +130,11 @@ export const ${name} = createComponent(({ items = [], onItemClick, className = '
     div: {
       className: \`${name.toLowerCase()} \${className}\`.trim(),
       children: [
-        { 
-          h3: { 
+        {
+          h3: {
             className: '${name.toLowerCase()}__title',
-            text: '${name}' 
-          } 
+            text: '${name}'
+          }
         },
         {
           ul: {
@@ -181,17 +181,17 @@ function generateInteractiveComponent(name) {
 
 /**
  * ${name} - Interactive component with state management
- * 
+ *
  * @param {Object} props - Component properties
  * @param {*} props.initialValue - Initial value
  * @param {Function} props.onChange - Change callback
  * @param {string} props.className - CSS class name
  */
-export const ${name} = createComponent(({ 
-  initialValue = '', 
+export const ${name} = createComponent(({
+  initialValue = '',
   onChange,
   className = '',
-  ...props 
+  ...props
 }) => {
   // Component state (handled by Coherent.js hydration)
   const state = {
@@ -272,7 +272,7 @@ function generateLayoutComponent(name) {
 
 /**
  * ${name} - Layout component for page structure
- * 
+ *
  * @param {Object} props - Component properties
  * @param {string} props.title - Page title
  * @param {Array|Object} props.children - Child content
@@ -280,7 +280,7 @@ function generateLayoutComponent(name) {
  * @param {Object} props.footer - Footer content
  * @param {string} props.className - CSS class name
  */
-export const ${name} = createComponent(({ 
+export const ${name} = createComponent(({
   title = 'Page Title',
   children = [],
   header = null,
@@ -358,38 +358,39 @@ export const ${name} = createComponent(({
  * Generate test content
  */
 function generateTestContent(name) {
-  return `import { test } from 'node:test';
-import assert from 'node:assert';
+  return `import { describe, it, expect } from 'vitest';
 import { render } from '@coherent.js/core';
 import { ${name} } from './${name}.js';
 
-test('${name} renders correctly', () => {
-  const component = ${name}({});
-  const html = render(component);
-  
-  assert(typeof html === 'string');
-  assert(html.length > 0);
-  assert(html.includes('${name.toLowerCase()}'));
+describe('${name}', () => {
+  it('renders correctly', () => {
+    const component = ${name}({});
+    const html = render(component);
+
+    expect(typeof html).toBe('string');
+    expect(html.length).toBeGreaterThan(0);
+    expect(html).toContain('${name.toLowerCase()}');
+  });
+
+  it('accepts className prop', () => {
+    const component = ${name}({ className: 'test-class' });
+    const html = render(component);
+
+    expect(html).toContain('test-class');
+  });
 });
 
-test('${name} accepts className prop', () => {
-  const component = ${name}({ className: 'test-class' });
-  const html = render(component);
-  
-  assert(html.includes('test-class'));
-});
+it('renders children correctly', () => {
+    const children = [
+      { p: { text: 'Test child content' } }
+    ];
 
-test('${name} renders children correctly', () => {
-  const children = [
-    { p: { text: 'Test child content' } }
-  ];
-  
-  const component = ${name}({ children });
-  const html = render(component);
-  
-  assert(html.includes('Test child content'));
-});
-`;
+    const component = ${name}({ children });
+    const html = render(component);
+
+    expect(html).toContain('Test child content');
+  });
+});`;
 }
 
 /**

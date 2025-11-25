@@ -1,0 +1,78 @@
+{
+  "timestamp": 1763722039320,
+  "packageSizes": {
+    "results": {
+      "core": {
+        "rawSize": 391613,
+        "sizeKB": 382.4,
+        "fileCount": 33
+      },
+      "state": {
+        "rawSize": 72685,
+        "sizeKB": 71,
+        "fileCount": 6
+      },
+      "api": {
+        "rawSize": 90814,
+        "sizeKB": 88.7,
+        "fileCount": 8
+      },
+      "devtools": {
+        "rawSize": 133891,
+        "sizeKB": 130.8,
+        "fileCount": 9
+      }
+    },
+    "totalSize": 689003
+  },
+  "treeShaking": {
+    "fullSize": 131893,
+    "selectiveSize": 26995,
+    "reduction": 79.5,
+    "fileSizes": {
+      "Component Visualizer": {
+        "size": 12235,
+        "sizeKB": 11.9
+      },
+      "Performance Dashboard": {
+        "size": 14760,
+        "sizeKB": 14.4
+      },
+      "Enhanced Errors": {
+        "size": 16974,
+        "sizeKB": 16.6
+      },
+      "Hybrid Integration": {
+        "size": 16673,
+        "sizeKB": 16.3
+      },
+      "Inspector": {
+        "size": 12625,
+        "sizeKB": 12.3
+      },
+      "Profiler": {
+        "size": 15378,
+        "sizeKB": 15
+      },
+      "Logger": {
+        "size": 12870,
+        "sizeKB": 12.6
+      },
+      "Dev Tools": {
+        "size": 30378,
+        "sizeKB": 29.7
+      }
+    }
+  },
+  "minification": {
+    "sourceSize": 689003,
+    "minifiedSize": 241151.05,
+    "gzippedSize": 82680.36
+  },
+  "validation": {
+    "treeShakingPassed": false,
+    "bundleSizePassed": true,
+    "allClaimsValid": false
+  },
+  "environment": "real-measurements"
+}
