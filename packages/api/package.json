@@ -59,6 +59,9 @@
   "peerDependencies": {
     "@coherent.js/core": "workspace:*"
   },
+  "devDependencies": {
+    "@coherent.js/state": "workspace:*"
+  },
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"

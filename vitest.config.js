@@ -38,9 +38,10 @@ export default defineConfig({
     // File patterns
     include: [
       'packages/*/test/**/*.{test,spec}.{js,ts}',
-      'packages/*/src/**/*.{test,spec}.{js,ts}'
+      'packages/*/src/**/*.{test,spec}.{js,ts}',
+      'test/**/*.{test,spec}.{js,ts}'
     ],
-    
+
     // Exclude patterns
     exclude: [
       'node_modules/**',
@@ -56,7 +57,7 @@ export default defineConfig({
         singleFork: false // Allow multiple forks for better isolation
       }
     },
-    
+
     // Test isolation settings
     isolate: true, // Isolate tests
     clearMocks: true, // Clear mocks between tests
