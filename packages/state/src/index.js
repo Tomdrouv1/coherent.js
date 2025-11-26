@@ -45,6 +45,14 @@ import {
     validators
 } from './state-validation.js';
 
+// Import enhanced state patterns
+import {
+    createFormState,
+    createListState,
+    createModalState,
+    createRouterState
+} from './enhanced-state-patterns.js';
+
 // Re-export everything from state-manager (SSR-compatible state)
 export {
     createState,
@@ -69,6 +77,14 @@ export {
     createValidatedState,
     validators
 } from './state-validation.js';
+
+// Re-export enhanced state patterns
+export {
+    createFormState,
+    createListState,
+    createModalState,
+    createRouterState
+} from './enhanced-state-patterns.js';
 
 // Default export provides all utilities
 export default {
@@ -95,6 +111,12 @@ export default {
     // Validation utilities
     createValidatedState,
     validators,
+
+    // Enhanced state patterns
+    createFormState,
+    createListState,
+    createModalState,
+    createRouterState,
 
     // State utilities
     stateUtils

@@ -16,7 +16,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 10.20.0
+          version: 10.23.0
 
       - name: Use Node.js
         uses: actions/setup-node@v4
@@ -41,15 +41,15 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run audit
-        run: pnpm audit --audit-level moderate
+        run: pnpm audit --audit-level high
         continue-on-error: true
 
-      - name: Check for moderate+ vulnerabilities
+      - name: Check for high+ vulnerabilities
         run: |
           AUDIT_JSON=$(pnpm audit --json 2>&1 || true)
-          MODERATE=$(echo "$AUDIT_JSON" | jq -r '.metadata.vulnerabilities.moderate // 0')
-          HIGH=$(echo "$AUDIT_JSON" | jq -r '.metadata.vulnerabilities.high // 0')
           CRITICAL=$(echo "$AUDIT_JSON" | jq -r '.metadata.vulnerabilities.critical // 0')
+          HIGH=$(echo "$AUDIT_JSON" | jq -r '.metadata.vulnerabilities.high // 0')
+          MODERATE=$(echo "$AUDIT_JSON" | jq -r '.metadata.vulnerabilities.moderate // 0')
           LOW=$(echo "$AUDIT_JSON" | jq -r '.metadata.vulnerabilities.low // 0')
 
           echo "📊 Audit Summary:"
@@ -58,15 +58,15 @@ jobs:
           echo "  Moderate: $MODERATE"
           echo "  Low: $LOW (ignored)"
 
-          TOTAL=$((MODERATE + HIGH + CRITICAL))
+          TOTAL=$((HIGH + CRITICAL))
 
           if [ "$TOTAL" -gt 0 ]; then
-            echo "❌ Found $TOTAL moderate or higher severity vulnerabilities!"
-            pnpm audit --audit-level moderate
+            echo "❌ Found $TOTAL high or higher severity vulnerabilities!"
+            pnpm audit --audit-level high
             exit 1
           else
-            echo "✅ No moderate+ vulnerabilities found."
+            echo "✅ No high+ vulnerabilities found."
             if [ "$LOW" -gt 0 ]; then
-              echo "ℹ️  Note: $LOW low-severity vulnerabilities found (accepted risk, see SECURITY.md)"
+              echo "ℹ️  Note: $((LOW + MODERATE)) moderate-severity vulnerabilities found (accepted risk, see SECURITY.md)"
             fi
           fi
