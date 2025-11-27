@@ -73,7 +73,7 @@ coherent.js/
 │   │   │   │   ├── event-bus.js            # Event bus
 │   │   │   │   └── component-integration.js
 │   │   │   └── utils/                      # Utilities
-│   │   │       ├── _error-handler.js       # Error handling
+│   │   │       ├── error-handler.js        # Error handling
 │   │   │       └── render-utils.js         # Shared rendering utilities
 │   │   └── types/                          # TypeScript definitions
 │   │

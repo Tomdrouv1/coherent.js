@@ -4,7 +4,7 @@
  */
 
 import { ReactiveState, observable, computed } from '@coherent.js/state/src/reactive-state.js';
-import { globalErrorHandler } from '@coherent.js/core/src/utils/_error-handler.js';
+import { globalErrorHandler } from '@coherent.js/core/src/utils/error-handler.js';
 
 /**
  * Built-in validation rules
