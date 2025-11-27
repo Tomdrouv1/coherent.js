@@ -62,6 +62,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build packages
+        run: pnpm run build
+
       - name: Lint
         run: pnpm run lint
 
@@ -94,9 +97,6 @@ jobs:
           path: |
             coverage/
             coverage-summary.json
-
-      - name: Build packages
-        run: pnpm run build
 
       - name: Build website (sanity check)
         run: pnpm run website:build
