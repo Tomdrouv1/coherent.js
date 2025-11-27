@@ -69,7 +69,7 @@ jobs:
         run: pnpm run typecheck
 
       - name: Unit tests with coverage
-        run: pnpm run test:coverage
+        run: pnpm run test:coverage:ci
         continue-on-error: false
         env:
           CI: true

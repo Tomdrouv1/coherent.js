@@ -14,11 +14,13 @@
   ],
   "scripts": {
     "test": "vitest run",
+    "test:ci": "vitest run --no-cache",
     "test:vitest": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:packages": "pnpm -r run test",
     "test:coverage": "vitest run --coverage",
+    "test:coverage:ci": "vitest run --coverage --no-cache",
     "coverage:report": "node scripts/generate-coverage-report.js",
     "build": "pnpm run build:packages",
     "build:packages": "pnpm -r --stream run build",
@@ -161,7 +163,8 @@
     },
     "onlyBuiltDependencies": [
       "esbuild",
-      "sharp"
+      "sharp",
+      "sqlite3"
     ],
     "overrides": {
       "glob@<8": ">=10.0.0",
