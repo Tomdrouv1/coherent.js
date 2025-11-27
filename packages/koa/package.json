@@ -1,6 +1,6 @@
 {
   "name": "@coherent.js/koa",
-  "version": "1.0.0-beta.4",
+  "version": "1.0.0-beta.5",
   "description": "Koa adapter for Coherent.js",
   "type": "module",
   "main": "dist/index.cjs",
