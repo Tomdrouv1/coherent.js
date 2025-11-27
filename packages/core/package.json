@@ -1,6 +1,6 @@
 {
   "name": "@coherent.js/core",
-  "version": "1.0.0-beta.3",
+  "version": "1.0.0-beta.4",
   "description": "Core runtime for Coherent.js (SSR framework).",
   "type": "module",
   "main": "dist/index.cjs",

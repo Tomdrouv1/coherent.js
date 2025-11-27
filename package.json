@@ -1,6 +1,6 @@
 {
   "name": "@coherent.js/monorepo",
-  "version": "1.0.0-beta.3",
+  "version": "1.0.0-beta.4",
   "private": true,
   "description": "A lightweight, high-performance server-side rendering framework using pure JavaScript objects. Features include streaming renderer, performance monitoring, component composition, memoization, and integrations with Express.js, Fastify, and Next.js.",
   "type": "module",
@@ -165,21 +165,6 @@
       "esbuild",
       "sharp",
       "sqlite3"
-    ],
-    "overrides": {
-      "glob@<8": ">=10.0.0",
-      "rimraf@<4": ">=5.0.0",
-      "inflight": "npm:@humanfs/inflight@^1.0.0",
-      "npmlog": "npm:proc-log@^5.0.0",
-      "are-we-there-yet": "npm:proc-log@^5.0.0",
-      "gauge": "npm:proc-log@^5.0.0",
-      "tar-fs": ">=2.1.4",
-      "tmp": ">=0.2.4",
-      "esbuild": ">=0.25.9",
-      "js-yaml@<3.14.2": ">=3.14.2",
-      "js-yaml@>=4.0.0 <4.1.1": ">=4.1.1",
-      "glob@>=11.0.0 <11.1.0": ">=11.1.0",
-      "@changesets/parse>js-yaml@>=4.0.0 <4.1.1": ">=4.1.1"
-    }
+    ]
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@coherent.js/api",
-  "version": "1.0.0-beta.3",
+  "version": "1.0.0-beta.4",
   "description": "API framework for Coherent.js (REST/RPC/GraphQL).",
   "type": "module",
   "main": "dist/index.cjs",

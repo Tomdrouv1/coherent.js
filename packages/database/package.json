@@ -1,6 +1,6 @@
 {
   "name": "@coherent.js/database",
-  "version": "1.0.0-beta.3",
+  "version": "1.0.0-beta.4",
   "description": "Database utilities and adapters for Coherent.js",
   "type": "module",
   "main": "dist/index.cjs",
