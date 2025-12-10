@@ -2,13 +2,14 @@
  * Project scaffolding generator
  */
 
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, copyFileSync, constants, readFileSync, appendFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { execSync } from 'node:child_process';
 import { getCLIVersion } from '../utils/version.js';
 import { generateServerFile, getRuntimeDependencies } from './runtime-scaffold.js';
 import { generateDatabaseScaffolding } from './database-scaffold.js';
 import { generateAuthScaffolding } from './auth-scaffold.js';
+import { generateDockerScaffolding, generateHealthCheck } from './docker-scaffold.js';
 import { generatePackageScaffolding } from './package-scaffold.js';
 import { generateTsConfig, generateJsConfig, getTypeScriptDependencies } from './typescript-config.js';
 
@@ -95,14 +96,41 @@ export async function scaffoldProject(projectPath, options) {
 
   // Generate database scaffolding
   if (database) {
-    const dbScaffolding = generateDatabaseScaffolding(database);
-    writeFileSync(join(projectPath, 'src/db/config.js'), dbScaffolding.config);
-    writeFileSync(join(projectPath, 'src/db/index.js'), dbScaffolding.init);
-    writeFileSync(join(projectPath, 'src/db/models/User.js'), dbScaffolding.model);
+    const dbScaffolding = generateDatabaseScaffolding(database, language);
+    writeFileSync(join(projectPath, `src/db/config${fileExtension}`), dbScaffolding.config);
+    writeFileSync(join(projectPath, `src/db/index${fileExtension}`), dbScaffolding.init);
+    writeFileSync(join(projectPath, `src/db/models/User${fileExtension}`), dbScaffolding.model);
 
-    // Generate or update .env.example
-    const existingEnv = '';
-    writeFileSync(join(projectPath, '.env.example'), existingEnv + dbScaffolding.env);
+    // Generate Docker configuration if requested
+    if (options.dockerConfig && database !== 'sqlite') {
+      const dockerScaffolding = generateDockerScaffolding(database, options.dockerConfig);
+
+      // Write Docker files
+      writeFileSync(join(projectPath, 'docker-compose.yml'), dockerScaffolding['docker-compose.yml']);
+      writeFileSync(join(projectPath, 'Dockerfile'), dockerScaffolding['Dockerfile']);
+      writeFileSync(join(projectPath, '.dockerignore'), dockerScaffolding['.dockerignore']);
+
+      // Generate health check script
+      writeFileSync(join(projectPath, `healthcheck${fileExtension}`), generateHealthCheck());
+
+      // Update .env.example with Docker configuration
+      let envContent = '';
+      for (const [key, value] of Object.entries(dockerScaffolding.envConfig)) {
+        envContent += `${key}=${value}\n`;
+      }
+      writeFileSync(join(projectPath, '.env.example'), envContent);
+    } else {
+      // Generate or update .env.example without Docker
+      const existingEnv = '';
+      writeFileSync(join(projectPath, '.env.example'), existingEnv + dbScaffolding.env);
+    }
+
+    // Create .env from .env.example if it doesn't exist
+    try {
+      copyFileSync(join(projectPath, '.env.example'), join(projectPath, '.env'), constants.COPYFILE_EXCL);
+    } catch {
+      // Ignore if .env already exists
+    }
   }
 
   // Generate auth scaffolding
@@ -111,15 +139,26 @@ export async function scaffoldProject(projectPath, options) {
 
     // Write auth middleware/plugin
     const authDir = runtime === 'fastify' ? 'plugins' : 'middleware';
-    writeFileSync(join(projectPath, `src/${authDir}/auth.js`), authScaffolding.middleware);
+    writeFileSync(join(projectPath, `src/${authDir}/auth${fileExtension}`), authScaffolding.middleware);
 
     // Write auth routes
-    writeFileSync(join(projectPath, 'src/api/auth.js'), authScaffolding.routes);
+    writeFileSync(join(projectPath, `src/api/auth${fileExtension}`), authScaffolding.routes);
 
     // Append to .env.example
     const envPath = join(projectPath, '.env.example');
     const existingEnv = '';
     writeFileSync(envPath, existingEnv + authScaffolding.env);
+
+    // Update .env if it exists
+    try {
+      const envContent = readFileSync(join(projectPath, '.env'), 'utf8');
+      if (!envContent.includes('JWT_SECRET') && !envContent.includes('SESSION_SECRET')) {
+        appendFileSync(join(projectPath, '.env'), authScaffolding.env);
+      }
+    } catch {
+      // .env might not exist if database wasn't selected first, create it
+      writeFileSync(join(projectPath, '.env'), authScaffolding.env);
+    }
   }
 
   // Generate optional package scaffolding
@@ -209,6 +248,11 @@ function generatePackageJson(name, options) {
     const tsDeps = getTypeScriptDependencies();
     Object.assign(base.devDependencies, tsDeps);
     base.devDependencies.tsx = '^4.19.2'; // For running TypeScript files directly
+
+    // Add @types for auth packages if auth is enabled
+    if (auth) {
+      base.devDependencies['@types/jsonwebtoken'] = '^9.0.7';
+    }
   }
 
   // Add packageManager field (Corepack standard)
@@ -224,7 +268,7 @@ function generatePackageJson(name, options) {
 
   // Database dependencies
   if (database) {
-    const { dependencies: dbDeps } = generateDatabaseScaffolding(database);
+    const { dependencies: dbDeps } = generateDatabaseScaffolding(database, language);
     Object.assign(base.dependencies, dbDeps);
   }
 
