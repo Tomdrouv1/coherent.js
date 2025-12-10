@@ -11,12 +11,32 @@ import { resolve } from 'path';
 import { scaffoldProject } from '../generators/project-scaffold.js';
 import { validateProjectName } from '../utils/validation.js';
 
+// Helper function to get default Docker port for database
+function getDefaultDockerPort(database) {
+  const ports = {
+    postgres: 5432,
+    mysql: 3306,
+    mongodb: 27017
+  };
+  return ports[database] || 5432;
+}
+
 export const createCommand = new Command('create')
   .description('Create a new Coherent.js project')
   .argument('[name]', 'project name')
   .option('-t, --template <template>', 'project template', 'basic')
+  .option('--runtime <runtime>', 'runtime framework', 'koa')
+  .option('--database <database>', 'database type')
+  .option('--auth <auth>', 'authentication type')
+  .option('--language <language>', 'language', 'javascript')
   .option('--skip-install', 'skip npm install')
   .option('--skip-git', 'skip git initialization')
+  .option('--skip-prompts', 'skip interactive prompts')
+  .option('--use-docker', 'include Docker configuration for database')
+  .option('--docker-db-port <port>', 'Docker database port')
+  .option('--docker-db-name <name>', 'Docker database name')
+  .option('--docker-db-user <user>', 'Docker database user')
+  .option('--docker-db-password <password>', 'Docker database password')
   .action(async (name, options) => {
     let projectName = name;
 
@@ -34,7 +54,7 @@ export const createCommand = new Command('create')
         console.log(picocolors.yellow('👋 Project creation cancelled'));
         process.exit(0);
       }
-      
+
       projectName = response.name;
     }
 
@@ -61,58 +81,62 @@ export const createCommand = new Command('create')
 
     // Template selection
     let template = options.template;
-    if (!template || template === 'basic') {
-      const response = await prompts({
+    if (!template || (template === 'basic' && !options.skipPrompts)) {
+      if (!options.skipPrompts) {
+        const response = await prompts({
+          type: 'select',
+          name: 'template',
+          message: 'Which template would you like to use?',
+          choices: [
+            { title: '🏃‍♂️ Basic App', value: 'basic', description: 'Simple Coherent.js app with routing' },
+            { title: '🌐 Full Stack', value: 'fullstack', description: 'API + SSR with database integration' },
+            { title: '⚡ Express Integration', value: 'express', description: 'Coherent.js with Express.js' },
+            { title: '🚀 Fastify Integration', value: 'fastify', description: 'Coherent.js with Fastify' },
+            { title: '📱 Component Library', value: 'components', description: 'Reusable component library' },
+            { title: '🎨 Custom Setup', value: 'custom', description: 'Choose your own runtime and packages' }
+          ],
+          initial: 0
+        });
+
+        if (!response.template) {
+          console.log(picocolors.yellow('👋 Project creation cancelled'));
+          process.exit(0);
+        }
+
+        template = response.template;
+      }
+    }
+
+    // Collect additional configuration options
+    let runtime = options.runtime || 'built-in';
+    let database = options.database || null;
+    let auth = options.auth || null;
+    let packages = [];
+    let language = options.language || 'javascript';
+
+    // Language selection (TypeScript vs JavaScript)
+    if (!options.skipPrompts) {
+      const languageResponse = await prompts({
         type: 'select',
-        name: 'template',
-        message: 'Which template would you like to use?',
+        name: 'language',
+        message: 'Would you like to use TypeScript or JavaScript?',
         choices: [
-          { title: '🏃‍♂️ Basic App', value: 'basic', description: 'Simple Coherent.js app with routing' },
-          { title: '🌐 Full Stack', value: 'fullstack', description: 'API + SSR with database integration' },
-          { title: '⚡ Express Integration', value: 'express', description: 'Coherent.js with Express.js' },
-          { title: '🚀 Fastify Integration', value: 'fastify', description: 'Coherent.js with Fastify' },
-          { title: '📱 Component Library', value: 'components', description: 'Reusable component library' },
-          { title: '🎨 Custom Setup', value: 'custom', description: 'Choose your own runtime and packages' }
+          { title: '📘 JavaScript', value: 'javascript', description: 'JavaScript with JSDoc type hints (recommended)' },
+          { title: '📕 TypeScript', value: 'typescript', description: 'Full TypeScript with static type checking' }
         ],
         initial: 0
       });
 
-      if (!response.template) {
+      if (!languageResponse.language) {
         console.log(picocolors.yellow('👋 Project creation cancelled'));
         process.exit(0);
       }
 
-      template = response.template;
+      language = languageResponse.language;
     }
-
-    // Collect additional configuration options
-    let runtime = 'built-in';
-    let database = null;
-    let auth = null;
-    let packages = [];
-    let language = 'javascript';
-
-    // Language selection (TypeScript vs JavaScript)
-    const languageResponse = await prompts({
-      type: 'select',
-      name: 'language',
-      message: 'Would you like to use TypeScript or JavaScript?',
-      choices: [
-        { title: '📘 JavaScript', value: 'javascript', description: 'JavaScript with JSDoc type hints (recommended)' },
-        { title: '📕 TypeScript', value: 'typescript', description: 'Full TypeScript with static type checking' }
-      ],
-      initial: 0
-    });
-
-    if (!languageResponse.language) {
-      console.log(picocolors.yellow('👋 Project creation cancelled'));
-      process.exit(0);
-    }
-
-    language = languageResponse.language;
 
     // Runtime selection for applicable templates
-    if (template === 'custom' || template === 'basic' || template === 'fullstack' || template === 'components') {
+    if ((template === 'custom' || template === 'basic' || template === 'fullstack' || template === 'components') && !options.skipPrompts) {
       const runtimeResponse = await prompts({
         type: 'select',
         name: 'runtime',
@@ -141,47 +165,57 @@ export const createCommand = new Command('create')
     // Fullstack and Custom templates get additional options
     if (template === 'fullstack' || template === 'custom') {
       // Database selection
-      const dbResponse = await prompts({
-        type: 'select',
-        name: 'database',
-        message: 'Which database would you like to use?',
-        choices: [
-          { title: '🐘 PostgreSQL', value: 'postgres', description: 'Powerful, open source relational database' },
-          { title: '🐬 MySQL', value: 'mysql', description: 'Popular open source relational database' },
-          { title: '📦 SQLite', value: 'sqlite', description: 'Lightweight, file-based database' },
-          { title: '🍃 MongoDB', value: 'mongodb', description: 'NoSQL document database' },
-          { title: '❌ None', value: 'none', description: 'Skip database setup' }
-        ],
-        initial: 0
-      });
+      if (!options.skipPrompts) {
+        const dbResponse = await prompts({
+          type: 'select',
+          name: 'database',
+          message: 'Which database would you like to use?',
+          choices: [
+            { title: '🐘 PostgreSQL', value: 'postgres', description: 'Powerful, open source relational database' },
+            { title: '🐬 MySQL', value: 'mysql', description: 'Popular open source relational database' },
+            { title: '📦 SQLite', value: 'sqlite', description: 'Lightweight, file-based database' },
+            { title: '🍃 MongoDB', value: 'mongodb', description: 'NoSQL document database' },
+            { title: '❌ None', value: 'none', description: 'Skip database setup' }
+          ],
+          initial: 0
+        });
 
-      if (!dbResponse.database) {
-        console.log(picocolors.yellow('👋 Project creation cancelled'));
-        process.exit(0);
+        if (!dbResponse.database) {
+          console.log(picocolors.yellow('👋 Project creation cancelled'));
+          process.exit(0);
+        }
+
+        database = dbResponse.database === 'none' ? null : dbResponse.database;
+      } else {
+        // Use database from CLI options when skip-prompts is enabled
+        database = options.database || null;
       }
 
-      database = dbResponse.database === 'none' ? null : dbResponse.database;
-
       // Optional packages
-      const pkgResponse = await prompts({
-        type: 'multiselect',
-        name: 'packages',
-        message: 'Select optional packages (space to select, enter to confirm):',
-        choices: [
-          { title: '@coherent.js/api', value: 'api', description: 'API framework with validation & OpenAPI', selected: template === 'fullstack' },
-          { title: '@coherent.js/client', value: 'client', description: 'Client-side hydration & progressive enhancement' },
-          { title: '@coherent.js/i18n', value: 'i18n', description: 'Internationalization utilities' },
-          { title: '@coherent.js/forms', value: 'forms', description: 'Form handling utilities' },
-          { title: '@coherent.js/devtools', value: 'devtools', description: 'Development tools & debugging' },
-          { title: '@coherent.js/seo', value: 'seo', description: 'SEO optimization utilities' },
-          { title: '@coherent.js/testing', value: 'testing', description: 'Testing utilities & helpers' }
-        ]
-      });
+      if (!options.skipPrompts) {
+        const pkgResponse = await prompts({
+          type: 'multiselect',
+          name: 'packages',
+          message: 'Select optional packages (space to select, enter to confirm):',
+          choices: [
+            { title: '@coherent.js/api', value: 'api', description: 'API framework with validation & OpenAPI', selected: template === 'fullstack' },
+            { title: '@coherent.js/client', value: 'client', description: 'Client-side hydration & progressive enhancement' },
+            { title: '@coherent.js/i18n', value: 'i18n', description: 'Internationalization utilities' },
+            { title: '@coherent.js/forms', value: 'forms', description: 'Form handling utilities' },
+            { title: '@coherent.js/devtools', value: 'devtools', description: 'Development tools & debugging' },
+            { title: '@coherent.js/seo', value: 'seo', description: 'SEO optimization utilities' },
+            { title: '@coherent.js/testing', value: 'testing', description: 'Testing utilities & helpers' }
+          ]
+        });
 
-      packages = pkgResponse.packages || [];
+        packages = pkgResponse.packages || [];
+      } else {
+        // Use sensible defaults when skip-prompts is enabled
+        packages = template === 'fullstack' ? ['api'] : [];
+      }
 
       // Auth scaffolding
-      if (packages.includes('api') || database) {
+      if (!options.skipPrompts && (packages.includes('api') || database)) {
         const authResponse = await prompts({
           type: 'select',
           name: 'auth',
@@ -215,7 +249,7 @@ export const createCommand = new Command('create')
 
     // Package manager selection
     let packageManager = 'npm';
-    if (!options.skipInstall) {
+    if (!options.skipInstall && !options.skipPrompts) {
       const pmResponse = await prompts({
         type: 'select',
         name: 'packageManager',
@@ -236,6 +270,62 @@ export const createCommand = new Command('create')
       packageManager = pmResponse.packageManager;
     }
 
+    // Docker configuration for database - handle both interactive and non-interactive modes
+    let dockerConfig = null;
+    if (database && database !== 'sqlite' && !options.skipPrompts) {
+      const dockerResponse = await prompts({
+        type: 'confirm',
+        name: 'useDocker',
+        message: 'Would you like to include Docker configuration for the database?',
+        initial: true
+      });
+
+      if (dockerResponse.useDocker) {
+        // Get Docker configuration details
+        const dockerDetailsResponse = await prompts([
+          {
+            type: 'number',
+            name: 'dbPort',
+            message: 'What port should the database use?',
+            initial: getDefaultDockerPort(database)
+          },
+          {
+            type: 'text',
+            name: 'dbName',
+            message: 'What should the database be named?',
+            initial: 'coherent_db'
+          },
+          {
+            type: 'text',
+            name: 'dbUser',
+            message: 'What should the database user be?',
+            initial: 'coherent_user'
+          },
+          {
+            type: 'text',
+            name: 'dbPassword',
+            message: 'What should the database password be?',
+            initial: 'coherent_pass'
+          }
+        ]);
+
+        dockerConfig = {
+          port: dockerDetailsResponse.dbPort || getDefaultDockerPort(database),
+          name: dockerDetailsResponse.dbName,
+          user: dockerDetailsResponse.dbUser,
+          password: dockerDetailsResponse.dbPassword
+        };
+      }
+    } else if (database && database !== 'sqlite' && options.useDocker) {
+      // Use CLI flags or defaults for non-interactive mode
+      dockerConfig = {
+        port: options.dockerDbPort || getDefaultDockerPort(database),
+        name: options.dockerDbName || 'coherent_db',
+        user: options.dockerDbUser || 'coherent_user',
+        password: options.dockerDbPassword || 'coherent_pass'
+      };
+    }
+
     const spinner = ora('Scaffolding project...').start();
 
     try {
@@ -252,6 +342,7 @@ export const createCommand = new Command('create')
         packages,
         language,
         packageManager,
+        dockerConfig,
         skipInstall: options.skipInstall,
         skipGit: options.skipGit
       });
