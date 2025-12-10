@@ -17,41 +17,42 @@ import { createRouter } from '@coherent.js/api';
 
 const router = createRouter();
 
-// Example route with validation
+// Business Logic
+async function getUserById(id) {
+  return { id, name: 'Example User', email: 'user@example.com' };
+}
+
+async function createUser(data) {
+  return { id: 1, ...data };
+}
+
+// Router Definitions (for Express/Fastify/Koa usage)
 router.get('/users/:id', {
   params: {
     id: { type: 'number', required: true }
   },
   handler: async (req, res) => {
     const { id } = req.params;
-    // Fetch user logic here
-    return { id, name: 'Example User', email: 'user@example.com' };
+    return getUserById(id);
   }
 });
 
-// Example POST route with body validation
 router.post('/users', {
   body: {
     name: { type: 'string', required: true, minLength: 2 },
     email: { type: 'string', required: true, pattern: /^[^@]+@[^@]+\\.[^@]+$/ }
   },
   handler: async (req, res) => {
-    const { name, email } = req.body;
-    // Create user logic here
-    return { id: 1, name, email };
+    return createUser(req.body);
   }
 });
 
-// Handler for GET /api/users/:id
+// Handler for GET /api/users/:id (Built-in Server)
 export async function getUsersByIdHandler(req, res) {
   try {
-    // Extract ID from URL parameters
     const { id } = req.params;
-    
-    // Call the original handler
-    const result = await router.handle('GET', '/users/:id', { params: { id } }, {});
-    
-    // Send JSON response
+    const result = await getUserById(id);
+
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(result));
   } catch (error) {
@@ -61,23 +62,19 @@ export async function getUsersByIdHandler(req, res) {
   }
 }
 
-// Handler for POST /api/users
+// Handler for POST /api/users (Built-in Server)
 export async function postUsersHandler(req, res) {
   try {
-    // Parse JSON body
     let body = '';
     req.on('data', chunk => {
       body += chunk.toString();
     });
-    
+
     req.on('end', async () => {
       try {
         const parsedBody = JSON.parse(body);
-        
-        // Call the original handler
-        const result = await router.handle('POST', '/users', { body: parsedBody }, {});
-        
-        // Send JSON response
+        const result = await createUser(parsedBody);
+
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(result));
       } catch (error) {
@@ -137,7 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       // Dynamically import component
-      const module = await import(\`../components/\${componentName}.js\`);
+      const module = await import(\`/components/\${componentName}.js\`);
       const Component = module.default || module[componentName];
 
       // Hydrate component

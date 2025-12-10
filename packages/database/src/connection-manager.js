@@ -1,6 +1,6 @@
 /**
  * Database Connection Manager for Coherent.js
- * 
+ *
  * @fileoverview Manages database connections, connection pooling, and adapter selection
  * with support for multiple database engines and automatic failover.
  */
@@ -9,12 +9,12 @@ import { EventEmitter } from 'events';
 
 /**
  * Database Connection Manager
- * 
+ *
  * @class DatabaseManager
  * @extends EventEmitter
  * @description Manages database connections with pooling, health checks, and adapter abstraction.
  * Provides a unified interface for different database engines.
- * 
+ *
  * @param {Object} config - Database configuration
  * @param {string} config.type - Database type ('postgresql', 'mysql', 'sqlite', 'mongodb')
  * @param {string} [config.host='localhost'] - Database host
@@ -24,7 +24,7 @@ import { EventEmitter } from 'events';
  * @param {string} [config.password] - Database password
  * @param {Object} [config.pool] - Connection pool configuration
  * @param {boolean} [config.debug=false] - Enable debug logging
- * 
+ *
  * @example
  * const db = new DatabaseManager({
  *   type: 'postgresql',
@@ -34,25 +34,25 @@ import { EventEmitter } from 'events';
  *   password: 'pass',
  *   pool: { min: 2, max: 10 }
  * });
- * 
+ *
  * await db.connect();
  * const users = await db.query('SELECT * FROM users WHERE active = ?', [true]);
  */
 export class DatabaseManager extends EventEmitter {
   constructor(config) {
     super();
-    
+
     this.config = this.validateConfig(config);
     this.adapter = null;
     this.pool = null;
     this.isConnected = false;
     this.connectionAttempts = 0;
     this.maxRetries = 3;
-    
+
     // Health check interval
     this.healthCheckInterval = null;
     this.healthCheckFrequency = 30000; // 30 seconds
-    
+
     // Connection statistics
     this.stats = {
       totalConnections: 0,
@@ -66,7 +66,7 @@ export class DatabaseManager extends EventEmitter {
 
   /**
    * Validate database configuration
-   * 
+   *
    * @private
    * @param {Object} config - Configuration to validate
    * @returns {Object} Validated configuration
@@ -79,24 +79,24 @@ export class DatabaseManager extends EventEmitter {
 
     // New adapter-based configuration
     if (config.adapter) {
-      if (typeof config.adapter !== 'object' || 
+      if (typeof config.adapter !== 'object' ||
           typeof config.adapter.createPool !== 'function') {
         throw new Error('Invalid adapter provided. Adapter must be an object with a createPool method');
       }
-      
+
       // Set default store config if not provided
       if (!config.store) {
         config.store = { name: 'default' };
       } else if (typeof config.store === 'string') {
         config.store = { name: config.store };
       }
-      
+
       return config;
     }
-    
+
     // Legacy type-based configuration
     const { type, database } = config;
-    
+
     if (!type) {
       throw new Error('Either database type or adapter is required');
     }
@@ -138,10 +138,10 @@ export class DatabaseManager extends EventEmitter {
 
   /**
    * Connect to the database
-   * 
+   *
    * @returns {Promise<void>}
    * @throws {Error} If connection fails after retries
-   * 
+   *
    * @example
    * await db.connect();
    * console.log('Database connected successfully');
@@ -154,40 +154,40 @@ export class DatabaseManager extends EventEmitter {
     try {
       // Load appropriate adapter
       this.adapter = await this.loadAdapter(this.config.type);
-      
+
       // Create connection pool
       this.pool = await this.adapter.createPool(this.config);
-      
+
       // Test connection
       await this.testConnection();
-      
+
       this.isConnected = true;
       this.connectionAttempts = 0;
-      
+
       // Start health checks if supported by the adapter
       if (this.adapter.startHealthChecks) {
         this.startHealthChecks();
       }
-      
+
       return this;
     } catch (_error) {
       this.connectionAttempts++;
       this.stats.failedConnections++;
       this.emit('_error', _error);
-      
+
       if (this.connectionAttempts < this.maxRetries) {
         console.warn(`Connection attempt ${this.connectionAttempts} failed. Retrying in 2 seconds...`);
         await new Promise(resolve => setTimeout(resolve, 2000));
         return this.connect();
       }
-      
+
       throw new Error(`Failed to connect to database after ${this.connectionAttempts} attempts: ${_error.message}`);
     }
   }
 
   /**
    * Load database adapter
-   * 
+   *
    * @private
    * @param {string} type - Database type
    * @returns {Object} Database adapter
@@ -197,7 +197,7 @@ export class DatabaseManager extends EventEmitter {
     if (this.config.adapter) {
       return this.config.adapter;
     }
-    
+
     // For built-in adapters
     const adapterMap = {
       postgresql: './adapters/postgresql.js',
@@ -219,12 +219,12 @@ export class DatabaseManager extends EventEmitter {
         if (adapterModule.default) {
           return new adapterModule.default();
         }
-        
+
         const AdapterClass = adapterModule[`${type.charAt(0).toUpperCase() + type.slice(1)}Adapter`];
         if (AdapterClass) {
           return new AdapterClass();
         }
-        
+
         throw new Error(`No valid adapter found in ${adapterPath}`);
       })
       .catch(_error => {
@@ -234,26 +234,26 @@ export class DatabaseManager extends EventEmitter {
 
   /**
    * Test database connection
-   * 
+   *
    * @private
    * @returns {Promise<void>}
    */
   async testConnection() {
     const startTime = Date.now();
-    
+
     try {
       if (typeof this.adapter.testConnection === 'function') {
-        await this.adapter.testConnection();
+        await this.adapter.testConnection(this.pool);
       } else if (this.adapter.ping) {
         // Try ping if available
         await this.adapter.ping();
       }
       // If no test method is available, we'll assume the connection is good
-      
+
       const duration = Date.now() - startTime;
       this.stats.lastHealthCheck = new Date();
       this.emit('connect:test', { duration });
-      
+
     } catch (_error) {
       this.emit('_error', _error);
       throw new Error(`Database connection test failed: ${_error.message}`);
@@ -262,12 +262,12 @@ export class DatabaseManager extends EventEmitter {
 
   /**
    * Execute a database query
-   * 
+   *
    * @param {string} sql - SQL query string
    * @param {Array} [params=[]] - Query parameters
    * @param {Object} [options={}] - Query options
    * @returns {Promise<Object>} Query result
-   * 
+   *
    * @example
    * const users = await db.query('SELECT * FROM users WHERE age > ?', [18]);
    * const user = await db.query('SELECT * FROM users WHERE id = ?', [123], { single: true });
@@ -278,26 +278,26 @@ export class DatabaseManager extends EventEmitter {
     }
 
     const startTime = Date.now();
-    
+
     try {
       let result;
-      
+
       // Handle MemoryAdapter's query method
       if (typeof this.pool.query === 'function') {
         result = await this.pool.query(operation, params);
-      } 
+      }
       // Handle SQL adapters
       else if (typeof this.adapter.query === 'function') {
         result = await this.adapter.query(this.pool, operation, params);
       } else {
         throw new Error('No valid query method found on adapter or pool');
       }
-      
+
       // Update statistics
       const duration = Date.now() - startTime;
       this.stats.queriesExecuted++;
       this.stats.averageQueryTime = (
-        (this.stats.averageQueryTime * (this.stats.queriesExecuted - 1) + duration) / 
+        (this.stats.averageQueryTime * (this.stats.queriesExecuted - 1) + duration) /
         this.stats.queriesExecuted
       );
 
@@ -306,22 +306,22 @@ export class DatabaseManager extends EventEmitter {
       }
 
       this.emit('query', { operation, params, duration });
-      
+
       return result;
-      
+
     } catch (_error) {
       const duration = Date.now() - startTime;
       this.emit('queryError', { operation, params, duration, _error: _error.message });
-      
+
       throw new Error(`Query failed: ${_error.message}`);
     }
   }
 
   /**
    * Start a database transaction
-   * 
+   *
    * @returns {Promise<Object>} Transaction object
-   * 
+   *
    * @example
    * const tx = await db.transaction();
    * try {
@@ -343,7 +343,7 @@ export class DatabaseManager extends EventEmitter {
 
   /**
    * Start health check monitoring
-   * 
+   *
    * @private
    */
   startHealthCheck() {
@@ -357,7 +357,7 @@ export class DatabaseManager extends EventEmitter {
         this.emit('healthCheck', { status: 'healthy', timestamp: new Date() });
       } catch (_error) {
         this.emit('healthCheck', { status: 'unhealthy', _error: _error.message, timestamp: new Date() });
-        
+
         if (this.config.debug) {
           console.error('Database health check failed:', _error.message);
         }
@@ -367,7 +367,7 @@ export class DatabaseManager extends EventEmitter {
 
   /**
    * Get connection statistics
-   * 
+   *
    * @returns {Object} Connection statistics
    */
   getStats() {
@@ -380,7 +380,7 @@ export class DatabaseManager extends EventEmitter {
 
   /**
    * Close database connection
-   * 
+   *
    * @returns {Promise<void>}
    */
   async close() {
@@ -413,10 +413,10 @@ export class DatabaseManager extends EventEmitter {
 
 /**
  * Factory function to create a DatabaseManager instance
- * 
+ *
  * @param {Object} config - Database configuration
  * @returns {DatabaseManager} Database manager instance
- * 
+ *
  * @example
  * const db = createDatabaseManager({
  *   type: 'sqlite',

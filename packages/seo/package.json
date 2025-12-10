@@ -1,6 +1,6 @@
 {
   "name": "@coherent.js/seo",
-  "version": "1.0.0-beta.5",
+  "version": "1.0.0-beta.6",
   "description": "SEO utilities for Coherent.js applications",
   "type": "module",
   "main": "./dist/index.js",

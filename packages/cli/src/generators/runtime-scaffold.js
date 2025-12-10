@@ -15,7 +15,9 @@ export function generateBuiltInServer(options = {}) {
   const { port = 3000, hasApi = false, hasDatabase = false, hasAuth = false } = options;
 
   const imports = [
-    `import http from 'http';`,
+    `import http from 'node:http';`,
+    `import fs from 'node:fs';`,
+    `import path from 'node:path';`,
     `import { render } from '@coherent.js/core';`
   ];
 
@@ -51,11 +53,42 @@ ${hasApi || hasAuth ? `  // Handle API routes
     }
   }
 
-` : ''}  // Serve static files
+` : ''}  // Serve components for hydration
+  if (url.pathname.startsWith('/components/')) {
+    const filePath = path.join(process.cwd(), 'src', url.pathname);
+    try {
+      const content = await fs.promises.readFile(filePath);
+      res.writeHead(200, { 'Content-Type': 'text/javascript' });
+      return res.end(content);
+    } catch (err) {
+      res.writeHead(404);
+      return res.end('Not Found');
+    }
+  }
+
+  // Serve static files
   if (url.pathname.startsWith('/public')) {
-    // Add your static file serving logic here
-    res.writeHead(404);
-    return res.end('Not Found');
+    const filePath = path.join(process.cwd(), url.pathname);
+    try {
+      const content = await fs.promises.readFile(filePath);
+      const ext = path.extname(filePath).toLowerCase();
+      const contentTypes = {
+        '.html': 'text/html',
+        '.js': 'text/javascript',
+        '.css': 'text/css',
+        '.json': 'application/json',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.gif': 'image/gif',
+        '.svg': 'image/svg+xml',
+        '.ico': 'image/x-icon'
+      };
+      res.writeHead(200, { 'Content-Type': contentTypes[ext] || 'application/octet-stream' });
+      return res.end(content);
+    } catch (err) {
+      res.writeHead(404);
+      return res.end('Not Found');
+    }
   }
 
   // Render page
@@ -86,23 +119,23 @@ function matchRoute(routePattern, urlPath, requestMethod, routeMethod) {
   if (requestMethod !== routeMethod) {
     return null;
   }
-  
+
   // Split paths into segments
   const routeSegments = routePattern.split('/').filter(Boolean);
   const urlSegments = urlPath.split('/').filter(Boolean);
-  
+
   // Check if lengths match
   if (routeSegments.length !== urlSegments.length) {
     return null;
   }
-  
+
   const params = {};
-  
+
   // Match each segment
   for (let i = 0; i < routeSegments.length; i++) {
     const routeSegment = routeSegments[i];
     const urlSegment = urlSegments[i];
-    
+
     // Check for parameter (e.g., :id)
     if (routeSegment.startsWith(':')) {
       const paramName = routeSegment.substring(1);
@@ -112,7 +145,7 @@ function matchRoute(routePattern, urlPath, requestMethod, routeMethod) {
       return null;
     }
   }
-  
+
   return { params };
 }
 

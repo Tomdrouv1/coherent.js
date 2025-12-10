@@ -12,9 +12,12 @@
 /** Primitive values that can be rendered as HTML */
 export type Primitive = string | number | boolean | null | undefined;
 
+/** Allow objects and functions in attributes */
+export type AttributeValue = Primitive | object;
+
 /** HTML attributes object */
 export interface HTMLAttributes {
-  [key: string]: Primitive | (() => Primitive);
+  [key: string]: AttributeValue;
   className?: string;
   class?: string;
   id?: string;
@@ -49,7 +52,120 @@ export interface ElementProps extends HTMLAttributes {
 
 /** A Coherent.js HTML element definition */
 export interface CoherentElement {
-  [tagName: string]: ElementProps | string;
+  [tagName: string]: ElementProps | string | undefined;
+
+  // Common HTML Elements
+  a?: ElementProps | string;
+  abbr?: ElementProps | string;
+  address?: ElementProps | string;
+  area?: ElementProps | string;
+  article?: ElementProps | string;
+  aside?: ElementProps | string;
+  audio?: ElementProps | string;
+  b?: ElementProps | string;
+  base?: ElementProps | string;
+  bdi?: ElementProps | string;
+  bdo?: ElementProps | string;
+  blockquote?: ElementProps | string;
+  body?: ElementProps | string;
+  br?: ElementProps | string;
+  button?: ElementProps | string;
+  canvas?: ElementProps | string;
+  caption?: ElementProps | string;
+  cite?: ElementProps | string;
+  code?: ElementProps | string;
+  col?: ElementProps | string;
+  colgroup?: ElementProps | string;
+  data?: ElementProps | string;
+  datalist?: ElementProps | string;
+  dd?: ElementProps | string;
+  del?: ElementProps | string;
+  details?: ElementProps | string;
+  dfn?: ElementProps | string;
+  dialog?: ElementProps | string;
+  div?: ElementProps | string;
+  dl?: ElementProps | string;
+  dt?: ElementProps | string;
+  em?: ElementProps | string;
+  embed?: ElementProps | string;
+  fieldset?: ElementProps | string;
+  figcaption?: ElementProps | string;
+  figure?: ElementProps | string;
+  footer?: ElementProps | string;
+  form?: ElementProps | string;
+  h1?: ElementProps | string;
+  h2?: ElementProps | string;
+  h3?: ElementProps | string;
+  h4?: ElementProps | string;
+  h5?: ElementProps | string;
+  h6?: ElementProps | string;
+  head?: ElementProps | string;
+  header?: ElementProps | string;
+  hgroup?: ElementProps | string;
+  hr?: ElementProps | string;
+  html?: ElementProps | string;
+  i?: ElementProps | string;
+  iframe?: ElementProps | string;
+  img?: ElementProps | string;
+  input?: ElementProps | string;
+  ins?: ElementProps | string;
+  kbd?: ElementProps | string;
+  label?: ElementProps | string;
+  legend?: ElementProps | string;
+  li?: ElementProps | string;
+  link?: ElementProps | string;
+  main?: ElementProps | string;
+  map?: ElementProps | string;
+  mark?: ElementProps | string;
+  menu?: ElementProps | string;
+  meta?: ElementProps | string;
+  meter?: ElementProps | string;
+  nav?: ElementProps | string;
+  noscript?: ElementProps | string;
+  object?: ElementProps | string;
+  ol?: ElementProps | string;
+  optgroup?: ElementProps | string;
+  option?: ElementProps | string;
+  output?: ElementProps | string;
+  p?: ElementProps | string;
+  picture?: ElementProps | string;
+  pre?: ElementProps | string;
+  progress?: ElementProps | string;
+  q?: ElementProps | string;
+  rp?: ElementProps | string;
+  rt?: ElementProps | string;
+  ruby?: ElementProps | string;
+  s?: ElementProps | string;
+  samp?: ElementProps | string;
+  script?: ElementProps | string;
+  section?: ElementProps | string;
+  select?: ElementProps | string;
+  slot?: ElementProps | string;
+  small?: ElementProps | string;
+  source?: ElementProps | string;
+  span?: ElementProps | string;
+  strong?: ElementProps | string;
+  style?: ElementProps | string;
+  sub?: ElementProps | string;
+  summary?: ElementProps | string;
+  sup?: ElementProps | string;
+  table?: ElementProps | string;
+  tbody?: ElementProps | string;
+  td?: ElementProps | string;
+  template?: ElementProps | string;
+  textarea?: ElementProps | string;
+  tfoot?: ElementProps | string;
+  th?: ElementProps | string;
+  thead?: ElementProps | string;
+  time?: ElementProps | string;
+  title?: ElementProps | string;
+  tr?: ElementProps | string;
+  track?: ElementProps | string;
+  u?: ElementProps | string;
+  ul?: ElementProps | string;
+  var?: ElementProps | string;
+  video?: ElementProps | string;
+  wbr?: ElementProps | string;
 }
 
 /** Valid nodes that can be rendered */
@@ -218,11 +334,11 @@ export interface StateUtilities<S extends ComponentState = ComponentState> {
 }
 
 /** Enhanced props with state for withState HOC */
-export interface WithStateProps<P extends ComponentProps, S extends ComponentState> extends P {
+export type WithStateProps<P extends ComponentProps, S extends ComponentState> = P & {
   state: S;
   setState: (newState: Partial<S> | ((state: S) => Partial<S>)) => void;
   stateUtils: StateUtilities<S>;
-}
+};
 
 // ============================================================================
 // Higher-Order Components (HOCs)
@@ -256,7 +372,7 @@ export interface MemoOptions {
 }
 
 /** Memoized function with utilities */
-export interface MemoizedFunction<T extends (...args: any[]) => any> extends T {
+export type MemoizedFunction<T extends (...args: any[]) => any> = T & {
   cache: Map<string, any>;
   clear(): void;
   delete(key: string): boolean;
@@ -265,7 +381,7 @@ export interface MemoizedFunction<T extends (...args: any[]) => any> extends T {
   refresh(...args: Parameters<T>): ReturnType<T>;
   stats?(): { hits: number; misses: number; evictions: number };
   resetStats?(): void;
-}
+};
 
 /** Props transformation function */
 export type PropsTransform<P, T> = (props: P, state?: ComponentState, context?: ComponentContext) => T | Promise<T>;
@@ -719,7 +835,6 @@ export const componentUtils: ComponentUtils;
 
 /** Default export with all core functionality */
 declare const coherent: {
-  render: typeof render;
   render: typeof render;
   renderSync: typeof renderSync;
   withState: typeof withState;

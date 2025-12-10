@@ -21,9 +21,12 @@ export const dbConfig = {
   user: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
   // Connection pool settings
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  pool: {
+    min: 2,
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+  }
 };
 `,
     mysql: `
@@ -34,9 +37,12 @@ export const dbConfig = {
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || 'password',
   // Connection pool settings
-  connectionLimit: 10,
-  waitForConnections: true,
-  queueLimit: 0
+  pool: {
+    max: 10,
+    min: 0,
+    waitForConnections: true,
+    queueLimit: 0
+  }
 };
 `,
     sqlite: `
@@ -65,19 +71,23 @@ export const dbConfig = {
 /**
  * Generate database initialization file
  */
-export function generateDatabaseInit(dbType) {
+export function generateDatabaseInit(dbType, language = 'javascript') {
+  const isTypeScript = language === 'typescript';
+  const typeAnnotation = isTypeScript ? ': any' : '';
+  const returnType = isTypeScript ? ': Promise<any>' : '';
+
   const inits = {
     postgres: `
-import { setupDatabase } from '@coherent.js/database';
+import { setupDatabase, PostgreSQLAdapter } from '@coherent.js/database';
 import { dbConfig } from './config.js';
 
-let db;
+let db${typeAnnotation};
 
-export async function initDatabase() {
+export async function initDatabase()${returnType} {
   try {
     // Setup database with Coherent.js
     db = setupDatabase({
-      type: 'postgres',
+      adapter: PostgreSQLAdapter(),
       ...dbConfig
     });
 
@@ -90,7 +100,7 @@ export async function initDatabase() {
   }
 }
 
-export function getDatabase() {
+export function getDatabase()${typeAnnotation} {
   if (!db) {
     throw new Error('Database not initialized. Call initDatabase() first.');
   }
@@ -107,16 +117,16 @@ process.on('SIGINT', async () => {
 });
 `,
     mysql: `
-import { setupDatabase } from '@coherent.js/database';
+import { setupDatabase, MySQLAdapter } from '@coherent.js/database';
 import { dbConfig } from './config.js';
 
-let db;
+let db${typeAnnotation};
 
-export async function initDatabase() {
+export async function initDatabase()${returnType} {
   try {
     // Setup database with Coherent.js
     db = setupDatabase({
-      type: 'mysql',
+      adapter: MySQLAdapter(),
       ...dbConfig
     });
 
@@ -129,7 +139,7 @@ export async function initDatabase() {
   }
 }
 
-export function getDatabase() {
+export function getDatabase()${typeAnnotation} {
   if (!db) {
     throw new Error('Database not initialized. Call initDatabase() first.');
   }
@@ -146,14 +156,14 @@ process.on('SIGINT', async () => {
 });
 `,
     sqlite: `
-import { setupDatabase } from '@coherent.js/database';
+import { setupDatabase, SQLiteAdapter } from '@coherent.js/database';
 import { dbConfig } from './config.js';
 import { mkdirSync } from 'fs';
 import { dirname } from 'path';
 
-let db;
+let db${typeAnnotation};
 
-export async function initDatabase() {
+export async function initDatabase()${returnType} {
   try {
     // Ensure directory exists
     if (dbConfig.filename) {
@@ -162,7 +172,7 @@ export async function initDatabase() {
 
     // Setup database with Coherent.js
     db = setupDatabase({
-      type: 'sqlite',
+      adapter: SQLiteAdapter(),
       ...dbConfig
     });
 
@@ -175,7 +185,7 @@ export async function initDatabase() {
   }
 }
 
-export function getDatabase() {
+export function getDatabase()${typeAnnotation} {
   if (!db) {
     throw new Error('Database not initialized. Call initDatabase() first.');
   }
@@ -192,16 +202,16 @@ process.on('SIGINT', () => {
 });
 `,
     mongodb: `
-import { setupDatabase } from '@coherent.js/database';
+import { setupDatabase, MongoDBAdapter } from '@coherent.js/database';
 import { dbConfig } from './config.js';
 
-let db;
+let db${typeAnnotation};
 
-export async function initDatabase() {
+export async function initDatabase()${returnType} {
   try {
     // Setup database with Coherent.js
     db = setupDatabase({
-      type: 'mongodb',
+      adapter: MongoDBAdapter(),
       ...dbConfig
     });
 
@@ -214,7 +224,7 @@ export async function initDatabase() {
   }
 }
 
-export function getDatabase() {
+export function getDatabase()${typeAnnotation} {
   if (!db) {
     throw new Error('Database not initialized. Call initDatabase() first.');
   }
@@ -238,47 +248,58 @@ process.on('SIGINT', async () => {
 /**
  * Generate example model file
  */
-export function generateExampleModel(dbType) {
+export function generateExampleModel(dbType, language = 'javascript') {
+  const isTypeScript = language === 'typescript';
+  const typeAnnotation = isTypeScript ? ': Promise<any>' : '';
+  const interfaceDef = isTypeScript ? `
+interface UserData {
+  email: string;
+  name: string;
+}` : '';
+
   const models = {
     postgres: `
 import { getDatabase } from '../index.js';
 
+${interfaceDef}
+
 export class UserModel {
-  static async createTable() {
+  static async createTable()${typeAnnotation} {
     const db = getDatabase();
     await db.query(\`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
         name VARCHAR(255) NOT NULL,
+        password_hash VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     \`);
   }
 
-  static async create(data) {
+  static async create(userData)${typeAnnotation} {
     const db = getDatabase();
     const result = await db.query(
       'INSERT INTO users (email, name) VALUES ($1, $2) RETURNING *',
-      [data.email, data.name]
+      [userData.email, userData.name]
     );
     return result.rows[0];
   }
 
-  static async findById(id) {
+  static async findById(id)${typeAnnotation} {
     const db = getDatabase();
     const result = await db.query('SELECT * FROM users WHERE id = $1', [id]);
     return result.rows[0];
   }
 
-  static async findByEmail(email) {
+  static async findByEmail(email)${typeAnnotation} {
     const db = getDatabase();
     const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
     return result.rows[0];
   }
 
-  static async update(id, data) {
+  static async update(id, data)${typeAnnotation} {
     const db = getDatabase();
     const result = await db.query(
       'UPDATE users SET email = $1, name = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING *',
@@ -287,7 +308,7 @@ export class UserModel {
     return result.rows[0];
   }
 
-  static async delete(id) {
+  static async delete(id)${typeAnnotation} {
     const db = getDatabase();
     await db.query('DELETE FROM users WHERE id = $1', [id]);
   }
@@ -296,61 +317,66 @@ export class UserModel {
     mysql: `
 import { getDatabase } from '../index.js';
 
+${interfaceDef}
+
 export class UserModel {
-  static async createTable() {
+  static async createTable()${typeAnnotation} {
     const db = getDatabase();
-    await db.execute(\`
+    await db.query(\`
       CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
         name VARCHAR(255) NOT NULL,
+        password_hash VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     \`);
   }
 
-  static async create(data) {
+  static async create(userData)${typeAnnotation} {
     const db = getDatabase();
-    const [result] = await db.execute(
+    const result = await db.query(
       'INSERT INTO users (email, name) VALUES (?, ?)',
-      [data.email, data.name]
+      [userData.email, userData.name]
     );
-    return { id: result.insertId, ...data };
+    return result[0];
   }
 
-  static async findById(id) {
+  static async findById(id)${typeAnnotation} {
     const db = getDatabase();
-    const [rows] = await db.execute('SELECT * FROM users WHERE id = ?', [id]);
-    return rows[0];
+    const result = await db.query('SELECT * FROM users WHERE id = ?', [id]);
+    return result[0];
   }
 
-  static async findByEmail(email) {
+  static async findByEmail(email)${typeAnnotation} {
     const db = getDatabase();
-    const [rows] = await db.execute('SELECT * FROM users WHERE email = ?', [email]);
-    return rows[0];
+    const result = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+    return result[0];
   }
 
-  static async update(id, data) {
+  static async update(id, data)${typeAnnotation} {
     const db = getDatabase();
-    await db.execute(
-      'UPDATE users SET email = ?, name = ? WHERE id = ?',
+    const result = await db.query(
+      'UPDATE users SET email = ?, name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
       [data.email, data.name, id]
     );
-    return { id, ...data };
+    return result[0];
   }
 
-  static async delete(id) {
+  static async delete(id)${typeAnnotation} {
     const db = getDatabase();
-    await db.execute('DELETE FROM users WHERE id = ?', [id]);
+    await db.query('DELETE FROM users WHERE id = ?', [id]);
   }
 }
 `,
     sqlite: `
 import { getDatabase } from '../index.js';
 
+${interfaceDef}
+
 export class UserModel {
-  static createTable() {
+  static createTable()${typeAnnotation} {
     const db = getDatabase();
     db.exec(\`
       CREATE TABLE IF NOT EXISTS users (
@@ -363,94 +389,82 @@ export class UserModel {
     \`);
   }
 
-  static create(data) {
+  static create(data)${typeAnnotation} {
     const db = getDatabase();
     const stmt = db.prepare('INSERT INTO users (email, name) VALUES (?, ?)');
     const result = stmt.run(data.email, data.name);
     return { id: result.lastInsertRowid, ...data };
   }
 
-  static findById(id) {
+  static findById(id)${typeAnnotation} {
     const db = getDatabase();
     const stmt = db.prepare('SELECT * FROM users WHERE id = ?');
     return stmt.get(id);
   }
 
-  static findByEmail(email) {
+  static findByEmail(email)${typeAnnotation} {
     const db = getDatabase();
     const stmt = db.prepare('SELECT * FROM users WHERE email = ?');
     return stmt.get(email);
   }
 
-  static update(id, data) {
+  static update(id, data)${typeAnnotation} {
     const db = getDatabase();
     const stmt = db.prepare('UPDATE users SET email = ?, name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
     stmt.run(data.email, data.name, id);
-    return { id, ...data };
+    return this.findById(id);
   }
 
-  static delete(id) {
+  static delete(id)${typeAnnotation} {
     const db = getDatabase();
     const stmt = db.prepare('DELETE FROM users WHERE id = ?');
-    stmt.run(id);
+    return stmt.run(id);
   }
 }
 `,
     mongodb: `
 import { getDatabase } from '../index.js';
 
+${interfaceDef}
+
 export class UserModel {
-  static collectionName = 'users';
-
-  static getCollection() {
+  static async createCollection()${typeAnnotation} {
     const db = getDatabase();
-    return db.collection(this.collectionName);
+    await db.createCollection('users');
+
+    // Create index for email uniqueness
+    await db.collection('users').createIndex({ email: 1 }, { unique: true });
   }
 
-  static async create(data) {
-    const collection = this.getCollection();
-    const result = await collection.insertOne({
-      email: data.email,
-      name: data.name,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    });
-    return { _id: result.insertedId, ...data };
+  static async create(userData)${typeAnnotation} {
+    const db = getDatabase();
+    const result = await db.collection('users').insertOne(userData);
+    return { _id: result.insertedId, ...userData };
   }
 
-  static async findById(id) {
-    const collection = this.getCollection();
-    return await collection.findOne({ _id: id });
+  static async findById(id)${typeAnnotation} {
+    const db = getDatabase();
+    return await db.collection('users').findOne({ _id: id });
   }
 
-  static async findByEmail(email) {
-    const collection = this.getCollection();
-    return await collection.findOne({ email });
+  static async findByEmail(email)${typeAnnotation} {
+    const db = getDatabase();
+    return await db.collection('users').findOne({ email });
   }
 
-  static async update(id, data) {
-    const collection = this.getCollection();
-    await collection.updateOne(
+  static async update(id, data)${typeAnnotation} {
+    const db = getDatabase();
+    const result = await db.collection('users').updateOne(
       { _id: id },
-      {
-        $set: {
-          email: data.email,
-          name: data.name,
-          updatedAt: new Date()
-        }
-      }
+      { $set: { ...data, updatedAt: new Date() } }
     );
-    return { _id: id, ...data };
+    return result.modifiedCount > 0 ? this.findById(id) : null;
   }
 
-  static async delete(id) {
-    const collection = this.getCollection();
-    await collection.deleteOne({ _id: id });
-  }
-
-  static async createIndexes() {
-    const collection = this.getCollection();
-    await collection.createIndex({ email: 1 }, { unique: true });
+  static async delete(id)${typeAnnotation} {
+    const db = getDatabase();
+    const result = await db.collection('users').deleteOne({ _id: id });
+    return result.deletedCount > 0;
   }
 }
 `
@@ -518,11 +532,11 @@ export function getDatabaseDependencies(dbType) {
 /**
  * Generate complete database scaffolding
  */
-export function generateDatabaseScaffolding(dbType) {
+export function generateDatabaseScaffolding(dbType, language = 'javascript') {
   return {
     config: generateDatabaseConfig(dbType),
-    init: generateDatabaseInit(dbType),
-    model: generateExampleModel(dbType),
+    init: generateDatabaseInit(dbType, language),
+    model: generateExampleModel(dbType, language),
     env: generateEnvExample(dbType),
     dependencies: getDatabaseDependencies(dbType)
   };
