@@ -31,7 +31,7 @@ export function getCLIVersion() {
     return cachedVersion;
   } catch {
     // Fallback to environment variable or default
-    cachedVersion = process.env.COHERENT_CLI_VERSION || '1.0.0-beta.3';
+    cachedVersion = process.env.COHERENT_CLI_VERSION || '1.0.0-beta.5';
     return cachedVersion;
   }
 }
