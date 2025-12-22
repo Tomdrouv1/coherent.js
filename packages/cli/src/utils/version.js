@@ -6,6 +6,7 @@
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { env } from 'node:process';
 
 let cachedVersion = null;
 
@@ -31,7 +32,7 @@ export function getCLIVersion() {
     return cachedVersion;
   } catch {
     // Fallback to environment variable or default
-    cachedVersion = process.env.COHERENT_CLI_VERSION || '1.0.0-beta.5';
+    cachedVersion = env.COHERENT_CLI_VERSION || '1.0.0-beta.5';
     return cachedVersion;
   }
 }

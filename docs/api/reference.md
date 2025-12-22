@@ -4,15 +4,24 @@ This document provides a comprehensive reference for all public APIs available i
 
 > **Pure Object Philosophy**: Coherent.js emphasizes **factory functions** over class instantiation. Throughout this API reference, we recommend using factory functions for a pure JavaScript object approach.
 
+## Supported Imports
+
+Use only the package entrypoints:
+
+```javascript
+import { render } from '@coherent.js/core';
+import { hydrate, autoHydrate } from '@coherent.js/client';
+```
+
 ## Core Rendering
 
-### `render(component, context?)`
+### `render(component, options?)`
 
 Renders a Coherent.js component to an HTML string.
 
 **Parameters:**
 - `component` (CoherentNode): The component to render
-- `context` (Object, optional): Context data to pass to the component
+- `options` (Object, optional): Rendering options
 
 **Returns:** String - The rendered HTML
 
@@ -33,27 +42,21 @@ const html = render(component);
 // Output: <div class="greeting"><h1>Hello, World!</h1></div>
 ```
 
-### `render(component, options?)`
-
-Renders a Coherent.js component to a complete HTML document with DOCTYPE and CSS support.
-
-**Parameters:**
-- `component` (CoherentNode): The component to render
-- `options` (Object, optional): Rendering options including CSS configuration
-
 **Options:**
-- `cssFiles` (Array<string>): CSS files to load and inject
-- `cssLinks` (Array<string>): External CSS URLs to link
-- `cssInline` (string): Inline CSS to inject
-- `cssMinify` (boolean): Whether to minify CSS
-- `minify` (boolean): Whether to minify HTML
-- `enableCache` (boolean): Whether to enable caching
+- `enableCache` (boolean): Enable caching (default: true)
+- `enableMonitoring` (boolean): Enable performance monitoring (default: false)
+- `minify` (boolean): Minify output HTML
+- `maxDepth` (number): Maximum tree depth
+- `cacheSize` (number): Cache size limit
+- `cacheTTL` (number): Cache TTL in ms
+- `scoped` (boolean): Enable CSS scoping (alias of `encapsulate`)
+- `encapsulate` (boolean): Enable CSS scoping
 
-**Returns:** Promise<string> - The complete HTML document with DOCTYPE
+**Returns:** string - The rendered HTML
 
 **Example:**
 ```javascript
-import { render } from 'coherent';
+import { render } from '@coherent.js/core';
 
 const App = () => ({
   html: {
@@ -78,70 +81,17 @@ const App = () => ({
   }
 });
 
-const html = await render(App(), {
-  cssFiles: ['./styles/main.css', './styles/components.css'],
-  cssLinks: ['https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap'],
-  cssInline: '.custom { color: red; }',
-  minify: true
+const html = render(App(), {
+  enableCache: true,
+  enableMonitoring: false,
+  minify: true,
+  encapsulate: true
 });
 ```
 
-### `renderSync(component, options?)`
+### Streaming
 
-Synchronous version of `render` for cases without CSS files.
-
-**Parameters:**
-- `component` (CoherentNode): The component to render
-- `options` (Object, optional): Rendering options (CSS files will trigger warning)
-
-**Returns:** string | Promise<string> - HTML document (promise if CSS files detected)
-
-**Example:**
-```javascript
-import { renderSync } from 'coherent';
-
-const html = renderSync(App(), {
-  cssInline: '.app { margin: 0; padding: 20px; }'
-});
-```
-
-### `render(component, options?)`
-
-Alias for `render()` - provides semantic naming for complete HTML rendering.
-
-**Example:**
-```javascript
-import { render } from 'coherent';
-
-const html = await render(App(), {
-  cssFiles: ['./styles/main.css']
-});
-```
-
-### `renderToStream(component, context?)`
-
-Renders a Coherent.js component to a Node.js Readable stream.
-
-**Parameters:**
-- `component` (CoherentNode): The component to render
-- `context` (Object, optional): Context data to pass to the component
-
-**Returns:** ReadableStream - A stream that emits HTML chunks
-
-**Example:**
-```javascript
-import { renderToStream } from '@coherent.js/core';
-
-const stream = renderToStream(largeComponent, context);
-
-stream.on('data', (chunk) => {
-  response.write(chunk);
-});
-
-stream.on('end', () => {
-  response.end();
-});
-```
+Streaming rendering is not currently part of the stable public API surface.
 
 ## Component Utilities
 
@@ -382,110 +332,6 @@ const TodoList = (context) => ({
   }
 });
 ```
-
-## CSS Management
-
-### `createCSSManager(options?)`
-
-Creates a CSS manager instance for loading and processing CSS files.
-
-**Parameters:**
-- `options` (Object, optional): CSS manager configuration
-  - `baseDir` (string): Base directory for resolving relative CSS paths
-  - `enableCache` (boolean): Whether to cache loaded CSS files
-  - `minify` (boolean): Whether to minify CSS by default
-
-**Returns:** CSSManager instance
-
-**Example:**
-```javascript
-import { createCSSManager } from 'coherent';
-
-const cssManager = createCSSManager({
-  baseDir: './src/styles',
-  enableCache: true,
-  minify: process.env.NODE_ENV === 'production'
-});
-
-const css = await cssManager.loadCSSFile('components/button.css');
-```
-
-### `defaultCSSManager`
-
-The default CSS manager instance used by render functions.
-
-**Example:**
-```javascript
-import { defaultCSSManager } from 'coherent';
-
-// Load CSS file using default manager
-const css = await defaultCSSManager.loadCSSFile('./styles/main.css');
-
-// Generate CSS links
-const links = defaultCSSManager.generateCSSLinks([
-  'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css'
-]);
-```
-
-### `cssUtils`
-
-Utilities for processing CSS options and generating CSS HTML.
-
-**Methods:**
-- `processCSSOptions(options)`: Process render options to extract CSS configuration
-- `generateCSSHtml(cssOptions, cssManager)`: Generate HTML for CSS injection
-
-**Example:**
-```javascript
-import { cssUtils, defaultCSSManager } from 'coherent';
-
-const options = {
-  cssFiles: ['./main.css'],
-  cssInline: '.custom { color: red; }'
-};
-
-const cssOptions = cssUtils.processCSSOptions(options);
-const cssHtml = await cssUtils.generateCSSHtml(cssOptions, defaultCSSManager);
-```
-
-### CSS Manager Methods
-
-#### `loadCSSFile(filePath)`
-
-Load and return CSS content from a file.
-
-**Parameters:**
-- `filePath` (string): Path to the CSS file
-
-**Returns:** Promise<string> - The CSS content
-
-#### `generateCSSLinks(filePaths, baseUrl?)`
-
-Generate HTML link tags for CSS files.
-
-**Parameters:**
-- `filePaths` (Array<string>): CSS file paths or URLs
-- `baseUrl` (string, optional): Base URL for relative paths
-
-**Returns:** string - HTML link tags
-
-#### `generateInlineStyles(css)`
-
-Generate HTML style tag for inline CSS.
-
-**Parameters:**
-- `css` (string): CSS content to inline
-
-**Returns:** string - HTML style tag
-
-#### `minifyCSS(css)`
-
-Minify CSS content by removing whitespace and comments.
-
-**Parameters:**
-- `css` (string): CSS content to minify
-
-**Returns:** string - Minified CSS
 
 ## Performance Monitoring
 

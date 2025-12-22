@@ -10,7 +10,7 @@
  * @module EnhancedErrors
  */
 
-import { isCoherentObject, hasChildren } from '../../core/src/core/object-utils.js';
+import { isCoherentObject, hasChildren } from '@coherent.js/core';
 
 export class EnhancedErrorHandler {
   constructor(options = {}) {

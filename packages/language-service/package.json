@@ -2,12 +2,23 @@
   "name": "@coherent.js/language-service",
   "version": "1.0.0-beta.6",
   "description": "Language service and tooling for Coherent.js",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "dev": "tsc -w"
   },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tomdrouv1/coherent.js.git"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "sideEffects": false,
   "devDependencies": {
     "typescript": "^5.9.3"
   }

@@ -22,4 +22,4 @@ function init() {
   return { create };
 }
 
-export = init;
+export default init;

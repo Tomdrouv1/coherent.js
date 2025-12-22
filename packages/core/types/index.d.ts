@@ -486,14 +486,57 @@ export interface PerformanceMetrics {
 // Core Functions
 // ============================================================================
 
-/** Render a Coherent node to HTML string */
-export function render(obj: CoherentNode): string;
+/** Render options for `render(component, options)` */
+export interface RenderOptions {
+  enableCache?: boolean;
+  enableMonitoring?: boolean;
+  minify?: boolean;
+  maxDepth?: number;
+  cacheSize?: number;
+  cacheTTL?: number;
+  scoped?: boolean;
+  encapsulate?: boolean;
+}
 
-/** Alias for render */
-export function render(obj: CoherentNode): string;
+/** Render a Coherent node to an HTML string */
+export function render(component: CoherentNode, options?: RenderOptions): string;
 
-/** Synchronous version of render */
-export function renderSync(obj: CoherentNode): string;
+export interface RenderUtilityOptions {
+  enablePerformanceMonitoring?: boolean;
+  template?: string;
+}
+
+export function renderWithMonitoring(component: CoherentNode, options?: RenderUtilityOptions): string;
+export function renderWithTemplate(component: CoherentNode, options?: RenderUtilityOptions): string;
+export function renderComponentFactory(
+  componentFactory: (...args: any[]) => CoherentNode | Promise<CoherentNode>,
+  factoryArgs: any[],
+  options?: RenderUtilityOptions
+): Promise<string>;
+export function isCoherentComponent(obj: unknown): boolean;
+export function createErrorResponse(
+  error: Error,
+  context?: string
+): {
+  error: string;
+  message: string;
+  context: string;
+  timestamp: string;
+};
+
+export function isPeerDependencyAvailable(packageName: string): boolean;
+export function importPeerDependency(packageName: string, integrationName: string): Promise<any>;
+export function createLazyIntegration(
+  packageName: string,
+  integrationName: string,
+  createIntegration: (module: any) => (...args: any[]) => any
+): (...args: any[]) => Promise<any>;
+export function checkPeerDependencies(
+  dependencies: Array<{ package: string; integration: string }>
+): Record<string, boolean>;
+
+export function hasChildren(component: unknown): boolean;
+export function normalizeChildren(children: unknown): unknown[];
 
 /** Escape HTML characters in text */
 export function escapeHtml(text: string): string;
@@ -681,55 +724,6 @@ export class VDOMDiffer {
 }
 
 // ============================================================================
-// Advanced Rendering Functions (Additional)
-// ============================================================================
-
-/** Render options */
-export interface RenderOptions {
-  cache?: boolean;
-  pretty?: boolean;
-  minify?: boolean;
-  streaming?: boolean;
-  chunkSize?: number;
-}
-
-/** Render component to string */
-export function render(component: CoherentNode, options?: RenderOptions): string;
-
-/** Render multiple components in batch */
-export function renderBatch(components: CoherentNode[], options?: RenderOptions): string[];
-
-/** Render to chunks generator */
-export function renderToChunks(component: CoherentNode, options?: RenderOptions): Generator<string, void, unknown>;
-
-/** Render to stream async generator */
-export function renderToStream(component: CoherentNode, options?: RenderOptions): AsyncGenerator<string, void, unknown>;
-
-/** Get rendering cache */
-export function getCache(): Map<string, any>;
-
-/** Reset rendering cache */
-export function resetCache(): void;
-
-/** Get rendering statistics */
-export function getRenderingStats(): {
-  totalRenders: number;
-  cacheHits: number;
-  cacheMisses: number;
-  averageRenderTime: number;
-};
-
-/** Precompile component for faster rendering */
-export function precompileComponent(component: CoherentNode, options?: RenderOptions): any;
-
-/** Render with timing information */
-export function renderWithTiming(component: CoherentNode, options?: RenderOptions): {
-  html: string;
-  time: number;
-  metrics: Record<string, any>;
-};
-
-// ============================================================================
 // CSS Management (Additional)
 // ============================================================================
 
@@ -836,7 +830,6 @@ export const componentUtils: ComponentUtils;
 /** Default export with all core functionality */
 declare const coherent: {
   render: typeof render;
-  renderSync: typeof renderSync;
   withState: typeof withState;
   memo: typeof memo;
   validateComponent: typeof validateComponent;

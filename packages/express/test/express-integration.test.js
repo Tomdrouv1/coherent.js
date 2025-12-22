@@ -4,7 +4,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { coherentMiddleware, createCoherentHandler, setupCoherent } from '../src/coherent-express.js';
-import { render } from '../../core/src/rendering/html-renderer.js';
+import { render } from '@coherent.js/core';
 
 describe('Express.js Integration', () => {
   it('should create coherentMiddleware', () => {
@@ -32,7 +32,7 @@ describe('Express.js Integration', () => {
       set: () => {},
       use: () => {}
     };
-    
+
     expect(() => {
       setupCoherent(mockApp);
     }).not.toThrow();
@@ -45,7 +45,7 @@ describe('Express.js Integration', () => {
         text: 'Hello Coherent.js!'
       }
     };
-    
+
     const html = render(testComponent);
     expect(html).toContain('Hello Coherent.js!');
   });

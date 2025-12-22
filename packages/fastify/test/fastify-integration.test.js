@@ -4,7 +4,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { coherentFastify, createHandler, setupCoherent } from '../src/coherent-fastify.js';
-import { render } from '../../core/src/index.js';
+import { render } from '@coherent.js/core';
 
 describe('Fastify Integration', () => {
   it('should create coherentFastify plugin', () => {
@@ -18,7 +18,7 @@ describe('Fastify Integration', () => {
       addHook: () => {},
       register: () => {}
     };
-    
+
     expect(() => {
       coherentFastify(mockFastify, {
         enablePerformanceMonitoring: true,
@@ -37,7 +37,7 @@ describe('Fastify Integration', () => {
     const mockFastify = {
       register: () => {}
     };
-    
+
     expect(() => {
       setupCoherent(mockFastify);
     }).not.toThrow();
@@ -50,7 +50,7 @@ describe('Fastify Integration', () => {
         text: 'Hello Coherent.js!'
       }
     };
-    
+
     const html = render(testComponent);
     expect(html).toContain('Hello Coherent.js!');
   });
@@ -62,7 +62,7 @@ describe('Fastify Integration', () => {
       addHook: () => {},
       register: () => {}
     };
-    
+
     expect(() => {
       coherentFastify(mockFastify, {}, () => {});
     }).not.toThrow();

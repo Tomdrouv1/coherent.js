@@ -19,6 +19,7 @@ import {
 import { performanceMonitor } from '../performance/monitor.js';
 import { createCacheManager } from '../performance/cache-manager.js';
 import { cssUtils, defaultCSSManager } from './css-manager.js';
+import { CoherentError, RenderingError, globalErrorHandler } from '../utils/error-handler.js';
 
 // Create a global cache instance for the renderer
 const rendererCache = createCacheManager({
@@ -26,14 +27,29 @@ const rendererCache = createCacheManager({
     ttlMs: 300000 // 5 minutes
 });
 
+function formatRenderPath(path) {
+    if (!path || path.length === 0) return 'root';
+
+    let rendered = 'root';
+    for (const segment of path) {
+        if (typeof segment !== 'string' || segment.length === 0) continue;
+        if (segment.startsWith('[')) {
+            rendered += segment;
+        } else {
+            rendered += `.${segment}`;
+        }
+    }
+    return rendered;
+}
+
 /**
  * HTML Renderer Class extending BaseRenderer
- * 
+ *
  * @class HTMLRenderer
  * @extends BaseRenderer
  * @description High-performance HTML renderer with caching, monitoring, and streaming support.
  * Converts object-based components to HTML strings with advanced optimizations.
- * 
+ *
  * @param {Object} [options={}] - Renderer configuration options
  * @param {boolean} [options.enableCache=true] - Enable component caching
  * @param {boolean} [options.enableMonitoring=true] - Enable performance monitoring
@@ -42,14 +58,14 @@ const rendererCache = createCacheManager({
  * @param {number} [options.maxDepth=100] - Maximum rendering depth
  * @param {number} [options.cacheSize=1000] - Cache size limit
  * @param {number} [options.cacheTTL=300000] - Cache TTL in milliseconds
- * 
+ *
  * @example
  * const renderer = new HTMLRenderer({
  *   enableCache: true,
  *   enableMonitoring: true,
  *   minify: true
  * });
- * 
+ *
  * const html = renderer.render({ div: { text: 'Hello World' } });
  */
 class HTMLRenderer extends BaseRenderer {
@@ -62,7 +78,7 @@ class HTMLRenderer extends BaseRenderer {
             maxDepth: options.maxDepth || 100,
             ...options
         });
-        
+
         // Initialize cache if enabled
         if (this.config.enableCache && !this.cache) {
             this.cache = rendererCache;
@@ -71,14 +87,14 @@ class HTMLRenderer extends BaseRenderer {
 
     /**
      * Main render method - converts components to HTML string
-     * 
+     *
      * @param {Object|Array|string|Function} component - Component to render
      * @param {Object} [options={}] - Rendering options
      * @param {Object} [options.context] - Rendering context
      * @param {boolean} [options.enableCache] - Override cache setting
      * @param {number} [options.depth=0] - Current rendering depth
      * @returns {string} Rendered HTML string
-     * 
+     *
      * @example
      * const html = renderer.render({
      *   div: {
@@ -101,58 +117,85 @@ class HTMLRenderer extends BaseRenderer {
             }
 
             // Main rendering logic
-            const html = this.renderComponent(component, config, 0);
+            const html = this.renderComponent(component, config, 0, []);
             const finalHtml = config.minify ? minifyHtml(html, config) : html;
 
             // Performance monitoring
             this.endTiming();
             this.recordPerformance('render', this.metrics.startTime, false, {
-                cacheEnabled: config.enableCache 
+                cacheEnabled: config.enableCache
             });
 
             return finalHtml;
 
         } catch (_error) {
             this.recordError('render', _error);
-            throw _error;
+            const enhancedError = globalErrorHandler.handle(_error, {
+                renderContext: { path: 'root', renderer: 'html' }
+            });
+
+            if (config.throwOnError === false) {
+                return config.errorFallback;
+            }
+
+            throw enhancedError;
         }
     }
 
     /**
      * Render a single component with full optimization pipeline
      */
-    renderComponent(component, options, depth = 0) {
+    renderComponent(component, options, depth = 0, path = []) {
         // Use base class depth validation
         this.validateDepth(depth);
-        
-        // Use base class component type processing
-        const { type, value } = this.processComponentType(component);
-        
-        switch (type) {
-            case 'empty':
-                return '';
-            case 'text':
-                return escapeHtml(value);
-            case 'function':
-                const result = this.executeFunctionComponent(value, depth);
-                return this.renderComponent(result, options, depth + 1);
-            case 'array':
-                return value.map(child => this.renderComponent(child, options, depth + 1)).join('');
-            case 'element':
-                // Process object-based component
-                const tagName = Object.keys(value)[0];
-                const elementContent = value[tagName];
-                return this.renderElement(tagName, elementContent, options, depth);
-            default:
-                this.recordError('renderComponent', new Error(`Unknown component type: ${type}`));
-                return '';
+
+        try {
+            // Use base class component type processing
+            const { type, value } = this.processComponentType(component);
+
+            switch (type) {
+                case 'empty':
+                    return '';
+                case 'text':
+                    return escapeHtml(value);
+                case 'function':
+                    {
+                        const result = this.executeFunctionComponent(value, depth);
+                        return this.renderComponent(result, options, depth + 1, [...path, '()']);
+                    }
+                case 'array':
+                    return value.map((child, index) => this.renderComponent(child, options, depth + 1, [...path, `[${index}]`])).join('');
+                case 'element':
+                    {
+                        // Process object-based component
+                        const tagName = Object.keys(value)[0];
+                        const elementContent = value[tagName];
+                        return this.renderElement(tagName, elementContent, options, depth, [...path, tagName]);
+                    }
+                default:
+                    this.recordError('renderComponent', new Error(`Unknown component type: ${type}`));
+                    return '';
+            }
+        } catch (_error) {
+            const renderPath = formatRenderPath(path);
+
+            if (_error instanceof CoherentError) {
+                if (!_error.context || typeof _error.context !== 'object') {
+                    _error.context = { path: renderPath };
+                } else if (!_error.context.path) {
+                    _error.context = { ..._error.context, path: renderPath };
+                }
+                throw _error;
+            }
+
+            throw new RenderingError(_error.message, undefined, { path: renderPath, renderer: 'html' });
         }
     }
 
     /**
      * Render an HTML element with advanced caching and optimization
      */
-    renderElement(tagName, element, options, depth = 0) {
+    renderElement(tagName, element, options, depth = 0, path = []) {
         const startTime = performance.now();
 
         // Track element usage for performance analysis (via stats in the new cache manager)
@@ -184,12 +227,12 @@ class HTMLRenderer extends BaseRenderer {
         // Handle function elements
         if (typeof element === 'function') {
             const result = this.executeFunctionComponent(element, depth);
-            return this.renderElement(tagName, result, options, depth);
+            return this.renderElement(tagName, result, options, depth, [...path, '()']);
         }
 
         // Handle object elements (complex elements with props and children)
         if (element && typeof element === 'object') {
-            return this.renderObjectElement(tagName, element, options, depth);
+            return this.renderObjectElement(tagName, element, options, depth, path);
         }
 
         // Handle null and undefined by returning empty tags
@@ -223,7 +266,7 @@ class HTMLRenderer extends BaseRenderer {
     /**
      * Render complex object elements with attributes and children
      */
-    renderObjectElement(tagName, element, options, depth = 0) {
+    renderObjectElement(tagName, element, options, depth = 0, path = []) {
         const startTime = performance.now();
 
         // Check component-level cache
@@ -273,7 +316,7 @@ class HTMLRenderer extends BaseRenderer {
         if (hasChildren(element)) {
             const normalizedChildren = normalizeChildren(children);
             childrenHtml = normalizedChildren
-                .map(child => this.renderComponent(child, options, depth + 1))
+                .map((child, index) => this.renderComponent(child, options, depth + 1, [...path, `children[${index}]`]))
                 .join('');
         }
 
@@ -305,7 +348,7 @@ export function render(component, options = {}) {
         enableMonitoring: false,
         ...options
     };
-    
+
     const renderer = new HTMLRenderer(mergedOptions);
     return renderer.render(component, mergedOptions);
 }
@@ -317,25 +360,25 @@ export function render(component, options = {}) {
  */
 export async function renderHTML(component, options = {}) {
     const htmlContent = render(component, options);
-    
+
     // Process CSS options
     const cssOptions = cssUtils.processCSSOptions(options);
-    
+
     // Generate CSS HTML if any CSS is specified
     let cssHtml = '';
     if (cssOptions.files.length > 0 || cssOptions.links.length > 0 || cssOptions.inline) {
         cssHtml = await cssUtils.generateCSSHtml(cssOptions, defaultCSSManager);
     }
-    
+
     // If the component includes a head tag, inject CSS into it
     if (cssHtml && htmlContent.includes('<head>')) {
         const htmlWithCSS = htmlContent.replace(
-            '</head>', 
+            '</head>',
             `${cssHtml}\n</head>`
         );
         return `<!DOCTYPE html>\n${htmlWithCSS}`;
     }
-    
+
     // If there's CSS but no head tag, wrap the component with a basic HTML structure
     if (cssHtml) {
         return `<!DOCTYPE html>
@@ -350,7 +393,7 @@ ${htmlContent}
 </body>
 </html>`;
     }
-    
+
     return `<!DOCTYPE html>\n${htmlContent}`;
 }
 
@@ -360,15 +403,15 @@ ${htmlContent}
  */
 export function renderHTMLSync(component, options = {}) {
     const cssOptions = cssUtils.processCSSOptions(options);
-    
+
     // If CSS files are specified, return a promise
     if (cssOptions.files.length > 0) {
         console.warn('CSS files detected, use render() (async) instead of renderSync()');
         return render(component, options);
     }
-    
+
     const htmlContent = render(component, options);
-    
+
     // Handle inline CSS and external links only
     let cssHtml = '';
     if (cssOptions.links.length > 0) {
@@ -377,15 +420,15 @@ export function renderHTMLSync(component, options = {}) {
     if (cssOptions.inline) {
         cssHtml += `\n${  defaultCSSManager.generateInlineStyles(cssOptions.inline)}`;
     }
-    
+
     if (cssHtml && htmlContent.includes('<head>')) {
         const htmlWithCSS = htmlContent.replace(
-            '</head>', 
+            '</head>',
             `${cssHtml}\n</head>`
         );
         return `<!DOCTYPE html>\n${htmlWithCSS}`;
     }
-    
+
     if (cssHtml) {
         return `<!DOCTYPE html>
 <html>
@@ -399,7 +442,7 @@ ${htmlContent}
 </body>
 </html>`;
     }
-    
+
     return `<!DOCTYPE html>\n${htmlContent}`;
 }
 

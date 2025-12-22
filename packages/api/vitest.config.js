@@ -1,4 +1,6 @@
 import { defineConfig } from 'vitest/config';
+import { codecovVitePlugin } from "@codecov/vite-plugin";
+import { env } from 'node:process';
 
 export default defineConfig({
   test: {
@@ -9,6 +11,13 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'lcov'],
       reportsDirectory: './coverage'
-    }
+    },
+    plugins: [
+      codecovVitePlugin({
+        enableBundleAnalysis: env.CODECOV_TOKEN !== undefined,
+        bundleName: "@coherent.js/api",
+        uploadToken: env.CODECOV_TOKEN,
+      }),
+    ],
   }
 });

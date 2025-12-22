@@ -35,6 +35,8 @@ describe('Error Handler', () => {
       expect(error.name).toBe('CoherentError');
       expect(error.message).toBe('Test error');
       expect(error.type).toBe('generic');
+      expect(error.code).toBe('COHERENT_GENERIC');
+      expect(error.docsUrl).toBe('/docs/core/errors#COHERENT_GENERIC');
       expect(error.timestamp).toBeGreaterThan(0);
     });
 
@@ -48,9 +50,16 @@ describe('Error Handler', () => {
       const error = new CoherentError('Test error', options);
 
       expect(error.type).toBe('custom');
+      expect(error.code).toBe('COHERENT_CUSTOM');
       expect(error.component).toBe('TestComponent');
       expect(error.context).toEqual({ prop: 'value' });
       expect(error.suggestions).toEqual(['Try this', 'Try that']);
+    });
+
+    it('should allow overriding error code', () => {
+      const error = new CoherentError('Test error', { type: 'custom', code: 'COHERENT_CUSTOM_OVERRIDE' });
+      expect(error.code).toBe('COHERENT_CUSTOM_OVERRIDE');
+      expect(error.docsUrl).toBe('/docs/core/errors#COHERENT_CUSTOM_OVERRIDE');
     });
 
     it('should serialize to JSON correctly', () => {
@@ -67,6 +76,8 @@ describe('Error Handler', () => {
         name: 'CoherentError',
         message: 'Test error',
         type: 'test',
+        code: 'COHERENT_TEST',
+        docsUrl: '/docs/core/errors#COHERENT_TEST',
         component: 'TestComp',
         context: { key: 'value' },
         suggestions: ['suggestion1']
@@ -91,6 +102,7 @@ describe('Error Handler', () => {
       expect(error).toBeInstanceOf(ComponentValidationError);
       expect(error.name).toBe('ComponentValidationError');
       expect(error.type).toBe('validation');
+      expect(error.code).toBe('COHERENT_VALIDATION');
       expect(error.component).toBe('TestComponent');
     });
 
@@ -120,6 +132,7 @@ describe('Error Handler', () => {
       expect(error).toBeInstanceOf(RenderingError);
       expect(error.name).toBe('RenderingError');
       expect(error.type).toBe('rendering');
+      expect(error.code).toBe('COHERENT_RENDERING');
       expect(error.component).toBe('TestComponent');
       expect(error.context).toEqual({ prop: 'value' });
     });
@@ -141,6 +154,7 @@ describe('Error Handler', () => {
       expect(error).toBeInstanceOf(PerformanceError);
       expect(error.name).toBe('PerformanceError');
       expect(error.type).toBe('performance');
+      expect(error.code).toBe('COHERENT_PERFORMANCE');
       expect(error.context).toEqual(metrics);
     });
 
@@ -161,6 +175,7 @@ describe('Error Handler', () => {
       expect(error).toBeInstanceOf(StateError);
       expect(error.name).toBe('StateError');
       expect(error.type).toBe('state');
+      expect(error.code).toBe('COHERENT_STATE');
       expect(error.context).toEqual(state);
     });
 

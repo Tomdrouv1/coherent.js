@@ -1,7 +1,7 @@
 import { getCLIVersion } from '../utils/version.js';
 
 // Get current CLI version automatically
-const cliVersion = getCLIVersion();
+const _cliVersion = getCLIVersion();
 
 /**
  * Generate Docker configuration for database

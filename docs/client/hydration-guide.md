@@ -15,7 +15,7 @@ Coherent.js provides several utilities for hydrating components:
 Hydrates a single DOM element with a Coherent component.
 
 ```javascript
-import { hydrate } from 'coherent/client/hydration';
+import { hydrate } from '@coherent.js/client';
 
 const element = document.getElementById('my-component');
 const instance = hydrate(element, MyComponent, { initialProp: 'value' });
@@ -26,7 +26,7 @@ const instance = hydrate(element, MyComponent, { initialProp: 'value' });
 Hydrates multiple elements with their corresponding components.
 
 ```javascript
-import { hydrateAll } from 'coherent/client/hydration';
+import { hydrateAll } from '@coherent.js/client';
 
 const elements = [document.getElementById('counter'), document.getElementById('todo-list')];
 const components = [Counter, TodoList];
@@ -40,7 +40,7 @@ const instances = hydrateAll(elements, components, propsArray);
 Finds elements by CSS selector and hydrates them with a component.
 
 ```javascript
-import { hydrateBySelector } from 'coherent/client/hydration';
+import { hydrateBySelector } from '@coherent.js/client';
 
 const instances = hydrateBySelector('.counter', Counter, { count: 0 });
 ```
@@ -50,7 +50,7 @@ const instances = hydrateBySelector('.counter', Counter, { count: 0 });
 Marks a component as hydratable and adds metadata for server-side rendering.
 
 ```javascript
-import { makeHydratable } from 'coherent/client/hydration';
+import { makeHydratable } from '@coherent.js/client';
 
 const HydratableCounter = makeHydratable(Counter);
 ```
@@ -60,7 +60,7 @@ const HydratableCounter = makeHydratable(Counter);
 To make a component hydratable, wrap it with the `makeHydratable` function:
 
 ```javascript
-import { makeHydratable } from 'coherent/client/hydration';
+import { makeHydratable } from '@coherent.js/client';
 
 function Counter(props) {
   return {
@@ -92,8 +92,8 @@ const HydratableCounter = makeHydratable(Counter);
 When rendering on the server, use `render` with hydratable components:
 
 ```javascript
-import { render } from 'coherent/rendering/html-renderer';
-import { makeHydratable } from 'coherent/client/hydration';
+import { render } from '@coherent.js/core';
+import { makeHydratable } from '@coherent.js/client';
 
 function Counter(props) {
   return {
@@ -126,7 +126,7 @@ const html = render(HydratableCounter, { count: 5 });
 On the client side, hydrate the server-rendered HTML:
 
 ```javascript
-import { hydrate } from 'coherent/client/hydration';
+import { hydrate } from '@coherent.js/client';
 
 // Find the server-rendered element
 const element = document.getElementById('counter');
@@ -200,8 +200,8 @@ Here's a complete example showing server-side rendering and client-side hydratio
 ### Server-side (Node.js)
 
 ```javascript
-import { render } from 'coherent/rendering/html-renderer';
-import { makeHydratable } from 'coherent/client/hydration';
+import { render } from '@coherent.js/core';
+import { makeHydratable } from '@coherent.js/client';
 
 function Counter(props) {
   return {
@@ -250,29 +250,30 @@ res.send(`
 </head>
 <body>
   <div id="counter">${html}</div>
-  <script type="module">
-    import { hydrate } from './coherent/client/hydration.js';
-    
-    const element = document.getElementById('counter');
-    hydrate(element, ${HydratableCounter.name}, { count: 0 });
-  </script>
+  <script type="module" src="/hydration.js"></script>
 </body>
 </html>
 `);
 ```
 
+Bundle the browser entrypoint (example using esbuild):
+
+```bash
+npx esbuild client.js --bundle --format=esm --outfile=public/hydration.js
+```
+
 ### Client-side (Browser)
 
 ```javascript
-import { hydrate } from 'coherent/client/hydration';
+import { autoHydrate, makeHydratable } from '@coherent.js/client';
+import { Counter } from './components/Counter.js';
 
-// Find the server-rendered element
-const element = document.getElementById('counter');
+window.componentRegistry = {
+  counter: makeHydratable(Counter, { componentName: 'counter' })
+};
 
-// Hydrate the component
-const instance = hydrate(element, HydratableCounter, { count: 0 });
-
-// The component is now interactive!
+// Auto-hydrate when the module runs
+autoHydrate(window.componentRegistry);
 ```
 
 ## Best Practices

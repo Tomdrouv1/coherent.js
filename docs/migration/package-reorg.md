@@ -8,6 +8,8 @@ This guide helps you migrate from v1.0.0-beta.1 to the reorganized package struc
 
 In v1.0.0-beta.2, we've reorganized the Coherent.js ecosystem to provide better modularity and separation of concerns:
 
+> **Note**: In current releases, `@coherent.js/core` is intended to be consumed via its top-level entrypoint (`import { ... } from '@coherent.js/core'`). Historical subpath imports shown in **Before** snippets (like `@coherent.js/core/router` or `@coherent.js/core/internal/*`) are not part of the supported public API.
+
 ### New Packages
 
 1. **@coherent.js/state** - Dedicated reactive state management package

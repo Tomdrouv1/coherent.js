@@ -415,7 +415,7 @@ module.exports = {
   },
   resolve: {
     alias: {
-      '@coherent.js/core': '@coherent.js/core/dist/coherent.min.js'
+      '@coherent.js/core': '@coherent.js/core'
     }
   }
 };

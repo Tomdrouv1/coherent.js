@@ -1,14 +1,18 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "module": "commonjs",
-    "target": "es2020",
-    "lib": ["es2020"],
-    "outDir": "dist",
-    "strict": true,
-    "declaration": true,
-    "esModuleInterop": true,
-    "moduleResolution": "node",
-    "skipLibCheck": true
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "baseUrl": "./",
+    "paths": {
+      "@coherent.js/core": ["../core/dist"],
+      "@coherent.js/nextjs": ["./dist"]
+    }
   },
-  "include": ["src/**/*"]
+  "include": [
+    "src/**/*"
+  ],
+  "references": [
+    { "path": "../core" }
+  ]
 }

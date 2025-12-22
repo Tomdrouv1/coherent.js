@@ -28,7 +28,7 @@ pnpm add @coherent.js/core@beta
 yarn add @coherent.js/core@beta
 ```
 
-> **Note**: Coherent.js is currently in beta (v1.0.0-beta.1). The `@beta` tag ensures you get the latest beta release.
+> **Note**: Coherent.js is currently in beta (v1.0.0-beta.6). The `@beta` tag ensures you get the latest beta release.
 
 ### Your First Component
 
@@ -117,6 +117,12 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 ```
 
+Bundle this file for the browser (example using esbuild):
+
+```bash
+npx esbuild hydration.js --bundle --format=esm --outfile=public/hydration.js
+```
+
 ### Step 3: Create a Complete Page
 
 ```javascript
@@ -164,7 +170,7 @@ export const appPage = {
                 `
               }
             },
-            { script: { src: './hydration.js', defer: true } }
+            { script: { type: 'module', src: '/hydration.js' } }
           ]
         }
       },

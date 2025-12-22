@@ -87,6 +87,7 @@ jobs:
           files: ./coverage/lcov.info
           fail_ci_if_error: false
           verbose: true
+          token: ${{secrets.CODECOV_TOKEN}}
         continue-on-error: true
 
       - name: Upload coverage artifacts

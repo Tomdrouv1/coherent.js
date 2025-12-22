@@ -1,6 +1,7 @@
 import { build } from 'esbuild';
 import { readFile, writeFile } from 'fs/promises';
 import { spawn } from 'child_process';
+import process, { env } from 'node:process';
 import path from 'path';
 
 /**
@@ -12,9 +13,9 @@ export const commonConfig = {
   target: 'node20',
   sourcemap: true,
   treeShaking: true,
-  minify: process.env.NODE_ENV === 'production',
+  minify: env.NODE_ENV === 'production',
   define: {
-    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+    'process.env.NODE_ENV': JSON.stringify(env.NODE_ENV || 'development'),
   },
   external: [
     // Common externals that should not be bundled
@@ -34,9 +35,9 @@ export const commonConfig = {
 /**
  * Build a package with both ESM and CJS formats
  */
-export async function buildPackage({ 
-  packageName, 
-  entryPoint, 
+export async function buildPackage({
+  packageName,
+  entryPoint,
   outDir = 'dist',
   external = [],
   additionalConfig = {},
@@ -78,12 +79,12 @@ export async function buildPackage({
  */
 export async function generateDeclarations(packagePath) {
   return new Promise((resolve, reject) => {
-    const process = spawn('tsc', ['--build', packagePath], {
+    const tscProcess = spawn('tsc', ['--build', packagePath], {
       stdio: 'inherit',
       cwd: path.resolve('.')
     });
 
-    process.on('close', (code) => {
+    tscProcess.on('close', (code) => {
       if (code === 0) {
         console.log(`✅ Generated TypeScript declarations for ${packagePath}`);
         resolve();
@@ -101,7 +102,7 @@ export async function buildBrowserPackage({
   packageName,
   entryPoint,
   outDir = 'dist',
-  minify = process.env.NODE_ENV === 'production'
+  minify = env.NODE_ENV === 'production'
 }) {
   console.log(`🏗️  Building browser package ${packageName}...`);
 
@@ -117,7 +118,7 @@ export async function buildBrowserPackage({
     outfile: `${outDir}/index.js`,
     metafile: true,
     define: {
-      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+      'process.env.NODE_ENV': JSON.stringify(env.NODE_ENV || 'development'),
     },
   });
 
@@ -140,7 +141,7 @@ export async function buildBrowserPackage({
 export async function generatePackageExports(packagePath) {
   const packageJsonPath = path.join(packagePath, 'package.json');
   const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf-8'));
-  
+
   // Ensure consistent exports configuration
   packageJson.exports = {
     ".": {
@@ -149,7 +150,7 @@ export async function generatePackageExports(packagePath) {
       "types": "./dist/index.d.ts"
     }
   };
-  
+
   // Ensure files array includes dist
   if (!packageJson.files) {
     packageJson.files = [];
@@ -157,7 +158,7 @@ export async function generatePackageExports(packagePath) {
   if (!packageJson.files.includes('dist/')) {
     packageJson.files.unshift('dist/');
   }
-  
+
   await writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
 }
 
@@ -167,11 +168,11 @@ export async function generatePackageExports(packagePath) {
 export async function buildAll() {
   const buildOrder = [
     'core',
-    'api', 
+    'api',
     'database',
     'client',
     'express',
-    'fastify', 
+    'fastify',
     'koa',
     'nextjs'
   ];
@@ -181,7 +182,7 @@ export async function buildAll() {
     try {
       const packagePath = `packages/${pkg}`;
       const entryPoint = `${packagePath}/${getEntryPoint(pkg)}`;
-      
+
       if (pkg === 'client') {
         await buildBrowserPackage({
           packageName: `@coherent.js/${pkg}`,
@@ -196,7 +197,7 @@ export async function buildAll() {
           external: getPackageExternals(pkg)
         });
       }
-      
+
       await generatePackageExports(packagePath);
     } catch (error) {
       console.error(`❌ Failed to build ${pkg}:`, error);
@@ -223,14 +224,14 @@ function getEntryPoint(packageName) {
   const entryPoints = {
     'core': 'src/index.js',
     'api': 'src/index.js',
-    'database': 'src/index.js', 
+    'database': 'src/index.js',
     'client': 'src/hydration.js',
     'express': 'src/index.js',
     'fastify': 'src/index.js',
     'koa': 'src/index.js',
     'nextjs': 'src/index.js'
   };
-  
+
   return entryPoints[packageName] || `src/index.js`;
 }
 
@@ -248,7 +249,7 @@ function getPackageExternals(packageName) {
     'koa': ['@coherent.js/core'],
     'nextjs': ['@coherent.js/core']
   };
-  
+
   return externals[packageName] || [];
 }
 

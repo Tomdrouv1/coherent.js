@@ -31,7 +31,8 @@ npm install @coherent.js/core@beta
 pnpm add @coherent.js/core@beta
 ```
 
-> **Note**: Coherent.js is currently in beta (v1.0.0-beta.1).
+> **Note**: Coherent.js is currently in beta (v1.0.0-beta.6).
+ 
 
 ### 2. Your First Component
 
@@ -241,8 +242,8 @@ npm run dev
 
 - 📖 [Full API Reference](../api-reference.md)
 - 🎯 [Examples Browser](../../examples/)
-- 🐛 [GitHub Issues](https://github.com/@coherent.js/core/coherent/issues)
-- 💬 [Discussions](https://github.com/@coherent.js/core/coherent/discussions)
+- 🐛 [GitHub Issues](https://github.com/Tomdrouv1/coherent.js/issues)
+- 💬 [Discussions](https://github.com/Tomdrouv1/coherent.js/discussions)
 
 ---
 

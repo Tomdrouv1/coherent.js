@@ -286,7 +286,7 @@ test('scaffoldProject should handle different templates', async () => {
   }
 });
 
-test.skip('scaffoldProject should create valid main index.js', async () => {
+test('scaffoldProject should create valid main index.js', async () => {
   const tempDir = await createTempDir();
 
   try {
@@ -307,7 +307,7 @@ test.skip('scaffoldProject should create valid main index.js', async () => {
     const indexContent = readFileSync(indexPath, 'utf-8');
 
     // Check basic structure (built-in HTTP server)
-    assert(indexContent.includes("import http from 'http'"));
+    assert(indexContent.includes("import http from 'node:http'"));
     assert(indexContent.includes("import { render } from '@coherent.js/core'"));
     assert(indexContent.includes("import { HomePage } from './components/HomePage.js'"));
     assert(indexContent.includes('server.listen'));

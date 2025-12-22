@@ -3,6 +3,8 @@
  * @fileoverview Standardized _error classes and handling utilities
  */
 
+import { env } from 'node:process';
+
 /**
  * Base API Error class
  * @extends Error
@@ -19,13 +21,13 @@ class ApiError extends Error {
     this.name = 'ApiError';
     this.statusCode = statusCode;
     this.details = details;
-    
+
     // Ensure proper stack trace
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, ApiError);
     }
   }
-  
+
   /**
    * Convert _error to JSON-serializable object
    * @returns {Object} Error object
@@ -130,7 +132,7 @@ function withErrorHandling(handler) {
       if (_error instanceof ApiError) {
         throw _error;
       }
-      
+
       // Otherwise, wrap it as a generic server _error
       throw new ApiError(_error.message || 'Internal server _error', 500);
     }
@@ -145,29 +147,29 @@ function createErrorHandler() {
   return (_error, req, res, next) => {
     // Log _error for debugging
     console.error('API Error:', _error);
-    
+
     // If headers are already sent, delegate to default _error handler
     if (res.headersSent) {
       return next(_error);
     }
-    
+
     // Format _error response
     const response = {
       _error: _error.name || 'Error',
       message: _error.message || 'An _error occurred',
       statusCode: _error.statusCode || 500
     };
-    
+
     // Add details if available
     if (_error.details) {
       response.details = _error.details;
     }
-    
+
     // Add stack trace in development
-    if (process.env.NODE_ENV === 'development') {
+    if (env.NODE_ENV === 'development') {
       response.stack = _error.stack;
     }
-    
+
     res.status(response.statusCode).json(response);
   };
 }

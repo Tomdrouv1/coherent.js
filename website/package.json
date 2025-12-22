@@ -9,10 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@coherent.js/core": "1.0.0-beta.2",
-    "@coherent.js/runtime": "1.0.0-beta.2"
+    "@coherent.js/core": "1.0.0-beta.5",
+    "@coherent.js/runtime": "1.0.0-beta.5"
   },
   "devDependencies": {
-    "vite": "^5.0.0"
+    "vite": "7.3.0"
   }
 }

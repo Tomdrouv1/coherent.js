@@ -32,13 +32,13 @@ const LIFECYCLE_HOOKS = {
 
 /**
  * Component state management class
- * 
+ *
  * @class ComponentState
  * @description Manages component state with reactive updates and listener notifications.
  * Provides immutable state updates with change detection.
- * 
+ *
  * @param {Object} [initialState={}] - Initial state object
- * 
+ *
  * @example
  * const state = new ComponentState({ count: 0 });
  * state.set({ count: 1 });
@@ -53,7 +53,7 @@ class ComponentState {
 
     /**
      * Get state value by key or entire state
-     * 
+     *
      * @param {string} [key] - State key to retrieve
      * @returns {*} State value or entire state object
      */
@@ -63,7 +63,7 @@ class ComponentState {
 
     /**
      * Update state with new values
-     * 
+     *
      * @param {Object} updates - State updates to apply
      * @returns {ComponentState} This instance for chaining
      */
@@ -2106,6 +2106,8 @@ export function withState(initialState = {}, options = {}) {
                 ...props,
                 [propName]: transformedState,
                 [actionsName]: boundActions,
+                setState: stateUtils.setState,
+                getState: stateUtils.getState,
                 stateUtils
             };
 

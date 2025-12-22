@@ -47,14 +47,12 @@ The browser makes the server HTML interactive:
 
 ```javascript
 // client.js
-import { hydrate } from '@coherent.js/client';
+import { hydrateBySelector } from '@coherent.js/client';
+
+import { UserProfilePage } from './components/UserProfilePage.js';
 
 // Attach event listeners to server-rendered HTML
-hydrate('#app', {
-  onHydrated: () => {
-    console.log('Page is now interactive!');
-  }
-});
+hydrateBySelector('#app', UserProfilePage);
 ```
 
 **Result**: Server HTML becomes fully interactive
@@ -69,7 +67,7 @@ import { createRouter } from '@coherent.js/client/router';
 import { createReactiveState } from '@coherent.js/state';
 
 // Hydrate first
-await hydrate('#app');
+hydrateBySelector('#app', UserProfilePage);
 
 // Enable client-side routing (SPA-like navigation)
 const router = createRouter({
@@ -163,13 +161,13 @@ app.listen(3000);
 
 ```javascript
 // client/index.js
-import { hydrate } from '@coherent.js/client';
+import { hydrateBySelector } from '@coherent.js/client';
 import { createRouter } from '@coherent.js/client/router';
 import { createReactiveState, withLocalStorage } from '@coherent.js/state';
 import { hydrateForm } from '@coherent.js/forms';
 
 // 1. Hydrate server HTML
-await hydrate('#app');
+hydrateBySelector('#app', App);
 
 // 2. Set up client-side routing
 const router = createRouter({
@@ -337,12 +335,12 @@ app.get('/products', (req, res) => {
 ### **2. Hydrate Before Adding Interactivity**
 ```javascript
 // ✅ Good: Hydrate first, then enhance
-await hydrate('#app');
+hydrateBySelector('#app', App);
 const router = createRouter({ /* ... */ });
 
 // ❌ Bad: Router before hydration
 const router = createRouter({ /* ... */ });
-await hydrate('#app'); // Conflicts!
+hydrateBySelector('#app', App); // Conflicts!
 ```
 
 ### **3. Use Reactive State for Client-Only Features**

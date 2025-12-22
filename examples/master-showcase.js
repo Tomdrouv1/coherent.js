@@ -1,10 +1,10 @@
 /**
  * 🔥 COHERENT.JS MASTER SHOWCASE EXAMPLE
- * 
+ *
  * This comprehensive example demonstrates ALL capabilities and best practices of Coherent.js:
- * 
+ *
  * ✅ Server-Side Rendering (SSR)
- * ✅ Client-Side Hydration  
+ * ✅ Client-Side Hydration
  * ✅ State Management with withState
  * ✅ Component Composition & Reusability
  * ✅ Event Handling & Interactivity
@@ -16,18 +16,37 @@
  * ✅ Component Memoization
  * ✅ Advanced Styling Patterns
  * ✅ Error Handling
- * 
+ *
  * Run this example: node examples/master-showcase.js
  */
 
 import { render, withState, memo, dangerouslySetInnerContent } from '../packages/core/src/index.js';
 import { createServer } from 'http';
-import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { dirname } from 'path';
+import { build } from 'esbuild';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+const hydrationBuildResult = await build({
+  bundle: true,
+  format: 'esm',
+  platform: 'browser',
+  write: false,
+  target: ['es2020'],
+  stdin: {
+    sourcefile: 'hydration-entry.js',
+    resolveDir: __dirname,
+    contents: `import { autoHydrate } from '@coherent.js/client';
+
+window.componentRegistry = window.componentRegistry || {};
+autoHydrate(window.componentRegistry);
+`,
+  },
+});
+
+const hydrationCode = hydrationBuildResult.outputFiles[0].text;
 
 // ===== UTILITY COMPONENTS =====
 
@@ -106,32 +125,32 @@ const ContactForm = withState({
   submitCount: 0,
   lastSubmitted: null
 })(({ state, setState, stateUtils }) => {
-  
+
   // Validation logic
   const validateForm = (data) => {
     const errors = {};
-    
+
     if (!data.name?.trim()) {
       errors.name = 'Name is required';
     } else if (data.name.trim().length < 2) {
       errors.name = 'Name must be at least 2 characters';
     }
-    
+
     if (!data.email?.trim()) {
       errors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
       errors.email = 'Please enter a valid email address';
     }
-    
+
     if (!data.message?.trim()) {
       errors.message = 'Message is required';
     } else if (data.message.trim().length < 10) {
       errors.message = 'Message must be at least 10 characters';
     }
-    
+
     return errors;
   };
-  
+
   return Card({
     title: '📝 Advanced Form with State Management',
     className: 'contact-form-card',
@@ -147,8 +166,8 @@ const ContactForm = withState({
                 className: 'form-success-banner',
                 children: [
                   Icon({ name: 'check', color: '#059669' }),
-                  { 
-                    span: { 
+                  {
+                    span: {
                       text: `✅ Form submitted successfully ${state.submitCount} time${state.submitCount > 1 ? 's' : ''}!`,
                       style: 'margin-left: 8px; color: #059669; font-weight: 600;'
                     }
@@ -156,7 +175,7 @@ const ContactForm = withState({
                 ]
               }
             },
-            
+
             // Name Field
             {
               div: {
@@ -193,8 +212,8 @@ const ContactForm = withState({
                 ].filter(Boolean)
               }
             },
-            
-            // Email Field  
+
+            // Email Field
             {
               div: {
                 className: 'form-group',
@@ -228,7 +247,7 @@ const ContactForm = withState({
                 ].filter(Boolean)
               }
             },
-            
+
             // Message Field
             {
               div: {
@@ -263,7 +282,7 @@ const ContactForm = withState({
                 ].filter(Boolean)
               }
             },
-            
+
             // Submit Button
             {
               div: {
@@ -294,7 +313,7 @@ const LiveDataDashboard = withState({
   autoRefresh: true,
   refreshCount: 0
 })(({ state, setState, stateUtils }) => {
-  
+
   return Card({
     title: '📊 Real-time Data Dashboard',
     className: 'dashboard-card',
@@ -309,7 +328,7 @@ const LiveDataDashboard = withState({
               onclick: 'alert("Refresh clicked! (Hydration will enable full functionality)");',
               children: [Icon({ name: 'refresh' }), { span: { text: ' Refresh Data' } }]
             }),
-            
+
             state.lastUpdate && {
               div: {
                 className: 'last-update',
@@ -322,7 +341,7 @@ const LiveDataDashboard = withState({
           ].filter(Boolean)
         }
       },
-      
+
       // Data Grid
       state.data.length > 0 ? {
         div: {
@@ -396,7 +415,7 @@ const LiveDataDashboard = withState({
 
 const OptimizedProductList = memo(
   ({ products = [], filters = {}, sortBy = 'name' }) => {
-    
+
     // Memoized filtering and sorting
     const filteredProducts = products
       .filter(product => {
@@ -409,7 +428,7 @@ const OptimizedProductList = memo(
         if (sortBy === 'rating') return b.rating - a.rating;
         return a.name.localeCompare(b.name);
       });
-    
+
     return Card({
       title: `🚀 Optimized Product List (${filteredProducts.length} items)`,
       className: 'product-list-card',
@@ -495,14 +514,14 @@ const MasterShowcase = withState({
   productFilters: { search: '' },
   productSort: 'name'
 })(({ state, setState }) => {
-  
+
   const tabs = [
     { id: 'overview', name: 'Overview', icon: 'info' },
     { id: 'forms', name: 'Advanced Forms', icon: 'edit' },
     { id: 'dashboard', name: 'Live Dashboard', icon: 'chart' },
     { id: 'products', name: 'Optimized Lists', icon: 'star' }
   ];
-  
+
   const renderTabContent = () => {
     switch (state.currentTab) {
       case 'overview':
@@ -515,8 +534,8 @@ const MasterShowcase = withState({
                   className: 'overview-hero',
                   children: [
                     { h2: { text: '🚀 Welcome to the Coherent.js Master Showcase' } },
-                    { 
-                      p: { 
+                    {
+                      p: {
                         text: 'This comprehensive example demonstrates every aspect of modern web development with Coherent.js, from basic components to advanced state management patterns.',
                         className: 'hero-description'
                       }
@@ -524,7 +543,7 @@ const MasterShowcase = withState({
                   ]
                 }
               },
-              
+
               {
                 div: {
                   className: 'features-showcase',
@@ -583,25 +602,25 @@ const MasterShowcase = withState({
             ]
           }
         };
-      
+
       case 'forms':
         return ContactForm();
-      
+
       case 'dashboard':
         return LiveDataDashboard();
-      
+
       case 'products':
         return OptimizedProductList({
           products: state.sampleProducts,
           filters: state.productFilters,
           sortBy: state.productSort
         });
-      
+
       default:
         return { div: { text: 'Tab not found' } };
     }
   };
-  
+
   return {
     div: {
       className: 'master-showcase',
@@ -621,7 +640,7 @@ const MasterShowcase = withState({
             ]
           }
         },
-        
+
         // Tab Navigation
         {
           nav: {
@@ -634,10 +653,10 @@ const MasterShowcase = withState({
                   // Simple tab switching without complex state management for SSR example
                   const tabs = document.querySelectorAll('.tab-button');
                   const panels = document.querySelectorAll('.tab-panel');
-                  
+
                   tabs.forEach(t => t.classList.remove('active'));
                   panels.forEach(p => p.classList.remove('active'));
-                  
+
                   this.classList.add('active');
                   document.getElementById('${tab.id}-panel').classList.add('active');
                 `,
@@ -652,7 +671,7 @@ const MasterShowcase = withState({
             }))
           }
         },
-        
+
         // Tab Content
         {
           main: {
@@ -701,7 +720,7 @@ const MasterShowcase = withState({
             ]
           }
         },
-        
+
         // Footer
         {
           footer: {
@@ -779,13 +798,13 @@ const masterShowcasePage = {
             { meta: { name: 'viewport', content: 'width=device-width, initial-scale=1.0' } },
             { title: { text: 'Coherent.js Master Showcase - Complete Framework Demo' } },
             { meta: { name: 'description', content: 'Comprehensive demonstration of all Coherent.js capabilities including SSR, state management, forms, real-time updates, and performance optimization.' } },
-            
+
             // Comprehensive styles
-            { 
-              style: { 
+            {
+              style: {
                 text: `
                   * { box-sizing: border-box; margin: 0; padding: 0; }
-                  
+
                   body {
                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                     line-height: 1.6;
@@ -794,12 +813,12 @@ const masterShowcasePage = {
                     min-height: 100dvh;
                     padding: 20px;
                   }
-                  
+
                   .master-showcase {
                     max-width: 1200px;
                     margin: 0 auto;
                   }
-                  
+
                   .showcase-header {
                     text-align: center;
                     margin-bottom: 40px;
@@ -809,7 +828,7 @@ const masterShowcasePage = {
                     border-radius: 20px;
                     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
                   }
-                  
+
                   .showcase-title {
                     font-size: 3rem;
                     font-weight: 800;
@@ -819,13 +838,13 @@ const masterShowcasePage = {
                     background-clip: text;
                     margin-bottom: 15px;
                   }
-                  
+
                   .showcase-subtitle {
                     font-size: 1.2rem;
                     color: #6b7280;
                     margin-bottom: 25px;
                   }
-                  
+
                   .tab-nav {
                     display: flex;
                     background: rgba(255, 255, 255, 0.95);
@@ -836,7 +855,7 @@ const masterShowcasePage = {
                     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
                     gap: 8px;
                   }
-                  
+
                   .tab-button {
                     flex: 1;
                     background: transparent;
@@ -853,18 +872,18 @@ const masterShowcasePage = {
                     justify-content: center;
                     gap: 8px;
                   }
-                  
+
                   .tab-button:hover {
                     background: rgba(102, 126, 234, 0.1);
                     color: #667eea;
                   }
-                  
+
                   .tab-button.active {
                     background: linear-gradient(45deg, #667eea, #764ba2);
                     color: white;
                     box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
                   }
-                  
+
                   .tab-content {
                     background: rgba(255, 255, 255, 0.95);
                     backdrop-filter: blur(10px);
@@ -874,21 +893,21 @@ const masterShowcasePage = {
                     margin-bottom: 30px;
                     min-height: 400px;
                   }
-                  
+
                   .tab-panel {
                     display: none;
                   }
-                  
+
                   .tab-panel.active {
                     display: block;
                     animation: fadeIn 0.3s ease-in-out;
                   }
-                  
+
                   @keyframes fadeIn {
                     from { opacity: 0; transform: translateY(10px); }
                     to { opacity: 1; transform: translateY(0); }
                   }
-                  
+
                   .card {
                     background: white;
                     border-radius: 12px;
@@ -897,24 +916,24 @@ const masterShowcasePage = {
                     border: 1px solid #e5e7eb;
                     margin-bottom: 20px;
                   }
-                  
+
                   .card-header {
                     background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
                     padding: 20px 25px;
                     border-bottom: 1px solid #e5e7eb;
                   }
-                  
+
                   .card-title {
                     font-size: 1.4rem;
                     font-weight: 700;
                     color: #1f2937;
                     margin: 0;
                   }
-                  
+
                   .card-body {
                     padding: 25px;
                   }
-                  
+
                   .btn {
                     display: inline-flex;
                     align-items: center;
@@ -929,41 +948,41 @@ const masterShowcasePage = {
                     text-decoration: none;
                     gap: 8px;
                   }
-                  
+
                   .btn-primary {
                     background: linear-gradient(45deg, #3b82f6, #2563eb);
                     color: white;
                     box-shadow: 0 3px 10px rgba(59, 130, 246, 0.3);
                   }
-                  
+
                   .btn-primary:hover:not(:disabled) {
                     transform: translateY(-2px);
                     box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
                   }
-                  
+
                   .btn-lg {
                     padding: 12px 24px;
                     font-size: 1rem;
                   }
-                  
+
                   .btn:disabled {
                     opacity: 0.6;
                     cursor: not-allowed;
                     transform: none !important;
                   }
-                  
+
                   /* Form Styles */
                   .form-group {
                     margin-bottom: 20px;
                   }
-                  
+
                   .form-label {
                     display: block;
                     margin-bottom: 6px;
                     font-weight: 600;
                     color: #374151;
                   }
-                  
+
                   .form-input, .form-textarea {
                     width: 100%;
                     padding: 12px 16px;
@@ -972,17 +991,17 @@ const masterShowcasePage = {
                     font-size: 1rem;
                     transition: all 0.2s ease;
                   }
-                  
+
                   .form-input:focus, .form-textarea:focus {
                     outline: none;
                     border-color: #3b82f6;
                     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
                   }
-                  
+
                   .form-input.error, .form-textarea.error {
                     border-color: #dc2626;
                   }
-                  
+
                   .form-error {
                     display: flex;
                     align-items: center;
@@ -990,7 +1009,7 @@ const masterShowcasePage = {
                     font-size: 0.9rem;
                     margin-top: 6px;
                   }
-                  
+
                   .form-success-banner {
                     display: flex;
                     align-items: center;
@@ -1000,12 +1019,12 @@ const masterShowcasePage = {
                     margin-bottom: 20px;
                     border: 1px solid #a7f3d0;
                   }
-                  
+
                   .form-actions {
                     margin-top: 30px;
                     text-align: center;
                   }
-                  
+
                   /* Dashboard Styles */
                   .dashboard-controls {
                     display: flex;
@@ -1014,7 +1033,7 @@ const masterShowcasePage = {
                     align-items: center;
                     flex-wrap: wrap;
                   }
-                  
+
                   .last-update {
                     display: flex;
                     align-items: center;
@@ -1025,13 +1044,13 @@ const masterShowcasePage = {
                     background: #f9fafb;
                     border-radius: 6px;
                   }
-                  
+
                   .data-grid {
                     display: grid;
                     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
                     gap: 20px;
                   }
-                  
+
                   .data-item {
                     background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
                     border-radius: 10px;
@@ -1039,25 +1058,25 @@ const masterShowcasePage = {
                     border: 1px solid #e5e7eb;
                     transition: transform 0.2s ease;
                   }
-                  
+
                   .data-item:hover {
                     transform: translateY(-2px);
                     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
                   }
-                  
+
                   .data-header {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
                     margin-bottom: 15px;
                   }
-                  
+
                   .data-name {
                     margin: 0;
                     color: #374151;
                     font-size: 1rem;
                   }
-                  
+
                   .trend {
                     display: flex;
                     align-items: center;
@@ -1065,10 +1084,10 @@ const masterShowcasePage = {
                     font-weight: 600;
                     font-size: 0.9rem;
                   }
-                  
+
                   .trend-up { color: #059669; }
                   .trend-down { color: #dc2626; }
-                  
+
                   .data-value {
                     font-size: 2rem;
                     font-weight: 700;
@@ -1076,7 +1095,7 @@ const masterShowcasePage = {
                     margin-bottom: 15px;
                     text-align: center;
                   }
-                  
+
                   .progress-bar {
                     width: 100%;
                     height: 8px;
@@ -1084,29 +1103,29 @@ const masterShowcasePage = {
                     border-radius: 4px;
                     overflow: hidden;
                   }
-                  
+
                   .progress-fill {
                     height: 100%;
                     border-radius: 4px;
                     transition: width 0.5s ease;
                   }
-                  
+
                   .progress-fill.trend-up { background: linear-gradient(90deg, #10b981, #059669); }
                   .progress-fill.trend-down { background: linear-gradient(90deg, #f87171, #dc2626); }
-                  
+
                   .no-data {
                     text-align: center;
                     padding: 40px 20px;
                     color: #6b7280;
                   }
-                  
+
                   /* Product List Styles */
                   .product-grid {
                     display: grid;
                     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
                     gap: 20px;
                   }
-                  
+
                   .product-card {
                     background: white;
                     border-radius: 12px;
@@ -1115,12 +1134,12 @@ const masterShowcasePage = {
                     border: 1px solid #e5e7eb;
                     transition: all 0.3s ease;
                   }
-                  
+
                   .product-card:hover {
                     transform: translateY(-5px);
                     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
                   }
-                  
+
                   .product-image {
                     height: 100px;
                     display: flex;
@@ -1128,60 +1147,60 @@ const masterShowcasePage = {
                     justify-content: center;
                     position: relative;
                   }
-                  
+
                   .product-emoji {
                     font-size: 2.5rem;
                   }
-                  
+
                   .product-info {
                     padding: 20px;
                   }
-                  
+
                   .product-name {
                     margin: 0 0 8px 0;
                     color: #1f2937;
                     font-size: 1.1rem;
                     font-weight: 600;
                   }
-                  
+
                   .product-description {
                     color: #6b7280;
                     font-size: 0.9rem;
                     margin-bottom: 12px;
                     line-height: 1.5;
                   }
-                  
+
                   .product-meta {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
                   }
-                  
+
                   .product-price {
                     font-size: 1.2rem;
                     font-weight: 700;
                     color: #059669;
                   }
-                  
+
                   .product-rating {
                     display: flex;
                     align-items: center;
                     gap: 4px;
                     font-size: 0.9rem;
                   }
-                  
+
                   /* Overview Styles */
                   .overview-hero {
                     text-align: center;
                     margin-bottom: 40px;
                   }
-                  
+
                   .overview-hero h2 {
                     font-size: 2.5rem;
                     color: #1f2937;
                     margin-bottom: 15px;
                   }
-                  
+
                   .hero-description {
                     font-size: 1.1rem;
                     color: #6b7280;
@@ -1189,21 +1208,21 @@ const masterShowcasePage = {
                     max-width: 800px;
                     margin: 0 auto;
                   }
-                  
+
                   .features-showcase h3 {
                     color: #1f2937;
                     margin-bottom: 25px;
                     text-align: center;
                     font-size: 1.5rem;
                   }
-                  
+
                   .features-grid {
                     display: grid;
                     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
                     gap: 25px;
                     margin-top: 20px;
                   }
-                  
+
                   .feature-card {
                     background: white;
                     padding: 25px;
@@ -1213,29 +1232,29 @@ const masterShowcasePage = {
                     border: 1px solid #e5e7eb;
                     transition: transform 0.2s ease;
                   }
-                  
+
                   .feature-card:hover {
                     transform: translateY(-3px);
                     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
                   }
-                  
+
                   .feature-icon {
                     font-size: 2.5rem;
                     margin-bottom: 15px;
                   }
-                  
+
                   .feature-card h4 {
                     color: #1f2937;
                     margin-bottom: 10px;
                     font-size: 1.2rem;
                   }
-                  
+
                   .feature-card p {
                     color: #6b7280;
                     line-height: 1.6;
                     font-size: 0.95rem;
                   }
-                  
+
                   /* Footer Styles */
                   .showcase-footer {
                     background: rgba(255, 255, 255, 0.95);
@@ -1244,34 +1263,34 @@ const masterShowcasePage = {
                     padding: 25px;
                     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
                   }
-                  
+
                   .tech-info h3 {
                     text-align: center;
                     color: #1f2937;
                     margin-bottom: 20px;
                   }
-                  
+
                   .tech-grid {
                     display: grid;
                     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
                     gap: 15px;
                   }
-                  
+
                   .tech-item {
                     padding: 15px;
                     background: #f8fafc;
                     border-radius: 8px;
                     border-left: 4px solid #3b82f6;
                   }
-                  
+
                   .tech-item strong {
                     color: #1f2937;
                   }
-                  
+
                   .tech-item span {
                     color: #6b7280;
                   }
-                  
+
                   /* Responsive Design */
                   @media (max-width: 768px) {
                     .master-showcase { padding: 15px; }
@@ -1284,7 +1303,7 @@ const masterShowcasePage = {
                     .features-grid { grid-template-columns: 1fr; }
                     .tech-grid { grid-template-columns: 1fr; }
                   }
-                  
+
                   /* Focus styles for accessibility */
                   button:focus-visible, input:focus-visible, textarea:focus-visible {
                     outline: 2px solid #3b82f6;
@@ -1300,47 +1319,8 @@ const masterShowcasePage = {
         body: {
           children: [
             MasterShowcase(),
-            
-            // Load hydration module
-            {
-              script: {
-                type: 'module',
-                text: dangerouslySetInnerContent(`
-                  import { autoHydrate } from '/hydration.js';
-                  
-                  console.log('🔥 Coherent.js Master Showcase loaded!');
-                  console.log('✨ Initializing Coherent.js hydration...');
-                  
-                  // Component registry will be populated by inline script below
-                  window.componentRegistry = {};
-                  
-                  // Auto-hydrate when DOM is ready
-                  if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', () => {
-                      autoHydrate(window.componentRegistry);
-                      console.log('✅ Coherent.js hydration complete!');
-                    });
-                  } else {
-                    autoHydrate(window.componentRegistry);
-                    console.log('✅ Coherent.js hydration complete!');
-                  }
-                  
-                  // Performance monitoring
-                  if (typeof performance !== 'undefined') {
-                    window.addEventListener('load', () => {
-                      const perfData = performance.getEntriesByType('navigation')[0];
-                      if (perfData) {
-                        console.log('📊 Performance Metrics:', {
-                          'DOM Ready': Math.round(perfData.domContentLoadedEventEnd - perfData.domContentLoadedEventStart) + 'ms',
-                          'Load Complete': Math.round(perfData.loadEventEnd - perfData.loadEventStart) + 'ms',
-                          'Total Load Time': Math.round(perfData.loadEventEnd - perfData.fetchStart) + 'ms'
-                        });
-                      }
-                    });
-                  }
-                `)
-              }
-            }
+
+            { script: { type: 'module', src: '/hydration.js' } }
           ]
         }
       }
@@ -1354,25 +1334,16 @@ function startServer() {
   const server = createServer((req, res) => {
     // Serve hydration client bundle
     if (req.url === '/hydration.js') {
-      try {
-        const hydrationPath = join(__dirname, '../packages/client/src/hydration.js');
-        const hydrationCode = readFileSync(hydrationPath, 'utf-8');
-        res.setHeader('Content-Type', 'application/javascript');
-        res.writeHead(200);
-        res.end(hydrationCode);
-        return;
-      } catch (error) {
-        console.error('Error serving hydration.js:', error);
-        res.writeHead(404);
-        res.end('Not found');
-        return;
-      }
+      res.setHeader('Content-Type', 'application/javascript');
+      res.writeHead(200);
+      res.end(hydrationCode);
+      return;
     }
-    
+
     // Serve main page
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    
+
     try {
       const htmlString = render(masterShowcasePage);
       res.writeHead(200);
@@ -1392,7 +1363,7 @@ function startServer() {
       `);
     }
   });
-  
+
   return server;
 }
 

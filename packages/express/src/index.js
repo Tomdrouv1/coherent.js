@@ -1,5 +1,5 @@
 // src/express/index.js
-import { render } from '../../core/src/index.js';
+import { render } from '@coherent.js/core';
 
 export function expressEngine() {
     return (filePath, options, callback) => {

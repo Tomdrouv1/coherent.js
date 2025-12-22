@@ -146,6 +146,7 @@ const html = render(WelcomeCard('Developer'));
 ### 🛠️ **Advanced Topics**
 - **[Object-Based Routing](object-based-routing.md)** - Advanced routing patterns
 - **[Security Guide](security-guide.md)** - Security best practices
+- **[Error Codes](errors.md)** - Stable error codes and troubleshooting links
 - **[API Reference](api-reference.md)** - Complete function documentation
 - **[API Usage Guide](api-usage.md)** - Practical API examples
 - **[API Enhancement Plan](api-enhancement-plan.md)** - Future API roadmap

@@ -516,6 +516,28 @@ const RobustComponent = ({ data, fallback }) => {
 
 ## Performance Optimization
 
+### Recommended `render()` options for production
+
+If you're rendering on the server for production workloads, start with:
+
+```javascript
+import { render } from '@coherent.js/core';
+
+const html = render(component, {
+  enableCache: true,
+  cacheSize: 1000,
+  cacheTTL: 300000,
+  minify: true,
+  maxDepth: 100
+});
+```
+
+Notes:
+
+- **`enableCache`**: Enables the built-in renderer cache for repeated renders.
+- **`minify`**: Reduces HTML size; validate output if you rely on whitespace.
+- **`maxDepth`**: Safety guard against accidental deep/cyclic trees.
+
 ### Component Precompilation
 
 ```javascript

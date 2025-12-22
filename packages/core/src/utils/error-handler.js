@@ -11,11 +11,13 @@ export class CoherentError extends Error {
         super(message);
         this.name = 'CoherentError';
         this.type = options.type || 'generic';
+        this.code = options.code || `COHERENT_${String(this.type).toUpperCase()}`;
+        this.docsUrl = options.docsUrl || `/docs/core/errors#${this.code}`;
         this.component = options.component;
         this.context = options.context;
         this.suggestions = options.suggestions || [];
         this.timestamp = Date.now();
-        
+
         if (Error.captureStackTrace) {
             Error.captureStackTrace(this, CoherentError);
         }
@@ -26,6 +28,8 @@ export class CoherentError extends Error {
             name: this.name,
             message: this.message,
             type: this.type,
+            code: this.code,
+            docsUrl: this.docsUrl,
             component: this.component,
             context: this.context,
             suggestions: this.suggestions,
@@ -105,10 +109,15 @@ export class StateError extends CoherentError {
  */
 export class ErrorHandler {
     constructor(options = {}) {
+        const isDev = typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development';
+        const envForceSilent = typeof process !== 'undefined' && process.env && process.env.COHERENT_SILENT === '1';
+        const envForceDebug = typeof process !== 'undefined' && process.env && process.env.COHERENT_DEBUG === '1';
+        const defaultEnableLogging = envForceSilent ? false : (envForceDebug ? true : isDev);
+
         this.options = {
             enableStackTrace: options.enableStackTrace !== false,
             enableSuggestions: options.enableSuggestions !== false,
-            enableLogging: options.enableLogging !== false,
+            enableLogging: options.enableLogging ?? defaultEnableLogging,
             logLevel: options.logLevel || '_error',
             maxErrorHistory: options.maxErrorHistory || 100,
             ...options
@@ -148,7 +157,7 @@ export class ErrorHandler {
 
         // Determine _error type from context
         const errorType = this.classifyError(_error, context);
-        
+
         // Create appropriate _error type
         switch (errorType) {
             case 'validation':
@@ -197,7 +206,7 @@ export class ErrorHandler {
         const message = _error.message.toLowerCase();
 
         // Validation errors
-        if (message.includes('invalid') || message.includes('validation') || 
+        if (message.includes('invalid') || message.includes('validation') ||
             message.includes('required') || message.includes('type')) {
             return 'validation';
         }
@@ -316,7 +325,7 @@ export class ErrorHandler {
      */
     addToHistory(_error) {
         const errorKey = `${_error.name}:${_error.message}`;
-        
+
         // Update count
         this.errorCounts.set(errorKey, (this.errorCounts.get(errorKey) || 0) + 1);
 
@@ -330,7 +339,7 @@ export class ErrorHandler {
 
         // Remove old entry if exists
         this.errorHistory = this.errorHistory.filter(e => e.key !== errorKey);
-        
+
         // Add new entry
         this.errorHistory.unshift(historyEntry);
 
@@ -349,25 +358,37 @@ export class ErrorHandler {
         }
 
         const isRepeated = this.errorCounts.get(`${_error.name}:${_error.message}`) > 1;
-        
+
         // Format _error for console
         const errorGroup = `🚨 ${_error.name}${isRepeated ? ` (×${this.errorCounts.get(`${_error.name  }:${  _error.message}`)})` : ''}`;
-        
+
         console.group(errorGroup);
-        
+
         // Main _error message
         console.error(`❌ ${_error.message}`);
-        
+
+        if (_error.code) {
+            console.log('🏷️ Code:', _error.code);
+        }
+
+        if (_error.docsUrl) {
+            console.log('📖 Docs:', _error.docsUrl);
+        }
+
         // Component context if available
         if (_error.component) {
             console.log('🔍 Component:', this.formatComponent(_error.component));
         }
-        
+
         // Additional context
         if (_error.context) {
             console.log('📋 Context:', _error.context);
         }
-        
+
+        if (_error.context && typeof _error.context === 'object' && _error.context.path) {
+            console.log('📍 Path:', _error.context.path);
+        }
+
         // Suggestions
         if (this.options.enableSuggestions && _error.suggestions.length > 0) {
             console.group('💡 Suggestions:');
@@ -376,12 +397,12 @@ export class ErrorHandler {
             });
             console.groupEnd();
         }
-        
+
         // Stack trace
         if (this.options.enableStackTrace && _error.stack) {
             console.log('📚 Stack trace:', _error.stack);
         }
-        
+
         console.groupEnd();
     }
 
@@ -398,7 +419,7 @@ export class ErrorHandler {
         }
 
         if (Array.isArray(component)) {
-            return component.slice(0, 3).map(item => 
+            return component.slice(0, 3).map(item =>
                 this.formatComponent(item, maxDepth, currentDepth + 1)
             );
         }
@@ -406,7 +427,7 @@ export class ErrorHandler {
         if (component && typeof component === 'object') {
             const formatted = {};
             const keys = Object.keys(component).slice(0, 5);
-            
+
             for (const key of keys) {
                 if (key === 'children' && component[key]) {
                     formatted[key] = this.formatComponent(component[key], maxDepth, currentDepth + 1);
@@ -514,11 +535,11 @@ export function safeExecute(fn, context = {}, fallback = null) {
         return fn();
     } catch (_error) {
         const enhancedError = globalErrorHandler.handle(_error, context);
-        
+
         if (fallback !== null) {
             return typeof fallback === 'function' ? fallback(enhancedError) : fallback;
         }
-        
+
         throw enhancedError;
     }
 }
@@ -531,21 +552,21 @@ export async function safeExecuteAsync(fn, context = {}, fallback = null) {
         return await fn();
     } catch (_error) {
         const enhancedError = globalErrorHandler.handle(_error, context);
-        
+
         if (fallback !== null) {
             return typeof fallback === 'function' ? fallback(enhancedError) : fallback;
         }
-        
+
         throw enhancedError;
     }
 }
 
 /**
  * Factory function to create an ErrorHandler instance
- * 
+ *
  * @param {Object} options - ErrorHandler configuration
  * @returns {ErrorHandler} ErrorHandler instance
- * 
+ *
  * @example
  * const errorHandler = createErrorHandler({
  *   enableTracing: true,

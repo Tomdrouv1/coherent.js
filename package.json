@@ -43,8 +43,8 @@
     "example:hydration": "node examples/hydration-test.js",
     "example:memoization": "node examples/memoization-test.js",
     "example:composition": "node examples/component-composition.js",
-    "lint": "eslint packages/*/src/ packages/*/test/ examples/ scripts/ --max-warnings=0",
-    "lint:fix": "eslint packages/*/src/ packages/*/test/ examples/ scripts/ --fix",
+    "lint": "eslint packages/*/src/**/*.js packages/*/test/**/*.js examples/**/*.js scripts/**/*.js scripts/**/*.mjs --max-warnings=0",
+    "lint:fix": "eslint packages/*/src/**/*.js packages/*/test/**/*.js examples/**/*.js scripts/**/*.js scripts/**/*.mjs --fix",
     "format": "prettier --write packages/ tests/ examples/",
     "format:check": "prettier --check packages/ tests/ examples/",
     "typecheck": "tsc --noEmit",
@@ -63,6 +63,7 @@
     "perf:analyze": "node scripts/analyze-bundle.mjs",
     "perf:build": "NODE_ENV=production pnpm build",
     "perf:benchmark": "node benchmarks/benchmark.js",
+    "perf:gate": "node benchmarks/perf-gate.js",
     "test:node": "pnpm -r run test:node"
   },
   "keywords": [
@@ -131,28 +132,29 @@
     }
   },
   "devDependencies": {
-    "@changesets/cli": "^2.29.8",
-    "@commitlint/cli": "20.1.0",
-    "@commitlint/config-conventional": "20.0.0",
+    "@changesets/cli": "2.29.8",
+    "@codecov/vite-plugin": "1.9.1",
+    "@commitlint/cli": "20.2.0",
+    "@commitlint/config-conventional": "20.2.0",
     "@eslint-community/eslint-utils": "4.9.0",
     "@eslint-community/regexpp": "4.12.2",
     "@eslint/config-array": "0.23.0",
     "@eslint/config-helpers": "0.5.0",
     "@eslint/core": "1.0.0",
     "@types/node": "24.10.1",
-    "@vitest/coverage-v8": "4.0.14",
+    "@vitest/coverage-v8": "4.0.15",
     "chokidar": "4.0.3",
     "concurrently": "9.2.1",
-    "esbuild": "0.27.0",
-    "eslint": "^9.39.1",
-    "husky": "^9.1.7",
-    "marked": "^16.4.2",
-    "next": "16.0.6",
-    "prettier": "^3.7.3",
-    "react": "19.2.0",
-    "react-dom": "19.2.0",
+    "esbuild": "0.27.1",
+    "eslint": "9.39.2",
+    "husky": "9.1.7",
+    "marked": "17.0.1",
+    "next": "16.0.10",
+    "prettier": "3.7.4",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
     "typescript": "5.9.3",
-    "vitest": "4.0.13",
+    "vitest": "4.0.15",
     "ws": "8.18.3"
   },
   "pnpm": {
@@ -165,6 +167,13 @@
       "esbuild",
       "sharp",
       "sqlite3"
-    ]
+    ],
+    "overrides": {
+      "esbuild@<=0.24.2": ">=0.25.0",
+      "next@>=15.5.0-canary.0 <15.5.7": ">=15.5.7",
+      "next@>=16.0.0-canary.0 <16.0.7": ">=16.0.7",
+      "next@>=16.0.0-beta.0 <16.0.9": ">=16.0.9",
+      "next@>=15.5.1-canary.0 <15.5.8": ">=15.5.8"
+    }
   }
 }

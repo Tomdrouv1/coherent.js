@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config';
+import { env } from 'node:process';
 
 export default defineConfig({
   test: {
@@ -10,10 +11,10 @@ export default defineConfig({
     teardownTimeout: 5000,
 
     // Retry flaky tests automatically
-    retry: process.env.CI ? 2 : 0, // Retry 2 times in CI, 0 locally
+    retry: env.CI ? 2 : 0, // Retry 2 times in CI, 0 locally
 
     // Better reporting for CI
-    reporters: process.env.CI
+    reporters: env.CI
       ? ['verbose', 'json', 'junit']
       : ['default'],
     outputFile: {

@@ -83,6 +83,24 @@ export interface BatchHydrationResult {
   duration: number;
 }
 
+export interface HydratedInstance {
+  element: HTMLElement;
+  component: Function;
+  props: Record<string, any>;
+  state: any;
+  isHydrated: boolean;
+
+  update(newProps?: Record<string, any>): HydratedInstance;
+  rerender(): void;
+  destroy(): void;
+  setState(newState: any): void;
+}
+
+export interface MakeHydratableOptions {
+  componentName?: string;
+  initialState?: any;
+}
+
 // ============================================================================
 // Client Component Types
 // ============================================================================
@@ -295,77 +313,94 @@ export interface ExtendedIntersectionObserverEntry extends IntersectionObserverE
 // ============================================================================
 
 /** Extract initial state from DOM element */
-export function extractInitialState(
+declare function extractInitialState(
   element: HTMLElement,
   options?: Pick<HydrationOptions, 'initialState' | 'transforms' | 'validators'>
 ): SerializableState | null;
 
 /** Hydrate a single element */
-export function hydrateElement(
+export function hydrate(
   element: HTMLElement,
-  component?: ComponentFactory,
-  options?: HydrationOptions
-): Promise<HydrationResult>;
+  component: Function,
+  props?: Record<string, any>,
+  options?: { initialState?: any }
+): HydratedInstance | null;
 
 /** Hydrate multiple elements */
 export function hydrateAll(
-  selector?: string,
-  options?: HydrationOptions
-): Promise<BatchHydrationResult>;
+  elements: HTMLElement[],
+  components: Function[],
+  propsArray?: Array<Record<string, any>>
+): Array<HydratedInstance | null>;
+
+export function hydrateBySelector(
+  selector: string,
+  component: Function,
+  props?: Record<string, any>
+): Array<HydratedInstance | null>;
+
+export function enableClientEvents(rootElement?: Document | HTMLElement): void;
+
+export function makeHydratable<T extends Function>(
+  component: T,
+  options?: MakeHydratableOptions
+): T;
 
 /** Auto-hydrate elements on DOM ready */
-export function autoHydrate(options?: HydrationOptions): Promise<void>;
+export function autoHydrate(componentRegistry?: Record<string, any>): void;
+
+export function registerEventHandler(id: string, handler: Function): void;
 
 /** Register a component for auto-hydration */
-export function registerComponent(
+declare function registerComponent(
   name: string,
   factory: ComponentFactory,
   options?: Partial<ComponentRegistryEntry>
 ): void;
 
 /** Unregister a component */
-export function unregisterComponent(name: string): boolean;
+declare function unregisterComponent(name: string): boolean;
 
 /** Get registered component */
-export function getComponent(name: string): ComponentRegistryEntry | undefined;
+declare function getComponent(name: string): ComponentRegistryEntry | undefined;
 
 /** Get all registered components */
-export function getAllComponents(): ComponentRegistryEntry[];
+declare function getAllComponents(): ComponentRegistryEntry[];
 
 /** Create a client component */
-export function createClientComponent(
+declare function createClientComponent(
   element: HTMLElement,
   initialState?: SerializableState
 ): ClientComponent;
 
 /** Wait for DOM to be ready */
-export function ready(callback: ReadyCallback): Promise<void>;
+declare function ready(callback: ReadyCallback): Promise<void>;
 
 /** DOM query utilities */
-export function $(selector: Selector): HTMLElement[];
-export function $$(selector: string): HTMLElement | null;
+declare function $(selector: Selector): HTMLElement[];
+declare function $$(selector: string): HTMLElement | null;
 
 /** Event utilities */
-export function on(
+declare function on(
   element: HTMLElement | string,
   event: string,
   handler: EventHandler,
   options?: EventListenerOptions | boolean
 ): void;
 
-export function off(
+declare function off(
   element: HTMLElement | string,
   event?: string,
   handler?: EventHandler
 ): void;
 
-export function trigger(
+declare function trigger(
   element: HTMLElement,
   event: string,
   data?: CustomEventData
 ): boolean;
 
-export function delegate(
+declare function delegate(
   container: HTMLElement,
   selector: string,
   event: string,
@@ -373,40 +408,40 @@ export function delegate(
 ): void;
 
 /** Animation utilities */
-export function requestAnimationFrame(callback: AnimationCallback): number;
-export function cancelAnimationFrame(id: number): void;
+declare function requestAnimationFrame(callback: AnimationCallback): number;
+declare function cancelAnimationFrame(id: number): void;
 
 /** Debounce and throttle utilities */
-export function debounce<T extends (...args: any[]) => any>(
+declare function debounce<T extends (...args: any[]) => any>(
   func: T,
   delay: number
 ): (...args: Parameters<T>) => void;
 
-export function throttle<T extends (...args: any[]) => any>(
+declare function throttle<T extends (...args: any[]) => any>(
   func: T,
   limit: number
 ): (...args: Parameters<T>) => void;
 
 /** State management utilities */
-export function createStateManager(): ClientStateManager;
-export function syncState(options: StateSyncOptions): void;
+declare function createStateManager(): ClientStateManager;
+declare function syncState(options: StateSyncOptions): void;
 
 /** Performance utilities */
-export function createPerformanceMonitor(): PerformanceMonitor;
+declare function createPerformanceMonitor(): PerformanceMonitor;
 
 /** HMR utilities */
-export function createHMRClient(config?: Partial<HMRConfig>): HMRClient;
-export function enableHMR(config?: Partial<HMRConfig>): Promise<void>;
+declare function createHMRClient(config?: Partial<HMRConfig>): HMRClient;
+declare function enableHMR(config?: Partial<HMRConfig>): Promise<void>;
 
 /** Intersection observer utilities */
-export function observeVisibility(
+declare function observeVisibility(
   elements: HTMLElement | HTMLElement[],
   callback: (entries: ExtendedIntersectionObserverEntry[]) => void,
   options?: IntersectionObserverInit
 ): IntersectionObserver;
 
 /** Lazy loading utilities */
-export function lazyLoad(
+declare function lazyLoad(
   elements: HTMLElement | HTMLElement[],
   options?: {
     threshold?: number;
@@ -421,19 +456,19 @@ export function lazyLoad(
 // ============================================================================
 
 /** Default hydration selector */
-export const DEFAULT_HYDRATION_SELECTOR: string;
+declare const DEFAULT_HYDRATION_SELECTOR: string;
 
 /** Component registry */
-export const componentRegistry: Map<string, ComponentRegistryEntry>;
+declare const componentRegistry: Map<string, ComponentRegistryEntry>;
 
 /** Global state manager instance */
-export const globalStateManager: ClientStateManager;
+declare const globalStateManager: ClientStateManager;
 
 /** Global event manager instance */
-export const globalEventManager: EventManager;
+declare const globalEventManager: EventManager;
 
 /** Global performance monitor instance */
-export const globalPerformanceMonitor: PerformanceMonitor;
+declare const globalPerformanceMonitor: PerformanceMonitor;
 
 // ============================================================================
 // Default Export
@@ -442,7 +477,7 @@ export const globalPerformanceMonitor: PerformanceMonitor;
 declare const coherentClient: {
   // Hydration
   extractInitialState: typeof extractInitialState;
-  hydrateElement: typeof hydrateElement;
+  hydrateElement: typeof hydrate;
   hydrateAll: typeof hydrateAll;
   autoHydrate: typeof autoHydrate;
 
@@ -495,4 +530,4 @@ declare const coherentClient: {
   globalEventManager: typeof globalEventManager;
 };
 
-export default coherentClient;
+declare const _unused: typeof coherentClient;

@@ -11,7 +11,7 @@ import {
   isCoherentObject,
   hasChildren,
   normalizeChildren
-} from '../../core/src/core/object-utils.js';
+} from '@coherent.js/core';
 
 /**
  * Component tree visualizer with enhanced debugging

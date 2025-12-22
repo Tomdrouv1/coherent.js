@@ -6,6 +6,7 @@ import { Command } from 'commander';
 import prompts from 'prompts';
 import ora from 'ora';
 import picocolors from 'picocolors';
+import process, { env } from 'node:process';
 import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 import { analyzeComponent } from '../analyzers/component-analyzer.js';
@@ -94,25 +95,25 @@ export const debugCommand = new Command('debug')
       }
 
       spinner.succeed(`Analysis complete!`);
-      
+
       // Output results
       await outputResults(result, options.output);
 
     } catch (error) {
       spinner.fail(`Analysis failed: ${error.message}`);
-      
+
       console.log();
       console.log(picocolors.red('❌ Debug Error:'));
       console.log(picocolors.gray(`  ${  error.message}`));
-      
-      if (process.env.DEBUG) {
+
+      if (env.DEBUG) {
         console.log();
         console.log(picocolors.gray('Stack trace:'));
         console.log(picocolors.gray(error.stack));
       } else {
         console.log(picocolors.gray('  Run with DEBUG=1 for detailed error information'));
       }
-      
+
       process.exit(1);
     }
   });
@@ -238,11 +239,11 @@ async function analyzeConfiguration(_options = {}) {
       const packageJson = JSON.parse(readFileSync('package.json', 'utf-8'));
       const hasCoherentDeps = Object.keys(packageJson.dependencies || {})
         .some(dep => dep.startsWith('@coherent.js/'));
-      
+
       if (!hasCoherentDeps) {
         analysis.summary.issues.push('No Coherent.js dependencies found');
       }
-      
+
       analysis.details.packageJson = {
         name: packageJson.name,
         version: packageJson.version,
@@ -278,11 +279,11 @@ async function outputResults(result, format = 'console') {
     case 'json':
       console.log(JSON.stringify(result, null, 2));
       break;
-      
+
     case 'html':
       await generateHTMLReport(result);
       break;
-      
+
     case 'console':
     default:
       printConsoleReport(result);
@@ -295,12 +296,12 @@ function printConsoleReport(result) {
   console.log();
   console.log(picocolors.cyan(`📊 ${result.type.toUpperCase()} REPORT`));
   console.log(picocolors.gray('━'.repeat(50)));
-  
+
   // Summary
   if (result.summary) {
     console.log();
     console.log(picocolors.bold('📋 Summary:'));
-    
+
     Object.entries(result.summary).forEach(([key, value]) => {
       if (key === 'status') {
         const statusIcon = value === 'success' ? '✅' : value === 'warning' ? '⚠️' : '❌';
@@ -312,7 +313,7 @@ function printConsoleReport(result) {
       }
     });
   }
-  
+
   // Issues (if any)
   if (result.issues && result.issues.length > 0) {
     console.log();
@@ -324,7 +325,7 @@ function printConsoleReport(result) {
       }
     });
   }
-  
+
   // Recommendations
   if (result.recommendations && result.recommendations.length > 0) {
     console.log();
@@ -334,7 +335,7 @@ function printConsoleReport(result) {
       console.log(`  ${priorityIcon} ${rec.message}`);
     });
   }
-  
+
   // Detailed results (if available)
   if (result.details && Object.keys(result.details).length > 0) {
     console.log();
@@ -343,7 +344,7 @@ function printConsoleReport(result) {
       console.log(`  ${key}:`, typeof value === 'object' ? JSON.stringify(value, null, 2) : value);
     });
   }
-  
+
   console.log();
 }
 
@@ -368,12 +369,12 @@ async function generateHTMLReport(result) {
         <h1>🔍 Coherent.js Debug Report</h1>
         <p>Generated: ${new Date().toLocaleString()}</p>
       </div>
-      
+
       <div class="section">
         <h2>Summary</h2>
         <pre>${JSON.stringify(result.summary, null, 2)}</pre>
       </div>
-      
+
       ${result.issues ? `
       <div class="section">
         <h2>Issues</h2>
@@ -382,7 +383,7 @@ async function generateHTMLReport(result) {
         `).join('')}
       </div>
       ` : ''}
-      
+
       ${result.recommendations ? `
       <div class="section">
         <h2>Recommendations</h2>
@@ -394,11 +395,11 @@ async function generateHTMLReport(result) {
     </body>
     </html>
   `;
-  
+
   const { writeFileSync } = await import('fs');
   const filename = `coherent-debug-report-${Date.now()}.html`;
   writeFileSync(filename, html);
-  
+
   console.log();
   console.log(picocolors.green(`📄 HTML report generated: ${filename}`));
   console.log(picocolors.gray(`   Open in browser to view detailed analysis`));

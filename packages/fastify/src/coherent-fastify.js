@@ -6,12 +6,12 @@
 import {
   renderWithTemplate,
   renderComponentFactory
-} from '../../core/src/utils/render-utils.js';
+} from '@coherent.js/core';
 
 /**
  * Fastify plugin for Coherent.js
  * Automatically renders Coherent.js components and handles errors
- * 
+ *
  * @param {Object} fastify - Fastify instance
  * @param {Object} options - Plugin options
  * @param {boolean} options.enablePerformanceMonitoring - Enable performance monitoring
@@ -23,31 +23,31 @@ export function coherentFastify(fastify, options, done) {
     enablePerformanceMonitoring = false,
     template = '<!DOCTYPE html>\n{{content}}'
   } = options;
-  
+
   // Add decorator to check if an object is a Coherent.js component
   fastify.decorateReply('isCoherentObject', (obj) => {
     if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
       return false;
     }
-    
+
     const keys = Object.keys(obj);
     return keys.length === 1;
   });
-  
+
   // Add decorator for rendering Coherent.js components
   fastify.decorateReply('coherent', function(component, renderOptions = {}) {
     const {
       enablePerformanceMonitoring: renderPerformanceMonitoring = enablePerformanceMonitoring,
       template: renderTemplate = template
     } = renderOptions;
-    
+
     try {
       // Use shared rendering utility
       const finalHtml = renderWithTemplate(component, {
         enablePerformanceMonitoring: renderPerformanceMonitoring,
         template: renderTemplate
       });
-      
+
       // Set content type and send HTML
       this.header('Content-Type', 'text/html; charset=utf-8');
       this.send(finalHtml);
@@ -59,7 +59,7 @@ export function coherentFastify(fastify, options, done) {
       });
     }
   });
-  
+
   // Hook to automatically render Coherent.js objects
   fastify.addHook('onSend', async (request, reply, payload) => {
     // If payload is a Coherent.js object, render it
@@ -67,7 +67,7 @@ export function coherentFastify(fastify, options, done) {
       try {
         // Use shared rendering utility
         const finalHtml = renderWithTemplate(payload, { enablePerformanceMonitoring, template });
-        
+
         // Set content type and return HTML
         reply.header('Content-Type', 'text/html; charset=utf-8');
         return finalHtml;
@@ -76,17 +76,17 @@ export function coherentFastify(fastify, options, done) {
         throw _error;
       }
     }
-    
+
     // For non-Coherent.js data, return as-is
     return payload;
   });
-  
+
   done();
 }
 
 /**
  * Create a Fastify route handler for Coherent.js components
- * 
+ *
  * @param {Function} componentFactory - Function that returns a Coherent.js component
  * @param {Object} options - Handler options
  * @returns {Function} Fastify route handler
@@ -100,7 +100,7 @@ export function createHandler(componentFactory, options = {}) {
         [request, reply],
         options
       );
-      
+
       // Send HTML response
       reply.header('Content-Type', 'text/html; charset=utf-8');
       return finalHtml;
@@ -113,7 +113,7 @@ export function createHandler(componentFactory, options = {}) {
 
 /**
  * Setup Coherent.js with Fastify instance
- * 
+ *
  * @param {Object} fastify - Fastify instance
  * @param {Object} options - Setup options
  */

@@ -52,13 +52,19 @@ describe('Runtime Utilities', () => {
     });
 
     it('should handle unknown environments gracefully', async () => {
-      // Clear all globals
-      vi.stubGlobal('window', undefined);
-      vi.stubGlobal('document', undefined);
-      vi.stubGlobal('process', undefined);
-
       const { RuntimeDetector } = await import('../src/utils/runtime-detector.js');
       const detector = new RuntimeDetector();
+
+      // Mock all detection methods to return false
+      vi.spyOn(detector, 'isNodeJS').mockReturnValue(false);
+      vi.spyOn(detector, 'isBrowser').mockReturnValue(false);
+      vi.spyOn(detector, 'isDeno').mockReturnValue(false);
+      vi.spyOn(detector, 'isBun').mockReturnValue(false);
+      vi.spyOn(detector, 'isElectron').mockReturnValue(false);
+      vi.spyOn(detector, 'isTauri').mockReturnValue(false);
+      vi.spyOn(detector, 'isWebView').mockReturnValue(false);
+      vi.spyOn(detector, 'isEdgeRuntime').mockReturnValue(false);
+      vi.spyOn(detector, 'isCloudflareWorkers').mockReturnValue(false);
 
       const info = detector.getEnvironmentInfo();
 

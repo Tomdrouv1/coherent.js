@@ -2,13 +2,18 @@
  * Coherent.js - Object-Based Rendering Framework
  * A pure JavaScript framework for server-side rendering using natural object syntax
  *
- * @version 2.0.0
+ * @version 1.0.0-beta.6
  * @author Coherent Framework Team
  * @license MIT
  */
 
+import { readFileSync } from 'node:fs';
+
 // Performance monitoring
 import { performanceMonitor } from './performance/monitor.js';
+
+// Unified HTML renderer
+import { render as renderWithHtmlRenderer } from './rendering/html-renderer.js';
 
 // Component system imports
 import {
@@ -157,11 +162,11 @@ export function dangerouslySetInnerContent(content) {
 /**
  * Check if content is marked as safe
  */
-function isTrustedContent(value) {
+function _isTrustedContent(value) {
   return value && typeof value === 'object' && value.__trusted === true && typeof value.__html === 'string';
 }
 
-function isVoidElement(tagName) {
+function _isVoidElement(tagName) {
   const voidElements = new Set([
     'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
     'link', 'meta', 'param', 'source', 'track', 'wbr'
@@ -169,7 +174,7 @@ function isVoidElement(tagName) {
   return voidElements.has(tagName.toLowerCase());
 }
 
-function formatAttributes(attrs) {
+function _formatAttributes(attrs) {
   if (!attrs || typeof attrs !== 'object') return '';
 
   return Object.entries(attrs)
@@ -188,70 +193,14 @@ function formatAttributes(attrs) {
     .join(' ');
 }
 
-// Internal raw rendering (no encapsulation) - used by scoped renderer
-function renderRaw(obj) {
-  if (obj === null || obj === undefined) return '';
-  if (typeof obj === 'string' || typeof obj === 'number') return escapeHtml(String(obj));
-  if (Array.isArray(obj)) return obj.map(renderRaw).join('');
-
-  // Handle functions (like context providers)
-  if (typeof obj === 'function') {
-    const result = obj(renderRaw);
-    return renderRaw(result);
-  }
-
-  if (typeof obj !== 'object') return escapeHtml(String(obj));
-
-  // Handle text content
-  if (obj.text !== undefined) {
-    return escapeHtml(String(obj.text));
-  }
-
-  // Handle HTML elements
-  for (const [tagName, props] of Object.entries(obj)) {
-    if (typeof props === 'object' && props !== null) {
-      const { children, text, ...attributes } = props;
-      const attrsStr = formatAttributes(attributes);
-      const openTag = attrsStr ? `<${tagName} ${attrsStr}>` : `<${tagName}>`;
-
-      if (isVoidElement(tagName)) {
-        return openTag.replace('>', ' />');
-      }
-
-      let content = '';
-      if (text !== undefined) {
-        // Check if content is explicitly marked as trusted
-        if (isTrustedContent(text)) {
-          content = text.__html;
-        } else {
-          content = escapeHtml(String(text));
-        }
-      } else if (children) {
-        content = renderRaw(children);
-      }
-
-      return `${openTag}${content}</${tagName}>`;
-    } else if (typeof props === 'string') {
-      // Simple text content - always escape unless explicitly marked as trusted
-      const content = isTrustedContent(props) ? props.__html : escapeHtml(props);
-      return isVoidElement(tagName) ? `<${tagName} />` : `<${tagName}>${content}</${tagName}>`;
-    }
-  }
-
-  return '';
-}
-
 // Main rendering function
 export function render(obj, options = {}) {
-  const { scoped = false } = options;
+  const scoped = options.scoped ?? options.encapsulate ?? false;
 
-  // Scoped mode - use CSS encapsulation
-  if (scoped) {
-    return renderScopedComponent(obj);
-  }
+  const { scoped: _scoped, encapsulate: _encapsulate, ...rendererOptions } = options;
 
-  // Default: unscoped rendering
-  return renderRaw(obj);
+  const component = scoped ? renderScopedComponent(obj) : obj;
+  return renderWithHtmlRenderer(component, rendererOptions);
 }
 
 // Internal: Scoped rendering with CSS encapsulation
@@ -296,7 +245,7 @@ function renderScopedComponent(component) {
   const processedComponent = processScopedElement(component);
   const scopedComponent = applyScopeToElement(processedComponent, scopeId);
 
-  return renderRaw(scopedComponent);
+  return scopedComponent;
 }
 
 // Component system - Re-export from component-system for unified API
@@ -346,7 +295,27 @@ export {
   createAsyncErrorBoundary,
   GlobalErrorHandler,
   createGlobalErrorHandler
-} from './components/error-boundary.js';
+};
+
+export {
+  renderWithMonitoring,
+  renderWithTemplate,
+  renderComponentFactory,
+  isCoherentComponent,
+  createErrorResponse
+} from './utils/render-utils.js';
+
+export {
+  isPeerDependencyAvailable,
+  importPeerDependency,
+  createLazyIntegration,
+  checkPeerDependencies
+} from './utils/dependency-utils.js';
+
+export {
+  hasChildren,
+  normalizeChildren
+} from './core/object-utils.js';
 
 // Simple memoization
 const memoCache = new Map();
@@ -354,11 +323,9 @@ const memoCache = new Map();
 export function memo(component, keyGenerator) {
   return function MemoizedComponent(props = {}) {
     const key = keyGenerator ? keyGenerator(props) : JSON.stringify(props);
-
     if (memoCache.has(key)) {
       return memoCache.get(key);
     }
-
     const result = component(props);
     memoCache.set(key, result);
 
@@ -372,7 +339,6 @@ export function memo(component, keyGenerator) {
   };
 }
 
-// Utility functions
 export function validateComponent(obj) {
   if (!obj || typeof obj !== 'object') {
     throw new Error('Component must be an object');
@@ -397,7 +363,10 @@ export function deepClone(obj) {
 }
 
 // Version info
-export const VERSION = '2.0.0';
+const _corePackageJson = JSON.parse(
+  readFileSync(new URL('../package.json', import.meta.url), 'utf-8')
+);
+export const VERSION = _corePackageJson.version;
 
 // Performance monitoring export
 export { performanceMonitor };

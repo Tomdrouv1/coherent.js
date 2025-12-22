@@ -10,7 +10,7 @@ export function Home() {
           { p: { className: 'lead', text: 'Fast SSR and hydration with plain JS objects. Minimal API. Maximum clarity.' } },
           { div: { className: 'badges', children: [
             { img: { id: 'coverage-badge', src: 'https://img.shields.io/badge/coverage-NA-red', alt: 'Coverage', className: 'badge' } },
-            { img: { src: 'https://img.shields.io/badge/version-beta.3-blue', alt: 'version', className: 'badge' } },
+            { img: { src: 'https://img.shields.io/badge/version-beta.5-blue', alt: 'version', className: 'badge' } },
             { img: { src: 'https://img.shields.io/github/actions/workflow/status/Tomdrouv1/coherent.js/ci.yml?branch=main', alt: 'CI Status', className: 'badge' } }
           ] } },
           { div: { className: 'cta', children: [
@@ -67,7 +67,7 @@ const coverageScript = `
           let color = 'red';
           if (coverage >= 80) color = 'brightgreen';
           else if (coverage >= 60) color = 'yellow';
-          
+
           badge.src = \`https://img.shields.io/badge/coverage-\${coverage}%25-\${color}\`;
           badge.alt = \`Coverage: \${coverage}%\`;
         }
@@ -76,7 +76,7 @@ const coverageScript = `
       console.log('Could not load coverage badge:', error);
     }
   }
-  
+
   // Load coverage when page is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', loadCoverageBadge);

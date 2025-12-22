@@ -7,11 +7,18 @@
   "module": "dist/index.js",
   "exports": {
     ".": {
+      "types": "./types/index.d.ts",
       "development": "./src/hydration.js",
       "import": "./dist/index.js"
     },
-    "./router": "./src/router.js",
-    "./hmr": "./src/hmr.js"
+    "./router": {
+      "types": "./types/router.d.ts",
+      "default": "./src/router.js"
+    },
+    "./hmr": {
+      "types": "./types/hmr.d.ts",
+      "default": "./src/hmr.js"
+    }
   },
   "types": "./types/index.d.ts",
   "scripts": {
@@ -19,7 +26,7 @@
     "clean": "rm -rf dist/",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
     "test:coverage": "vitest run --coverage",
     "test:vitest": "vitest run",
     "test:node": "node --test test/*.test.js"

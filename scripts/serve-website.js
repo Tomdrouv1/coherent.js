@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
+import { env } from 'node:process';
 
 // Lazy imports for optional dev-only deps (ws, chokidar)
 let WebSocketServer = null;
@@ -19,8 +20,8 @@ const SRC_DIR = path.join(repoRoot, 'src');
 const EXAMPLES_DIR = path.join(repoRoot, 'examples');
 const WEBSITE_SRC_DIR = path.join(repoRoot, 'website', 'src');
 
-const PORT = Number(process.env.PORT || 8081);
-const HOST = process.env.HOST || '127.0.0.1';
+const PORT = Number(env.PORT || 8081);
+const HOST = env.HOST || '127.0.0.1';
 
 const MIME = {
   '.html': 'text/html; charset=UTF-8',
@@ -220,7 +221,7 @@ ${wrapperCode}
     child.stdout.on('data', (d) => { if ((stdout.length + d.length) < MAX_OUTPUT) stdout += d.toString(); });
     child.stderr.on('data', (d) => { if ((stderr.length + d.length) < MAX_OUTPUT) stderr += d.toString(); });
 
-    const timeoutMs = Number(process.env.PLAYGROUND_TIMEOUT_MS || 5000);
+    const timeoutMs = Number(env.PLAYGROUND_TIMEOUT_MS || 5000);
     const killer = setTimeout(() => {
       try { child.kill('SIGKILL'); } catch {}
     }, timeoutMs);

@@ -8,29 +8,10 @@
   "types": "./types/index.d.ts",
   "exports": {
     ".": {
+      "types": "./types/index.d.ts",
       "development": "./src/index.js",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
-    },
-    "./components": {
-      "development": "./src/components/index.js",
-      "import": "./dist/components/index.js",
-      "require": "./dist/components/index.cjs"
-    },
-    "./rendering": {
-      "development": "./src/rendering/index.js",
-      "import": "./dist/rendering/index.js",
-      "require": "./dist/rendering/index.cjs"
-    },
-    "./performance": {
-      "development": "./src/performance/index.js",
-      "import": "./dist/performance/index.js",
-      "require": "./dist/performance/index.cjs"
-    },
-    "./utils": {
-      "development": "./src/utils/index.js",
-      "import": "./dist/utils/index.js",
-      "require": "./dist/utils/index.cjs"
     }
   },
   "scripts": {
@@ -39,7 +20,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
     "test:vitest": "vitest run",
     "test:node": "node --test test/*.test.js"
   },

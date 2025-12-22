@@ -28,7 +28,8 @@ Create your project structure:
 mkdir my-coherent-app
 cd my-coherent-app
 npm init -y
-npm install @coherent.js/core
+npm install @coherent.js/core @coherent.js/client
+npm install -D esbuild
 ```
 
 Create these files:
@@ -37,6 +38,9 @@ Create these files:
 my-coherent-app/
 ├── components/
 │   └── Counter.js
+├── client.js
+├── public/
+│   └── hydration.js
 ├── server.js
 └── package.json
 ```
@@ -113,6 +117,25 @@ export const Counter = withState({ count: 0 })(({ state, setState }) => ({
 
 ## 🖥️ Step 3: Create the Server
 
+Create `client.js`:
+
+```javascript
+import { autoHydrate, makeHydratable } from '@coherent.js/client';
+import { Counter } from './components/Counter.js';
+
+window.componentRegistry = {
+  counter: makeHydratable(Counter, { componentName: 'counter' })
+};
+
+autoHydrate(window.componentRegistry);
+```
+
+Bundle the client for the browser:
+
+```bash
+npx esbuild client.js --bundle --format=esm --outfile=public/hydration.js
+```
+
 Create `server.js`:
 
 ```javascript
@@ -157,22 +180,9 @@ const createPage = () => ({
           children: [
             { h1: { text: 'My Coherent.js App' } },
             Counter(),  // ← Render the counter
-            
-            // Hydration script
-            {
-              script: {
-                type: 'module',
-                text: dangerouslySetInnerContent(`
-                  import { autoHydrate } from '/hydration.js';
-                  
-                  document.addEventListener('DOMContentLoaded', () => {
-                    window.componentRegistry = {};
-                    autoHydrate(window.componentRegistry);
-                    console.log('✅ Hydration complete!');
-                  });
-                `)
-              }
-            }
+
+            // Hydration bundle (bundled from client.js)
+            { script: { type: 'module', src: '/hydration.js' } }
           ]
         }
       }
@@ -184,7 +194,7 @@ const createPage = () => ({
 const server = createServer((req, res) => {
   // Serve hydration bundle
   if (req.url === '/hydration.js') {
-    const hydrationPath = join(__dirname, 'node_modules/@coherent.js/core/client/hydration.js');
+    const hydrationPath = join(__dirname, 'public/hydration.js');
     const hydrationCode = readFileSync(hydrationPath, 'utf-8');
     res.setHeader('Content-Type', 'application/javascript');
     res.end(hydrationCode);

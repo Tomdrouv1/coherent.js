@@ -34,7 +34,7 @@ Renders a component with optional performance monitoring.
 
 **Example:**
 ```javascript
-import { renderWithMonitoring } from '@coherent.js/core/utils/render-utils';
+import { renderWithMonitoring } from '@coherent.js/core';
 
 const component = {
   div: {
@@ -78,7 +78,7 @@ Renders a component and applies an HTML template.
 
 **Example:**
 ```javascript
-import { renderWithTemplate } from '@coherent.js/core/utils/render-utils';
+import { renderWithTemplate } from '@coherent.js/core';
 
 const component = {
   div: { text: 'Page content' }
@@ -122,7 +122,7 @@ Handles component creation, rendering, and error handling for framework integrat
 
 **Example:**
 ```javascript
-import { renderComponentFactory } from '@coherent.js/core/utils/render-utils';
+import { renderComponentFactory } from '@coherent.js/core';
 
 // Component factory
 const createUserProfile = (req, res) => ({
@@ -171,7 +171,7 @@ Checks if an object is a valid Coherent.js component.
 
 **Example:**
 ```javascript
-import { isCoherentComponent } from '@coherent.js/core/utils/render-utils';
+import { isCoherentComponent } from '@coherent.js/core';
 
 // Valid component
 const component = { div: { text: 'Hello' } };
@@ -207,7 +207,7 @@ Creates a standardized error response for framework integrations.
 
 **Example:**
 ```javascript
-import { createErrorResponse } from '@coherent.js/core/utils/render-utils';
+import { createErrorResponse } from '@coherent.js/core';
 
 try {
   // Some rendering operation
@@ -248,7 +248,7 @@ import express from 'express';
 import { 
   renderWithTemplate, 
   renderComponentFactory 
-} from '@coherent.js/core/utils/render-utils';
+} from '@coherent.js/core';
 
 const app = express();
 
@@ -278,7 +278,7 @@ app.get('/user/:id', async (req, res, next) => {
 
 ```javascript
 import Fastify from 'fastify';
-import { renderWithTemplate } from '@coherent.js/core/utils/render-utils';
+import { renderWithTemplate } from '@coherent.js/core';
 
 const fastify = Fastify();
 
@@ -296,7 +296,7 @@ fastify.get('/', async (request, reply) => {
 
 ```javascript
 import Koa from 'koa';
-import { renderWithTemplate } from '@coherent.js/core/utils/render-utils';
+import { renderWithTemplate } from '@coherent.js/core';
 
 const app = new Koa();
 
@@ -310,7 +310,7 @@ app.use(async (ctx) => {
 ### Next.js Integration
 
 ```javascript
-import { renderComponentFactory } from '@coherent.js/core/utils/render-utils';
+import { renderComponentFactory } from '@coherent.js/core';
 
 export default async function handler(req, res) {
   const html = await renderComponentFactory(
@@ -398,7 +398,7 @@ const html = renderWithTemplate(component, options);
 ### 3. Validate Components
 
 ```javascript
-import { isCoherentComponent } from '@coherent.js/core/utils/render-utils';
+import { isCoherentComponent } from '@coherent.js/core';
 
 if (!isCoherentComponent(data)) {
   throw new Error('Invalid component structure');
@@ -410,7 +410,7 @@ const html = renderWithTemplate(data);
 ### 4. Handle Errors Gracefully
 
 ```javascript
-import { createErrorResponse } from '@coherent.js/core/utils/render-utils';
+import { createErrorResponse } from '@coherent.js/core';
 
 try {
   const html = await renderComponentFactory(factory, args);
@@ -447,7 +447,7 @@ res.send(finalHtml);
 
 **After (v1.1.0+):**
 ```javascript
-import { renderWithTemplate } from '@coherent.js/core/utils/render-utils';
+import { renderWithTemplate } from '@coherent.js/core';
 
 const html = renderWithTemplate(component, {
   enablePerformanceMonitoring: enableMonitoring,
@@ -473,7 +473,7 @@ res.send(html);
 
 **Solution:** Check if component is valid
 ```javascript
-import { isCoherentComponent } from '@coherent.js/core/utils/render-utils';
+import { isCoherentComponent } from '@coherent.js/core';
 
 if (!isCoherentComponent(component)) {
   console.error('Invalid component:', component);

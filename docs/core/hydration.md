@@ -180,7 +180,7 @@ export const Counter = CounterComponent(CounterView);
 
 ```javascript
 // client.js
-import { hydrate, makeHydratable } from '@coherent.js/client';
+import { hydrate, makeHydratable, autoHydrate } from '@coherent.js/client';
 import { Counter } from './components/Counter.js';
 
 // Method 1: Direct hydration
@@ -205,6 +205,18 @@ const HydratableCounter = makeHydratable(Counter, {
 autoHydrate({
   counter: HydratableCounter
 });
+```
+
+Bundle the client entry for the browser (example using esbuild):
+
+```bash
+npx esbuild client.js --bundle --format=esm --outfile=public/hydration.js
+```
+
+Then include the bundled module in your server-rendered HTML:
+
+```javascript
+{ script: { type: 'module', src: '/hydration.js' } }
 ```
 
 ## Auto-Hydration

@@ -3,7 +3,7 @@
  * Works with both SSR and client-side hydration
  */
 
-import { withState } from '../../../packages/core/src/index.js';
+import { withState } from '../../../packages/core/src/components/component-system.js';
 
 export const Counter = withState({ count: 0 })(({ state, setState }) => ({
   div: {
@@ -11,11 +11,11 @@ export const Counter = withState({ count: 0 })(({ state, setState }) => ({
     className: 'counter',
     children: [
       { h2: { text: 'Interactive Counter' } },
-      { 
-        p: { 
+      {
+        p: {
           text: `Count: ${state.count}`,
           className: 'count-display'
-        } 
+        }
       },
       {
         div: {

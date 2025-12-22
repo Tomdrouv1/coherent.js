@@ -4,7 +4,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { createCoherentNextHandler, createCoherentAppRouterHandler } from '../src/coherent-nextjs.js';
-import { render } from '../../core/src/rendering/html-renderer.js';
+import { render } from '@coherent.js/core';
 
 describe('Next.js Integration', () => {
   it('should create coherent next handler', () => {
@@ -22,12 +22,12 @@ describe('Next.js Integration', () => {
       enablePerformanceMonitoring: true,
       template: '<html><body>{{content}}</body></html>'
     });
-    
+
     const handler2 = createCoherentAppRouterHandler(() => ({}), {
       enablePerformanceMonitoring: true,
       template: '<html><body>{{content}}</body></html>'
     });
-    
+
     expect(typeof handler1).toBe('function');
     expect(typeof handler2).toBe('function');
   });
@@ -39,7 +39,7 @@ describe('Next.js Integration', () => {
         text: 'Hello Coherent.js!'
       }
     };
-    
+
     const html = render(testComponent);
     expect(html).toContain('Hello Coherent.js!');
   });
@@ -47,7 +47,7 @@ describe('Next.js Integration', () => {
   it('should handle complete integration scenario', () => {
     // This is a conceptual test - in a real scenario we would
     // need to set up a full Next.js server and make requests
-    
+
     const mockReq = { method: 'GET', url: '/' };
     const mockRes = {
       setHeader: () => mockRes,
@@ -56,9 +56,9 @@ describe('Next.js Integration', () => {
       send: () => mockRes,
       end: () => {}
     };
-    
+
     const handler = createCoherentNextHandler(() => ({ div: { text: 'Test' } }));
-    
+
     expect(() => {
       handler(mockReq, mockRes);
     }).not.toThrow();

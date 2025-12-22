@@ -4,14 +4,37 @@
  */
 
 import { createServer } from 'http';
-import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { dirname } from 'path';
+import { build } from 'esbuild';
 import { render, dangerouslySetInnerContent } from '../../packages/core/src/index.js';
 import { Counter } from './components/Counter.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+const hydrationBuildResult = await build({
+  bundle: true,
+  format: 'esm',
+  platform: 'browser',
+  write: false,
+  target: ['es2020'],
+  stdin: {
+    sourcefile: 'hydration-entry.js',
+    resolveDir: __dirname,
+    contents: `import { autoHydrate, makeHydratable } from '@coherent.js/client';
+import { Counter } from './components/Counter.js';
+
+window.componentRegistry = {
+  counter: makeHydratable(Counter, { componentName: 'counter' })
+};
+
+autoHydrate(window.componentRegistry);
+`,
+  },
+});
+
+const hydrationCode = hydrationBuildResult.outputFiles[0].text;
 
 // Create the HTML page
 const createPage = () => ({
@@ -28,7 +51,7 @@ const createPage = () => ({
               style: {
                 text: dangerouslySetInnerContent(`
                   * { box-sizing: border-box; margin: 0; padding: 0; }
-                  
+
                   body {
                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                     line-height: 1.6;
@@ -36,7 +59,7 @@ const createPage = () => ({
                     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                     min-height: 100vh;
                   }
-                  
+
                   .container {
                     max-width: 600px;
                     margin: 0 auto;
@@ -45,17 +68,17 @@ const createPage = () => ({
                     border-radius: 12px;
                     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
                   }
-                  
+
                   h1 {
                     color: #333;
                     margin-bottom: 10px;
                   }
-                  
+
                   .subtitle {
                     color: #666;
                     margin-bottom: 30px;
                   }
-                  
+
                   .counter {
                     background: #f8f9fa;
                     padding: 30px;
@@ -63,27 +86,27 @@ const createPage = () => ({
                     border: 2px solid #e9ecef;
                     text-align: center;
                   }
-                  
+
                   .counter h2 {
                     color: #495057;
                     margin-bottom: 20px;
                     font-size: 1.5rem;
                   }
-                  
+
                   .count-display {
                     font-size: 3rem;
                     font-weight: bold;
                     color: #667eea;
                     margin: 20px 0;
                   }
-                  
+
                   .button-group {
                     display: flex;
                     gap: 10px;
                     justify-content: center;
                     margin-top: 20px;
                   }
-                  
+
                   .btn {
                     padding: 12px 24px;
                     font-size: 1.2rem;
@@ -95,26 +118,26 @@ const createPage = () => ({
                     font-weight: 600;
                     transition: all 0.2s;
                   }
-                  
+
                   .btn:hover {
                     background: #5568d3;
                     transform: translateY(-2px);
                     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
                   }
-                  
+
                   .btn:active {
                     transform: translateY(0);
                   }
-                  
+
                   .btn-secondary {
                     background: #6c757d;
                   }
-                  
+
                   .btn-secondary:hover {
                     background: #5a6268;
                     box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
                   }
-                  
+
                   .info {
                     margin-top: 30px;
                     padding: 20px;
@@ -123,11 +146,11 @@ const createPage = () => ({
                     border-radius: 6px;
                     color: #0c5460;
                   }
-                  
+
                   .info h3 {
                     margin-bottom: 10px;
                   }
-                  
+
                   code {
                     background: #f8f9fa;
                     padding: 2px 6px;
@@ -149,35 +172,35 @@ const createPage = () => ({
                 children: [
                   { h1: { text: '🚀 Coherent.js Starter App' } },
                   { p: { text: 'A simple full-stack example with SSR and hydration', className: 'subtitle' } },
-                  
+
                   // Counter component
                   Counter(),
-                  
+
                   // Info section
                   {
                     div: {
                       className: 'info',
                       children: [
                         { h3: { text: '✨ How it works' } },
-                        { 
-                          p: { 
-                            text: '1. The counter is rendered on the server (SSR)' 
-                          } 
+                        {
+                          p: {
+                            text: '1. The counter is rendered on the server (SSR)'
+                          }
                         },
-                        { 
-                          p: { 
-                            text: '2. HTML is sent to the browser instantly' 
-                          } 
+                        {
+                          p: {
+                            text: '2. HTML is sent to the browser instantly'
+                          }
                         },
-                        { 
-                          p: { 
-                            text: '3. Client-side hydration makes it interactive' 
-                          } 
+                        {
+                          p: {
+                            text: '3. Client-side hydration makes it interactive'
+                          }
                         },
-                        { 
-                          p: { 
-                            text: '4. Click the buttons - they work!' 
-                          } 
+                        {
+                          p: {
+                            text: '4. Click the buttons - they work!'
+                          }
                         }
                       ]
                     }
@@ -185,25 +208,12 @@ const createPage = () => ({
                 ]
               }
             },
-            
+
             // Hydration script
             {
               script: {
                 type: 'module',
-                text: dangerouslySetInnerContent(`
-                  import { autoHydrate } from '/hydration.js';
-                  
-                  console.log('🔥 Coherent.js Starter App');
-                  console.log('✨ Initializing hydration...');
-                  
-                  // Auto-hydrate all components
-                  window.componentRegistry = {};
-                  
-                  document.addEventListener('DOMContentLoaded', () => {
-                    autoHydrate(window.componentRegistry);
-                    console.log('✅ Hydration complete! Try clicking the buttons.');
-                  });
-                `)
+                src: '/hydration.js'
               }
             }
           ]
@@ -217,25 +227,16 @@ const createPage = () => ({
 const server = createServer((req, res) => {
   // Serve hydration bundle
   if (req.url === '/hydration.js') {
-    try {
-      const hydrationPath = join(__dirname, '../../packages/client/src/hydration.js');
-      const hydrationCode = readFileSync(hydrationPath, 'utf-8');
-      res.setHeader('Content-Type', 'application/javascript');
-      res.writeHead(200);
-      res.end(hydrationCode);
-      return;
-    } catch (error) {
-      console.error('Error serving hydration.js:', error);
-      res.writeHead(404);
-      res.end('Not found');
-      return;
-    }
+    res.setHeader('Content-Type', 'application/javascript');
+    res.writeHead(200);
+    res.end(hydrationCode);
+    return;
   }
-  
+
   // Serve main page
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
-  
+
   try {
     const page = createPage();
     const html = render(page);
