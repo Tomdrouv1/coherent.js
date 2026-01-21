@@ -317,6 +317,13 @@ export {
   normalizeChildren
 } from './core/object-utils.js';
 
+// HTML nesting validation exports
+export {
+  validateNesting,
+  FORBIDDEN_CHILDREN,
+  HTMLNestingError
+} from './core/html-nesting-rules.js';
+
 // Simple memoization
 const memoCache = new Map();
 

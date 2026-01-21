@@ -9,6 +9,8 @@ import {
     normalizeChildren,
 } from '../core/object-utils.js';
 
+import { validateNesting } from '../core/html-nesting-rules.js';
+
 import {
     escapeHtml,
     isVoidElement,
@@ -345,7 +347,16 @@ class HTMLRenderer extends BaseRenderer {
         if (hasChildren(element)) {
             const normalizedChildren = normalizeChildren(children);
             childrenHtml = normalizedChildren
-                .map((child, index) => this.renderComponent(child, options, depth + 1, [...path, `children[${index}]`]))
+                .map((child, index) => {
+                    // Validate HTML nesting before rendering child
+                    if (child && typeof child === 'object' && !Array.isArray(child)) {
+                        const childTagName = Object.keys(child)[0];
+                        if (childTagName) {
+                            validateNesting(tagName, childTagName, formatRenderPath([...path, `children[${index}]`]));
+                        }
+                    }
+                    return this.renderComponent(child, options, depth + 1, [...path, `children[${index}]`]);
+                })
                 .join('');
         }
 
