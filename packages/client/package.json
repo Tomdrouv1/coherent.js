@@ -3,13 +3,21 @@
   "version": "1.0.0-beta.6",
   "description": "Client-side hydration/HMR utilities for Coherent.js",
   "type": "module",
-  "main": "src/hydration.js",
+  "main": "src/index.js",
   "module": "dist/index.js",
   "exports": {
     ".": {
       "types": "./types/index.d.ts",
-      "development": "./src/hydration.js",
+      "development": "./src/index.js",
       "import": "./dist/index.js"
+    },
+    "./hydration": {
+      "types": "./types/hydration.d.ts",
+      "default": "./src/hydration.js"
+    },
+    "./events": {
+      "types": "./types/events.d.ts",
+      "default": "./src/events/index.js"
     },
     "./router": {
       "types": "./types/router.d.ts",
