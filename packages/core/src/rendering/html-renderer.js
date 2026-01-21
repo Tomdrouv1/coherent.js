@@ -116,8 +116,14 @@ class HTMLRenderer extends BaseRenderer {
                 throw new Error('Invalid component structure');
             }
 
+            // Initialize seenObjects for circular reference detection
+            const renderOptions = {
+                ...config,
+                seenObjects: new WeakSet()
+            };
+
             // Main rendering logic
-            const html = this.renderComponent(component, config, 0, []);
+            const html = this.renderComponent(component, renderOptions, 0, []);
             const finalHtml = config.minify ? minifyHtml(html, config) : html;
 
             // Performance monitoring
@@ -146,6 +152,29 @@ class HTMLRenderer extends BaseRenderer {
      * Render a single component with full optimization pipeline
      */
     renderComponent(component, options, depth = 0, path = []) {
+        // Handle nullish and empty inputs immediately
+        if (component === null || component === undefined) {
+            return '';
+        }
+        if (Array.isArray(component) && component.length === 0) {
+            return '';
+        }
+
+        // Detect circular references (objects only)
+        if (typeof component === 'object' && component !== null && !Array.isArray(component)) {
+            if (options.seenObjects && options.seenObjects.has(component)) {
+                throw new RenderingError(
+                    'Circular reference detected in component tree',
+                    component,
+                    { path: formatRenderPath(path) },
+                    ['Remove the circular reference', 'Use lazy loading to break the cycle']
+                );
+            }
+            if (options.seenObjects) {
+                options.seenObjects.add(component);
+            }
+        }
+
         // Use base class depth validation
         this.validateDepth(depth);
 
