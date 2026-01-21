@@ -25,6 +25,7 @@ key-files:
     - packages/core/test/html-nesting.test.js
   modified:
     - packages/core/src/rendering/html-renderer.js
+    - packages/core/src/rendering/base-renderer.js
     - packages/core/src/index.js
 
 key-decisions:
@@ -47,11 +48,11 @@ completed: 2026-01-21
 
 ## Performance
 
-- **Duration:** 4 min
+- **Duration:** 7 min
 - **Started:** 2026-01-21T13:56:36Z
-- **Completed:** 2026-01-21T14:00:45Z
-- **Tasks:** 3
-- **Files modified:** 4
+- **Completed:** 2026-01-21T14:03:30Z
+- **Tasks:** 3 (+ 1 bug fix)
+- **Files modified:** 5
 
 ## Accomplishments
 - Created comprehensive HTML nesting rules based on WHATWG content model spec
@@ -67,6 +68,7 @@ Each task was committed atomically:
 1. **Task 1: Create html-nesting-rules.js** - `178a108` (feat)
 2. **Task 2: Integrate nesting validation into renderer** - `a733320` (feat)
 3. **Task 3: Add tests for HTML nesting validation** - `dc7488e` (test)
+4. **Bug fix: Circular reference detection** - `8e56054` (fix)
 
 ## Files Created/Modified
 - `packages/core/src/core/html-nesting-rules.js` - FORBIDDEN_CHILDREN map and validateNesting function
@@ -81,10 +83,24 @@ Each task was committed atomically:
 - Export HTMLNestingError class for users who want to throw on invalid nesting
 
 ## Deviations from Plan
-None - plan executed exactly as written.
+
+### Auto-fixed Issues
+
+**1. [Rule 1 - Bug] Fixed circular reference detection in isStaticElement**
+- **Found during:** Commit verification (pre-commit tests)
+- **Issue:** isStaticElement only recursed into objects under 'children' key, missing circular references in other nested objects. This caused JSON.stringify to fail with "Converting circular structure" instead of our custom "Circular reference detected" error.
+- **Fix:** Modified isStaticElement to recursively check ALL nested objects and arrays, not just 'children'.
+- **Files modified:** packages/core/src/rendering/base-renderer.js
+- **Verification:** All 22 defensive-input tests pass, including circular reference detection
+- **Committed in:** `8e56054` (fix)
+
+---
+
+**Total deviations:** 1 auto-fixed (1 bug)
+**Impact on plan:** Essential fix for proper error handling. No scope creep.
 
 ## Issues Encountered
-- ESLint warning on string concatenation required refactoring message construction (auto-fixed)
+- ESLint warning on string concatenation required refactoring message construction (trivial fix)
 
 ## User Setup Required
 None - no external service configuration required.
@@ -92,7 +108,7 @@ None - no external service configuration required.
 ## Next Phase Readiness
 - HTML nesting validation complete and integrated
 - Ready for Plan 03 (Void element protection) which builds on same rendering infrastructure
-- All 407 tests pass, including 13 new nesting tests
+- All 1345 tests pass (full monorepo), including 13 new nesting tests
 
 ---
 *Phase: 01-foundation*
