@@ -9,17 +9,17 @@ Requirements for operational framework. Each maps to roadmap phases.
 
 ### Core Rendering
 
-- [ ] **REND-01**: Renderer handles null/undefined inputs without crashing
-- [ ] **REND-02**: Renderer validates HTML nesting (no `<p><div>` producing mismatches)
-- [ ] **REND-03**: Error boundaries catch component render errors with actionable messages
-- [ ] **REND-04**: Rendering depth limit prevents stack overflow on circular structures
+- [x] **REND-01**: Renderer handles null/undefined inputs without crashing
+- [x] **REND-02**: Renderer validates HTML nesting (no `<p><div>` producing mismatches)
+- [x] **REND-03**: Error boundaries catch component render errors with actionable messages
+- [x] **REND-04**: Rendering depth limit prevents stack overflow on circular structures
 
 ### Reconciliation
 
-- [ ] **RECON-01**: Component syntax supports `key` property for stable element identity
-- [ ] **RECON-02**: Diffing algorithm uses keys to match elements (not array indices)
-- [ ] **RECON-03**: List reordering preserves component state correctly
-- [ ] **RECON-04**: Dev mode warns when list items are missing keys
+- [x] **RECON-01**: Component syntax supports `key` property for stable element identity
+- [x] **RECON-02**: Diffing algorithm uses keys to match elements (not array indices)
+- [x] **RECON-03**: List reordering preserves component state correctly
+- [x] **RECON-04**: Dev mode warns when list items are missing keys
 
 ### Hydration
 
@@ -100,14 +100,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REND-01 | Phase 1: Foundation | Pending |
-| REND-02 | Phase 1: Foundation | Pending |
-| REND-03 | Phase 1: Foundation | Pending |
-| REND-04 | Phase 1: Foundation | Pending |
-| RECON-01 | Phase 1: Foundation | Pending |
-| RECON-02 | Phase 1: Foundation | Pending |
-| RECON-03 | Phase 1: Foundation | Pending |
-| RECON-04 | Phase 1: Foundation | Pending |
+| REND-01 | Phase 1: Foundation | Complete |
+| REND-02 | Phase 1: Foundation | Complete |
+| REND-03 | Phase 1: Foundation | Complete |
+| REND-04 | Phase 1: Foundation | Complete |
+| RECON-01 | Phase 1: Foundation | Complete |
+| RECON-02 | Phase 1: Foundation | Complete |
+| RECON-03 | Phase 1: Foundation | Complete |
+| RECON-04 | Phase 1: Foundation | Complete |
 | HYDR-01 | Phase 2: Hydration | Pending |
 | HYDR-02 | Phase 2: Hydration | Pending |
 | HYDR-03 | Phase 2: Hydration | Pending |

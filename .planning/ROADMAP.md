@@ -12,7 +12,7 @@ This roadmap stabilizes Coherent.js from a feature-rich but unstable framework i
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Stable rendering engine with key-based reconciliation
+- [x] **Phase 1: Foundation** - Stable rendering engine with key-based reconciliation
 - [ ] **Phase 2: Hydration** - Reliable client-side hydration with event delegation
 - [ ] **Phase 3: CLI Scaffolding** - Working project generator with current APIs
 - [ ] **Phase 4: Hot Module Replacement** - State-preserving development updates
@@ -34,9 +34,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Defensive input handling and circular reference detection
-- [ ] 01-02-PLAN.md — HTML nesting validation with dev warnings
-- [ ] 01-03-PLAN.md — Key prop support and key-based reconciliation
+- [x] 01-01-PLAN.md — Defensive input handling and circular reference detection
+- [x] 01-02-PLAN.md — HTML nesting validation with dev warnings
+- [x] 01-03-PLAN.md — Key prop support and key-based reconciliation
 
 ### Phase 2: Hydration
 **Goal**: Client-side hydration reliably attaches to server-rendered HTML with event delegation and state preservation
@@ -123,7 +123,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/3 | Planned | - |
+| 1. Foundation | 3/3 | Complete | 2026-01-21 |
 | 2. Hydration | 0/3 | Not started | - |
 | 3. CLI Scaffolding | 0/2 | Not started | - |
 | 4. Hot Module Replacement | 0/2 | Not started | - |
@@ -132,4 +132,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 ---
 *Roadmap created: 2026-01-21*
-*Last updated: 2026-01-21*
+*Last updated: 2026-01-21 (Phase 1 complete)*
