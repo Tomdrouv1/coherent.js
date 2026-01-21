@@ -374,10 +374,16 @@ export const RendererUtils = {
     /**
      * Check if element is static (no functions)
      */
-    isStaticElement(element) {
+    isStaticElement(element, visited = new WeakSet()) {
         if (!element || typeof element !== 'object') {
             return typeof element === 'string' || typeof element === 'number';
         }
+
+        // Handle circular references - treat as non-static (will be caught during render)
+        if (visited.has(element)) {
+            return false;
+        }
+        visited.add(element);
 
         // Check if element has any dynamic content
         for (const [key, value] of Object.entries(element)) {
@@ -385,11 +391,11 @@ export const RendererUtils = {
 
             if (key === 'children' && Array.isArray(value)) {
                 // Recursively check children for dynamic content
-                return value.every(child => RendererUtils.isStaticElement(child));
+                return value.every(child => RendererUtils.isStaticElement(child, visited));
             }
 
             if (key === 'children' && typeof value === 'object' && value !== null) {
-                return RendererUtils.isStaticElement(value);
+                return RendererUtils.isStaticElement(value, visited);
             }
         }
 

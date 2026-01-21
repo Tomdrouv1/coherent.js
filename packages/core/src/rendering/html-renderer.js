@@ -229,6 +229,21 @@ class HTMLRenderer extends BaseRenderer {
     renderElement(tagName, element, options, depth = 0, path = []) {
         const startTime = performance.now();
 
+        // Check for circular references in element props
+        if (element && typeof element === 'object' && !Array.isArray(element)) {
+            if (options.seenObjects && options.seenObjects.has(element)) {
+                throw new RenderingError(
+                    'Circular reference detected in component tree',
+                    element,
+                    { path: formatRenderPath(path) },
+                    ['Remove the circular reference', 'Use lazy loading to break the cycle']
+                );
+            }
+            if (options.seenObjects) {
+                options.seenObjects.add(element);
+            }
+        }
+
         // Track element usage for performance analysis (via stats in the new cache manager)
         if (options.enableMonitoring && this.cache) {
             // The new cache manager tracks usage automatically via get/set operations
@@ -236,11 +251,16 @@ class HTMLRenderer extends BaseRenderer {
 
         // Check cache first for static elements
         if (options.enableCache && this.cache && RendererUtils.isStaticElement(element)) {
-            const cacheKey = `static:${tagName}:${JSON.stringify(element)}`;
-            const cached = this.cache.get('static', cacheKey);
-            if (cached) {
-                this.recordPerformance(tagName, startTime, true);
-                return cached.value; // Return the cached HTML
+            try {
+                const cacheKey = `static:${tagName}:${JSON.stringify(element)}`;
+                const cached = this.cache.get('static', cacheKey);
+                if (cached) {
+                    this.recordPerformance(tagName, startTime, true);
+                    return cached.value; // Return the cached HTML
+                }
+            } catch {
+                // Circular reference in element - skip caching and continue with rendering
+                // The circular reference will be detected and properly reported during render
             }
         }
 
@@ -286,11 +306,15 @@ class HTMLRenderer extends BaseRenderer {
      */
     cacheIfStatic(tagName, element, html) {
         if (this.config.enableCache && this.cache && RendererUtils.isStaticElement(element)) {
-            const cacheKey = `static:${tagName}:${JSON.stringify(element)}`;
-            this.cache.set('static', cacheKey, html, {
-                ttlMs: this.config.cacheTTL || 5 * 60 * 1000, // 5 minutes default
-                size: html.length // Approximate size
-            });
+            try {
+                const cacheKey = `static:${tagName}:${JSON.stringify(element)}`;
+                this.cache.set('static', cacheKey, html, {
+                    ttlMs: this.config.cacheTTL || 5 * 60 * 1000, // 5 minutes default
+                    size: html.length // Approximate size
+                });
+            } catch {
+                // Circular reference - skip caching
+            }
         }
     }
 
