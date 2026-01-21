@@ -31,12 +31,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Component errors are caught and displayed with file/line information instead of crashing the app
   4. List items with `key` props maintain their state when reordered, added, or removed
   5. Development mode warns when list items are missing keys
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
-- [ ] 01-03: TBD
+- [ ] 01-01-PLAN.md — Defensive input handling and circular reference detection
+- [ ] 01-02-PLAN.md — HTML nesting validation with dev warnings
+- [ ] 01-03-PLAN.md — Key prop support and key-based reconciliation
 
 ### Phase 2: Hydration
 **Goal**: Client-side hydration reliably attaches to server-rendered HTML with event delegation and state preservation
@@ -123,7 +123,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/3 | Not started | - |
+| 1. Foundation | 0/3 | Planned | - |
 | 2. Hydration | 0/3 | Not started | - |
 | 3. CLI Scaffolding | 0/2 | Not started | - |
 | 4. Hot Module Replacement | 0/2 | Not started | - |
