@@ -13,7 +13,7 @@ This roadmap stabilizes Coherent.js from a feature-rich but unstable framework i
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Stable rendering engine with key-based reconciliation
-- [ ] **Phase 2: Hydration** - Reliable client-side hydration with event delegation
+- [x] **Phase 2: Hydration** - Reliable client-side hydration with event delegation
 - [ ] **Phase 3: CLI Scaffolding** - Working project generator with current APIs
 - [ ] **Phase 4: Hot Module Replacement** - State-preserving development updates
 - [ ] **Phase 5: TypeScript** - Complete type definitions across all packages
@@ -51,10 +51,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Event delegation system with document-level listeners
-- [ ] 02-02-PLAN.md — State serialization with base64 encoding
-- [ ] 02-03-PLAN.md — Mismatch detection for development mode
-- [ ] 02-04-PLAN.md — Clean hydrate() API integrating all modules
+- [x] 02-01-PLAN.md — Event delegation system with document-level listeners
+- [x] 02-02-PLAN.md — State serialization with base64 encoding
+- [x] 02-03-PLAN.md — Mismatch detection for development mode
+- [x] 02-04-PLAN.md — Clean hydrate() API integrating all modules
 
 ### Phase 3: CLI Scaffolding
 **Goal**: `coherent create` produces immediately runnable fullstack projects using current framework APIs
@@ -125,7 +125,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete | 2026-01-21 |
-| 2. Hydration | 0/4 | Planned | - |
+| 2. Hydration | 4/4 | Complete | 2026-01-21 |
 | 3. CLI Scaffolding | 0/2 | Not started | - |
 | 4. Hot Module Replacement | 0/2 | Not started | - |
 | 5. TypeScript | 0/2 | Not started | - |
@@ -133,4 +133,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 ---
 *Roadmap created: 2026-01-21*
-*Last updated: 2026-01-21 (Phase 2 planned)*
+*Last updated: 2026-01-21 (Phase 2 complete)*
