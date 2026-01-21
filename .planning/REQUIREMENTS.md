@@ -29,7 +29,7 @@ Requirements for operational framework. Each maps to roadmap phases.
 - [ ] **HYDR-04**: Event delegation system with single document-level listener
 - [ ] **HYDR-05**: Event handlers survive DOM patches (no re-attachment required)
 - [ ] **HYDR-06**: `hydrate()` function has simple, documented API
-- [ ] **HYDR-07**: State serialization uses centralized JSON script tag pattern
+- [ ] **HYDR-07**: State serialization uses data-state attributes with base64-encoded JSON
 
 ### CLI Scaffolding
 
