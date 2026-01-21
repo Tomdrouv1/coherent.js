@@ -1,12 +1,29 @@
 /**
  * Client-side hydration utilities for Coherent.js
- * 
+ *
  * This module provides utilities for hydrating server-rendered HTML
  * with client-side interactivity.
  */
 
 // Store for component instances
 const componentInstances = new WeakMap();
+
+/**
+ * Extract key from Coherent.js vNode
+ * @param {Object|string|number} vNode - Virtual node
+ * @returns {string|number|undefined} - The key if present
+ */
+function getKey(vNode) {
+    if (!vNode || typeof vNode !== 'object' || Array.isArray(vNode)) {
+        return undefined;
+    }
+    const tagName = Object.keys(vNode)[0];
+    const props = vNode[tagName];
+    if (props && typeof props === 'object') {
+        return props.key;
+    }
+    return undefined;
+}
 
 /**
  * Extract initial state from DOM element data attributes
@@ -327,81 +344,130 @@ function hydrate(element, component, props = {}, options = {}) {
       });
     },
     
-    // Patch children with intelligent list diffing
+    // Get children array from a vNode
+    getVNodeChildren(vNode) {
+      if (!vNode || typeof vNode !== 'object' || Array.isArray(vNode)) {
+        return [];
+      }
+      const tagName = Object.keys(vNode)[0];
+      const props = vNode[tagName];
+      if (!props || typeof props !== 'object') {
+        return [];
+      }
+      if (props.children) {
+        return Array.isArray(props.children) ? props.children : [props.children];
+      }
+      if (props.text !== undefined) {
+        return [props.text];
+      }
+      return [];
+    },
+
+    // Patch children with key-based reconciliation
     patchChildren(domElement, oldVNode, newVNode) {
       // Check if we're in a browser environment
       if (typeof window === 'undefined' || typeof Node === 'undefined' || typeof document === 'undefined') {
         return;
       }
-      
+
       // Check if domElement has required methods
       if (!domElement || typeof domElement.childNodes === 'undefined' || typeof domElement.appendChild !== 'function') {
         return;
       }
-      
-      const oldTagName = oldVNode ? Object.keys(oldVNode)[0] : null;
-      const newTagName = Object.keys(newVNode)[0];
-      const oldProps = oldVNode && oldTagName ? (oldVNode[oldTagName] || {}) : {};
-      const newProps = newVNode[newTagName] || {};
-      
-      // Extract children arrays
-      let oldChildren = [];
-      let newChildren = [];
-      
-      // Handle old children
-      if (oldProps.children) {
-        oldChildren = Array.isArray(oldProps.children) ? oldProps.children : [oldProps.children];
-      } else if (oldProps.text) {
-        oldChildren = [oldProps.text];
-      }
-      
-      // Handle new children
-      if (newProps.children) {
-        newChildren = Array.isArray(newProps.children) ? newProps.children : [newProps.children];
-      } else if (newProps.text) {
-        newChildren = [newProps.text];
-      }
-      
-      // Get current DOM children (excluding text nodes that are just whitespace)
-      // Check if Array.from is available and domElement.childNodes is iterable
+
+      const oldChildren = this.getVNodeChildren(oldVNode);
+      const newChildren = this.getVNodeChildren(newVNode);
+
+      // Get current DOM children (excluding whitespace-only text nodes)
       let domChildren = [];
       if (typeof Array.from === 'function' && domElement.childNodes) {
         try {
           domChildren = Array.from(domElement.childNodes).filter(node => {
-            return node.nodeType === Node.ELEMENT_NODE || 
+            return node.nodeType === Node.ELEMENT_NODE ||
                    (node.nodeType === Node.TEXT_NODE && node.textContent && node.textContent.trim());
           });
         } catch (_error) {
-          // Fallback to empty array if Array.from fails
           console.warn('Failed to convert childNodes to array:', _error);
           domChildren = [];
         }
       }
-      
-      // Simple diffing algorithm - can be improved with key-based diffing
-      const maxLength = Math.max(oldChildren.length, newChildren.length, domChildren.length);
-      
-      for (let i = 0; i < maxLength; i++) {
-        const oldChild = oldChildren[i];
-        const newChild = newChildren[i];
-        const domChild = domChildren[i];
-        
-        if (newChild === undefined) {
-          // Remove extra DOM children
-          if (domChild && typeof domChild.remove === 'function') {
-            domChild.remove();
-          }
-        } else if (domChild === undefined) {
-          // Add new DOM children
-          const newElement = this.createDOMElement(newChild);
-          if (newElement) {
-            domElement.appendChild(newElement);
+
+      // Build key -> {vNode, index, domNode} maps
+      const oldKeyMap = new Map();
+      const oldIndexMap = new Map();  // For keyless items, track by index
+
+      oldChildren.forEach((child, i) => {
+        const key = getKey(child);
+        if (key !== undefined) {
+          oldKeyMap.set(key, { vNode: child, index: i, domNode: domChildren[i] });
+        } else {
+          oldIndexMap.set(i, { vNode: child, index: i, domNode: domChildren[i] });
+        }
+      });
+
+      // Track which old nodes are reused
+      const usedOldNodes = new Set();
+
+      // Process new children
+      newChildren.forEach((newChild, newIndex) => {
+        const newKey = getKey(newChild);
+        let oldEntry = null;
+
+        // Try to find matching old node
+        if (newKey !== undefined && oldKeyMap.has(newKey)) {
+          oldEntry = oldKeyMap.get(newKey);
+          usedOldNodes.add(newKey);
+        } else if (newKey === undefined && oldIndexMap.has(newIndex)) {
+          // Keyless fallback: match by index
+          oldEntry = oldIndexMap.get(newIndex);
+          usedOldNodes.add(`index:${newIndex}`);
+        }
+
+        if (oldEntry && oldEntry.domNode) {
+          // Patch existing node
+          this.patchDOM(oldEntry.domNode, oldEntry.vNode, newChild);
+
+          // Move node if position changed
+          const currentPosition = Array.from(domElement.childNodes).filter(node => {
+            return node.nodeType === Node.ELEMENT_NODE ||
+                   (node.nodeType === Node.TEXT_NODE && node.textContent && node.textContent.trim());
+          }).indexOf(oldEntry.domNode);
+
+          if (currentPosition !== newIndex) {
+            const referenceNode = domElement.childNodes[newIndex];
+            if (referenceNode) {
+              domElement.insertBefore(oldEntry.domNode, referenceNode);
+            } else {
+              domElement.appendChild(oldEntry.domNode);
+            }
           }
         } else {
-          // Patch existing child
-          this.patchDOM(domChild, oldChild, newChild);
+          // Create new node
+          const newElement = this.createDOMElement(newChild);
+          if (newElement) {
+            const referenceNode = domElement.childNodes[newIndex];
+            if (referenceNode) {
+              domElement.insertBefore(newElement, referenceNode);
+            } else {
+              domElement.appendChild(newElement);
+            }
+          }
         }
-      }
+      });
+
+      // Remove old nodes that weren't reused
+      oldKeyMap.forEach((entry, key) => {
+        if (!usedOldNodes.has(key) && entry.domNode && entry.domNode.parentNode) {
+          entry.domNode.remove();
+        }
+      });
+
+      // Remove keyless old nodes that weren't matched by index
+      oldIndexMap.forEach((entry, index) => {
+        if (!usedOldNodes.has(`index:${index}`) && entry.domNode && entry.domNode.parentNode) {
+          entry.domNode.remove();
+        }
+      });
     },
     
     // Create DOM element from virtual element
