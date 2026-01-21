@@ -100,45 +100,45 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REND-01 | TBD | Pending |
-| REND-02 | TBD | Pending |
-| REND-03 | TBD | Pending |
-| REND-04 | TBD | Pending |
-| RECON-01 | TBD | Pending |
-| RECON-02 | TBD | Pending |
-| RECON-03 | TBD | Pending |
-| RECON-04 | TBD | Pending |
-| HYDR-01 | TBD | Pending |
-| HYDR-02 | TBD | Pending |
-| HYDR-03 | TBD | Pending |
-| HYDR-04 | TBD | Pending |
-| HYDR-05 | TBD | Pending |
-| HYDR-06 | TBD | Pending |
-| HYDR-07 | TBD | Pending |
-| CLI-01 | TBD | Pending |
-| CLI-02 | TBD | Pending |
-| CLI-03 | TBD | Pending |
-| CLI-04 | TBD | Pending |
-| CLI-05 | TBD | Pending |
-| CLI-06 | TBD | Pending |
-| HMR-01 | TBD | Pending |
-| HMR-02 | TBD | Pending |
-| HMR-03 | TBD | Pending |
-| HMR-04 | TBD | Pending |
-| TS-01 | TBD | Pending |
-| TS-02 | TBD | Pending |
-| TS-03 | TBD | Pending |
-| TS-04 | TBD | Pending |
-| IDE-01 | TBD | Pending |
-| IDE-02 | TBD | Pending |
-| IDE-03 | TBD | Pending |
-| IDE-04 | TBD | Pending |
+| REND-01 | Phase 1: Foundation | Pending |
+| REND-02 | Phase 1: Foundation | Pending |
+| REND-03 | Phase 1: Foundation | Pending |
+| REND-04 | Phase 1: Foundation | Pending |
+| RECON-01 | Phase 1: Foundation | Pending |
+| RECON-02 | Phase 1: Foundation | Pending |
+| RECON-03 | Phase 1: Foundation | Pending |
+| RECON-04 | Phase 1: Foundation | Pending |
+| HYDR-01 | Phase 2: Hydration | Pending |
+| HYDR-02 | Phase 2: Hydration | Pending |
+| HYDR-03 | Phase 2: Hydration | Pending |
+| HYDR-04 | Phase 2: Hydration | Pending |
+| HYDR-05 | Phase 2: Hydration | Pending |
+| HYDR-06 | Phase 2: Hydration | Pending |
+| HYDR-07 | Phase 2: Hydration | Pending |
+| CLI-01 | Phase 3: CLI Scaffolding | Pending |
+| CLI-02 | Phase 3: CLI Scaffolding | Pending |
+| CLI-03 | Phase 3: CLI Scaffolding | Pending |
+| CLI-04 | Phase 3: CLI Scaffolding | Pending |
+| CLI-05 | Phase 3: CLI Scaffolding | Pending |
+| CLI-06 | Phase 3: CLI Scaffolding | Pending |
+| HMR-01 | Phase 4: Hot Module Replacement | Pending |
+| HMR-02 | Phase 4: Hot Module Replacement | Pending |
+| HMR-03 | Phase 4: Hot Module Replacement | Pending |
+| HMR-04 | Phase 4: Hot Module Replacement | Pending |
+| TS-01 | Phase 5: TypeScript | Pending |
+| TS-02 | Phase 5: TypeScript | Pending |
+| TS-03 | Phase 5: TypeScript | Pending |
+| TS-04 | Phase 5: TypeScript | Pending |
+| IDE-01 | Phase 6: IDE Support | Pending |
+| IDE-02 | Phase 6: IDE Support | Pending |
+| IDE-03 | Phase 6: IDE Support | Pending |
+| IDE-04 | Phase 6: IDE Support | Pending |
 
 **Coverage:**
 - v1 requirements: 32 total
-- Mapped to phases: 0
-- Unmapped: 32 ⚠️
+- Mapped to phases: 32
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-21*
-*Last updated: 2026-01-21 after initial definition*
+*Last updated: 2026-01-21 after roadmap creation*
