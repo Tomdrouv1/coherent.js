@@ -3150,3 +3150,108 @@ body:not(:focus-within) #templates-menu {
   color: white;
   border-color: white;
 }
+
+/* ============================================================================
+   Hydration Demo Styles
+   ============================================================================ */
+
+.hydration-demo {
+  margin: 40px 0;
+  padding: 30px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+}
+
+.hydration-demo h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #7cc4ff;
+  font-size: 1.5rem;
+}
+
+.demo-description {
+  color: #9aa4b2;
+  margin-bottom: 20px;
+  font-size: 0.95rem;
+}
+
+.demo-container {
+  background: rgba(15, 20, 32, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+}
+
+.demo-container.hydrated {
+  border-color: rgba(59, 247, 125, 0.3);
+  box-shadow: 0 0 20px rgba(59, 247, 125, 0.1);
+}
+
+.counter-display {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+}
+
+.counter-label {
+  color: #9aa4b2;
+  font-size: 1.1rem;
+}
+
+.counter-value {
+  color: #3bf77d;
+  font-size: 2.5rem;
+  font-weight: 700;
+  font-family: ui-monospace, 'SF Mono', 'Monaco', monospace;
+}
+
+.counter-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.counter-buttons .button {
+  min-width: 60px;
+  font-size: 1.2rem;
+  padding: 10px 20px;
+}
+
+.demo-info {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.demo-info small {
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+
+/* Light theme adjustments */
+[data-theme="light"] .hydration-demo {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .demo-container {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .counter-display {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .counter-value {
+  color: #059669;
+}
+
+[data-theme="light"] .demo-info {
+  border-top-color: rgba(0, 0, 0, 0.1);
+}

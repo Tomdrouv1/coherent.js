@@ -37,6 +37,34 @@ export function Home() {
           ] } }
         ] } },
 
+        // Interactive Hydration Demo
+        { section: { className: 'hydration-demo', children: [
+          { h3: { text: 'Live Hydration Demo' } },
+          { p: { className: 'demo-description', text: 'This counter uses Phase 2 hydration: event delegation, state serialization, and the clean hydrate() API.' } },
+          {
+            div: {
+              id: 'counter-demo',
+              className: 'demo-container',
+              'data-coherent-hydrate': 'CounterComponent',
+              'data-state': 'eyUyMmNvdW50JTIyJTNBMH0=',  // Base64 encoded {"count":0}
+              children: [
+                { div: { className: 'counter-display', children: [
+                  { span: { className: 'counter-label', text: 'Count: ' } },
+                  { span: { id: 'counter-value', className: 'counter-value', text: '0' } }
+                ] } },
+                { div: { className: 'counter-buttons', children: [
+                  { button: { id: 'decrement-btn', className: 'button', text: '−' } },
+                  { button: { id: 'increment-btn', className: 'button primary', text: '+' } },
+                  { button: { id: 'reset-btn', className: 'button', text: 'Reset' } }
+                ] } },
+                { div: { className: 'demo-info', children: [
+                  { small: { text: 'Check DevTools console for hydration logs. State persists in data-state attribute.' } }
+                ] } }
+              ]
+            }
+          }
+        ] } },
+
         // Quick links
         { section: { className: 'quick-links', children: [
           { h3: { text: 'Quick Links' } },

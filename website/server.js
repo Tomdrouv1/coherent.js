@@ -177,10 +177,11 @@ function renderPageRoute(currentPath, PageComponent, title, scripts = []) {
 
 // Create router with object-based route definitions
 const router = createRouter({
-  // Root route
+  // Root route - with hydration demo scripts
   '/': {
     GET: {
-      handler: renderPageRoute('/', Home, 'Coherent.js - Modern Object-Based UI Framework')
+      handler: renderPageRoute('/', Home, 'Coherent.js - Modern Object-Based UI Framework',
+        ['/coherent-hydrate.js', '/counter-demo.js'])
     }
   },
 
