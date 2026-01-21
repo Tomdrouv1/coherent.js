@@ -195,6 +195,30 @@ class HTMLRenderer extends BaseRenderer {
                         return this.renderComponent(result, options, depth + 1, [...path, '()']);
                     }
                 case 'array':
+                    // Development mode warning for missing keys
+                    if (typeof process !== 'undefined' &&
+                        process.env &&
+                        process.env.NODE_ENV !== 'production' &&
+                        value.length > 1) {
+
+                        const missingKeyCount = value.filter((child) => {
+                            if (child && typeof child === 'object' && !Array.isArray(child)) {
+                                const tagName = Object.keys(child)[0];
+                                const props = child[tagName];
+                                return props && typeof props === 'object' && props.key === undefined;
+                            }
+                            return false;  // primitives don't need keys
+                        }).length;
+
+                        if (missingKeyCount > 0) {
+                            console.warn(
+                                `[Coherent.js] Array of ${value.length} elements at ${formatRenderPath(path)} ` +
+                                `has ${missingKeyCount} items missing "key" props. ` +
+                                `Keys help identify which items changed for efficient updates. ` +
+                                `Add unique key props like: { div: { key: 'unique-id', ... } }`
+                            );
+                        }
+                    }
                     return value.map((child, index) => this.renderComponent(child, options, depth + 1, [...path, `[${index}]`])).join('');
                 case 'element':
                     {
@@ -337,7 +361,10 @@ class HTMLRenderer extends BaseRenderer {
         }
 
         // Extract props and children directly from element content
-        const { children, text, ...attributes } = element || {};
+        // Note: key is extracted but NOT rendered as an HTML attribute
+        // It's used for reconciliation identity, not DOM output
+        // html prop is extracted to prevent it from being rendered as an attribute
+        const { children, text, key: _key, html: _rawHtml, ...attributes } = element || {};
 
         // Build opening tag with attributes
         const attributeString = formatAttributes(attributes);
