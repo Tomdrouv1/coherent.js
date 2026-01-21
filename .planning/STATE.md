@@ -10,29 +10,29 @@ See: .planning/PROJECT.md (updated 2026-01-21)
 ## Current Position
 
 Phase: 2 of 6 (Hydration)
-Plan: 3/4 plans complete in Phase 2
-Status: In progress
-Last activity: 2026-01-21 - Completed 02-03-PLAN.md (Mismatch Detection)
+Plan: 4/4 plans complete in Phase 2
+Status: Phase complete
+Last activity: 2026-01-21 - Completed 02-04-PLAN.md (Hydrate API)
 
-Progress: [███░░░░░░░] 33% (6 of 18 total plans)
+Progress: [████░░░░░░] 39% (7 of 18 total plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
+- Total plans completed: 7
 - Average duration: 7 min
-- Total execution time: 41 min
+- Total execution time: 46 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-foundation | 3 | 27 min | 9 min |
-| 02-hydration | 3 | 14 min | 5 min |
+| 02-hydration | 4 | 19 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-03 (8 min), 02-02 (2 min), 02-01 (8 min), 02-03 (4 min)
-- Trend: Faster execution for focused plans
+- Last 5 plans: 02-02 (2 min), 02-01 (8 min), 02-03 (4 min), 02-04 (5 min)
+- Trend: Consistent 5min for focused hydration plans
 
 *Updated after each plan completion*
 
@@ -65,6 +65,10 @@ Recent decisions affecting current work:
 | 2026-01-21 | 02-03 | Recursive depth-first comparison | Matches tree structure, precise paths |
 | 2026-01-21 | 02-03 | Filter whitespace text nodes | Prevents false positives |
 | 2026-01-21 | 02-03 | Warning by default, strict optional | Non-breaking dev, strict for CI |
+| 2026-01-21 | 02-04 | Control object pattern | Matches React/Preact convention |
+| 2026-01-21 | 02-04 | Dev-mode mismatch detection | Zero prod overhead, catches issues early |
+| 2026-01-21 | 02-04 | initialState overrides extracted | Explicit intent beats implicit extraction |
+| 2026-01-21 | 02-04 | legacyHydrate alias | Zero breaking changes for existing users |
 
 ### Pending Todos
 
@@ -76,6 +80,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-21T17:31:00Z
-Stopped at: Completed 02-03-PLAN.md (Mismatch Detection)
+Last session: 2026-01-21T17:40:00Z
+Stopped at: Completed 02-04-PLAN.md (Hydrate API) - Phase 2 complete
 Resume file: None
