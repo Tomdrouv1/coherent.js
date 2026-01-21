@@ -69,6 +69,11 @@ export class RenderingError extends CoherentError {
             ]
         });
         this.name = 'RenderingError';
+
+        // Add renderPath for debugging if available in context
+        if (context && context.path) {
+            this.renderPath = context.path;
+        }
     }
 }
 

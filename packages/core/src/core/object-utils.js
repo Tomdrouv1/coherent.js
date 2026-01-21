@@ -315,6 +315,46 @@ export function validateComponent(component, path = 'root') {
 }
 
 /**
+ * Validate component without throwing - returns { valid: boolean, reason?: string, path?: string }
+ * Use this in render contexts where graceful degradation is preferred
+ */
+export function validateComponentGraceful(component, path = 'root') {
+    if (component === null || component === undefined) {
+        return { valid: false, reason: 'Component is null or undefined', path };
+    }
+
+    // Allow strings, numbers, booleans as text content
+    if (['string', 'number', 'boolean'].includes(typeof component)) {
+        return { valid: true };
+    }
+
+    // Allow functions (will be evaluated during render)
+    if (typeof component === 'function') {
+        return { valid: true };
+    }
+
+    // Handle arrays
+    if (Array.isArray(component)) {
+        for (let i = 0; i < component.length; i++) {
+            const result = validateComponentGraceful(component[i], `${path}[${i}]`);
+            if (!result.valid) return result;
+        }
+        return { valid: true };
+    }
+
+    // Handle objects
+    if (typeof component === 'object') {
+        const keys = Object.keys(component);
+        if (keys.length === 0) {
+            return { valid: false, reason: 'Empty object', path };
+        }
+        return { valid: true };
+    }
+
+    return { valid: false, reason: `Invalid type: ${typeof component}`, path };
+}
+
+/**
  * Check if an object follows Coherent.js object syntax
  */
 export function isCoherentObject(obj) {
