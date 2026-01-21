@@ -46,14 +46,15 @@ Plans:
   1. Development mode detects server/client mismatch and shows exact location of divergence
   2. Event handlers work after hydration without per-element attachment (delegation pattern)
   3. Event handlers survive DOM updates without needing re-attachment
-  4. Component state serializes to a single `<script>` tag and deserializes correctly on client
+  4. Component state serializes to data-state attribute and deserializes correctly on client
   5. `hydrate()` API is simple: one function call with component and container
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
-- [ ] 02-03: TBD
+- [ ] 02-01-PLAN.md — Event delegation system with document-level listeners
+- [ ] 02-02-PLAN.md — State serialization with base64 encoding
+- [ ] 02-03-PLAN.md — Mismatch detection for development mode
+- [ ] 02-04-PLAN.md — Clean hydrate() API integrating all modules
 
 ### Phase 3: CLI Scaffolding
 **Goal**: `coherent create` produces immediately runnable fullstack projects using current framework APIs
@@ -124,7 +125,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete | 2026-01-21 |
-| 2. Hydration | 0/3 | Not started | - |
+| 2. Hydration | 0/4 | Planned | - |
 | 3. CLI Scaffolding | 0/2 | Not started | - |
 | 4. Hot Module Replacement | 0/2 | Not started | - |
 | 5. TypeScript | 0/2 | Not started | - |
@@ -132,4 +133,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 ---
 *Roadmap created: 2026-01-21*
-*Last updated: 2026-01-21 (Phase 1 complete)*
+*Last updated: 2026-01-21 (Phase 2 planned)*
