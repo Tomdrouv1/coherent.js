@@ -82,11 +82,12 @@ Plans:
   2. Form inputs, scroll position, and component state survive HMR updates
   3. Old module effects (timers, listeners) are cleaned up on HMR (no duplicates)
   4. HMR errors display in browser with file, line, and error message
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 04-01: TBD
-- [ ] 04-02: TBD
+- [ ] 04-01-PLAN.md — Core HMR infrastructure (cleanup tracker, state capturer)
+- [ ] 04-02-PLAN.md — UI components (error overlay, connection indicator)
+- [ ] 04-03-PLAN.md — HMR client integration and exports
 
 ### Phase 5: TypeScript
 **Goal**: All public APIs have accurate TypeScript definitions that match runtime behavior
@@ -128,10 +129,10 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 1. Foundation | 3/3 | Complete | 2026-01-21 |
 | 2. Hydration | 4/4 | Complete | 2026-01-21 |
 | 3. CLI Scaffolding | 3/3 | Complete | 2026-01-22 |
-| 4. Hot Module Replacement | 0/2 | Not started | - |
+| 4. Hot Module Replacement | 0/3 | Planned | - |
 | 5. TypeScript | 0/2 | Not started | - |
 | 6. IDE Support | 0/2 | Not started | - |
 
 ---
 *Roadmap created: 2026-01-21*
-*Last updated: 2026-01-22 (Phase 3 complete)*
+*Last updated: 2026-01-22 (Phase 4 planned)*
