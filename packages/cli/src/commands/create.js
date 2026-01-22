@@ -88,12 +88,8 @@ export const createCommand = new Command('create')
           name: 'template',
           message: 'Which template would you like to use?',
           choices: [
-            { title: '🏃‍♂️ Basic App', value: 'basic', description: 'Simple Coherent.js app with routing' },
-            { title: '🌐 Full Stack', value: 'fullstack', description: 'API + SSR with database integration' },
-            { title: '⚡ Express Integration', value: 'express', description: 'Coherent.js with Express.js' },
-            { title: '🚀 Fastify Integration', value: 'fastify', description: 'Coherent.js with Fastify' },
-            { title: '📱 Component Library', value: 'components', description: 'Reusable component library' },
-            { title: '🎨 Custom Setup', value: 'custom', description: 'Choose your own runtime and packages' }
+            { title: '🏃‍♂️ Basic App', value: 'basic', description: 'Simple SSR app with routing' },
+            { title: '🌐 Full Stack', value: 'fullstack', description: 'API + SSR with database and auth options' }
           ],
           initial: 0
         });
@@ -136,7 +132,7 @@ export const createCommand = new Command('create')
     }
 
     // Runtime selection for applicable templates
-    if ((template === 'custom' || template === 'basic' || template === 'fullstack' || template === 'components') && !options.skipPrompts) {
+    if ((template === 'basic' || template === 'fullstack') && !options.skipPrompts) {
       const runtimeResponse = await prompts({
         type: 'select',
         name: 'runtime',
@@ -156,14 +152,10 @@ export const createCommand = new Command('create')
       }
 
       runtime = runtimeResponse.runtime;
-    } else if (template === 'express') {
-      runtime = 'express';
-    } else if (template === 'fastify') {
-      runtime = 'fastify';
     }
 
-    // Fullstack and Custom templates get additional options
-    if (template === 'fullstack' || template === 'custom') {
+    // Fullstack template gets additional options
+    if (template === 'fullstack') {
       // Database selection
       if (!options.skipPrompts) {
         const dbResponse = await prompts({
@@ -230,8 +222,8 @@ export const createCommand = new Command('create')
 
         auth = authResponse.auth === 'none' ? null : authResponse.auth;
       }
-    } else if (template === 'basic' || template === 'components') {
-      // Basic and components get simplified package selection
+    } else if (template === 'basic' && !options.skipPrompts) {
+      // Basic template gets simplified package selection
       const pkgResponse = await prompts({
         type: 'multiselect',
         name: 'packages',
