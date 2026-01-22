@@ -116,11 +116,11 @@ Plans:
   2. Ctrl+Click on Coherent.js imports navigates to source definitions
   3. Invalid component syntax shows red squiggles before running code
   4. VS Code extension is published on marketplace and documented in README
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 06-01: TBD
-- [ ] 06-02: TBD
+- [ ] 06-01-PLAN.md — LSP server with Coherent object analysis and validation
+- [ ] 06-02-PLAN.md — VS Code extension with snippets and marketplace publish
 
 ## Progress
 
@@ -138,4 +138,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 ---
 *Roadmap created: 2026-01-21*
-*Last updated: 2026-01-22 (Phase 5 complete)*
+*Last updated: 2026-01-22 (Phase 6 planned)*
