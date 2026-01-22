@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-21)
 
 **Core value:** A developer can run `coherent create my-app`, get a working fullstack app with auth and database, and start building in 5 minutes
-**Current focus:** Phase 4 - Hot Module Replacement (COMPLETE)
+**Current focus:** Phase 5 - TypeScript (IN PROGRESS)
 
 ## Current Position
 
-Phase: 4 of 6 (Hot Module Replacement)
-Plan: 3/3 plans complete in Phase 4
-Status: Phase complete
-Last activity: 2026-01-22 - Phase 4 verified and approved
+Phase: 5 of 6 (TypeScript)
+Plan: 1/3 plans complete in Phase 5
+Status: In progress
+Last activity: 2026-01-22 - Completed 05-01-PLAN.md
 
-Progress: [███████░░░] 72% (13 of 18 total plans)
+Progress: [████████░░] 78% (14 of 18 total plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13
+- Total plans completed: 14
 - Average duration: 7 min
-- Total execution time: 87 min
+- Total execution time: 91 min
 
 **By Phase:**
 
@@ -31,9 +31,10 @@ Progress: [███████░░░] 72% (13 of 18 total plans)
 | 02-hydration | 4 | 19 min | 5 min |
 | 03-cli-scaffolding | 3 | 17 min | 6 min |
 | 04-hot-module-replacement | 3 | 24 min | 8 min |
+| 05-typescript | 1 | 4 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-03 (5 min), 04-01 (7 min), 04-02 (10 min), 04-03 (7 min)
+- Last 5 plans: 04-01 (7 min), 04-02 (10 min), 04-03 (7 min), 05-01 (4 min)
 - Trend: Consistent performance
 
 *Updated after each plan completion*
@@ -96,6 +97,10 @@ Recent decisions affecting current work:
 | 2026-01-22 | 04-03 | Full page reload on reconnect after disconnect | Server may have restarted |
 | 2026-01-22 | 04-03 | State capture/restore wraps entire update | Form inputs survive even on fallback |
 | 2026-01-22 | 04-03 | Backward compatible deprecation | Re-export + IIFE auto-init |
+| 2026-01-22 | 05-01 | StrictCoherentElement opt-in | Backward compatible, users choose strict typing |
+| 2026-01-22 | 05-01 | Boolean not allowed in children | Use null/undefined for conditionals |
+| 2026-01-22 | 05-01 | Void elements cannot have children | Elements like img, input, br have children omitted |
+| 2026-01-22 | 05-01 | Event handlers accept string or function | Support both SSR (string) and hydration (function) |
 
 ### Pending Todos
 
@@ -107,6 +112,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-22T10:42:55Z
-Stopped at: Completed 04-03-PLAN.md (HMR Client Integration)
+Last session: 2026-01-22T13:46:51Z
+Stopped at: Completed 05-01-PLAN.md (Strict HTML Element Types)
 Resume file: None
