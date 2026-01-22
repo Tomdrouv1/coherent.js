@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-21)
 
 **Core value:** A developer can run `coherent create my-app`, get a working fullstack app with auth and database, and start building in 5 minutes
-**Current focus:** Phase 5 - TypeScript (IN PROGRESS)
+**Current focus:** Phase 5 - TypeScript (COMPLETE)
 
 ## Current Position
 
 Phase: 5 of 6 (TypeScript)
-Plan: 2/3 plans complete in Phase 5
-Status: In progress
-Last activity: 2026-01-22 - Completed 05-02-PLAN.md
+Plan: 3/3 plans complete in Phase 5
+Status: Phase complete
+Last activity: 2026-01-22 - Completed 05-03-PLAN.md
 
-Progress: [████████░░] 83% (15 of 18 total plans)
+Progress: [█████████░] 89% (16 of 18 total plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15
+- Total plans completed: 16
 - Average duration: 6 min
-- Total execution time: 96 min
+- Total execution time: 103 min
 
 **By Phase:**
 
@@ -31,10 +31,10 @@ Progress: [████████░░] 83% (15 of 18 total plans)
 | 02-hydration | 4 | 19 min | 5 min |
 | 03-cli-scaffolding | 3 | 17 min | 6 min |
 | 04-hot-module-replacement | 3 | 24 min | 8 min |
-| 05-typescript | 2 | 9 min | 5 min |
+| 05-typescript | 3 | 16 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-02 (10 min), 04-03 (7 min), 05-01 (4 min), 05-02 (5 min)
+- Last 5 plans: 04-03 (7 min), 05-01 (4 min), 05-02 (5 min), 05-03 (7 min)
 - Trend: Consistent performance
 
 *Updated after each plan completion*
@@ -104,6 +104,10 @@ Recent decisions affecting current work:
 | 2026-01-22 | 05-02 | @ts-expect-error placement above error line | TypeScript requires directive directly above erroneous line |
 | 2026-01-22 | 05-02 | void unused variables | Suppress lint warnings while preserving type checks |
 | 2026-01-22 | 05-02 | Comprehensive invalid patterns | Dual purpose: testing and documentation |
+| 2026-01-22 | 05-03 | Client imports from @coherent.js/core | Single source of truth for element types |
+| 2026-01-22 | 05-03 | Specific DOM event handler types | Better type inference for event properties |
+| 2026-01-22 | 05-03 | Generic registerEventHandler | Allows typed state and specific event types |
+| 2026-01-22 | 05-03 | SerializableState strict JSON-safe | Prevents runtime errors during serialization |
 
 ### Pending Todos
 
@@ -115,6 +119,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-22T13:55:32Z
-Stopped at: Completed 05-02-PLAN.md (Type Testing Infrastructure)
+Last session: 2026-01-22T13:57:33Z
+Stopped at: Completed 05-03-PLAN.md (Client Package Types)
 Resume file: None
