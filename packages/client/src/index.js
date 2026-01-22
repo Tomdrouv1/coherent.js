@@ -43,3 +43,20 @@ export {
   autoHydrate,
   registerEventHandler,
 } from './hydration.js';
+
+// HMR client (Phase 4)
+export {
+  HMRClient,
+  hmrClient,
+  ModuleTracker,
+  moduleTracker,
+  createHotContext,
+  CleanupTracker,
+  cleanupTracker,
+  StateCapturer,
+  stateCapturer,
+  ErrorOverlay,
+  errorOverlay,
+  ConnectionIndicator,
+  connectionIndicator,
+} from './hmr/index.js';
