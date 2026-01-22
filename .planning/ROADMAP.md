@@ -98,11 +98,14 @@ Plans:
   2. Component object syntax gets accurate autocomplete (tagName, attributes, children)
   3. Event handler types match actual runtime event objects
   4. Type tests verify definitions match runtime behavior (no silent mismatches)
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 05-01: TBD
-- [ ] 05-02: TBD
+- [ ] 05-01-PLAN.md — Core element types with strict per-element attributes
+- [ ] 05-02-PLAN.md — Core package type tests with Vitest expectTypeOf
+- [ ] 05-03-PLAN.md — Client package types and type tests
+- [ ] 05-04-PLAN.md — Integration package types (api, database, adapters)
+- [ ] 05-05-PLAN.md — Utility package types (forms, i18n, testing, etc.)
 
 ### Phase 6: IDE Support
 **Goal**: VS Code provides intelligent autocomplete, go-to-definition, and error highlighting for Coherent.js
@@ -130,9 +133,9 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 2. Hydration | 4/4 | Complete | 2026-01-21 |
 | 3. CLI Scaffolding | 3/3 | Complete | 2026-01-22 |
 | 4. Hot Module Replacement | 3/3 | Complete | 2026-01-22 |
-| 5. TypeScript | 0/2 | Not started | - |
+| 5. TypeScript | 0/5 | Not started | - |
 | 6. IDE Support | 0/2 | Not started | - |
 
 ---
 *Roadmap created: 2026-01-21*
-*Last updated: 2026-01-22 (Phase 4 complete)*
+*Last updated: 2026-01-22 (Phase 5 planned)*
