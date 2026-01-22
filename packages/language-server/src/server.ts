@@ -25,6 +25,9 @@ import { TextDocument } from 'vscode-languageserver-textdocument';
 
 // Import providers
 import { registerDiagnosticProvider } from './providers/diagnostics.js';
+import { registerCompletionProvider } from './providers/completion.js';
+import { registerHoverProvider } from './providers/hover.js';
+import { registerCodeActionProvider } from './providers/code-actions.js';
 
 // Create connection using all proposed features
 export const connection = createConnection(ProposedFeatures.all);
@@ -97,6 +100,9 @@ connection.onInitialized(() => {
 
   // Register providers
   registerDiagnosticProvider(connection, documents);
+  registerCompletionProvider(connection, documents);
+  registerHoverProvider(connection, documents);
+  registerCodeActionProvider(connection, documents);
 
   console.error('[coherent-lsp] Server initialized successfully');
 });
