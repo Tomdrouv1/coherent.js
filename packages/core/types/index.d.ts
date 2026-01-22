@@ -5,6 +5,9 @@
  * @version 1.0.0-beta.1
  */
 
+// Re-export strict element types
+export * from './elements';
+
 // ============================================================================
 // Basic Types
 // ============================================================================
@@ -50,7 +53,26 @@ export interface ElementProps extends HTMLAttributes {
   text?: Primitive;
 }
 
-/** A Coherent.js HTML element definition */
+/**
+ * Permissive element type - allows any tag name and any attributes.
+ * For strict type checking with per-element attributes, use StrictCoherentElement.
+ *
+ * @example
+ * ```typescript
+ * // Permissive - accepts any attributes on any element
+ * const element: CoherentElement = {
+ *   div: { checked: true }  // No error (but incorrect HTML)
+ * };
+ *
+ * // For strict checking, use StrictCoherentElement instead
+ * import { StrictCoherentElement } from '@coherent.js/core';
+ * const strictElement: StrictCoherentElement = {
+ *   div: { checked: true }  // Type error! checked not valid on div
+ * };
+ * ```
+ *
+ * @see StrictCoherentElement for strict per-element attribute validation
+ */
 export interface CoherentElement {
   [tagName: string]: ElementProps | string | undefined;
 
@@ -168,10 +190,14 @@ export interface CoherentElement {
   wbr?: ElementProps | string;
 }
 
-/** Valid nodes that can be rendered */
+/**
+ * Valid nodes that can be rendered.
+ * Accepts both permissive CoherentElement and strict StrictCoherentElement.
+ */
 export type CoherentNode =
   | Primitive
   | CoherentElement
+  | StrictCoherentElement
   | CoherentNode[]
   | CoherentComponent
   | ContextProvider
