@@ -6,7 +6,7 @@
  */
 
 import { Application, RequestHandler, Request, Response, NextFunction } from 'express';
-import { CoherentNode } from '@coherent/core';
+import { CoherentNode, RenderOptions } from '@coherent.js/core';
 
 // ============================================================================
 // Express Engine Types
@@ -45,7 +45,7 @@ export interface CoherentExpressOptions {
   viewsDirectory?: string;
   cache?: boolean;
   development?: boolean;
-  renderOptions?: {
+  renderOptions?: RenderOptions & {
     pretty?: boolean;
     doctype?: string;
     compileDebug?: boolean;
@@ -55,7 +55,7 @@ export interface CoherentExpressOptions {
 
 /** Express application with Coherent.js support */
 export interface CoherentExpressApplication extends Application {
-  renderCoherent(view: CoherentNode, options?: any): void;
+  renderCoherent(view: CoherentNode, options?: RenderOptions): void;
 }
 
 /** Enhanced Express request with Coherent.js utilities */
@@ -66,7 +66,7 @@ export interface CoherentRequest extends Request {
 
 /** Enhanced Express response with Coherent.js utilities */
 export interface CoherentResponse extends Response {
-  renderCoherent(component: CoherentNode, options?: any): void;
+  renderCoherent(component: CoherentNode, options?: RenderOptions): void;
   sendComponent<P = any>(component: (props: P) => CoherentNode, props?: P): void;
   streamComponent<P = any>(component: (props: P) => CoherentNode, props?: P): void;
 }
@@ -77,6 +77,24 @@ export interface CoherentResponse extends Response {
 
 /** Coherent middleware factory */
 export type CoherentMiddleware = (options?: CoherentExpressOptions) => RequestHandler;
+
+/**
+ * Create middleware that enables Coherent.js rendering on Express responses.
+ *
+ * @example
+ * ```typescript
+ * import express from 'express';
+ * import { coherentMiddleware } from '@coherent.js/express';
+ *
+ * const app = express();
+ * app.use(coherentMiddleware({ development: true }));
+ *
+ * app.get('/', (req, res) => {
+ *   res.renderCoherent({ div: { text: 'Hello World' } });
+ * });
+ * ```
+ */
+export function coherentMiddleware(options?: CoherentExpressOptions): RequestHandler;
 
 /** Component rendering middleware options */
 export interface ComponentMiddlewareOptions {
@@ -208,6 +226,18 @@ export function ssrMiddleware(config?: SSRConfig): RequestHandler;
 /** Development middleware with HMR */
 export function devMiddleware(options?: DevServerOptions & HMRConfig): RequestHandler;
 
+/**
+ * Render a CoherentNode to HTML string.
+ *
+ * @example
+ * ```typescript
+ * import { renderComponent } from '@coherent.js/express';
+ *
+ * const html = renderComponent({ div: { text: 'Hello' } });
+ * ```
+ */
+export function renderComponent(component: CoherentNode, options?: RenderOptions): string;
+
 // ============================================================================
 // Utility Functions
 // ============================================================================
@@ -236,12 +266,14 @@ declare const coherentExpress: {
   setupCoherent: typeof setupCoherent;
   createComponentRoute: typeof createComponentRoute;
   coherentStatic: typeof coherentStatic;
+  coherentMiddleware: typeof coherentMiddleware;
   componentMiddleware: typeof componentMiddleware;
   ssrMiddleware: typeof ssrMiddleware;
   devMiddleware: typeof devMiddleware;
   createCoherentApp: typeof createCoherentApp;
   registerRoutes: typeof registerRoutes;
   createErrorHandler: typeof createErrorHandler;
+  renderComponent: typeof renderComponent;
 };
 
 export default coherentExpress;

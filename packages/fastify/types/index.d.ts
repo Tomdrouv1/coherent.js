@@ -5,8 +5,14 @@
  * @version 1.0.0-beta.1
  */
 
-import { FastifyInstance, FastifyPluginOptions, FastifyRequest, FastifyReply, FastifyPluginCallback } from 'fastify';
-import { CoherentNode } from '@coherent/core';
+import {
+  FastifyInstance,
+  FastifyPluginOptions,
+  FastifyRequest,
+  FastifyReply,
+  FastifyPluginCallback
+} from 'fastify';
+import { CoherentNode, RenderOptions } from '@coherent.js/core';
 
 // ============================================================================
 // Fastify Plugin Types
@@ -18,11 +24,15 @@ export interface CoherentFastifyOptions extends FastifyPluginOptions {
   template?: string;
   cache?: boolean;
   development?: boolean;
-  renderOptions?: {
+  renderOptions?: RenderOptions & {
     pretty?: boolean;
     doctype?: string;
   };
-  errorHandler?: (error: Error, request: FastifyRequest, reply: FastifyReply) => void | Promise<void>;
+  errorHandler?: (
+    error: Error,
+    request: FastifyRequest,
+    reply: FastifyReply
+  ) => void | Promise<void>;
 }
 
 /** Enhanced Fastify reply with Coherent.js methods */
@@ -42,22 +52,15 @@ export interface CoherentFastifyRequest extends FastifyRequest {
   getCoherentState?(): any;
 }
 
-/** Render options for Coherent.js components */
-export interface RenderOptions {
-  enablePerformanceMonitoring?: boolean;
-  template?: string;
-  cache?: boolean;
-  minify?: boolean;
-  pretty?: boolean;
-  doctype?: string;
-}
-
 /** Fastify instance with Coherent.js support */
 export interface CoherentFastifyInstance extends FastifyInstance {
   coherent: {
     render(component: CoherentNode, options?: RenderOptions): string;
     renderToStream(component: CoherentNode, options?: RenderOptions): ReadableStream;
-    registerComponent(name: string, component: CoherentNode | ((props: any) => CoherentNode)): void;
+    registerComponent(
+      name: string,
+      component: CoherentNode | ((props: any) => CoherentNode)
+    ): void;
     getComponent(name: string): CoherentNode | ((props: any) => CoherentNode) | undefined;
   };
 }
@@ -188,12 +191,18 @@ export interface CoherentDecorators {
   reply: {
     isCoherentObject: (obj: any) => boolean;
     coherent: (component: CoherentNode, options?: RenderOptions) => void;
-    renderComponent: <P = any>(component: (props: P) => CoherentNode, props?: P) => string;
+    renderComponent: <P = any>(
+      component: (props: P) => CoherentNode,
+      props?: P
+    ) => string;
   };
   instance: {
     coherent: {
       render: (component: CoherentNode, options?: RenderOptions) => string;
-      renderToStream: (component: CoherentNode, options?: RenderOptions) => ReadableStream;
+      renderToStream: (
+        component: CoherentNode,
+        options?: RenderOptions
+      ) => ReadableStream;
       registry: ComponentRegistry;
     };
   };
@@ -252,7 +261,25 @@ export interface FastifyHMRConfig {
 // Main Functions
 // ============================================================================
 
-/** Coherent.js Fastify plugin */
+/**
+ * Coherent.js Fastify plugin.
+ *
+ * @example
+ * ```typescript
+ * import Fastify from 'fastify';
+ * import { fastifyCoherent } from '@coherent.js/fastify';
+ *
+ * const app = Fastify();
+ * app.register(fastifyCoherent, { development: true });
+ *
+ * app.get('/', (request, reply) => {
+ *   reply.coherent({ div: { text: 'Hello World' } });
+ * });
+ * ```
+ */
+export const fastifyCoherent: CoherentFastifyPlugin;
+
+/** @deprecated Use fastifyCoherent instead */
 export const coherentFastify: CoherentFastifyPlugin;
 
 /** Setup Coherent.js with Fastify instance */
@@ -309,7 +336,10 @@ export function isCoherentObject(obj: any): boolean;
 export function renderComponent(component: CoherentNode, options?: RenderOptions): string;
 
 /** Render component to stream */
-export function renderToStream(component: CoherentNode, options?: RenderOptions): ReadableStream;
+export function renderToStream(
+  component: CoherentNode,
+  options?: RenderOptions
+): ReadableStream;
 
 /** Cache utilities */
 export const cache: {
@@ -339,6 +369,7 @@ export function isCoherentInstance(fastify: FastifyInstance): fastify is Coheren
 // ============================================================================
 
 declare const coherentFastifyPlugin: {
+  fastifyCoherent: typeof fastifyCoherent;
   coherentFastify: typeof coherentFastify;
   setupCoherent: typeof setupCoherent;
   createHandler: typeof createHandler;

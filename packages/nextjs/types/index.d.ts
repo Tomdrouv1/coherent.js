@@ -5,8 +5,14 @@
  * @version 1.0.0-beta.1
  */
 
-import { NextApiRequest, NextApiResponse, NextPage, GetServerSideProps, GetStaticProps } from 'next';
-import { CoherentNode } from '@coherent/core';
+import {
+  NextApiRequest,
+  NextApiResponse,
+  NextPage,
+  GetServerSideProps,
+  GetStaticProps
+} from 'next';
+import { CoherentNode, RenderOptions } from '@coherent.js/core';
 
 // ============================================================================
 // Next.js Integration Types
@@ -44,7 +50,7 @@ export interface CoherentApiRequest extends NextApiRequest {
 /** Enhanced Next.js API response */
 export interface CoherentApiResponse extends NextApiResponse {
   sendComponent<P = any>(component: (props: P) => CoherentNode, props?: P): void;
-  renderCoherent(component: CoherentNode, options?: any): void;
+  renderCoherent(component: CoherentNode, options?: RenderOptions): void;
 }
 
 // ============================================================================
@@ -116,7 +122,10 @@ export interface NextSSRContext {
 /** Enhanced GetServerSideProps with Coherent.js support */
 export type CoherentGetServerSideProps<P = CoherentPageProps> = (
   context: NextSSRContext & {
-    renderComponent: <CP = any>(component: (props: CP) => CoherentNode, props?: CP) => string;
+    renderComponent: <CP = any>(
+      component: (props: CP) => CoherentNode,
+      props?: CP
+    ) => string;
     coherentState: any;
     setCoherentState: (state: any) => void;
   }
@@ -136,7 +145,10 @@ export type CoherentGetStaticProps<P = CoherentPageProps> = (
     locales?: string[];
     defaultLocale?: string;
   } & {
-    renderComponent: <CP = any>(component: (props: CP) => CoherentNode, props?: CP) => string;
+    renderComponent: <CP = any>(
+      component: (props: CP) => CoherentNode,
+      props?: CP
+    ) => string;
   }
 ) => Promise<{
   props: P;
@@ -172,7 +184,18 @@ export interface ApiMiddlewareOptions {
   };
 }
 
-/** API route handler with Coherent.js support */
+/**
+ * API route handler with Coherent.js support.
+ *
+ * @example
+ * ```typescript
+ * import { coherentApiHandler } from '@coherent.js/nextjs';
+ *
+ * export default coherentApiHandler((req, res) => {
+ *   res.renderCoherent({ div: { text: 'Hello from API' } });
+ * });
+ * ```
+ */
 export type CoherentApiHandler = (
   req: CoherentApiRequest,
   res: CoherentApiResponse
@@ -246,7 +269,22 @@ export interface BuildStats {
 // Main Functions
 // ============================================================================
 
-/** Create Coherent.js Next.js configuration */
+/**
+ * Create Coherent.js Next.js configuration.
+ *
+ * @example
+ * ```typescript
+ * // next.config.js
+ * const { withCoherent } = require('@coherent.js/nextjs');
+ *
+ * module.exports = withCoherent({
+ *   coherent: {
+ *     ssr: true,
+ *     hydration: true
+ *   }
+ * });
+ * ```
+ */
 export function withCoherent(nextConfig?: any): CoherentNextConfig;
 
 /** Create page component with Coherent.js support */
@@ -264,6 +302,21 @@ export function createApiRoute(
   handler: CoherentApiHandler,
   options?: ApiMiddlewareOptions
 ): CoherentApiHandler;
+
+/**
+ * Wrap an API handler with Coherent.js rendering support.
+ *
+ * @example
+ * ```typescript
+ * import { coherentApiHandler } from '@coherent.js/nextjs';
+ *
+ * export default coherentApiHandler((req, res) => {
+ *   const component = { div: { text: `Hello ${req.query.name}` } };
+ *   res.renderCoherent(component);
+ * });
+ * ```
+ */
+export function coherentApiHandler(handler: CoherentApiHandler): CoherentApiHandler;
 
 /** Create layout component */
 export function createLayout(
@@ -286,10 +339,43 @@ export function withServerSideProps<P = CoherentPageProps>(
   getProps: CoherentGetServerSideProps<P>
 ): GetServerSideProps<P>;
 
+/**
+ * Wrap getServerSideProps with Coherent.js rendering utilities.
+ *
+ * @example
+ * ```typescript
+ * import { withCoherentProps } from '@coherent.js/nextjs';
+ *
+ * export const getServerSideProps = withCoherentProps(async (ctx) => {
+ *   return {
+ *     props: {
+ *       title: 'My Page',
+ *       content: ctx.renderComponent(MyComponent, { data })
+ *     }
+ *   };
+ * });
+ * ```
+ */
+export function withCoherentProps<P = CoherentPageProps>(
+  getProps: CoherentGetServerSideProps<P>
+): GetServerSideProps<P>;
+
 /** Enhanced GetStaticProps */
 export function withStaticProps<P = CoherentPageProps>(
   getProps: CoherentGetStaticProps<P>
 ): GetStaticProps<P>;
+
+/**
+ * Render a CoherentNode to HTML string.
+ *
+ * @example
+ * ```typescript
+ * import { renderToString } from '@coherent.js/nextjs';
+ *
+ * const html = renderToString({ div: { text: 'Hello' } });
+ * ```
+ */
+export function renderToString(component: CoherentNode, options?: RenderOptions): string;
 
 // ============================================================================
 // Utility Functions
@@ -315,11 +401,14 @@ declare const coherentNext: {
   withCoherent: typeof withCoherent;
   createPage: typeof createPage;
   createApiRoute: typeof createApiRoute;
+  coherentApiHandler: typeof coherentApiHandler;
   createLayout: typeof createLayout;
   createApp: typeof createApp;
   withMiddleware: typeof withMiddleware;
   withServerSideProps: typeof withServerSideProps;
+  withCoherentProps: typeof withCoherentProps;
   withStaticProps: typeof withStaticProps;
+  renderToString: typeof renderToString;
   getBuildConfig: typeof getBuildConfig;
   getRuntimeConfig: typeof getRuntimeConfig;
   createWebpackConfig: typeof createWebpackConfig;

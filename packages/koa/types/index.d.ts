@@ -6,7 +6,7 @@
  */
 
 import Koa, { Context, Middleware, Next } from 'koa';
-import { CoherentNode } from '@coherent/core';
+import { CoherentNode, RenderOptions } from '@coherent.js/core';
 
 // ============================================================================
 // Koa Integration Types
@@ -18,7 +18,7 @@ export interface CoherentKoaOptions {
   viewsDirectory?: string;
   cache?: boolean;
   development?: boolean;
-  renderOptions?: {
+  renderOptions?: RenderOptions & {
     pretty?: boolean;
     doctype?: string;
   };
@@ -28,7 +28,7 @@ export interface CoherentKoaOptions {
 /** Enhanced Koa context with Coherent.js utilities */
 export interface CoherentContext extends Context {
   renderComponent<P = any>(component: (props: P) => CoherentNode, props?: P): string;
-  renderCoherent(component: CoherentNode, options?: any): void;
+  renderCoherent(component: CoherentNode, options?: RenderOptions): void;
   sendComponent<P = any>(component: (props: P) => CoherentNode, props?: P): void;
   getComponent<P = any>(name: string, props?: P): CoherentNode | undefined;
 
@@ -41,7 +41,7 @@ export interface CoherentContext extends Context {
 /** Koa application with Coherent.js support */
 export interface CoherentKoaApplication extends Koa {
   context: CoherentContext;
-  renderCoherent(component: CoherentNode, options?: any): void;
+  renderCoherent(component: CoherentNode, options?: RenderOptions): void;
 }
 
 // ============================================================================
@@ -114,6 +114,24 @@ export function setupCoherent(
 /** Create component-based route middleware */
 export function createComponentRoute(config: KoaComponentRoute): Middleware;
 
+/**
+ * Middleware for component rendering.
+ *
+ * @example
+ * ```typescript
+ * import Koa from 'koa';
+ * import { coherentMiddleware } from '@coherent.js/koa';
+ *
+ * const app = new Koa();
+ * app.use(coherentMiddleware({ development: true }));
+ *
+ * app.use((ctx) => {
+ *   ctx.renderCoherent({ div: { text: 'Hello World' } });
+ * });
+ * ```
+ */
+export function coherentMiddleware(options?: CoherentKoaOptions): Middleware;
+
 /** Middleware for component rendering */
 export function componentMiddleware(options?: KoaComponentMiddlewareOptions): Middleware;
 
@@ -139,6 +157,12 @@ export function registerRoutes(
   routes: KoaComponentRoute[]
 ): void;
 
+/** Render component to HTML string */
+export function renderComponent(component: CoherentNode, options?: RenderOptions): string;
+
+/** Check if object is a Coherent component */
+export function isCoherentObject(obj: any): boolean;
+
 // ============================================================================
 // Default Export
 // ============================================================================
@@ -146,11 +170,14 @@ export function registerRoutes(
 declare const coherentKoa: {
   setupCoherent: typeof setupCoherent;
   createComponentRoute: typeof createComponentRoute;
+  coherentMiddleware: typeof coherentMiddleware;
   componentMiddleware: typeof componentMiddleware;
   ssrMiddleware: typeof ssrMiddleware;
   errorMiddleware: typeof errorMiddleware;
   createCoherentApp: typeof createCoherentApp;
   registerRoutes: typeof registerRoutes;
+  renderComponent: typeof renderComponent;
+  isCoherentObject: typeof isCoherentObject;
 };
 
 export default coherentKoa;
