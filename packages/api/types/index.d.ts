@@ -6,6 +6,7 @@
  */
 
 import { IncomingMessage, ServerResponse } from 'http';
+import { CoherentNode, RenderOptions } from '@coherent.js/core';
 
 // ============================================================================
 // HTTP Types
@@ -99,18 +100,23 @@ export interface ApiResponse extends ServerResponse {
   redirect(url: string): void;
   vary(field: string): ApiResponse;
   render(view: string, locals?: any, callback?: Function): void;
+  /** Render a CoherentNode component to HTML */
+  renderCoherent(component: CoherentNode, options?: RenderOptions): void;
 }
 
 // ============================================================================
 // Route Handler Types
 // ============================================================================
 
-/** Route handler function */
+/**
+ * Route handler function.
+ * Can return void, Promise<void>, JSON-serializable data, or a CoherentNode for rendering.
+ */
 export type RouteHandler = (
   req: ApiRequest,
   res: ApiResponse,
   next?: NextFunction
-) => void | Promise<void> | any;
+) => void | Promise<void> | CoherentNode | Promise<CoherentNode> | any;
 
 /** Next function for middleware */
 export interface NextFunction {
@@ -186,47 +192,142 @@ export interface ObjectRouter {
 // Validation
 // ============================================================================
 
-/** Field validation rule */
-export interface ValidationRule {
-  type?: 'string' | 'number' | 'boolean' | 'array' | 'object' | 'email' | 'url' | 'date';
+/**
+ * Primitive validation types.
+ */
+export type ValidationPrimitiveType = 'string' | 'number' | 'boolean' | 'date';
+
+/**
+ * Compound validation types.
+ */
+export type ValidationCompoundType = 'array' | 'object';
+
+/**
+ * String format validation types.
+ */
+export type ValidationFormatType = 'email' | 'url' | 'uuid' | 'phone' | 'credit-card';
+
+/**
+ * All supported validation types.
+ */
+export type ValidationType = ValidationPrimitiveType | ValidationCompoundType | ValidationFormatType;
+
+/**
+ * Field validation rule.
+ * Defines constraints for validating a single field.
+ *
+ * @example
+ * ```typescript
+ * const emailRule: ValidationRule = {
+ *   type: 'email',
+ *   required: true,
+ *   message: 'Please provide a valid email address'
+ * };
+ *
+ * const ageRule: ValidationRule<number> = {
+ *   type: 'number',
+ *   min: 0,
+ *   max: 150,
+ *   custom: (value) => value >= 18 || 'Must be 18 or older'
+ * };
+ * ```
+ */
+export interface ValidationRule<T = any> {
+  /** The expected type of the field value */
+  type?: ValidationType;
+  /** Whether the field is required */
   required?: boolean;
+  /** Minimum value (for numbers) or minimum length (for strings/arrays) */
   min?: number;
+  /** Maximum value (for numbers) or maximum length (for strings/arrays) */
   max?: number;
+  /** Minimum string length */
   minLength?: number;
+  /** Maximum string length */
   maxLength?: number;
+  /** Regex pattern for string validation */
   pattern?: RegExp | string;
-  enum?: any[];
-  custom?: (value: any, field: string, data: any) => boolean | string;
+  /** Array of allowed values */
+  enum?: T[];
+  /**
+   * Custom validation function.
+   * Return true for valid, false or string message for invalid.
+   */
+  custom?: (value: T, field: string, data: Record<string, any>) => boolean | string;
+  /** Custom error message */
   message?: string;
-  transform?: (value: any) => any;
+  /** Transform function applied before validation */
+  transform?: (value: any) => T;
+  /** Default value if field is missing */
+  default?: T | (() => T);
+  /** Validation for array items (when type is 'array') */
+  items?: ValidationRule;
+  /** Validation for object properties (when type is 'object') */
+  properties?: ValidationSchema;
+  /** Allow null values */
+  nullable?: boolean;
+  /** Trim whitespace from strings before validation */
+  trim?: boolean;
 }
 
-/** Validation schema */
+/**
+ * Validation schema defining rules for multiple fields.
+ * Can be nested for complex object structures.
+ *
+ * @example
+ * ```typescript
+ * const userSchema: ValidationSchema = {
+ *   email: { type: 'email', required: true },
+ *   password: { type: 'string', minLength: 8, required: true },
+ *   profile: {
+ *     name: { type: 'string', required: true },
+ *     age: { type: 'number', min: 0 }
+ *   }
+ * };
+ * ```
+ */
 export interface ValidationSchema {
   [field: string]: ValidationRule | ValidationSchema;
 }
 
-/** Validation result */
-export interface ValidationResult {
+/**
+ * Result of validation operation.
+ * Generic type T represents the validated data shape.
+ */
+export interface ValidationResult<T = any> {
+  /** Whether validation passed */
   valid: boolean;
-  errors: ValidationError[];
-  data: any;
+  /** Array of validation errors (empty if valid) */
+  errors: ValidationErrorInfo[];
+  /** Validated and transformed data */
+  data: T;
 }
 
-/** Validation error */
-export interface ValidationError {
+/**
+ * Information about a single validation error.
+ */
+export interface ValidationErrorInfo {
+  /** Dot-notation path to the field (e.g., 'user.email') */
   field: string;
+  /** Human-readable error message */
   message: string;
+  /** The invalid value */
   value: any;
+  /** The rule that failed (e.g., 'required', 'min', 'pattern') */
   rule: string;
 }
 
 /** Validation options */
 export interface ValidationOptions {
+  /** Stop validation on first error */
   abortEarly?: boolean;
+  /** Remove fields not in schema */
   stripUnknown?: boolean;
+  /** Allow fields not in schema */
   allowUnknown?: boolean;
+  /** Skip validation for missing optional fields */
   skipMissing?: boolean;
+  /** Additional context passed to custom validators */
   context?: any;
 }
 
@@ -314,38 +415,69 @@ export interface SerializationOptions {
 // Error Handling
 // ============================================================================
 
-/** Base API error */
+/**
+ * Base API error class.
+ * Extends Error with HTTP status code and error code support.
+ */
 export class ApiError extends Error {
   constructor(message: string, statusCode?: number, code?: string);
+  /** HTTP status code (default: 500) */
   statusCode: number;
+  /** Machine-readable error code */
   code: string;
+  /** Additional error details */
   details?: any;
-  toJSON(): object;
+  /** Convert error to JSON-serializable object */
+  toJSON(): { message: string; statusCode: number; code: string; details?: any };
 }
 
-/** Validation error class */
+/**
+ * Validation error class.
+ * Thrown when request validation fails.
+ */
 export class ValidationError extends ApiError {
-  constructor(message: string, errors?: ValidationError[]);
-  errors: ValidationError[];
+  constructor(message: string, errors?: ValidationErrorInfo[]);
+  /** Array of field-level validation errors */
+  errors: ValidationErrorInfo[];
 }
 
-/** Authentication error class */
+/**
+ * Authentication error class.
+ * Thrown when authentication fails (HTTP 401).
+ */
 export class AuthenticationError extends ApiError {
   constructor(message?: string);
 }
 
-/** Authorization error class */
+/**
+ * Authorization error class.
+ * Thrown when user lacks required permissions (HTTP 403).
+ */
 export class AuthorizationError extends ApiError {
   constructor(message?: string);
 }
 
-/** Not found error class */
+/**
+ * Not found error class.
+ * Thrown when requested resource doesn't exist (HTTP 404).
+ */
 export class NotFoundError extends ApiError {
   constructor(message?: string);
 }
 
-/** Conflict error class */
+/**
+ * Conflict error class.
+ * Thrown when operation conflicts with current state (HTTP 409).
+ */
 export class ConflictError extends ApiError {
+  constructor(message?: string);
+}
+
+/**
+ * Bad request error class.
+ * Thrown when request is malformed (HTTP 400).
+ */
+export class BadRequestError extends ApiError {
   constructor(message?: string);
 }
 
@@ -616,26 +748,39 @@ export function withErrorHandling(options?: ErrorHandlerOptions): (handler: Rout
 /** Create error handler middleware */
 export function createErrorHandler(options?: ErrorHandlerOptions): ErrorMiddleware;
 
-/** Validate against schema */
-export function validateAgainstSchema(
+/**
+ * Validate data against a schema.
+ * @param schema - The validation schema
+ * @param data - The data to validate
+ * @param options - Validation options
+ * @returns Validation result with valid flag, errors, and transformed data
+ */
+export function validateAgainstSchema<T = any>(
   schema: ValidationSchema,
   data: any,
   options?: ValidationOptions
-): ValidationResult;
+): ValidationResult<T>;
 
-/** Validate a single field */
-export function validateField(
-  rule: ValidationRule,
-  value: any,
+/**
+ * Validate a single field against a rule.
+ * @param rule - The validation rule
+ * @param value - The value to validate
+ * @param field - The field name (for error messages)
+ * @param data - The full data object (for cross-field validation)
+ * @returns ValidationErrorInfo if invalid, null if valid
+ */
+export function validateField<T = any>(
+  rule: ValidationRule<T>,
+  value: T,
   field: string,
-  data?: any
-): ValidationError | null;
+  data?: Record<string, any>
+): ValidationErrorInfo | null;
 
-/** Validation middleware */
-export function withValidation(schema: ValidationSchema): Middleware;
+/** Validation middleware for request body */
+export function withValidation<T = any>(schema: ValidationSchema): Middleware;
 
 /** Query validation middleware */
-export function withQueryValidation(schema: ValidationSchema): Middleware;
+export function withQueryValidation<T = any>(schema: ValidationSchema): Middleware;
 
 /** Params validation middleware */
 export function withParamsValidation(schema: ValidationSchema): Middleware;
@@ -646,8 +791,12 @@ export function withAuth(config?: AuthConfig): Middleware;
 /** Role-based authorization middleware */
 export function withRole(roles: string | string[]): Middleware;
 
-/** Input validation middleware */
-export function withInputValidation(schema: ValidationSchema): Middleware;
+/** Input validation middleware (combines body, query, and params) */
+export function withInputValidation(schema: {
+  body?: ValidationSchema;
+  query?: ValidationSchema;
+  params?: ValidationSchema;
+}): Middleware;
 
 /** Hash password */
 export function hashPassword(password: string, saltRounds?: number): Promise<string>;
@@ -694,6 +843,7 @@ declare const coherentApi: {
   AuthorizationError: typeof AuthorizationError;
   NotFoundError: typeof NotFoundError;
   ConflictError: typeof ConflictError;
+  BadRequestError: typeof BadRequestError;
   withErrorHandling: typeof withErrorHandling;
   createErrorHandler: typeof createErrorHandler;
   validateAgainstSchema: typeof validateAgainstSchema;
