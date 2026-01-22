@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-21)
 
 **Core value:** A developer can run `coherent create my-app`, get a working fullstack app with auth and database, and start building in 5 minutes
-**Current focus:** Phase 5 - TypeScript (IN PROGRESS)
+**Current focus:** Phase 5 - TypeScript (COMPLETE)
 
 ## Current Position
 
 Phase: 5 of 6 (TypeScript)
-Plan: 4/5 plans complete in Phase 5
-Status: In progress
-Last activity: 2026-01-22 - Completed 05-04-PLAN.md
+Plan: 5/5 plans complete in Phase 5
+Status: Phase complete
+Last activity: 2026-01-22 - Completed 05-05-PLAN.md
 
-Progress: [█████████░] 94% (17 of 18 total plans)
+Progress: [██████████] 100% (18 of 18 total plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 17
+- Total plans completed: 18
 - Average duration: 6 min
-- Total execution time: 113 min
+- Total execution time: 122 min
 
 **By Phase:**
 
@@ -31,10 +31,10 @@ Progress: [█████████░] 94% (17 of 18 total plans)
 | 02-hydration | 4 | 19 min | 5 min |
 | 03-cli-scaffolding | 3 | 17 min | 6 min |
 | 04-hot-module-replacement | 3 | 24 min | 8 min |
-| 05-typescript | 4 | 26 min | 6 min |
+| 05-typescript | 5 | 35 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-01 (4 min), 05-02 (5 min), 05-03 (7 min), 05-04 (10 min)
+- Last 5 plans: 05-01 (4 min), 05-02 (5 min), 05-03 (7 min), 05-04 (10 min), 05-05 (9 min)
 - Trend: Consistent performance
 
 *Updated after each plan completion*
@@ -111,6 +111,9 @@ Recent decisions affecting current work:
 | 2026-01-22 | 05-04 | ValidationRule<T> generic for validators | Type carries through to custom validators and enums |
 | 2026-01-22 | 05-04 | Database-specific config types | Prevents invalid options for each database |
 | 2026-01-22 | 05-04 | Standardized middleware naming | Follows each framework's naming conventions |
+| 2026-01-22 | 05-05 | Generic FormBuilder<T> | Compile-time safety for form data shape |
+| 2026-01-22 | 05-05 | Module augmentation for Vitest | Extends matchers without breaking compatibility |
+| 2026-01-22 | 05-05 | Consistent import pattern | All packages use `import type { ... } from '@coherent.js/core'` |
 
 ### Pending Todos
 
@@ -122,6 +125,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-22T14:08:00Z
-Stopped at: Completed 05-04-PLAN.md (Integration Package Types)
+Last session: 2026-01-22T14:10:33Z
+Stopped at: Completed 05-05-PLAN.md (Utility Package Types)
 Resume file: None
