@@ -3,76 +3,229 @@
  * @module @coherent.js/testing
  */
 
-// ===== Test Renderer Types =====
+import type { CoherentNode, CoherentElement, CoherentComponent, ComponentProps } from '@coherent.js/core';
 
+// ============================================================================
+// Test Renderer Types
+// ============================================================================
+
+/**
+ * Render options for test utilities
+ */
 export interface RenderOptions {
-  wrapper?: any;
-  context?: Record<string, any>;
-  props?: Record<string, any>;
+  /** Wrapper component */
+  wrapper?: CoherentComponent;
+  /** Context values to provide */
+  context?: Record<string, unknown>;
+  /** Props to pass to component */
+  props?: Record<string, unknown>;
+  /** Initial state */
+  initialState?: Record<string, unknown>;
 }
 
-export interface TestRendererResult {
+/**
+ * Result from rendering a component
+ */
+export interface RenderResult {
+  /** Rendered HTML string */
   html: string;
-  component: any;
+  /** The rendered element structure */
+  element: CoherentElement;
+  /** Container element (if DOM is available) */
   container: HTMLElement | null;
-  rerender(component: any): void;
+  /** Re-render with new props */
+  rerender(props?: Record<string, unknown>): void;
+  /** Unmount and cleanup */
   unmount(): void;
+  /** Debug output */
   debug(): void;
+  /** Query helpers */
+  getByText(text: string | RegExp): Element | null;
+  getByTestId(testId: string): Element | null;
+  getAllByText(text: string | RegExp): Element[];
 }
 
+/**
+ * Test renderer class
+ */
 export class TestRenderer {
-  render(component: any, options?: RenderOptions): TestRendererResult;
-  renderAsync(component: any, options?: RenderOptions): Promise<TestRendererResult>;
-  shallow(component: any): TestRendererResult;
+  /** Render a component */
+  render(component: CoherentNode, options?: RenderOptions): RenderResult;
+
+  /** Render a component asynchronously */
+  renderAsync(component: CoherentNode, options?: RenderOptions): Promise<RenderResult>;
+
+  /** Shallow render (no children) */
+  shallow(component: CoherentNode): RenderResult;
+
+  /** Cleanup all renders */
   cleanup(): void;
 }
 
-export function renderComponent(component: any, options?: RenderOptions): TestRendererResult;
-export function renderComponentAsync(component: any, options?: RenderOptions): Promise<TestRendererResult>;
+/**
+ * Render a component for testing
+ */
+export function renderComponent(
+  component: CoherentComponent | CoherentNode,
+  props?: Record<string, unknown>
+): RenderResult;
+
+/**
+ * Render a component asynchronously
+ */
+export function renderComponentAsync(
+  component: CoherentNode,
+  options?: RenderOptions
+): Promise<RenderResult>;
+
+/**
+ * Create a new test renderer instance
+ */
 export function createTestRenderer(): TestRenderer;
-export function shallowRender(component: any): TestRendererResult;
 
-// ===== Test Utilities Types =====
+/**
+ * Shallow render a component
+ */
+export function shallowRender(component: CoherentNode): RenderResult;
 
+/**
+ * Render a node to HTML string
+ */
+export function renderToString(node: CoherentNode): string;
+
+// ============================================================================
+// Custom Matchers for Coherent.js
+// ============================================================================
+
+/**
+ * Coherent.js-specific test matchers
+ */
+export interface CoherentMatchers<R = unknown> {
+  // Element structure matchers
+  /** Assert element has specific tag name */
+  toHaveTag(tagName: string): R;
+  /** Assert element contains text */
+  toHaveText(text: string): R;
+  /** Assert element has attribute (optionally with value) */
+  toHaveAttribute(name: string, value?: string): R;
+  /** Assert element has CSS class */
+  toHaveClassName(className: string): R;
+  /** Assert element has children (optionally specific count) */
+  toHaveChildren(count?: number): R;
+
+  // Component matchers
+  /** Assert component renders an element with tag */
+  toRenderElement(tagName: string): R;
+  /** Assert component renders text content */
+  toRenderText(text: string): R;
+  /** Assert component matches snapshot */
+  toMatchComponentSnapshot(): R;
+
+  // Hydration matchers
+  /** Assert hydration completes without mismatch */
+  toHydrateWithoutMismatch(): R;
+  /** Assert hydrated component has specific state */
+  toHaveState(state: Record<string, unknown>): R;
+
+  // Accessibility matchers
+  /** Assert element has accessible name */
+  toHaveAccessibleName(name: string): R;
+  /** Assert element has ARIA role */
+  toHaveRole(role: string): R;
+}
+
+// ============================================================================
+// Test Utilities
+// ============================================================================
+
+/**
+ * Event simulation options
+ */
 export interface EventOptions {
   bubbles?: boolean;
   cancelable?: boolean;
   composed?: boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
+/**
+ * Fire DOM events on elements
+ */
 export const fireEvent: {
+  /** Fire any event */
   (element: Element, event: Event): boolean;
+  /** Fire click event */
   click(element: Element, options?: EventOptions): boolean;
-  change(element: Element, options?: EventOptions & { target?: { value?: any } }): boolean;
-  input(element: Element, options?: EventOptions & { target?: { value?: any } }): boolean;
+  /** Fire change event */
+  change(element: Element, options?: EventOptions & { target?: { value?: unknown } }): boolean;
+  /** Fire input event */
+  input(element: Element, options?: EventOptions & { target?: { value?: unknown } }): boolean;
+  /** Fire submit event */
   submit(element: Element, options?: EventOptions): boolean;
+  /** Fire keydown event */
   keyDown(element: Element, options?: EventOptions & { key?: string; code?: string }): boolean;
+  /** Fire keyup event */
   keyUp(element: Element, options?: EventOptions & { key?: string; code?: string }): boolean;
+  /** Fire focus event */
   focus(element: Element, options?: EventOptions): boolean;
+  /** Fire blur event */
   blur(element: Element, options?: EventOptions): boolean;
+  /** Fire mouseenter event */
   mouseEnter(element: Element, options?: EventOptions): boolean;
+  /** Fire mouseleave event */
   mouseLeave(element: Element, options?: EventOptions): boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
+/**
+ * Wait options
+ */
 export interface WaitOptions {
+  /** Timeout in ms */
   timeout?: number;
+  /** Check interval in ms */
   interval?: number;
 }
 
-export function waitFor<T>(callback: () => T | Promise<T>, options?: WaitOptions): Promise<T>;
-export function waitForElement(selector: string, options?: WaitOptions): Promise<Element>;
-export function waitForElementToBeRemoved(selector: string | Element, options?: WaitOptions): Promise<void>;
+/**
+ * Wait for a condition to be true
+ */
+export function waitFor<T>(
+  callback: () => T | Promise<T>,
+  options?: WaitOptions
+): Promise<T>;
 
+/**
+ * Wait for an element to appear
+ */
+export function waitForElement(selector: string, options?: WaitOptions): Promise<Element>;
+
+/**
+ * Wait for an element to be removed
+ */
+export function waitForElementToBeRemoved(
+  selector: string | Element,
+  options?: WaitOptions
+): Promise<void>;
+
+/**
+ * Run a callback and flush pending state updates
+ */
 export function act<T>(callback: () => T | Promise<T>): Promise<T>;
 
-export interface Mock<T extends (...args: any[]) => any = (...args: any[]) => any> {
+// ============================================================================
+// Mock Utilities
+// ============================================================================
+
+/**
+ * Mock function interface
+ */
+export interface Mock<T extends (...args: unknown[]) => unknown = (...args: unknown[]) => unknown> {
   (...args: Parameters<T>): ReturnType<T>;
   mock: {
     calls: Parameters<T>[];
-    results: Array<{ type: 'return' | 'throw'; value: any }>;
-    instances: any[];
+    results: Array<{ type: 'return' | 'throw'; value: unknown }>;
+    instances: unknown[];
   };
   mockClear(): void;
   mockReset(): void;
@@ -81,14 +234,55 @@ export interface Mock<T extends (...args: any[]) => any = (...args: any[]) => an
   mockReturnValue(value: ReturnType<T>): this;
   mockReturnValueOnce(value: ReturnType<T>): this;
   mockResolvedValue(value: ReturnType<T> extends Promise<infer U> ? U : never): this;
-  mockRejectedValue(error: any): this;
+  mockRejectedValue(error: unknown): this;
 }
 
-export function createMock<T extends (...args: any[]) => any>(implementation?: T): Mock<T>;
-export function createSpy<T extends (...args: any[]) => any>(object: any, method: string): Mock<T>;
+/**
+ * Create a mock function
+ */
+export function createMock<T extends (...args: unknown[]) => unknown>(
+  implementation?: T
+): Mock<T>;
 
+/**
+ * Create a spy on an object method
+ */
+export function createSpy<T extends (...args: unknown[]) => unknown>(
+  object: object,
+  method: string
+): Mock<T>;
+
+/**
+ * Mock a component
+ */
+export function mockComponent<P extends ComponentProps = ComponentProps>(
+  name: string,
+  render?: (props: P) => CoherentNode
+): CoherentComponent<P>;
+
+/**
+ * Create test state with reset capability
+ */
+export function createTestState<T extends Record<string, unknown>>(
+  initial: T
+): {
+  getState: () => T;
+  setState: (updates: Partial<T>) => void;
+  reset: () => void;
+};
+
+/**
+ * Cleanup all mocks and rendered components
+ */
 export function cleanup(): void;
 
+// ============================================================================
+// Query Utilities
+// ============================================================================
+
+/**
+ * Query helper interface
+ */
 export interface Within {
   getByText(text: string | RegExp): Element;
   getByRole(role: string, options?: { name?: string | RegExp }): Element;
@@ -102,9 +296,19 @@ export interface Within {
   findAllByText(text: string | RegExp): Promise<Element[]>;
 }
 
+/**
+ * Create query helpers scoped to an element
+ */
 export function within(element: Element): Within;
+
+/**
+ * Global screen queries (document.body)
+ */
 export const screen: Within;
 
+/**
+ * User event simulation
+ */
 export const userEvent: {
   click(element: Element): Promise<void>;
   dblClick(element: Element): Promise<void>;
@@ -118,8 +322,37 @@ export const userEvent: {
   paste(element: Element, text: string): Promise<void>;
 };
 
-// ===== Matchers Types =====
+// ============================================================================
+// Assertion Utilities
+// ============================================================================
 
+/**
+ * Assert element structure matches expected
+ */
+export function assertElementStructure(
+  element: CoherentElement,
+  expected: Partial<CoherentElement>
+): void;
+
+/**
+ * Standard assertions
+ */
+export const assertions: {
+  assertElement(element: unknown): asserts element is Element;
+  assertHTMLElement(element: unknown): asserts element is HTMLElement;
+  assertInDocument(element: Element | null): asserts element is Element;
+  assertVisible(element: Element): void;
+  assertHasAttribute(element: Element, attr: string): void;
+  assertHasClass(element: Element, className: string): void;
+};
+
+// ============================================================================
+// DOM Matchers (for Vitest/Jest)
+// ============================================================================
+
+/**
+ * Custom DOM matchers
+ */
 export interface CustomMatchers<R = void> {
   toHaveHTML(html: string): R;
   toContainHTML(html: string): R;
@@ -130,35 +363,42 @@ export interface CustomMatchers<R = void> {
   toBeVisible(): R;
   toBeDisabled(): R;
   toBeEnabled(): R;
-  toHaveValue(value: any): R;
-  toHaveStyle(style: Record<string, any>): R;
+  toHaveValue(value: unknown): R;
+  toHaveStyle(style: Record<string, unknown>): R;
   toHaveFocus(): R;
   toBeChecked(): R;
   toBeValid(): R;
   toBeInvalid(): R;
 }
 
+/**
+ * Custom matchers object
+ */
 export const customMatchers: CustomMatchers;
 
-export function extendExpect(matchers: Record<string, (...args: any[]) => any>): void;
+/**
+ * Extend test framework expect
+ */
+export function extendExpect(matchers: Record<string, (...args: unknown[]) => unknown>): void;
 
-export const assertions: {
-  assertElement(element: any): asserts element is Element;
-  assertHTMLElement(element: any): asserts element is HTMLElement;
-  assertInDocument(element: Element | null): asserts element is Element;
-  assertVisible(element: Element): void;
-  assertHasAttribute(element: Element, attr: string): void;
-  assertHasClass(element: Element, className: string): void;
-};
+// ============================================================================
+// Vitest/Jest Module Extensions
+// ============================================================================
 
-// Extend Jest/Vitest expect
+// Extend Vitest matchers
+declare module 'vitest' {
+  interface Assertion<T = unknown> extends CoherentMatchers<T>, CustomMatchers<T> {}
+  interface AsymmetricMatchersContaining extends CoherentMatchers, CustomMatchers {}
+}
+
+// Extend Jest matchers (for users using Jest)
 declare global {
   namespace Vi {
-    interface Matchers<R = void> extends CustomMatchers<R> {}
-    interface AsymmetricMatchers extends CustomMatchers {}
+    interface Matchers<R = void> extends CustomMatchers<R>, CoherentMatchers<R> {}
+    interface AsymmetricMatchers extends CustomMatchers, CoherentMatchers {}
   }
   namespace jest {
-    interface Matchers<R = void> extends CustomMatchers<R> {}
-    interface Expect extends CustomMatchers {}
+    interface Matchers<R = void> extends CustomMatchers<R>, CoherentMatchers<R> {}
+    interface Expect extends CustomMatchers, CoherentMatchers {}
   }
 }
