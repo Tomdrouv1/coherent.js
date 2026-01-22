@@ -66,11 +66,12 @@ Plans:
   3. Generated TypeScript configuration compiles without errors
   4. Auth option produces working login/register flow connected to database
   5. Database option produces working CRUD operations with chosen adapter
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 03-01: TBD
-- [ ] 03-02: TBD
+- [ ] 03-01-PLAN.md — Template consolidation and import fixes
+- [ ] 03-02-PLAN.md — Comprehensive test suite for scaffold permutations
+- [ ] 03-03-PLAN.md — Enhanced CLI output and dev server offer
 
 ### Phase 4: Hot Module Replacement
 **Goal**: File changes update the browser without full reload, preserving component state
@@ -126,11 +127,11 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete | 2026-01-21 |
 | 2. Hydration | 4/4 | Complete | 2026-01-21 |
-| 3. CLI Scaffolding | 0/2 | Not started | - |
+| 3. CLI Scaffolding | 0/3 | Planned | - |
 | 4. Hot Module Replacement | 0/2 | Not started | - |
 | 5. TypeScript | 0/2 | Not started | - |
 | 6. IDE Support | 0/2 | Not started | - |
 
 ---
 *Roadmap created: 2026-01-21*
-*Last updated: 2026-01-21 (Phase 2 complete)*
+*Last updated: 2026-01-22 (Phase 3 planned)*
