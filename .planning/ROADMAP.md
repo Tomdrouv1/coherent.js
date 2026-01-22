@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundation** - Stable rendering engine with key-based reconciliation
 - [x] **Phase 2: Hydration** - Reliable client-side hydration with event delegation
 - [x] **Phase 3: CLI Scaffolding** - Working project generator with current APIs
-- [ ] **Phase 4: Hot Module Replacement** - State-preserving development updates
+- [x] **Phase 4: Hot Module Replacement** - State-preserving development updates
 - [ ] **Phase 5: TypeScript** - Complete type definitions across all packages
 - [ ] **Phase 6: IDE Support** - Language server and VS Code extension
 
@@ -85,9 +85,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Core HMR infrastructure (cleanup tracker, state capturer)
-- [ ] 04-02-PLAN.md — UI components (error overlay, connection indicator)
-- [ ] 04-03-PLAN.md — HMR client integration and exports
+- [x] 04-01-PLAN.md — Core HMR infrastructure (cleanup tracker, state capturer)
+- [x] 04-02-PLAN.md — UI components (error overlay, connection indicator)
+- [x] 04-03-PLAN.md — HMR client integration and exports
 
 ### Phase 5: TypeScript
 **Goal**: All public APIs have accurate TypeScript definitions that match runtime behavior
@@ -129,10 +129,10 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 1. Foundation | 3/3 | Complete | 2026-01-21 |
 | 2. Hydration | 4/4 | Complete | 2026-01-21 |
 | 3. CLI Scaffolding | 3/3 | Complete | 2026-01-22 |
-| 4. Hot Module Replacement | 0/3 | Planned | - |
+| 4. Hot Module Replacement | 3/3 | Complete | 2026-01-22 |
 | 5. TypeScript | 0/2 | Not started | - |
 | 6. IDE Support | 0/2 | Not started | - |
 
 ---
 *Roadmap created: 2026-01-21*
-*Last updated: 2026-01-22 (Phase 4 planned)*
+*Last updated: 2026-01-22 (Phase 4 complete)*

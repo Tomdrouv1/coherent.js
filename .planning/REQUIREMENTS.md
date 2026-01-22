@@ -23,29 +23,29 @@ Requirements for operational framework. Each maps to roadmap phases.
 
 ### Hydration
 
-- [ ] **HYDR-01**: Hydration detects server/client mismatch in development mode
-- [ ] **HYDR-02**: Mismatch errors show specific location (path to differing element)
-- [ ] **HYDR-03**: Hydration works without hardcoded state patterns (generic state extraction)
-- [ ] **HYDR-04**: Event delegation system with single document-level listener
-- [ ] **HYDR-05**: Event handlers survive DOM patches (no re-attachment required)
-- [ ] **HYDR-06**: `hydrate()` function has simple, documented API
-- [ ] **HYDR-07**: State serialization uses data-state attributes with base64-encoded JSON
+- [x] **HYDR-01**: Hydration detects server/client mismatch in development mode
+- [x] **HYDR-02**: Mismatch errors show specific location (path to differing element)
+- [x] **HYDR-03**: Hydration works without hardcoded state patterns (generic state extraction)
+- [x] **HYDR-04**: Event delegation system with single document-level listener
+- [x] **HYDR-05**: Event handlers survive DOM patches (no re-attachment required)
+- [x] **HYDR-06**: `hydrate()` function has simple, documented API
+- [x] **HYDR-07**: State serialization uses data-state attributes with base64-encoded JSON
 
 ### CLI Scaffolding
 
-- [ ] **CLI-01**: `coherent create <name>` produces immediately runnable project
-- [ ] **CLI-02**: Generated project uses current framework APIs (no deprecated patterns)
-- [ ] **CLI-03**: Generated files have correct import paths and connections
-- [ ] **CLI-04**: Scaffold includes working TypeScript configuration
-- [ ] **CLI-05**: Scaffold includes auth option that integrates with database
-- [ ] **CLI-06**: Scaffold includes database option with working adapter
+- [x] **CLI-01**: `coherent create <name>` produces immediately runnable project
+- [x] **CLI-02**: Generated project uses current framework APIs (no deprecated patterns)
+- [x] **CLI-03**: Generated files have correct import paths and connections
+- [x] **CLI-04**: Scaffold includes working TypeScript configuration
+- [x] **CLI-05**: Scaffold includes auth option that integrates with database
+- [x] **CLI-06**: Scaffold includes database option with working adapter
 
 ### Hot Module Replacement
 
-- [ ] **HMR-01**: File changes trigger partial updates without full page reload
-- [ ] **HMR-02**: Component state preserved across HMR updates
-- [ ] **HMR-03**: Old module effects cleaned up (no duplicate listeners)
-- [ ] **HMR-04**: HMR errors shown with actionable messages
+- [x] **HMR-01**: File changes trigger partial updates without full page reload
+- [x] **HMR-02**: Component state preserved across HMR updates
+- [x] **HMR-03**: Old module effects cleaned up (no duplicate listeners)
+- [x] **HMR-04**: HMR errors shown with actionable messages
 
 ### TypeScript
 
@@ -108,23 +108,23 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RECON-02 | Phase 1: Foundation | Complete |
 | RECON-03 | Phase 1: Foundation | Complete |
 | RECON-04 | Phase 1: Foundation | Complete |
-| HYDR-01 | Phase 2: Hydration | Pending |
-| HYDR-02 | Phase 2: Hydration | Pending |
-| HYDR-03 | Phase 2: Hydration | Pending |
-| HYDR-04 | Phase 2: Hydration | Pending |
-| HYDR-05 | Phase 2: Hydration | Pending |
-| HYDR-06 | Phase 2: Hydration | Pending |
-| HYDR-07 | Phase 2: Hydration | Pending |
-| CLI-01 | Phase 3: CLI Scaffolding | Pending |
-| CLI-02 | Phase 3: CLI Scaffolding | Pending |
-| CLI-03 | Phase 3: CLI Scaffolding | Pending |
-| CLI-04 | Phase 3: CLI Scaffolding | Pending |
-| CLI-05 | Phase 3: CLI Scaffolding | Pending |
-| CLI-06 | Phase 3: CLI Scaffolding | Pending |
-| HMR-01 | Phase 4: Hot Module Replacement | Pending |
-| HMR-02 | Phase 4: Hot Module Replacement | Pending |
-| HMR-03 | Phase 4: Hot Module Replacement | Pending |
-| HMR-04 | Phase 4: Hot Module Replacement | Pending |
+| HYDR-01 | Phase 2: Hydration | Complete |
+| HYDR-02 | Phase 2: Hydration | Complete |
+| HYDR-03 | Phase 2: Hydration | Complete |
+| HYDR-04 | Phase 2: Hydration | Complete |
+| HYDR-05 | Phase 2: Hydration | Complete |
+| HYDR-06 | Phase 2: Hydration | Complete |
+| HYDR-07 | Phase 2: Hydration | Complete |
+| CLI-01 | Phase 3: CLI Scaffolding | Complete |
+| CLI-02 | Phase 3: CLI Scaffolding | Complete |
+| CLI-03 | Phase 3: CLI Scaffolding | Complete |
+| CLI-04 | Phase 3: CLI Scaffolding | Complete |
+| CLI-05 | Phase 3: CLI Scaffolding | Complete |
+| CLI-06 | Phase 3: CLI Scaffolding | Complete |
+| HMR-01 | Phase 4: Hot Module Replacement | Complete |
+| HMR-02 | Phase 4: Hot Module Replacement | Complete |
+| HMR-03 | Phase 4: Hot Module Replacement | Complete |
+| HMR-04 | Phase 4: Hot Module Replacement | Complete |
 | TS-01 | Phase 5: TypeScript | Pending |
 | TS-02 | Phase 5: TypeScript | Pending |
 | TS-03 | Phase 5: TypeScript | Pending |
@@ -141,4 +141,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-21*
-*Last updated: 2026-01-21 after roadmap creation*
+*Last updated: 2026-01-22 (Phase 4 complete)*
