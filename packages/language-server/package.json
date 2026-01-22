@@ -1,0 +1,53 @@
+{
+  "name": "@coherent.js/language-server",
+  "version": "1.0.0-beta.1",
+  "description": "Language Server Protocol (LSP) server for Coherent.js providing autocomplete, validation, and hover information",
+  "type": "module",
+  "main": "dist/server.js",
+  "types": "dist/server.d.ts",
+  "bin": {
+    "coherent-language-server": "dist/server.js"
+  },
+  "scripts": {
+    "build": "pnpm run extract-attributes && tsc",
+    "dev": "tsc -w",
+    "start": "node dist/server.js --stdio",
+    "extract-attributes": "tsx scripts/extract-attributes.ts",
+    "clean": "rm -rf dist"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tomdrouv1/coherent.js.git",
+    "directory": "packages/language-server"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "sideEffects": false,
+  "keywords": [
+    "coherent",
+    "language-server",
+    "lsp",
+    "vscode",
+    "ide",
+    "autocomplete",
+    "validation"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.12"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.4",
+    "typescript": "^5.9.3"
+  }
+}
