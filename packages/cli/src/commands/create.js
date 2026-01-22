@@ -337,7 +337,8 @@ export const createCommand = new Command('create')
         packageManager,
         dockerConfig,
         skipInstall: options.skipInstall,
-        skipGit: options.skipGit
+        skipGit: options.skipGit,
+        onProgress: (msg) => { spinner.text = msg; }
       });
 
       spinner.succeed('Project created successfully!');
