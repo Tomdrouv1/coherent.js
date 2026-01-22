@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-21)
 
 **Core value:** A developer can run `coherent create my-app`, get a working fullstack app with auth and database, and start building in 5 minutes
-**Current focus:** Phase 5 - TypeScript (COMPLETE)
+**Current focus:** Phase 5 - TypeScript (IN PROGRESS)
 
 ## Current Position
 
 Phase: 5 of 6 (TypeScript)
-Plan: 3/3 plans complete in Phase 5
-Status: Phase complete
-Last activity: 2026-01-22 - Completed 05-03-PLAN.md
+Plan: 4/5 plans complete in Phase 5
+Status: In progress
+Last activity: 2026-01-22 - Completed 05-04-PLAN.md
 
-Progress: [█████████░] 89% (16 of 18 total plans)
+Progress: [█████████░] 94% (17 of 18 total plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 16
+- Total plans completed: 17
 - Average duration: 6 min
-- Total execution time: 103 min
+- Total execution time: 113 min
 
 **By Phase:**
 
@@ -31,10 +31,10 @@ Progress: [█████████░] 89% (16 of 18 total plans)
 | 02-hydration | 4 | 19 min | 5 min |
 | 03-cli-scaffolding | 3 | 17 min | 6 min |
 | 04-hot-module-replacement | 3 | 24 min | 8 min |
-| 05-typescript | 3 | 16 min | 5 min |
+| 05-typescript | 4 | 26 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-03 (7 min), 05-01 (4 min), 05-02 (5 min), 05-03 (7 min)
+- Last 5 plans: 05-01 (4 min), 05-02 (5 min), 05-03 (7 min), 05-04 (10 min)
 - Trend: Consistent performance
 
 *Updated after each plan completion*
@@ -108,6 +108,9 @@ Recent decisions affecting current work:
 | 2026-01-22 | 05-03 | Specific DOM event handler types | Better type inference for event properties |
 | 2026-01-22 | 05-03 | Generic registerEventHandler | Allows typed state and specific event types |
 | 2026-01-22 | 05-03 | SerializableState strict JSON-safe | Prevents runtime errors during serialization |
+| 2026-01-22 | 05-04 | ValidationRule<T> generic for validators | Type carries through to custom validators and enums |
+| 2026-01-22 | 05-04 | Database-specific config types | Prevents invalid options for each database |
+| 2026-01-22 | 05-04 | Standardized middleware naming | Follows each framework's naming conventions |
 
 ### Pending Todos
 
@@ -119,6 +122,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-22T13:57:33Z
-Stopped at: Completed 05-03-PLAN.md (Client Package Types)
+Last session: 2026-01-22T14:08:00Z
+Stopped at: Completed 05-04-PLAN.md (Integration Package Types)
 Resume file: None
