@@ -68,6 +68,7 @@
     "@types/vscode": "^1.85.0",
     "@vscode/vsce": "^3.3.2",
     "esbuild": "^0.25.0",
+    "sharp": "0.34.5",
     "typescript": "^5.9.3"
   },
   "scripts": {

@@ -1,0 +1,226 @@
+{
+  "Coherent Element": {
+    "prefix": "cel",
+    "body": [
+      "{ ${1:div}: {",
+      "\tclassName: '${2:class}',",
+      "\t${3:children: [",
+      "\t\t$0",
+      "\t]}",
+      "}}"
+    ],
+    "description": "Create a Coherent.js element"
+  },
+  "Coherent Component": {
+    "prefix": "ccomp",
+    "body": [
+      "const ${1:ComponentName} = (${2:props}) => ({",
+      "\t${3:div}: {",
+      "\t\tclassName: '${4:component-class}',",
+      "\t\tchildren: [",
+      "\t\t\t$0",
+      "\t\t]",
+      "\t}",
+      "});",
+      "",
+      "export { ${1:ComponentName} };"
+    ],
+    "description": "Create a Coherent.js functional component"
+  },
+  "Coherent Text": {
+    "prefix": "ctext",
+    "body": [
+      "{ ${1:p}: { text: '${2:content}' }}"
+    ],
+    "description": "Create a text element"
+  },
+  "Coherent Link": {
+    "prefix": "clink",
+    "body": [
+      "{ a: {",
+      "\thref: '${1:/path}',",
+      "\ttext: '${2:Link text}'",
+      "}}"
+    ],
+    "description": "Create an anchor element"
+  },
+  "Coherent Image": {
+    "prefix": "cimg",
+    "body": [
+      "{ img: {",
+      "\tsrc: '${1:url}',",
+      "\talt: '${2:description}'",
+      "}}"
+    ],
+    "description": "Create an image element"
+  },
+  "Coherent Input": {
+    "prefix": "cinput",
+    "body": [
+      "{ input: {",
+      "\ttype: '${1|text,email,password,number,checkbox,radio|}',",
+      "\tname: '${2:fieldName}',",
+      "\tplaceholder: '${3:Enter value}'",
+      "}}"
+    ],
+    "description": "Create an input element"
+  },
+  "Coherent Button": {
+    "prefix": "cbtn",
+    "body": [
+      "{ button: {",
+      "\ttype: '${1|button,submit,reset|}',",
+      "\tclassName: '${2:btn}',",
+      "\ttext: '${3:Click me}'",
+      "}}"
+    ],
+    "description": "Create a button element"
+  },
+  "Coherent Form": {
+    "prefix": "cform",
+    "body": [
+      "{ form: {",
+      "\tmethod: '${1|POST,GET|}',",
+      "\taction: '${2:/api/submit}',",
+      "\tchildren: [",
+      "\t\t$0",
+      "\t]",
+      "}}"
+    ],
+    "description": "Create a form element"
+  },
+  "Coherent List": {
+    "prefix": "clist",
+    "body": [
+      "{ ${1|ul,ol|}: {",
+      "\tchildren: ${2:items}.map((${3:item}) => ({",
+      "\t\tli: { text: ${3:item} }",
+      "\t}))",
+      "}}"
+    ],
+    "description": "Create a list with mapped items"
+  },
+  "Coherent Conditional": {
+    "prefix": "cif",
+    "body": [
+      "${1:condition} ? { ${2:div}: { text: '${3:shown}' }} : null"
+    ],
+    "description": "Conditional rendering pattern"
+  },
+  "Coherent Event Handler": {
+    "prefix": "cevent",
+    "body": [
+      "on${1|Click,Change,Submit,Focus,Blur|}: '${2:handlerName}'"
+    ],
+    "description": "Add an event handler"
+  },
+  "Coherent Data Attributes": {
+    "prefix": "cdata",
+    "body": [
+      "'data-${1:name}': '${2:value}'"
+    ],
+    "description": "Add a data attribute"
+  },
+  "Coherent Page Layout": {
+    "prefix": "cpage",
+    "body": [
+      "const ${1:PageName} = () => ({",
+      "\thtml: {",
+      "\t\tlang: 'en',",
+      "\t\tchildren: [",
+      "\t\t\t{ head: {",
+      "\t\t\t\tchildren: [",
+      "\t\t\t\t\t{ meta: { charset: 'utf-8' }},",
+      "\t\t\t\t\t{ meta: { name: 'viewport', content: 'width=device-width, initial-scale=1' }},",
+      "\t\t\t\t\t{ title: { text: '${2:Page Title}' }}",
+      "\t\t\t\t]",
+      "\t\t\t}},",
+      "\t\t\t{ body: {",
+      "\t\t\t\tchildren: [",
+      "\t\t\t\t\t$0",
+      "\t\t\t\t]",
+      "\t\t\t}}",
+      "\t\t]",
+      "\t}",
+      "});",
+      "",
+      "export { ${1:PageName} };"
+    ],
+    "description": "Create a full page layout"
+  },
+  "Coherent Card": {
+    "prefix": "ccard",
+    "body": [
+      "{ div: {",
+      "\tclassName: '${1:card}',",
+      "\tchildren: [",
+      "\t\t{ ${2:img}: { src: '${3:url}', alt: '${4:description}' }},",
+      "\t\t{ div: {",
+      "\t\t\tclassName: '${1:card}-body',",
+      "\t\t\tchildren: [",
+      "\t\t\t\t{ h3: { text: '${5:Title}' }},",
+      "\t\t\t\t{ p: { text: '${6:Description}' }}",
+      "\t\t\t]",
+      "\t\t}}",
+      "\t]",
+      "}}"
+    ],
+    "description": "Create a card component structure"
+  },
+  "Coherent Table": {
+    "prefix": "ctable",
+    "body": [
+      "{ table: {",
+      "\tchildren: [",
+      "\t\t{ thead: {",
+      "\t\t\tchildren: [",
+      "\t\t\t\t{ tr: {",
+      "\t\t\t\t\tchildren: [",
+      "\t\t\t\t\t\t{ th: { text: '${1:Column 1}' }},",
+      "\t\t\t\t\t\t{ th: { text: '${2:Column 2}' }}",
+      "\t\t\t\t\t]",
+      "\t\t\t\t}}",
+      "\t\t\t]",
+      "\t\t}},",
+      "\t\t{ tbody: {",
+      "\t\t\tchildren: ${3:data}.map((${4:row}) => ({",
+      "\t\t\t\ttr: {",
+      "\t\t\t\t\tchildren: [",
+      "\t\t\t\t\t\t{ td: { text: ${4:row}.${5:field1} }},",
+      "\t\t\t\t\t\t{ td: { text: ${4:row}.${6:field2} }}",
+      "\t\t\t\t\t]",
+      "\t\t\t\t}",
+      "\t\t\t}))",
+      "\t\t}}",
+      "\t]",
+      "}}"
+    ],
+    "description": "Create a table with header and mapped body"
+  },
+  "Coherent Render Import": {
+    "prefix": "cimport",
+    "body": [
+      "import { ${1|render,renderToString,createComponent|} } from '@coherent.js/core';"
+    ],
+    "description": "Import Coherent.js core functions"
+  },
+  "Coherent Server Setup": {
+    "prefix": "cserver",
+    "body": [
+      "import { render } from '@coherent.js/core';",
+      "import { createServer } from '@coherent.js/${1|express,fastify,koa|}';",
+      "",
+      "const app = createServer();",
+      "",
+      "app.get('/', (req, res) => {",
+      "\tconst html = render({ div: { text: 'Hello, Coherent.js!' }});",
+      "\tres.send(html);",
+      "});",
+      "",
+      "app.listen(${2:3000}, () => {",
+      "\tconsole.log('Server running on port ${2:3000}');",
+      "});"
+    ],
+    "description": "Create a basic Coherent.js server"
+  }
+}
