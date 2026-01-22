@@ -306,7 +306,7 @@ export function generateAuthRoutes(runtime, authType) {
   const jwtRoutes = {
     express: `
 import express from 'express';
-import { generateToken } from '../middleware/auth.js';
+import { generateToken, authMiddleware } from '../middleware/auth.js';
 import { UserModel } from '../db/models/User.js';
 
 const router = express.Router();
@@ -706,11 +706,7 @@ router.get('/me', authMiddleware, async (ctx) => {
   }
 });
 
-export default function registerAuthRoutes(router) {
-  router.post('/auth/register', registerHandler);
-  router.post('/auth/login', loginHandler);
-  router.get('/auth/me', authMiddleware, meHandler);
-}
+export default router;
 `
   };
 
