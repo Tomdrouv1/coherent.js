@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-21)
 
 **Core value:** A developer can run `coherent create my-app`, get a working fullstack app with auth and database, and start building in 5 minutes
-**Current focus:** Phase 2 - Hydration
+**Current focus:** Phase 3 - CLI Scaffolding
 
 ## Current Position
 
-Phase: 2 of 6 (Hydration)
-Plan: 4/4 plans complete in Phase 2
-Status: Phase complete
-Last activity: 2026-01-21 - Completed 02-04-PLAN.md (Hydrate API)
+Phase: 3 of 6 (CLI Scaffolding)
+Plan: 1/3 plans complete in Phase 3
+Status: In progress
+Last activity: 2026-01-22 - Completed 03-01-PLAN.md (Template Consolidation)
 
-Progress: [████░░░░░░] 39% (7 of 18 total plans)
+Progress: [████▌░░░░░] 44% (8 of 18 total plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
+- Total plans completed: 8
 - Average duration: 7 min
-- Total execution time: 46 min
+- Total execution time: 54 min
 
 **By Phase:**
 
@@ -29,10 +29,11 @@ Progress: [████░░░░░░] 39% (7 of 18 total plans)
 |-------|-------|-------|----------|
 | 01-foundation | 3 | 27 min | 9 min |
 | 02-hydration | 4 | 19 min | 5 min |
+| 03-cli-scaffolding | 1 | 8 min | 8 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-02 (2 min), 02-01 (8 min), 02-03 (4 min), 02-04 (5 min)
-- Trend: Consistent 5min for focused hydration plans
+- Last 5 plans: 02-01 (8 min), 02-03 (4 min), 02-04 (5 min), 03-01 (8 min)
+- Trend: Consistent performance
 
 *Updated after each plan completion*
 
@@ -69,6 +70,10 @@ Recent decisions affecting current work:
 | 2026-01-21 | 02-04 | Dev-mode mismatch detection | Zero prod overhead, catches issues early |
 | 2026-01-21 | 02-04 | initialState overrides extracted | Explicit intent beats implicit extraction |
 | 2026-01-21 | 02-04 | legacyHydrate alias | Zero breaking changes for existing users |
+| 2026-01-22 | 03-01 | Template consolidation from 6 to 2 | Simpler UX, basic and fullstack cover all use cases |
+| 2026-01-22 | 03-01 | Runtime selection for both templates | No template-to-runtime mapping, flexible choice |
+| 2026-01-22 | 03-01 | Adapter factories receive dbConfig directly | Consistent instantiation pattern |
+| 2026-01-22 | 03-01 | Koa auth uses export default router | Clean module exports |
 
 ### Pending Todos
 
@@ -80,6 +85,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-21T17:40:00Z
-Stopped at: Completed 02-04-PLAN.md (Hydrate API) - Phase 2 complete
+Last session: 2026-01-22T09:53:00Z
+Stopped at: Completed 03-01-PLAN.md (Template Consolidation)
 Resume file: None
