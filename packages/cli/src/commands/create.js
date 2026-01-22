@@ -343,29 +343,78 @@ export const createCommand = new Command('create')
 
       // Success message
       console.log();
-      console.log(picocolors.green('✅ Project created successfully!'));
+      console.log(picocolors.green('Project created successfully!'));
       console.log();
 
       // Show configuration summary
-      console.log(picocolors.cyan('📋 Project Configuration:'));
-      console.log(picocolors.gray('  Language:'), picocolors.bold(language === 'typescript' ? 'TypeScript' : 'JavaScript'));
-      console.log(picocolors.gray('  Runtime:'), picocolors.bold(runtime));
+      console.log(picocolors.cyan('Configuration:'));
+      console.log(picocolors.gray('  Template:'), picocolors.white(template === 'fullstack' ? 'Full Stack' : 'Basic'));
+      console.log(picocolors.gray('  Language:'), picocolors.white(language === 'typescript' ? 'TypeScript' : 'JavaScript'));
+      console.log(picocolors.gray('  Runtime:'), picocolors.white(runtime));
       if (database) {
-        console.log(picocolors.gray('  Database:'), picocolors.bold(database));
+        console.log(picocolors.gray('  Database:'), picocolors.white(database));
       }
       if (auth) {
-        console.log(picocolors.gray('  Authentication:'), picocolors.bold(auth.toUpperCase()));
+        console.log(picocolors.gray('  Auth:'), picocolors.white(auth.toUpperCase()));
       }
       if (packages.length > 0) {
-        console.log(picocolors.gray('  Packages:'), picocolors.bold(packages.join(', ')));
+        const formattedPackages = packages.map(p => `@coherent.js/${p}`).join(', ');
+        console.log(picocolors.gray('  Packages:'), picocolors.white(formattedPackages));
       }
       console.log();
 
-      console.log(picocolors.cyan('Next steps:'));
-      console.log(picocolors.gray('  cd'), picocolors.bold(projectName));
-
+      // Show file tree
+      const fileExt = language === 'typescript' ? '.ts' : '.js';
+      console.log(picocolors.cyan('Project structure:'));
+      console.log(picocolors.white(`  ${projectName}/`));
+      console.log(picocolors.gray(`    src/`));
+      console.log(picocolors.gray(`      index${fileExt}`));
+      console.log(picocolors.gray(`      components/`));
       if (database) {
-        console.log(picocolors.gray('  # Configure database in .env.example'));
+        console.log(picocolors.gray(`      db/`));
+      }
+      if (auth || packages.includes('api')) {
+        console.log(picocolors.gray(`      api/`));
+      }
+      console.log(picocolors.gray(`    public/`));
+      console.log(picocolors.gray(`    package.json`));
+      if (database) {
+        console.log(picocolors.gray(`    .env.example`), picocolors.yellow('<-- Configure this!'));
+      }
+      console.log();
+
+      // Environment variables reminder
+      const needsEnvConfig = database && database !== 'sqlite';
+      const envVars = [];
+      if (needsEnvConfig) {
+        if (database === 'mongodb') {
+          envVars.push('MONGODB_URI');
+        } else {
+          envVars.push('DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASSWORD');
+        }
+      }
+      if (auth === 'jwt') {
+        envVars.push('JWT_SECRET');
+      }
+      if (auth === 'session') {
+        envVars.push('SESSION_SECRET');
+      }
+
+      if (envVars.length > 0) {
+        console.log(picocolors.yellow('Environment variables to configure:'));
+        envVars.forEach(v => console.log(picocolors.gray(`  ${v}`)));
+        console.log();
+      }
+
+      // Numbered next steps
+      console.log(picocolors.cyan('Next steps:'));
+      let stepNum = 1;
+      console.log(picocolors.white(`  ${stepNum}.`), picocolors.gray(`cd ${projectName}`));
+      stepNum++;
+
+      if (needsEnvConfig) {
+        console.log(picocolors.white(`  ${stepNum}.`), picocolors.gray('Edit .env with your database credentials'));
+        stepNum++;
       }
 
       // Show commands for selected package manager
@@ -377,15 +426,14 @@ export const createCommand = new Command('create')
 
       const commands = pmCommands[packageManager] || pmCommands.npm;
 
-      if (!options.skipInstall) {
-        console.log(picocolors.gray(`  ${commands.dev}`));
-      } else {
-        console.log(picocolors.gray(`  ${commands.install}`));
-        console.log(picocolors.gray(`  ${commands.dev}`));
+      if (options.skipInstall) {
+        console.log(picocolors.white(`  ${stepNum}.`), picocolors.gray(commands.install));
+        stepNum++;
       }
+      console.log(picocolors.white(`  ${stepNum}.`), picocolors.gray(commands.dev));
 
       console.log();
-      console.log(picocolors.gray('Happy coding! 🎉'));
+      console.log(picocolors.gray('Happy coding!'));
 
     } catch (_error) {
       spinner.fail('Failed to create project');
