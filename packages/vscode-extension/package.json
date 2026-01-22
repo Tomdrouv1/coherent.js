@@ -1,0 +1,78 @@
+{
+  "name": "coherent-language-support",
+  "displayName": "Coherent.js Language Support",
+  "description": "IntelliSense, validation, and snippets for Coherent.js",
+  "version": "1.0.0",
+  "publisher": "coherentjs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Tomdrouv1/coherent.js"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters",
+    "Snippets"
+  ],
+  "keywords": [
+    "coherent",
+    "ssr",
+    "server-side-rendering",
+    "html",
+    "components"
+  ],
+  "icon": "icon.png",
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "snippets": [
+      {
+        "language": "javascript",
+        "path": "./snippets/coherent.json"
+      },
+      {
+        "language": "typescript",
+        "path": "./snippets/coherent.json"
+      },
+      {
+        "language": "javascriptreact",
+        "path": "./snippets/coherent.json"
+      },
+      {
+        "language": "typescriptreact",
+        "path": "./snippets/coherent.json"
+      }
+    ],
+    "configuration": {
+      "title": "Coherent.js",
+      "properties": {
+        "coherent.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Traces communication between VS Code and the language server"
+        }
+      }
+    }
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.3.2",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.9.3"
+  },
+  "scripts": {
+    "build": "node esbuild.config.mjs",
+    "package": "vsce package --no-dependencies",
+    "publish": "vsce publish --no-dependencies"
+  }
+}
