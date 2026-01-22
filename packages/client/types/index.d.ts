@@ -735,7 +735,10 @@ export function makeHydratable<T extends CoherentComponent>(
 /** Auto-hydrate elements on DOM ready */
 export function autoHydrate(componentRegistry?: Record<string, CoherentComponent>): void;
 
-export function registerEventHandler(id: string, handler: StateAwareHandler): void;
+export function registerEventHandler<S = any, E extends Event = Event>(
+  id: string,
+  handler: StateAwareHandler<S, E>
+): void;
 
 /** Register a component for auto-hydration */
 declare function registerComponent(
@@ -881,9 +884,9 @@ export const eventDelegation: EventDelegation;
 export const handlerRegistry: HandlerRegistry;
 
 /** Wrap an event handler for use with event delegation */
-export function wrapEvent(
+export function wrapEvent<S = any, E extends Event = Event>(
   eventType: string,
-  handler: StateAwareHandler,
+  handler: StateAwareHandler<S, E>,
   handlerId?: string
 ): { handlerId: string; dataAttribute: string };
 

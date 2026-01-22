@@ -164,7 +164,11 @@ importers:
         specifier: ^2.4.2
         version: 2.4.2
 
-  packages/client: {}
+  packages/client:
+    devDependencies:
+      expect-type:
+        specifier: 1.3.0
+        version: 1.3.0
 
   packages/core: {}
 
@@ -2395,6 +2399,10 @@ packages:
 
   expect-type@1.2.2:
     resolution: {integrity: sha512-JhFGDVJ7tmDJItKhYgJCGLOWjuK9vPxiXoUFLwLDc99NlmklilbiQJwoctZtt13+xMw91MCk/REan6MWHqDjyA==}
+    engines: {node: '>=12.0.0'}
+
+  expect-type@1.3.0:
+    resolution: {integrity: sha512-knvyeauYhqjOYvQ66MznSMs83wmHrCycNEN6Ao+2AeYEfxUIkuiVxdEa1qlGEPK+We3n0THiDciYSsCcgW/DoA==}
     engines: {node: '>=12.0.0'}
 
   express@5.1.0:
@@ -6492,6 +6500,8 @@ snapshots:
   expand-template@2.0.3: {}
 
   expect-type@1.2.2: {}
+
+  expect-type@1.3.0: {}
 
   express@5.1.0:
     dependencies:
