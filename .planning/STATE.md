@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-21)
 
 **Core value:** A developer can run `coherent create my-app`, get a working fullstack app with auth and database, and start building in 5 minutes
-**Current focus:** Phase 3 - CLI Scaffolding (COMPLETE)
+**Current focus:** Phase 4 - Hot Module Replacement (IN PROGRESS)
 
 ## Current Position
 
-Phase: 3 of 6 (CLI Scaffolding)
-Plan: 3/3 plans complete in Phase 3
-Status: Phase complete
-Last activity: 2026-01-22 - Completed 03-03-PLAN.md (CLI UX Improvements)
+Phase: 4 of 6 (Hot Module Replacement)
+Plan: 1/4 plans complete in Phase 4
+Status: In progress
+Last activity: 2026-01-22 - Completed 04-01-PLAN.md (HMR Core Infrastructure)
 
-Progress: [█████▌░░░░] 56% (10 of 18 total plans)
+Progress: [██████░░░░] 61% (11 of 18 total plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
+- Total plans completed: 11
 - Average duration: 6 min
-- Total execution time: 63 min
+- Total execution time: 70 min
 
 **By Phase:**
 
@@ -30,9 +30,10 @@ Progress: [█████▌░░░░] 56% (10 of 18 total plans)
 | 01-foundation | 3 | 27 min | 9 min |
 | 02-hydration | 4 | 19 min | 5 min |
 | 03-cli-scaffolding | 3 | 17 min | 6 min |
+| 04-hot-module-replacement | 1 | 7 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-04 (5 min), 03-01 (8 min), 03-02 (4 min), 03-03 (5 min)
+- Last 5 plans: 03-01 (8 min), 03-02 (4 min), 03-03 (5 min), 04-01 (7 min)
 - Trend: Consistent performance
 
 *Updated after each plan completion*
@@ -80,6 +81,10 @@ Recent decisions affecting current work:
 | 2026-01-22 | 03-03 | onProgress callback with default no-op | Backward compatible progress reporting |
 | 2026-01-22 | 03-03 | Dev server spawn with detached + unref | CLI exits cleanly while server continues |
 | 2026-01-22 | 03-03 | Dev server prompt only with deps installed | Prevents broken state if deps missing |
+| 2026-01-22 | 04-01 | Per-module resource tracking via Map | Targeted cleanup on HMR dispose |
+| 2026-01-22 | 04-01 | Input key priority: id > name+type > path | Balance stability with fallback coverage |
+| 2026-01-22 | 04-01 | 50px layout change threshold | Matches scroll anchoring patterns |
+| 2026-01-22 | 04-01 | Tracked fetch with auto AbortController | Clean resource management for pending requests |
 
 ### Pending Todos
 
@@ -91,6 +96,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-22T09:05:23Z
-Stopped at: Completed 03-03-PLAN.md (CLI UX Improvements) - Phase 3 complete
+Last session: 2026-01-22T10:29:14Z
+Stopped at: Completed 04-01-PLAN.md (HMR Core Infrastructure)
 Resume file: None
