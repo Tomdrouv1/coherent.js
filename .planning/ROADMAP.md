@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Hydration** - Reliable client-side hydration with event delegation
 - [x] **Phase 3: CLI Scaffolding** - Working project generator with current APIs
 - [x] **Phase 4: Hot Module Replacement** - State-preserving development updates
-- [ ] **Phase 5: TypeScript** - Complete type definitions across all packages
+- [x] **Phase 5: TypeScript** - Complete type definitions across all packages
 - [ ] **Phase 6: IDE Support** - Language server and VS Code extension
 
 ## Phase Details
@@ -101,11 +101,11 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — Core element types with strict per-element attributes
-- [ ] 05-02-PLAN.md — Core package type tests with Vitest expectTypeOf
-- [ ] 05-03-PLAN.md — Client package types and type tests
-- [ ] 05-04-PLAN.md — Integration package types (api, database, adapters)
-- [ ] 05-05-PLAN.md — Utility package types (forms, i18n, testing, etc.)
+- [x] 05-01-PLAN.md — Core element types with strict per-element attributes
+- [x] 05-02-PLAN.md — Core package type tests with Vitest expectTypeOf
+- [x] 05-03-PLAN.md — Client package types and type tests
+- [x] 05-04-PLAN.md — Integration package types (api, database, adapters)
+- [x] 05-05-PLAN.md — Utility package types (forms, i18n, testing, etc.)
 
 ### Phase 6: IDE Support
 **Goal**: VS Code provides intelligent autocomplete, go-to-definition, and error highlighting for Coherent.js
@@ -133,9 +133,9 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 2. Hydration | 4/4 | Complete | 2026-01-21 |
 | 3. CLI Scaffolding | 3/3 | Complete | 2026-01-22 |
 | 4. Hot Module Replacement | 3/3 | Complete | 2026-01-22 |
-| 5. TypeScript | 0/5 | Not started | - |
+| 5. TypeScript | 5/5 | Complete | 2026-01-22 |
 | 6. IDE Support | 0/2 | Not started | - |
 
 ---
 *Roadmap created: 2026-01-21*
-*Last updated: 2026-01-22 (Phase 5 planned)*
+*Last updated: 2026-01-22 (Phase 5 complete)*

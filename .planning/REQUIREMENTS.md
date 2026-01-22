@@ -49,10 +49,10 @@ Requirements for operational framework. Each maps to roadmap phases.
 
 ### TypeScript
 
-- [ ] **TS-01**: All public APIs have TypeScript definitions
-- [ ] **TS-02**: Component object syntax has accurate type inference
-- [ ] **TS-03**: Event handler types match runtime behavior
-- [ ] **TS-04**: Generated types tested against actual runtime
+- [x] **TS-01**: All public APIs have TypeScript definitions
+- [x] **TS-02**: Component object syntax has accurate type inference
+- [x] **TS-03**: Event handler types match runtime behavior
+- [x] **TS-04**: Generated types tested against actual runtime
 
 ### IDE Support
 
@@ -125,10 +125,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HMR-02 | Phase 4: Hot Module Replacement | Complete |
 | HMR-03 | Phase 4: Hot Module Replacement | Complete |
 | HMR-04 | Phase 4: Hot Module Replacement | Complete |
-| TS-01 | Phase 5: TypeScript | Pending |
-| TS-02 | Phase 5: TypeScript | Pending |
-| TS-03 | Phase 5: TypeScript | Pending |
-| TS-04 | Phase 5: TypeScript | Pending |
+| TS-01 | Phase 5: TypeScript | Complete |
+| TS-02 | Phase 5: TypeScript | Complete |
+| TS-03 | Phase 5: TypeScript | Complete |
+| TS-04 | Phase 5: TypeScript | Complete |
 | IDE-01 | Phase 6: IDE Support | Pending |
 | IDE-02 | Phase 6: IDE Support | Pending |
 | IDE-03 | Phase 6: IDE Support | Pending |
@@ -141,4 +141,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-21*
-*Last updated: 2026-01-22 (Phase 4 complete)*
+*Last updated: 2026-01-22 (Phase 5 complete)*
