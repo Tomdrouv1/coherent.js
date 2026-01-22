@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-21)
 
 **Core value:** A developer can run `coherent create my-app`, get a working fullstack app with auth and database, and start building in 5 minutes
-**Current focus:** Phase 3 - CLI Scaffolding
+**Current focus:** Phase 3 - CLI Scaffolding (COMPLETE)
 
 ## Current Position
 
 Phase: 3 of 6 (CLI Scaffolding)
-Plan: 2/3 plans complete in Phase 3
-Status: In progress
-Last activity: 2026-01-22 - Completed 03-02-PLAN.md (CLI Test Coverage)
+Plan: 3/3 plans complete in Phase 3
+Status: Phase complete
+Last activity: 2026-01-22 - Completed 03-03-PLAN.md (CLI UX Improvements)
 
-Progress: [█████░░░░░] 50% (9 of 18 total plans)
+Progress: [█████▌░░░░] 56% (10 of 18 total plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
+- Total plans completed: 10
 - Average duration: 6 min
-- Total execution time: 58 min
+- Total execution time: 63 min
 
 **By Phase:**
 
@@ -29,10 +29,10 @@ Progress: [█████░░░░░] 50% (9 of 18 total plans)
 |-------|-------|-------|----------|
 | 01-foundation | 3 | 27 min | 9 min |
 | 02-hydration | 4 | 19 min | 5 min |
-| 03-cli-scaffolding | 2 | 12 min | 6 min |
+| 03-cli-scaffolding | 3 | 17 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-03 (4 min), 02-04 (5 min), 03-01 (8 min), 03-02 (4 min)
+- Last 5 plans: 02-04 (5 min), 03-01 (8 min), 03-02 (4 min), 03-03 (5 min)
 - Trend: Consistent performance
 
 *Updated after each plan completion*
@@ -77,6 +77,9 @@ Recent decisions affecting current work:
 | 2026-01-22 | 03-02 | PACKAGE_EXPORTS map for import validation | Detects when scaffolded code imports non-existent exports |
 | 2026-01-22 | 03-02 | Matrix testing pattern for permutations | Systematic coverage without duplicating test code |
 | 2026-01-22 | 03-02 | extractImports/validateImports utilities | Reusable import analysis for CLI testing |
+| 2026-01-22 | 03-03 | onProgress callback with default no-op | Backward compatible progress reporting |
+| 2026-01-22 | 03-03 | Dev server spawn with detached + unref | CLI exits cleanly while server continues |
+| 2026-01-22 | 03-03 | Dev server prompt only with deps installed | Prevents broken state if deps missing |
 
 ### Pending Todos
 
@@ -88,6 +91,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-22T09:04:40Z
-Stopped at: Completed 03-02-PLAN.md (CLI Test Coverage)
+Last session: 2026-01-22T09:05:23Z
+Stopped at: Completed 03-03-PLAN.md (CLI UX Improvements) - Phase 3 complete
 Resume file: None
