@@ -186,6 +186,44 @@ export default {
 - `@coherent.js/koa` - Koa adapter
 - `@coherent.js/nextjs` - Next.js integration
 
+### **Tooling**
+- `@coherent.js/language-server` - LSP for IDE support
+- `coherent-language-support` - VS Code extension
+
+## IDE Support
+
+Coherent.js provides first-class IDE support for an excellent developer experience.
+
+### VS Code Extension
+
+Install the **Coherent.js Language Support** extension from the VS Code Marketplace for:
+
+- **IntelliSense** - Autocomplete for HTML attributes and event handlers
+- **Validation** - Real-time warnings for invalid attributes and HTML nesting
+- **Snippets** - Quick patterns like `cel`, `ccomp`, `cinput`, and more
+- **Hover Info** - Type information and documentation on hover
+
+```bash
+# Install from command line
+code --install-extension coherentjs.coherent-language-support
+```
+
+Or search "Coherent.js Language Support" in the VS Code Extensions panel.
+
+### Language Server (for other editors)
+
+The `@coherent.js/language-server` package provides LSP support for any editor:
+
+```bash
+# Install globally
+npm install -g @coherent.js/language-server
+
+# Run the server
+coherent-language-server --stdio
+```
+
+Configure your editor's LSP client to use `coherent-language-server` for JavaScript and TypeScript files.
+
 ## 🎯 **Production Validation**
 
 All performance claims validated with real measurements:
