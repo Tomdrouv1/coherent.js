@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-21)
 ## Current Position
 
 Phase: 4 of 6 (Hot Module Replacement)
-Plan: 2/4 plans complete in Phase 4
+Plan: 3/4 plans complete in Phase 4
 Status: In progress
-Last activity: 2026-01-22 - Completed 04-02-PLAN.md (HMR UI Components)
+Last activity: 2026-01-22 - Completed 04-03-PLAN.md (HMR Client Integration)
 
-Progress: [██████▌░░░] 67% (12 of 18 total plans)
+Progress: [███████░░░] 72% (13 of 18 total plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 12
+- Total plans completed: 13
 - Average duration: 7 min
-- Total execution time: 80 min
+- Total execution time: 87 min
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: [██████▌░░░] 67% (12 of 18 total plans)
 | 01-foundation | 3 | 27 min | 9 min |
 | 02-hydration | 4 | 19 min | 5 min |
 | 03-cli-scaffolding | 3 | 17 min | 6 min |
-| 04-hot-module-replacement | 2 | 17 min | 9 min |
+| 04-hot-module-replacement | 3 | 24 min | 8 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-02 (4 min), 03-03 (5 min), 04-01 (7 min), 04-02 (10 min)
+- Last 5 plans: 03-03 (5 min), 04-01 (7 min), 04-02 (10 min), 04-03 (7 min)
 - Trend: Consistent performance
 
 *Updated after each plan completion*
@@ -90,6 +90,12 @@ Recent decisions affecting current work:
 | 2026-01-22 | 04-02 | 8px indicator dot (unobtrusive) | Per CONTEXT.md "small colored dot, not a banner" |
 | 2026-01-22 | 04-02 | Lazy indicator creation | Element only created on first status update |
 | 2026-01-22 | 04-02 | Editor URL schemes via window.open | Standard click-to-open pattern |
+| 2026-01-22 | 04-03 | Vite-compatible hot context API | Industry standard, familiar to developers |
+| 2026-01-22 | 04-03 | Module boundary via accept or __hmrBoundary | Explicit opt-in for HMR |
+| 2026-01-22 | 04-03 | Exponential backoff with jitter (1-30s) | Prevents thundering herd on restart |
+| 2026-01-22 | 04-03 | Full page reload on reconnect after disconnect | Server may have restarted |
+| 2026-01-22 | 04-03 | State capture/restore wraps entire update | Form inputs survive even on fallback |
+| 2026-01-22 | 04-03 | Backward compatible deprecation | Re-export + IIFE auto-init |
 
 ### Pending Todos
 
@@ -101,6 +107,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-22T10:32:36Z
-Stopped at: Completed 04-02-PLAN.md (HMR UI Components)
+Last session: 2026-01-22T10:42:55Z
+Stopped at: Completed 04-03-PLAN.md (HMR Client Integration)
 Resume file: None
