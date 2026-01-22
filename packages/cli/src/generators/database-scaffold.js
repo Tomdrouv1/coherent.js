@@ -87,8 +87,7 @@ export async function initDatabase()${returnType} {
   try {
     // Setup database with Coherent.js
     db = setupDatabase({
-      adapter: PostgreSQLAdapter(),
-      ...dbConfig
+      adapter: PostgreSQLAdapter(dbConfig)
     });
 
     console.log('✓ Connected to PostgreSQL database');
@@ -126,8 +125,7 @@ export async function initDatabase()${returnType} {
   try {
     // Setup database with Coherent.js
     db = setupDatabase({
-      adapter: MySQLAdapter(),
-      ...dbConfig
+      adapter: MySQLAdapter(dbConfig)
     });
 
     console.log('✓ Connected to MySQL database');
@@ -172,8 +170,7 @@ export async function initDatabase()${returnType} {
 
     // Setup database with Coherent.js
     db = setupDatabase({
-      adapter: SQLiteAdapter(),
-      ...dbConfig
+      adapter: SQLiteAdapter(dbConfig)
     });
 
     console.log('✓ Connected to SQLite database');
@@ -211,8 +208,7 @@ export async function initDatabase()${returnType} {
   try {
     // Setup database with Coherent.js
     db = setupDatabase({
-      adapter: MongoDBAdapter(),
-      ...dbConfig
+      adapter: MongoDBAdapter(dbConfig)
     });
 
     console.log('✓ Connected to MongoDB database');
