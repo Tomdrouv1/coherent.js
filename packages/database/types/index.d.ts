@@ -9,9 +9,104 @@
 // Database Connection Types
 // ============================================================================
 
+/**
+ * Database type identifier.
+ */
+export type DatabaseType = 'postgresql' | 'mysql' | 'sqlite' | 'mongodb' | 'memory';
+
+/**
+ * PostgreSQL-specific configuration options.
+ */
+export interface PostgreSQLConfig {
+  type: 'postgresql';
+  host: string;
+  port?: number;
+  username: string;
+  password: string;
+  database: string;
+  ssl?: boolean | {
+    rejectUnauthorized?: boolean;
+    ca?: string;
+    key?: string;
+    cert?: string;
+  };
+  schema?: string;
+  applicationName?: string;
+  statementTimeout?: number;
+  idleTimeout?: number;
+}
+
+/**
+ * MySQL-specific configuration options.
+ */
+export interface MySQLConfig {
+  type: 'mysql';
+  host: string;
+  port?: number;
+  username: string;
+  password: string;
+  database: string;
+  ssl?: boolean | {
+    ca?: string;
+    key?: string;
+    cert?: string;
+  };
+  multipleStatements?: boolean;
+  namedPlaceholders?: boolean;
+  dateStrings?: boolean;
+  supportBigNumbers?: boolean;
+  bigNumberStrings?: boolean;
+}
+
+/**
+ * SQLite-specific configuration options.
+ */
+export interface SQLiteConfig {
+  type: 'sqlite';
+  database: string;
+  mode?: 'readonly' | 'readwrite' | 'create';
+  wal?: boolean;
+  busyTimeout?: number;
+}
+
+/**
+ * MongoDB-specific configuration options.
+ */
+export interface MongoDBConfig {
+  type: 'mongodb';
+  uri?: string;
+  host?: string;
+  port?: number;
+  username?: string;
+  password?: string;
+  database: string;
+  authSource?: string;
+  replicaSet?: string;
+  retryWrites?: boolean;
+  w?: number | 'majority';
+}
+
+/**
+ * In-memory database configuration for testing.
+ */
+export interface MemoryConfig {
+  type: 'memory';
+  database?: string;
+}
+
+/**
+ * Database-specific configuration union type.
+ */
+export type DatabaseSpecificConfig =
+  | PostgreSQLConfig
+  | MySQLConfig
+  | SQLiteConfig
+  | MongoDBConfig
+  | MemoryConfig;
+
 /** Database configuration options */
 export interface DatabaseConfig {
-  type: 'postgresql' | 'mysql' | 'sqlite' | 'mongodb' | 'memory';
+  type: DatabaseType;
   host?: string;
   port?: number;
   username?: string;
@@ -57,14 +152,22 @@ export interface DatabaseConnection {
   ping(): Promise<boolean>;
 }
 
-/** Database transaction interface */
+/**
+ * Database transaction interface.
+ * Supports nested transactions via savepoints.
+ */
 export interface Transaction {
   query<T = any>(sql: string, parameters?: any[]): Promise<T>;
   commit(): Promise<void>;
   rollback(): Promise<void>;
+  /** Create a savepoint for nested transaction */
   savepoint(name: string): Promise<void>;
+  /** Release a savepoint */
   release(name: string): Promise<void>;
+  /** Rollback to a savepoint */
   rollbackTo(name: string): Promise<void>;
+  /** Whether transaction is still active */
+  readonly isActive: boolean;
 }
 
 /** Database manager interface */
@@ -206,9 +309,14 @@ export interface FieldInfo {
 // Model Types
 // ============================================================================
 
+/**
+ * Field type definitions for model schema.
+ */
+export type FieldType = 'string' | 'number' | 'boolean' | 'date' | 'json' | 'array' | 'object' | 'uuid' | 'bigint' | 'decimal';
+
 /** Model field definition */
 export interface FieldDefinition {
-  type: 'string' | 'number' | 'boolean' | 'date' | 'json' | 'array' | 'object';
+  type: FieldType;
   required?: boolean;
   default?: any;
   primaryKey?: boolean;
@@ -250,106 +358,131 @@ export interface RelationDefinition {
 }
 
 /** Model configuration */
-export interface ModelConfig {
+export interface ModelConfig<T extends Record<string, any> = Record<string, any>> {
   table: string;
   schema: ModelSchema;
   timestamps?: boolean | { created?: string; updated?: string };
   softDeletes?: boolean | string;
   primaryKey?: string;
-  fillable?: string[];
-  guarded?: string[];
-  hidden?: string[];
-  visible?: string[];
-  casts?: Record<string, string>;
+  fillable?: (keyof T)[];
+  guarded?: (keyof T)[];
+  hidden?: (keyof T)[];
+  visible?: (keyof T)[];
+  casts?: Record<keyof T, string>;
   relations?: Record<string, RelationDefinition>;
-  hooks?: ModelHooks;
-  validators?: Record<string, (value: any, instance: ModelInstance) => boolean | string>;
+  hooks?: ModelHooks<T>;
+  validators?: Record<string, (value: any, instance: ModelInstance<T>) => boolean | string>;
 }
 
 /** Model lifecycle hooks */
-export interface ModelHooks {
-  beforeSave?: (instance: ModelInstance) => void | Promise<void>;
-  afterSave?: (instance: ModelInstance) => void | Promise<void>;
-  beforeCreate?: (instance: ModelInstance) => void | Promise<void>;
-  afterCreate?: (instance: ModelInstance) => void | Promise<void>;
-  beforeUpdate?: (instance: ModelInstance) => void | Promise<void>;
-  afterUpdate?: (instance: ModelInstance) => void | Promise<void>;
-  beforeDelete?: (instance: ModelInstance) => void | Promise<void>;
-  afterDelete?: (instance: ModelInstance) => void | Promise<void>;
-  beforeValidate?: (instance: ModelInstance) => void | Promise<void>;
-  afterValidate?: (instance: ModelInstance) => void | Promise<void>;
+export interface ModelHooks<T extends Record<string, any> = Record<string, any>> {
+  beforeSave?: (instance: ModelInstance<T>) => void | Promise<void>;
+  afterSave?: (instance: ModelInstance<T>) => void | Promise<void>;
+  beforeCreate?: (instance: ModelInstance<T>) => void | Promise<void>;
+  afterCreate?: (instance: ModelInstance<T>) => void | Promise<void>;
+  beforeUpdate?: (instance: ModelInstance<T>) => void | Promise<void>;
+  afterUpdate?: (instance: ModelInstance<T>) => void | Promise<void>;
+  beforeDelete?: (instance: ModelInstance<T>) => void | Promise<void>;
+  afterDelete?: (instance: ModelInstance<T>) => void | Promise<void>;
+  beforeValidate?: (instance: ModelInstance<T>) => void | Promise<void>;
+  afterValidate?: (instance: ModelInstance<T>) => void | Promise<void>;
 }
 
-/** Model instance interface */
-export interface ModelInstance {
-  readonly $model: Model;
+/**
+ * Model instance interface with generic type support.
+ * Type parameter T represents the model's attribute shape.
+ */
+export interface ModelInstance<T extends Record<string, any> = Record<string, any>> {
+  readonly $model: Model<T>;
   readonly $table: string;
   readonly $primaryKey: string;
   readonly $exists: boolean;
   readonly $dirty: boolean;
-  readonly $original: Record<string, any>;
-  readonly $attributes: Record<string, any>;
+  readonly $original: T;
+  readonly $attributes: T;
   readonly $relations: Record<string, any>;
 
-  get<K extends keyof this>(key: K): this[K];
-  set<K extends keyof this>(key: K, value: this[K]): this;
-  setAttribute(key: string, value: any): this;
-  getAttribute(key: string): any;
+  get<K extends keyof T>(key: K): T[K];
+  set<K extends keyof T>(key: K, value: T[K]): this;
+  setAttribute<K extends keyof T>(key: K, value: T[K]): this;
+  getAttribute<K extends keyof T>(key: K): T[K];
   hasAttribute(key: string): boolean;
-  fill(attributes: Record<string, any>): this;
+  fill(attributes: Partial<T>): this;
   save(): Promise<this>;
-  update(attributes: Record<string, any>): Promise<this>;
+  update(attributes: Partial<T>): Promise<this>;
   delete(): Promise<boolean>;
   refresh(): Promise<this>;
   validate(): Promise<boolean>;
   getValidationErrors(): string[];
-  toObject(): Record<string, any>;
-  toJSON(): Record<string, any>;
-  clone(): ModelInstance;
-  is(instance: ModelInstance): boolean;
-  isNot(instance: ModelInstance): boolean;
-  getKey(): any;
-  setKey(value: any): this;
-  getDirty(): Record<string, any>;
-  getOriginal(): Record<string, any>;
+  toObject(): T;
+  toJSON(): T;
+  clone(): ModelInstance<T>;
+  is(instance: ModelInstance<T>): boolean;
+  isNot(instance: ModelInstance<T>): boolean;
+  getKey(): T[keyof T];
+  setKey(value: T[keyof T]): this;
+  getDirty(): Partial<T>;
+  getOriginal(): T;
   syncOriginal(): this;
-  wasChanged(key?: string): boolean;
-  getChanges(): Record<string, any>;
+  wasChanged(key?: keyof T): boolean;
+  getChanges(): Partial<T>;
   load(relations: string | string[]): Promise<this>;
   loadMissing(relations: string | string[]): Promise<this>;
 }
 
-/** Model query builder interface */
-export interface ModelQuery<T extends ModelInstance = ModelInstance> {
-  readonly model: Model;
+/**
+ * Model query builder interface with full generic chaining.
+ * Type parameter T flows through all query methods to the results.
+ *
+ * @example
+ * ```typescript
+ * interface User {
+ *   id: number;
+ *   email: string;
+ *   name: string;
+ *   createdAt: Date;
+ * }
+ *
+ * const userModel = createModel<User>({ table: 'users', ... });
+ *
+ * // Type-safe query chain
+ * const users = await userModel.query()
+ *   .where({ email: 'test@example.com' })
+ *   .orderBy('createdAt', 'DESC')
+ *   .limit(10)
+ *   .get(); // users: ModelInstance<User>[]
+ * ```
+ */
+export interface ModelQuery<T extends Record<string, any> = Record<string, any>> {
+  readonly model: Model<T>;
 
-  find(id: any): Promise<T | null>;
-  findOrFail(id: any): Promise<T>;
-  findMany(ids: any[]): Promise<T[]>;
-  first(): Promise<T | null>;
-  firstOrFail(): Promise<T>;
-  get(): Promise<T[]>;
-  all(): Promise<T[]>;
+  find(id: any): Promise<ModelInstance<T> | null>;
+  findOrFail(id: any): Promise<ModelInstance<T>>;
+  findMany(ids: any[]): Promise<ModelInstance<T>[]>;
+  first(): Promise<ModelInstance<T> | null>;
+  firstOrFail(): Promise<ModelInstance<T>>;
+  get(): Promise<ModelInstance<T>[]>;
+  all(): Promise<ModelInstance<T>[]>;
   count(): Promise<number>;
   exists(): Promise<boolean>;
-  sum(column: string): Promise<number>;
-  avg(column: string): Promise<number>;
-  min(column: string): Promise<number>;
-  max(column: string): Promise<number>;
+  sum(column: keyof T & string): Promise<number>;
+  avg(column: keyof T & string): Promise<number>;
+  min(column: keyof T & string): Promise<number>;
+  max(column: keyof T & string): Promise<number>;
 
-  where(conditions: WhereConditions): ModelQuery<T>;
-  where(column: string, value: any): ModelQuery<T>;
-  where(column: string, operator: SqlOperator, value: any): ModelQuery<T>;
-  whereIn(column: string, values: any[]): ModelQuery<T>;
-  whereNotIn(column: string, values: any[]): ModelQuery<T>;
-  whereBetween(column: string, values: [any, any]): ModelQuery<T>;
-  whereNull(column: string): ModelQuery<T>;
-  whereNotNull(column: string): ModelQuery<T>;
+  where(conditions: Partial<T> | WhereConditions): ModelQuery<T>;
+  where<K extends keyof T>(column: K, value: T[K]): ModelQuery<T>;
+  where<K extends keyof T>(column: K, operator: SqlOperator, value: T[K]): ModelQuery<T>;
+  whereIn<K extends keyof T>(column: K, values: T[K][]): ModelQuery<T>;
+  whereNotIn<K extends keyof T>(column: K, values: T[K][]): ModelQuery<T>;
+  whereBetween<K extends keyof T>(column: K, values: [T[K], T[K]]): ModelQuery<T>;
+  whereNull(column: keyof T & string): ModelQuery<T>;
+  whereNotNull(column: keyof T & string): ModelQuery<T>;
 
-  orderBy(column: string, direction?: OrderDirection): ModelQuery<T>;
-  orderByDesc(column: string): ModelQuery<T>;
-  latest(column?: string): ModelQuery<T>;
-  oldest(column?: string): ModelQuery<T>;
+  orderBy(column: keyof T & string, direction?: OrderDirection): ModelQuery<T>;
+  orderByDesc(column: keyof T & string): ModelQuery<T>;
+  latest(column?: keyof T & string): ModelQuery<T>;
+  oldest(column?: keyof T & string): ModelQuery<T>;
 
   limit(count: number): ModelQuery<T>;
   take(count: number): ModelQuery<T>;
@@ -359,21 +492,24 @@ export interface ModelQuery<T extends ModelInstance = ModelInstance> {
   with(relations: string | string[]): ModelQuery<T>;
   withCount(relations: string | string[]): ModelQuery<T>;
   has(relation: string, operator?: string, count?: number): ModelQuery<T>;
-  whereHas(relation: string, callback?: (query: ModelQuery) => void): ModelQuery<T>;
+  whereHas(relation: string, callback?: (query: ModelQuery<any>) => void): ModelQuery<T>;
   doesntHave(relation: string): ModelQuery<T>;
-  whereDoesntHave(relation: string, callback?: (query: ModelQuery) => void): ModelQuery<T>;
+  whereDoesntHave(relation: string, callback?: (query: ModelQuery<any>) => void): ModelQuery<T>;
 
-  create(attributes: Record<string, any>): Promise<T>;
-  insert(records: Record<string, any>[]): Promise<void>;
-  update(attributes: Record<string, any>): Promise<number>;
+  /** Select specific columns */
+  select<K extends keyof T>(...columns: K[]): ModelQuery<Pick<T, K>>;
+
+  create(attributes: Partial<T>): Promise<ModelInstance<T>>;
+  insert(records: Partial<T>[]): Promise<void>;
+  update(attributes: Partial<T>): Promise<number>;
   delete(): Promise<number>;
   forceDelete(): Promise<number>;
 
   paginate(page: number, perPage: number): Promise<PaginationResult<T>>;
   simplePaginate(page: number, perPage: number): Promise<SimplePaginationResult<T>>;
 
-  chunk(size: number, callback: (items: T[]) => void | Promise<void>): Promise<void>;
-  each(callback: (item: T) => void | Promise<void>): Promise<void>;
+  chunk(size: number, callback: (items: ModelInstance<T>[]) => void | Promise<void>): Promise<void>;
+  each(callback: (item: ModelInstance<T>) => void | Promise<void>): Promise<void>;
 
   toSql(): string;
   explain(): Promise<any[]>;
@@ -381,26 +517,50 @@ export interface ModelQuery<T extends ModelInstance = ModelInstance> {
   clone(): ModelQuery<T>;
 }
 
-/** Model class interface */
-export interface Model {
+/**
+ * Model class interface with generic type support.
+ *
+ * @example
+ * ```typescript
+ * interface User {
+ *   id: number;
+ *   email: string;
+ *   name: string;
+ * }
+ *
+ * const User: Model<User> = createModel<User>({
+ *   table: 'users',
+ *   schema: {
+ *     id: { type: 'number', primaryKey: true },
+ *     email: { type: 'string', unique: true },
+ *     name: { type: 'string' }
+ *   }
+ * });
+ *
+ * // Type-safe operations
+ * const user = await User.create({ email: 'test@example.com', name: 'Test' });
+ * const found = await User.find(1);
+ * ```
+ */
+export interface Model<T extends Record<string, any> = Record<string, any>> {
   readonly table: string;
   readonly primaryKey: string;
   readonly schema: ModelSchema;
-  readonly config: ModelConfig;
+  readonly config: ModelConfig<T>;
   readonly connection: DatabaseConnection;
 
-  query(): ModelQuery;
-  newInstance(attributes?: Record<string, any>, exists?: boolean): ModelInstance;
-  create(attributes: Record<string, any>): Promise<ModelInstance>;
-  find(id: any): Promise<ModelInstance | null>;
-  findOrFail(id: any): Promise<ModelInstance>;
-  findMany(ids: any[]): Promise<ModelInstance[]>;
-  first(): Promise<ModelInstance | null>;
-  firstOrFail(): Promise<ModelInstance>;
-  all(): Promise<ModelInstance[]>;
-  where(conditions: WhereConditions): ModelQuery;
-  insert(records: Record<string, any>[]): Promise<void>;
-  update(attributes: Record<string, any>, conditions?: WhereConditions): Promise<number>;
+  query(): ModelQuery<T>;
+  newInstance(attributes?: Partial<T>, exists?: boolean): ModelInstance<T>;
+  create(attributes: Partial<T>): Promise<ModelInstance<T>>;
+  find(id: any): Promise<ModelInstance<T> | null>;
+  findOrFail(id: any): Promise<ModelInstance<T>>;
+  findMany(ids: any[]): Promise<ModelInstance<T>[]>;
+  first(): Promise<ModelInstance<T> | null>;
+  firstOrFail(): Promise<ModelInstance<T>>;
+  all(): Promise<ModelInstance<T>[]>;
+  where(conditions: Partial<T> | WhereConditions): ModelQuery<T>;
+  insert(records: Partial<T>[]): Promise<void>;
+  update(attributes: Partial<T>, conditions?: WhereConditions): Promise<number>;
   delete(conditions?: WhereConditions): Promise<number>;
   count(conditions?: WhereConditions): Promise<number>;
 
@@ -410,14 +570,14 @@ export interface Model {
   getSchema(): ModelSchema;
   getRelations(): Record<string, RelationDefinition>;
 
-  on(event: string, listener: (...args: any[]) => void): Model;
-  off(event: string, listener?: (...args: any[]) => void): Model;
+  on(event: string, listener: (...args: any[]) => void): Model<T>;
+  off(event: string, listener?: (...args: any[]) => void): Model<T>;
   emit(event: string, ...args: any[]): boolean;
 }
 
-/** Pagination result */
-export interface PaginationResult<T> {
-  data: T[];
+/** Pagination result with typed data */
+export interface PaginationResult<T extends Record<string, any> = Record<string, any>> {
+  data: ModelInstance<T>[];
   total: number;
   perPage: number;
   currentPage: number;
@@ -428,9 +588,9 @@ export interface PaginationResult<T> {
   hasPrevPage: boolean;
 }
 
-/** Simple pagination result */
-export interface SimplePaginationResult<T> {
-  data: T[];
+/** Simple pagination result with typed data */
+export interface SimplePaginationResult<T extends Record<string, any> = Record<string, any>> {
+  data: ModelInstance<T>[];
   perPage: number;
   currentPage: number;
   hasNextPage: boolean;
@@ -467,20 +627,28 @@ export interface SchemaBuilder {
 /** Table builder for schema modifications */
 export interface TableBuilder {
   increments(name?: string): ColumnBuilder;
+  bigIncrements(name?: string): ColumnBuilder;
   string(name: string, length?: number): ColumnBuilder;
   text(name: string): ColumnBuilder;
+  mediumText(name: string): ColumnBuilder;
+  longText(name: string): ColumnBuilder;
   integer(name: string): ColumnBuilder;
+  smallInteger(name: string): ColumnBuilder;
+  tinyInteger(name: string): ColumnBuilder;
   bigInteger(name: string): ColumnBuilder;
   float(name: string, precision?: number, scale?: number): ColumnBuilder;
+  double(name: string, precision?: number, scale?: number): ColumnBuilder;
   decimal(name: string, precision?: number, scale?: number): ColumnBuilder;
   boolean(name: string): ColumnBuilder;
   date(name: string): ColumnBuilder;
   datetime(name: string): ColumnBuilder;
   timestamp(name: string): ColumnBuilder;
   timestamps(useTimestamps?: boolean, defaultToNow?: boolean): void;
+  softDeletes(columnName?: string): ColumnBuilder;
   json(name: string): ColumnBuilder;
   jsonb(name: string): ColumnBuilder;
   uuid(name: string): ColumnBuilder;
+  binary(name: string, length?: number): ColumnBuilder;
   enum(name: string, values: string[]): ColumnBuilder;
 
   primary(columns: string | string[]): void;
@@ -533,8 +701,10 @@ export type ForeignKeyAction = 'CASCADE' | 'SET NULL' | 'SET DEFAULT' | 'RESTRIC
 /** Index options */
 export interface IndexOptions {
   indexName?: string;
-  indexType?: 'btree' | 'hash' | 'gist' | 'gin' | 'spgist';
+  indexType?: 'btree' | 'hash' | 'gist' | 'gin' | 'spgist' | 'brin';
   storageParameters?: Record<string, any>;
+  unique?: boolean;
+  where?: string;
 }
 
 /** Migration interface */
@@ -580,7 +750,8 @@ export type DatabaseFeature =
   | 'cte'
   | 'window'
   | 'upsert'
-  | 'returning';
+  | 'returning'
+  | 'fullTextSearch';
 
 // ============================================================================
 // Middleware Types
@@ -610,8 +781,8 @@ export type TransactionIsolation =
   | 'SERIALIZABLE';
 
 /** Model middleware options */
-export interface ModelMiddlewareOptions {
-  model: string | Model;
+export interface ModelMiddlewareOptions<T extends Record<string, any> = Record<string, any>> {
+  model: string | Model<T>;
   connection?: string;
   as?: string;
 }
@@ -649,6 +820,21 @@ export interface MigrationStatus {
   error?: string;
 }
 
+/**
+ * Helper type to infer model attributes from schema definition.
+ */
+export type InferModelAttributes<S extends ModelSchema> = {
+  [K in keyof S]: S[K]['type'] extends 'string' ? string
+    : S[K]['type'] extends 'number' ? number
+    : S[K]['type'] extends 'boolean' ? boolean
+    : S[K]['type'] extends 'date' ? Date
+    : S[K]['type'] extends 'json' | 'array' | 'object' ? any
+    : S[K]['type'] extends 'uuid' ? string
+    : S[K]['type'] extends 'bigint' ? bigint
+    : S[K]['type'] extends 'decimal' ? number
+    : unknown;
+};
+
 // ============================================================================
 // Main Functions
 // ============================================================================
@@ -659,8 +845,34 @@ export function createQuery(config: QueryConfig): QueryConfig;
 /** Execute a query using the provided configuration */
 export function executeQuery<T = any>(db: DatabaseConnection, query: QueryConfig): Promise<QueryResult<T>>;
 
-/** Create a model */
-export function createModel(config: ModelConfig): Model;
+/**
+ * Create a typed model.
+ *
+ * @example
+ * ```typescript
+ * interface User {
+ *   id: number;
+ *   email: string;
+ *   name: string;
+ * }
+ *
+ * const User = createModel<User>({
+ *   table: 'users',
+ *   schema: {
+ *     id: { type: 'number', primaryKey: true },
+ *     email: { type: 'string', unique: true },
+ *     name: { type: 'string' }
+ *   }
+ * });
+ *
+ * // Type-safe: user is ModelInstance<User>
+ * const user = await User.create({ email: 'test@example.com', name: 'Test' });
+ * console.log(user.email); // Type-safe access
+ * ```
+ */
+export function createModel<T extends Record<string, any> = Record<string, any>>(
+  config: ModelConfig<T>
+): Model<T>;
 
 /** Create a migration */
 export function createMigration(config: MigrationConfig): Migration;
@@ -671,6 +883,14 @@ export function createDatabaseManager(config: DatabaseConfig): DatabaseManager;
 /** Create a connection */
 export function createConnection(config: DatabaseConfig): Promise<DatabaseConnection>;
 
+/**
+ * Create a connection from database-specific configuration.
+ * Provides better type inference for database-specific options.
+ */
+export function createTypedConnection<T extends DatabaseSpecificConfig>(
+  config: T
+): Promise<DatabaseConnection>;
+
 /** Run migrations */
 export function runMigrations(
   connection: DatabaseConnection,
@@ -679,15 +899,15 @@ export function runMigrations(
 ): Promise<MigrationStatus[]>;
 
 /** Database adapter creators */
-export function createPostgreSQLAdapter(config: DatabaseConfig): DatabaseAdapter;
-export function createMySQLAdapter(config: DatabaseConfig): DatabaseAdapter;
-export function createSQLiteAdapter(config: DatabaseConfig): DatabaseAdapter;
-export function createMongoDBAdapter(config: DatabaseConfig): DatabaseAdapter;
+export function createPostgreSQLAdapter(config: PostgreSQLConfig | DatabaseConfig): DatabaseAdapter;
+export function createMySQLAdapter(config: MySQLConfig | DatabaseConfig): DatabaseAdapter;
+export function createSQLiteAdapter(config: SQLiteConfig | DatabaseConfig): DatabaseAdapter;
+export function createMongoDBAdapter(config: MongoDBConfig | DatabaseConfig): DatabaseAdapter;
 
 /** Middleware functions */
 export function withDatabase(options?: DatabaseMiddlewareOptions): any;
 export function withTransaction(options?: TransactionMiddlewareOptions): any;
-export function withModel(options: ModelMiddlewareOptions): any;
+export function withModel<T extends Record<string, any>>(options: ModelMiddlewareOptions<T>): any;
 export function withPagination(options?: PaginationMiddlewareOptions): any;
 
 /** Setup database with default configuration */
@@ -724,6 +944,7 @@ declare const coherentDatabase: {
   SQLiteAdapter: typeof SQLiteAdapter;
   MongoDBAdapter: typeof MongoDBAdapter;
   createConnection: typeof createConnection;
+  createTypedConnection: typeof createTypedConnection;
   runMigrations: typeof runMigrations;
   setupDatabase: typeof setupDatabase;
   DEFAULT_DB_CONFIG: typeof DEFAULT_DB_CONFIG;
