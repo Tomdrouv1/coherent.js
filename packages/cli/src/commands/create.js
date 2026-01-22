@@ -8,6 +8,7 @@ import ora from 'ora';
 import picocolors from 'picocolors';
 import { existsSync, mkdirSync } from 'fs';
 import { resolve } from 'path';
+import { spawn } from 'child_process';
 import { scaffoldProject } from '../generators/project-scaffold.js';
 import { validateProjectName } from '../utils/validation.js';
 
@@ -433,6 +434,41 @@ export const createCommand = new Command('create')
       console.log(picocolors.white(`  ${stepNum}.`), picocolors.gray(commands.dev));
 
       console.log();
+
+      // Offer to start dev server (only in interactive mode with deps installed)
+      if (!options.skipPrompts && !options.skipInstall) {
+        const startResponse = await prompts({
+          type: 'confirm',
+          name: 'startDev',
+          message: 'Start development server now?',
+          initial: true
+        });
+
+        if (startResponse.startDev) {
+          console.log();
+          console.log(picocolors.cyan('Starting development server...'));
+          console.log(picocolors.gray(`  ${commands.dev}`));
+          console.log();
+
+          try {
+            const devProcess = spawn(commands.dev, [], {
+              cwd: projectPath,
+              stdio: 'inherit',
+              shell: true,
+              detached: true
+            });
+
+            devProcess.unref();
+            // Exit cleanly - dev server continues in background
+            return;
+          } catch {
+            console.log(picocolors.yellow('Could not start development server automatically.'));
+            console.log(picocolors.gray(`  Run manually: cd ${projectName} && ${commands.dev}`));
+            console.log();
+          }
+        }
+      }
+
       console.log(picocolors.gray('Happy coding!'));
 
     } catch (_error) {
