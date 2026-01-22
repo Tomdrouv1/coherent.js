@@ -30,7 +30,8 @@ export async function scaffoldProject(projectPath, options) {
     auth = null,
     packages = [],
     language = 'javascript',
-    packageManager = 'npm'
+    packageManager = 'npm',
+    onProgress = () => {}
   } = options;
 
   const isTypeScript = language === 'typescript';
@@ -69,9 +70,13 @@ export async function scaffoldProject(projectPath, options) {
     mkdirSync(join(projectPath, dir), { recursive: true });
   });
 
+  onProgress('Created project structure');
+
   // Generate package.json
   const packageJson = generatePackageJson(name, { template, runtime, database, auth, packages, language, packageManager });
   writeFileSync(join(projectPath, 'package.json'), JSON.stringify(packageJson, null, 2));
+
+  onProgress('Generated package.json');
 
   // Generate TypeScript or JavaScript config
   if (isTypeScript) {
@@ -82,6 +87,8 @@ export async function scaffoldProject(projectPath, options) {
     writeFileSync(join(projectPath, 'jsconfig.json'), JSON.stringify(jsConfig, null, 2));
   }
 
+  onProgress('Created configuration files');
+
   // Generate main server file
   const serverContent = generateServerFile(runtime, {
     port: 3000,
@@ -91,8 +98,12 @@ export async function scaffoldProject(projectPath, options) {
   });
   writeFileSync(join(projectPath, `src/index${fileExtension}`), serverContent);
 
+  onProgress('Set up server');
+
   // Generate HomePage component
   await generateHomePageComponent(projectPath, name, isTypeScript, fileExtension);
+
+  onProgress('Created components');
 
   // Generate database scaffolding
   if (database) {
@@ -119,6 +130,8 @@ export async function scaffoldProject(projectPath, options) {
         envContent += `${key}=${value}\n`;
       }
       writeFileSync(join(projectPath, '.env.example'), envContent);
+
+      onProgress('Created Docker configuration');
     } else {
       // Generate or update .env.example without Docker
       const existingEnv = '';
@@ -131,6 +144,8 @@ export async function scaffoldProject(projectPath, options) {
     } catch {
       // Ignore if .env already exists
     }
+
+    onProgress('Configured database');
   }
 
   // Generate auth scaffolding
@@ -159,6 +174,8 @@ export async function scaffoldProject(projectPath, options) {
       // .env might not exist if database wasn't selected first, create it
       writeFileSync(join(projectPath, '.env'), authScaffolding.env);
     }
+
+    onProgress('Set up authentication');
   }
 
   // Generate optional package scaffolding
