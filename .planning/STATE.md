@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-21)
 ## Current Position
 
 Phase: 4 of 6 (Hot Module Replacement)
-Plan: 1/4 plans complete in Phase 4
+Plan: 2/4 plans complete in Phase 4
 Status: In progress
-Last activity: 2026-01-22 - Completed 04-01-PLAN.md (HMR Core Infrastructure)
+Last activity: 2026-01-22 - Completed 04-02-PLAN.md (HMR UI Components)
 
-Progress: [██████░░░░] 61% (11 of 18 total plans)
+Progress: [██████▌░░░] 67% (12 of 18 total plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
-- Average duration: 6 min
-- Total execution time: 70 min
+- Total plans completed: 12
+- Average duration: 7 min
+- Total execution time: 80 min
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: [██████░░░░] 61% (11 of 18 total plans)
 | 01-foundation | 3 | 27 min | 9 min |
 | 02-hydration | 4 | 19 min | 5 min |
 | 03-cli-scaffolding | 3 | 17 min | 6 min |
-| 04-hot-module-replacement | 1 | 7 min | 7 min |
+| 04-hot-module-replacement | 2 | 17 min | 9 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 (8 min), 03-02 (4 min), 03-03 (5 min), 04-01 (7 min)
+- Last 5 plans: 03-02 (4 min), 03-03 (5 min), 04-01 (7 min), 04-02 (10 min)
 - Trend: Consistent performance
 
 *Updated after each plan completion*
@@ -85,6 +85,11 @@ Recent decisions affecting current work:
 | 2026-01-22 | 04-01 | Input key priority: id > name+type > path | Balance stability with fallback coverage |
 | 2026-01-22 | 04-01 | 50px layout change threshold | Matches scroll anchoring patterns |
 | 2026-01-22 | 04-01 | Tracked fetch with auto AbortController | Clean resource management for pending requests |
+| 2026-01-22 | 04-02 | Shadow DOM for overlay style isolation | Prevents CSS conflicts with app |
+| 2026-01-22 | 04-02 | Dracula color scheme for overlay | Matches Vite aesthetic per CONTEXT.md |
+| 2026-01-22 | 04-02 | 8px indicator dot (unobtrusive) | Per CONTEXT.md "small colored dot, not a banner" |
+| 2026-01-22 | 04-02 | Lazy indicator creation | Element only created on first status update |
+| 2026-01-22 | 04-02 | Editor URL schemes via window.open | Standard click-to-open pattern |
 
 ### Pending Todos
 
@@ -96,6 +101,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-22T10:29:14Z
-Stopped at: Completed 04-01-PLAN.md (HMR Core Infrastructure)
+Last session: 2026-01-22T10:32:36Z
+Stopped at: Completed 04-02-PLAN.md (HMR UI Components)
 Resume file: None
