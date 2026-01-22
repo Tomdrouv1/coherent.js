@@ -132,6 +132,7 @@ export default [
                 atob: 'readonly',
                 BroadcastChannel: 'readonly',
                 IntersectionObserver: 'readonly',
+                MutationObserver: 'readonly',
                 requestIdleCallback: 'readonly',
                 requestAnimationFrame: 'readonly',
                 cancelAnimationFrame: 'readonly',
@@ -140,7 +141,15 @@ export default [
                 path: 'readonly',
                 context: 'readonly',
                 renderToStream: 'readonly',
-                DatabaseManager: 'readonly'
+                DatabaseManager: 'readonly',
+                // HMR-related browser APIs
+                fetch: 'readonly',
+                AbortController: 'readonly',
+                AbortSignal: 'readonly',
+                HTMLElement: 'readonly',
+                KeyboardEvent: 'readonly',
+                Event: 'readonly',
+                CustomEvent: 'readonly'
             }
         },
         rules: {
