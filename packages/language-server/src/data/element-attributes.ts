@@ -215,6 +215,19 @@ export function getSuggestions(tagName: string, attributeName: string, maxDistan
   const suggestions: Array<{ name: string; distance: number }> = [];
 
   for (const attr of validAttrs) {
+    // Skip exact matches
+    if (attr.name === attributeName) {
+      continue;
+    }
+
+    // Check for case-insensitive match (common typo)
+    if (attr.name.toLowerCase() === attributeName.toLowerCase()) {
+      // Case mismatch is treated as distance 1
+      suggestions.push({ name: attr.name, distance: 1 });
+      continue;
+    }
+
+    // Calculate edit distance
     const distance = levenshteinDistance(attributeName.toLowerCase(), attr.name.toLowerCase());
     if (distance <= maxDistance && distance > 0) {
       suggestions.push({ name: attr.name, distance });

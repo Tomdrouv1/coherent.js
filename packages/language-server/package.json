@@ -9,7 +9,7 @@
     "coherent-language-server": "dist/server.js"
   },
   "scripts": {
-    "build": "pnpm run extract-attributes && tsc",
+    "build": "pnpm run extract-attributes && tsc && cp src/data/element-attributes.generated.json dist/data/",
     "dev": "tsc -w",
     "start": "node dist/server.js --stdio",
     "extract-attributes": "tsx scripts/extract-attributes.ts",

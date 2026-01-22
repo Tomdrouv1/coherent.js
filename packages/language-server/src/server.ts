@@ -23,6 +23,9 @@ import {
 } from 'vscode-languageserver/node.js';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
+// Import providers
+import { registerDiagnosticProvider } from './providers/diagnostics.js';
+
 // Create connection using all proposed features
 export const connection = createConnection(ProposedFeatures.all);
 
@@ -91,6 +94,9 @@ connection.onInitialized(() => {
       console.error('[coherent-lsp] Workspace folder change event received');
     });
   }
+
+  // Register providers
+  registerDiagnosticProvider(connection, documents);
 
   console.error('[coherent-lsp] Server initialized successfully');
 });
