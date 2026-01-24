@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: CLI Scaffolding** - Working project generator with current APIs
 - [x] **Phase 4: Hot Module Replacement** - State-preserving development updates
 - [x] **Phase 5: TypeScript** - Complete type definitions across all packages
-- [ ] **Phase 6: IDE Support** - Language server and VS Code extension
+- [x] **Phase 6: IDE Support** - Language server and VS Code extension
 
 ## Phase Details
 
@@ -119,8 +119,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — LSP server with Coherent object analysis and validation
-- [ ] 06-02-PLAN.md — VS Code extension with snippets and marketplace publish
+- [x] 06-01-PLAN.md — LSP server with Coherent object analysis and validation
+- [x] 06-02-PLAN.md — VS Code extension with snippets and marketplace publish
 
 ## Progress
 
@@ -134,8 +134,8 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 3. CLI Scaffolding | 3/3 | Complete | 2026-01-22 |
 | 4. Hot Module Replacement | 3/3 | Complete | 2026-01-22 |
 | 5. TypeScript | 5/5 | Complete | 2026-01-22 |
-| 6. IDE Support | 0/2 | Not started | - |
+| 6. IDE Support | 2/2 | Complete | 2026-01-22 |
 
 ---
 *Roadmap created: 2026-01-21*
-*Last updated: 2026-01-22 (Phase 6 planned)*
+*Last updated: 2026-01-22 (Phase 6 complete - Milestone complete)*

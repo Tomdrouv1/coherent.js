@@ -56,10 +56,10 @@ Requirements for operational framework. Each maps to roadmap phases.
 
 ### IDE Support
 
-- [ ] **IDE-01**: Language Server provides component prop autocompletion
-- [ ] **IDE-02**: Go-to-definition works for Coherent.js imports
-- [ ] **IDE-03**: Syntax errors highlighted before runtime
-- [ ] **IDE-04**: VS Code extension published and documented
+- [x] **IDE-01**: Language Server provides component prop autocompletion
+- [x] **IDE-02**: Go-to-definition works for Coherent.js imports
+- [x] **IDE-03**: Syntax errors highlighted before runtime
+- [x] **IDE-04**: VS Code extension published and documented
 
 ## v2 Requirements
 
@@ -129,16 +129,17 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TS-02 | Phase 5: TypeScript | Complete |
 | TS-03 | Phase 5: TypeScript | Complete |
 | TS-04 | Phase 5: TypeScript | Complete |
-| IDE-01 | Phase 6: IDE Support | Pending |
-| IDE-02 | Phase 6: IDE Support | Pending |
-| IDE-03 | Phase 6: IDE Support | Pending |
-| IDE-04 | Phase 6: IDE Support | Pending |
+| IDE-01 | Phase 6: IDE Support | Complete |
+| IDE-02 | Phase 6: IDE Support | Complete |
+| IDE-03 | Phase 6: IDE Support | Complete |
+| IDE-04 | Phase 6: IDE Support | Complete |
 
 **Coverage:**
 - v1 requirements: 32 total
 - Mapped to phases: 32
 - Unmapped: 0
+- Complete: 32 (100%)
 
 ---
 *Requirements defined: 2026-01-21*
-*Last updated: 2026-01-22 (Phase 5 complete)*
+*Last updated: 2026-01-22 (Phase 6 complete - All v1 requirements satisfied)*
