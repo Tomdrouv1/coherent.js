@@ -78,7 +78,7 @@ export function generateDatabaseInit(dbType, language = 'javascript') {
 
   const inits = {
     postgres: `
-import { setupDatabase, PostgreSQLAdapter } from '@coherent.js/database';
+import { setupDatabase } from '@coherent.js/database';
 import { dbConfig } from './config.js';
 
 let db${typeAnnotation};
@@ -87,8 +87,17 @@ export async function initDatabase()${returnType} {
   try {
     // Setup database with Coherent.js
     db = setupDatabase({
-      adapter: PostgreSQLAdapter(dbConfig)
+      type: 'postgresql',
+      host: dbConfig.host,
+      port: dbConfig.port,
+      database: dbConfig.database,
+      username: dbConfig.user,
+      password: dbConfig.password,
+      pool: dbConfig.pool
     });
+
+    // Wait for connection
+    await db.connect();
 
     console.log('✓ Connected to PostgreSQL database');
 
@@ -116,7 +125,7 @@ process.on('SIGINT', async () => {
 });
 `,
     mysql: `
-import { setupDatabase, MySQLAdapter } from '@coherent.js/database';
+import { setupDatabase } from '@coherent.js/database';
 import { dbConfig } from './config.js';
 
 let db${typeAnnotation};
@@ -125,8 +134,17 @@ export async function initDatabase()${returnType} {
   try {
     // Setup database with Coherent.js
     db = setupDatabase({
-      adapter: MySQLAdapter(dbConfig)
+      type: 'mysql',
+      host: dbConfig.host,
+      port: dbConfig.port,
+      database: dbConfig.database,
+      username: dbConfig.user,
+      password: dbConfig.password,
+      pool: dbConfig.pool
     });
+
+    // Wait for connection
+    await db.connect();
 
     console.log('✓ Connected to MySQL database');
 
@@ -154,7 +172,7 @@ process.on('SIGINT', async () => {
 });
 `,
     sqlite: `
-import { setupDatabase, SQLiteAdapter } from '@coherent.js/database';
+import { setupDatabase } from '@coherent.js/database';
 import { dbConfig } from './config.js';
 import { mkdirSync } from 'fs';
 import { dirname } from 'path';
@@ -163,15 +181,19 @@ let db${typeAnnotation};
 
 export async function initDatabase()${returnType} {
   try {
-    // Ensure directory exists
-    if (dbConfig.filename) {
+    // Ensure directory exists for SQLite file
+    if (dbConfig.filename && dbConfig.filename !== ':memory:') {
       mkdirSync(dirname(dbConfig.filename), { recursive: true });
     }
 
     // Setup database with Coherent.js
     db = setupDatabase({
-      adapter: SQLiteAdapter(dbConfig)
+      type: 'sqlite',
+      database: dbConfig.filename || ':memory:'
     });
+
+    // Wait for connection
+    await db.connect();
 
     console.log('✓ Connected to SQLite database');
 
@@ -190,16 +212,16 @@ export function getDatabase()${typeAnnotation} {
 }
 
 // Graceful shutdown
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
   if (db) {
-    db.close();
+    await db.disconnect();
     console.log('Database closed');
   }
   process.exit(0);
 });
 `,
     mongodb: `
-import { setupDatabase, MongoDBAdapter } from '@coherent.js/database';
+import { setupDatabase } from '@coherent.js/database';
 import { dbConfig } from './config.js';
 
 let db${typeAnnotation};
@@ -208,8 +230,13 @@ export async function initDatabase()${returnType} {
   try {
     // Setup database with Coherent.js
     db = setupDatabase({
-      adapter: MongoDBAdapter(dbConfig)
+      type: 'mongodb',
+      database: dbConfig.uri,
+      ...dbConfig.options
     });
+
+    // Wait for connection
+    await db.connect();
 
     console.log('✓ Connected to MongoDB database');
 

@@ -1748,6 +1748,63 @@ class SimpleRouter {
   head(path, handler, options = {}) {
     return this.addRoute('HEAD', path, handler, options);
   }
+
+  /**
+   * Convert to Express Router middleware
+   *
+   * @param {Object} express - Express module (required)
+   * @returns {Function} Express-compatible router middleware
+   *
+   * @example
+   * import express from 'express';
+   * const router = createRouter();
+   * router.get('/users', handler);
+   * app.use('/api', router.toExpressRouter(express));
+   */
+  toExpressRouter(express) {
+    if (!express || typeof express.Router !== 'function') {
+      throw new Error('Express is required for toExpressRouter(). Pass the express module as argument: router.toExpressRouter(express)');
+    }
+
+    const expressRouter = express.Router();
+
+    // Register all routes on the Express router
+    for (const route of this.routes) {
+      const method = route.method.toLowerCase();
+      const path = route.path;
+      const handler = route.handler;
+      const middleware = route.middleware || [];
+
+      // Create Express-compatible handler that adapts the Coherent.js handler
+      const expressHandler = async (req, res, next) => {
+        try {
+          // Apply Coherent.js middleware
+          for (const mw of middleware) {
+            await new Promise((resolve, reject) => {
+              mw(req, res, (err) => err ? reject(err) : resolve());
+            });
+          }
+
+          // Call the handler
+          const result = await handler(req, res);
+
+          // If result is returned and response not sent, send as JSON
+          if (result !== undefined && !res.headersSent) {
+            res.json(result);
+          }
+        } catch (error) {
+          next(error);
+        }
+      };
+
+      // Register route on Express router
+      if (typeof expressRouter[method] === 'function') {
+        expressRouter[method](path, expressHandler);
+      }
+    }
+
+    return expressRouter;
+  }
 }
 
 /**

@@ -125,14 +125,14 @@ test('scaffoldProject should create Express template correctly', async () => {
     const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
 
     assert(packageJson.dependencies.express);
-    assert(packageJson.dependencies['@coherent.js/express']);
+    assert(packageJson.dependencies['@coherent.js/core']);
 
     // Check main index.js has Express setup
     const indexPath = join(tempDir, 'src/index.js');
     const indexContent = readFileSync(indexPath, 'utf-8');
 
     assert(indexContent.includes('express'));
-    assert(indexContent.includes('setupCoherent'));
+    assert(indexContent.includes('render'));
     assert(indexContent.includes('app.listen'));
 
 

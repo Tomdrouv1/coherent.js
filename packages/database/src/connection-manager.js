@@ -7,6 +7,13 @@
 
 import { EventEmitter } from 'events';
 
+// Import adapters statically to work with bundled builds
+import { createPostgreSQLAdapter } from './adapters/postgresql.js';
+import { createMySQLAdapter } from './adapters/mysql.js';
+import { createSQLiteAdapter } from './adapters/sqlite.js';
+import { createMongoDBAdapter } from './adapters/mongodb.js';
+import { MemoryAdapter } from './adapters/memory.js';
+
 /**
  * Database Connection Manager
  *
@@ -155,8 +162,14 @@ export class DatabaseManager extends EventEmitter {
       // Load appropriate adapter
       this.adapter = await this.loadAdapter(this.config.type);
 
-      // Create connection pool
-      this.pool = await this.adapter.createPool(this.config);
+      // Create connection pool or connect (adapters may have different methods)
+      if (typeof this.adapter.createPool === 'function') {
+        this.pool = await this.adapter.createPool(this.config);
+      } else if (typeof this.adapter.connect === 'function') {
+        this.pool = await this.adapter.connect(this.config);
+      } else {
+        throw new Error('Adapter must have either createPool or connect method');
+      }
 
       // Test connection
       await this.testConnection();
@@ -195,41 +208,29 @@ export class DatabaseManager extends EventEmitter {
   loadAdapter(type) {
     // If using direct adapter instance (for custom adapters like MemoryAdapter)
     if (this.config.adapter) {
-      return this.config.adapter;
+      return Promise.resolve(this.config.adapter);
     }
 
-    // For built-in adapters
-    const adapterMap = {
-      postgresql: './adapters/postgresql.js',
-      mysql: './adapters/mysql.js',
-      sqlite: './adapters/sqlite.js',
-      mongodb: './adapters/mongodb.js',
-      memory: './adapters/memory.js'
+    // For built-in adapters - use statically imported factory functions
+    const adapterFactories = {
+      postgresql: createPostgreSQLAdapter,
+      mysql: createMySQLAdapter,
+      sqlite: createSQLiteAdapter,
+      mongodb: createMongoDBAdapter,
+      memory: () => new MemoryAdapter()
     };
 
-    const adapterPath = adapterMap[type];
-    if (!adapterPath) {
-      throw new Error(`No adapter found for database type: ${type}`);
+    const adapterFactory = adapterFactories[type];
+    if (!adapterFactory) {
+      return Promise.reject(new Error(`No adapter found for database type: ${type}`));
     }
 
-    // Use dynamic import for ESM compatibility
-    return import(adapterPath)
-      .then(adapterModule => {
-        // Try both the default export and the named export pattern
-        if (adapterModule.default) {
-          return new adapterModule.default();
-        }
-
-        const AdapterClass = adapterModule[`${type.charAt(0).toUpperCase() + type.slice(1)}Adapter`];
-        if (AdapterClass) {
-          return new AdapterClass();
-        }
-
-        throw new Error(`No valid adapter found in ${adapterPath}`);
-      })
-      .catch(_error => {
-        throw new Error(`Failed to load ${type} adapter: ${_error.message}`);
-      });
+    try {
+      const adapter = adapterFactory();
+      return Promise.resolve(adapter);
+    } catch (_error) {
+      return Promise.reject(new Error(`Failed to load ${type} adapter: ${_error.message}`));
+    }
   }
 
   /**

@@ -52,7 +52,7 @@ describe('Scaffold Matrix Tests', () => {
             expect(indexContent).toContain("server.listen");
           } else if (runtime === 'express') {
             expect(indexContent).toContain("import express from 'express'");
-            expect(indexContent).toContain("setupCoherent");
+            expect(indexContent).toContain("render");
             expect(indexContent).toContain("app.listen");
           } else if (runtime === 'fastify') {
             expect(indexContent).toContain("import Fastify from 'fastify'");
@@ -91,11 +91,11 @@ describe('Scaffold Matrix Tests', () => {
 
   describe('P1: Fullstack template x database matrix', () => {
     const databases = ['postgres', 'mysql', 'sqlite', 'mongodb'];
-    const adapterNames = {
-      postgres: 'PostgreSQLAdapter',
-      mysql: 'MySQLAdapter',
-      sqlite: 'SQLiteAdapter',
-      mongodb: 'MongoDBAdapter'
+    const dbTypeNames = {
+      postgres: 'postgresql',
+      mysql: 'mysql',
+      sqlite: 'sqlite',
+      mongodb: 'mongodb'
     };
 
     for (const database of databases) {
@@ -119,10 +119,10 @@ describe('Scaffold Matrix Tests', () => {
           expect(existsSync(join(tempDir, 'src/db/index.js'))).toBe(true);
           expect(existsSync(join(tempDir, 'src/db/models/User.js'))).toBe(true);
 
-          // Read db/index.js and verify adapter import
+          // Read db/index.js and verify type-based configuration
           const dbIndexContent = await readFile(join(tempDir, 'src/db/index.js'), 'utf-8');
-          expect(dbIndexContent).toContain(adapterNames[database]);
-          expect(dbIndexContent).toContain('dbConfig');
+          expect(dbIndexContent).toContain(`type: '${dbTypeNames[database]}'`);
+          expect(dbIndexContent).toContain('setupDatabase');
           expect(dbIndexContent).toContain("'@coherent.js/database'");
 
           // Read and verify package.json has database dep

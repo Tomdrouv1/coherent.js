@@ -165,7 +165,7 @@ export function generateExpressServer(options = {}) {
 
   const imports = [
     `import express from 'express';`,
-    `import { setupCoherent } from '@coherent.js/express';`
+    `import { render } from '@coherent.js/core';`
   ];
 
   if (hasApi) imports.push(`import apiRoutes from './api/routes.js';`);
@@ -188,15 +188,25 @@ ${hasDatabase ? `// Initialize database
 await initDatabase();
 ` : ''}${hasAuth ? `// Setup authentication
 app.use(authMiddleware);
-` : ''}// Setup Coherent.js
-setupCoherent(app);
-
-${hasApi ? `// API routes
-app.use('/api', apiRoutes);
 ` : ''}
-// Main route
+${hasApi ? `// API routes - convert Coherent.js router to Express middleware
+app.use('/api', apiRoutes.toExpressRouter(express));
+` : ''}
+// Main route - render Coherent.js component to HTML
 app.get('/', (req, res) => {
-  res.render(HomePage({}));
+  const content = render(HomePage({}));
+  const html = \`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coherent.js App</title>
+</head>
+<body>
+  \${content}
+</body>
+</html>\`;
+  res.type('html').send(html);
 });
 
 // Error handling
@@ -253,9 +263,9 @@ await fastify.register(import('@fastify/static'), {
 ${hasApi ? `// API routes
 await fastify.register(apiRoutes, { prefix: '/api' });
 ` : ''}
-// Main route
+// Main route - return Coherent.js component (auto-rendered by plugin)
 fastify.get('/', async (request, reply) => {
-  return reply.render(HomePage({}));
+  return HomePage({});
 });
 
 // Start server
@@ -311,9 +321,9 @@ setupCoherent(app);
 ${hasApi ? `// API routes
 apiRoutes(router);
 ` : ''}
-// Main route
+// Main route - set body to Coherent.js component (auto-rendered by middleware)
 router.get('/', async (ctx) => {
-  ctx.render(HomePage({}));
+  ctx.body = HomePage({});
 });
 
 app.use(router.routes());
