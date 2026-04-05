@@ -3609,22 +3609,26 @@ body:not(:focus-within) #templates-menu {
 /* --- Floating accent orb --- */
 .hero-orb {
   position: absolute;
-  width: 400px;
-  height: 400px;
+  width: 600px;
+  height: 600px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(0, 229, 160, 0.12) 0%, transparent 70%);
-  top: 20%;
+  background: radial-gradient(circle, rgba(0, 229, 160, 0.10) 0%, rgba(0, 229, 160, 0.03) 40%, transparent 70%);
+  top: 40%;
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 0;
-  animation: orbFloat 8s ease-in-out infinite;
+  animation: orbDrift 20s ease-in-out infinite;
   pointer-events: none;
+  filter: blur(40px);
 }
 
-@keyframes orbFloat {
-  0%, 100% { transform: translate(-50%, -50%) scale(1); }
-  33% { transform: translate(-45%, -55%) scale(1.1); }
-  66% { transform: translate(-55%, -45%) scale(0.95); }
+@keyframes orbDrift {
+  0%   { transform: translate(-50%, -50%) scale(1); }
+  20%  { transform: translate(-40%, -60%) scale(1.08); }
+  40%  { transform: translate(-55%, -45%) scale(0.95); }
+  60%  { transform: translate(-45%, -55%) scale(1.05); }
+  80%  { transform: translate(-58%, -48%) scale(0.98); }
+  100% { transform: translate(-50%, -50%) scale(1); }
 }
 
 /* --- Scroll indicator --- */
