@@ -3947,39 +3947,16 @@ body:not(:focus-within) #templates-menu {
    CHANGELOG PAGE
    ========================================================================== */
 .changelog-page {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 0 20px 60px;
-}
-
-.changelog-hero {
-  text-align: center;
-  padding: 48px 0 40px;
-  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.changelog-hero h1 {
-  font-family: var(--font-display);
-  font-size: 2.5rem;
-  font-weight: 800;
-  margin: 0 0 12px;
-  background: var(--gradient-text);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  letter-spacing: -0.03em;
-}
-
-.changelog-hero p {
-  color: var(--muted);
-  font-size: 1.1rem;
-  margin: 0;
+  padding: 0 0 60px;
 }
 
 /* Timeline line */
 .changelog-timeline {
   position: relative;
   padding-left: 28px;
+  max-width: 720px;
+  margin: 0 auto;
+  padding-right: 20px;
 }
 
 .changelog-timeline::before {
@@ -4133,12 +4110,6 @@ body:not(:focus-within) #templates-menu {
 }
 
 /* Light theme */
-[data-theme="light"] .changelog-hero h1 {
-  background: linear-gradient(135deg, #0b0e14 30%, #00a876 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-}
-
 [data-theme="light"] .changelog-entry {
   background: #ffffff;
   border-color: #e8ecf0;
