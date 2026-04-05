@@ -143,15 +143,14 @@ const pageRoutes = [
 // ---------------------------------------------------------------------------
 const app = express();
 
-// Coherent.js Express integration — auto-renders component objects via res.send()
-setupCoherent(app, { useEngine: false });
+// Coherent.js Express integration
+setupCoherent(app, { useEngine: false, useMiddleware: false });
 
 // JSON body parsing for playground
 app.use(express.json({ limit: '12kb' }));
 
-// Static files — replaces custom staticFileMiddleware
+// Static files
 app.use('/examples', express.static(join(__dirname, '../examples'), { maxAge: '1h' }));
-app.use('/dist', express.static(join(__dirname, 'dist'), { maxAge: '1h' }));
 app.use(express.static(join(__dirname, 'public'), { maxAge: '1h' }));
 
 // ---------------------------------------------------------------------------
