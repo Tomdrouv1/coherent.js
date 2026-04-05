@@ -71,21 +71,24 @@ jobs:
       - name: Build website
         run: pnpm run website:build
 
-      - name: Download coverage artifacts (if available)
-        uses: actions/download-artifact@v6
+      - name: Download coverage artifacts (cross-workflow)
+        uses: dawidd6/action-download-artifact@v6
         with:
+          workflow: ci.yml
           name: coverage-report
           path: ./coverage-temp/
+          branch: main
+          if_no_artifact_found: warn
         continue-on-error: true
 
       - name: Copy coverage files to website
         run: |
-          if [ -d "coverage-temp" ]; then
+          if [ -d "coverage-temp" ] && [ "$(ls -A coverage-temp 2>/dev/null)" ]; then
             mkdir -p website/dist/coverage
             cp -r coverage-temp/* website/dist/
-            echo "✅ Coverage files copied to website"
+            echo "Coverage files copied to website"
           else
-            echo "⚠️  No coverage files found, creating placeholder badge"
+            echo "No coverage files found, creating placeholder badge"
             mkdir -p website/dist/coverage
             echo '{"schemaVersion": 1, "label": "coverage", "message": "N/A", "color": "lightgrey"}' > website/dist/coverage/badge.json
           fi
