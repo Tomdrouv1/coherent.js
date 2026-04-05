@@ -35,6 +35,14 @@ coverage/
 *.swo
 *~
 
+# AI tooling (keep settings.json for project config)
+.claude/agents/
+.claude/commands/
+.claude/get-shit-done/
+.claude/hooks/
+.claude/settings.local.json
+.junie/
+
 # OS generated files
 .DS_Store
 .DS_Store?
