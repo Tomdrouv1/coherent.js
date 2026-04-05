@@ -38,7 +38,7 @@ footer {
   max-height: calc(100dvh - 120px);
   display: flex;
   flex-direction: column;
-  padding: 48px 24px 20px;
+  padding: 0 24px 20px;
   box-sizing: border-box;
   overflow: hidden; /* Prevent container overflow */
   max-width: 1400px;
@@ -578,9 +578,11 @@ h1, h2, h3, h4 {
 
 .container.single {
   display: block;
+  width: 100%;
   max-width: 100%;
   padding: 0;
   gap: 0;
+  margin: 0;
 }
 
 .container.single > .content {
@@ -1020,6 +1022,33 @@ pre.shiki code {
 .copy-btn{position:absolute;right:8px;top:8px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:#0f1420;color:var(--text);font-size:12px}
 .copy-btn:hover{border-color:var(--accent)}
 .code-wrapper{position:relative}
+
+/* General code blocks — consistent across all pages */
+.code-wrapper pre,
+pre.code-block {
+  background: rgba(10, 14, 20, 0.8);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.7;
+  color: #e8ecf1;
+  margin: 0;
+}
+
+.code-wrapper {
+  position: relative;
+  margin: 16px 0;
+}
+
+[data-theme="light"] .code-wrapper pre,
+[data-theme="light"] pre.code-block {
+  background: #f3f6fa;
+  border-color: #dde2ea;
+  color: #0b0e14;
+}
 
 /* Enhanced Home with glassmorphism */
 .home {
@@ -2156,8 +2185,7 @@ body:not(:focus-within) #templates-menu {
 .coverage-page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
-  position: relative;
+  padding: 0 24px 40px;
 }
 
 .performance-page {

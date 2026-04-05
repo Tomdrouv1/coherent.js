@@ -66,9 +66,9 @@ export const StarterAppPage = () => ({
                   { h2: { text: '⚡ Quick Start', className: 'starter-section-title' } },
                   {
                     div: {
-                      className: 'starter-code-block',
+                      className: 'code-wrapper',
                       children: [
-                        { pre: { text: '# Clone the repository\ngit clone https://github.com/coherentjs/coherent.git\ncd coherent/examples/starter-app\n\n# Run the server\nnode server.js\n\n# Open http://localhost:3000' } }
+                        { pre: { className: 'code-block', children: [{ code: { className: 'language-bash', text: '# Clone the repository\ngit clone https://github.com/coherentjs/coherent.git\ncd coherent/examples/starter-app\n\n# Run the server\nnode server.js\n\n# Open http://localhost:3000' } }] } }
                       ]
                     }
                   },
@@ -144,11 +144,15 @@ export const StarterAppPage = () => ({
                   { p: { text: 'Here\'s the complete Counter component:', className: 'starter-code-intro' } },
                   {
                     div: {
-                      className: 'starter-code-block',
+                      className: 'code-wrapper',
                       children: [
-                        { 
-                          pre: { 
-                            text: `import { withState } from '@coherent.js/core';
+                        {
+                          pre: {
+                            className: 'code-block',
+                            children: [{
+                              code: {
+                                className: 'language-javascript',
+                                text: `import { withState } from '@coherent.js/core';
 
 export const Counter = withState({ count: 0 })(({ state, setState }) => ({
   div: {
@@ -168,7 +172,9 @@ export const Counter = withState({ count: 0 })(({ state, setState }) => ({
     ]
   }
 }));`
-                          } 
+                              }
+                            }]
+                          }
                         }
                       ]
                     }
