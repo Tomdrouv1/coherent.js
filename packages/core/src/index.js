@@ -7,7 +7,6 @@
  * @license MIT
  */
 
-import { readFileSync } from 'node:fs';
 
 // Performance monitoring
 import { performanceMonitor } from './performance/monitor.js';
@@ -426,11 +425,8 @@ export function deepClone(obj) {
   return cloned;
 }
 
-// Version info
-const _corePackageJson = JSON.parse(
-  readFileSync(new URL('../package.json', import.meta.url), 'utf-8')
-);
-export const VERSION = _corePackageJson.version;
+// Version info — hardcoded to avoid import.meta.url issues in CJS builds
+export const VERSION = '1.0.0-beta.7';
 
 // Performance monitoring export
 export { performanceMonitor };
