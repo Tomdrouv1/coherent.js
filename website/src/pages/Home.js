@@ -1,4 +1,31 @@
 // Home.js - simple landing content
+import { Island } from '../../../packages/core/src/index.js';
+
+// Counter component wrapped with Island() for automatic hydration attributes
+const CounterIsland = Island(function CounterComponent() {
+  return {
+    div: {
+      id: 'counter-demo',
+      className: 'demo-container',
+      'data-coherent-state': 'eyJjb3VudCI6MH0=',
+      children: [
+        { div: { className: 'counter-display', children: [
+          { span: { className: 'counter-label', text: 'Count: ' } },
+          { span: { id: 'counter-value', className: 'counter-value', text: '0' } }
+        ] } },
+        { div: { className: 'counter-buttons', children: [
+          { button: { id: 'decrement-btn', className: 'button', 'aria-label': 'Decrement counter', text: '−' } },
+          { button: { id: 'increment-btn', className: 'button primary', 'aria-label': 'Increment counter', text: '+' } },
+          { button: { id: 'reset-btn', className: 'button', text: 'Reset' } }
+        ] } },
+        { div: { className: 'demo-info', children: [
+          { small: { text: 'Only this Island is interactive. Check DevTools console for hydration logs.' } }
+        ] } }
+      ]
+    }
+  };
+});
+
 export function Home() {
   return {
     section: {
@@ -51,33 +78,11 @@ export function Home() {
           ] } }
         ] } },
 
-        // Interactive Island Demo
+        // Interactive Island Demo — uses Island() wrapper from @coherent.js/core
         { section: { className: 'hydration-demo reveal', children: [
           { h2: { text: '🏝️ Live Island Demo' } },
           { p: { className: 'demo-description', text: 'This counter is an "Island". Only this component is hydrated, while the rest of the page remains static and zero-JS.' } },
-          {
-            div: {
-              id: 'counter-demo',
-              className: 'demo-container',
-              'data-coherent-island': 'true',
-              'data-coherent-component': 'CounterComponent',
-              'data-coherent-state': 'eyJjb3VudCI6MH0=',  // Base64 encoded {"count":0}
-              children: [
-                { div: { className: 'counter-display', children: [
-                  { span: { className: 'counter-label', text: 'Count: ' } },
-                  { span: { id: 'counter-value', className: 'counter-value', text: '0' } }
-                ] } },
-                { div: { className: 'counter-buttons', children: [
-                  { button: { id: 'decrement-btn', className: 'button', 'aria-label': 'Decrement counter', text: '−' } },
-                  { button: { id: 'increment-btn', className: 'button primary', 'aria-label': 'Increment counter', text: '+' } },
-                  { button: { id: 'reset-btn', className: 'button', text: 'Reset' } }
-                ] } },
-                { div: { className: 'demo-info', children: [
-                  { small: { text: 'Only this Island is interactive. Check DevTools console for hydration logs.' } }
-                ] } }
-              ]
-            }
-          }
+          CounterIsland()
         ] } },
 
         // Quick links

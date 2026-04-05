@@ -637,6 +637,27 @@ export function createPerformanceMonitor(options = {}) {
     startProfiling();
   }
 
+  // Render tracking helpers for framework integrations
+  let _renderCounter = 0;
+  const _renderTimers = new Map();
+
+  function startRender() {
+    const id = `render_${++_renderCounter}`;
+    _renderTimers.set(id, performance.now());
+    return id;
+  }
+
+  function endRender(id) {
+    const startTime = _renderTimers.get(id);
+    if (startTime !== undefined) {
+      const duration = performance.now() - startTime;
+      _renderTimers.delete(id);
+      recordMetric('render', duration);
+      return duration;
+    }
+    return 0;
+  }
+
   return {
     recordMetric,
     measure,
@@ -646,6 +667,8 @@ export function createPerformanceMonitor(options = {}) {
     generateReport,
     getStats,
     reset,
+    startRender,
+    endRender,
     start() {
       opts.enabled = true;
       startResourceMonitoring();

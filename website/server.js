@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { renderWithTemplate } from '../packages/core/src/utils/render-utils.js';
+import { performanceMonitor } from '../packages/core/src/performance/monitor.js';
 import { registerComponent, getComponent } from '../packages/core/src/components/component-system.js';
 import { createErrorBoundary } from '../packages/core/src/components/error-boundary.js';
 import { setupCoherent } from '../packages/express/src/coherent-express.js';
@@ -118,7 +119,10 @@ function renderFullPage({ currentPath, componentName, props = {}, title = 'Coher
   const SafeComponent = withPageErrorBoundary(Component);
   const content = SafeComponent(props);
   const page = Layout({ title, currentPath, content, scripts });
-  return renderWithTemplate(page, { template: '<!DOCTYPE html>\n{{content}}' });
+  return renderWithTemplate(page, {
+    template: '<!DOCTYPE html>\n{{content}}',
+    enablePerformanceMonitoring: true,
+  });
 }
 
 // Declarative route table
@@ -337,6 +341,11 @@ const apiRouter = createRouter({
       }
     }
   }
+});
+
+// Performance stats endpoint — powered by @coherent.js/core performanceMonitor
+app.get('/api/perf', (req, res) => {
+  res.json(performanceMonitor.getStats());
 });
 
 // Mount the Coherent.js API router as Express middleware
