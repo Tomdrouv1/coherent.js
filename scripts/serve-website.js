@@ -327,9 +327,11 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
-    // Serve HMR client from source during dev
-    if (urlPath === '/__coherent/hmr.js') {
-      const hmrPath = path.join(repoRoot, 'packages', 'client', 'src', 'hmr.js');
+    // Serve HMR client and its submodules from source during dev
+    if (urlPath.startsWith('/__coherent/')) {
+      // Map /__coherent/* to packages/client/src/*
+      const relativePath = urlPath.replace('/__coherent/', '');
+      const hmrPath = path.join(repoRoot, 'packages', 'client', 'src', relativePath);
       try {
         const buf = await fs.readFile(hmrPath);
         res.statusCode = 200;
@@ -337,7 +339,7 @@ const server = http.createServer(async (req, res) => {
         res.end(buf);
         return;
       } catch {
-        // Fallback: serve empty HMR script to prevent 404 errors
+        // Fallback: serve empty script to prevent 404 errors
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/javascript; charset=UTF-8');
         res.end(`// HMR client fallback

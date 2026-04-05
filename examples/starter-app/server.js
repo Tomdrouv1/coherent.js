@@ -7,7 +7,7 @@ import { createServer } from 'http';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { build } from 'esbuild';
-import { render, dangerouslySetInnerContent } from '../../packages/core/src/index.js';
+import { render, dangerouslySetInnerContent } from '@coherent.js/core';
 import { Counter } from './components/Counter.js';
 
 const __filename = fileURLToPath(import.meta.url);

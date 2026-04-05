@@ -68,13 +68,9 @@ app.listen(3000, () => {
 
 ```javascript
 import express from 'express';
-import { render, createCoherent } from '@coherent.js/core';
+import { render } from '@coherent.js/core';
 
 const app = express();
-const coherent = createCoherent({
-  enableCache: true,
-  enableMonitoring: true
-});
 
 // Custom middleware for automatic Coherent.js rendering
 const coherentMiddleware = (options = {}) => (req, res, next) => {
@@ -82,7 +78,7 @@ const coherentMiddleware = (options = {}) => (req, res, next) => {
   
   res.sendCoherent = (component, props = {}) => {
     try {
-      const rendered = coherent.render(component(props));
+      const rendered = render(component(props));
       res.set('Content-Type', 'text/html');
       res.send(rendered);
     } catch (error) {
@@ -315,26 +311,18 @@ start();
 
 ```javascript
 import Fastify from 'fastify';
-import { render, createCoherent } from '@coherent.js/core';
+import { render } from '@coherent.js/core';
 
 const fastify = Fastify({ logger: true });
 
 // Create Coherent.js plugin
 async function coherentPlugin(fastify, options) {
-  const coherent = createCoherent({
-    enableCache: true,
-    enableMonitoring: true
-  });
-
   // Add coherent rendering to reply object
   fastify.decorateReply('sendCoherent', function(component, props = {}) {
-    const rendered = coherent.render(component(props));
+    const rendered = render(component(props));
     this.type('text/html');
     return this.send(rendered);
   });
-
-  // Add coherent instance to fastify
-  fastify.decorate('coherent', coherent);
 }
 
 await fastify.register(coherentPlugin);
@@ -624,18 +612,13 @@ npm install @coherent.js/core
 # No additional dependencies needed
 ```
 
-> **Note**: Use `@beta` tag for the current beta release (v1.0.0-beta.6).
+> **Note**: Use `@beta` tag for the current beta release (v1.0.0-beta.7).
 
 ### Basic HTTP Server
 
 ```javascript
 import http from 'node:http';
-import { render, createCoherent } from '@coherent.js/core';
-
-const coherent = createCoherent({
-  enableCache: true,
-  enableMonitoring: true
-});
+import { render } from '@coherent.js/core';
 
 const Layout = ({ title, children }) => ({
   html: {
@@ -669,7 +652,7 @@ const HomePage = ({ timestamp }) => Layout({
 
 const server = http.createServer((req, res) => {
   if (req.method === 'GET' && req.url === '/') {
-    const html = coherent.render(HomePage({ 
+    const html = render(HomePage({ 
       timestamp: new Date().toISOString() 
     }));
     
@@ -677,7 +660,7 @@ const server = http.createServer((req, res) => {
     res.end(html);
   } else {
     res.writeHead(404, { 'Content-Type': 'text/html' });
-    res.end(coherent.render(Layout({
+    res.end(render(Layout({
       title: '404 - Not Found',
       children: [
         { h1: { text: '404 - Page Not Found' } },
@@ -706,18 +689,14 @@ npm install koa @coherent.js/core
 
 ```javascript
 import Koa from 'koa';
-import { render, createCoherent } from '@coherent.js/core';
+import { render } from '@coherent.js/core';
 
 const app = new Koa();
-const coherent = createCoherent({
-  enableCache: true,
-  enableMonitoring: true
-});
 
 // Custom middleware for Coherent.js
 app.use(async (ctx, next) => {
   ctx.sendCoherent = (component, props = {}) => {
-    const html = coherent.render(component(props));
+    const html = render(component(props));
     ctx.type = 'html';
     ctx.body = html;
   };
@@ -918,12 +897,8 @@ app.get('/', (req, res) => {
 ### 3. Enable Caching
 
 ```javascript
-// Production setup
-const coherent = createCoherent({
-  enableCache: true,
-  cacheSize: 1000,
-  enableMonitoring: true
-});
+// Production setup - use render directly
+import { render } from '@coherent.js/core';
 ```
 
 ### 4. Handle Errors Gracefully
@@ -956,12 +931,11 @@ setInterval(() => {
 ### Production Settings
 
 ```javascript
-const coherent = createCoherent({
-  enableCache: process.env.NODE_ENV === 'production',
-  enableMonitoring: true,
-  cacheSize: parseInt(process.env.CACHE_SIZE) || 1000,
-  maxMemoryUsage: '512MB'
-});
+import { render, performanceMonitor } from '@coherent.js/core';
+
+// Use render() directly and performanceMonitor for production monitoring
+const html = render(myComponent);
+const stats = performanceMonitor.getStats();
 ```
 
 ### Docker Setup

@@ -1,5 +1,12 @@
 # @coherent.js/forms
 
+## 1.0.0
+
+### Patch Changes
+
+- @coherent.js/core@1.0.0
+- @coherent.js/state@1.0.0
+
 ## 1.0.0-beta.3
 
 ### Patch Changes

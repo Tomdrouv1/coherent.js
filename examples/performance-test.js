@@ -3,7 +3,10 @@
  * Demonstrates performance monitoring, caching, and optimization features
  */
 
-import { render, performanceMonitor } from '../packages/core/src/index.js';
+import { render, performanceMonitor, getCache } from '@coherent.js/core';
+
+// Access global cache
+const globalCache = getCache();
 
 // Recursive component for performance testing
 const HeavyComponent = ({ depth = 0, maxDepth = 3, label = 'Node' }) => {
@@ -92,7 +95,9 @@ async function runPerformanceTests() {
     performanceMonitor.start();
     
     // Force initial memory collection
-    performanceMonitor.collectSystemMetrics();
+    if (typeof performanceMonitor.collectSystemMetrics === 'function') {
+        performanceMonitor.collectSystemMetrics();
+    }
     
     // Add memory tracking helper with cleanup
     const trackMemory = (label) => {

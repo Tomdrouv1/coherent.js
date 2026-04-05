@@ -1,6 +1,6 @@
 {
   "name": "@coherent.js/web-components",
-  "version": "1.0.0-beta.6",
+  "version": "1.0.0-beta.7",
   "description": "Web Components integration for Coherent.js",
   "type": "module",
   "main": "src/index.js",
@@ -19,7 +19,7 @@
   ],
   "author": "Coherent.js Team",
   "license": "MIT",
-  "dependencies": {
+  "peerDependencies": {
     "@coherent.js/core": "workspace:*"
   },
   "devDependencies": {
@@ -29,11 +29,20 @@
     "type": "git",
     "url": "git+https://github.com/Tomdrouv1/coherent.js.git"
   },
+  "homepage": "https://github.com/Tomdrouv1/coherent.js",
+  "bugs": {
+    "url": "https://github.com/Tomdrouv1/coherent.js/issues"
+  },
   "publishConfig": {
     "access": "public"
   },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "types": "./types/index.d.ts",
   "files": [
+    "dist/",
+    "src/",
     "LICENSE",
     "README.md",
     "types/"

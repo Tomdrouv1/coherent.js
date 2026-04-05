@@ -75,7 +75,7 @@ export function DocsIndexPage() {
                   children: [
                     {
                       a: {
-                        href: 'docs/getting-started',
+                        href: 'docs/getting-started/quick-start',
                         className: 'docs-card docs-card-primary',
                         children: [
                           { h3: { text: '⚡ Quick Start' } },
@@ -97,7 +97,7 @@ export function DocsIndexPage() {
                     },
                     {
                       a: {
-                        href: 'docs/migration-guide',
+                        href: 'docs/migration/from-other-frameworks',
                         className: 'docs-card',
                         children: [
                           { h3: { text: '🔄 Migration Guide' } },
@@ -126,7 +126,7 @@ export function DocsIndexPage() {
                   children: [
                     {
                       a: {
-                        href: 'docs/components/basic-components',
+                        href: 'docs/components/basics',
                         className: 'docs-card',
                         children: [
                           { h3: { text: '🏗️ Basic Components' } },
@@ -137,7 +137,7 @@ export function DocsIndexPage() {
                     },
                     {
                       a: {
-                        href: 'docs/components/state-management',
+                        href: 'docs/components/state',
                         className: 'docs-card',
                         children: [
                           { h3: { text: '🔄 State Management' } },
@@ -148,7 +148,7 @@ export function DocsIndexPage() {
                     },
                     {
                       a: {
-                        href: 'docs/client-side-hydration-guide',
+                        href: 'docs/client/hydration-guide',
                         className: 'docs-card',
                         children: [
                           { h3: { text: '💧 Hydration' } },
@@ -177,7 +177,7 @@ export function DocsIndexPage() {
                   children: [
                     {
                       a: {
-                        href: 'docs/components/advanced-components',
+                        href: 'docs/components/advanced',
                         className: 'docs-card',
                         children: [
                           { h3: { text: '🎯 Advanced Components' } },
@@ -188,7 +188,7 @@ export function DocsIndexPage() {
                     },
                     {
                       a: {
-                        href: 'docs/performance-optimizations',
+                        href: 'docs/deployment/performance',
                         className: 'docs-card',
                         children: [
                           { h3: { text: '🚀 Performance' } },
@@ -199,7 +199,7 @@ export function DocsIndexPage() {
                     },
                     {
                       a: {
-                        href: 'docs/deployment-guide',
+                        href: 'docs/deployment/index',
                         className: 'docs-card',
                         children: [
                           { h3: { text: '☁️ Deployment' } },
@@ -228,7 +228,7 @@ export function DocsIndexPage() {
                   children: [
                     {
                       a: {
-                        href: 'docs/framework-integrations',
+                        href: 'docs/deployment/integrations',
                         className: 'docs-card',
                         children: [
                           { h3: { text: '🌐 Framework Integrations' } },
@@ -239,7 +239,7 @@ export function DocsIndexPage() {
                     },
                     {
                       a: {
-                        href: 'docs/database-integration',
+                        href: 'docs/database/index',
                         className: 'docs-card',
                         children: [
                           { h3: { text: '🗄️ Database Integration' } },
@@ -250,7 +250,7 @@ export function DocsIndexPage() {
                     },
                     {
                       a: {
-                        href: 'docs/security-guide',
+                        href: 'docs/deployment/security',
                         className: 'docs-card',
                         children: [
                           { h3: { text: '🛡️ Security' } },
@@ -279,7 +279,7 @@ export function DocsIndexPage() {
                   children: [
                     {
                       a: {
-                        href: 'docs/api-reference',
+                        href: 'docs/api/reference',
                         className: 'docs-card',
                         children: [
                           { h3: { text: '📋 API Reference' } },

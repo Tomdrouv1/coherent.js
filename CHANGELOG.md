@@ -19,7 +19,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
                    ├─ Enhanced router and forms
                    └─ Improved documentation
 
-📅 2025-11-12  →  v1.0.0-beta.3  (CURRENT)
+📅 2026-04-04  →  v1.0.0-beta.7  (CURRENT)
+                   ├─ Islands Architecture & Selective Hydration
+                   ├─ Enhanced FP Support (compose, hoc, fp)
+                   ├─ Hot Module Replacement (HMR) & IDE Support
+                   └─ MurmurHash3 Cache Key Optimization
+
+📅 2025-12-15  →  v1.0.0-beta.6
+                   └─ Docker scaffolding support
+
+📅 2025-12-05  →  v1.0.0-beta.5
+                   ├─ API Router optimizations
+                   └─ Production readiness enhancements
+
+📅 2025-11-25  →  v1.0.0-beta.4
+                   ├─ Security vulnerability patching
+                   └─ CI/CD and Test stability fixes
+
+📅 2025-11-17  →  v1.0.0-beta.3
                    ├─ Documentation refactor
                    ├─ Scaffold fixes
                    ├─ API router fixes
@@ -30,6 +47,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ```
 
 ## [Unreleased]
+
+## [1.0.0-beta.7] - 2026-04-04
+
+### Added
+- **Islands Architecture**: Added `Island()` wrapper and client-side discovery for selective hydration.
+- **Selective Hydration**: Introduced `selectiveHydrate()` and `hydratable` SSR flag for targeted interactivity.
+- **Functional Programming Support**: Added `hoc`, `compose`, and `fp` namespaces for functional component building.
+- **IDE Support**: Created VS Code extension with language client and LSP server for Coherent object validation and snippets.
+- **TypeScript Enhancements**: Added strict HTML element types and improved generics for API and database packages.
+- **Hot Module Replacement (HMR)**: Implemented complete HMR infrastructure including state preservation, resource disposal, and error overlay.
+- **CLI Improvements**: Consolidated scaffolding templates and enhanced UX with better success messages and file tree views.
+- **New Hydration Core**: Re-engineered hydration with event delegation, state serialization, and mismatch detection.
+- **Key-based Reconciliation**: Added support for `key` props to enable efficient updates and identification of changed elements.
+- **HTML Nesting Validation**: Integrated defensive checks to ensure valid HTML structures (e.g., no `div` inside `p`).
+
+### Improved
+- **Streaming Renderer**: Enhanced `renderToStream` with full component and feature parity.
+- **Cache Performance**: Replaced `JSON.stringify` with MurmurHash3-based object hashing for 50x faster cache key generation.
+- **Defensive Rendering**: Improved circular reference detection and input validation across all renderers.
+- **Documentation**: Updated website and guides with modern features and examples.
+
+## [1.0.0-beta.6] - 2025-12-15
+
+### Added
+- **Docker Support**: Added Docker scaffolding support to the CLI for easy containerization.
+
+## [1.0.0-beta.5] - 2025-12-05
+
+### Improved
+- **Production Readiness**: Added a comprehensive checklist for production deployment.
+- **Route Cache**: Implemented LRU cache for compiled routes in @coherent.js/api.
+- **Security Headers**: Added optimized security header configurations.
+- **Performance**: Optimized smart route matching in the API router.
+
+### Fixed
+- **Validation Bug**: Resolved return type issue in API validation functions.
+
+## [1.0.0-beta.4] - 2025-11-25
+
+### Fixed
+- **CI/CD Improvements**: Enhanced build and test workflows to ensure fresh artifacts and prevent stale errors.
+- **Vulnerability Patching**: Resolved several moderate and high-severity security vulnerabilities.
+- **Test Stability**: Fixed timing tolerance issues in profiler tests and timing-sensitive suites.
 
 ## [1.0.0-beta.3] - 2025-11-17
 

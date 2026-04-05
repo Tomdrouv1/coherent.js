@@ -1,6 +1,6 @@
 {
   "name": "@coherent.js/koa",
-  "version": "1.0.0-beta.6",
+  "version": "1.0.0-beta.7",
   "description": "Koa adapter for Coherent.js",
   "type": "module",
   "main": "dist/index.cjs",
@@ -35,6 +35,10 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Tomdrouv1/coherent.js.git"
+  },
+  "homepage": "https://github.com/Tomdrouv1/coherent.js",
+  "bugs": {
+    "url": "https://github.com/Tomdrouv1/coherent.js/issues"
   },
   "peerDependencies": {
     "koa": ">=2.13.0 < 4.0.0",

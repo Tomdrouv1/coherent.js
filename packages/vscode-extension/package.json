@@ -2,11 +2,15 @@
   "name": "coherent-language-support",
   "displayName": "Coherent.js Language Support",
   "description": "IntelliSense, validation, and snippets for Coherent.js",
-  "version": "1.0.0",
+  "version": "1.0.0-beta.7",
   "publisher": "coherentjs",
   "repository": {
     "type": "git",
     "url": "https://github.com/Tomdrouv1/coherent.js"
+  },
+  "homepage": "https://github.com/Tomdrouv1/coherent.js",
+  "bugs": {
+    "url": "https://github.com/Tomdrouv1/coherent.js/issues"
   },
   "engines": {
     "vscode": "^1.85.0"

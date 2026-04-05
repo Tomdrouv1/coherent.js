@@ -48,6 +48,21 @@ Welcome to the official documentation for Coherent.js, a high-performance server
 - [Performance](deployment/performance.md) - Optimization techniques
 - [Security](deployment/security.md) - Security best practices
 
+### 🧪 Testing & Tooling
+- [Testing Guide](testing/guide.md) - Testing utilities and matchers
+- [Profiler](profiler/README.md) - Performance profiling and metrics
+- [Build Tools](build-tools/README.md) - Vite, Webpack, and Rollup plugins
+
+### 🧩 Extended Packages
+- [Forms Guide](forms/guide.md) - Form building, validation, and hydration
+- [Web Components](web-components/README.md) - Custom Elements integration (experimental)
+- [Runtime](runtime/README.md) - Universal runtime for any JS environment
+- [Adapters](adapters/README.md) - Astro, Remix, and SvelteKit adapters (experimental)
+
+### 🛠️ Editor Support
+- [VS Code Extension](vscode-extension/README.md) - IntelliSense and snippets for VS Code
+- [Language Server](language-server/README.md) - LSP server for any editor
+
 ### 🔧 Advanced
 - [Utilities](advanced/utilities.md) - Shared rendering utilities
 
@@ -71,6 +86,9 @@ Welcome to the official documentation for Coherent.js, a high-performance server
 - **Work with databases** → [Database Integration](database/index.md)
 - **Deploy to production** → [Deployment Guide](deployment/index.md)
 - **Migrate from React/Vue** → [Migration Guide](migration/from-other-frameworks.md)
+- **Build forms** → [Forms Guide](forms/guide.md)
+- **Test components** → [Testing Guide](testing/guide.md)
+- **Set up VS Code** → [VS Code Extension](vscode-extension/README.md)
 
 ## 📦 Package Reference
 
@@ -80,21 +98,30 @@ Coherent.js is a monorepo with multiple packages:
 - `@coherent.js/core` - Core framework
 - `@coherent.js/client` - Client-side utilities
 - `@coherent.js/api` - API framework
+- `@coherent.js/runtime` - [Universal runtime](runtime/README.md)
 
 ### Integration Packages
 - `@coherent.js/express` - Express.js adapter
 - `@coherent.js/fastify` - Fastify adapter
 - `@coherent.js/koa` - Koa adapter
 - `@coherent.js/nextjs` - Next.js integration
+- `@coherent.js/adapters` - [Astro, Remix, SvelteKit adapters](adapters/README.md) (experimental)
 
 ### Feature Packages
 - `@coherent.js/database` - Database adapters
-- `@coherent.js/forms` - Form utilities
+- `@coherent.js/forms` - [Form utilities](forms/guide.md)
 - `@coherent.js/i18n` - Internationalization
 - `@coherent.js/seo` - SEO tools
-- `@coherent.js/testing` - Testing utilities
+- `@coherent.js/testing` - [Testing utilities](testing/guide.md)
 - `@coherent.js/state` - Reactive state management
 - `@coherent.js/devtools` - Developer tools
+- `@coherent.js/web-components` - [Custom Elements](web-components/README.md) (experimental)
+- `@coherent.js/profiler` - [Performance profiling](profiler/README.md)
+- `@coherent.js/build-tools` - [Build tool plugins](build-tools/README.md)
+
+### Editor Tooling
+- `@coherent.js/language-server` - [LSP server](language-server/README.md)
+- `coherent-language-support` - [VS Code extension](vscode-extension/README.md)
 
 ## 🆘 Getting Help
 
