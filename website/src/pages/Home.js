@@ -43,8 +43,8 @@ export function Home() {
             { img: { src: 'https://img.shields.io/badge/version-1.0.0--beta.7-blue', alt: 'version', className: 'badge' } }
           ] } },
           { div: { className: 'cta', children: [
-            { a: { className: 'button primary', href: 'starter-app', text: '🚀 Starter App' } },
-            { a: { className: 'button secondary', href: 'docs', text: '📖 Docs' } },
+            { a: { className: 'button primary', href: 'starter-app', text: 'Get Started' } },
+            { a: { className: 'button secondary', href: 'docs', text: 'Documentation' } },
             { a: { className: 'button', href: 'examples', text: 'Examples' } }
           ] } },
           // Scroll indicator
