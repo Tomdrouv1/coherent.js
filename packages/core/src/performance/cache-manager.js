@@ -325,6 +325,10 @@ export function createCacheManager(options = {}) {
   }
 
   // Public API
+  function hashObject(obj) {
+    return simpleHash(JSON.stringify(obj));
+  }
+
   return {
     get,
     set,
@@ -334,6 +338,7 @@ export function createCacheManager(options = {}) {
     cleanup,
     destroy,
     generateCacheKey,
+    hashObject,
     get memoryUsage() {
       return memoryUsage;
     },

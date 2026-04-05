@@ -10,7 +10,7 @@ export function Coverage() {
         { section: { className: 'coverage-badges', children: [
           { h2: { text: 'Current Status' } },
           { div: { className: 'badges-row', children: [
-            { img: { src: '/coverage/badge.json', alt: 'Overall Coverage' } },
+            { span: { className: 'coverage-badge', text: 'Coverage', id: 'coverage-badge' } },
             { img: { src: 'https://codecov.io/gh/Tomdrouv1/coherent.js/branch/main/graph/badge.svg', alt: 'Codecov Coverage' } }
           ] } }
         ] } },
@@ -130,7 +130,7 @@ export function Coverage() {
                 console.error('Failed to load coverage data:', error);
                 const summaryEl = document.getElementById('coverage-data');
                 if (summaryEl) {
-                  summaryEl.innerHTML = '<p class="error">Failed to load coverage data. Please try again later.</p>';
+                  summaryEl.innerHTML = '<p class="coverage-unavailable">Coverage data is not currently available. Run <code>pnpm test:coverage</code> locally to generate a report.</p>';
                 }
               }
             }
