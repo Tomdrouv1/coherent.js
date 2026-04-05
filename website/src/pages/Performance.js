@@ -32,12 +32,12 @@ const PerformanceView = (props) => {
         // Header
         {
           div: {
-            className: 'performance-header',
+            className: 'page-header',
             children: [
               { h1: { text: 'Performance Testing' } },
-              { p: { 
-                className: 'lead', 
-                text: 'Interactive performance tests to benchmark Coherent.js rendering, caching, and optimization features.' 
+              { p: {
+                className: 'page-lead',
+                text: 'Interactive performance tests to benchmark Coherent.js rendering, caching, and optimization features.'
               } }
             ]
           }

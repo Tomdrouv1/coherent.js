@@ -7,43 +7,11 @@ export const StarterAppPage = () => ({
   div: {
     className: 'starter-app-page',
     children: [
-      // Hero Section
-      {
-        div: {
-          className: 'starter-hero-section',
-          children: [
-            { h1: { text: '🚀 Coherent.js Starter App', className: 'starter-hero-title' } },
-            { 
-              p: { 
-                text: 'A simple, working full-stack example that actually works',
-                className: 'starter-hero-subtitle'
-              } 
-            },
-            {
-              div: {
-                style: 'margin-top: 30px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;',
-                children: [
-                  {
-                    a: {
-                      href: 'https://github.com/coherentjs/coherent/tree/main/examples/starter-app',
-                      target: '_blank',
-                      className: 'btn btn-primary starter-btn',
-                      text: '📁 View Code on GitHub'
-                    }
-                  },
-                  {
-                    a: {
-                      href: '#quick-start',
-                      className: 'btn btn-outline starter-btn-outline',
-                      text: '▶️ Quick Start'
-                    }
-                  }
-                ]
-              }
-            }
-          ]
-        }
-      },
+      // Page header
+      { div: { className: 'page-header', children: [
+        { h1: { text: 'Starter App' } },
+        { p: { className: 'page-lead', text: 'A simple, working full-stack example that actually works.' } }
+      ] } },
 
       // Main Content
       {

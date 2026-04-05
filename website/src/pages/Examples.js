@@ -6,32 +6,13 @@ export function Examples({ items = [] } = {}) {
       children: [
         {
           div: {
-            className: 'examples-hero',
+            className: 'page-header',
             children: [
-              { h1: { text: '⚡ Examples & Demos' } },
+              { h1: { text: 'Examples & Demos' } },
               {
                 p: {
-                  className: 'examples-lead',
+                  className: 'page-lead',
                   text: 'Discover the power of Coherent.js through interactive playground examples. From basic components to advanced patterns, see how pure object syntax makes building UIs intuitive and performant.',
-                },
-              },
-              {
-                div: {
-                  className: 'run-instruction',
-                  children: [
-                    {
-                      span: {
-                        className: 'instruction-label',
-                        text: '🚀 Quick Start:',
-                      },
-                    },
-                    {
-                      code: {
-                        className: 'instruction-code',
-                        text: 'node examples/<example>.js',
-                      },
-                    },
-                  ],
                 },
               },
             ],

@@ -4,7 +4,9 @@ export function Coverage() {
     div: {
       className: 'coverage-page',
       children: [
-        { h1: { text: 'Test Coverage' } },
+        { div: { className: 'page-header', children: [
+          { h1: { text: 'Test Coverage' } }
+        ] } },
         
         // Coverage badges
         { section: { className: 'coverage-badges', children: [

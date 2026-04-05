@@ -7,8 +7,10 @@ export function Playground() {
         section: {
             className: 'playground-container',
             children: [
-                {h1: {text: 'Coherent.js Playground'}},
-                {p: {text: 'Create and test Coherent.js components using JavaScript! Write components as pure JavaScript objects and see them rendered in real-time with live preview and HTML generation.'}},
+                {div: { className: 'page-header', children: [
+                    {h1: {text: 'Playground'}},
+                    {p: {className: 'page-lead', text: 'Create and test Coherent.js components using JavaScript! Write components as pure JavaScript objects and see them rendered in real-time with live preview and HTML generation.'}}
+                ] } },
 
                 {
                     div: {

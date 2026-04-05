@@ -4,10 +4,10 @@ export function Changelog() {
     div: {
       className: 'changelog-page',
       children: [
-        // Hero section
-        { section: { className: 'changelog-hero', children: [
+        // Header
+        { div: { className: 'page-header', children: [
           { h1: { text: 'Changelog' } },
-          { p: { text: 'All notable changes to Coherent.js, following Semantic Versioning.' } }
+          { p: { className: 'page-lead', text: 'All notable changes to Coherent.js, following Semantic Versioning.' } }
         ] } },
 
         // Timeline

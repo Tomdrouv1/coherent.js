@@ -38,9 +38,11 @@ footer {
   max-height: calc(100dvh - 120px);
   display: flex;
   flex-direction: column;
-  padding: 20px;
+  padding: 48px 24px 20px;
   box-sizing: border-box;
   overflow: hidden; /* Prevent container overflow */
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 /* Playground content - header elements take minimal space */
@@ -590,17 +592,31 @@ h1, h2, h3, h4 {
   max-width: 100%;
 }
 
-/* Consistent page title for all non-Home single pages */
-.container.single h1 {
+/* Shared page header — consistent across all non-Home pages */
+.page-header {
+  text-align: center;
+  padding: 48px 24px 32px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.page-header h1 {
   font-family: var(--font-display);
   font-size: clamp(2rem, 5vw, 2.8rem);
   font-weight: 800;
-  margin: 0 0 16px;
+  margin: 0 0 12px;
   background: var(--gradient-text);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   letter-spacing: -0.03em;
+}
+
+.page-header .page-lead {
+  color: var(--muted);
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin: 0;
 }
 
 /* Home title has its own specific style */
