@@ -43,7 +43,7 @@ jobs:
       - name: Get pnpm store directory
         id: pnpm-cache
         run: |
-          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+          echo "STORE_PATH=$(pnpm store path)" >> "$GITHUB_OUTPUT"
 
       - name: Setup pnpm cache
         uses: actions/cache@v4
@@ -62,26 +62,33 @@ jobs:
       - name: Determine npm tag
         id: npm-tag
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "tag=${{ inputs.tag }}" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.event.release.prerelease }}" == "true" ]]; then
-            echo "tag=beta" >> $GITHUB_OUTPUT
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "tag=$INPUT_TAG" >> "$GITHUB_OUTPUT"
+          elif [[ "$IS_PRERELEASE" == "true" ]]; then
+            echo "tag=beta" >> "$GITHUB_OUTPUT"
           else
-            echo "tag=latest" >> $GITHUB_OUTPUT
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
           fi
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          IS_PRERELEASE: ${{ github.event.release.prerelease }}
 
       - name: Publish to NPM
         run: |
-          if [[ "${{ steps.npm-tag.outputs.tag }}" == "latest" ]]; then
+          if [[ "$NPM_TAG" == "latest" ]]; then
             pnpm publish -r --provenance --access public --no-git-checks
           else
-            pnpm publish -r --provenance --access public --tag ${{ steps.npm-tag.outputs.tag }} --no-git-checks
+            pnpm publish -r --provenance --access public --tag "$NPM_TAG" --no-git-checks
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TAG: ${{ steps.npm-tag.outputs.tag }}
 
       - name: Summary
         run: |
-          echo "✅ Published all packages to NPM with tag: ${{ steps.npm-tag.outputs.tag }}"
-          echo "📦 Packages published:"
-          ls -1 packages/*/package.json | xargs -I {} sh -c 'cat {} | grep -m1 "\"name\":" | cut -d\" -f4'
+          echo "Published all packages to NPM with tag: $NPM_TAG"
+          echo "Packages published:"
+          find packages -maxdepth 2 -name package.json -exec grep -m1 '"name":' {} \; | cut -d\" -f4
+        env:
+          NPM_TAG: ${{ steps.npm-tag.outputs.tag }}
