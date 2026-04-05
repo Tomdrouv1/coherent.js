@@ -118,7 +118,9 @@ function renderFullPage({ currentPath, componentName, props = {}, title = 'Coher
   const Component = getComponent(componentName);
   const SafeComponent = withPageErrorBoundary(Component);
   const content = SafeComponent(props);
-  const page = Layout({ title, currentPath, content, scripts });
+  // Layout expects paths without leading slash (e.g. 'examples', not '/examples')
+  const layoutPath = currentPath === '/' ? '' : currentPath.replace(/^\//, '');
+  const page = Layout({ title, currentPath: layoutPath, content, scripts });
   return renderWithTemplate(page, {
     template: '<!DOCTYPE html>\n{{content}}',
     enablePerformanceMonitoring: true,

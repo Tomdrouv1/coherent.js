@@ -1588,7 +1588,6 @@ pre.shiki code {
   text-decoration: underline;
 }
 
-/* Enhanced Examples page styling */
 .examples-hero {
   text-align: center;
   padding: 60px 24px 40px;
@@ -2130,12 +2129,26 @@ body:not(:focus-within) #templates-menu {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+  position: relative;
 }
 
 .performance-page {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 24px 40px;
+  position: relative;
+}
+
+/* Full-viewport background glow for all pages — applied to the content wrapper */
+.container.single > .content > #coherent-content::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 10%, rgba(0, 229, 160, 0.06) 0%, transparent 60%),
+    radial-gradient(circle at 75% 60%, rgba(0, 229, 160, 0.03) 0%, transparent 40%);
+  pointer-events: none;
 }
 
 .coverage-badges {
