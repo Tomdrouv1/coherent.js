@@ -69,7 +69,6 @@ export function renderFullPage({ currentPath, componentName, props = {}, title =
 
 export const pageRoutes = [
   { path: '/', component: 'Home', title: 'Coherent.js - Modern Object-Based UI Framework', scripts: ['/coherent-hydrate.js', '/counter-demo.js'] },
-  { path: '/docs', component: 'DocsIndex', title: 'Documentation - Coherent.js' },
   { path: '/playground', component: 'Playground', title: 'Playground - Coherent.js', scripts: ['/codemirror-editor.js', '/playground.js'] },
   { path: '/performance', component: 'Performance', title: 'Performance - Coherent.js', scripts: ['/performance.js'] },
   { path: '/coverage', component: 'Coverage', title: 'Coverage - Coherent.js' },
@@ -203,6 +202,14 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
       props: { items: getExamplesList() },
       title: 'Examples - Coherent.js',
     });
+    res.type('html').send(html);
+  });
+
+  // Docs index — with sidebar
+  app.get('/docs', (req, res) => {
+    const sidebar = getDocsSidebar();
+    const page = Layout({ title: 'Documentation | Coherent.js', sidebar, currentPath: 'docs', baseHref: '/', content: DocsIndexPage({}) });
+    const html = '<!DOCTYPE html>\n' + render(page);
     res.type('html').send(html);
   });
 
