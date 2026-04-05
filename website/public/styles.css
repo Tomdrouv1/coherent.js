@@ -581,9 +581,8 @@ h1, h2, h3, h4 {
 }
 
 .container.single > .content {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 24px;
+  max-width: 100%;
+  padding: 0;
 }
 
 .container.docs {
@@ -1075,6 +1074,17 @@ pre.shiki code {
   justify-content: center;
   flex-wrap: wrap;
   margin-top: 40px;
+}
+
+.home .install,
+.home .features,
+.home .hydration-demo,
+.home .quick-links {
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 24px;
+  padding-right: 24px;
 }
 
 .home .install {
@@ -2115,6 +2125,12 @@ body:not(:focus-within) #templates-menu {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+}
+
+.performance-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px 40px;
 }
 
 .coverage-badges {
