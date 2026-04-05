@@ -575,14 +575,19 @@ h1, h2, h3, h4 {
 }
 
 .container.single {
-  grid-template-columns: 1fr;
+  display: block;
   max-width: 100%;
   padding: 0;
+  gap: 0;
 }
 
 .container.single > .content {
   max-width: 100%;
   padding: 0;
+}
+
+.container.single > .content > #coherent-content {
+  max-width: 100%;
 }
 
 .container.docs {
