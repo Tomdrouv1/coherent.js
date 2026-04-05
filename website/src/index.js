@@ -83,6 +83,41 @@ export { getExamplesList, Layout };
 // Helpers
 // ---------------------------------------------------------------------------
 
+function slugify(str) {
+  return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
+
+function getDocsSidebar() {
+  const docsDir = join(repoRoot, 'docs');
+  const groups = {};
+
+  function scan(dir, base = '') {
+    try {
+      const entries = readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const rel = base ? `${base}/${entry.name}` : entry.name;
+        if (entry.isDirectory()) {
+          scan(join(dir, entry.name), rel);
+        } else if (entry.name.endsWith('.md')) {
+          const section = rel.includes('/') ? rel.split('/')[0] : 'General';
+          if (!groups[section]) groups[section] = [];
+          const slug = rel.replace(/\.md$/i, '').split('/').map(slugify).join('/');
+          const label = entry.name.replace(/\.md$/i, '').replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+          groups[section].push({ href: `docs/${slug}`, label });
+        }
+      }
+    } catch {}
+  }
+
+  scan(docsDir);
+  return Object.entries(groups).map(([title, items]) => ({
+    title: title.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+    items
+  }));
+}
+
+export { getDocsSidebar };
+
 function getExamplesList() {
   const examplesDir = join(repoRoot, 'examples');
 
@@ -199,7 +234,8 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     const title = (md.match(/^#\s+(.+)$/m) || [null, 'Documentation'])[1];
 
     // Render with Layout using placeholder approach (docs need breadcrumbs/TOC slots)
-    const page = Layout({ title: `${title} | Coherent.js Docs`, currentPath: `docs/${slug}`, baseHref: '/' });
+    const sidebar = getDocsSidebar();
+    const page = Layout({ title: `${title} | Coherent.js Docs`, sidebar, currentPath: `docs/${slug}`, baseHref: '/' });
     let html = '<!DOCTYPE html>\n' + render(page);
     html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', `<div class="markdown-body">${htmlBody}</div>`);
     html = html.replace('[[[COHERENT_BREADCRUMBS_PLACEHOLDER]]]', '');
