@@ -7,13 +7,15 @@ on:
     branches: [ '**' ]
 
 permissions:
-  id-token: write
   contents: read
 
 jobs:
   test:
     name: Test & Build
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     timeout-minutes: 15
     strategy:
       matrix:
@@ -37,7 +39,7 @@ jobs:
       - name: Get pnpm store directory
         id: pnpm-cache
         run: |
-          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+          echo "STORE_PATH=$(pnpm store path)" >> "$GITHUB_OUTPUT"
 
       - name: Setup pnpm cache
         uses: actions/cache@v4
@@ -73,7 +75,6 @@ jobs:
 
       - name: Unit tests with coverage
         run: pnpm run test:coverage:ci
-        continue-on-error: false
         env:
           CI: true
 

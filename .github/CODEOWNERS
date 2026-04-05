@@ -20,6 +20,11 @@ packages/devtools/ @Tomdrouv1
 packages/testing/ @Tomdrouv1
 packages/cli/ @Tomdrouv1
 
+# Editor tooling
+packages/language-server/ @Tomdrouv1
+packages/language-service/ @Tomdrouv1
+packages/vscode-extension/ @Tomdrouv1
+
 # Feature packages
 packages/i18n/ @Tomdrouv1
 packages/forms/ @Tomdrouv1
