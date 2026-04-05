@@ -1,6 +1,7 @@
 /**
- * Streaming Rendering Examples
- * Demonstrates streaming capabilities for large datasets and real-time updates
+ * @name Streaming SSR
+ * @category Features
+ * @description Stream HTML responses for faster time-to-first-byte.
  */
 
 import { render } from '@coherent.js/core';

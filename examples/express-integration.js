@@ -1,6 +1,7 @@
 /**
- * Express.js Integration Example
- * Demonstrates Coherent.js components with Express middleware and routing
+ * @name Express Integration
+ * @category Integrations
+ * @description Using Coherent.js with Express.js for SSR.
  */
 
 import express from 'express';

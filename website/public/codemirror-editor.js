@@ -197,7 +197,7 @@ return App();`;
     padding: 8px 12px;
     border-radius: 4px;
     font-size: 12px;
-    z-index: 1000;
+    z-index: 10;
     max-width: 300px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     pointer-events: none;

@@ -1,7 +1,7 @@
 /**
- * Coherent.js Error Boundary Demo
- * 
- * Demonstrates error handling with error boundaries
+ * @name Error Boundaries
+ * @category Components
+ * @description Graceful error handling with fallback components.
  */
 
 import { render, createErrorBoundary, createErrorFallback, withErrorBoundary, createAsyncErrorBoundary, createGlobalErrorHandler } from '@coherent.js/core';

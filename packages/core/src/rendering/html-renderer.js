@@ -372,6 +372,13 @@ class HTMLRenderer extends BaseRenderer {
             ? `<${tagName} ${attributeString}>`
             : `<${tagName}>`;
 
+        // Handle raw HTML injection (unescaped) — for SSR use cases like syntax highlighting
+        if (_rawHtml !== undefined) {
+            const rawContent = typeof _rawHtml === 'function' ? String(_rawHtml()) : String(_rawHtml);
+            const result = `${openingTag}${rawContent}</${tagName}>`;
+            return result;
+        }
+
         // Handle text content
         let textContent = '';
         if (text !== undefined) {

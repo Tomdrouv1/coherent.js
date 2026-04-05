@@ -1,11 +1,7 @@
 /**
- * Next.js Integration Example
- * 
- * This example demonstrates how to integrate Coherent.js with Next.js:
- * - API route handlers with server-side rendering
- * - Automatic component rendering
- * - Request data integration
- * - Performance monitoring
+ * @name Next.js Integration
+ * @category Integrations
+ * @description Using Coherent.js components inside Next.js applications.
  */
 
 import { createCoherentNextHandler } from '@coherent.js/nextjs';

@@ -1,6 +1,7 @@
 /**
- * Hydration Demo - Comprehensive Example
- * Demonstrates client-side hydration of server-rendered components with interactivity
+ * @name Hydration
+ * @category Client-Side
+ * @description Client-side hydration with Islands Architecture.
  */
 
 import { makeHydratable, autoHydrate } from '@coherent.js/client';

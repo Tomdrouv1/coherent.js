@@ -52,6 +52,7 @@ export function Layout({
               { script: { src: './theme-init.js' } },
               { script: { src: './header-search.js', defer: true } },
               { script: { src: './toc-active.js', defer: true } },
+              { script: { src: './coherent-animations.js', defer: true } },
               // Page-specific scripts (passed via props or hardcoded for build compatibility)
               ...(scripts.length > 0
                 ? scripts.map(src => ({ script: { src, defer: true } }))

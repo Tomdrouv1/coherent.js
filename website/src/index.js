@@ -6,7 +6,47 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'fs';
 import { renderWithTemplate } from '../../packages/core/src/utils/render-utils.js';
 import { render } from '../../packages/core/src/rendering/html-renderer.js';
 import { marked } from 'marked';
+import { createHighlighter } from 'shiki';
 import { performanceMonitor } from '../../packages/core/src/performance/monitor.js';
+
+// Initialize Shiki for syntax highlighting
+const highlighter = await createHighlighter({
+  themes: ['github-dark', 'github-light'],
+  langs: ['javascript', 'typescript', 'html', 'css', 'json', 'bash', 'shell'],
+});
+
+// Configure marked to use Shiki
+marked.use({
+  renderer: {
+    code({ text, lang }) {
+      try {
+        return highlighter.codeToHtml(text, {
+          lang: lang || 'text',
+          themes: { dark: 'github-dark', light: 'github-light' },
+          cssVariablePrefix: '--shiki-',
+          defaultColor: 'dark',
+        });
+      } catch {
+        const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return `<pre class="shiki"><code>${escaped}</code></pre>`;
+      }
+    }
+  }
+});
+
+export function highlightCode(code, lang = 'javascript') {
+  try {
+    return highlighter.codeToHtml(code, {
+      lang,
+      themes: { dark: 'github-dark', light: 'github-light' },
+      cssVariablePrefix: '--shiki-',
+      defaultColor: 'dark',
+    });
+  } catch {
+    const escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return `<pre class="shiki"><code>${escaped}</code></pre>`;
+  }
+}
 import { registerComponent, getComponent } from '../../packages/core/src/components/component-system.js';
 import { createErrorBoundary } from '../../packages/core/src/components/error-boundary.js';
 import { Examples } from './pages/Examples.js';
@@ -72,7 +112,7 @@ export const pageRoutes = [
   { path: '/playground', component: 'Playground', title: 'Playground - Coherent.js', scripts: ['/codemirror-editor.js', '/playground.js'] },
   { path: '/performance', component: 'Performance', title: 'Performance - Coherent.js', scripts: ['/performance.js'] },
   { path: '/coverage', component: 'Coverage', title: 'Coverage - Coherent.js' },
-  { path: '/starter-app', component: 'StarterApp', title: 'Starter App - Coherent.js' },
+  { path: '/starter-app', component: 'StarterApp', title: 'Starter App - Coherent.js', props: { highlightCode } },
   { path: '/changelog', component: 'Changelog', title: 'Changelog - Coherent.js' },
 ];
 
@@ -86,6 +126,21 @@ function slugify(str) {
   return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 }
 
+// Logical section order for the docs sidebar
+const SECTION_ORDER = [
+  'getting-started',
+  'components',
+  'client',
+  'server',
+  'api',
+  'database',
+  'deployment',
+  'packages',
+  'advanced',
+  'examples',
+  'migration',
+];
+
 function getDocsSidebar() {
   const docsDir = join(repoRoot, 'docs');
   const groups = {};
@@ -98,7 +153,8 @@ function getDocsSidebar() {
         if (entry.isDirectory()) {
           scan(join(dir, entry.name), rel);
         } else if (entry.name.endsWith('.md')) {
-          const section = rel.includes('/') ? rel.split('/')[0] : 'General';
+          const section = rel.includes('/') ? rel.split('/')[0] : null;
+          if (!section) continue; // Skip root-level markdown files (README, etc.)
           if (!groups[section]) groups[section] = [];
           const slug = rel.replace(/\.md$/i, '').split('/').map(slugify).join('/');
           const label = entry.name.replace(/\.md$/i, '').replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -109,13 +165,26 @@ function getDocsSidebar() {
   }
 
   scan(docsDir);
-  return Object.entries(groups).map(([title, items]) => ({
-    title: title.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-    items
+
+  // Sort sections by defined order, unknown sections go at the end
+  const sortedKeys = Object.keys(groups).sort((a, b) => {
+    const ia = SECTION_ORDER.indexOf(a);
+    const ib = SECTION_ORDER.indexOf(b);
+    if (ia === -1 && ib === -1) return a.localeCompare(b);
+    if (ia === -1) return 1;
+    if (ib === -1) return 1;
+    return ia - ib;
+  });
+
+  return sortedKeys.map(key => ({
+    title: key.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+    items: groups[key]
   }));
 }
 
 export { getDocsSidebar };
+
+const CATEGORY_ORDER = ['Getting Started', 'Components', 'Features', 'Client-Side', 'Integrations', 'Full Apps'];
 
 function getExamplesList() {
   const examplesDir = join(repoRoot, 'examples');
@@ -132,41 +201,37 @@ function getExamplesList() {
     let code = '';
     let description = '';
     let label = '';
+    let category = 'Other';
 
     try {
       code = readFileSync(filePath, 'utf-8');
-      const commentMatch = code.match(/\/\*\*(.*?)\*\//s) || code.match(/\/\*(.*?)\*\//s);
-      if (commentMatch) {
-        description = commentMatch[1].replace(/\*/g, '').trim();
-        const lines = description.split('\n').map(l => l.trim()).filter(Boolean);
-        description = lines[0] || 'Explore this practical Coherent.js example.';
-      }
-      label = file.replace('.js', '').split('-').map(word =>
-        word.charAt(0).toUpperCase() + word.slice(1)
-      ).join(' ');
-      if (file === 'basic-usage.js') {
-        label = 'Basic Usage';
-        description = 'Basic component examples showing greetings, user cards, and complete page composition patterns with styling.';
-      } else if (file === 'dev-preview.js') {
-        label = 'Dev Preview';
-        description = 'Development server preview component demonstrating basic structure and styling capabilities.';
-      }
+
+      // Parse @name, @category, @description from JSDoc
+      const nameMatch = code.match(/@name\s+(.+)/);
+      const catMatch = code.match(/@category\s+(.+)/);
+      const descMatch = code.match(/@description\s+(.+)/);
+
+      label = nameMatch ? nameMatch[1].trim() : file.replace('.js', '').split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      category = catMatch ? catMatch[1].trim() : 'Other';
+      description = descMatch ? descMatch[1].trim() : 'Explore this Coherent.js example.';
     } catch (error) {
       console.error(`Error reading ${file}:`, error.message);
-      description = 'Explore this practical Coherent.js example.';
+      description = 'Explore this Coherent.js example.';
       label = file.replace('.js', '');
     }
 
     return {
       file,
       label,
-      description: description.length > 150 ? `${description.substring(0, 147)}...` : description,
+      category,
+      description,
       runCmd: `node examples/${file}`,
-      code: code.length > 5000 ? `${code.substring(0, 4997)}...` : code
+      code
     };
   }).sort((a, b) => {
-    if (a.file === 'basic-usage.js') return -1;
-    if (b.file === 'basic-usage.js') return 1;
+    const ia = CATEGORY_ORDER.indexOf(a.category);
+    const ib = CATEGORY_ORDER.indexOf(b.category);
+    if (ia !== ib) return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
     return a.label.localeCompare(b.label);
   });
 }
@@ -179,7 +244,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const app = express();
   app.set('strict routing', true);
 
-  app.use(express.json({ limit: '12kb' }));
+  app.use(express.json({ limit: '100kb' }));
 
   // Page routes — before static files
   for (const route of pageRoutes) {
@@ -199,7 +264,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     const html = renderFullPage({
       currentPath: '/examples',
       componentName: 'Examples',
-      props: { items: getExamplesList() },
+      props: { items: getExamplesList(), highlightCode },
       title: 'Examples - Coherent.js',
     });
     res.type('html').send(html);
@@ -240,20 +305,51 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     const htmlBody = marked.parse(md);
     const title = (md.match(/^#\s+(.+)$/m) || [null, 'Documentation'])[1];
 
-    // Render with Layout using placeholder approach (docs need breadcrumbs/TOC slots)
+    // Extract headings from the rendered HTML (not raw markdown) for accurate matching
+    const headings = [];
+    const htmlHeadingRegex = /<(h[23])>([\s\S]*?)<\/\1>/gi;
+    let hMatch;
+    while ((hMatch = htmlHeadingRegex.exec(htmlBody)) !== null) {
+      const level = hMatch[1].toLowerCase();
+      const innerHtml = hMatch[2];
+      // Strip HTML tags to get plain text for the TOC label
+      const plainText = innerHtml.replace(/<[^>]+>/g, '').trim();
+      const id = slugify(plainText);
+      headings.push({ level, text: plainText, id, original: hMatch[0] });
+    }
+
+    const currentDocPath = `docs/${slug}`;
+    const tocHtml = headings.length > 0
+      ? `<div class="toc-box"><div class="toc-title">On this page</div><ul class="toc-list">${headings.map(h =>
+          `<li class="${h.level}"><a href="${currentDocPath}#${h.id}" data-toc-target="${h.id}" onclick="event.preventDefault(); document.getElementById('${h.id}')?.scrollIntoView({behavior: 'smooth', block: 'start'});">${h.text}</a></li>`
+        ).join('')}</ul></div>`
+      : '';
+
+    // Inject IDs into the heading tags in the rendered HTML
+    let contentHtml = htmlBody;
+    for (const h of headings) {
+      contentHtml = contentHtml.replace(
+        h.original,
+        `<${h.level} id="${h.id}">${h.original.slice(h.level.length + 2, -(h.level.length + 3))}</${h.level}>`
+      );
+    }
+
+    // Render with Layout
     const sidebar = getDocsSidebar();
     const page = Layout({ title: `${title} | Coherent.js Docs`, sidebar, currentPath: `docs/${slug}`, baseHref: '/' });
     let html = '<!DOCTYPE html>\n' + render(page);
-    html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', `<div class="markdown-body">${htmlBody}</div>`);
+    html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', `<div class="markdown-body">${contentHtml}</div>`);
     html = html.replace('[[[COHERENT_BREADCRUMBS_PLACEHOLDER]]]', '');
-    html = html.replace('[[[COHERENT_TOC_PLACEHOLDER]]]', '');
+    html = html.replace('[[[COHERENT_TOC_PLACEHOLDER]]]', tocHtml);
 
     res.type('html').send(html);
   });
 
   // Static files
-  app.use(express.static(join(websiteRoot, 'public'), { maxAge: '1h' }));
-  app.use('/examples-src', express.static(join(repoRoot, 'examples'), { maxAge: '1h' }));
+  const isDev = process.env.NODE_ENV !== 'production';
+  const staticOpts = isDev ? { etag: false, lastModified: false, maxAge: 0 } : { maxAge: '1h' };
+  app.use(express.static(join(websiteRoot, 'public'), staticOpts));
+  app.use('/examples-src', express.static(join(repoRoot, 'examples'), staticOpts));
 
   // API routes
   const apiRouter = createRouter({
@@ -301,7 +397,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
               try {
                 const { code } = req.body;
                 if (!code) { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ code: 1, stderr: 'No code provided' })); resolve(); return; }
-                if (code.length > 10240) { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ code: 1, stderr: 'Code exceeds maximum size (10KB)' })); resolve(); return; }
+                if (code.length > 102400) { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ code: 1, stderr: 'Code exceeds maximum size (100KB)' })); resolve(); return; }
 
                 const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
                 const now = Date.now();
@@ -357,6 +453,70 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   });
 
   app.get('/api/perf', (req, res) => { res.json(performanceMonitor.getStats()); });
+
+  // Search index — built from actual docs and pages
+  app.get('/api/search-index', (req, res) => {
+    const index = [];
+
+    // Add page routes
+    for (const route of pageRoutes) {
+      index.push({ title: route.title.replace(' - Coherent.js', ''), url: route.path, type: 'page' });
+    }
+    index.push({ title: 'Examples & Demos', url: '/examples', type: 'page' });
+
+    // Add docs
+    const docsDir = join(repoRoot, 'docs');
+    function scanDocs(dir, base) {
+      try {
+        const entries = readdirSync(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          const rel = base ? `${base}/${entry.name}` : entry.name;
+          if (entry.isDirectory()) { scanDocs(join(dir, entry.name), rel); }
+          else if (entry.name.endsWith('.md')) {
+            const content = readFileSync(join(dir, entry.name), 'utf-8');
+            const title = (content.match(/^#\s+(.+)$/m) || [null, entry.name.replace('.md', '')])[1];
+            const slug = rel.replace(/\.md$/i, '').split('/').map(s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-')).join('/');
+            const snippet = content.replace(/^#.+$/gm, '').replace(/[#*`\[\]()]/g, '').trim().substring(0, 150);
+            index.push({ title, url: `/docs/${slug}`, content: snippet, type: 'docs' });
+          }
+        }
+      } catch {}
+    }
+    scanDocs(docsDir, '');
+
+    res.json(index);
+  });
+
+  // Playground execution — direct Express route (API router hangs with Express)
+  app.post('/__playground/run', (req, res) => {
+    const { code } = req.body;
+    if (!code) return res.status(400).json({ code: 1, stderr: 'No code provided' });
+    if (code.length > 102400) return res.status(400).json({ code: 1, stderr: 'Code exceeds maximum size (100KB)' });
+
+    const blockedModules = ['fs', 'child_process', 'net', 'http', 'https', 'os', 'path', 'cluster', 'worker_threads', 'dgram', 'tls', 'dns', 'readline', 'vm', 'crypto'];
+    const blockedGlobals = ['process.exit', 'process.kill', 'process.env', 'process.chdir'];
+    const importPattern = /import\s*\(?[^)]*['"](?!@coherent\.js\/)([^'"]+)['"]/g;
+    for (const match of [...code.matchAll(importPattern)]) {
+      const mod = match[1].split('/')[0];
+      if (blockedModules.includes(mod)) return res.status(400).json({ code: 1, stderr: `Import of '${mod}' is not allowed.` });
+    }
+    for (const blocked of blockedGlobals) {
+      if (code.includes(blocked)) return res.status(400).json({ code: 1, stderr: `Use of '${blocked}' is not allowed.` });
+    }
+
+    const wrappedCode = `(async () => {\n${code}\n})().catch(console.error);`;
+    import('child_process').then(({ spawn }) => {
+      const child = spawn('node', ['--input-type=module'], { timeout: 5000, env: { NODE_ENV: 'sandbox', PATH: process.env.PATH } });
+      let stdout = '', stderr = '';
+      child.stdout.on('data', (d) => { stdout += d.toString(); });
+      child.stderr.on('data', (d) => { stderr += d.toString(); });
+      child.on('close', (exitCode) => { res.json({ code: exitCode || 0, stdout, stderr }); });
+      child.on('error', (error) => { if (!res.headersSent) res.status(500).json({ code: 1, stdout: '', stderr: error.message }); });
+      child.stdin.write(wrappedCode);
+      child.stdin.end();
+    });
+  });
+
   app.use(async (req, res, next) => { const handled = await apiRouter.handle(req, res); if (!handled) next(); });
 
   app.listen(port, () => {

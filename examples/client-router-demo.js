@@ -1,16 +1,7 @@
 /**
- * Client Router Demo - @coherent.js/client/router
- *
- * This example demonstrates the client-side router with:
- * - Basic routing and navigation
- * - Dynamic routes with parameters
- * - Route prefetching
- * - Page transitions
- * - Navigation guards
- *
- * Note: This is meant to run in a browser environment
- *
- * @since v1.0.0-beta.2
+ * @name Client Router
+ * @category Client-Side
+ * @description Client-side routing with prefetching, transitions, and guards.
  */
 
 import { createRouter } from '@coherent.js/client/router';

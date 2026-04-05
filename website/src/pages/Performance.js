@@ -46,7 +46,7 @@ const PerformanceView = (props) => {
         // Test Controls
         {
           div: {
-            className: 'test-controls',
+            className: 'test-controls reveal',
             children: [
               { h3: { text: 'Test Controls' } },
               {
@@ -162,7 +162,7 @@ const PerformanceView = (props) => {
         // Performance Metrics Display
         {
           div: {
-            className: 'metrics-grid',
+            className: 'metrics-grid reveal',
             children: [
               // Rendering Performance
               {
@@ -224,7 +224,7 @@ const PerformanceView = (props) => {
         // Interactive Demo Components
         {
           div: {
-            className: 'demo-section',
+            className: 'demo-section reveal',
             children: [
               { h2: { text: '🔬 Live Performance Demo' } },
               
@@ -313,51 +313,46 @@ const PerformanceView = (props) => {
         // Performance Tips
         {
           div: {
-            className: 'tips-section',
+            className: 'tips-section reveal',
             children: [
               { h2: { text: '💡 Performance Optimization Tips' } },
               {
                 div: {
                   className: 'tips-grid',
-                  style: 'display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 20px 0;',
                   children: [
                     {
                       div: {
                         className: 'tip-card',
-                        style: 'background: rgba(0, 229, 160, 0.1); border: 1px solid rgba(0, 229, 160, 0.3); border-radius: 12px; padding: 20px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);',
                         children: [
-                          { h4: { text: '⚡ Enable Caching', style: 'margin-top: 0; color: #00e5a0; font-weight: 600;' } },
-                          { p: { text: 'Use framework caching for frequently rendered components to achieve up to 200x performance improvements.', style: 'color: #e6edf3; margin-bottom: 0;' } }
+                          { h4: { text: 'Enable Caching' } },
+                          { p: { text: 'Use framework caching for frequently rendered components to achieve up to 200x performance improvements.' } }
                         ]
                       }
                     },
                     {
                       div: {
                         className: 'tip-card',
-                        style: 'background: rgba(0, 229, 160, 0.08); border: 1px solid rgba(0, 229, 160, 0.2); border-radius: 12px; padding: 20px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);',
                         children: [
-                          { h4: { text: '🗂️ Static Components', style: 'margin-top: 0; color: #00c98b; font-weight: 600;' } },
-                          { p: { text: 'Pre-render static components and cache them for ultra-fast rendering of unchanging UI elements.', style: 'color: #e6edf3; margin-bottom: 0;' } }
+                          { h4: { text: 'Static Components' } },
+                          { p: { text: 'Pre-render static components and cache them for ultra-fast rendering of unchanging UI elements.' } }
                         ]
                       }
                     },
                     {
                       div: {
                         className: 'tip-card',
-                        style: 'background: rgba(0, 201, 139, 0.1); border: 1px solid rgba(0, 201, 139, 0.3); border-radius: 12px; padding: 20px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);',
                         children: [
-                          { h4: { text: '📦 Bundle Optimization', style: 'margin-top: 0; color: #00c98b; font-weight: 600;' } },
-                          { p: { text: 'Use the bundle optimizer to identify and remove unused components from your production builds.', style: 'color: #e6edf3; margin-bottom: 0;' } }
+                          { h4: { text: 'Bundle Optimization' } },
+                          { p: { text: 'Use the bundle optimizer to identify and remove unused components from your production builds.' } }
                         ]
                       }
                     },
                     {
                       div: {
                         className: 'tip-card',
-                        style: 'background: rgba(0, 168, 118, 0.1); border: 1px solid rgba(0, 168, 118, 0.3); border-radius: 12px; padding: 20px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);',
                         children: [
-                          { h4: { text: '🧠 Memory Management', style: 'margin-top: 0; color: #00a876; font-weight: 600;' } },
-                          { p: { text: 'Monitor memory usage and implement cleanup strategies for long-running applications.', style: 'color: #e6edf3; margin-bottom: 0;' } }
+                          { h4: { text: 'Memory Management' } },
+                          { p: { text: 'Monitor memory usage and implement cleanup strategies for long-running applications.' } }
                         ]
                       }
                     }

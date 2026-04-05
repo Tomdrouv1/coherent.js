@@ -267,8 +267,12 @@ async function runJavaScriptCode(code) {
     // Show output in preview - detect HTML and render it
     if (previewEl) {
       if (isHTML) {
-        // Render HTML directly in the preview (Live Preview mode)
-        previewEl.innerHTML = stdout.trim();
+        // Render HTML in sandboxed iframe to prevent style leaking
+        previewEl.innerHTML = '';
+        const iframe = document.createElement('iframe');
+        iframe.style.cssText = 'width:100%;height:100%;border:none;background:#fff;border-radius:6px;';
+        iframe.srcdoc = stdout.trim();
+        previewEl.appendChild(iframe);
       } else {
         // Show regular console output
         let output = '';
@@ -624,13 +628,13 @@ async function loadExampleFile(fileName) {
       outputEl.className = 'output-status';
     }
 
-    const apiUrl = `/api/example/${fileName}`;
+    const apiUrl = `/api/examples/${fileName}`;
 
     let response = await fetch(apiUrl);
 
     // If API fails, try direct static file access as fallback
     if (!response.ok) {
-      const staticUrl = `/examples/${fileName}`;
+      const staticUrl = `/examples-src/${fileName}`;
       response = await fetch(staticUrl);
     }
 
@@ -639,8 +643,8 @@ async function loadExampleFile(fileName) {
     }
 
     const exampleCode = await response.text();
-    
-    // Paste the actual example code directly into the CodeMirror editor
+
+    // Paste the cleaned code into the CodeMirror editor
     window.setEditorContent(exampleCode);
     
     // Detect if this is JavaScript code and update UI accordingly
@@ -676,14 +680,37 @@ async function loadExampleFile(fileName) {
 }
 
 
+// Templates dropdown toggle
+window.toggleTemplatesMenu = function() {
+  var menu = document.getElementById('templates-menu');
+  if (!menu) return;
+  var isOpen = menu.getAttribute('data-open') === 'true';
+  if (isOpen) {
+    menu.style.opacity = '0';
+    menu.style.transform = 'translateY(-6px) scale(0.97)';
+    setTimeout(function() {
+      menu.removeAttribute('data-open');
+      menu.style.display = 'none';
+    }, 150);
+  } else {
+    menu.setAttribute('data-open', 'true');
+    menu.style.display = 'block';
+    menu.style.opacity = '0';
+    menu.style.transform = 'translateY(-6px) scale(0.97)';
+    requestAnimationFrame(function() {
+      menu.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+      menu.style.opacity = '1';
+      menu.style.transform = 'translateY(0) scale(1)';
+    });
+  }
+};
+
 // Initialize when DOM is ready (editor is initialized by codemirror-editor.js)
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
-    // Just load example if needed (editor initializes itself)
     setTimeout(() => loadExampleFromURL(), 200);
   });
 } else {
-  // Just load example if needed (editor initializes itself)
   setTimeout(() => loadExampleFromURL(), 200);
 }
 

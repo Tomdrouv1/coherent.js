@@ -1,13 +1,7 @@
 /**
- * State Management Demo - @coherent.js/state Package
- *
- * This example demonstrates the new @coherent.js/state package features:
- * - Reactive observables and computed properties
- * - State persistence with localStorage
- * - State validation
- * - SSR-compatible state management
- *
- * @since v1.0.0-beta.2
+ * @name State Management
+ * @category Components
+ * @description Reactive state with observables, computed properties, and persistence.
  */
 
 import { render } from '@coherent.js/core';

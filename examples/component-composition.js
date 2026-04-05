@@ -1,3 +1,9 @@
+/**
+ * @name Component Composition
+ * @category Components
+ * @description HOCs, state management, and advanced component patterns.
+ */
+
 import { withState } from '@coherent.js/core';
 import { makeHydratable, autoHydrate } from '@coherent.js/client';
 

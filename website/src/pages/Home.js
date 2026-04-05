@@ -90,13 +90,13 @@ export function Home() {
           { h2: { text: 'Quick Links' } },
           { ul: { className: 'links', children: [
             { li: { children: [ { a: { href: 'docs/getting-started/installation', text: 'Getting Started' } } ] } },
-            { li: { children: [ { a: { href: 'docs/api-reference', text: 'API Reference' } } ] } },
-            { li: { children: [ { a: { href: 'docs/framework-integrations', text: 'Framework Integrations' } } ] } },
+            { li: { children: [ { a: { href: 'docs/api/reference', text: 'API Reference' } } ] } },
+            { li: { children: [ { a: { href: 'docs/deployment/integrations', text: 'Framework Integrations' } } ] } },
             { li: { children: [ { a: { href: 'changelog', text: 'Changelog' } } ] } }
           ] } }
         ] } },
 
-        // Inline scripts for install tabs, copy button, and scroll reveals
+        // Inline scripts for install tabs, copy button, and mouse-tracking
         { script: { text: `
           function switchInstallTab(btn, cmd) {
             document.querySelectorAll('.install-tab').forEach(function(t) { t.classList.remove('active'); });
@@ -112,31 +112,6 @@ export function Home() {
               });
             }
           }
-          // Scroll-reveal: sections fade in when entering viewport
-          (function() {
-            var observer = new IntersectionObserver(function(entries) {
-              entries.forEach(function(entry) {
-                if (entry.isIntersecting) {
-                  entry.target.classList.add('revealed');
-                  // Stagger feature cards
-                  var cards = entry.target.querySelectorAll('.features-grid li');
-                  cards.forEach(function(card, i) {
-                    card.style.transitionDelay = (i * 0.1) + 's';
-                    card.classList.add('card-revealed');
-                  });
-                  // Stagger quick-link items
-                  var links = entry.target.querySelectorAll('.links li');
-                  links.forEach(function(link, i) {
-                    link.style.transitionDelay = (i * 0.08) + 's';
-                    link.classList.add('card-revealed');
-                  });
-                }
-              });
-            }, { threshold: 0.15 });
-            document.querySelectorAll('.reveal').forEach(function(el) {
-              observer.observe(el);
-            });
-          })();
           // Feature card mouse-tracking glow
           document.querySelectorAll('.features-grid li').forEach(function(card) {
             card.addEventListener('mousemove', function(e) {

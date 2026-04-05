@@ -1,4 +1,8 @@
-// Basic component example - Greeting component with conditional rendering
+/**
+ * @name Basic Usage
+ * @category Getting Started
+ * @description Greeting components with conditional rendering and user cards.
+ */
 export const Greeting = ({ name = 'World', mood = 'happy' }) => ({
     div: {
         className: `greeting greeting--${mood}`,
@@ -59,65 +63,18 @@ const sampleUsers = [
     { id: 3, name: 'Charlie', email: 'charlie@example.com', role: 'User' }
 ];
 
-// Complete page example with embedded styles
-export const completePage = {
-    html: {
+// Demo component combining everything
+const Demo = () => ({
+    div: {
+        style: 'font-family: system-ui, sans-serif; max-width: 800px; padding: 20px;',
         children: [
-            {
-                head: {
-                    children: [
-                        { title: { text: 'Coherent Framework Demo' } },
-                        {
-                            style: {
-                                text: `
-                                .greeting { 
-                                    padding: 20px; 
-                                    margin: 10px; 
-                                    border: 1px solid #ddd; 
-                                    border-radius: 4px;
-                                }
-                                .greeting--happy { border-color: #4CAF50; }
-                                .greeting--fantastic { 
-                                    border-color: #FF5722; 
-                                    background: #fff3e0; 
-                                }
-                                .celebration { 
-                                    margin-top: 10px; 
-                                    font-size: 1.2em; 
-                                    text-align: center; 
-                                }
-                                .user-list { margin: 20px 0; }
-                                .user-list ul { list-style-type: none; padding: 0; }
-                                .user-list li { padding: 8px; margin: 4px 0; background: #f5f5f5; }
-                                .user-card { 
-                                    border-radius: 4px; 
-                                    background: white; 
-                                }
-                                body { 
-                                    font-family: Arial, sans-serif; 
-                                    max-width: 800px; 
-                                    margin: 0 auto; 
-                                    padding: 20px; 
-                                }
-                                `
-                            }
-                        }
-                    ]
-                }
-            },
-            {
-                body: {
-                    children: [
-                        { h1: { text: 'Coherent Framework Demo' } },
-                        { p: { text: 'This page demonstrates basic component usage, composition, and styling.' } },
-                        Greeting({ name: 'Coherent User', mood: 'fantastic' }),
-                        UserList({ users: sampleUsers })
-                    ]
-                }
-            }
+            { h1: { text: 'Coherent Framework Demo' } },
+            { p: { text: 'This page demonstrates basic component usage, composition, and styling.' } },
+            Greeting({ name: 'Coherent User', mood: 'fantastic' }),
+            UserList({ users: sampleUsers })
         ]
     }
-};
+});
 
-// Export the complete page as default for live preview
-export default completePage;
+// Export for playground preview
+export default Demo();

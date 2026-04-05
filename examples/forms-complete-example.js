@@ -1,14 +1,7 @@
 /**
- * Complete Forms Example - User Registration & Profile Management
- * 
- * This example demonstrates:
- * - Form validation
- * - Custom validators
- * - Async validation
- * - Multi-step forms
- * - Form builder
- * - Error handling
- * - Success/failure states
+ * @name Forms & Validation
+ * @category Full Apps
+ * @description Complete user registration form with validation and state management.
  */
 
 import { html, render } from '@coherent.js/core';

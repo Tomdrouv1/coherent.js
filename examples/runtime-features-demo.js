@@ -1,7 +1,7 @@
 /**
- * Coherent.js Runtime Features Demo
- * 
- * Demonstrates streaming, middleware, and Node.js runtime features
+ * @name Runtime Features
+ * @category Features
+ * @description Core runtime utilities including rendering, caching, and monitoring.
  */
 
 import { createRuntime, RuntimeEnvironment } from '@coherent.js/runtime';

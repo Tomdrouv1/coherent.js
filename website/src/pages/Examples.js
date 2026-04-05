@@ -1,5 +1,5 @@
 // Simple Examples component with direct onclick handlers
-export function Examples({ items = [] } = {}) {
+export function Examples({ items = [], highlightCode } = {}) {
   return {
     section: {
       className: 'examples',
@@ -33,7 +33,7 @@ export function Examples({ items = [] } = {}) {
                       },
                     },
                     {
-                      span: { className: 'stat-label', text: 'Playground Examples' },
+                      span: { className: 'stat-label', text: 'Examples' },
                     },
                   ],
                 },
@@ -61,9 +61,19 @@ export function Examples({ items = [] } = {}) {
         },
         items.length
           ? {
-              ul: {
-                className: 'examples-grid',
-                children: items.map((ex) => ({
+              div: {
+                className: 'examples-sections',
+                children: (() => {
+                  // Group by category
+                  const groups = {};
+                  items.forEach(ex => {
+                    const cat = ex.category || 'Other';
+                    if (!groups[cat]) groups[cat] = [];
+                    groups[cat].push(ex);
+                  });
+                  return Object.entries(groups).flatMap(([category, categoryItems]) => [
+                    { h2: { className: 'examples-category', text: category } },
+                    { ul: { className: 'examples-grid', children: categoryItems.map((ex) => ({
                   li: {
                     key: ex.file,
                     children: [
@@ -125,7 +135,7 @@ export function Examples({ items = [] } = {}) {
                             {
                               button: {
                                 className: 'button primary',
-                                text: '👀 View Code',
+                                text: 'View Code',
                                 id: `view-code-${ex.file.replace('.js', '')}`,
                                 onclick: `
                                   const parentLi = this.closest('li');
@@ -133,11 +143,11 @@ export function Examples({ items = [] } = {}) {
                                   if (codeBlock.style.display === 'block') {
                                     codeBlock.style.display = 'none';
                                     parentLi.classList.remove('code-visible');
-                                    this.textContent = '👀 View Code';
+                                    this.textContent = 'View Code';
                                   } else {
                                     codeBlock.style.display = 'block';
                                     parentLi.classList.add('code-visible');
-                                    this.textContent = '🙈 Hide Code';
+                                    this.textContent = 'Hide Code';
                                     codeBlock.scrollIntoView({behavior:'smooth',block:'nearest'});
                                   }
                                 `,
@@ -145,36 +155,11 @@ export function Examples({ items = [] } = {}) {
                             },
                             {
                               a: {
-                                className: 'button',
-                                href: `/playground/?file=${encodeURIComponent(ex.file)}`,
-                                text: '🧪 Open in Playground',
-                              },
-                            },
-                            {
-                              button: {
                                 className: 'button secondary',
-                                text: '📋 Copy',
-                                id: `copy-cmd-${ex.file.replace('.js', '')}`,
-                                'data-cmd': ex.runCmd || `node examples/${ex.file}`,
-                                onclick: `
-                                  const cmd = this.getAttribute('data-cmd');
-                                  if (navigator.clipboard && cmd) {
-                                    navigator.clipboard.writeText(cmd).then(() => {
-                                      const originalText = this.textContent;
-                                      this.textContent = '✅ Copied!';
-                                      setTimeout(() => { this.textContent = originalText; }, 1200);
-                                    });
-                                  }
-                                `,
-                              },
-                            },
-                            {
-                              a: {
-                                className: 'button accent',
                                 href: `https://github.com/Tomdrouv1/coherent.js/blob/main/examples/${ex.file}`,
                                 target: '_blank',
                                 rel: 'noopener',
-                                text: '🔗 View on GitHub',
+                                text: 'View on GitHub',
                               },
                             },
                           ],
@@ -182,17 +167,19 @@ export function Examples({ items = [] } = {}) {
                       },
                       ex.code
                         ? {
-                            pre: {
+                            div: {
                               className: 'example-code',
                               id: `code-${ex.file.replace('.js', '')}`,
                               style: 'display: none;',
-                              children: [{ code: { text: ex.code } }],
+                              html: highlightCode ? highlightCode(ex.code, 'javascript') : `<pre><code>${ex.code.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</code></pre>`,
                             },
                           }
                         : null,
                     ].filter(Boolean),
                   },
-                })),
+                })) } },
+                  ]);
+                })()
               },
             }
           : {

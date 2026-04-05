@@ -1,7 +1,7 @@
 /**
- * Coherent.js Plugin System Demo
- * 
- * Demonstrates how to use the plugin system to extend framework functionality.
+ * @name Plugin System
+ * @category Features
+ * @description Extensible plugin architecture with lifecycle hooks.
  */
 
 import { render, createPluginManager, createPlugin, PluginHooks, createPerformancePlugin, createDevLoggerPlugin, createCachePlugin } from '@coherent.js/core';

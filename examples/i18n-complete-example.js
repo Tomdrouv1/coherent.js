@@ -1,13 +1,7 @@
 /**
- * Complete i18n Example - Multi-language Blog Application
- * 
- * This example demonstrates:
- * - Setting up translations
- * - Language switching
- * - Number/date/currency formatting
- * - RTL support
- * - Pluralization
- * - Nested translations
+ * @name Internationalization
+ * @category Full Apps
+ * @description Multi-language blog application with locale switching.
  */
 
 import { html, render } from '@coherent.js/core';

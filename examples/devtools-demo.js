@@ -1,7 +1,7 @@
 /**
- * Coherent.js DevTools Demo
- * 
- * Demonstrates inspector, profiler, and logger capabilities
+ * @name DevTools
+ * @category Full Apps
+ * @description Developer tools with component inspector, profiler, and logger.
  */
 
 import {

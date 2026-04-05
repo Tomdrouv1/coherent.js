@@ -9,7 +9,7 @@ export function Coverage() {
         ] } },
         
         // Coverage badges
-        { section: { className: 'coverage-badges', children: [
+        { section: { className: 'coverage-badges reveal', children: [
           { h2: { text: 'Current Status' } },
           { div: { className: 'badges-row', children: [
             { span: { className: 'coverage-badge', text: 'Coverage', id: 'coverage-badge' } },
@@ -18,20 +18,20 @@ export function Coverage() {
         ] } },
 
         // Coverage summary
-        { section: { className: 'coverage-summary', children: [
+        { section: { className: 'coverage-summary reveal', children: [
           { h2: { text: 'Coverage Summary' } },
           { p: { text: 'Real-time coverage data is fetched from our CI pipeline and updated with each commit.' } },
           { div: { id: 'coverage-data', className: 'coverage-data', text: 'Loading coverage data...' } }
         ] } },
 
         // Coverage by package
-        { section: { className: 'package-coverage', children: [
+        { section: { className: 'package-coverage reveal', children: [
           { h2: { text: 'Coverage by Package' } },
           { div: { id: 'package-coverage-table', className: 'coverage-table', text: 'Loading package coverage...' } }
         ] } },
 
         // Coverage reports
-        { section: { className: 'coverage-reports', children: [
+        { section: { className: 'coverage-reports reveal', children: [
           { h2: { text: 'Detailed Reports' } },
           { ul: { children: [
             { li: { children: [
@@ -50,7 +50,7 @@ export function Coverage() {
         ] } },
 
         // Testing information
-        { section: { className: 'testing-info', children: [
+        { section: { className: 'testing-info reveal', children: [
           { h2: { text: 'Testing Strategy' } },
           { div: { className: 'testing-grid', children: [
             { div: { className: 'testing-card', children: [

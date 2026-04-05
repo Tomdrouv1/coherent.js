@@ -3,7 +3,7 @@
  * Complete full-stack tutorial for Coherent.js
  */
 
-export const StarterAppPage = () => ({
+export const StarterAppPage = ({ highlightCode } = {}) => ({
   div: {
     className: 'starter-app-page',
     children: [
@@ -16,7 +16,7 @@ export const StarterAppPage = () => ({
       // Main Content
       {
         div: {
-          className: 'container starter-container',
+          className: 'starter-container',
           children: [
             // What You'll Build
             {
@@ -67,9 +67,9 @@ export const StarterAppPage = () => ({
                   {
                     div: {
                       className: 'code-wrapper',
-                      children: [
-                        { pre: { className: 'code-block', children: [{ code: { className: 'language-bash', text: '# Clone the repository\ngit clone https://github.com/coherentjs/coherent.git\ncd coherent/examples/starter-app\n\n# Run the server\nnode server.js\n\n# Open http://localhost:3000' } }] } }
-                      ]
+                      html: highlightCode
+                        ? highlightCode('# Clone the repository\ngit clone https://github.com/coherentjs/coherent.git\ncd coherent/examples/starter-app\n\n# Run the server\nnode server.js\n\n# Open http://localhost:3000', 'bash')
+                        : '<pre class="code-block"><code># Clone the repository\ngit clone https://github.com/coherentjs/coherent.git\ncd coherent/examples/starter-app\n\n# Run the server\nnode server.js\n\n# Open http://localhost:3000</code></pre>'
                     }
                   },
                   {
@@ -142,17 +142,8 @@ export const StarterAppPage = () => ({
                 children: [
                   { h2: { text: '💻 Code Example', className: 'starter-section-title' } },
                   { p: { text: 'Here\'s the complete Counter component:', className: 'starter-code-intro' } },
-                  {
-                    div: {
-                      className: 'code-wrapper',
-                      children: [
-                        {
-                          pre: {
-                            className: 'code-block',
-                            children: [{
-                              code: {
-                                className: 'language-javascript',
-                                text: `import { withState } from '@coherent.js/core';
+                  (() => {
+                    const code = `import { withState } from '@coherent.js/core';
 
 export const Counter = withState({ count: 0 })(({ state, setState }) => ({
   div: {
@@ -171,14 +162,16 @@ export const Counter = withState({ count: 0 })(({ state, setState }) => ({
       }
     ]
   }
-}));`
-                              }
-                            }]
-                          }
-                        }
-                      ]
-                    }
-                  }
+}));`;
+                    return {
+                      div: {
+                        className: 'code-wrapper',
+                        html: highlightCode
+                          ? highlightCode(code, 'javascript')
+                          : `<pre class="code-block"><code>${code.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</code></pre>`
+                      }
+                    };
+                  })()
                 ]
               }
             },
@@ -195,32 +188,30 @@ export const Counter = withState({ count: 0 })(({ state, setState }) => ({
                       children: [
                         {
                           a: {
-                            href: 'https://github.com/coherentjs/coherent/blob/main/examples/starter-app/README.md',
-                            target: '_blank',
+                            href: 'docs/getting-started/quick-start',
                             className: 'starter-doc-card',
                             children: [
-                              { h3: { text: '📖 Starter App README', className: 'starter-doc-title' } },
-                              { p: { text: 'Complete guide to the starter app with usage examples and customization tips.', className: 'starter-doc-desc' } }
+                              { h3: { text: 'Quick Start Guide', className: 'starter-doc-title' } },
+                              { p: { text: 'Get up and running in 5 minutes with the quick start guide.', className: 'starter-doc-desc' } }
                             ]
                           }
                         },
                         {
                           a: {
-                            href: 'https://github.com/coherentjs/coherent/blob/main/docs/FULL_STACK_TUTORIAL.md',
-                            target: '_blank',
+                            href: 'docs/components/basics',
                             className: 'starter-doc-card',
                             children: [
-                              { h3: { text: '🎓 Full-Stack Tutorial', className: 'starter-doc-title' } },
-                              { p: { text: 'Step-by-step tutorial covering SSR, hydration, state management, and more.', className: 'starter-doc-desc' } }
+                              { h3: { text: 'Component Basics', className: 'starter-doc-title' } },
+                              { p: { text: 'Learn the object syntax and component fundamentals.', className: 'starter-doc-desc' } }
                             ]
                           }
                         },
                         {
                           a: {
-                            href: '/docs',
+                            href: 'docs/api/reference',
                             className: 'starter-doc-card',
                             children: [
-                              { h3: { text: '📘 API Documentation', className: 'starter-doc-title' } },
+                              { h3: { text: 'API Reference', className: 'starter-doc-title' } },
                               { p: { text: 'Complete API reference for all Coherent.js features and utilities.', className: 'starter-doc-desc' } }
                             ]
                           }
@@ -235,27 +226,27 @@ export const Counter = withState({ count: 0 })(({ state, setState }) => ({
             // Next Steps
             {
               section: {
-                className: 'starter-cta-section',
+                className: 'starter-section',
                 children: [
-                  { h2: { text: '🚀 Ready to Start?', className: 'starter-cta-title' } },
-                  { p: { text: 'Get the starter app and build your first Coherent.js application in minutes!', className: 'starter-cta-subtitle' } },
+                  { h2: { text: 'Ready to Start?', className: 'starter-section-title' } },
+                  { p: { text: 'Get the starter app and build your first Coherent.js application in minutes.', className: 'starter-code-intro' } },
                   {
                     div: {
                       className: 'starter-cta-buttons',
                       children: [
                         {
                           a: {
-                            href: 'https://github.com/coherentjs/coherent/tree/main/examples/starter-app',
+                            href: 'https://github.com/Tomdrouv1/coherent.js/tree/main/examples/starter-app',
                             target: '_blank',
-                            className: 'btn btn-primary starter-btn',
-                            text: '📥 Download Starter App'
+                            className: 'button primary',
+                            text: 'Download Starter App'
                           }
                         },
                         {
                           a: {
                             href: '/examples',
-                            className: 'btn btn-outline starter-btn-outline',
-                            text: '🎨 View More Examples'
+                            className: 'button secondary',
+                            text: 'View More Examples'
                           }
                         }
                       ]

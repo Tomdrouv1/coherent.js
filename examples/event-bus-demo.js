@@ -1,8 +1,7 @@
 /**
- * Event Bus Demo for Coherent.js
- *
- * Demonstrates the event-driven architecture pattern with declarative DOM actions,
- * centralized event handling, and component communication.
+ * @name Event Bus
+ * @category Features
+ * @description Publish-subscribe event system for component communication.
  */
 
 import { render, eventSystem, withEventBus, createActionHandlers } from '@coherent.js/core';
