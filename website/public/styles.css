@@ -448,8 +448,8 @@ html, body {
   padding: 0;
   background: var(--bg);
   background-image:
-    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0, 229, 160, 0.06) 0%, transparent 60%),
-    radial-gradient(circle at 80% 80%, rgba(0, 229, 160, 0.03) 0%, transparent 40%);
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(0, 229, 160, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(0, 229, 160, 0.05) 0%, transparent 40%);
   background-attachment: fixed;
   color: var(--text);
   font: 16px/1.65 var(--font-body);
@@ -588,6 +588,27 @@ h1, h2, h3, h4 {
 
 .container.single > .content > #coherent-content {
   max-width: 100%;
+}
+
+/* Consistent page title for all non-Home single pages */
+.container.single h1 {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 2.8rem);
+  font-weight: 800;
+  margin: 0 0 16px;
+  background: var(--gradient-text);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: -0.03em;
+}
+
+/* Home title has its own specific style */
+.container.single .home .title {
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  background: linear-gradient(135deg, #ffffff 30%, #00e5a0 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
 }
 
 .container.docs {
@@ -1595,15 +1616,6 @@ pre.shiki code {
   width: 100%;
 }
 
-.examples-hero::before {
-  content: '';
-  position: absolute;
-  inset: -20px 0 0;
-  z-index: -1;
-  background:
-    radial-gradient(ellipse 60% 50% at 50% 30%, rgba(0, 229, 160, 0.08) 0%, transparent 60%),
-    radial-gradient(circle at 80% 70%, rgba(0, 229, 160, 0.04) 0%, transparent 40%);
-}
 
 .examples-hero h1 {
   font-size: 2.5rem;
@@ -2139,17 +2151,6 @@ body:not(:focus-within) #templates-menu {
   position: relative;
 }
 
-/* Full-viewport background glow for all pages — applied to the content wrapper */
-.container.single > .content > #coherent-content::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background:
-    radial-gradient(ellipse 60% 40% at 50% 10%, rgba(0, 229, 160, 0.06) 0%, transparent 60%),
-    radial-gradient(circle at 75% 60%, rgba(0, 229, 160, 0.03) 0%, transparent 40%);
-  pointer-events: none;
-}
 
 .coverage-badges {
   text-align: center;
@@ -2425,15 +2426,6 @@ body:not(:focus-within) #templates-menu {
   overflow: hidden;
 }
 
-.docs-hero::before {
-  content: '';
-  position: absolute;
-  inset: -20px 0 0;
-  z-index: -1;
-  background: 
-    radial-gradient(circle at 25% 25%, rgba(0, 229, 160, 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 75% 75%, rgba(0, 229, 160, 0.04) 0%, transparent 50%);
-}
 
 .docs-hero-title {
   font-size: 2rem;
