@@ -3,18 +3,15 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "node --watch src/index.js",
+    "build": "node build.js",
+    "start": "node src/index.js",
+    "preview": "npx serve dist"
   },
   "dependencies": {
     "@coherent.js/core": "1.0.0-beta.7",
     "@coherent.js/runtime": "1.0.0-beta.7",
     "@coherent.js/client": "1.0.0-beta.7",
     "express": "^5.1.0"
-  },
-  "devDependencies": {
-    "vite": "8.0.3"
   }
 }
