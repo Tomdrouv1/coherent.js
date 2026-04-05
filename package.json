@@ -31,7 +31,7 @@
     "changeset": "changeset",
     "changeset:version": "changeset version",
     "changeset:publish": "changeset publish",
-    "dev": "pnpm run build && pnpm run website:dev",
+    "dev": "pnpm run website:dev",
     "clean": "pnpm -r run clean && rm -rf dist/",
     "demo": "node examples/master-showcase.js",
     "example:basic": "node examples/basic-usage.js",
@@ -53,7 +53,7 @@
     "website:build": "pnpm --filter @coherent.js/client run build && node scripts/build-website.js",
     "website:serve": "node scripts/serve-website.js",
     "website:start": "pnpm run website:build && node scripts/serve-website.js",
-    "website:dev": "node scripts/dev-website.js",
+    "website:dev": "node --watch website/server.js",
     "version": "pnpm changeset version",
     "prepare": "husky",
     "prepack": "pnpm run build",
@@ -148,7 +148,9 @@
       ]
     },
     "onlyBuiltDependencies": [
+      "@vscode/vsce-sign",
       "esbuild",
+      "keytar",
       "sharp",
       "sqlite3"
     ],

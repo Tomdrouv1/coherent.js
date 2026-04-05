@@ -41,6 +41,7 @@ import { Coverage } from '../website/src/pages/Coverage.js';
 import { Performance } from '../website/src/pages/Performance.js';
 import { DocsIndexPage } from '../website/src/pages/DocsPage.js';
 import { StarterAppPage } from '../website/src/pages/StarterApp.js';
+import { Changelog } from '../website/src/pages/Changelog.js';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -144,10 +145,8 @@ function escapeHtml(s){
 }
 
 async function buildPerformance(sidebar) {
-  const content = render(Performance());
-  const page = Layout({ title: 'Performance | Coherent.js', sidebar, currentPath: 'performance', baseHref });
+  const page = Layout({ title: 'Performance | Coherent.js', sidebar, currentPath: 'performance', baseHref, content: Performance(), scripts: ['/performance.js'] });
   let html = render(page);
-  html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', content);
   
   // Add performance testing JavaScript
   const performanceScript = `
@@ -1326,10 +1325,8 @@ async function copyCodeMirrorModules() {
 }
 
 async function buildHome(sidebar) {
-  const content = render(Home());
-  const page = Layout({ title: 'Coherent.js', sidebar, currentPath: '', baseHref });
+  const page = Layout({ title: 'Coherent.js', sidebar, currentPath: '', baseHref, content: Home(), scripts: ['/coherent-hydrate.js', '/counter-demo.js'] });
   let html = render(page);
-  html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', content);
   
   // Inject the coverage script directly
   const coverageScript = `
@@ -1364,12 +1361,7 @@ async function buildHome(sidebar) {
   }
 </script>`;
   
-  // Inject hydration scripts for the island demo
-  const hydrationScripts = `
-<script src="/coherent-hydrate.js"></script>
-<script src="/counter-demo.js"></script>`;
-
-  html = html.replace('</body>', `${coverageScript}\n${hydrationScripts}\n</body>`);
+  html = html.replace('</body>', `${coverageScript}\n</body>`);
 
   await writePage('', html);
 }
@@ -1397,10 +1389,8 @@ async function buildExamples(sidebar) {
       items.push({ file, slug: base, label, runCmd: `node examples/${file}`, description, code });
     }
   } catch {}
-  const content = render(Examples({ items }));
-  const page = Layout({ title: 'Examples | Coherent.js', sidebar, currentPath: 'examples', baseHref });
-  let html = render(page);
-  html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', content);
+  const page = Layout({ title: 'Examples | Coherent.js', sidebar, currentPath: 'examples', baseHref, content: Examples({ items }) });
+  const html = render(page);
   await writePage('examples', html);
 }
 
@@ -1443,10 +1433,8 @@ async function buildPlaygroundIndex(sidebar) {
     }
   } catch {}
 
-  const content = render(Playground({ items }));
-  const page = Layout({ title: 'Playground | Coherent.js', sidebar, currentPath: 'playground', baseHref });
+  const page = Layout({ title: 'Playground | Coherent.js', sidebar, currentPath: 'playground', baseHref, content: Playground({ items }), scripts: ['/codemirror-editor.js', '/playground.js'] });
   let html = render(page);
-  html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', content);
   
   // Add hydration script for interactive playground
   const hydrationScript = `
@@ -1821,16 +1809,8 @@ async function buildDocsIndex(sidebar, docs = []) {
   const searchData = await generateSearchData(docs);
   
   // Use the new DocsIndexPage component
-  const content = render(DocsIndexPage({ searchData }));
-  const page = Layout({ title: 'Documentation | Coherent.js', sidebar, currentPath: 'docs', baseHref });
+  const page = Layout({ title: 'Documentation | Coherent.js', sidebar, currentPath: 'docs', baseHref, content: DocsIndexPage({ searchData }) });
   let html = render(page);
-  
-  // Replace content placeholder
-  html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', content);
-  html = html.replace('[[[COHERENT_BREADCRUMBS_PLACEHOLDER]]]', '<nav class="breadcrumbs"><a href="/docs">Documentation</a></nav>');
-  
-  // Remove TOC placeholder for docs index page since it doesn't need a TOC
-  html = html.replace('[[[COHERENT_TOC_PLACEHOLDER]]]', '');
   
   // Add search functionality script
   html = html.replace('</head>', `
@@ -1849,28 +1829,20 @@ async function buildDocsIndex(sidebar, docs = []) {
 }
 
 async function buildCoverage(sidebar) {
-  const content = render(Coverage());
-  const page = Layout({ title: 'Coverage | Coherent.js', sidebar, currentPath: 'coverage', baseHref });
-  let html = render(page);
-  html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', content);
+  const page = Layout({ title: 'Coverage | Coherent.js', sidebar, currentPath: 'coverage', baseHref, content: Coverage() });
+  const html = render(page);
   await writePage('coverage', html);
 }
 
 async function buildChangelog(sidebar) {
-  try {
-    const md = await fs.readFile(path.join(repoRoot, 'CHANGELOG.md'), 'utf8');
-    const htmlBody = marked.parse(md);
-    const page = Layout({ title: 'Changelog | Coherent.js', sidebar, currentPath: 'changelog', baseHref });
-    const html = render(page).replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', htmlBody);
-    await writePage('changelog', html);
-  } catch {}
+  const page = Layout({ title: 'Changelog | Coherent.js', sidebar, currentPath: 'changelog', baseHref, content: Changelog() });
+  const html = render(page);
+  await writePage('changelog', html);
 }
 
 async function buildStarterApp(sidebar) {
-  const content = render(StarterAppPage());
-  const page = Layout({ title: 'Starter App | Coherent.js', sidebar, currentPath: 'starter-app', baseHref });
-  let html = render(page);
-  html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', content);
+  const page = Layout({ title: 'Starter App | Coherent.js', sidebar, currentPath: 'starter-app', baseHref, content: StarterAppPage() });
+  const html = render(page);
   await writePage('starter-app', html);
 }
 

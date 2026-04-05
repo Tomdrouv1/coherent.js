@@ -149,12 +149,8 @@ setupCoherent(app, { useEngine: false, useMiddleware: false });
 // JSON body parsing for playground
 app.use(express.json({ limit: '12kb' }));
 
-// Static files
-app.use('/examples', express.static(join(__dirname, '../examples'), { maxAge: '1h' }));
-app.use(express.static(join(__dirname, 'public'), { maxAge: '1h' }));
-
 // ---------------------------------------------------------------------------
-// Page routes — declarative, registry-driven, with error boundaries
+// Page routes — BEFORE static files to avoid shadowing
 // ---------------------------------------------------------------------------
 
 // Register all static page routes from the route table
@@ -171,7 +167,7 @@ for (const route of pageRoutes) {
   });
 }
 
-// Examples needs dynamic data, so it's registered separately
+// Examples needs dynamic data
 app.get('/examples', (req, res) => {
   const html = renderFullPage({
     currentPath: '/examples',
@@ -181,6 +177,10 @@ app.get('/examples', (req, res) => {
   });
   res.type('html').send(html);
 });
+
+// Static files — after page routes
+app.use(express.static(join(__dirname, 'public'), { maxAge: '1h' }));
+app.use('/examples-src', express.static(join(__dirname, '../examples'), { maxAge: '1h' }));
 
 // ---------------------------------------------------------------------------
 // API routes — powered by @coherent.js/api Router
