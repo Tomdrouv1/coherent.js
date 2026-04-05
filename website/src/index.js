@@ -11,7 +11,7 @@ import { registerComponent, getComponent } from '../../packages/core/src/compone
 import { createErrorBoundary } from '../../packages/core/src/components/error-boundary.js';
 import { Examples } from './pages/Examples.js';
 import { Home } from './pages/Home.js';
-import { DocsPage } from './pages/DocsPage.js';
+import { DocsPage, DocsIndexPage } from './pages/DocsPage.js';
 import { Playground } from './pages/Playground.js';
 import { Performance } from './pages/Performance.js';
 import { Coverage } from './pages/Coverage.js';
@@ -25,6 +25,7 @@ import { Layout } from './layout/Layout.js';
 registerComponent('Home', Home);
 registerComponent('Examples', Examples);
 registerComponent('DocsPage', DocsPage);
+registerComponent('DocsIndex', DocsIndexPage);
 registerComponent('Playground', Playground);
 registerComponent('Performance', Performance);
 registerComponent('Coverage', Coverage);
@@ -68,7 +69,7 @@ export function renderFullPage({ currentPath, componentName, props = {}, title =
 
 export const pageRoutes = [
   { path: '/', component: 'Home', title: 'Coherent.js - Modern Object-Based UI Framework', scripts: ['/coherent-hydrate.js', '/counter-demo.js'] },
-  { path: '/docs', component: 'DocsPage', title: 'Documentation - Coherent.js', props: { title: 'Documentation', html: '' } },
+  { path: '/docs', component: 'DocsIndex', title: 'Documentation - Coherent.js' },
   { path: '/playground', component: 'Playground', title: 'Playground - Coherent.js', scripts: ['/codemirror-editor.js', '/playground.js'] },
   { path: '/performance', component: 'Performance', title: 'Performance - Coherent.js', scripts: ['/performance.js'] },
   { path: '/coverage', component: 'Coverage', title: 'Coverage - Coherent.js' },
