@@ -2,8 +2,10 @@ import express from 'express';
 import { createRouter } from '../../packages/api/src/router.js';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { readFileSync, readdirSync, statSync } from 'fs';
+import { readFileSync, readdirSync, statSync, existsSync } from 'fs';
 import { renderWithTemplate } from '../../packages/core/src/utils/render-utils.js';
+import { render } from '../../packages/core/src/rendering/html-renderer.js';
+import { marked } from 'marked';
 import { performanceMonitor } from '../../packages/core/src/performance/monitor.js';
 import { registerComponent, getComponent } from '../../packages/core/src/components/component-system.js';
 import { createErrorBoundary } from '../../packages/core/src/components/error-boundary.js';
@@ -165,6 +167,43 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
       props: { items: getExamplesList() },
       title: 'Examples - Coherent.js',
     });
+    res.type('html').send(html);
+  });
+
+  // Dynamic docs routes — reads markdown from docs/ and renders with Layout
+  app.get('/docs/{*slug}', (req, res) => {
+    const slug = Array.isArray(req.params.slug) ? req.params.slug.join('/') : req.params.slug;
+    const docsDir = join(repoRoot, 'docs');
+
+    // Try exact match, then with .md extension, then as index
+    const candidates = [
+      join(docsDir, `${slug}.md`),
+      join(docsDir, slug, 'index.md'),
+      join(docsDir, `${slug}/README.md`),
+    ];
+
+    const mdFile = candidates.find(f => existsSync(f));
+    if (!mdFile) {
+      res.status(404).type('html').send(renderFullPage({
+        currentPath: '/docs',
+        componentName: 'DocsPage',
+        props: { title: 'Not Found', html: '<p>Documentation page not found.</p>' },
+        title: 'Not Found - Coherent.js',
+      }));
+      return;
+    }
+
+    const md = readFileSync(mdFile, 'utf-8');
+    const htmlBody = marked.parse(md);
+    const title = (md.match(/^#\s+(.+)$/m) || [null, 'Documentation'])[1];
+
+    // Render with Layout using placeholder approach (docs need breadcrumbs/TOC slots)
+    const page = Layout({ title: `${title} | Coherent.js Docs`, currentPath: `docs/${slug}`, baseHref: '/' });
+    let html = '<!DOCTYPE html>\n' + render(page);
+    html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', `<div class="markdown-body">${htmlBody}</div>`);
+    html = html.replace('[[[COHERENT_BREADCRUMBS_PLACEHOLDER]]]', '');
+    html = html.replace('[[[COHERENT_TOC_PLACEHOLDER]]]', '');
+
     res.type('html').send(html);
   });
 
