@@ -15,6 +15,8 @@ export function Layout({
   sidebar = [],
   currentPath = '/',
   baseHref = '/',
+  content = null,
+  scripts = [],
 }) {
   return {
     html: {
@@ -50,15 +52,20 @@ export function Layout({
               { script: { src: './theme-init.js' } },
               { script: { src: './header-search.js', defer: true } },
               { script: { src: './toc-active.js', defer: true } },
-              ...(currentPath === 'playground'
-                ? [
-                    { script: { src: './codemirror-editor.js', type: 'module', defer: true } },
-                    { script: { src: './playground.js', defer: true } }
-                  ]
-                : []),
-              ...(currentPath === 'performance'
-                ? [{ script: { src: './performance.js', defer: true } }]
-                : []),
+              // Page-specific scripts (passed via props or hardcoded for build compatibility)
+              ...(scripts.length > 0
+                ? scripts.map(src => ({ script: { src, defer: true } }))
+                : [
+                    ...(currentPath === 'playground'
+                      ? [
+                          { script: { src: './codemirror-editor.js', type: 'module', defer: true } },
+                          { script: { src: './playground.js', defer: true } }
+                        ]
+                      : []),
+                    ...(currentPath === 'performance'
+                      ? [{ script: { src: './performance.js', defer: true } }]
+                      : []),
+                  ]),
             ],
           },
         },
@@ -213,12 +220,10 @@ export function Layout({
                                 },
                               }
                             : null,
-                          {
-                            div: {
-                              id: 'coherent-content-placeholder',
-                              text: '[[[COHERENT_CONTENT_PLACEHOLDER]]]',
-                            },
-                          },
+                          // Use actual content component when provided, fall back to placeholder for static build
+                          content
+                            ? { div: { id: 'coherent-content', children: [content] } }
+                            : { div: { id: 'coherent-content-placeholder', text: '[[[COHERENT_CONTENT_PLACEHOLDER]]]' } },
                         ].filter(Boolean),
                       },
                     });
