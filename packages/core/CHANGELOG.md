@@ -1,5 +1,7 @@
 # @coherent.js/core
 
+## 1.0.0
+
 ## 1.0.0-beta.3
 
 ### Patch Changes

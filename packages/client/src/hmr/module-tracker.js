@@ -124,7 +124,8 @@ export class ModuleTracker {
        * @param {string} [message] - Optional message explaining why
        */
       invalidate(message) {
-        if (tracker.socket?.readyState === WebSocket.OPEN) {
+        const WS_OPEN = typeof WebSocket !== 'undefined' ? WebSocket.OPEN : 1;
+        if (tracker.socket?.readyState === WS_OPEN) {
           tracker.socket.send(JSON.stringify({
             type: 'invalidate',
             moduleId,

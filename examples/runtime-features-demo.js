@@ -4,7 +4,7 @@
  * Demonstrates streaming, middleware, and Node.js runtime features
  */
 
-import { createRuntime, RuntimeEnvironment } from '../packages/runtime/src/index.js';
+import { createRuntime, RuntimeEnvironment } from '@coherent.js/runtime';
 
 console.log('\n=== Coherent.js Runtime Features Demo ===\n');
 

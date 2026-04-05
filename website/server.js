@@ -11,6 +11,7 @@ import { Playground } from './src/pages/Playground.js';
 import { Performance } from './src/pages/Performance.js';
 import { Coverage } from './src/pages/Coverage.js';
 import { StarterAppPage } from './src/pages/StarterApp.js';
+import { Changelog } from './src/pages/Changelog.js';
 import { Layout } from './src/layout/Layout.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -240,9 +241,7 @@ const router = createRouter({
   // Changelog route
   '/changelog': {
     GET: {
-      handler: renderPageRoute('/changelog',
-        '<div class="content"><h1>Changelog</h1><p>Version history and release notes coming soon...</p></div>',
-        'Changelog - Coherent.js')
+      handler: renderPageRoute('/changelog', Changelog, 'Changelog - Coherent.js')
     }
   },
 
@@ -262,27 +261,93 @@ const router = createRouter({
                 return;
               }
 
+              // Input size limit (10KB)
+              if (code.length > 10240) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ code: 1, stderr: 'Code exceeds maximum size (10KB)' }));
+                resolve();
+                return;
+              }
+
+              // Rate limiting: 10 executions per minute per IP
+              const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+              const now = Date.now();
+              if (!global._playgroundRateLimit) global._playgroundRateLimit = new Map();
+              const rateMap = global._playgroundRateLimit;
+              const entry = rateMap.get(clientIp) || { count: 0, resetAt: now + 60000 };
+              if (now > entry.resetAt) {
+                entry.count = 0;
+                entry.resetAt = now + 60000;
+              }
+              entry.count++;
+              rateMap.set(clientIp, entry);
+              if (entry.count > 10) {
+                res.writeHead(429, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ code: 1, stderr: 'Rate limit exceeded. Try again in a minute.' }));
+                resolve();
+                return;
+              }
+
+              // Block dangerous module imports and globals
+              const blockedModules = ['fs', 'child_process', 'net', 'http', 'https', 'os', 'path', 'cluster', 'worker_threads', 'dgram', 'tls', 'dns', 'readline', 'vm', 'crypto'];
+              const blockedGlobals = ['process.exit', 'process.kill', 'process.env', 'process.chdir'];
+              const importPattern = /import\s*\(?[^)]*['"](?!@coherent\.js\/)([^'"]+)['"]/g;
+              const dynamicImportPattern = /import\s*\(\s*['"](?!@coherent\.js\/)([^'"]+)['"]\s*\)/g;
+              const requirePattern = /require\s*\(\s*['"](?!@coherent\.js\/)([^'"]+)['"]\s*\)/g;
+
+              const allImports = [...code.matchAll(importPattern), ...code.matchAll(dynamicImportPattern), ...code.matchAll(requirePattern)];
+              for (const match of allImports) {
+                const mod = match[1].split('/')[0];
+                if (blockedModules.includes(mod)) {
+                  res.writeHead(400, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({ code: 1, stderr: `Import of '${mod}' is not allowed in the playground.` }));
+                  resolve();
+                  return;
+                }
+              }
+
+              for (const blocked of blockedGlobals) {
+                if (code.includes(blocked)) {
+                  res.writeHead(400, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({ code: 1, stderr: `Use of '${blocked}' is not allowed in the playground.` }));
+                  resolve();
+                  return;
+                }
+              }
+
               // Wrap code in an async IIFE to allow top-level return/await
               const wrappedCode = `(async () => {\n${code}\n})().catch(console.error);`;
 
-              // Execute code in a child process for security
+              // Execute code in a child process with restricted permissions
               import('child_process').then(({ spawn }) => {
-                const child = spawn('node', ['--input-type=module'], {
-                  timeout: 5000 // 5 second timeout
+                const child = spawn('node', [
+                  '--input-type=module'
+                ], {
+                  timeout: 5000,
+                  env: { NODE_ENV: 'sandbox', PATH: process.env.PATH }
                 });
 
                 let stdout = '';
                 let stderr = '';
+                const MAX_OUTPUT = 102400; // 100KB output cap
 
                 child.stdout.on('data', (data) => {
                   stdout += data.toString();
+                  if (stdout.length > MAX_OUTPUT) {
+                    child.kill();
+                  }
                 });
 
                 child.stderr.on('data', (data) => {
                   stderr += data.toString();
+                  if (stderr.length > MAX_OUTPUT) {
+                    child.kill();
+                  }
                 });
 
                 child.on('close', (exitCode) => {
+                  if (stdout.length > MAX_OUTPUT) stdout = stdout.slice(0, MAX_OUTPUT) + '\n... output truncated';
+                  if (stderr.length > MAX_OUTPUT) stderr = stderr.slice(0, MAX_OUTPUT) + '\n... output truncated';
                   res.writeHead(200, { 'Content-Type': 'application/json' });
                   res.end(JSON.stringify({
                     code: exitCode || 0,

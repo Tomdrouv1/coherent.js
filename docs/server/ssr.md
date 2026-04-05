@@ -62,20 +62,13 @@ server.listen(3000, () => {
 ### Using Coherent Factory
 
 ```javascript
-import { createCoherent } from '@coherent.js/core';
+import { render, performanceMonitor } from '@coherent.js/core';
 import http from 'http';
-
-// Create Coherent instance with SSR optimizations
-const coherent = createCoherent({
-  enableCache: true,        // Cache rendered components
-  enableMonitoring: true,   // Monitor performance
-  minify: true             // Minify output HTML
-});
 
 const server = http.createServer((req, res) => {
   try {
     const component = HomePage({ title: 'My App', user: { name: 'User' } });
-    const html = coherent.render(component);
+    const html = render(component);
     
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(`<!DOCTYPE html>${html}`);
@@ -238,13 +231,7 @@ const server = http.createServer(async (req, res) => {
 ### Caching SSR Results
 
 ```javascript
-import { createCoherent } from '@coherent.js/core';
-
-const coherent = createCoherent({
-  enableCache: true,
-  cacheSize: 1000,
-  cacheTTL: 300000 // 5 minutes
-});
+import { render } from '@coherent.js/core';
 
 // Simple in-memory cache for rendered pages
 const pageCache = new Map();
@@ -538,13 +525,13 @@ Notes:
 - **`minify`**: Reduces HTML size; validate output if you rely on whitespace.
 - **`maxDepth`**: Safety guard against accidental deep/cyclic trees.
 
-### Component Precompilation
+### Memoizing Static Components
 
 ```javascript
-import { precompileComponent } from '@coherent.js/core';
+import { memo } from '@coherent.js/core';
 
-// Precompile static components
-const precompiledHeader = precompileComponent({
+// Memoize static components to avoid re-rendering
+const Header = memo(() => ({
   header: {
     children: [
       { h1: { text: 'My Website' } },
@@ -566,7 +553,7 @@ const HomePage = ({ content }) => ({
       { head: { children: [{ title: { text: 'Home' } }] }},
       { body: {
         children: [
-          precompiledHeader, // Pre-rendered HTML
+          Header(), // Memoized - only rendered once
           { main: { children: content } }
         ]
       }}
@@ -578,17 +565,11 @@ const HomePage = ({ content }) => ({
 ### Memory Usage Optimization
 
 ```javascript
-import { createCoherent, performanceMonitor } from '@coherent.js/core';
-
-const coherent = createCoherent({
-  enableCache: true,
-  cacheSize: 500,  // Limit cache size
-  enableMonitoring: true
-});
+import { render, performanceMonitor } from '@coherent.js/core';
 
 // Monitor memory usage
 setInterval(() => {
-  const stats = coherent.getPerformanceStats();
+  const stats = performanceMonitor.getStats();
   const memUsage = process.memoryUsage();
   
   console.log('SSR Performance Stats:', {

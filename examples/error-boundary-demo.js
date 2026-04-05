@@ -4,14 +4,7 @@
  * Demonstrates error handling with error boundaries
  */
 
-import { render } from '../packages/core/src/index.js';
-import {
-  createErrorBoundary,
-  createErrorFallback,
-  withErrorBoundary,
-  createAsyncErrorBoundary,
-  createGlobalErrorHandler
-} from '../packages/core/src/components/error-boundary.js';
+import { render, createErrorBoundary, createErrorFallback, withErrorBoundary, createAsyncErrorBoundary, createGlobalErrorHandler } from '@coherent.js/core';
 
 console.log('\n=== Coherent.js Error Boundary Demo ===\n');
 

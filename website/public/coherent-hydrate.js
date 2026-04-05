@@ -166,8 +166,14 @@ function deserializeState(encoded) {
   if (!encoded || typeof encoded !== 'string') return null;
 
   try {
-    const json = decodeURIComponent(atob(encoded));
-    return JSON.parse(json);
+    const decoded = atob(encoded);
+    try {
+      // Try URL decoded first (Phase 2 legacy)
+      return JSON.parse(decodeURIComponent(decoded));
+    } catch (e) {
+      // Fallback to direct JSON parse
+      return JSON.parse(decoded);
+    }
   } catch (e) {
     console.warn('[Coherent.js] Failed to deserialize state:', e);
     return null;
@@ -178,7 +184,8 @@ function extractState(element) {
   if (!element || typeof element.getAttribute !== 'function') {
     return null;
   }
-  const encoded = element.getAttribute('data-state');
+  // Support both legacy and new state attributes
+  const encoded = element.getAttribute('data-coherent-state') || element.getAttribute('data-state');
   return deserializeState(encoded);
 }
 
@@ -235,7 +242,12 @@ function hydrate(component, container, options = {}) {
   const instance = createInstance(container, component, config.props, state);
 
   // Generate virtual DOM and register handlers
-  const props = { ...config.props, ...state, setState: instance.setState.bind(instance) };
+  const props = {
+    ...config.props,
+    ...state,
+    setState: instance.setState.bind(instance),
+    getState: () => instance.state
+  };
   let virtualDOM;
   try {
     virtualDOM = component(props);
@@ -278,10 +290,14 @@ function createInstance(container, component, props, initialState) {
         ? { ...currentState, ...newState(currentState) }
         : { ...currentState, ...newState };
 
-      // Update data-state attribute
+      // Update state attributes
       const encoded = serializeState(currentState);
       if (encoded) {
-        container.setAttribute('data-state', encoded);
+        if (container.hasAttribute('data-coherent-state')) {
+          container.setAttribute('data-coherent-state', encoded);
+        } else {
+          container.setAttribute('data-state', encoded);
+        }
       }
 
       // Trigger re-render
@@ -290,11 +306,17 @@ function createInstance(container, component, props, initialState) {
 
     rerender() {
       try {
-        const mergedProps = { ...currentProps, ...currentState, setState: this.setState.bind(this) };
+        const self = this;
+        const mergedProps = {
+          ...currentProps,
+          ...currentState,
+          setState: self.setState.bind(self),
+          getState: () => self.state
+        };
         const newVirtualDOM = component(mergedProps);
 
         // Re-register event handlers
-        registerEventHandlers(container, newVirtualDOM, this);
+        registerEventHandlers(container, newVirtualDOM, self);
 
       } catch (err) {
         console.error('[Coherent.js] rerender error:', err);
@@ -341,6 +363,21 @@ function registerEventHandlers(element, virtualNode, instance, path = '') {
 
   const tagName = Object.keys(virtualNode)[0];
   const props = virtualNode[tagName] || {};
+
+  // Special handling for fragments - they don't have their own element, 
+  // so we process their children against the current element
+  if (tagName === 'fragment' || tagName === 'Fragment') {
+    if (props.children) {
+      const children = Array.isArray(props.children) ? props.children : [props.children];
+      children.forEach((child, i) => {
+        const childElement = element.children[i];
+        if (childElement) {
+          registerEventHandlers(childElement, child, instance, `${path}.fragment[${i}]`);
+        }
+      });
+    }
+    return;
+  }
 
   // Find event handlers
   const eventProps = Object.keys(props).filter(key =>
@@ -399,16 +436,37 @@ console.log('[Coherent.js] Phase 2 hydration system loaded. Use window.CoherentH
 // ============================================================================
 
 function autoHydrateComponents() {
-  const hydrateTargets = document.querySelectorAll('[data-coherent-hydrate]');
+  console.log('[Coherent.js] Starting auto-hydration...');
+  // Support both legacy and new attributes
+  const hydrateTargets = document.querySelectorAll('[data-coherent-hydrate], [data-coherent-component], [data-coherent-island="true"]');
+
+  console.log(`[Coherent.js] Found ${hydrateTargets.length} hydration targets`);
 
   hydrateTargets.forEach(container => {
-    const componentName = container.getAttribute('data-coherent-hydrate');
+    const componentName = container.getAttribute('data-coherent-component') || 
+                          container.getAttribute('data-coherent-hydrate') ||
+                          container.getAttribute('data-coherent-island-component');
+    
+    console.log(`[Coherent.js] Hydrating component: ${componentName}`);
     const component = window[componentName];
 
     if (typeof component === 'function') {
       hydrate(component, container);
     } else {
-      console.warn(`[Coherent.js] Component "${componentName}" not found for auto-hydration`);
+      console.warn(`[Coherent.js] Component "${componentName}" not found for auto-hydration. Waiting for it to be available...`);
+      // If component not yet available, try again in a bit
+      let retries = 0;
+      const interval = setInterval(() => {
+        const comp = window[componentName];
+        if (typeof comp === 'function') {
+          console.log(`[Coherent.js] Component "${componentName}" found after delay, hydrating...`);
+          hydrate(comp, container);
+          clearInterval(interval);
+        } else if (++retries > 10) {
+          console.error(`[Coherent.js] Component "${componentName}" still not found after 10 retries.`);
+          clearInterval(interval);
+        }
+      }, 100);
     }
   });
 }

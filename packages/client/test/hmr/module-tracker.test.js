@@ -220,8 +220,9 @@ describe('ModuleTracker', () => {
 
   describe('invalidate', () => {
     it('should send invalidate message to WebSocket', () => {
+      const WS_OPEN = typeof WebSocket !== 'undefined' ? WebSocket.OPEN : 1;
       const mockSocket = {
-        readyState: WebSocket.OPEN,
+        readyState: WS_OPEN,
         send: vi.fn(),
       };
       tracker.setSocket(mockSocket);

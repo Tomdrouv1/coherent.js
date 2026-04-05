@@ -20,10 +20,10 @@
  * Run this example: node examples/master-showcase.js
  */
 
-import { render, withState, memo, dangerouslySetInnerContent } from '../packages/core/src/index.js';
+import { render, withState, memo, dangerouslySetInnerContent } from '@coherent.js/core';
 import { createServer } from 'http';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import { dirname, join } from 'path';
 import { build } from 'esbuild';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -37,13 +37,17 @@ const hydrationBuildResult = await build({
   target: ['es2020'],
   stdin: {
     sourcefile: 'hydration-entry.js',
-    resolveDir: __dirname,
+    resolveDir: join(__dirname, '..'),
     contents: `import { autoHydrate } from '@coherent.js/client';
 
 window.componentRegistry = window.componentRegistry || {};
 autoHydrate(window.componentRegistry);
 `,
   },
+  alias: {
+    '@coherent.js/client': join(__dirname, '../packages/client/src/index.js'),
+    '@coherent.js/core': join(__dirname, '../packages/core/src/index.js'),
+  }
 });
 
 const hydrationCode = hydrationBuildResult.outputFiles[0].text;

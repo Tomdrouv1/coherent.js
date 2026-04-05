@@ -3,6 +3,35 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { marked } from 'marked';
+import { createHighlighter } from 'shiki';
+
+// Initialize Shiki highlighter for server-side syntax highlighting
+const highlighter = await createHighlighter({
+  themes: ['github-dark', 'github-light'],
+  langs: ['javascript', 'typescript', 'html', 'css', 'json', 'bash', 'shell', 'yaml', 'markdown', 'jsx', 'tsx'],
+});
+
+// Custom marked renderer to use Shiki instead of client-side Prism
+const shikiRenderer = {
+  code({ text, lang }) {
+    const language = lang || 'text';
+    try {
+      const html = highlighter.codeToHtml(text, {
+        lang: language,
+        themes: { dark: 'github-dark', light: 'github-light' },
+        cssVariablePrefix: '--shiki-',
+        defaultColor: 'dark',
+      });
+      return html;
+    } catch {
+      // Fallback for unsupported languages
+      const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return `<pre class="shiki"><code>${escaped}</code></pre>`;
+    }
+  }
+};
+
+marked.use({ renderer: shikiRenderer });
 import { render } from "../packages/core/src/index.js";
 import { Layout } from '../website/src/layout/Layout.js';
 import { Home } from '../website/src/pages/Home.js';
@@ -1005,92 +1034,33 @@ function slugifySegment(name) {
 }
 
 function groupFor(relPath) {
-  // Enhanced grouping with logical progression from basics to advanced
   const p = relPath.split(path.sep);
   const top = p[0];
   const filename = path.basename(relPath, '.md');
-  
-  switch (top) {
-    case 'getting-started':
-      return 'Getting Started';
-      
-    case 'components':
-      return 'Core Concepts';
-      
-    case 'client-side':
-      return 'Client-Side Features';
-      
-    case 'server-side':
-      return 'Server-Side Rendering';
-      
-    case 'database':
-      return 'Database';
-      
-    case 'performance':
-      return 'Performance';
-      
-    case 'advanced':
-      return 'Advanced';
-      
-    case 'examples':
-      return 'Examples';
-      
-    default:
-      // Handle individual files
-      switch (filename) {
-        // Getting Started files
-        case 'getting-started':
-          return 'Getting Started';
-          
-        // Core Concepts files
-        case 'function-on-element-events':
-          return 'Core Concepts';
-          
-        // Client-Side Features
-        case 'client-side-hydration-guide':
-        case 'hydration-guide':
-          return 'Client-Side Features';
-          
-        // API & Routing files
-        case 'api-usage':
-        case 'api-reference':
-        case 'object-based-routing':
-        case 'framework-integrations':
-          return 'API & Routing';
-          
-        // Database files
-        case 'database-integration':
-        case 'query-builder':
-          return 'Database';
-          
-        // Performance files  
-        case 'performance-optimizations':
-          return 'Performance';
-          
-        // Security files
-        case 'security-guide':
-          return 'Security';
-          
-        // Deployment files
-        case 'deployment-guide':
-          return 'Integration & Deployment';
-          
-        // Migration files
-        case 'migration-guide':
-          return 'Migration';
-          
-        // Reference files
-        case 'api-reference':
-          return 'Reference';
-          
-        // Plans files
-        case 'api-enhancement-plan':
-          return 'Plans';
-          
-        default:
-          return 'Other';
-      }
-  }
+
+  // Map directory names to sidebar sections
+  const dirMap = {
+    'getting-started': 'Setup',
+    'components': 'Core Concepts',
+    'client': 'Client-Side Features',
+    'server': 'Server-Side Rendering',
+    'database': 'Database',
+    'api': 'API & Routing',
+    'deployment': 'Deployment',
+    'migration': 'Migration',
+    'advanced': 'Advanced',
+    'examples': 'Examples',
+    'packages': 'Packages',
+  };
+
+  if (dirMap[top]) return dirMap[top];
+
+  // Handle top-level files by filename
+  const fileMap = {};
+
+  if (fileMap[filename]) return fileMap[filename];
+
+  return 'Other';
 }
 
 async function walkDir(dir, base = dir) {
@@ -1110,49 +1080,78 @@ async function walkDir(dir, base = dir) {
 }
 
 function buildSidebarFromDocs(docs) {
+  // Skip files that shouldn't appear in sidebar
+  const skipFiles = new Set(['README.md']);
   const groups = new Map();
   for (const d of docs) {
+    if (skipFiles.has(d.rel)) continue;
     const group = groupFor(d.rel);
     if (!groups.has(group)) groups.set(group, []);
     const href = `docs/${  slugifySegment(d.rel.replace(/\\\\/g, '/'))
       .split('/')
       .map(slugifySegment)
       .join('/')}`;
-    const label = toTitleCase(slugifySegment(path.basename(d.rel)).replace(/-/g, ' '));
+    const baseName = slugifySegment(path.basename(d.rel)).replace(/-/g, ' ');
+    // For generic names like "index" or "readme", use the parent directory name instead
+    let label;
+    if (['index', 'readme', 'guide'].includes(baseName.toLowerCase())) {
+      const parentDir = path.dirname(d.rel);
+      if (parentDir && parentDir !== '.') {
+        const dirName = path.basename(parentDir).replace(/-/g, ' ');
+        label = toTitleCase(dirName);
+      } else {
+        label = toTitleCase(baseName);
+      }
+    } else {
+      label = toTitleCase(baseName);
+    }
+    // Fix specific labels
+    const labelFixes = {
+      'Ssr': 'SSR',
+      'Api': 'API',
+      'Vscode Extension': 'VS Code Extension',
+      'I18n': 'i18n',
+      'Query Builder Api': 'Query Builder API',
+    };
+    if (labelFixes[label]) label = labelFixes[label];
+    // Fix labels that depend on full path context
+    const hrefLabelFixes = {
+      'docs/core/index': 'Overview',
+      'docs/database/index': 'Overview',
+      'docs/deployment/index': 'Overview',
+    };
+    if (hrefLabelFixes[href]) label = hrefLabelFixes[href];
     groups.get(group).push({ href, label });
   }
   
   // Define logical order for documentation sections (basics to advanced)
   const sectionOrder = [
-    'Getting Started',
-    'Core Concepts', 
+    'Setup',
+    'Core Concepts',
     'Client-Side Features',
     'Server-Side Rendering',
-    'Database',
     'API & Routing',
-    'Performance',
-    'Security',
-    'Integration & Deployment', 
+    'Database',
+    'Deployment',
+    'Packages',
     'Migration',
-    'Reference',
     'Advanced',
     'Examples',
-    'Plans',
     'Other'
   ];
-  
+
   // Define logical order for items within each section
   const itemOrder = {
-    'Getting Started': ['Installation', 'Quick Start', 'Getting Started', 'Readme'],
-    'Core Concepts': ['Basic Components', 'State Management', 'Advanced Components', 'Styling Components', 'Function On Element Events'],
-    'Client-Side Features': ['Client Side Hydration Guide', 'Hydration Guide', 'Hydration'],
-    'Server-Side Rendering': ['Ssr Guide'],
-    'Database': ['Database Integration', 'Query Builder'],
-    'API & Routing': ['Api Reference', 'Api Usage', 'Framework Integrations', 'Object Based Routing', 'Security Guide'],
-    'Performance': ['Performance Optimizations'],
-    'Migration': ['Migration Guide'],
-    'Reference': ['Api Reference'],
-    'Examples': ['Performance Page Integration']
+    'Setup': ['Installation', 'Quick Start'],
+    'Core Concepts': ['Basics', 'State', 'Advanced', 'Styling'],
+    'Client-Side Features': ['Hydration', 'Router'],
+    'Server-Side Rendering': ['SSR'],
+    'API & Routing': ['Reference', 'Usage'],
+    'Database': ['Overview', 'Query Builder', 'Query Builder API'],
+    'Deployment': ['Overview', 'Integrations', 'Performance', 'Security'],
+    'Packages': ['Forms', 'Testing', 'Adapters', 'Build Tools', 'Profiler', 'Runtime', 'Web Components', 'VS Code Extension', 'Language Server'],
+    'Migration': ['Migration', 'Package Reorg'],
+    'Advanced': ['Utilities', 'Errors'],
   };
   
   const result = [];
@@ -1365,8 +1364,13 @@ async function buildHome(sidebar) {
   }
 </script>`;
   
-  html = html.replace('</body>', `${coverageScript}\n</body>`);
-  
+  // Inject hydration scripts for the island demo
+  const hydrationScripts = `
+<script src="/coherent-hydrate.js"></script>
+<script src="/counter-demo.js"></script>`;
+
+  html = html.replace('</body>', `${coverageScript}\n${hydrationScripts}\n</body>`);
+
   await writePage('', html);
 }
 
@@ -1668,35 +1672,30 @@ async function buildPlaygroundPages(items) {
 function buildLogicalDocOrder(docs) {
   // Use the same section and item ordering as the sidebar
   const sectionOrder = [
-    'Getting Started',
-    'Core Concepts', 
+    'Setup',
+    'Core Concepts',
     'Client-Side Features',
     'Server-Side Rendering',
-    'Database',
     'API & Routing',
-    'Performance',
-    'Security',
-    'Integration & Deployment',
+    'Database',
+    'Deployment',
+    'Packages',
     'Migration',
+    'Advanced',
     'Examples',
-    'Plans',
     'Other'
   ];
 
   const itemOrder = {
-    'Getting Started': ['Installation', 'Quick Start', 'Getting Started', 'Readme'],
-    'Core Concepts': ['Basic Components', 'State Management', 'Advanced Components', 'Styling Components', 'Function On Element Events'],
-    'Client-Side Features': ['Client Side Hydration Guide', 'Hydration Guide', 'Hydration'],
-    'Server-Side Rendering': ['Ssr Guide'],
-    'Database': ['Database Integration', 'Query Builder'],
-    'API & Routing': ['Api Reference', 'Api Usage', 'Api Enhancement Plan', 'Object Based Routing', 'Framework Integrations'],
-    'Performance': ['Performance Optimizations'],
-    'Security': ['Security Guide'],
-    'Integration & Deployment': ['Deployment Guide'],
-    'Migration': ['Migration Guide'],
-    'Examples': ['Performance Page Integration'],
-    'Plans': ['Api Enhancement Plan'],
-    'Other': ['Docs Index', 'Navigation', 'CSS File Integration']
+    'Setup': ['Installation', 'Quick Start', 'Index'],
+    'Core Concepts': ['Index', 'Basics', 'State', 'State Advanced', 'Reactive State', 'Advanced', 'Styling', 'Events', 'Routing', 'Navigation', 'Errors', 'Hydration'],
+    'Client-Side Features': ['Hydration Guide', 'Hydration Advanced', 'Router'],
+    'Server-Side Rendering': ['Ssr'],
+    'API & Routing': ['Reference', 'Usage', 'Roadmap'],
+    'Database': ['Index', 'Query Builder', 'Query Builder Api'],
+    'Deployment': ['Index', 'Integrations', 'Performance', 'Security', 'Production Guide'],
+    'Packages': ['Guide', 'Readme'],
+    'Migration': ['Migration Guide', 'From Other Frameworks', 'Package Reorg'],
   };
 
   // Group docs by section

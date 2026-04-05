@@ -8,7 +8,7 @@ export default defineConfig({
     environment: 'node',
     testTimeout: 10000,
     hookTimeout: 10000,
-    teardownTimeout: 5000,
+    teardownTimeout: 10000,
 
     // Retry flaky tests automatically
     retry: env.CI ? 2 : 0, // Retry 2 times in CI, 0 locally
@@ -53,11 +53,6 @@ export default defineConfig({
 
     // Workspace configuration - Enable better test isolation
     pool: 'forks',
-    poolOptions: {
-      forks: {
-        singleFork: false // Allow multiple forks for better isolation
-      }
-    },
 
     // Test isolation settings
     isolate: true, // Isolate tests

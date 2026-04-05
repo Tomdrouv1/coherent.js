@@ -4,15 +4,7 @@
  * Demonstrates how to use the plugin system to extend framework functionality.
  */
 
-import { render } from '../packages/core/src/index.js';
-import {
-  createPluginManager,
-  createPlugin,
-  PluginHooks,
-  createPerformancePlugin,
-  createDevLoggerPlugin,
-  createCachePlugin
-} from '../packages/core/src/plugins/index.js';
+import { render, createPluginManager, createPlugin, PluginHooks, createPerformancePlugin, createDevLoggerPlugin, createCachePlugin } from '@coherent.js/core';
 
 // Create plugin manager
 const pluginManager = createPluginManager({

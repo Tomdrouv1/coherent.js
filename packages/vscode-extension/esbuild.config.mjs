@@ -1,5 +1,5 @@
 import * as esbuild from 'esbuild';
-import { cp, mkdir } from 'fs/promises';
+import { cp, mkdir, access } from 'fs/promises';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -16,9 +16,13 @@ await esbuild.build({
   sourcemap: true,
 });
 
-// Copy language server from sibling package
-await mkdir(join(__dirname, 'server'), { recursive: true });
+// Copy language server from sibling package (if built)
 const serverSource = join(__dirname, '../language-server/dist');
-await cp(serverSource, join(__dirname, 'server'), { recursive: true });
-
-console.log('Build complete: extension bundled, server copied to server/');
+try {
+  await access(serverSource);
+  await mkdir(join(__dirname, 'server'), { recursive: true });
+  await cp(serverSource, join(__dirname, 'server'), { recursive: true });
+  console.log('Build complete: extension bundled, server copied to server/');
+} catch {
+  console.log('Build complete: extension bundled (language-server not yet built, skipping server copy)');
+}

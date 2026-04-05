@@ -31,7 +31,7 @@ npm install @coherent.js/core@beta
 pnpm add @coherent.js/core@beta
 ```
 
-> **Note**: Coherent.js is currently in beta (v1.0.0-beta.6).
+> **Note**: Coherent.js is currently in beta (v1.0.0-beta.7).
  
 
 ### 2. Your First Component
@@ -198,24 +198,24 @@ Now that you understand the basics, explore these guides based on what you want 
 ### 🎯 **Choose Your Learning Path:**
 
 #### 🌱 **New to Web Development?**
-1. [Basic Components](../components/basic-components.md) - Learn component fundamentals
-2. [State Management](../components/state-management.md) - Handle dynamic data
+1. [Basic Components](../components/basics.md) - Learn component fundamentals
+2. [State Management](../components/state.md) - Handle dynamic data
 3. [Styling & CSS](../components/styling.md) - Make it look great
 
 #### 🖥️ **Building Web Apps?**
-1. [Server-Side Rendering](../server-side/ssr-guide.md) - Fast initial loads
-2. [Client-Side Hydration](../client-side/hydration.md) - Add interactivity
-3. [Express Integration](../server-side/express-integration.md) - Full web apps
+1. [Server-Side Rendering](../server/ssr.md) - Fast initial loads
+2. [Client-Side Hydration](../client/hydration-guide.md) - Add interactivity
+3. [Framework Integrations](../deployment/integrations.md) - Full web apps
 
 #### 💾 **Working with Data?**
 1. [Database Queries](../database/query-builder.md) - Pure object queries
-2. [Database Models](../database/models.md) - Structure your data
-3. [Migrations](../database/migrations.md) - Manage schema changes
+2. [Database Overview](../database/index.md) - Structure your data
+3. [Query Builder API](../database/query-builder-api.md) - Full query API reference
 
 #### 🚀 **Building APIs?**
-1. [API Routing](../routing/api-routing.md) - RESTful endpoints
-2. [WebSocket APIs](../routing/websocket-routing.md) - Real-time features
-3. [API Security](../routing/api-security.md) - Secure your endpoints
+1. [API Usage](../api/usage.md) - RESTful endpoints
+2. [API Reference](../api/reference.md) - Full API documentation
+3. [Security](../deployment/security.md) - Secure your endpoints
 
 ## Examples
 

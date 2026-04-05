@@ -3,7 +3,7 @@
  * Works with both SSR and client-side hydration
  */
 
-import { withState } from '../../../packages/core/src/components/component-system.js';
+import { withState } from '@coherent.js/core';
 
 export const Counter = withState({ count: 0 })(({ state, setState }) => ({
   div: {

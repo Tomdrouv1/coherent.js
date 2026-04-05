@@ -2,7 +2,7 @@
  * Coherent.js - Object-Based Rendering Framework
  * A pure JavaScript framework for server-side rendering using natural object syntax
  *
- * @version 1.0.0-beta.6
+ * @version 1.0.0-beta.7
  * @author Coherent Framework Team
  * @license MIT
  */
@@ -193,13 +193,70 @@ function _formatAttributes(attrs) {
     .join(' ');
 }
 
+// Hydration attribute injection
+function injectHydrationAttributes(component, options) {
+  if (!component || typeof component !== 'object' || Array.isArray(component)) {
+    return component;
+  }
+
+  const tagName = Object.keys(component)[0];
+  if (!tagName) return component;
+
+  const props = component[tagName];
+  if (typeof props !== 'object' || props === null) return component;
+
+  const injected = { ...props };
+
+  if (options.hydratable) {
+    injected['data-hydratable'] = 'true';
+  }
+
+  if (options.island) {
+    injected['data-coherent-island'] = 'true';
+  }
+
+  if (options._islandComponentName) {
+    injected['data-coherent-island-component'] = options._islandComponentName;
+  }
+
+  return { [tagName]: injected };
+}
+
+/**
+ * Island wrapper - marks a component for island-based hydration
+ * @param {Function} componentFn - A function component to wrap as an island
+ * @returns {Function} Wrapped component that renders with island attributes
+ */
+export function Island(componentFn) {
+  const componentName = componentFn.name || 'Anonymous';
+
+  return function IslandComponent(props) {
+    const result = componentFn(props);
+    return injectHydrationAttributes(result, {
+      island: true,
+      _islandComponentName: componentName
+    });
+  };
+}
+
 // Main rendering function
 export function render(obj, options = {}) {
   const scoped = options.scoped ?? options.encapsulate ?? false;
 
-  const { scoped: _scoped, encapsulate: _encapsulate, ...rendererOptions } = options;
+  const { scoped: _scoped, encapsulate: _encapsulate, hydratable: _hydratable, island: _island, ...rendererOptions } = options;
 
-  const component = scoped ? renderScopedComponent(obj) : obj;
+  let component = scoped ? renderScopedComponent(obj) : obj;
+
+  // Handle function components passed directly to render
+  if (typeof component === 'function') {
+    component = component(options);
+  }
+
+  // Inject hydration attributes if needed
+  if (_hydratable || _island) {
+    component = injectHydrationAttributes(component, { hydratable: _hydratable, island: _island });
+  }
+
   return renderWithHtmlRenderer(component, rendererOptions);
 }
 
@@ -426,6 +483,22 @@ export {
     createActionHandlers,
     createEventHandlers,
     createEventComponent
+};
+
+// Enhanced FP composition tools
+export { hoc, compose } from './components/enhanced-composition.js';
+import { hoc, compose } from './components/enhanced-composition.js';
+
+/**
+ * Functional programming utilities
+ */
+export const fp = {
+  /**
+   * Curried map: fp.map(fn)(array)
+   */
+  map(fn) {
+    return (array) => array.map(fn);
+  }
 };
 
 // Note: Forms have been moved to @coherent.js/forms package

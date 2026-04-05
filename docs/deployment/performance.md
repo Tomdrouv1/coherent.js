@@ -285,13 +285,7 @@ Implement optimizations incrementally and measure impact at each step.
 
 ```javascript
 import http from 'node:http';
-import { createCoherent } from '@coherent.js/core';
-
-const coherent = createCoherent({
-  enableCache: true,
-  cacheSize: 10000,
-  enableMonitoring: true
-});
+import { render } from '@coherent.js/core';
 
 const server = http.createServer({
   keepAlive: true,
@@ -301,7 +295,7 @@ const server = http.createServer({
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('Keep-Alive', 'timeout=5, max=1000');
   
-  const html = coherent.render(MyComponent(props));
+  const html = render(MyComponent(props));
   res.end(html);
 });
 
@@ -317,10 +311,9 @@ server.headersTimeout = 60000;
 ```javascript
 import express from 'express';
 import compression from 'compression';
-import { createCoherent } from '@coherent.js/core';
+import { render } from '@coherent.js/core';
 
 const app = express();
-const coherent = createCoherent({ enableCache: true });
 
 // Enable gzip compression
 app.use(compression({
@@ -336,7 +329,7 @@ app.use(compression({
 }));
 
 app.get('*', (req, res) => {
-  const html = coherent.render(PageComponent(props));
+  const html = render(PageComponent(props));
   
   // Set caching headers for static content
   if (req.path.match(/\.(css|js|png|jpg|jpeg|gif|ico|svg)$/)) {
@@ -551,19 +544,15 @@ class AdvancedCacheManager {
 // Usage with Coherent.js
 const cacheManager = new AdvancedCacheManager();
 
-const createCoherentWithCache = () => {
-  return createCoherent({
-    enableCache: true,
-    customCache: {
-      get: (key) => cacheManager.get(key),
-      set: (key, value, ttl) => cacheManager.set(key, value, ttl),
-      clear: () => {
-        cacheManager.memoryCache.clear();
-        cacheManager.diskCache.clear();
-        cacheManager.redisCache.flushdb();
-      }
-    }
-  });
+const renderWithCache = (component) => {
+  const key = JSON.stringify(component);
+  const cached = cacheManager.get(key);
+  if (cached) return cached;
+  
+  const { render } = require('@coherent.js/core');
+  const html = render(component);
+  cacheManager.set(key, html, 300000);
+  return html;
 };
 ```
 
@@ -631,7 +620,7 @@ invalidator.watch(/^user:\d+:/, (key) => {
 
 ```javascript
 import { Pool } from 'pg';
-import { createCoherent } from '@coherent.js/core';
+import { render } from '@coherent.js/core';
 
 // Database connection pool
 const pool = new Pool({
@@ -902,16 +891,13 @@ class AdvancedPerformanceMonitor {
 // Integration with Coherent.js
 const monitor = new AdvancedPerformanceMonitor();
 
-const createMonitoredCoherent = () => {
-  return createCoherent({
-    enableCache: true,
-    enableMonitoring: true,
-    onRender: (component, duration) => {
-      monitor.recordRenderTime(component, duration);
-    },
-    onCacheHit: () => monitor.metrics.cacheHits++,
-    onCacheMiss: () => monitor.metrics.cacheMisses++
-  });
+const monitoredRender = (component) => {
+  const { render, performanceMonitor } = require('@coherent.js/core');
+  performanceMonitor.start();
+  const html = render(component);
+  const duration = performanceMonitor.stop();
+  monitor.recordRenderTime(component, duration);
+  return html;
 };
 ```
 

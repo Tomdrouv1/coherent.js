@@ -248,14 +248,9 @@ console.log(html);
 ### Using the Factory Function
 
 ```javascript
-import { createCoherent } from '@coherent.js/core';
+import { render } from '@coherent.js/core';
 
-const coherent = createCoherent({
-  enableCache: true,
-  enableMonitoring: true
-});
-
-const html = coherent.render(component);
+const html = render(component);
 ```
 
 ## Best Practices
@@ -381,6 +376,67 @@ const withLoading = (component, isLoading) => {
 const MyComponent = { div: { text: 'Loaded content' } };
 const LoadingComponent = withLoading(MyComponent, true);
 ```
+
+## Event Handling
+
+Coherent.js supports a powerful pattern for handling events directly on elements using function-valued props. When you define a function as a prop value for event attributes (like `onclick`, `oninput`, etc.), Coherent.js automatically handles it:
+
+1. **Server-side (Node.js)**: Stores the function in a global registry available during hydration
+2. **Client-side (Browser)**: Serializes the event handler as an inline JavaScript call to a global handler
+3. **During Hydration**: The global handler looks up the original function and executes it with proper component context
+
+### Usage Example
+
+```javascript
+const CounterComponent = withState({ count: 0 })(({ state, setState }) => ({
+  div: {
+    class: 'counter-widget',
+    'data-coherent-component': 'counter',
+    children: [
+      {
+        button: {
+          text: `Count: ${state.count}`,
+          class: 'btn btn-primary',
+          onclick: (event, state, setState) => {
+            setState({ count: state.count + 1 });
+          }
+        }
+      },
+      {
+        input: {
+          type: 'text',
+          value: state.text || '',
+          oninput: (event, state, setState) => {
+            setState({ text: event.target.value });
+          }
+        }
+      }
+    ]
+  }
+}));
+```
+
+### Function Parameters
+
+Event handler functions receive three parameters:
+
+1. `event` - The DOM event object
+2. `state` - The current component state
+3. `setState` - Function to update the component state
+
+### How It Differs from data-action
+
+While Coherent.js still supports the `data-action`/`data-target` pattern, the function-on-element approach provides:
+
+- More direct and intuitive event handling
+- Automatic context binding
+- Cleaner component definitions
+- No need to define separate action handlers
+
+### Limitations
+
+- Event handlers must be serializable functions (no closures over external variables)
+- The pattern is designed for simple event handling; complex logic should use separate functions
 
 ## Next Steps
 

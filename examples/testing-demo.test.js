@@ -22,7 +22,7 @@ import {
   userEvent,
   extendExpect,
   assertions
-} from '../packages/testing/src/index.js';
+} from '@coherent.js/testing';
 
 // Extend expect with custom matchers
 extendExpect(expect);
