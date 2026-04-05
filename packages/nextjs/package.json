@@ -41,9 +41,14 @@
     "url": "https://github.com/Tomdrouv1/coherent.js/issues"
   },
   "peerDependencies": {
-    "next": ">=13.0.0 < 16.0.0",
-    "react": ">=18.0.0 < 20.0.0",
+    "next": ">=13.0.0",
+    "react": ">=18.0.0",
     "@coherent.js/core": "workspace:*"
+  },
+  "devDependencies": {
+    "next": "16.1.7",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
   },
   "publishConfig": {
     "access": "public"

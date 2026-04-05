@@ -97,9 +97,7 @@
     "koa": ">=2.13.0 < 4.0.0",
     "mongodb": ">=5.0.0 < 7.0.0",
     "mysql2": ">=3.0.0 < 4.0.0",
-    "next": ">=13.0.0 < 16.0.0",
     "pg": ">=8.8.0 < 9.0.0",
-    "react": ">=18.0.0 < 20.0.0",
     "sqlite3": ">=5.1.0 < 6.0.0"
   },
   "peerDependenciesMeta": {
@@ -110,12 +108,6 @@
       "optional": true
     },
     "fastify": {
-      "optional": true
-    },
-    "next": {
-      "optional": true
-    },
-    "react": {
       "optional": true
     },
     "sqlite3": {
@@ -136,23 +128,14 @@
     "@codecov/vite-plugin": "1.9.1",
     "@commitlint/cli": "20.3.1",
     "@commitlint/config-conventional": "20.3.1",
-    "@eslint-community/eslint-utils": "4.9.1",
-    "@eslint-community/regexpp": "4.12.2",
-    "@eslint/config-array": "0.23.0",
-    "@eslint/config-helpers": "0.5.1",
-    "@eslint/core": "1.0.1",
     "@types/node": "24.10.9",
     "@vitest/coverage-v8": "4.0.18",
     "chokidar": "5.0.0",
-    "concurrently": "9.2.1",
     "esbuild": "0.27.2",
     "eslint": "9.39.2",
     "husky": "9.1.7",
     "marked": "17.0.1",
-    "next": "16.1.7",
     "prettier": "3.8.1",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
     "shiki": "4.0.2",
     "typescript": "5.9.3",
     "vitest": "4.0.18",
@@ -170,12 +153,7 @@
       "sqlite3"
     ],
     "overrides": {
-      "@vitest/coverage-v8": "4.0.18",
-      "esbuild@<=0.24.2": ">=0.25.0",
-      "next@>=15.5.0-canary.0 <15.5.7": ">=15.5.7",
-      "next@>=16.0.0-canary.0 <16.0.7": ">=16.0.7",
-      "next@>=16.0.0-beta.0 <16.0.9": ">=16.0.9",
-      "next@>=15.5.1-canary.0 <15.5.8": ">=15.5.8"
+      "@vitest/coverage-v8": "4.0.18"
     }
   }
 }
