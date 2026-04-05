@@ -341,7 +341,7 @@ return Demo();\`;
                 {
                     div: {
                         className: 'playground-grid',
-                        style: 'display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;',
+                        style: 'margin-top: 16px;',
                         children: [
 
                             // Left column: Code editor

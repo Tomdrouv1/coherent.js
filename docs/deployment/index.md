@@ -483,13 +483,8 @@ Resources:
 
 ```javascript
 // api/app.js - Serverless entry point
-import { createCoherent, render } from '@coherent.js/core';
+import { render } from '@coherent.js/core';
 import { HomePage } from '../components/HomePage.js';
-
-const coherent = createCoherent({
-  enableCache: true,
-  cacheSize: 1000
-});
 
 export default async function handler(req, res) {
   try {
@@ -499,7 +494,7 @@ export default async function handler(req, res) {
       headers: req.headers
     };
     
-    const html = coherent.render(HomePage(props));
+    const html = render(HomePage(props));
     
     res.setHeader('Content-Type', 'text/html');
     res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate');
@@ -515,13 +510,8 @@ export default async function handler(req, res) {
 
 ```javascript
 // netlify/functions/ssr.js
-import { createCoherent } from '@coherent.js/core';
+import { render } from '@coherent.js/core';
 import { App } from '../../src/App.js';
-
-const coherent = createCoherent({
-  enableCache: true,
-  cacheSize: 500
-});
 
 export const handler = async (event, context) => {
   try {
@@ -531,7 +521,7 @@ export const handler = async (event, context) => {
       headers: event.headers
     };
     
-    const html = coherent.render(App(props));
+    const html = render(App(props));
     
     return {
       statusCode: 200,
@@ -594,7 +584,7 @@ import express from 'express';
 import compression from 'compression';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { createCoherent } from '@coherent.js/core';
+import { render } from '@coherent.js/core';
 import { setupMonitoring } from './monitoring.js';
 import { setupHealthChecks } from './health.js';
 
@@ -648,13 +638,6 @@ app.use('/static', express.static('public', {
   etag: false
 }));
 
-// Initialize Coherent.js
-const coherent = createCoherent({
-  enableCache: true,
-  cacheSize: parseInt(process.env.CACHE_SIZE) || 10000,
-  enableMonitoring: true
-});
-
 // Setup monitoring and health checks
 setupMonitoring(app);
 setupHealthChecks(app);
@@ -669,7 +652,7 @@ app.get('*', async (req, res) => {
       headers: req.headers
     };
     
-    const html = coherent.render(App(props));
+    const html = render(App(props));
     
     // Cache headers
     res.set({

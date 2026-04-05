@@ -3,6 +3,6 @@
  * Integrations for modern web frameworks
  */
 
-export { createAstroIntegration } from './astro.js';
-export { createRemixAdapter } from './remix.js';
-export { createSvelteKitAdapter } from './sveltekit.js';
+export { createAstroIntegration, renderComponent, createRenderer } from './astro.js';
+export { createRemixAdapter, withCoherent } from './remix.js';
+export { createSvelteKitAdapter, createPreprocessor, createHandle } from './sveltekit.js';

@@ -130,6 +130,26 @@ import * as coherent from '@coherent.js/core';
 - **[API Reference](docs/api/reference.md)** - Complete documentation
 - **[Examples](examples/)** - Full-stack applications
 
+## 📦 **Which Package Do I Need?**
+
+| Use Case | Package(s) |
+|----------|------------|
+| Server-side rendering | `@coherent.js/core` |
+| Client-side hydration | `@coherent.js/core` + `@coherent.js/client` |
+| Express integration | `@coherent.js/core` + `@coherent.js/express` |
+| Fastify integration | `@coherent.js/core` + `@coherent.js/fastify` |
+| Next.js integration | `@coherent.js/core` + `@coherent.js/nextjs` |
+| State management | `@coherent.js/state` |
+| Forms & validation | `@coherent.js/forms` |
+| SEO (meta tags, sitemap, JSON-LD) | `@coherent.js/seo` |
+| Database ORM | `@coherent.js/database` |
+| API routing & middleware | `@coherent.js/api` |
+| Internationalization | `@coherent.js/i18n` |
+| Testing utilities | `@coherent.js/testing` |
+| Performance profiling | `@coherent.js/performance` |
+
+> All packages are ESM-only and require Node.js 20+. Install with `pnpm add @coherent.js/<name>`.
+
 ## 🛠️ **Development Tools**
 
 ```javascript

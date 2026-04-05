@@ -122,7 +122,17 @@ export function formatAttributes(props) {
         }
       }
 
-      if (value === true) {
+      // Handle style objects by converting to CSS string
+      if (attributeName === 'style' && typeof value === 'object' && value !== null) {
+        const cssString = Object.entries(value)
+          .map(([prop, val]) => {
+            // Convert camelCase to kebab-case
+            const kebabProp = prop.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`);
+            return `${kebabProp}: ${val}`;
+          })
+          .join('; ');
+        formatted += ` ${attributeName}="${escapeHtml(cssString)}"`;
+      } else if (value === true) {
         formatted += ` ${attributeName}`;
       } else if (value !== false && value !== null && value !== undefined) {
         formatted += ` ${attributeName}="${escapeHtml(String(value))}"`;

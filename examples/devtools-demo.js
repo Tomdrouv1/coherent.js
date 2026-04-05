@@ -12,7 +12,7 @@ import {
   measure,
   createLogger,
   LogLevel
-} from '../packages/devtools/src/index.js';
+} from '@coherent.js/devtools';
 
 console.log('\n=== Coherent.js DevTools Demo ===\n');
 

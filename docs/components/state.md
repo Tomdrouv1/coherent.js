@@ -1,8 +1,12 @@
 # State Management in Coherent.js
 
-Coherent.js provides powerful state management through the `withState` higher-order component, enabling reactive components that update when state changes. This guide covers everything from basic state usage to advanced patterns.
+Coherent.js provides powerful state management through the `withState` higher-order component, enabling reactive components that update when state changes. This guide covers everything from basic state usage to advanced patterns and reactive state.
 
-## 🚀 Quick Start
+**Package:** `@coherent.js/core`
+**Module:** `/src/components/component-system.js`
+**Since:** v1.0.0
+
+## Quick Start
 
 ### Basic Stateful Component
 
@@ -31,7 +35,7 @@ const CounterComponent = withState({ count: 0 })(({ state, stateUtils }) => {
 export const Counter = CounterComponent;
 ```
 
-## 🧩 Core Concepts
+## Core Concepts
 
 ### State Object
 
@@ -77,11 +81,11 @@ const Component = withState(initialState)(({ state, stateUtils }) => {
 });
 ```
 
-## 📝 State Updates
+## State Updates
 
 ### Shallow Updates (setState)
 
-Most common way to update state - replaces specified properties:
+Most common way to update state -- replaces specified properties:
 
 ```javascript
 const TodoApp = withState({
@@ -225,7 +229,7 @@ const ConditionalComponent = withState({
 });
 ```
 
-## 🎯 Advanced Patterns
+## Practical Patterns
 
 ### Form State Management
 
@@ -250,39 +254,28 @@ const ContactForm = withState({
       },
       errors: {
         ...state.errors,
-        [fieldName]: null // Clear error when user types
+        [fieldName]: null
       }
     });
   };
 
   const validateForm = () => {
     const errors = {};
-    
-    if (!state.fields.name.trim()) {
-      errors.name = 'Name is required';
-    }
-    
+    if (!state.fields.name.trim()) errors.name = 'Name is required';
     if (!state.fields.email.trim()) {
       errors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(state.fields.email)) {
       errors.email = 'Email is invalid';
     }
-    
-    if (!state.fields.message.trim()) {
-      errors.message = 'Message is required';
-    }
-
+    if (!state.fields.message.trim()) errors.message = 'Message is required';
     setState({ errors });
     return Object.keys(errors).length === 0;
   };
 
   const submitForm = async (event) => {
     event.preventDefault();
-    
     if (!validateForm()) return;
-    
     setState({ isSubmitting: true });
-    
     try {
       await submitToAPI(state.fields);
       setState({ 
@@ -317,10 +310,7 @@ const ContactForm = withState({
                 }
               },
               state.errors.name ? { 
-                span: { 
-                  className: 'error-message', 
-                  text: state.errors.name 
-                }
+                span: { className: 'error-message', text: state.errors.name }
               } : null
             ].filter(Boolean)
           }
@@ -334,10 +324,7 @@ const ContactForm = withState({
           }
         },
         state.submitted ? {
-          div: { 
-            className: 'success', 
-            text: 'Form submitted successfully!' 
-          }
+          div: { className: 'success', text: 'Form submitted successfully!' }
         } : null
       ].filter(Boolean)
     }
@@ -350,7 +337,7 @@ const ContactForm = withState({
 ```javascript
 const TaskManager = withState({
   tasks: [],
-  filter: 'all', // all, completed, pending
+  filter: 'all',
   newTask: '',
   editingId: null
 })(({ state, stateUtils }) => {
@@ -358,16 +345,13 @@ const TaskManager = withState({
 
   const addTask = () => {
     if (!state.newTask.trim()) return;
-    
-    const newTask = {
-      id: Date.now(),
-      text: state.newTask,
-      completed: false,
-      createdAt: new Date().toISOString()
-    };
-    
     setState({
-      tasks: [...state.tasks, newTask],
+      tasks: [...state.tasks, {
+        id: Date.now(),
+        text: state.newTask,
+        completed: false,
+        createdAt: new Date().toISOString()
+      }],
       newTask: ''
     });
   };
@@ -375,32 +359,13 @@ const TaskManager = withState({
   const toggleTask = (id) => {
     setState({
       tasks: state.tasks.map(task =>
-        task.id === id 
-          ? { ...task, completed: !task.completed }
-          : task
+        task.id === id ? { ...task, completed: !task.completed } : task
       )
     });
   };
 
   const deleteTask = (id) => {
-    setState({
-      tasks: state.tasks.filter(task => task.id !== id)
-    });
-  };
-
-  const startEdit = (id) => {
-    setState({ editingId: id });
-  };
-
-  const saveEdit = (id, newText) => {
-    setState({
-      tasks: state.tasks.map(task =>
-        task.id === id
-          ? { ...task, text: newText }
-          : task
-      ),
-      editingId: null
-    });
+    setState({ tasks: state.tasks.filter(task => task.id !== id) });
   };
 
   const filteredTasks = state.tasks.filter(task => {
@@ -413,7 +378,6 @@ const TaskManager = withState({
     div: {
       'data-coherent-component': 'task-manager',
       children: [
-        // Add new task
         {
           div: {
             className: 'add-task',
@@ -424,22 +388,13 @@ const TaskManager = withState({
                   value: state.newTask,
                   placeholder: 'Add a new task...',
                   oninput: (e) => setState({ newTask: e.target.value }),
-                  onkeypress: (e) => {
-                    if (e.key === 'Enter') addTask();
-                  }
+                  onkeypress: (e) => { if (e.key === 'Enter') addTask(); }
                 }
               },
-              {
-                button: {
-                  text: 'Add',
-                  onclick: addTask
-                }
-              }
+              { button: { text: 'Add', onclick: addTask } }
             ]
           }
         },
-
-        // Filter buttons
         {
           div: {
             className: 'filters',
@@ -452,8 +407,6 @@ const TaskManager = withState({
             }))
           }
         },
-
-        // Task list
         {
           ul: {
             className: 'task-list',
@@ -462,35 +415,9 @@ const TaskManager = withState({
                 key: task.id,
                 className: `task ${task.completed ? 'completed' : ''}`,
                 children: [
-                  {
-                    input: {
-                      type: 'checkbox',
-                      checked: task.completed,
-                      onchange: () => toggleTask(task.id)
-                    }
-                  },
-                  state.editingId === task.id ? {
-                    input: {
-                      type: 'text',
-                      defaultValue: task.text,
-                      onblur: (e) => saveEdit(task.id, e.target.value),
-                      onkeypress: (e) => {
-                        if (e.key === 'Enter') saveEdit(task.id, e.target.value);
-                      }
-                    }
-                  } : {
-                    span: {
-                      text: task.text,
-                      ondblclick: () => startEdit(task.id)
-                    }
-                  },
-                  {
-                    button: {
-                      text: '×',
-                      className: 'delete',
-                      onclick: () => deleteTask(task.id)
-                    }
-                  }
+                  { input: { type: 'checkbox', checked: task.completed, onchange: () => toggleTask(task.id) } },
+                  { span: { text: task.text } },
+                  { button: { text: 'x', className: 'delete', onclick: () => deleteTask(task.id) } }
                 ]
               }
             }))
@@ -514,40 +441,21 @@ const AsyncDataComponent = withState({
   const { setState } = stateUtils;
 
   const fetchData = async (force = false) => {
-    // Prevent duplicate requests
     if (state.loading) return;
-    
-    // Cache for 5 minutes unless forced
-    if (!force && state.lastFetch && 
-        Date.now() - state.lastFetch < 5 * 60 * 1000) {
-      return;
-    }
+    if (!force && state.lastFetch && Date.now() - state.lastFetch < 5 * 60 * 1000) return;
 
     setState({ loading: true, error: null });
 
     try {
       const response = await fetch('/api/data');
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
+      if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       const data = await response.json();
-      setState({ 
-        data, 
-        loading: false, 
-        lastFetch: Date.now() 
-      });
+      setState({ data, loading: false, lastFetch: Date.now() });
     } catch (error) {
-      setState({ 
-        error: error.message, 
-        loading: false 
-      });
+      setState({ error: error.message, loading: false });
     }
   };
 
-  const refreshData = () => fetchData(true);
-
-  // Auto-fetch on mount (in browser)
   if (typeof window !== 'undefined' && !state.data && !state.loading) {
     fetchData();
   }
@@ -563,37 +471,26 @@ const AsyncDataComponent = withState({
               {
                 button: {
                   text: state.loading ? 'Loading...' : 'Refresh',
-                  onclick: refreshData,
+                  onclick: () => fetchData(true),
                   disabled: state.loading
                 }
               },
               state.lastFetch ? {
-                span: {
-                  text: `Last updated: ${new Date(state.lastFetch).toLocaleTimeString()}`
-                }
+                span: { text: `Last updated: ${new Date(state.lastFetch).toLocaleTimeString()}` }
               } : null
             ].filter(Boolean)
           }
         },
-
         state.error ? {
           div: {
             className: 'error',
             children: [
               { p: { text: `Error: ${state.error}` } },
-              {
-                button: {
-                  text: 'Retry',
-                  onclick: refreshData
-                }
-              }
+              { button: { text: 'Retry', onclick: () => fetchData(true) } }
             ]
           }
         } : state.loading ? {
-          div: {
-            className: 'loading',
-            text: 'Loading data...'
-          }
+          div: { className: 'loading', text: 'Loading data...' }
         } : state.data ? {
           div: {
             className: 'data',
@@ -603,10 +500,7 @@ const AsyncDataComponent = withState({
             ]
           }
         } : {
-          div: {
-            className: 'no-data',
-            text: 'No data available'
-          }
+          div: { className: 'no-data', text: 'No data available' }
         }
       ].filter(Boolean)
     }
@@ -614,7 +508,50 @@ const AsyncDataComponent = withState({
 });
 ```
 
-## 🛠️ Configuration Options
+## Configuration Options
+
+### withState Options
+
+The `withState` HOC accepts extensive options for fine-grained control:
+
+```javascript
+const Component = withState(initialState, {
+  // State options
+  persistent: false,         // Persist state across unmounts
+  storageKey: null,          // Key for persistent storage
+  storage: localStorage,     // Storage mechanism
+  
+  // State transformation
+  stateTransform: null,      // Transform state before injection
+  propName: 'state',         // Prop name for state injection
+  actionsName: 'actions',    // Prop name for action injection
+  
+  // Reducers and actions
+  reducer: null,             // State reducer function
+  actions: {},               // Action creators
+  middleware: [],            // State middleware
+  
+  // Performance
+  memoizeState: false,       // Memoize state transformations
+  shallow: false,            // Shallow state comparison
+  
+  // Development
+  devTools: false,           // Connect to dev tools
+  debug: false,              // Debug logging
+  displayName: null,         // Component name for debugging
+  
+  // Lifecycle hooks
+  onStateChange: null,       // Called when state changes
+  onMount: null,             // Called when component mounts
+  onUnmount: null,           // Called when component unmounts
+  
+  // Validation
+  validator: null,           // State validator function
+  
+  // Async state
+  supportAsync: false        // Support async state updates
+})(ComponentFunction);
+```
 
 ### Debug Mode
 
@@ -637,13 +574,8 @@ const customStateUtils = {
   incrementCounter: (setState, state) => () => {
     setState({ count: state.count + 1 });
   },
-  
   resetForm: (setState) => () => {
-    setState({
-      name: '',
-      email: '',
-      message: ''
-    });
+    setState({ name: '', email: '', message: '' });
   }
 };
 
@@ -663,44 +595,33 @@ const ComponentWithCustomUtils = withState(initialState, {
 });
 ```
 
-## 🔄 State Persistence
+## State Persistence
 
 ### Local Storage Integration
 
 ```javascript
 const PersistentState = withState({
-  preferences: {
-    theme: 'light',
-    language: 'en'
-  }
+  preferences: { theme: 'light', language: 'en' }
 }, {
-  // Custom serialization/deserialization
   serialize: (state) => JSON.stringify(state),
   deserialize: (data) => JSON.parse(data),
-  
-  // Storage key
   storageKey: 'app-preferences'
 })(({ state, stateUtils }) => {
   const { setState } = stateUtils;
 
-  // Save to localStorage on state changes
   const updatePreference = (key, value) => {
     const newPreferences = { ...state.preferences, [key]: value };
     setState({ preferences: newPreferences });
-    
-    // Save to localStorage
     if (typeof window !== 'undefined') {
       localStorage.setItem('app-preferences', JSON.stringify(newPreferences));
     }
   };
 
-  // Load from localStorage on mount
   if (typeof window !== 'undefined' && !state._loaded) {
     const saved = localStorage.getItem('app-preferences');
     if (saved) {
       try {
-        const preferences = JSON.parse(saved);
-        setState({ preferences, _loaded: true });
+        setState({ preferences: JSON.parse(saved), _loaded: true });
       } catch (e) {
         console.warn('Failed to load preferences:', e);
         setState({ _loaded: true });
@@ -714,26 +635,517 @@ const PersistentState = withState({
 });
 ```
 
-## 🧪 Testing State Components
+## Advanced State Patterns
+
+### withStateUtils Variants
+
+The `withStateUtils` object provides specialized state management utilities beyond the basic `withState` HOC.
+
+#### Local State (Simple)
+
+```javascript
+import { withStateUtils } from '@coherent.js/core';
+
+const Component = withStateUtils.local({ count: 0 })(MyComponent);
+```
+
+#### Persistent State
+
+Automatically saves state to localStorage:
+
+```javascript
+const Component = withStateUtils.persistent(
+  { user: null, preferences: {} },
+  'app-state'  // Storage key
+)(MyComponent);
+```
+
+Features: automatic localStorage sync, survives page refreshes, JSON serialization.
+
+```javascript
+const UserPreferences = withStateUtils.persistent({
+  theme: 'light',
+  language: 'en',
+  notifications: true
+}, 'user-prefs')(({ state, setState }) => ({
+  div: {
+    children: [
+      {
+        select: {
+          value: state.theme,
+          onchange: (e) => setState({ theme: e.target.value }),
+          children: [
+            { option: { value: 'light', text: 'Light' } },
+            { option: { value: 'dark', text: 'Dark' } }
+          ]
+        }
+      }
+    ]
+  }
+}));
+```
+
+#### Reducer Pattern
+
+Redux-like state management:
+
+```javascript
+const initialState = { count: 0 };
+
+const reducer = (state, action) => {
+  switch (action.type) {
+    case 'INCREMENT': return { ...state, count: state.count + 1 };
+    case 'DECREMENT': return { ...state, count: state.count - 1 };
+    case 'RESET': return { ...state, count: 0 };
+    default: return state;
+  }
+};
+
+const actions = {
+  increment: (state, setState) => { setState({ type: 'INCREMENT' }); },
+  decrement: (state, setState) => { setState({ type: 'DECREMENT' }); },
+  reset: (state, setState) => { setState({ type: 'RESET' }); }
+};
+
+const Counter = withStateUtils.reducer(
+  initialState, reducer, actions
+)(({ state, actions }) => ({
+  div: {
+    children: [
+      { p: { text: `Count: ${state.count}` } },
+      { button: { text: '+', onclick: actions.increment } },
+      { button: { text: '-', onclick: actions.decrement } },
+      { button: { text: 'Reset', onclick: actions.reset } }
+    ]
+  }
+}));
+```
+
+#### Async State Management
+
+Handle async operations with built-in loading/error states:
+
+```javascript
+const DataFetcher = withStateUtils.async({
+  data: null
+}, {
+  fetchData: async (state, setState) => {
+    const response = await fetch('/api/data');
+    const data = await response.json();
+    setState({ data });
+  }
+})(({ state, actions }) => ({
+  div: {
+    children: [
+      { button: { text: 'Fetch Data', onclick: actions.fetchData } },
+      state.data && { pre: { text: JSON.stringify(state.data, null, 2) } }
+    ]
+  }
+}));
+```
+
+#### Validated State
+
+Enforce state validation rules:
+
+```javascript
+const validator = (state) => {
+  if (state.age < 0 || state.age > 150) throw new Error('Age must be between 0 and 150');
+  if (!state.email.includes('@')) throw new Error('Invalid email format');
+  return true;
+};
+
+const UserForm = withStateUtils.validated({
+  name: '', email: '', age: 0
+}, validator)(FormComponent);
+```
+
+#### Shared State
+
+Share state across multiple components:
+
+```javascript
+// Component A
+const ComponentA = withStateUtils.shared({
+  theme: 'light'
+}, 'app-theme')(({ state, setState }) => ({
+  div: {
+    children: [
+      { p: { text: `Theme: ${state.theme}` } },
+      {
+        button: {
+          text: 'Toggle',
+          onclick: () => setState({ theme: state.theme === 'light' ? 'dark' : 'light' })
+        }
+      }
+    ]
+  }
+}));
+
+// Component B (shares same state)
+const ComponentB = withStateUtils.shared({
+  theme: 'light'
+}, 'app-theme')(({ state }) => ({
+  div: {
+    className: `theme-${state.theme}`,
+    text: 'This component shares the theme state'
+  }
+}));
+```
+
+#### Form State
+
+Specialized utilities for form handling:
+
+```javascript
+const ContactForm = withStateUtils.form({
+  name: '', email: '', message: ''
+})(({ state, actions }) => ({
+  form: {
+    'data-coherent-component': 'contact-form',
+    onsubmit: (e) => {
+      e.preventDefault();
+      const isValid = actions.validateForm((state) => {
+        const errors = {};
+        if (!state.name) errors.name = 'Name is required';
+        if (!state.email.includes('@')) errors.email = 'Invalid email';
+        return errors;
+      });
+      if (isValid) console.log('Form submitted:', state);
+    },
+    children: [
+      { input: { type: 'text', placeholder: 'Name', value: state.name, oninput: (e) => actions.updateField('name', e.target.value) } },
+      { input: { type: 'email', placeholder: 'Email', value: state.email, oninput: (e) => actions.updateField('email', e.target.value) } },
+      { textarea: { placeholder: 'Message', value: state.message, oninput: (e) => actions.updateField('message', e.target.value) } },
+      { button: { type: 'submit', text: 'Send' } },
+      { button: { type: 'button', text: 'Reset', onclick: actions.resetForm } }
+    ]
+  }
+}));
+```
+
+Form actions: `updateField(field, value)`, `updateMultiple(updates)`, `resetForm()`, `validateForm(validator)`.
+
+#### Loading and Error Handling
+
+Built-in loading and error state management:
+
+```javascript
+const DataLoader = withStateUtils.withLoading({
+  users: []
+})(({ state, actions }) => ({
+  div: {
+    children: [
+      {
+        button: {
+          text: state._loading ? 'Loading...' : 'Load Users',
+          disabled: state._loading,
+          onclick: () => actions.asyncAction(async () => {
+            const response = await fetch('/api/users');
+            const users = await response.json();
+            return { users };
+          })
+        }
+      },
+      state._error && { div: { className: 'error', text: `Error: ${state._error.message}` } },
+      !state._loading && state.users.length > 0 && {
+        ul: { children: state.users.map(user => ({ li: { text: user.name } })) }
+      }
+    ]
+  }
+}));
+```
+
+Built-in state: `_loading` (Boolean), `_error` (Error|null). Actions: `setLoading(boolean)`, `setError(error)`, `clearError()`, `asyncAction(asyncFn)`.
+
+#### Undo/Redo (History)
+
+```javascript
+const TextEditor = withStateUtils.withHistory({
+  text: ''
+}, 10)(({ state, actions }) => ({
+  div: {
+    children: [
+      { textarea: { value: state.present.text, oninput: (e) => actions.updatePresent({ text: e.target.value }) } },
+      {
+        div: {
+          children: [
+            { button: { text: 'Undo', disabled: !actions.canUndo(state), onclick: actions.undo } },
+            { button: { text: 'Redo', disabled: !actions.canRedo(state), onclick: actions.redo } }
+          ]
+        }
+      }
+    ]
+  }
+}));
+```
+
+State structure: `{ present: { /* current */ }, past: [ /* previous */ ], future: [ /* undone */ ] }`. Actions: `undo()`, `redo()`, `updatePresent(newState)`, `canUndo(state)`, `canRedo(state)`.
+
+#### Computed Properties
+
+```javascript
+const ShoppingCart = withStateUtils.computed({
+  items: [
+    { id: 1, name: 'Item 1', price: 10, quantity: 2 },
+    { id: 2, name: 'Item 2', price: 20, quantity: 1 }
+  ]
+}, {
+  total: (state) => state.items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+  itemCount: (state) => state.items.reduce((sum, item) => sum + item.quantity, 0),
+  isEmpty: (state) => state.items.length === 0
+})(({ state }) => ({
+  div: {
+    children: [
+      { h2: { text: 'Shopping Cart' } },
+      { ul: { children: state.items.map(item => ({ li: { text: `${item.name} x${item.quantity} - $${item.price * item.quantity}` } })) } },
+      { p: { text: `Total Items: ${state.itemCount}` } },
+      { p: { text: `Total Price: $${state.total}` } },
+      state.isEmpty && { p: { text: 'Cart is empty' } }
+    ]
+  }
+}));
+```
+
+## Reactive State
+
+The `@coherent.js/state` package provides a comprehensive reactive state management solution with observables, computed properties, persistence, and validation -- ideal for client-side interactivity beyond what `withState` offers during SSR.
+
+### Installation
+
+```bash
+pnpm add @coherent.js/state@beta
+```
+
+### Observables
+
+Create reactive values that automatically track changes:
+
+```javascript
+import { observable, computed } from '@coherent.js/state';
+
+const count = observable(0);
+const doubled = computed(() => count.value * 2);
+
+count.watch((newValue, oldValue) => {
+  console.log(`Count changed from ${oldValue} to ${newValue}`);
+});
+
+count.value = 5; // Triggers watcher and updates computed
+console.log(doubled.value); // 10
+```
+
+### Reactive State Class
+
+For more complex state management:
+
+```javascript
+import { createReactiveState } from '@coherent.js/state';
+
+const appState = createReactiveState({
+  user: { name: 'John', age: 30 },
+  settings: { theme: 'dark' }
+});
+
+appState.watch('user.name', (newName, oldName) => {
+  console.log(`User name changed to ${newName}`);
+});
+
+appState.set('user.name', 'Jane');
+console.log(appState.get('user.name')); // 'Jane'
+```
+
+### Computed Properties (Reactive)
+
+```javascript
+import { observable, computed } from '@coherent.js/state';
+
+const firstName = observable('John');
+const lastName = observable('Doe');
+
+const fullName = computed(() => `${firstName.value} ${lastName.value}`);
+
+console.log(fullName.value); // 'John Doe'
+firstName.value = 'Jane';
+console.log(fullName.value); // 'Jane Doe' (automatically updated)
+```
+
+### SSR-Compatible State
+
+#### Request-Scoped State
+
+```javascript
+import { createState } from '@coherent.js/state';
+
+function handleRequest(req, res) {
+  const requestState = createState({
+    userId: req.user.id,
+    requestId: req.id,
+    startTime: Date.now()
+  });
+
+  requestState.set('theme', 'dark');
+  const theme = requestState.get('theme');
+}
+```
+
+#### Global State Manager
+
+```javascript
+import { globalStateManager } from '@coherent.js/state';
+
+globalStateManager.set('appVersion', '1.0.0');
+globalStateManager.set('config', { apiUrl: 'https://api.example.com' });
+
+const version = globalStateManager.get('appVersion');
+```
+
+#### Context API
+
+```javascript
+import { provideContext, useContext } from '@coherent.js/state';
+
+function renderApp() {
+  provideContext('request', { userId: 123, theme: 'dark' });
+  return renderComponents();
+}
+
+function UserProfile() {
+  const requestState = useContext('request');
+  return { div: { text: `User ID: ${requestState.userId}` } };
+}
+```
+
+### Reactive Persistence
+
+#### LocalStorage
+
+```javascript
+import { withLocalStorage } from '@coherent.js/state';
+
+const userPrefs = withLocalStorage({ theme: 'dark', lang: 'en' }, 'user-prefs');
+console.log(userPrefs.get('theme')); // Loaded from storage
+userPrefs.set('theme', 'light');     // Saved automatically
+```
+
+#### SessionStorage
+
+```javascript
+import { withSessionStorage } from '@coherent.js/state';
+
+const sessionData = withSessionStorage({ cart: [], checkoutStep: 1 }, 'session-data');
+```
+
+#### IndexedDB
+
+```javascript
+import { withIndexedDB } from '@coherent.js/state';
+
+const largeDataset = await withIndexedDB(
+  { data: [] },
+  'app-data',
+  { dbName: 'myApp', storeName: 'state' }
+);
+await largeDataset.set('data', hugeArray);
+```
+
+#### Custom Persistence
+
+```javascript
+import { createPersistentState } from '@coherent.js/state';
+
+const customState = createPersistentState({ count: 0 }, {
+  save: async (state) => {
+    await fetch('/api/state', { method: 'POST', body: JSON.stringify(state) });
+  },
+  load: async () => {
+    const response = await fetch('/api/state');
+    return response.json();
+  }
+});
+```
+
+### Reactive State Validation
+
+```javascript
+import { createValidatedState, validators } from '@coherent.js/state';
+
+const userForm = createValidatedState(
+  { email: '', age: 0, username: '' },
+  {
+    validators: {
+      email: validators.email('Invalid email format'),
+      age: validators.range(18, 120, 'Age must be between 18 and 120'),
+      username: validators.minLength(3, 'Username must be at least 3 characters')
+    }
+  }
+);
+
+userForm.set('email', 'user@example.com'); // Valid
+try {
+  userForm.set('email', 'invalid-email');  // Throws validation error
+} catch (error) {
+  console.error(error.message);
+}
+```
+
+Available validators: `required`, `email`, `minLength`, `maxLength`, `pattern`, `range`, `min`, `max`, `custom`, `async`.
+
+### Reactive State API Reference
+
+```typescript
+class Observable<T> {
+  value: T;
+  watch(callback: (newValue: T, oldValue: T) => void): () => void;
+  unwatch(callback: Function): void;
+  unwatchAll(): void;
+}
+
+class Computed<T> {
+  readonly value: T;
+  watch(callback: (newValue: T, oldValue: T) => void): () => void;
+}
+
+interface StateManager {
+  get(key: string): any;
+  set(key: string, value: any): this;
+  has(key: string): boolean;
+  delete(key: string): boolean;
+  clear(): this;
+  toObject(): Record<string, any>;
+}
+```
+
+### When to Use Which
+
+Use `withState` from `@coherent.js/core` for:
+- Simple component state during SSR
+- Request-scoped state
+- No need for reactivity or persistence
+
+Use `@coherent.js/state` when you need:
+- Reactive state with automatic UI updates (client-side)
+- Persistence (LocalStorage, SessionStorage, IndexedDB)
+- Built-in validators for data integrity
+- Global shared state across components
+- Computed properties, watchers, async state
+
+## Testing State Components
 
 ### Unit Testing
 
 ```javascript
 import { render } from '@coherent.js/core';
 
-// Test initial render
 test('renders with initial state', () => {
   const html = render(Counter());
   expect(html).toContain('Count: 0');
 });
 
-// Test state changes (requires client-side testing)
 test('increments count on button click', async () => {
   const { container, getByText } = renderComponent(Counter());
-  
   const button = getByText('+');
   fireEvent.click(button);
-  
   expect(getByText('Count: 1')).toBeInTheDocument();
 });
 ```
@@ -741,53 +1153,39 @@ test('increments count on button click', async () => {
 ### Integration Testing
 
 ```javascript
-// Test full user workflow
 test('todo app workflow', async () => {
   const { container, getByPlaceholderText, getByText } = renderComponent(TodoApp());
   
-  // Add a todo
   const input = getByPlaceholderText('Add a new task...');
   fireEvent.change(input, { target: { value: 'Test task' } });
   fireEvent.click(getByText('Add'));
-  
   expect(getByText('Test task')).toBeInTheDocument();
   
-  // Mark as completed
   const checkbox = container.querySelector('input[type="checkbox"]');
   fireEvent.click(checkbox);
-  
   expect(checkbox.checked).toBe(true);
 });
 ```
 
-## 📚 Best Practices
+## Best Practices
 
 ### 1. Keep State Minimal
 
 ```javascript
-// ✅ Good - only necessary state
-const Component = withState({
-  count: 0,
-  isVisible: true
-})(/* ... */);
+// Good - only necessary state
+const Component = withState({ count: 0, isVisible: true })(/* ... */);
 
-// ❌ Avoid - derived state
-const Component = withState({
-  count: 0,
-  isVisible: true,
-  doubleCount: 0 // This can be computed
-})(/* ... */);
+// Avoid - derived state
+const Component = withState({ count: 0, isVisible: true, doubleCount: 0 })(/* ... */);
 ```
 
 ### 2. Use Immutable Updates
 
 ```javascript
-// ✅ Good - immutable updates
-setState({
-  items: [...state.items, newItem]
-});
+// Good
+setState({ items: [...state.items, newItem] });
 
-// ❌ Avoid - mutation
+// Avoid
 state.items.push(newItem);
 setState({ items: state.items });
 ```
@@ -795,28 +1193,17 @@ setState({ items: state.items });
 ### 3. Group Related State
 
 ```javascript
-// ✅ Good - grouped state
 const FormComponent = withState({
-  form: {
-    name: '',
-    email: '',
-    message: ''
-  },
-  validation: {
-    errors: {},
-    isValid: true
-  }
+  form: { name: '', email: '', message: '' },
+  validation: { errors: {}, isValid: true }
 })(/* ... */);
 ```
 
 ### 4. Handle Loading States
 
 ```javascript
-// ✅ Good - proper loading states
 const AsyncComponent = withState({
-  data: null,
-  loading: false,
-  error: null
+  data: null, loading: false, error: null
 })(/* ... */);
 ```
 
@@ -838,13 +1225,22 @@ const ValidatedComponent = withState(initialState)(({ state, stateUtils }) => {
 });
 ```
 
-## 🔍 Debugging State
+### 6. Choose the Right Utility
+
+```javascript
+withStateUtils.local({ count: 0 })                          // Simple local state
+withStateUtils.persistent({ user: null }, 'user-data')       // Needs persistence
+withStateUtils.reducer(initialState, reducer, actions)       // Complex state logic
+withStateUtils.async({ data: null }, { fetchData: asyncFn }) // Async operations
+```
+
+## Debugging State
 
 ### Debug Logging
 
 ```javascript
 const DebugComponent = withState(initialState, {
-  debug: true
+  debug: process.env.NODE_ENV === 'development'
 })(({ state, stateUtils }) => {
   const { setState } = stateUtils;
 
@@ -878,6 +1274,25 @@ const StateInspector = ({ children, state }) => ({
 });
 ```
 
+## Migration from Simple State
+
+**Before (v1.0.x):**
+```javascript
+const Counter = withState({ count: 0 })(Component);
+```
+
+**After (v1.1.0+):**
+```javascript
+// Still works! (backward compatible)
+const Counter = withState({ count: 0 })(Component);
+
+// Or use advanced features
+const Counter = withState({ count: 0 }, {
+  persistent: true,
+  debug: true
+})(Component);
+```
+
 ---
 
-This comprehensive guide covers all aspects of state management in Coherent.js. For more advanced patterns and performance optimizations, see the [Performance Guide](../performance-optimizations.md) and [Advanced Components](./advanced-components.md).
+For more advanced patterns and performance optimizations, see the [Performance Guide](../performance-optimizations.md) and [Advanced Components](./advanced-components.md).

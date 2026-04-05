@@ -652,6 +652,14 @@ export async function* renderToStream(component, options = {}) {
 
                     yield* write(`</${tagName}>`);
                     elementCount++;
+                } else if (props === null || props === undefined) {
+                    // Handle null/undefined props - render empty element
+                    if (isVoidElement(tagName)) {
+                        yield* write(`<${tagName} />`);
+                    } else {
+                        yield* write(`<${tagName}></${tagName}>`);
+                    }
+                    elementCount++;
                 } else if (typeof props === 'string') {
                     const content = escapeHtml(props);
                     if (isVoidElement(tagName)) {

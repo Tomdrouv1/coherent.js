@@ -3,7 +3,7 @@
  * Demonstrates streaming capabilities for large datasets and real-time updates
  */
 
-import { render } from '../packages/core/src/index.js';
+import { render } from '@coherent.js/core';
 
 // Note: Streaming renderer is a separate feature - using render for now
 // For true streaming, use the streaming-renderer package when available

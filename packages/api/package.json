@@ -1,6 +1,6 @@
 {
   "name": "@coherent.js/api",
-  "version": "1.0.0-beta.6",
+  "version": "1.0.0-beta.7",
   "description": "API framework for Coherent.js (REST/RPC/GraphQL).",
   "type": "module",
   "main": "dist/index.cjs",
@@ -55,6 +55,10 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Tomdrouv1/coherent.js.git"
+  },
+  "homepage": "https://github.com/Tomdrouv1/coherent.js",
+  "bugs": {
+    "url": "https://github.com/Tomdrouv1/coherent.js/issues"
   },
   "peerDependencies": {
     "@coherent.js/core": "workspace:*"

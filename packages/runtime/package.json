@@ -1,6 +1,6 @@
 {
   "name": "@coherent.js/runtime",
-  "version": "1.0.0-beta.6",
+  "version": "1.0.0-beta.7",
   "description": "Runtime for Coherent.js - works in browsers, edge workers, and any JavaScript environment",
   "type": "module",
   "main": "dist/coherent-universal.js",
@@ -76,6 +76,10 @@
     "type": "git",
     "url": "git+https://github.com/Tomdrouv1/coherent.js.git",
     "directory": "packages/runtime"
+  },
+  "homepage": "https://github.com/Tomdrouv1/coherent.js",
+  "bugs": {
+    "url": "https://github.com/Tomdrouv1/coherent.js/issues"
   },
   "engines": {
     "node": ">=18.0.0"

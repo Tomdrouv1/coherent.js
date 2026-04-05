@@ -324,9 +324,9 @@ const PerformanceView = (props) => {
                     {
                       div: {
                         className: 'tip-card',
-                        style: 'background: rgba(67, 233, 123, 0.1); border: 1px solid rgba(67, 233, 123, 0.3); border-radius: 12px; padding: 20px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);',
+                        style: 'background: rgba(0, 229, 160, 0.1); border: 1px solid rgba(0, 229, 160, 0.3); border-radius: 12px; padding: 20px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);',
                         children: [
-                          { h4: { text: '⚡ Enable Caching', style: 'margin-top: 0; color: #3bf77d; font-weight: 600;' } },
+                          { h4: { text: '⚡ Enable Caching', style: 'margin-top: 0; color: #00e5a0; font-weight: 600;' } },
                           { p: { text: 'Use framework caching for frequently rendered components to achieve up to 200x performance improvements.', style: 'color: #e6edf3; margin-bottom: 0;' } }
                         ]
                       }
@@ -334,9 +334,9 @@ const PerformanceView = (props) => {
                     {
                       div: {
                         className: 'tip-card',
-                        style: 'background: rgba(79, 172, 254, 0.1); border: 1px solid rgba(79, 172, 254, 0.3); border-radius: 12px; padding: 20px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);',
+                        style: 'background: rgba(0, 229, 160, 0.08); border: 1px solid rgba(0, 229, 160, 0.2); border-radius: 12px; padding: 20px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);',
                         children: [
-                          { h4: { text: '🗂️ Static Components', style: 'margin-top: 0; color: #7cc4ff; font-weight: 600;' } },
+                          { h4: { text: '🗂️ Static Components', style: 'margin-top: 0; color: #00c98b; font-weight: 600;' } },
                           { p: { text: 'Pre-render static components and cache them for ultra-fast rendering of unchanging UI elements.', style: 'color: #e6edf3; margin-bottom: 0;' } }
                         ]
                       }
@@ -344,9 +344,9 @@ const PerformanceView = (props) => {
                     {
                       div: {
                         className: 'tip-card',
-                        style: 'background: rgba(255, 152, 0, 0.1); border: 1px solid rgba(255, 152, 0, 0.3); border-radius: 12px; padding: 20px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);',
+                        style: 'background: rgba(0, 201, 139, 0.1); border: 1px solid rgba(0, 201, 139, 0.3); border-radius: 12px; padding: 20px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);',
                         children: [
-                          { h4: { text: '📦 Bundle Optimization', style: 'margin-top: 0; color: #ff9800; font-weight: 600;' } },
+                          { h4: { text: '📦 Bundle Optimization', style: 'margin-top: 0; color: #00c98b; font-weight: 600;' } },
                           { p: { text: 'Use the bundle optimizer to identify and remove unused components from your production builds.', style: 'color: #e6edf3; margin-bottom: 0;' } }
                         ]
                       }
@@ -354,9 +354,9 @@ const PerformanceView = (props) => {
                     {
                       div: {
                         className: 'tip-card',
-                        style: 'background: rgba(233, 30, 99, 0.1); border: 1px solid rgba(233, 30, 99, 0.3); border-radius: 12px; padding: 20px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);',
+                        style: 'background: rgba(0, 168, 118, 0.1); border: 1px solid rgba(0, 168, 118, 0.3); border-radius: 12px; padding: 20px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);',
                         children: [
-                          { h4: { text: '🧠 Memory Management', style: 'margin-top: 0; color: #ff6b9d; font-weight: 600;' } },
+                          { h4: { text: '🧠 Memory Management', style: 'margin-top: 0; color: #00a876; font-weight: 600;' } },
                           { p: { text: 'Monitor memory usage and implement cleanup strategies for long-running applications.', style: 'color: #e6edf3; margin-bottom: 0;' } }
                         ]
                       }

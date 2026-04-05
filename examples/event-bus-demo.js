@@ -5,8 +5,7 @@
  * centralized event handling, and component communication.
  */
 
-import { render } from '../packages/core/src/index.js';
-import eventSystem, { withEventBus, createActionHandlers } from '../packages/core/src/events/index.js';
+import { render, eventSystem, withEventBus, createActionHandlers } from '@coherent.js/core';
 
 // Example: Todo Application with Event-Driven Architecture
 function createTodoApp() {

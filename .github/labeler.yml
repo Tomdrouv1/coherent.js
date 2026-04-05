@@ -27,10 +27,18 @@ integrations:
 # Developer tools labels
 devtools:
   - changed-files:
-      - any-glob-to-any-file: 
+      - any-glob-to-any-file:
           - packages/devtools/**/*
           - packages/testing/**/*
           - packages/cli/**/*
+
+# Editor tooling labels
+editor-tooling:
+  - changed-files:
+      - any-glob-to-any-file:
+          - packages/language-server/**/*
+          - packages/language-service/**/*
+          - packages/vscode-extension/**/*
 
 # Feature packages labels
 features:

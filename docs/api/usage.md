@@ -723,6 +723,106 @@ const server = router.createServer({
 7. **Monitor logs** - Track suspicious activity
 8. **Keep dependencies updated** - Regular security updates
 
+## Route Helper Functions
+
+The `route` helper provides convenient functions for creating route objects:
+
+```javascript
+import { route } from '@coherent/api/router';
+
+const routes = {
+  ...route.get({
+    path: '/status',
+    handler: () => ({ status: 'ok' })
+  }),
+
+  ...route.post({
+    path: '/data',
+    validation: dataSchema,
+    handler: (req, res) => ({ received: req.body })
+  }),
+
+  ...route.middleware({
+    handler: globalMiddleware
+  }),
+
+  ...route.group({
+    path: '/admin',
+    middleware: [authMiddleware],
+    routes: {
+      ...route.get({
+        path: '/dashboard',
+        handler: () => ({ dashboard: 'data' })
+      })
+    }
+  })
+};
+```
+
+## Comparison with Traditional Routing
+
+### Traditional Method Chaining
+
+```javascript
+const router = createApiRouter();
+router.get('/api/users', getUsersHandler);
+router.post('/api/users', validateUser, createUserHandler);
+router.get('/api/users/:id', getUserHandler);
+router.get('/api/users/:id/posts', getUserPostsHandler);
+```
+
+### Object-based Approach
+
+```javascript
+const routes = {
+  api: {
+    users: {
+      get: { handler: getUsersHandler },
+      post: { validation: userSchema, handler: createUserHandler },
+      ':id': {
+        get: { handler: getUserHandler },
+        posts: {
+          get: { handler: getUserPostsHandler }
+        }
+      }
+    }
+  }
+};
+
+const router = createRouter(routes);
+```
+
+Benefits of object-based routing:
+1. **Declarative**: Routes are defined as data structures
+2. **Hierarchical**: Natural nesting reflects URL structure
+3. **Consistent**: Matches Coherent.js component philosophy
+4. **Maintainable**: Easy to see entire API structure at a glance
+5. **Type-safe**: Can be easily typed with TypeScript
+
+## Gradual Migration to Object-Based Routing
+
+Existing applications can gradually migrate -- both approaches coexist:
+
+```javascript
+const router = createApiRouter();
+
+// Traditional routes
+router.get('/legacy', legacyHandler);
+
+// Object-based routes
+const newRoutes = {
+  api: {
+    v2: {
+      users: {
+        get: { handler: newUsersHandler }
+      }
+    }
+  }
+};
+
+transformRouteObject(newRoutes, router);
+```
+
 ## Example
 
 See `examples/object-router-demo.js` for a comprehensive example with all features.

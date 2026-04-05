@@ -1,6 +1,6 @@
 {
   "name": "@coherent.js/express",
-  "version": "1.0.0-beta.6",
+  "version": "1.0.0-beta.7",
   "description": "Express adapter for Coherent.js",
   "type": "module",
   "main": "dist/index.cjs",
@@ -35,6 +35,10 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Tomdrouv1/coherent.js.git"
+  },
+  "homepage": "https://github.com/Tomdrouv1/coherent.js",
+  "bugs": {
+    "url": "https://github.com/Tomdrouv1/coherent.js/issues"
   },
   "peerDependencies": {
     "express": ">=4.18.0 < 6.0.0",

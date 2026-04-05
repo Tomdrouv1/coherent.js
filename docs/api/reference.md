@@ -258,72 +258,32 @@ const ExpensiveComponent = memo(
 );
 ```
 
-### `compose(...components)`
-
-Composes multiple components into a single component.
-
-**Parameters:**
-- `...components` (Function[]): Components to compose
-
-**Returns:** Function - A composed component function
-
-**Example:**
-```javascript
-import { compose } from '@coherent.js/core';
-
-const Header = () => ({ header: { /* ... */ } });
-const Main = () => ({ main: { /* ... */ } });
-const Footer = () => ({ footer: { /* ... */ } });
-
-const Layout = compose(Header, Main, Footer);
-```
-
 ## Conditional Rendering
 
-### `when(condition, trueComponent, falseComponent?)`
-
-Renders one of two components based on a condition.
-
-**Parameters:**
-- `condition` (any): The condition to evaluate
-- `trueComponent` (CoherentNode): Component to render if condition is truthy
-- `falseComponent` (CoherentNode, optional): Component to render if condition is falsy
-
-**Returns:** CoherentNode - The appropriate component
+Use standard JavaScript ternary operators for conditional rendering:
 
 **Example:**
 ```javascript
-import { when } from '@coherent.js/core';
-
 const UserProfile = (context) => ({
   div: {
     children: [
-      when(context.user,
-        { p: { text: `Welcome, ${context.user.name}!` } },
-        { p: { text: 'Please log in' } }
-      )
+      context.user
+        ? { p: { text: `Welcome, ${context.user.name}!` } }
+        : { p: { text: 'Please log in' } }
     ]
   }
 });
 ```
 
-### `forEach(array, renderFunction)`
+## List Rendering
 
-Renders an array of items using a render function.
-
-**Parameters:**
-- `array` (Array): The array of items to render
-- `renderFunction` (Function): A function that returns a CoherentNode for each item
-
-**Returns:** Array - An array of rendered components
+Use standard JavaScript `Array.map()` to render lists:
 
 **Example:**
 ```javascript
-import { forEach } from '@coherent.js/core';
-
 const TodoList = (context) => ({
   ul: {
-    children: forEach(context.todos, (todo) => ({
+    children: context.todos.map((todo) => ({
       li: { 
         text: todo.text,
         className: todo.completed ? 'completed' : 'pending'
