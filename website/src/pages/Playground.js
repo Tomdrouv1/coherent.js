@@ -93,13 +93,13 @@ export function Playground() {
                                         {
                                             div: {
                                                 className: 'status-section', style: 'margin-bottom: 16px;', children: [
-                                                    {h3: {text: 'Status', style: 'margin-bottom: 8px;'}},
+                                                    {h3: {text: 'Output', style: 'margin-bottom: 8px;'}},
                                                     {
                                                         div: {
                                                             id: 'output',
                                                             className: 'output-status',
                                                             style: 'padding: 12px; border-radius: 6px; background: #f3f4f6; color: #374151; font-size: 14px;',
-                                                            text: 'Ready to run your component...'
+                                                            text: 'Press Ctrl+Enter or click Execute to render your component.'
                                                         }
                                                     }
                                                 ]

@@ -47,10 +47,20 @@ export function Home() {
             { a: { className: 'button secondary', href: 'docs', text: 'Documentation' } },
             { a: { className: 'button', href: 'examples', text: 'Examples' } }
           ] } },
-          // Scroll indicator
-          { div: { className: 'scroll-hint', 'aria-hidden': 'true', children: [
-            { span: { className: 'scroll-hint-line' } }
-          ] } }
+          // Inline code preview
+          { div: { className: 'hero-code-preview', children: [
+            { pre: { className: 'hero-code', children: [
+              { code: { text: `const App = () => ({
+  div: {
+    className: 'app',
+    children: [
+      { h1: { text: 'Hello World' } },
+      { p: { text: 'Pure objects. Zero JSX.' } }
+    ]
+  }
+});` } }
+            ] } }
+          ] } },
         ] } },
 
         // Install

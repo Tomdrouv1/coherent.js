@@ -5,8 +5,6 @@ const navLinks = [
   { href: 'starter-app', label: 'Starter App', match: (p) => p.startsWith('starter-app') },
   { href: 'examples', label: 'Examples', match: (p) => p.startsWith('examples') },
   { href: 'playground', label: 'Playground', match: (p) => p.startsWith('playground') },
-  { href: 'performance', label: 'Performance', match: (p) => p.startsWith('performance') },
-  { href: 'coverage', label: 'Coverage', match: (p) => p.startsWith('coverage') },
   { href: 'changelog', label: 'Changelog', match: (p) => p.startsWith('changelog') },
 ];
 
@@ -237,33 +235,6 @@ export function Layout({
                               div: {
                                 id: 'coherent-toc-placeholder',
                                 text: '[[[COHERENT_TOC_PLACEHOLDER]]]',
-                              },
-                            },
-                          ],
-                        },
-                      });
-                    } else if (isDocs && currentPath === 'docs') {
-                      // Show helpful message for docs index page
-                      nodes.push({
-                        aside: {
-                          className: 'toc toc-empty',
-                          children: [
-                            {
-                              div: {
-                                className: 'toc-placeholder-message',
-                                children: [
-                                  {
-                                    div: {
-                                      className: 'toc-icon',
-                                      text: '📖'
-                                    }
-                                  },
-                                  {
-                                    p: {
-                                      text: 'Table of contents will appear here when you navigate to a specific documentation page.'
-                                    }
-                                  }
-                                ]
                               },
                             },
                           ],
