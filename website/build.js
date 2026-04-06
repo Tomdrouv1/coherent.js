@@ -142,7 +142,8 @@ function buildSidebar(docs) {
   const groups = {};
   for (const d of docs) {
     const parts = d.rel.replace(/\\/g, '/').split('/');
-    const section = parts.length > 1 ? parts[0] : 'General';
+    const section = parts.length > 1 ? parts[0] : null;
+    if (!section) continue; // Skip root-level markdown files (README, etc.)
     if (!groups[section]) groups[section] = [];
     const slug = d.rel.replace(/\.md$/i, '').replace(/\\/g, '/').split('/').map(slugify).join('/');
     const label = path.basename(d.rel, '.md').replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
