@@ -123,6 +123,21 @@ async function collectDocs(dir, base = '') {
   return docs;
 }
 
+// Logical section order for the docs sidebar (must match index.js)
+const SECTION_ORDER = [
+  'getting-started',
+  'components',
+  'client',
+  'server',
+  'api',
+  'database',
+  'deployment',
+  'packages',
+  'advanced',
+  'examples',
+  'migration',
+];
+
 function buildSidebar(docs) {
   const groups = {};
   for (const d of docs) {
@@ -133,9 +148,19 @@ function buildSidebar(docs) {
     const label = path.basename(d.rel, '.md').replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     groups[section].push({ href: `docs/${slug}`, label });
   }
-  return Object.entries(groups).map(([title, items]) => ({
-    title: title.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-    items
+
+  const sortedKeys = Object.keys(groups).sort((a, b) => {
+    const ia = SECTION_ORDER.indexOf(a);
+    const ib = SECTION_ORDER.indexOf(b);
+    if (ia === -1 && ib === -1) return a.localeCompare(b);
+    if (ia === -1) return 1;
+    if (ib === -1) return 1;
+    return ia - ib;
+  });
+
+  return sortedKeys.map(key => ({
+    title: key.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+    items: groups[key]
   }));
 }
 

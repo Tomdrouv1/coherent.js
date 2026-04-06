@@ -281,6 +281,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   // Dynamic docs routes — reads markdown from docs/ and renders with Layout
   app.get('/docs/{*slug}', (req, res) => {
     const slug = Array.isArray(req.params.slug) ? req.params.slug.join('/') : req.params.slug;
+    if (!slug) { res.redirect('/docs'); return; }
     const docsDir = join(repoRoot, 'docs');
 
     // Try exact match, then with .md extension, then as index
