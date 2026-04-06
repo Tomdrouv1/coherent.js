@@ -19,7 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
                    ├─ Enhanced router and forms
                    └─ Improved documentation
 
-📅 2026-04-04  →  v1.0.0-beta.7  (CURRENT)
+📅 2026-04-06  →  v1.0.0-beta.8  (CURRENT)
+                   ├─ Major website UI/UX overhaul
+                   ├─ Website restructured as Coherent.js project
+                   ├─ CI/CD and build fixes
+                   └─ Dependency updates
+
+📅 2026-04-04  →  v1.0.0-beta.7
                    ├─ Islands Architecture & Selective Hydration
                    ├─ Enhanced FP Support (compose, hoc, fp)
                    ├─ Hot Module Replacement (HMR) & IDE Support
@@ -47,6 +53,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ```
 
 ## [Unreleased]
+
+## [1.0.0-beta.8] - 2026-04-06
+
+### Added
+- **Website UI/UX Overhaul**: Major visual polish across all pages with search, animations, and examples improvements.
+- **Website Dynamic Docs**: Added dynamic docs route and sidebar navigation for the dev server.
+- **Website Island Hydration**: Integrated `Island()` hydration, performance monitoring, and perf API into the website.
+- **Website Coherent.js Dogfooding**: Restructured website as a proper Coherent.js project using framework features throughout.
+
+### Improved
+- **Website Layout**: Consistent full-width layout, page structure, and background styling across all pages.
+- **Website Hero Section**: Improved hero orb animation, full-width hero, cleaner CTA buttons, and code block styling.
+- **Website Navigation**: Active nav state, footer alignment, and docs sidebar on index page.
+- **Code Highlighting**: Enhanced hero code highlighting and cleanup.
+- **Build System**: Unified website build script with component composition.
+
+### Fixed
+- **CJS Build**: Hardcoded VERSION to avoid `import.meta.url` warning in CJS builds.
+- **WebSocket**: Guarded `WebSocket.OPEN` reference for Node.js environments.
+- **Test Coverage**: Pinned `@vitest/coverage-v8` to match vitest version.
+- **CI/CD**: Fixed release-drafter PR trigger, resolved shellcheck warnings, and cleaned up GitHub Actions workflows.
+- **VS Code Extension**: Renamed vsce publish script to avoid beta conflicts.
+
+### Dependencies
+- Bumped `esbuild` from 0.27.2 to 0.27.3.
+- Bumped `next` from 16.1.4 to 16.1.7.
+- Bumped `codecov/codecov-action` from 5 to 6.
+- Bumped `actions/upload-artifact` from 5 to 7.
+- Bumped `actions/deploy-pages` from 4 to 5.
+- Bumped `pnpm/action-setup` from 4 to 5.
+- Bumped `release-drafter/release-drafter` from 6 to 7.
+- Bumped `dawidd6/action-download-artifact` from 6 to 20.
+- Cleaned up root dependencies and fixed peer ranges.
 
 ## [1.0.0-beta.7] - 2026-04-04
 

@@ -13,12 +13,46 @@ export function Changelog() {
         // Timeline
         { section: { className: 'changelog-timeline', children: [
 
+          // v1.0.0-beta.8
+          { article: { className: 'changelog-entry', children: [
+            { div: { className: 'changelog-entry-header', children: [
+              { span: { className: 'changelog-version', text: 'v1.0.0-beta.8' } },
+              { span: { className: 'changelog-date', text: '2026-04-06' } },
+              { span: { className: 'changelog-badge changelog-badge-current', text: 'Current' } }
+            ] } },
+            { div: { className: 'changelog-changes', children: [
+              { h3: { text: 'Added' } },
+              { ul: { children: [
+                { li: { text: 'Major website UI/UX overhaul with search, animations, and examples improvements' } },
+                { li: { text: 'Dynamic docs route and sidebar navigation for the dev server' } },
+                { li: { text: 'Island() hydration, performance monitoring, and perf API in the website' } },
+                { li: { text: 'Website restructured as a proper Coherent.js project using framework features' } }
+              ] } },
+              { h3: { text: 'Improved' } },
+              { ul: { children: [
+                { li: { text: 'Consistent full-width layout, page structure, and background styling' } },
+                { li: { text: 'Hero section: improved orb animation, cleaner CTA buttons, code highlighting' } },
+                { li: { text: 'Unified website build script with component composition' } }
+              ] } },
+              { h3: { text: 'Fixed' } },
+              { ul: { children: [
+                { li: { text: 'CJS build: hardcoded VERSION to avoid import.meta.url warning' } },
+                { li: { text: 'WebSocket.OPEN reference guarded for Node.js environments' } },
+                { li: { text: 'CI/CD: release-drafter, shellcheck warnings, and GitHub Actions cleanup' } },
+                { li: { text: 'Pinned @vitest/coverage-v8 to match vitest version' } }
+              ] } },
+              { h3: { text: 'Dependencies' } },
+              { ul: { children: [
+                { li: { text: 'Bumped esbuild, next, codecov, upload-artifact, deploy-pages, pnpm/action-setup, release-drafter, and more' } }
+              ] } }
+            ] } }
+          ] } },
+
           // v1.0.0-beta.7
           { article: { className: 'changelog-entry', children: [
             { div: { className: 'changelog-entry-header', children: [
               { span: { className: 'changelog-version', text: 'v1.0.0-beta.7' } },
-              { span: { className: 'changelog-date', text: '2026-04-04' } },
-              { span: { className: 'changelog-badge changelog-badge-current', text: 'Current' } }
+              { span: { className: 'changelog-date', text: '2026-04-04' } }
             ] } },
             { div: { className: 'changelog-changes', children: [
               { h3: { text: 'Added' } },

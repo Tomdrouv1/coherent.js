@@ -93,22 +93,18 @@ export function Layout({
                       },
                     },
                     {
-                      button: {
-                        className: 'menu-button',
-                        'aria-label': 'Toggle menu',
-                        text: '☰',
-                        onclick: 'document.body.classList.toggle("menu-open");',
-                      },
-                    },
-                    {
                       nav: {
                         className: 'top-nav',
                         children: navLinks.map(({ href, label, match }) => {
                           const isActive = match(currentPath);
+                          const classes = [
+                            isActive ? 'active' : '',
+                            href === 'playground' ? 'desktop-only' : '',
+                          ].filter(Boolean).join(' ');
                           return {
                             a: {
                               href: href === '' ? baseHref : href,
-                              className: isActive ? 'active' : '',
+                              className: classes,
                               ...(isActive ? { 'aria-current': 'page' } : {}),
                               text: label,
                             },
@@ -181,6 +177,14 @@ export function Layout({
                             },
                           },
                         ],
+                      },
+                    },
+                    {
+                      button: {
+                        className: 'menu-button',
+                        'aria-label': 'Toggle menu',
+                        text: '☰',
+                        onclick: 'document.body.classList.toggle("nav-open");',
                       },
                     },
                   ],
@@ -285,7 +289,7 @@ export function Layout({
                               children: [
                                 { h4: { text: 'Tools' } },
                                 { ul: { children: [
-                                  { li: { children: [{ a: { href: 'playground', text: 'Playground' } }] } },
+                                  { li: { className: 'desktop-only', children: [{ a: { href: 'playground', text: 'Playground' } }] } },
                                   { li: { children: [{ a: { href: 'performance', text: 'Performance' } }] } },
                                   { li: { children: [{ a: { href: 'coverage', text: 'Coverage' } }] } },
                                 ] } }
