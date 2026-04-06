@@ -50,7 +50,7 @@ export function Home({ highlightCode } = {}) {
           { h1: { className: 'title', text: 'Coherent.js' } },
           { p: { className: 'lead', text: 'Fast SSR and hydration with plain JS objects. Minimal API. Maximum clarity.' } },
           { div: { className: 'badges', children: [
-            { img: { src: 'https://img.shields.io/badge/version-1.0.0--beta.7-blue', alt: 'version', className: 'badge' } }
+            { img: { src: 'https://img.shields.io/badge/version-1.0.0--beta.8-blue', alt: 'version', className: 'badge' } }
           ] } },
           { div: { className: 'cta', children: [
             { a: { className: 'button primary', href: 'starter-app', text: 'Get Started' } },
