@@ -2,7 +2,7 @@
   "name": "coherent-language-support",
   "displayName": "Coherent.js Language Support",
   "description": "IntelliSense, validation, and snippets for Coherent.js",
-  "version": "1.0.0-beta.7",
+  "version": "1.0.0-beta.8",
   "publisher": "coherentjs",
   "repository": {
     "type": "git",

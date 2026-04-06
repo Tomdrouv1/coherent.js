@@ -2,7 +2,7 @@
  * Coherent.js - Object-Based Rendering Framework
  * A pure JavaScript framework for server-side rendering using natural object syntax
  *
- * @version 1.0.0-beta.7
+ * @version 1.0.0-beta.8
  * @author Coherent Framework Team
  * @license MIT
  */
@@ -426,7 +426,7 @@ export function deepClone(obj) {
 }
 
 // Version info — hardcoded to avoid import.meta.url issues in CJS builds
-export const VERSION = '1.0.0-beta.7';
+export const VERSION = '1.0.0-beta.8';
 
 // Performance monitoring export
 export { performanceMonitor };
