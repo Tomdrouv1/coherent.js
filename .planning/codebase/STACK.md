@@ -17,7 +17,7 @@
 - Node.js 20.0.0+ (minimum required in all package.json files)
 
 **Package Manager:**
-- pnpm 10.28.1 (as specified in root package.json)
+- pnpm 10.33.0 (as specified in root package.json)
 - Lockfile: `pnpm-lock.yaml` (present)
 
 ## Frameworks

@@ -34,12 +34,12 @@
   "author": "Coherent.js Team",
   "license": "MIT",
   "devDependencies": {
-    "vitest": "^4.0.8"
+    "vitest": "^4.1.2"
   },
   "peerDependencies": {
+    "rollup": "^4.53.2",
     "vite": "^7.2.2",
-    "webpack": "^5.102.1",
-    "rollup": "^4.53.2"
+    "webpack": "^5.102.1"
   },
   "peerDependenciesMeta": {
     "vite": {

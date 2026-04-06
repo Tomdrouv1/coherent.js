@@ -36,7 +36,7 @@
     "@coherent.js/core": "workspace:*"
   },
   "devDependencies": {
-    "vitest": "^4.0.8"
+    "vitest": "^4.1.2"
   },
   "repository": {
     "type": "git",

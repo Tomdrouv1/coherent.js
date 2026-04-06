@@ -49,11 +49,11 @@
     "@coherent.js/web-components": "workspace:*"
   },
   "devDependencies": {
-    "esbuild": "^0.27.3",
-    "vitest": "^4.0.8",
-    "@playwright/test": "^1.58.0",
-    "jsdom": "^27.4.0",
-    "vite": "^7.3.1"
+    "esbuild": "0.28.0",
+    "vitest": "4.1.2",
+    "@playwright/test": "1.59.1",
+    "jsdom": "29.0.1",
+    "vite": "8.0.5"
   },
   "keywords": [
     "coherentjs",
@@ -82,7 +82,7 @@
     "url": "https://github.com/Tomdrouv1/coherent.js/issues"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.0.0"
   },
   "browserslist": [
     "defaults",
