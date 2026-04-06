@@ -41,6 +41,8 @@ coverage/
 .claude/get-shit-done/
 .claude/hooks/
 .claude/settings.local.json
+.claude/package.json
+.claude/gsd-file-manifest.json
 .junie/
 
 # OS generated files
