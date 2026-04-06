@@ -108,7 +108,7 @@ export function renderFullPage({ currentPath, componentName, props = {}, title =
 }
 
 export const pageRoutes = [
-  { path: '/', component: 'Home', title: 'Coherent.js - Modern Object-Based UI Framework', scripts: ['/coherent-hydrate.js', '/counter-demo.js'] },
+  { path: '/', component: 'Home', title: 'Coherent.js - Modern Object-Based UI Framework', props: { highlightCode }, scripts: ['/coherent-hydrate.js', '/counter-demo.js'] },
   { path: '/playground', component: 'Playground', title: 'Playground - Coherent.js', scripts: ['/codemirror-editor.js', '/playground.js'] },
   { path: '/performance', component: 'Performance', title: 'Performance - Coherent.js', scripts: ['/performance.js'] },
   { path: '/coverage', component: 'Coverage', title: 'Coverage - Coherent.js' },

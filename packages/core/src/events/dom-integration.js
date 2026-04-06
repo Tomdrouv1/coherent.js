@@ -64,7 +64,6 @@ export class DOMEventIntegration {
 
     /**
      * Set up delegated DOM event listeners
-     * @private
      */
     setupDOMEventListeners() {
         // Click events
@@ -109,7 +108,6 @@ export class DOMEventIntegration {
 
     /**
      * Create a delegated event handler
-     * @private
      */
     createDelegatedHandler(eventType, handler) {
         return (event) => {
@@ -132,7 +130,6 @@ export class DOMEventIntegration {
 
     /**
      * Handle click events
-     * @private
      */
     handleClick(element, event) {
         const action = element.getAttribute?.('data-action');
@@ -152,7 +149,6 @@ export class DOMEventIntegration {
 
     /**
      * Handle change events
-     * @private
      */
     handleChange(element, event) {
         const action = element.getAttribute?.('data-action');
@@ -173,7 +169,6 @@ export class DOMEventIntegration {
 
     /**
      * Handle input events
-     * @private
      */
     handleInput(element, event) {
         const action = element.getAttribute?.('data-action');
@@ -194,7 +189,6 @@ export class DOMEventIntegration {
 
     /**
      * Handle submit events
-     * @private
      */
     handleSubmit(element, event) {
         const action = element.getAttribute?.('data-action');
@@ -216,7 +210,6 @@ export class DOMEventIntegration {
 
     /**
      * Handle keydown events
-     * @private
      */
     handleKeydown(element, event) {
         const action = element.getAttribute?.('data-action');
@@ -244,7 +237,6 @@ export class DOMEventIntegration {
 
     /**
      * Handle focus events
-     * @private
      */
     handleFocus(element, event) {
         this.activeElement = element;
@@ -258,7 +250,6 @@ export class DOMEventIntegration {
 
     /**
      * Handle blur events
-     * @private
      */
     handleBlur(element, event) {
         if (this.activeElement === element) {
@@ -274,7 +265,6 @@ export class DOMEventIntegration {
 
     /**
      * Handle data-action attributes
-     * @private
      */
     handleDataAction(element, event, action) {
         if (!action) return;
@@ -304,7 +294,6 @@ export class DOMEventIntegration {
 
     /**
      * Parse data attributes from an element
-     * @private
      */
     parseDataAttributes(element) {
         if (!element?.attributes) return {};
@@ -345,7 +334,6 @@ export class DOMEventIntegration {
 
     /**
      * Extract form data from a form element
-     * @private
      */
     extractFormData(formElement) {
         if (!formElement || formElement.tagName !== 'FORM') {
@@ -373,7 +361,6 @@ export class DOMEventIntegration {
 
     /**
      * Check if a key event should trigger an action
-     * @private
      */
     shouldTriggerKeyAction(event) {
         // Common keys that should trigger actions
@@ -383,7 +370,6 @@ export class DOMEventIntegration {
 
     /**
      * Debounce utility function
-     * @private
      */
     debounce(func, wait) {
         let timeout;
@@ -399,7 +385,6 @@ export class DOMEventIntegration {
 
     /**
      * Throttle utility function
-     * @private
      */
     throttle(func, limit) {
         let inThrottle;

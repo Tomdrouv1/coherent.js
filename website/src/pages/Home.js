@@ -26,7 +26,17 @@ const CounterIsland = Island(function CounterComponent() {
   };
 });
 
-export function Home() {
+export function Home({ highlightCode } = {}) {
+  const codeSnippet = `const App = () => ({
+  div: {
+    className: 'app',
+    children: [
+      { h1: { text: 'Hello World' } },
+      { p: { text: 'Pure objects. Zero JSX.' } }
+    ]
+  }
+});`;
+
   return {
     section: {
       className: 'home',
@@ -48,19 +58,10 @@ export function Home() {
             { a: { className: 'button', href: 'examples', text: 'Examples' } }
           ] } },
           // Inline code preview
-          { div: { className: 'hero-code-preview', children: [
-            { pre: { className: 'hero-code', children: [
-              { code: { text: `const App = () => ({
-  div: {
-    className: 'app',
-    children: [
-      { h1: { text: 'Hello World' } },
-      { p: { text: 'Pure objects. Zero JSX.' } }
-    ]
-  }
-});` } }
-            ] } }
-          ] } },
+          { div: {
+            className: 'hero-code-preview',
+            html: highlightCode ? highlightCode(codeSnippet, 'javascript') : `<div class="hero-code"><pre><code>${codeSnippet.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre></div>`
+          } },
         ] } },
 
         // Install

@@ -9,14 +9,14 @@
 /**
  * Throttle helper
  */
-function throttle(func, delay) {
+export function throttle(func, delay) {
   let lastCall = 0;
   let timeoutId = null;
-  
+
   return function throttled(...args) {
     const now = Date.now();
     const timeSinceLastCall = now - lastCall;
-    
+
     if (timeSinceLastCall >= delay) {
       lastCall = now;
       return func.apply(this, args);
@@ -35,7 +35,7 @@ function throttle(func, delay) {
  */
 // function debounce(func, delay) {
 //   let timeoutId = null;
-//   
+//
 //   return function debounced(...args) {
 //     if (timeoutId) clearTimeout(timeoutId);
 //     timeoutId = setTimeout(() => {
@@ -55,7 +55,7 @@ export class EventBus {
     this.middleware = [];
     this.throttledEmitters = new Map();
     this.debouncedEmitters = new Map();
-    
+
     this.options = {
       debug: false,
       performance: true,
@@ -124,7 +124,7 @@ export class EventBus {
    */
   passesFilters(event) {
     const { allowList, blockList } = this.options.filters;
-    
+
     // Check block list first
     if (blockList && blockList.length > 0) {
       for (const pattern of blockList) {
@@ -134,7 +134,7 @@ export class EventBus {
         }
       }
     }
-    
+
     // Check allow list if it exists
     if (allowList && allowList.length > 0) {
       for (const pattern of allowList) {
@@ -145,7 +145,7 @@ export class EventBus {
       this.stats.filteredEvents++;
       return false;
     }
-    
+
     return true;
   }
 
@@ -156,14 +156,14 @@ export class EventBus {
     const sep = this.options.wildcardSeparator;
     const patternParts = pattern.split(sep);
     const eventParts = event.split(sep);
-    
+
     if (pattern.includes('*')) {
       if (patternParts.length !== eventParts.length) {
         return false;
       }
       return patternParts.every((part, i) => part === '*' || part === eventParts[i]);
     }
-    
+
     return pattern === event;
   }
 
@@ -243,14 +243,14 @@ export class EventBus {
   }
 
   /**
-   * Emit with throttling
+   * Emit throttled event
    */
   emitThrottled(event, data, delay) {
     if (!this.throttledEmitters.has(event)) {
       const throttled = throttle((evt, d) => this.emitImmediate(evt, d), delay);
       this.throttledEmitters.set(event, throttled);
     }
-    
+
     this.stats.throttledEvents++;
     return this.throttledEmitters.get(event)(event, data);
   }
@@ -260,7 +260,7 @@ export class EventBus {
    */
   addToBatch(event, data) {
     this.batchQueue.push({ event, data, timestamp: Date.now() });
-    
+
     if (this.batchQueue.length >= this.options.batching.maxBatchSize) {
       this.flushBatch();
     } else if (!this.batchTimer) {
@@ -271,16 +271,16 @@ export class EventBus {
   }
 
   /**
-   * Flush batch queue
+   * Flush batched events
    */
   async flushBatch() {
     if (this.batchTimer) {
       clearTimeout(this.batchTimer);
       this.batchTimer = null;
     }
-    
+
     const batch = this.batchQueue.splice(0);
-    
+
     for (const { event, data } of batch) {
       await this.emitImmediate(event, data);
     }
@@ -351,7 +351,7 @@ export class EventBus {
           console.warn(`[EventBus] Listener timeout for event: ${event}`);
         }
       }, options.timeout);
-      
+
       onceListener.__cleanup = () => clearTimeout(timeoutId);
     }
 
@@ -368,18 +368,18 @@ export class EventBus {
 
     const listeners = this.listeners.get(event);
     const index = listeners.findIndex(l => l.listenerId === listenerId);
-    
+
     if (index !== -1) {
       const listenerObj = listeners[index];
       if (listenerObj.listener.__cleanup) {
         listenerObj.listener.__cleanup();
       }
       listeners.splice(index, 1);
-      
+
       if (listeners.length === 0) {
         this.listeners.delete(event);
       }
-      
+
       return true;
     }
 
@@ -448,7 +448,7 @@ export class EventBus {
   }
 
   /**
-   * Run middleware chain
+   * Run middleware
    */
   async runMiddleware(event, data) {
     if (this.middleware.length === 0) return;
@@ -541,7 +541,7 @@ export class EventBus {
    */
   handleAction(action, element, event, data) {
     const handler = this.actionHandlers.get(action);
-    
+
     if (!handler) {
       if (this.options.debug) {
         console.warn(`[EventBus] No handler registered for action: ${action}`);
@@ -608,7 +608,7 @@ export class EventBus {
     this.middleware = [];
     this.throttledEmitters.clear();
     this.debouncedEmitters.clear();
-    
+
     if (this.batchTimer) {
       clearTimeout(this.batchTimer);
     }

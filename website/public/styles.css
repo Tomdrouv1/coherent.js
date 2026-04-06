@@ -77,19 +77,19 @@ footer {
   .playground-container {
     height: auto;
   }
-  
+
   .playground-grid {
     grid-template-columns: 1fr;
     gap: 16px;
     height: auto;
   }
-  
+
   /* Make mobile layout more compact */
   .playground-grid .editor-section textarea {
     min-height: 300px;
     height: 300px;
   }
-  
+
   /* Mobile tab panels should be flexible height */
   .tab-panel {
     position: relative;
@@ -365,7 +365,7 @@ footer {
   background: var(--gradient-primary);
   color: white;
   transform: translateY(-2px);
-  box-shadow: 
+  box-shadow:
     0 8px 25px rgba(102, 126, 234, 0.4),
     0 2px 10px rgba(102, 126, 234, 0.3);
 }
@@ -516,7 +516,7 @@ h1, h2, h3, h4 {
 }
 
 .logo-link:hover .logo-svg {
-  filter: 
+  filter:
     drop-shadow(0 6px 20px rgba(120, 196, 255, 0.4))
     drop-shadow(0 0 30px rgba(199, 125, 255, 0.2));
   transform: scale(1.02);
@@ -1125,21 +1125,22 @@ pre.code-block {
 }
 
 .hero-code-preview {
-  margin-top: 40px;
+  margin-top: 48px;
   animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
-  max-width: 420px;
+  max-width: 600px;
   width: 100%;
 }
 
+.hero-code-preview .shiki,
 .hero-code {
   background: rgba(14, 18, 26, 0.85) !important;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
-  padding: 20px 24px;
+  padding: 32px 40px;
   margin: 0;
   text-align: left;
   font-family: var(--font-mono);
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   line-height: 1.6;
   color: var(--text);
   backdrop-filter: var(--blur);
@@ -1147,6 +1148,12 @@ pre.code-block {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
+.hero-code-preview .shiki {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+[data-theme="light"] .hero-code-preview .shiki,
 [data-theme="light"] .hero-code {
   background: rgba(241, 244, 248, 0.9) !important;
   border-color: rgba(0, 0, 0, 0.1);
@@ -1404,11 +1411,12 @@ pre.code-block {
   display: block;
 }
 
+.examples-grid .example-code .shiki,
 .examples-grid .example-code code {
   display: block;
   white-space: pre;
   overflow: auto;
-  background: var(--glass-bg);
+  background: var(--glass-bg) !important;
   border: 1px solid var(--glass-border);
   padding: 20px;
   border-radius: 12px;
@@ -1417,6 +1425,10 @@ pre.code-block {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.875rem;
   line-height: 1.5;
+}
+
+.examples-grid .example-code .shiki {
+  margin: 0;
 }
 
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
@@ -2422,9 +2434,6 @@ pre.code-block {
   .metrics-grid { grid-template-columns: 1fr; }
   .tips-grid { grid-template-columns: 1fr; }
 }
-  position: relative;
-}
-
 
 .coverage-badges {
   text-align: center;
@@ -3165,33 +3174,33 @@ pre.code-block {
   .docs-hero-title {
     font-size: 2rem;
   }
-  
+
   .docs-hero-description {
     font-size: 1.1rem;
   }
-  
+
   .docs-cards {
     grid-template-columns: 1fr;
     gap: 16px;
   }
-  
+
   .docs-card {
     padding: 20px;
     min-height: 140px;
   }
-  
+
   .docs-section h2 {
     font-size: 1.5rem;
   }
-  
+
   .header-tools .search {
     width: 180px;
   }
-  
+
   .header-tools .search:focus {
     width: 220px;
   }
-  
+
   .search-results {
     left: -50px;
     right: -50px;
@@ -3204,13 +3213,13 @@ pre.code-block {
     grid-template-columns: 260px 1fr 220px;
     gap: 24px;
   }
-  
+
   .container.docs .sidebar {
     width: 260px !important;
     min-width: 260px !important;
     max-width: 260px !important;
   }
-  
+
   .container.docs .toc {
     width: 220px !important;
     min-width: 220px !important;
@@ -3223,12 +3232,12 @@ pre.code-block {
     grid-template-columns: 240px 1fr;
     gap: 20px;
   }
-  
+
   /* Hide TOC on medium screens to prevent overflow */
   .container.docs .toc {
     display: none;
   }
-  
+
   .container.docs .sidebar {
     width: 240px !important;
     min-width: 240px !important;
@@ -3246,7 +3255,7 @@ pre.code-block {
     grid-template-columns: 1fr;
     gap: 16px;
   }
-  
+
   /* Stack layout on mobile */
   .container.docs .sidebar {
     width: 100% !important;
@@ -3267,20 +3276,20 @@ pre.code-block {
   .docs-page {
     padding: 12px;
   }
-  
+
   .docs-hero {
     padding: 40px 20px 30px;
     margin-bottom: 30px;
   }
-  
+
   .docs-hero-title {
     font-size: 1.75rem;
   }
-  
+
   .docs-content {
     padding: 20px;
   }
-  
+
   .header-tools .search {
     display: none;
   }
