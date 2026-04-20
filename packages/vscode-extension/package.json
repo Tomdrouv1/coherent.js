@@ -69,8 +69,8 @@
     "vscode-languageclient": "^9.0.1"
   },
   "devDependencies": {
-    "@types/vscode": "^1.115.0",
-    "@vscode/vsce": "^3.7.1",
+    "@types/vscode": "^1.116.0",
+    "@vscode/vsce": "^3.9.1",
     "esbuild": "^0.28.0",
     "sharp": "0.34.5",
     "typescript": "^5.9.3"
