@@ -54,6 +54,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- **BREAKING (client):** Removed `legacyHydrate`, `hydrateAll`, `hydrateBySelector`, `enableClientEvents`, `makeHydratable`, `autoHydrate`, `registerEventHandler` from `@coherent.js/client` public exports. Use `hydrate()` instead. See [migration guide](https://coherentjs.dev/docs/migration/1.0#removed-legacy-hydration).
+- **BREAKING (client):** `@coherent.js/client/src/hmr.js` direct imports now throw a migration error at module load. Import `{ hmrClient }` from `@coherent.js/client` instead.
+- **BREAKING (forms):** Removed `createForm`, `formValidators`, `enhancedForm`, and the `advanced-validation` wildcard re-export from `@coherent.js/forms`. Use `createFormBuilder` + `hydrateForm` instead.
+- **BREAKING (forms):** Removed `./forms` and `./advanced-validation` subpath exports from `@coherent.js/forms` package.json (the underlying source files are gone).
+
+### Changed
+
+- **forms:** `createFormBuilder({ fields: [...] })` now actually registers the passed fields (previously silently ignored). Behavior is a strict superset — callers who relied on the prior no-op behavior do not exist.
+- **docs (readme):** Removed "42.7% improvement over OOP" and "95%+ cache hit rate" claims. The OOP comparison required an unmaintained benchmark fixture; the cache hit rate is workload-dependent and was misleading as a framework property.
+
+### Known follow-ups (deferred to Wave 5 migration guide)
+
+- `packages/forms/README.md` still documents `createForm` as the primary API (8+ references). Update with the migration guide.
+- `packages/forms/types/hmr.d.ts` advertises a callable API that now throws at runtime. Wave 3 (API surface lockdown) will reconcile types with runtime.
+- `examples/forms-complete-example.js` and `scripts/add-exports-sections.js` reference removed APIs. Pre-existing brokenness; fold into Wave 5 doc cleanup.
+
 ## [1.0.0-beta.8] - 2026-04-06
 
 ### Added
