@@ -189,6 +189,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Render throughput gating deferred to Wave 3c. CI variance on shared GitHub Actions runners makes throughput gating noisy and false-fail-prone; tightening would require self-hosted runners. Worth re-evaluating after some operational experience with the bundle-size gate.
 - Skipped packages (integrations, tooling, vscode-extension) get re-evaluated whenever their root export shape changes — the `--write` baseline regeneration handles the transition automatically and the diff is reviewable.
 
+### Added (Wave 4a)
+
+- **NEW: Built-in HMR dev server.** `coherent dev --coherent` (or any project with `coherent.config.{js,mjs}`) now spins up a full HTTP + WebSocket + chokidar dev environment in-process — no vite/webpack/nodemon required. Broadcasts `{type:'hmr-update', filePath, webPath, updateType}` messages to the existing client at `packages/client/src/hmr/client.js`. ~400 lines split across four modules in `packages/cli/src/dev-server/`:
+  - `hmr-server.js` — `ws` WebSocketServer wrapper with `broadcast/close/clientCount`
+  - `file-watcher.js` — chokidar wrapper with debounce + `{filePath, webPath, updateType}` projection (POSIX webPath on all platforms)
+  - `static-handler.js` — zero-dep static file server with idempotent HMR script injection on HTML, safe path-traversal rejection, inline `/__coherent_hmr_client.js` bootstrap
+  - `index.js` — `startDevServer({root, port, host, open, log})` orchestrator
+- **`ws@8.20.0` and `chokidar@5.0.0` promoted** from root devDeps to direct `@coherent.js/cli` dependencies. Both are marked `external` in `packages/cli/build.mjs` so they don't inflate the cli's bundle-size baseline.
+- **ESLint test-files globals** gained `fetch` and `AbortSignal` (Node ≥ 20 natives) to support the dev-server integration tests.
+
+### Changed (Wave 4a)
+
+- **`coherent dev` error message** now suggests `--coherent` as a next step when no other dev-server configuration is detected.
+- **`@coherent.js/cli` bundle**: dev.js now imports the dev-server orchestrator, growing `dist/index.js` by ~2.5% raw / ~3.2% gz. Well within the ±5% gate; baseline did not need to be regenerated.
+
+### Notes (Wave 4a)
+
+- Wave 4a is **opt-in**. Existing projects with vite/webpack/nodemon or a `dev` script in `package.json` get the same behavior as before. Making the built-in server the default for scaffolded apps requires template updates and is intentionally deferred to Wave 4b.
+- **Out of scope for Wave 4a, deferred to Wave 4b:** Playwright E2E suite covering the six audit-item flows from spec Section 5 (hydration golden path, event survival, mismatch detection, HMR component update, form input preservation across HMR, scroll preservation across HMR), template updates to make `--coherent` the default for scaffolded apps, VS Code marketplace publish.
+- **Out of scope, deferred to Wave 5 or post-1.0:** HTTPS/TLS for the dev server (use a reverse proxy; the client picks `wss://` automatically based on `location.protocol`), on-the-fly JSX/TS compilation (use vite/webpack via existing dev paths), full SSR routing (use the integrations package), module dependency graph (the client's `moduleTracker` already handles graph traversal).
+- **Compile-error overlay path** currently only fires on chokidar `error` events (watcher errors, not module-load errors). Wiring the static handler to broadcast `hmr-error` when it can't serve a `.js` file is a small follow-up — left out of Wave 4a to keep the protocol surface minimal while we get operational experience.
+- **`--no-hmr` flag** is parsed but not yet honored by the built-in server (always enabled). Trivial follow-up: when set, skip both the WebSocket server and the HTML script injection. Deferred.
+
 ## [1.0.0-beta.8] - 2026-04-06
 
 ### Added
