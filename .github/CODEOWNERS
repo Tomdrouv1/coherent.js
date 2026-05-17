@@ -28,14 +28,10 @@ packages/vscode-extension/ @Tomdrouv1
 packages/i18n/ @Tomdrouv1
 packages/forms/ @Tomdrouv1
 packages/seo/ @Tomdrouv1
-packages/performance/ @Tomdrouv1
 packages/state/ @Tomdrouv1
 
 # Backend & Database
 packages/database/ @Tomdrouv1
-
-# Build tools
-packages/profiler/ @Tomdrouv1
 
 # Website & Documentation
 website/ @Tomdrouv1

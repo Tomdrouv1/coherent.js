@@ -26,7 +26,11 @@ Tree-shakable developer tools for debugging and performance monitoring
 ### Modular Imports (Tree-Shakable)
 
 - Component visualizer: `@coherent.js/devtools/visualizer`
-- Performance dashboard: `@coherent.js/devtools/performance`
+- Performance aggregator (dashboard + optimization utilities): `@coherent.js/devtools/performance`
+- Performance dashboard only: `@coherent.js/devtools/performance/dashboard`
+- Cache (LRU/Memory/Render/memoize): `@coherent.js/devtools/performance/cache`
+- Code-splitting (lazy components, route splitter): `@coherent.js/devtools/performance/code-splitting`
+- Lazy-loading (images, IntersectionObserver, preloader): `@coherent.js/devtools/performance/lazy-loading`
 - Enhanced errors: `@coherent.js/devtools/errors`
 - Hybrid integration: `@coherent.js/devtools/hybrid`
 - Inspector: `@coherent.js/devtools/inspector`
@@ -38,6 +42,7 @@ Tree-shakable developer tools for debugging and performance monitoring
 ```javascript
 import { logComponentTree } from '@coherent.js/devtools/visualizer';
 import { createPerformanceDashboard } from '@coherent.js/devtools/performance';
+import { LRUCache, memoize } from '@coherent.js/devtools/performance/cache';
 ```
 
 > **Note**: All exports are tree-shakable. Import only what you need for optimal bundle size.

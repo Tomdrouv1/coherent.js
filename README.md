@@ -144,7 +144,7 @@ import * as coherent from '@coherent.js/core';
 | API routing & middleware | `@coherent.js/api` |
 | Internationalization | `@coherent.js/i18n` |
 | Testing utilities | `@coherent.js/testing` |
-| Performance profiling | `@coherent.js/performance` |
+| Performance profiling & optimization | `@coherent.js/devtools/performance` |
 
 > All packages are ESM-only and require Node.js 20+. Install with `pnpm add @coherent.js/<name>`.
 

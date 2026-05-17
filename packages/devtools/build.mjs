@@ -4,7 +4,12 @@ const entries = [
   'src/index.js',
   'src/inspector.js',
   'src/profiler.js',
-  'src/logger.js'
+  'src/logger.js',
+  'src/performance-dashboard.js',
+  'src/performance/index.js',
+  'src/performance/cache.js',
+  'src/performance/code-splitting.js',
+  'src/performance/lazy-loading.js'
 ];
 
 for (const entry of entries) {
