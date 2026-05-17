@@ -85,7 +85,7 @@ When you create a project, the CLI will guide you through:
    - `@coherent.js/forms` - Form handling
    - `@coherent.js/devtools` - Development tools
    - `@coherent.js/seo` - SEO utilities
-   - `@coherent.js/testing` - Testing helpers
+   - `@coherent.js/tooling/testing` - Testing helpers (subpath of `@coherent.js/tooling`)
 
 4. **Authentication Scaffolding** (when database or API selected):
    - JWT Authentication (token-based)

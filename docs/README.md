@@ -57,7 +57,7 @@ Welcome to the official documentation for Coherent.js, a high-performance server
 
 ### 🛠️ Editor Support
 - [VS Code Extension](vscode-extension/README.md) - IntelliSense and snippets for VS Code
-- [Language Server](language-server/README.md) - LSP server for any editor
+- LSP server for any editor — ships with `@coherent.js/tooling` (binary: `coherent-language-server`)
 
 ### 🔧 Advanced
 - [Utilities](advanced/utilities.md) - Shared rendering utilities
@@ -107,12 +107,12 @@ Coherent.js is a monorepo with multiple packages:
 - `@coherent.js/forms` - [Form utilities](forms/guide.md)
 - `@coherent.js/i18n` - Internationalization
 - `@coherent.js/seo` - SEO tools
-- `@coherent.js/testing` - [Testing utilities](testing/guide.md)
+- `@coherent.js/tooling` - [Testing utilities](testing/guide.md) (`/testing` subpath) and Language Server (`coherent-language-server` binary)
 - `@coherent.js/state` - Reactive state management
 - `@coherent.js/devtools` - Developer tools, performance profiling, and optimization utilities (cache, code-splitting, lazy-loading via `/performance` subpath)
 
 ### Editor Tooling
-- `@coherent.js/language-server` - [LSP server](language-server/README.md)
+- `@coherent.js/tooling` - LSP server (binary: `coherent-language-server`) and testing utilities (`/testing` subpath)
 - `coherent-language-support` - [VS Code extension](vscode-extension/README.md)
 
 ## 🆘 Getting Help

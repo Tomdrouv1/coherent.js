@@ -1,0 +1,93 @@
+{
+  "name": "@coherent.js/tooling",
+  "version": "1.0.0-beta.8",
+  "description": "Coherent.js dev-time tooling: testing utilities (Vitest matchers, render harness) and Language Server Protocol implementation.",
+  "type": "module",
+  "main": "./dist/testing/index.js",
+  "exports": {
+    "./testing": {
+      "development": "./src/testing/index.js",
+      "import": "./dist/testing/index.js",
+      "require": "./dist/testing/index.cjs"
+    },
+    "./testing/renderer": {
+      "development": "./src/testing/test-renderer.js",
+      "import": "./dist/testing/test-renderer.js",
+      "require": "./dist/testing/test-renderer.cjs"
+    },
+    "./testing/utils": {
+      "development": "./src/testing/test-utils.js",
+      "import": "./dist/testing/test-utils.js",
+      "require": "./dist/testing/test-utils.cjs"
+    },
+    "./testing/matchers": {
+      "development": "./src/testing/matchers.js",
+      "import": "./dist/testing/matchers.js",
+      "require": "./dist/testing/matchers.cjs"
+    },
+    "./lsp": {
+      "import": "./dist/lsp/server.js"
+    }
+  },
+  "bin": {
+    "coherent-language-server": "./dist/lsp/server.js"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "node build.mjs",
+    "clean": "rm -rf dist",
+    "dev": "tsc -w",
+    "start": "node dist/lsp/server.js --stdio",
+    "extract-attributes": "tsx scripts/extract-attributes.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "keywords": [
+    "coherent",
+    "testing",
+    "test-utils",
+    "component-testing",
+    "language-server",
+    "lsp",
+    "vscode",
+    "ide",
+    "autocomplete",
+    "validation"
+  ],
+  "author": "Coherent.js Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tomdrouv1/coherent.js.git",
+    "directory": "packages/tooling"
+  },
+  "homepage": "https://github.com/Tomdrouv1/coherent.js",
+  "bugs": {
+    "url": "https://github.com/Tomdrouv1/coherent.js/issues"
+  },
+  "peerDependencies": {
+    "@coherent.js/core": "workspace:*"
+  },
+  "dependencies": {
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.12"
+  },
+  "devDependencies": {
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^1.6.1"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "sideEffects": false
+}

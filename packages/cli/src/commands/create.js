@@ -197,7 +197,7 @@ export const createCommand = new Command('create')
             { title: '@coherent.js/forms', value: 'forms', description: 'Form handling utilities' },
             { title: '@coherent.js/devtools', value: 'devtools', description: 'Development tools & debugging' },
             { title: '@coherent.js/seo', value: 'seo', description: 'SEO optimization utilities' },
-            { title: '@coherent.js/testing', value: 'testing', description: 'Testing utilities & helpers' }
+            { title: '@coherent.js/tooling (testing)', value: 'testing', description: 'Testing utilities & helpers (subpath of tooling)' }
           ]
         });
 

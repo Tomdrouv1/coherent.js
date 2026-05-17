@@ -21,7 +21,7 @@ Useful root files:
 Primary packages (examples, not exhaustive):
 - `@coherent.js/core` – Core runtime and rendering
 - `@coherent.js/client` – Client-side hydration utilities
-- `@coherent.js/testing` – Testing helpers for components
+- `@coherent.js/tooling/testing` – Testing helpers for components (subpath of `@coherent.js/tooling`)
 - Integration packages (Express/Fastify/Koa/Next, etc.) may be present
 
 ## Environment & Tooling Requirements

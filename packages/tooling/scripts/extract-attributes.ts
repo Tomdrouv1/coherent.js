@@ -16,7 +16,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ELEMENTS_PATH = path.resolve(__dirname, '../../core/types/elements.d.ts');
-const OUTPUT_PATH = path.resolve(__dirname, '../src/data/element-attributes.generated.json');
+const OUTPUT_PATH = path.resolve(__dirname, '../src/lsp/data/element-attributes.generated.json');
 
 interface AttributeInfo {
   name: string;

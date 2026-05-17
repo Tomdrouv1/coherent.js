@@ -143,7 +143,7 @@ import * as coherent from '@coherent.js/core';
 | Database ORM | `@coherent.js/database` |
 | API routing & middleware | `@coherent.js/api` |
 | Internationalization | `@coherent.js/i18n` |
-| Testing utilities | `@coherent.js/testing` |
+| Testing utilities | `@coherent.js/tooling/testing` |
 | Performance profiling & optimization | `@coherent.js/devtools/performance` |
 
 > All packages are ESM-only and require Node.js 20+. Install with `pnpm add @coherent.js/<name>`.
@@ -196,7 +196,6 @@ export default {
 - `@coherent.js/database` - Database adapters (121.8KB source)
 - `@coherent.js/forms` - Form utilities (72.1KB source)
 - `@coherent.js/devtools` - Development tools (130.8KB source)
-- `@coherent.js/testing` - Testing utilities (27.6KB source)
 
 ### **Integrations**
 - `@coherent.js/express` - Express.js adapter
@@ -205,7 +204,7 @@ export default {
 - `@coherent.js/nextjs` - Next.js integration
 
 ### **Tooling**
-- `@coherent.js/language-server` - LSP for IDE support
+- `@coherent.js/tooling` - Testing utilities (`/testing` subpath) and Language Server (`coherent-language-server` binary)
 - `coherent-language-support` - VS Code extension
 
 ## IDE Support
@@ -230,11 +229,11 @@ Or search "Coherent.js Language Support" in the VS Code Extensions panel.
 
 ### Language Server (for other editors)
 
-The `@coherent.js/language-server` package provides LSP support for any editor:
+The `@coherent.js/tooling` package ships a `coherent-language-server` binary that provides LSP support for any editor:
 
 ```bash
 # Install globally
-npm install -g @coherent.js/language-server
+npm install -g @coherent.js/tooling
 
 # Run the server
 coherent-language-server --stdio

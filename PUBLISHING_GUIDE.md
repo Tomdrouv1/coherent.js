@@ -33,7 +33,7 @@
 2. `@coherent.js/client` - Client-side hydration
 3. `@coherent.js/api` - API framework
 4. `@coherent.js/database` - Database layer
-5. `@coherent.js/testing` - Testing utilities
+5. `@coherent.js/tooling` - Testing utilities (`/testing` subpath) and Language Server (`coherent-language-server` binary)
 6. `@coherent.js/devtools` - Developer tools
 7. `@coherent.js/i18n` - Internationalization
 8. `@coherent.js/forms` - Form utilities
