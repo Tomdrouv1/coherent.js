@@ -1,9 +1,16 @@
 /**
  * Tests for Next.js integration with Coherent.js
+ *
+ * Migrated from packages/nextjs/test/nextjs-integration.test.js during
+ * Wave 2c (integrations consolidation). Imports the coherent-nextjs helpers
+ * from the new integrations package path.
  */
 
 import { describe, it, expect } from 'vitest';
-import { createCoherentNextHandler, createCoherentAppRouterHandler } from '../src/coherent-nextjs.js';
+import {
+  createCoherentNextHandler,
+  createCoherentAppRouterHandler
+} from '../../src/nextjs/coherent-nextjs.js';
 import { render } from '@coherent.js/core';
 
 describe('Next.js Integration', () => {

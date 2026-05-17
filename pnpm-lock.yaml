@@ -149,15 +149,6 @@ importers:
         specifier: workspace:*
         version: link:../core
 
-  packages/fastify:
-    dependencies:
-      '@coherent.js/core':
-        specifier: workspace:*
-        version: link:../core
-      fastify:
-        specifier: '>=4.0.0 < 6.0.0'
-        version: 5.8.4
-
   packages/forms:
     dependencies:
       '@coherent.js/core':
@@ -181,31 +172,18 @@ importers:
       express:
         specifier: '>=4.18.0 < 6.0.0'
         version: 5.2.1
-
-  packages/koa:
-    dependencies:
-      '@coherent.js/core':
-        specifier: workspace:*
-        version: link:../core
+      fastify:
+        specifier: '>=4.0.0 < 6.0.0'
+        version: 5.8.4
       koa:
         specifier: '>=2.13.0 < 4.0.0'
         version: 3.2.0
-
-  packages/nextjs:
-    dependencies:
-      '@coherent.js/core':
-        specifier: workspace:*
-        version: link:../core
-    devDependencies:
       next:
-        specifier: 16.2.6
+        specifier: '>=13.0.0'
         version: 16.2.6(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       react:
-        specifier: 19.2.6
+        specifier: '>=18.0.0'
         version: 19.2.6
-      react-dom:
-        specifier: 19.2.6
-        version: 19.2.6(react@19.2.6)
 
   packages/seo:
     dependencies:

@@ -135,8 +135,8 @@ import * as coherent from '@coherent.js/core';
 | Server-side rendering | `@coherent.js/core` |
 | Client-side hydration | `@coherent.js/core` + `@coherent.js/client` |
 | Express integration | `@coherent.js/core` + `@coherent.js/integrations` |
-| Fastify integration | `@coherent.js/core` + `@coherent.js/fastify` |
-| Next.js integration | `@coherent.js/core` + `@coherent.js/nextjs` |
+| Fastify integration | `@coherent.js/core` + `@coherent.js/integrations` |
+| Next.js integration | `@coherent.js/core` + `@coherent.js/integrations` |
 | State management | `@coherent.js/state` |
 | Forms & validation | `@coherent.js/forms` |
 | SEO (meta tags, sitemap, JSON-LD) | `@coherent.js/seo` |
@@ -198,10 +198,7 @@ export default {
 - `@coherent.js/devtools` - Development tools (130.8KB source)
 
 ### **Integrations**
-- `@coherent.js/integrations` - Framework integration adapters via subpath exports (`/express`; `/fastify`, `/koa`, `/nextjs`, `/astro`, `/remix`, `/sveltekit` in upcoming Wave 2c tasks)
-- `@coherent.js/fastify` - Fastify adapter
-- `@coherent.js/koa` - Koa adapter
-- `@coherent.js/nextjs` - Next.js integration
+- `@coherent.js/integrations` - Framework integration adapters via subpath exports (`/express`, `/fastify`, `/koa`, `/nextjs`; `/astro`, `/remix`, `/sveltekit` in upcoming Wave 2c tasks)
 
 ### **Tooling**
 - `@coherent.js/tooling` - Testing utilities (`/testing` subpath) and Language Server (`coherent-language-server` binary)

@@ -9,9 +9,6 @@ packages/api/ @Tomdrouv1
 
 # Integrations
 packages/integrations/ @Tomdrouv1
-packages/fastify/ @Tomdrouv1
-packages/koa/ @Tomdrouv1
-packages/nextjs/ @Tomdrouv1
 packages/adapters/ @Tomdrouv1
 
 # Developer tools

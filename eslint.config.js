@@ -158,7 +158,7 @@ export default [
     },
     {
         // i18n, forms, performance packages - isomorphic code
-        files: ['packages/i18n/**/*.js', 'packages/forms/**/*.js', 'packages/devtools/src/performance/**/*.js', 'packages/nextjs/**/*.js'],
+        files: ['packages/i18n/**/*.js', 'packages/forms/**/*.js', 'packages/devtools/src/performance/**/*.js', 'packages/integrations/src/nextjs/**/*.js'],
         languageOptions: {
             globals: {
                 // Browser APIs

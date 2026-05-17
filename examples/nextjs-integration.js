@@ -4,7 +4,7 @@
  * @description Using Coherent.js components inside Next.js applications.
  */
 
-import { createCoherentNextHandler } from '@coherent.js/nextjs';
+import { createCoherentNextHandler } from '@coherent.js/integrations/nextjs';
 
 // Enhanced Next.js home page component
 export const NextHomePage = ({ name = 'World', timestamp = new Date().toISOString() }) => ({

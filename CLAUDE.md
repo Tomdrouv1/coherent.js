@@ -51,10 +51,7 @@ The project uses pnpm workspaces with packages in `/packages/`:
 - **`@coherent.js/api`** - API framework with validation, routing, and OpenAPI generation  
 - **`@coherent.js/database`** - Database layer with adapters for PostgreSQL, MySQL, SQLite, MongoDB
 - **`@coherent.js/client`** - Client-side hydration and progressive enhancement utilities
-- **`@coherent.js/integrations`** - Framework integration adapters bundled as subpath exports (currently `/express`; `/fastify`, `/koa`, `/nextjs`, `/astro`, `/remix`, `/sveltekit` added in upcoming Wave 2c tasks)
-- **`@coherent.js/fastify`** - Fastify integration adapter
-- **`@coherent.js/koa`** - Koa.js integration adapter
-- **`@coherent.js/nextjs`** - Next.js integration adapter
+- **`@coherent.js/integrations`** - Framework integration adapters bundled as subpath exports (currently `/express`, `/fastify`, `/koa`, `/nextjs`; `/astro`, `/remix`, `/sveltekit` added in upcoming Wave 2c tasks)
 - **`@coherent.js/tooling`** - Dev-time tooling: testing utilities (Vitest matchers, render harness) via `@coherent.js/tooling/testing`, and Language Server Protocol server (`coherent-language-server` binary)
 - **`@coherent.js/devtools`** - Developer tools (inspector, profiler, logger) and performance utilities (cache, code-splitting, lazy-loading via `/performance` subpath)
 - **`@coherent.js/cli`** - CLI tools for development and scaffolding

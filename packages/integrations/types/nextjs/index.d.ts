@@ -1,8 +1,12 @@
 // Type definitions for Coherent.js Next.js Integration
+//
+// Migrated from packages/nextjs/src/coherent-nextjs.d.ts during
+// Wave 2c (integrations consolidation). Declarations are aligned with the
+// runtime exports of ../../src/nextjs/coherent-nextjs.js.
 
 import { NextApiRequest, NextApiResponse } from 'next';
 import { ReactNode } from 'react';
-import { CoherentNode } from '../coherent';
+import type { CoherentNode } from '@coherent.js/core';
 
 export interface CoherentNextHandlerOptions {
   /**
@@ -10,18 +14,33 @@ export interface CoherentNextHandlerOptions {
    * @default false
    */
   enablePerformanceMonitoring?: boolean;
-  
+
   /**
    * HTML template to wrap rendered components
-   * @default '<!DOCTYPE html><html><body>{{content}}</body></html>'
+   * @default '<!DOCTYPE html>\n{{content}}'
    */
   template?: string;
-  
+
   /**
    * Enable streaming rendering for large components
    * @default false
    */
   enableStreaming?: boolean;
+}
+
+export interface CoherentNextComponentOptions {
+  /**
+   * Enable performance monitoring for rendered components
+   * @default false
+   */
+  enablePerformanceMonitoring?: boolean;
+}
+
+export interface CoherentNextIntegration {
+  createCoherentNextHandler: typeof createCoherentNextHandler;
+  createCoherentAppRouterHandler: typeof createCoherentAppRouterHandler;
+  createCoherentServerComponent: typeof createCoherentServerComponent;
+  createCoherentClientComponent: typeof createCoherentClientComponent;
 }
 
 /**
@@ -31,9 +50,12 @@ export interface CoherentNextHandlerOptions {
  * @returns Next.js API route handler
  */
 export function createCoherentNextHandler(
-  componentFactory: (req: NextApiRequest, res: NextApiResponse) => CoherentNode | Promise<CoherentNode>,
+  componentFactory: (
+    req: NextApiRequest,
+    res: NextApiResponse
+  ) => CoherentNode | Promise<CoherentNode>,
   options?: CoherentNextHandlerOptions
-): (req: NextApiRequest, res: NextApiResponse) => void;
+): (req: NextApiRequest, res: NextApiResponse) => Promise<void>;
 
 /**
  * Create a Next.js App Router route handler for Coherent.js components
@@ -54,10 +76,7 @@ export function createCoherentAppRouterHandler(
  */
 export function createCoherentServerComponent(
   componentFactory: (props: any) => CoherentNode | Promise<CoherentNode>,
-  options?: { 
-    enablePerformanceMonitoring?: boolean;
-    enableStreaming?: boolean;
-  }
+  options?: CoherentNextComponentOptions
 ): Promise<(props: any) => Promise<ReactNode>>;
 
 /**
@@ -68,22 +87,18 @@ export function createCoherentServerComponent(
  */
 export function createCoherentClientComponent(
   componentFactory: (props: any) => CoherentNode,
-  options?: { 
-    enablePerformanceMonitoring?: boolean;
-    enableHydration?: boolean;
-  }
-): (props: any) => ReactNode;
+  options?: CoherentNextComponentOptions
+): Promise<(props: any) => ReactNode>;
 
 /**
- * Render a Coherent component to HTML string
- * @param component Coherent component to render
- * @param options Rendering options
- * @returns Rendered HTML string
+ * Create Next.js integration with dependency checking.
+ * Verifies Next.js and React are available before returning bound handlers.
+ * @param options Default options applied to all returned handlers
+ * @returns Object with Next.js integration utilities
  */
-export function renderComponent(
-  component: CoherentNode,
-  options?: CoherentNextHandlerOptions
-): string;
+export function createNextIntegration(
+  options?: CoherentNextHandlerOptions & CoherentNextComponentOptions
+): Promise<CoherentNextIntegration>;
 
 /**
  * Default export with all utilities
@@ -93,7 +108,7 @@ declare const coherentNext: {
   createCoherentAppRouterHandler: typeof createCoherentAppRouterHandler;
   createCoherentServerComponent: typeof createCoherentServerComponent;
   createCoherentClientComponent: typeof createCoherentClientComponent;
-  renderComponent: typeof renderComponent;
+  createNextIntegration: typeof createNextIntegration;
 };
 
 export default coherentNext;
