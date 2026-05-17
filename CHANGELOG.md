@@ -91,7 +91,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Notes (Wave 2a)
 
-- Workspace shrank from 26 → 24 packages (`@coherent.js/runtime`, `@coherent.js/web-components` removed).
+- Workspace shrank from 24 → 22 packages (`@coherent.js/runtime`, `@coherent.js/web-components` removed).
 - Test count: ~1792 → 1672 (drop of ~120 tests across deleted runtime suite, deleted web-components suite, 5 deleted legacy client hydration test files, and 3 deleted client describe blocks). Modern hydration coverage remains in `hydrate-api.test.js`, `mismatch-detection.test.js`, `state-serialization.test.js`, `vdom-diffing.test.js`, `dom-state-management.test.js`, `event-delegation.test.js`.
 - Pre-existing Wave 1 follow-up about `scripts/add-exports-sections.js` referencing removed APIs is partially addressed (runtime + web-components sections trimmed); the forms references it carried will be addressed in Wave 5 doc cleanup.
 
