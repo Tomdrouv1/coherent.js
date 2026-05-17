@@ -56,7 +56,6 @@ Welcome to the official documentation for Coherent.js, a high-performance server
 ### 🧩 Extended Packages
 - [Forms Guide](forms/guide.md) - Form building, validation, and hydration
 - [Web Components](web-components/README.md) - Custom Elements integration (experimental)
-- [Runtime](runtime/README.md) - Universal runtime for any JS environment
 - [Adapters](adapters/README.md) - Astro, Remix, and SvelteKit adapters (experimental)
 
 ### 🛠️ Editor Support
