@@ -46,7 +46,6 @@
 15. `@coherent.js/koa` - Koa.js integration
 16. `@coherent.js/nextjs` - Next.js integration
 17. `@coherent.js/adapters` - Framework adapters
-18. `@coherent.js/web-components` - Web components
 
 ---
 

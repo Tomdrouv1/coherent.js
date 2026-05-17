@@ -55,7 +55,6 @@ Welcome to the official documentation for Coherent.js, a high-performance server
 
 ### 🧩 Extended Packages
 - [Forms Guide](forms/guide.md) - Form building, validation, and hydration
-- [Web Components](web-components/README.md) - Custom Elements integration (experimental)
 - [Adapters](adapters/README.md) - Astro, Remix, and SvelteKit adapters (experimental)
 
 ### 🛠️ Editor Support
@@ -113,7 +112,6 @@ Coherent.js is a monorepo with multiple packages:
 - `@coherent.js/testing` - [Testing utilities](testing/guide.md)
 - `@coherent.js/state` - Reactive state management
 - `@coherent.js/devtools` - Developer tools
-- `@coherent.js/web-components` - [Custom Elements](web-components/README.md) (experimental)
 - `@coherent.js/profiler` - [Performance profiling](profiler/README.md)
 - `@coherent.js/build-tools` - [Build tool plugins](build-tools/README.md)
 

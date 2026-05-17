@@ -61,7 +61,6 @@ build-tools:
       - any-glob-to-any-file: 
           - packages/build-tools/**/*
           - packages/profiler/**/*
-          - packages/web-components/**/*
 
 # Documentation labels
 documentation:

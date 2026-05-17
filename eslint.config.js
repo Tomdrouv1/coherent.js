@@ -181,31 +181,6 @@ export default [
         }
     },
     {
-        // Web Components - needs all browser globals
-        files: ['packages/web-components/**/*.js'],
-        languageOptions: {
-            globals: {
-                window: 'readonly',
-                document: 'readonly',
-                HTMLElement: 'readonly',
-                customElements: 'readonly',
-                CustomEvent: 'readonly',
-                Element: 'readonly',
-                Document: 'readonly',
-                MutationObserver: 'readonly',
-                FormData: 'readonly',
-                requestAnimationFrame: 'readonly'
-            }
-        },
-        rules: {
-            'no-new-func': 'off', // Allow Function constructor for dynamic components
-            'no-unused-vars': ['warn', { 
-                argsIgnorePattern: '^_',
-                varsIgnorePattern: '^_' 
-            }]
-        }
-    },
-    {
         // Framework Adapters - needs flexible rules for framework integration
         files: ['packages/adapters/**/*.js', 'packages/build-tools/**/*.js'],
         languageOptions: {
