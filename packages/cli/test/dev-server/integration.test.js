@@ -99,4 +99,30 @@ describe('startDevServer (integration)', () => {
     }
     expect(errored).toBe(true);
   });
+
+  test('honors hmr:false — no WS, no script injection, 404 on bootstrap path', async () => {
+    server = await startDevServer({ root, port: 0, host: '127.0.0.1', open: false, log: false, hmr: false });
+
+    // HTML is served clean (no script injection)
+    const htmlRes = await fetch(`http://127.0.0.1:${server.port}/`);
+    const html = await htmlRes.text();
+    expect(htmlRes.status).toBe(200);
+    expect(html).not.toContain('__coherent_hmr_client');
+
+    // Bootstrap path is 404
+    const bootRes = await fetch(`http://127.0.0.1:${server.port}/__coherent_hmr_client.js`);
+    expect(bootRes.status).toBe(404);
+
+    // WebSocket upgrade attempts should fail (no WS server attached)
+    const { WebSocket } = await import('ws');
+    const ws = new WebSocket(`ws://127.0.0.1:${server.port}`);
+    const result = await new Promise((resolve) => {
+      ws.once('open', () => resolve('opened'));
+      ws.once('error', () => resolve('errored'));
+      ws.once('close', () => resolve('closed'));
+      setTimeout(() => resolve('timeout'), 500);
+    });
+    expect(['errored', 'closed', 'timeout']).toContain(result);
+    try { ws.close(); } catch { /* ignore */ }
+  });
 });

@@ -90,13 +90,13 @@ function safeResolve(root, urlPath) {
  * @param {string} options.root - Absolute path to the project root.
  * @returns {(req: import('node:http').IncomingMessage, res: import('node:http').ServerResponse) => Promise<void>}
  */
-export function createStaticHandler({ root }) {
+export function createStaticHandler({ root, hmr = true }) {
   return async function handle(req, res) {
     try {
       const urlPath = req.url || '/';
 
       // Serve the inline HMR client bootstrap.
-      if (urlPath === HMR_CLIENT_PATH || urlPath.startsWith(`${HMR_CLIENT_PATH}?`)) {
+      if (hmr && (urlPath === HMR_CLIENT_PATH || urlPath.startsWith(`${HMR_CLIENT_PATH}?`))) {
         res.statusCode = 200;
         res.setHeader('content-type', MIME['.js']);
         res.setHeader('cache-control', 'no-cache');
@@ -131,7 +131,7 @@ export function createStaticHandler({ root }) {
       res.setHeader('content-type', ct);
       res.setHeader('cache-control', 'no-cache');
 
-      if (ct.startsWith('text/html')) {
+      if (ct.startsWith('text/html') && hmr) {
         res.end(injectHmrScript(buf.toString('utf8')));
       } else {
         res.end(buf);

@@ -57,6 +57,7 @@ export const devCommand = new Command('dev')
           host: options.host,
           open: Boolean(options.open),
           log: true,
+          hmr: options.hmr !== false,
         });
 
         const cleanup = async () => {
