@@ -612,7 +612,7 @@ npm install @coherent.js/core
 # No additional dependencies needed
 ```
 
-> **Note**: Use `@beta` tag for the current beta release (v1.0.0-beta.8).
+> **Note**: Use `@rc` for the current release candidate or omit the tag (defaults to the latest stable once released).
 
 ### Basic HTTP Server
 
