@@ -4,28 +4,30 @@
   "description": "Coherent.js dev-time tooling: testing utilities (Vitest matchers, render harness) and Language Server Protocol implementation.",
   "type": "module",
   "main": "./dist/testing/index.js",
+  "types": "./types/testing/index.d.ts",
   "exports": {
     "./testing": {
+      "types": "./types/testing/index.d.ts",
       "development": "./src/testing/index.js",
-      "import": "./dist/testing/index.js",
-      "require": "./dist/testing/index.cjs"
+      "import": "./dist/testing/index.js"
     },
     "./testing/renderer": {
+      "types": "./types/testing/index.d.ts",
       "development": "./src/testing/test-renderer.js",
-      "import": "./dist/testing/test-renderer.js",
-      "require": "./dist/testing/test-renderer.cjs"
+      "import": "./dist/testing/test-renderer.js"
     },
     "./testing/utils": {
+      "types": "./types/testing/index.d.ts",
       "development": "./src/testing/test-utils.js",
-      "import": "./dist/testing/test-utils.js",
-      "require": "./dist/testing/test-utils.cjs"
+      "import": "./dist/testing/test-utils.js"
     },
     "./testing/matchers": {
+      "types": "./types/testing/index.d.ts",
       "development": "./src/testing/matchers.js",
-      "import": "./dist/testing/matchers.js",
-      "require": "./dist/testing/matchers.cjs"
+      "import": "./dist/testing/matchers.js"
     },
     "./lsp": {
+      "types": "./dist/lsp/server.d.ts",
       "import": "./dist/lsp/server.js"
     }
   },
@@ -34,6 +36,7 @@
   },
   "files": [
     "dist/",
+    "types/",
     "README.md",
     "LICENSE"
   ],
