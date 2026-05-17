@@ -157,8 +157,8 @@ export default [
         }
     },
     {
-        // i18n, forms, performance, runtime packages - isomorphic code
-        files: ['packages/i18n/**/*.js', 'packages/forms/**/*.js', 'packages/performance/**/*.js', 'packages/runtime/**/*.js', 'packages/nextjs/**/*.js'],
+        // i18n, forms, performance packages - isomorphic code
+        files: ['packages/i18n/**/*.js', 'packages/forms/**/*.js', 'packages/performance/**/*.js', 'packages/nextjs/**/*.js'],
         languageOptions: {
             globals: {
                 // Browser APIs
@@ -203,46 +203,6 @@ export default [
                 argsIgnorePattern: '^_',
                 varsIgnorePattern: '^_' 
             }]
-        }
-    },
-    {
-        // Runtime package - needs multiple environment globals
-        files: ['packages/runtime/**/*.js'],
-        languageOptions: {
-            globals: {
-                // Browser globals
-                window: 'readonly',
-                document: 'readonly',
-                navigator: 'readonly',
-                HTMLElement: 'readonly',
-                customElements: 'readonly',
-                Image: 'readonly',
-                FontFace: 'readonly',
-                DOMParser: 'readonly',
-                // Runtime-specific globals
-                EdgeRuntime: 'readonly',
-                Deno: 'readonly',
-                Bun: 'readonly',
-                caches: 'readonly',
-                Request: 'readonly',
-                Response: 'readonly',
-                addEventListener: 'readonly',
-                fetch: 'readonly',
-                WebSocket: 'readonly',
-                Worker: 'readonly',
-                localStorage: 'readonly',
-                sessionStorage: 'readonly',
-                indexedDB: 'readonly',
-                crypto: 'readonly',
-                ReadableStream: 'readonly',
-                IntersectionObserver: 'readonly',
-                MutationObserver: 'readonly',
-                requestAnimationFrame: 'readonly',
-                requestIdleCallback: 'readonly'
-            }
-        },
-        rules: {
-            'no-new-func': 'off' // Runtime detection may need Function constructor
         }
     },
     {

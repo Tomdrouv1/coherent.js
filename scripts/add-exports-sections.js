@@ -23,8 +23,7 @@ const packagesNeedingExports = [
   'fastify',
   'i18n',
   'profiler',
-  'web-components',
-  'runtime' // needs usage section
+  'web-components'
 ];
 
 // Package-specific export information
@@ -102,18 +101,6 @@ import { createModel } from '@coherent.js/database/model';`
     ],
     example: `import { createForm } from '@coherent.js/forms';
 import { validateForm } from '@coherent.js/forms/validation';`
-  },
-  'runtime': {
-    description: 'Universal runtime for browsers, edge workers, and desktop',
-    exports: [
-      'Universal runtime: `@coherent.js/runtime`',
-      'Browser runtime: `@coherent.js/runtime/browser`',
-      'Edge runtime: `@coherent.js/runtime/edge`',
-      'Static runtime: `@coherent.js/runtime/static`',
-      'Desktop runtime: `@coherent.js/runtime/desktop`'
-    ],
-    example: `import { createCoherent } from '@coherent.js/runtime';
-import { createBrowserApp } from '@coherent.js/runtime/browser';`
   },
   'express': {
     description: 'Express.js adapter for Coherent.js',
@@ -233,34 +220,6 @@ ${config.example}
 }
 
 /**
- * Generate usage section for runtime package
- */
-function generateUsageSection(packageName) {
-  if (packageName !== 'runtime') return '';
-
-  return `## Usage
-
-\`\`\`javascript
-import { createCoherent } from '@coherent.js/runtime';
-
-// Create universal app
-const app = createCoherent({
-  components: { App: () => ({ div: { text: 'Hello World' } }) }
-});
-
-// Browser usage
-import { createBrowserApp } from '@coherent.js/runtime/browser';
-const browserApp = createBrowserApp(app);
-
-// Edge usage
-import { createEdgeApp } from '@coherent.js/runtime/edge';
-const edgeApp = createEdgeApp(app);
-\`\`\`
-
-`;
-}
-
-/**
  * Update a package README
  */
 function updatePackageReadme(packageName) {
@@ -303,10 +262,9 @@ function updatePackageReadme(packageName) {
 
   // Generate new sections
   const exportsSection = generateExportsSection(packageName);
-  const usageSection = generateUsageSection(packageName);
 
   // Insert new sections
-  const newContent = `${content.slice(0, insertIndex)}\n${exportsSection}${usageSection}${content.slice(insertIndex)}`;
+  const newContent = `${content.slice(0, insertIndex)}\n${exportsSection}${content.slice(insertIndex)}`;
 
   // Write updated README
   fs.writeFileSync(readmePath, newContent);

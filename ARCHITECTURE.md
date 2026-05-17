@@ -97,7 +97,6 @@ coherent.js/
 │   │
 │   ├── cli/                            # @coherent.js/cli - CLI tools
 │   ├── build-tools/                    # @coherent.js/build-tools - Build utilities
-│   ├── runtime/                        # @coherent.js/runtime - Runtime enhancements
 │   ├── adapters/                       # @coherent.js/adapters - Framework adapters
 │   └── web-components/                 # @coherent.js/web-components - Web components
 │

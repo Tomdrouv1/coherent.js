@@ -35,19 +35,18 @@
 4. `@coherent.js/database` - Database layer
 5. `@coherent.js/testing` - Testing utilities
 6. `@coherent.js/devtools` - Developer tools
-7. `@coherent.js/runtime` - Enhanced runtimes
-8. `@coherent.js/i18n` - Internationalization
-9. `@coherent.js/forms` - Form utilities
-10. `@coherent.js/seo` - SEO optimization
-11. `@coherent.js/performance` - Performance optimization
-12. `@coherent.js/cli` - CLI tools
-13. `@coherent.js/build-tools` - Build utilities
-14. `@coherent.js/express` - Express.js integration
-15. `@coherent.js/fastify` - Fastify integration
-16. `@coherent.js/koa` - Koa.js integration
-17. `@coherent.js/nextjs` - Next.js integration
-18. `@coherent.js/adapters` - Framework adapters
-19. `@coherent.js/web-components` - Web components
+7. `@coherent.js/i18n` - Internationalization
+8. `@coherent.js/forms` - Form utilities
+9. `@coherent.js/seo` - SEO optimization
+10. `@coherent.js/performance` - Performance optimization
+11. `@coherent.js/cli` - CLI tools
+12. `@coherent.js/build-tools` - Build utilities
+13. `@coherent.js/express` - Express.js integration
+14. `@coherent.js/fastify` - Fastify integration
+15. `@coherent.js/koa` - Koa.js integration
+16. `@coherent.js/nextjs` - Next.js integration
+17. `@coherent.js/adapters` - Framework adapters
+18. `@coherent.js/web-components` - Web components
 
 ---
 

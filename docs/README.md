@@ -98,7 +98,6 @@ Coherent.js is a monorepo with multiple packages:
 - `@coherent.js/core` - Core framework
 - `@coherent.js/client` - Client-side utilities
 - `@coherent.js/api` - API framework
-- `@coherent.js/runtime` - [Universal runtime](runtime/README.md)
 
 ### Integration Packages
 - `@coherent.js/express` - Express.js adapter
