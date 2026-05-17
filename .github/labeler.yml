@@ -42,17 +42,17 @@ editor-tooling:
 # Feature packages labels
 features:
   - changed-files:
-      - any-glob-to-any-file: 
+      - any-glob-to-any-file:
           - packages/i18n/**/*
           - packages/forms/**/*
           - packages/seo/**/*
-          - packages/performance/**/*
+          - packages/devtools/src/performance/**/*
           - packages/state/**/*
 
 # Backend & Database labels
 backend:
   - changed-files:
-      - any-glob-to-any-file: 
+      - any-glob-to-any-file:
           - packages/database/**/*
 
 # Build tools labels
@@ -60,7 +60,6 @@ build-tools:
   - changed-files:
       - any-glob-to-any-file:
           - packages/cli/src/build-tools/**/*
-          - packages/profiler/**/*
 
 # Documentation labels
 documentation:

@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { LazyLoader, ImageLazyLoader, ResourcePreloader, ProgressiveImageLoader, createLazyLoader, lazyImage, progressiveImage } from '../src/lazy-loading.js';
+import { describe, it, expect } from 'vitest';
+import { LazyLoader, ImageLazyLoader, ResourcePreloader, ProgressiveImageLoader, createLazyLoader, lazyImage, progressiveImage } from '../../src/performance/lazy-loading.js';
 
 describe('LazyLoader', () => {
   it('creates without IntersectionObserver (server-side)', () => {

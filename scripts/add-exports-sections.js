@@ -20,17 +20,20 @@ const packagesNeedingExports = [
   'devtools',
   'express',
   'fastify',
-  'i18n',
-  'profiler'
+  'i18n'
 ];
 
 // Package-specific export information
 const packageExports = {
   'devtools': {
-    description: 'Tree-shakable developer tools for debugging and performance monitoring',
+    description: 'Tree-shakable developer tools for debugging, profiling, and performance optimization',
     exports: [
       'Component visualizer: `@coherent.js/devtools/visualizer`',
-      'Performance dashboard: `@coherent.js/devtools/performance`',
+      'Performance aggregator (dashboard + optimization utilities): `@coherent.js/devtools/performance`',
+      'Performance dashboard only: `@coherent.js/devtools/performance/dashboard`',
+      'Cache (LRU/Memory/Render/memoize): `@coherent.js/devtools/performance/cache`',
+      'Code-splitting (lazy components, route splitter): `@coherent.js/devtools/performance/code-splitting`',
+      'Lazy-loading (images, IntersectionObserver, preloader): `@coherent.js/devtools/performance/lazy-loading`',
       'Enhanced errors: `@coherent.js/devtools/errors`',
       'Hybrid integration: `@coherent.js/devtools/hybrid`',
       'Inspector: `@coherent.js/devtools/inspector`',
@@ -38,7 +41,8 @@ const packageExports = {
       'Logger: `@coherent.js/devtools/logger`'
     ],
     example: `import { logComponentTree } from '@coherent.js/devtools/visualizer';
-import { createPerformanceDashboard } from '@coherent.js/devtools/performance';`
+import { createPerformanceDashboard } from '@coherent.js/devtools/performance';
+import { LRUCache, memoize } from '@coherent.js/devtools/performance/cache';`
   },
   'client': {
     description: 'Client-side hydration and HMR utilities',
@@ -147,20 +151,6 @@ import { createHandler } from '@coherent.js/koa';`
       'Testing utilities: `@coherent.js/testing`'
     ],
     example: `import { renderTest } from '@coherent.js/testing';`
-  },
-  'performance': {
-    description: 'Performance optimization utilities',
-    exports: [
-      'Performance utilities: `@coherent.js/performance`'
-    ],
-    example: `import { optimizeBundle } from '@coherent.js/performance';`
-  },
-  'profiler': {
-    description: 'Performance profiling tools',
-    exports: [
-      'Profiler utilities: `@coherent.js/profiler`'
-    ],
-    example: `import { createProfiler } from '@coherent.js/profiler';`
   },
   'adapters': {
     description: 'Framework adapters',

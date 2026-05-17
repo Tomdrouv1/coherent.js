@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { CodeSplitter, createCodeSplitter, lazy, createRouteSplitter, BundleAnalyzer } from '../src/code-splitting.js';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { CodeSplitter, createCodeSplitter, lazy, createRouteSplitter, BundleAnalyzer } from '../../src/performance/code-splitting.js';
 
 describe('CodeSplitter', () => {
   let splitter;

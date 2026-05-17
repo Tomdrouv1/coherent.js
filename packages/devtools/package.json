@@ -17,6 +17,26 @@
       "require": "./dist/component-visualizer.cjs"
     },
     "./performance": {
+      "development": "./src/performance/index.js",
+      "import": "./dist/performance/index.js",
+      "require": "./dist/performance/index.cjs"
+    },
+    "./performance/cache": {
+      "development": "./src/performance/cache.js",
+      "import": "./dist/performance/cache.js",
+      "require": "./dist/performance/cache.cjs"
+    },
+    "./performance/code-splitting": {
+      "development": "./src/performance/code-splitting.js",
+      "import": "./dist/performance/code-splitting.js",
+      "require": "./dist/performance/code-splitting.cjs"
+    },
+    "./performance/lazy-loading": {
+      "development": "./src/performance/lazy-loading.js",
+      "import": "./dist/performance/lazy-loading.js",
+      "require": "./dist/performance/lazy-loading.cjs"
+    },
+    "./performance/dashboard": {
       "development": "./src/performance-dashboard.js",
       "import": "./dist/performance-dashboard.js",
       "require": "./dist/performance-dashboard.cjs"

@@ -27,8 +27,7 @@ coherent.js/
 │   ├── i18n/                           # @coherent.js/i18n - Internationalization
 │   ├── seo/                            # @coherent.js/seo - SEO tools
 │   ├── testing/                        # @coherent.js/testing - Testing utilities
-│   ├── devtools/                       # @coherent.js/devtools - Developer tools
-│   ├── performance/                    # @coherent.js/performance - Performance utilities
+│   ├── devtools/                       # @coherent.js/devtools - Developer tools and performance utilities (cache, code-splitting, lazy-loading via /performance subpath)
 │   │
 │   ├── cli/                            # @coherent.js/cli - CLI tools (includes build-tools subpath)
 │   └── adapters/                       # @coherent.js/adapters - Framework adapters

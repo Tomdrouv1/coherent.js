@@ -56,12 +56,11 @@ The project uses pnpm workspaces with packages in `/packages/`:
 - **`@coherent.js/koa`** - Koa.js integration adapter
 - **`@coherent.js/nextjs`** - Next.js integration adapter
 - **`@coherent.js/testing`** - Testing utilities and matchers
-- **`@coherent.js/devtools`** - Developer tools (inspector, profiler, logger)
+- **`@coherent.js/devtools`** - Developer tools (inspector, profiler, logger) and performance utilities (cache, code-splitting, lazy-loading via `/performance` subpath)
 - **`@coherent.js/cli`** - CLI tools for development and scaffolding
 - **`@coherent.js/i18n`** - Internationalization support
 - **`@coherent.js/forms`** - Form utilities and validation
 - **`@coherent.js/seo`** - SEO optimization tools
-- **`@coherent.js/performance`** - Performance optimization utilities
 
 ### Core Concepts
 

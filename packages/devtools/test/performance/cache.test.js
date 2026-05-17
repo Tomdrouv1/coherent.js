@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { LRUCache, MemoryCache, MemoCache, RenderCache, createCache, memoize } from '../src/cache.js';
+import { LRUCache, MemoryCache, MemoCache, RenderCache, createCache, memoize } from '../../src/performance/cache.js';
 
 describe('LRUCache', () => {
   let cache;

@@ -20,13 +20,11 @@ const packagesToFix = [
   'state',
   'i18n',
   'testing',
-  'performance',
   'seo',
   'nextjs',
   'express',
   'fastify',
   'koa',
-  'profiler',
   'adapters'
 ];
 
