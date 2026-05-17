@@ -9,9 +9,7 @@
     "./form-builder": "./dist/form-builder.js",
     "./hydration": "./dist/form-hydration.js",
     "./validation": "./dist/validation.js",
-    "./validators": "./dist/validators.js",
-    "./forms": "./dist/forms.js",
-    "./advanced-validation": "./dist/advanced-validation.js"
+    "./validators": "./dist/validators.js"
   },
   "keywords": [
     "coherent",
