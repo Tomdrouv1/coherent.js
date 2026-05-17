@@ -88,6 +88,12 @@ importers:
         specifier: workspace:*
         version: link:../../../packages/client
 
+  e2e/fixtures/hmr-hydrate:
+    dependencies:
+      '@coherent.js/client':
+        specifier: workspace:*
+        version: link:../../../packages/client
+
   packages/api:
     dependencies:
       '@coherent.js/core':
