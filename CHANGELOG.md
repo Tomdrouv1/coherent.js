@@ -172,6 +172,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Wave 3a explicitly defers three Section-2 items to follow-on work: the `@internal` JSDoc sweep + `stripInternal` audit (per-package classification; the snapshot already catches any reclassification as a diff); the `experimental_` prefix pass (requires user input on which APIs are explicitly not SemVer-committed); and cleanup of phantom `require` → `*.cjs` declarations in package.json files (most packages still advertise `.cjs` paths their ESM-only build doesn't emit).
 - Perf CI gates (Section 4 of the spec) are tracked separately as Wave 3b.
 
+### Added (Wave 3b)
+
+- **NEW: Bundle size gate.** `scripts/check-bundle-size.mjs` measures each package's built `dist/index.js` raw + gzipped byte length and snapshots per-package `packages/<name>/bundle-size.json` baselines. CI runs `--check` after build (right after the API surface check); fails PRs that grow any package's bundle by more than ±5% without an accompanying baseline update. Mirrors the Wave-3a API-surface gate pattern exactly.
+- 13 baseline `bundle-size.json` files committed — 10 measured (api, cli, client, core, database, devtools, forms, i18n, seo, state), 3 marked `skipped` (integrations and tooling have no `.` root export; vscode-extension has no `exports` field).
+
+### Removed (Wave 3b)
+
+- **README:** Dropped "80.7KB gzipped production bundle" claim. Was a single-snapshot aggregate that didn't represent any real consumer's bundle. Replaced with a reference to the per-package `bundle-size.json` gates.
+- **README:** Dropped "79.5% tree shaking reduction" claim. No tree-shake gate exists; the number was not reproducible from any committed benchmark. Removed rather than leave an ungated assertion.
+
+### Notes (Wave 3b)
+
+- The "247 renders/sec" claim in README is left untouched. It's a defensible measurement from `benchmarks/benchmark.js`. A render-throughput gate is a Wave 3c candidate — if pursued, it will either defend the number or trigger an update.
+- Tree-shake reduction gating deferred to Wave 3c. The existing `scripts/analyze-bundle.mjs` references packages deleted in Wave 2c (express/fastify/koa/nextjs) so it's bit-rotted and needs a rewrite alongside any tree-shake gate work.
+- Render throughput gating deferred to Wave 3c. CI variance on shared GitHub Actions runners makes throughput gating noisy and false-fail-prone; tightening would require self-hosted runners. Worth re-evaluating after some operational experience with the bundle-size gate.
+- Skipped packages (integrations, tooling, vscode-extension) get re-evaluated whenever their root export shape changes — the `--write` baseline regeneration handles the transition automatically and the diff is reviewable.
+
 ## [1.0.0-beta.8] - 2026-04-06
 
 ### Added
