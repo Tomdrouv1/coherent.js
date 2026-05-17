@@ -26,6 +26,7 @@
     "build:packages": "pnpm -r --stream run build",
     "build:types": "tsc --build",
     "publish:beta": "pnpm publish -r --access public --tag beta --no-git-checks",
+    "publish:rc": "pnpm publish -r --access public --tag rc --no-git-checks",
     "publish:latest": "pnpm publish -r --access public --no-git-checks",
     "release": "pnpm changeset version && pnpm publish -r --access public --no-git-checks",
     "changeset": "changeset",

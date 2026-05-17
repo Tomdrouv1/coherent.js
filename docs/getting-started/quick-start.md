@@ -31,7 +31,7 @@ npm install @coherent.js/core@beta
 pnpm add @coherent.js/core@beta
 ```
 
-> **Note**: Coherent.js is currently in beta (v1.0.0-beta.8).
+> **Note**: Coherent.js 1.0 is currently in release-candidate. Install with `pnpm add @coherent.js/core@rc`. The stable release follows after a 1-2 week soak.
  
 
 ### 2. Your First Component

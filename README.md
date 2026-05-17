@@ -11,7 +11,7 @@ Coherent.js delivers exceptional performance with validated production metrics:
 
 - **📦 Per-package bundle size gated by CI** (see `packages/*/bundle-size.json`)
 - **🚀 247 renders/sec** with LRU caching  
-- **🔧 100% tree-shaking ready** across all 21 packages
+- **🔧 100% tree-shaking ready** across all 12 packages
 
 ## 🎯 **Why Coherent.js?**
 
