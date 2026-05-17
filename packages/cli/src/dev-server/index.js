@@ -51,9 +51,10 @@ export async function startDevServer(options) {
     host = 'localhost',
     open = false,
     log = true,
+    hmr = true,
   } = options;
 
-  const handler = createStaticHandler({ root });
+  const handler = createStaticHandler({ root, hmr });
   const httpServer = createServer(handler);
 
   await new Promise((resolve, reject) => {
@@ -66,41 +67,47 @@ export async function startDevServer(options) {
 
   const actualPort = httpServer.address().port;
 
-  const hmr = createHmrServer(httpServer);
-
-  const watcher = await createFileWatcher({
-    root,
-    onChange: (change) => {
-      hmr.broadcast({
-        type: 'hmr-update',
-        filePath: change.filePath,
-        webPath: change.webPath,
-        updateType: change.updateType,
-      });
-      if (log) {
-        console.log(picocolors.cyan('[hmr]'), change.updateType, change.webPath);
-      }
-    },
-    onError: (err) => {
-      hmr.broadcast({
-        type: 'hmr-error',
-        error: {
-          message: err.message,
-          file: null,
-          line: null,
-          column: null,
-          stack: err.stack,
-        },
-      });
-      if (log) {
-        console.warn(picocolors.yellow('[hmr] watcher error:'), err.message);
-      }
-    },
-  });
+  let hmrServer = null;
+  let watcher = null;
+  if (hmr) {
+    hmrServer = createHmrServer(httpServer);
+    watcher = await createFileWatcher({
+      root,
+      onChange: (change) => {
+        hmrServer.broadcast({
+          type: 'hmr-update',
+          filePath: change.filePath,
+          webPath: change.webPath,
+          updateType: change.updateType,
+        });
+        if (log) {
+          console.log(picocolors.cyan('[hmr]'), change.updateType, change.webPath);
+        }
+      },
+      onError: (err) => {
+        hmrServer.broadcast({
+          type: 'hmr-error',
+          error: {
+            message: err.message,
+            file: null,
+            line: null,
+            column: null,
+            stack: err.stack,
+          },
+        });
+        if (log) {
+          console.warn(picocolors.yellow('[hmr] watcher error:'), err.message);
+        }
+      },
+    });
+  }
 
   if (log) {
     console.log(picocolors.green('✅ Coherent dev server ready'));
     console.log(picocolors.cyan('🌐 Local:'), `http://${host}:${actualPort}`);
+    if (!hmr) {
+      console.log(picocolors.gray('   HMR: disabled (--no-hmr)'));
+    }
   }
 
   if (open) {
@@ -116,8 +123,8 @@ export async function startDevServer(options) {
     port: actualPort,
     host,
     async close() {
-      await watcher.close();
-      hmr.close();
+      if (watcher) await watcher.close();
+      if (hmrServer) hmrServer.close();
       await new Promise((resolve) => httpServer.close(() => resolve()));
     },
   };
