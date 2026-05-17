@@ -17,10 +17,7 @@ coherent.js/
 │   ├── client/                         # @coherent.js/client - Client-side hydration
 │   ├── api/                            # @coherent.js/api - API framework
 │   │
-│   ├── integrations/                   # @coherent.js/integrations - Framework adapters via subpath exports (express; more added in upcoming Wave 2c tasks)
-│   ├── fastify/                        # @coherent.js/fastify - Fastify integration  
-│   ├── koa/                            # @coherent.js/koa - Koa.js integration
-│   ├── nextjs/                         # @coherent.js/nextjs - Next.js integration
+│   ├── integrations/                   # @coherent.js/integrations - Framework adapters via subpath exports (express, fastify, koa, nextjs; more added in upcoming Wave 2c tasks)
 │   │
 │   ├── database/                       # @coherent.js/database - Database adapters
 │   ├── forms/                          # @coherent.js/forms - Form utilities

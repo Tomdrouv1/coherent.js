@@ -18,7 +18,6 @@ const packagesNeedingExports = [
   'adapters',
   'client',
   'devtools',
-  'fastify',
   'i18n'
 ];
 
@@ -103,24 +102,6 @@ import { createModel } from '@coherent.js/database/model';`
     example: `import { createForm } from '@coherent.js/forms';
 import { validateForm } from '@coherent.js/forms/validation';`
   },
-  'fastify': {
-    description: 'Fastify adapter for Coherent.js',
-    exports: [
-      'Fastify integration: `@coherent.js/fastify`',
-      'Handler creation: `@coherent.js/fastify`'
-    ],
-    example: `import { setupCoherent } from '@coherent.js/fastify';
-import { createHandler } from '@coherent.js/fastify';`
-  },
-  'koa': {
-    description: 'Koa adapter for Coherent.js',
-    exports: [
-      'Koa integration: `@coherent.js/koa`',
-      'Handler creation: `@coherent.js/koa`'
-    ],
-    example: `import { setupCoherent } from '@coherent.js/koa';
-import { createHandler } from '@coherent.js/koa';`
-  },
   'i18n': {
     description: 'Internationalization utilities',
     exports: [
@@ -142,13 +123,6 @@ import { createHandler } from '@coherent.js/koa';`
     ],
     example: `import { createAdapter } from '@coherent.js/adapters';`
   },
-  'nextjs': {
-    description: 'Next.js integration',
-    exports: [
-      'Next.js integration: `@coherent.js/nextjs`'
-    ],
-    example: `import { setupCoherent } from '@coherent.js/nextjs';`
-  }
 };
 
 /**

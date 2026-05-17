@@ -9,12 +9,9 @@
     "@coherent.js/core": "1.0.0-beta.5",
     "@coherent.js/database": "1.0.0-beta.5",
     "@coherent.js/devtools": "1.0.0-beta.5",
-    "@coherent.js/fastify": "1.0.0-beta.5",
     "@coherent.js/forms": "1.0.0-beta.5",
     "@coherent.js/i18n": "1.0.0-beta.5",
     "@coherent.js/integrations": "1.0.0-beta.8",
-    "@coherent.js/koa": "1.0.0-beta.5",
-    "@coherent.js/nextjs": "1.0.0-beta.5",
     "@coherent.js/seo": "1.0.0-beta.5",
     "@coherent.js/state": "1.0.0-beta.5",
     "@coherent.js/tooling": "1.0.0-beta.5"

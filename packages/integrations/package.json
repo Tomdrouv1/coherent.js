@@ -7,6 +7,17 @@
     "./express": {
       "types": "./types/express/index.d.ts",
       "import": "./src/express/index.js"
+    },
+    "./fastify": {
+      "types": "./types/fastify/index.d.ts",
+      "import": "./src/fastify/index.js"
+    },
+    "./koa": {
+      "import": "./src/koa/index.js"
+    },
+    "./nextjs": {
+      "types": "./types/nextjs/index.d.ts",
+      "import": "./src/nextjs/index.js"
     }
   },
   "files": [
@@ -36,10 +47,26 @@
   },
   "peerDependencies": {
     "@coherent.js/core": "workspace:*",
-    "express": ">=4.18.0 < 6.0.0"
+    "express": ">=4.18.0 < 6.0.0",
+    "fastify": ">=4.0.0 < 6.0.0",
+    "koa": ">=2.13.0 < 4.0.0",
+    "next": ">=13.0.0",
+    "react": ">=18.0.0"
   },
   "peerDependenciesMeta": {
     "express": {
+      "optional": true
+    },
+    "fastify": {
+      "optional": true
+    },
+    "koa": {
+      "optional": true
+    },
+    "next": {
+      "optional": true
+    },
+    "react": {
       "optional": true
     }
   },

@@ -1,9 +1,17 @@
 /**
  * Tests for Fastify integration with Coherent.js
+ *
+ * Migrated from packages/fastify/test/fastify-integration.test.js during
+ * Wave 2c (integrations consolidation). Imports the coherent-fastify helpers
+ * from the new integrations package path.
  */
 
 import { describe, it, expect } from 'vitest';
-import { coherentFastify, createHandler, setupCoherent } from '../src/coherent-fastify.js';
+import {
+  coherentFastify,
+  createHandler,
+  setupCoherent
+} from '../../src/fastify/coherent-fastify.js';
 import { render } from '@coherent.js/core';
 
 describe('Fastify Integration', () => {

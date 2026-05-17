@@ -77,10 +77,10 @@ describe('Scaffold Matrix Tests', () => {
             expect(packageJson.dependencies['@coherent.js/integrations']).toBeDefined();
           } else if (runtime === 'fastify') {
             expect(packageJson.dependencies.fastify).toBeDefined();
-            expect(packageJson.dependencies['@coherent.js/fastify']).toBeDefined();
+            expect(packageJson.dependencies['@coherent.js/integrations']).toBeDefined();
           } else if (runtime === 'koa') {
             expect(packageJson.dependencies.koa).toBeDefined();
-            expect(packageJson.dependencies['@coherent.js/koa']).toBeDefined();
+            expect(packageJson.dependencies['@coherent.js/integrations']).toBeDefined();
           }
         } finally {
           await cleanupTempDir(tempDir);

@@ -81,10 +81,7 @@ coherent.js/
 │   ├── api/                            # @coherent.js/api - API framework
 │   ├── state/                          # @coherent.js/state - Reactive state management
 │   │
-│   ├── integrations/                   # @coherent.js/integrations - Framework adapters via subpath exports (express; more added in upcoming Wave 2c tasks)
-│   ├── fastify/                        # @coherent.js/fastify - Fastify integration
-│   ├── koa/                            # @coherent.js/koa - Koa.js integration
-│   ├── nextjs/                         # @coherent.js/nextjs - Next.js integration
+│   ├── integrations/                   # @coherent.js/integrations - Framework adapters via subpath exports (express, fastify, koa, nextjs; more added in upcoming Wave 2c tasks)
 │   │
 │   ├── database/                       # @coherent.js/database - Database adapters
 │   ├── forms/                          # @coherent.js/forms - Form utilities & validation
@@ -331,16 +328,16 @@ export function createCoherentHandler(componentFactory, options = {}) {
    - Route handler factory
    - Error handling
 
-2. **Fastify** (`@coherent.js/fastify`)
+2. **Fastify** (`@coherent.js/integrations/fastify`)
    - Plugin system
    - Reply decorators
    - Hook integration
 
-3. **Koa** (`@coherent.js/koa`)
+3. **Koa** (`@coherent.js/integrations/koa`)
    - Middleware support
    - Context integration
 
-4. **Next.js** (`@coherent.js/nextjs`)
+4. **Next.js** (`@coherent.js/integrations/nextjs`)
    - Server Components
    - Client Components
    - App Router support

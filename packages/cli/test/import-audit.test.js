@@ -108,16 +108,23 @@ const PACKAGE_EXPORTS = {
     'setupCoherent',
     'expressEngine'
   ],
-  '@coherent.js/fastify': [
+  '@coherent.js/integrations/fastify': [
     'coherentFastify',
     'createHandler',
     'setupCoherent'
   ],
-  '@coherent.js/koa': [
+  '@coherent.js/integrations/koa': [
     'setupCoherent',
     'coherentKoaMiddleware',
     'createHandler',
     'createKoaIntegration'
+  ],
+  '@coherent.js/integrations/nextjs': [
+    'createCoherentNextHandler',
+    'createCoherentAppRouterHandler',
+    'createCoherentServerComponent',
+    'createCoherentClientComponent',
+    'createNextIntegration'
   ],
   '@coherent.js/api': [
     'createRouter',

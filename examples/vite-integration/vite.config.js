@@ -45,7 +45,7 @@ export default defineConfig({
   build: {
     target: 'node20',
     rollupOptions: {
-      external: ['@coherent.js/integrations', '@coherent.js/fastify']
+      external: ['@coherent.js/integrations']
     }
   },
   

@@ -1,7 +1,11 @@
 // Type definitions for Coherent.js Fastify Integration
+//
+// Migrated from packages/fastify/src/coherent-fastify.d.ts during
+// Wave 2c (integrations consolidation). Declarations are aligned with the
+// runtime exports of ../../src/fastify/coherent-fastify.js.
 
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { CoherentNode } from '../coherent';
+import type { CoherentNode } from '@coherent.js/core';
 
 export interface CoherentFastifyOptions {
   /**
@@ -9,19 +13,19 @@ export interface CoherentFastifyOptions {
    * @default false
    */
   enablePerformanceMonitoring?: boolean;
-  
+
   /**
    * HTML template to wrap rendered components
-   * @default '<!DOCTYPE html><html><body>{{content}}</body></html>'
+   * @default '<!DOCTYPE html>\n{{content}}'
    */
   template?: string;
-  
+
   /**
    * Enable server-side rendering
    * @default true
    */
   enableSSR?: boolean;
-  
+
   /**
    * Static file directory for client-side assets
    * @default 'public'
@@ -35,13 +39,13 @@ export interface CoherentFastifyHandlerOptions {
    * @default false
    */
   enablePerformanceMonitoring?: boolean;
-  
+
   /**
    * HTML template to wrap rendered components
-   * @default '<!DOCTYPE html><html><body>{{content}}</body></html>'
+   * @default '<!DOCTYPE html>\n{{content}}'
    */
   template?: string;
-  
+
   /**
    * Enable streaming rendering for large components
    * @default false
@@ -69,7 +73,10 @@ export function coherentFastify(
  * @returns Fastify route handler
  */
 export function createHandler(
-  componentFactory: (request: FastifyRequest, reply: FastifyReply) => CoherentNode | Promise<CoherentNode>,
+  componentFactory: (
+    request: FastifyRequest,
+    reply: FastifyReply
+  ) => CoherentNode | Promise<CoherentNode>,
   options?: CoherentFastifyHandlerOptions
 ): (request: FastifyRequest, reply: FastifyReply) => Promise<any>;
 
@@ -85,17 +92,6 @@ export function setupCoherent(
 ): void;
 
 /**
- * Render a Coherent component to HTML string
- * @param component Coherent component to render
- * @param options Rendering options
- * @returns Rendered HTML string
- */
-export function renderComponent(
-  component: CoherentNode,
-  options?: CoherentFastifyHandlerOptions
-): string;
-
-/**
  * Fastify reply extensions
  */
 declare module 'fastify' {
@@ -106,13 +102,16 @@ declare module 'fastify' {
      * @returns True if object is a valid Coherent component
      */
     isCoherentObject(obj: any): boolean;
-    
+
     /**
      * Render and send a Coherent component as HTML response
      * @param component Coherent component to render
      * @param options Rendering options
      */
-    coherent(component: CoherentNode, options?: CoherentFastifyHandlerOptions): void;
+    coherent(
+      component: CoherentNode,
+      options?: CoherentFastifyHandlerOptions
+    ): void;
   }
 }
 
