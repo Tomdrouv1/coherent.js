@@ -122,17 +122,6 @@ export function setupCoherent(
 ): void;
 
 /**
- * Render a Coherent component to HTML string
- * @param component Coherent component to render
- * @param options Rendering options
- * @returns Rendered HTML string
- */
-export function renderComponent(
-  component: CoherentNode,
-  options?: CoherentMiddlewareOptions
-): string;
-
-/**
  * Default export with all utilities
  */
 declare const coherentExpress: {
@@ -140,7 +129,6 @@ declare const coherentExpress: {
   createCoherentHandler: typeof createCoherentHandler;
   enhancedExpressEngine: typeof enhancedExpressEngine;
   setupCoherent: typeof setupCoherent;
-  renderComponent: typeof renderComponent;
 };
 
 export default coherentExpress;
