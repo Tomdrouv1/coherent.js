@@ -225,7 +225,7 @@ function getEntryPoint(packageName) {
     'core': 'src/index.js',
     'api': 'src/index.js',
     'database': 'src/index.js',
-    'client': 'src/hydration.js',
+    'client': 'src/index.js',
     'express': 'src/index.js',
     'fastify': 'src/index.js',
     'koa': 'src/index.js',

@@ -11,10 +11,6 @@
       "development": "./src/index.js",
       "import": "./dist/index.js"
     },
-    "./hydration": {
-      "types": "./types/hydration.d.ts",
-      "default": "./src/hydration.js"
-    },
     "./events": {
       "types": "./types/events.d.ts",
       "default": "./src/events/index.js"
