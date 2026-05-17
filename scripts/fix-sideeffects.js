@@ -27,7 +27,6 @@ const packagesToFix = [
   'fastify',
   'koa',
   'profiler',
-  'build-tools',
   'adapters'
 ];
 

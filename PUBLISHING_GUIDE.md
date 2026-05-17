@@ -39,13 +39,12 @@
 8. `@coherent.js/forms` - Form utilities
 9. `@coherent.js/seo` - SEO optimization
 10. `@coherent.js/performance` - Performance optimization
-11. `@coherent.js/cli` - CLI tools
-12. `@coherent.js/build-tools` - Build utilities
-13. `@coherent.js/express` - Express.js integration
-14. `@coherent.js/fastify` - Fastify integration
-15. `@coherent.js/koa` - Koa.js integration
-16. `@coherent.js/nextjs` - Next.js integration
-17. `@coherent.js/adapters` - Framework adapters
+11. `@coherent.js/cli` - CLI tools (includes build-tools subpath)
+12. `@coherent.js/express` - Express.js integration
+13. `@coherent.js/fastify` - Fastify integration
+14. `@coherent.js/koa` - Koa.js integration
+15. `@coherent.js/nextjs` - Next.js integration
+16. `@coherent.js/adapters` - Framework adapters
 
 ---
 

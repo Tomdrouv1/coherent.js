@@ -19,6 +19,5 @@
     { "path": "./packages/cli" },
     { "path": "./packages/profiler" },
     { "path": "./packages/state" },
-    { "path": "./packages/build-tools" },
   ]
 }

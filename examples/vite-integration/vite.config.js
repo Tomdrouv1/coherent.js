@@ -3,11 +3,11 @@
  */
 
 import { defineConfig } from 'vite';
-import { coherentVitePlugin } from '@coherent.js/build-tools/vite';
+import { createVitePlugin } from '@coherent.js/cli/build-tools/vite';
 
 export default defineConfig({
   plugins: [
-    coherentVitePlugin({
+    createVitePlugin({
       // Enable server-side rendering
       ssr: true,
       
