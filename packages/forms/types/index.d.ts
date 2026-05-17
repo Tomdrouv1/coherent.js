@@ -383,45 +383,6 @@ export const validators: {
   async(fn: (value: unknown) => Promise<boolean | string>): Validator;
 };
 
-/** Alias for validators */
-export const formValidators: typeof validators;
-
-// ============================================================================
-// Advanced Validation
-// ============================================================================
-
-/**
- * Validation rule configuration
- */
-export interface ValidationRule {
-  /** The validator function */
-  validator: Validator;
-  /** Custom error message */
-  message?: string;
-  /** Whether this is an async validator */
-  async?: boolean;
-}
-
-/**
- * Create an async validator
- */
-export function createAsyncValidator(
-  fn: (value: unknown) => Promise<boolean | string>
-): Validator;
-
-/**
- * Combine multiple validators into one
- */
-export function combineValidators(...validators: Validator[]): Validator;
-
-/**
- * Create a conditional validator
- */
-export function conditionalValidator(
-  condition: (data: Record<string, unknown>) => boolean,
-  validator: Validator
-): Validator;
-
 // ============================================================================
 // Form Utilities
 // ============================================================================
@@ -444,14 +405,6 @@ export function createFieldGroup(
   fields: FormField[]
 ): CoherentNode;
 
-// ============================================================================
-// Deprecated Functions (Backward Compatibility)
-// ============================================================================
-
-/** @deprecated Use createFormBuilder() on server + hydrateForm() on client */
-export function createForm(config: FormConfig): CoherentNode;
-
-/** @deprecated Use validators with hydrateForm() instead */
-export function enhancedForm(
-  config: FormConfig & { validation?: Record<string, Validator[]> }
-): CoherentNode;
+// 1.0: removed deprecated SPA APIs — createForm, formValidators, enhancedForm,
+// createAsyncValidator, combineValidators, conditionalValidator.
+// See docs/migration/1.0#removed-forms-spa-apis.

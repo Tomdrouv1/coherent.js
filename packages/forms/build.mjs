@@ -5,9 +5,7 @@ const entries = [
   'src/form-builder.js',
   'src/form-hydration.js',
   'src/validation.js',
-  'src/validators.js',
-  'src/forms.js',
-  'src/advanced-validation.js'
+  'src/validators.js'
 ];
 
 for (const entry of entries) {

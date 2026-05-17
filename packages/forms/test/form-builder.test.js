@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { FormBuilder, createForm } from '../src/form-builder.js';
+import { FormBuilder, createFormBuilder } from '../src/form-builder.js';
 
 describe('FormBuilder', () => {
   let form;
@@ -375,7 +375,7 @@ describe('FormBuilder', () => {
 
   describe('Helper Functions', () => {
     it('should create form with factory function', () => {
-      const newForm = createForm({
+      const newForm = createFormBuilder({
         name: 'contactForm',
         fields: [
           { name: 'email', type: 'email', required: true },
