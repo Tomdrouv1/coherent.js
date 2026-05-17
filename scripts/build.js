@@ -110,7 +110,7 @@ const builds = [
 
     // Optional client-side hydration
     {
-        entryPoints: ['packages/client/src/hydration.js'],
+        entryPoints: ['packages/client/src/index.js'],
         format: 'esm',
         outfile: 'dist/client.js',
         platform: 'browser',
