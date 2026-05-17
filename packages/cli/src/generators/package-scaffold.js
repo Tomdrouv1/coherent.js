@@ -286,10 +286,10 @@ export const i18n = createI18n({
  */
 export function generateFormsScaffolding() {
   const exampleForm = `
-import { createForm, validators } from '@coherent.js/forms';
+import { createFormBuilder, validators } from '@coherent.js/forms';
 
 export function ContactForm(props = {}) {
-  const form = createForm({
+  const form = createFormBuilder({
     fields: {
       name: {
         type: 'text',

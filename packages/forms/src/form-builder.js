@@ -566,15 +566,6 @@ export class FormBuilder {
  * Create a form builder
  */
 export function createFormBuilder(options = {}) {
-  return new FormBuilder(options);
-}
-
-/**
- * Create a form with UI builder capabilities (for SSR rendering)
- * Alias for createFormBuilder - Use createFormBuilder() instead
- * @deprecated Use createFormBuilder() to avoid conflicts with advanced form system
- */
-export function createForm(options = {}) {
   const form = new FormBuilder(options);
 
   // Add fields if provided
@@ -603,6 +594,5 @@ export function buildForm(fields, options = {}) {
 export default {
   FormBuilder,
   createFormBuilder,
-  createForm,
   buildForm
 };
