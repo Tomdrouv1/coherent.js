@@ -13,7 +13,7 @@
     "url": "https://github.com/Tomdrouv1/coherent.js/issues"
   },
   "engines": {
-    "vscode": "^1.85.0"
+    "vscode": "^1.118.0"
   },
   "categories": [
     "Programming Languages",
@@ -77,7 +77,10 @@
   },
   "scripts": {
     "build": "node esbuild.config.mjs",
+    "clean": "rm -rf dist server",
     "package": "vsce package --no-dependencies",
-    "publish:vsce": "vsce publish --no-dependencies"
+    "prepublishOnly": "pnpm run build",
+    "publish:vsce": "vsce publish --no-dependencies",
+    "vscode:prepublish": "pnpm run build"
   }
 }
