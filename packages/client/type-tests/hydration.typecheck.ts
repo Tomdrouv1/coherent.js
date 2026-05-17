@@ -3,12 +3,6 @@
  *
  * Tests type correctness for:
  * - hydrate() function (clean API)
- * - hydrateAll() function
- * - hydrateBySelector() function
- * - autoHydrate() function
- * - enableClientEvents() function
- * - makeHydratable() function
- * - registerEventHandler() function
  * - SerializableState type
  * - EventHandler types
  * - ClientComponent interface
@@ -27,12 +21,10 @@ import type {
   ComponentProps,
   // Hydration types
   HydrateControl,
-  HydratedInstance,
   HydrationOptions,
   HydrationMismatch,
   HydrationResult,
   BatchHydrationResult,
-  MakeHydratableOptions,
   // State types
   SerializableState,
   SerializablePrimitive,
@@ -60,13 +52,6 @@ import type {
 
 import {
   hydrate,
-  legacyHydrate,
-  hydrateAll,
-  hydrateBySelector,
-  autoHydrate,
-  enableClientEvents,
-  makeHydratable,
-  registerEventHandler,
   serializeState,
   deserializeState,
   extractState,
@@ -123,133 +108,15 @@ const controlWithOptions = hydrate(MyComponent, container, {
 expectTypeOf(controlWithOptions).toMatchTypeOf<HydrateControl>();
 
 // ============================================================================
-// Test: legacyHydrate() function
+// Test: StateAwareHandler used downstream (kept for clickHandler reference)
 // ============================================================================
 
-const legacyInstance = legacyHydrate(container, MyComponent);
-expectTypeOf(legacyInstance).toMatchTypeOf<HydratedInstance | null>();
-
-if (legacyInstance) {
-  // HydratedInstance should have element, component, props, state, isHydrated
-  expectTypeOf(legacyInstance.element).toMatchTypeOf<HTMLElement>();
-  expectTypeOf(legacyInstance.component).toMatchTypeOf<CoherentComponent>();
-  expectTypeOf(legacyInstance.props).toMatchTypeOf<Record<string, any>>();
-  expectTypeOf(legacyInstance.state).toMatchTypeOf<SerializableState>();
-  expectTypeOf(legacyInstance.isHydrated).toBeBoolean();
-
-  // HydratedInstance should have update, rerender, destroy, setState methods
-  expectTypeOf(legacyInstance.update).toBeFunction();
-  expectTypeOf(legacyInstance.rerender).toBeFunction();
-  expectTypeOf(legacyInstance.destroy).toBeFunction();
-  expectTypeOf(legacyInstance.setState).toBeFunction();
-
-  // update should return HydratedInstance for chaining
-  expectTypeOf(legacyInstance.update({ title: 'New' })).toMatchTypeOf<HydratedInstance>();
-
-  // setState should accept partial state or updater
-  legacyInstance.setState({ count: 1 });
-  legacyInstance.setState((prev) => ({ count: (prev.count as number) + 1 }));
-}
-
-// ============================================================================
-// Test: hydrateAll() function
-// ============================================================================
-
-declare const elements: HTMLElement[];
-declare const components: CoherentComponent[];
-
-const instances = hydrateAll(elements, components);
-expectTypeOf(instances).toMatchTypeOf<Array<HydratedInstance | null>>();
-
-// hydrateAll should accept props array
-const instancesWithProps = hydrateAll(elements, components, [{ a: 1 }, { b: 2 }]);
-expectTypeOf(instancesWithProps).toMatchTypeOf<Array<HydratedInstance | null>>();
-
-// ============================================================================
-// Test: hydrateBySelector() function
-// ============================================================================
-
-const selectorInstances = hydrateBySelector('.my-component', MyComponent);
-expectTypeOf(selectorInstances).toMatchTypeOf<Array<HydratedInstance | null>>();
-
-// hydrateBySelector should accept props
-const selectorInstancesWithProps = hydrateBySelector('.my-component', MyComponent, { title: 'Hello' });
-expectTypeOf(selectorInstancesWithProps).toMatchTypeOf<Array<HydratedInstance | null>>();
-
-// ============================================================================
-// Test: autoHydrate() function
-// ============================================================================
-
-// autoHydrate should accept optional component registry
-autoHydrate();
-autoHydrate({ Counter: MyComponent, TodoList: MyComponent });
-
-expectTypeOf(autoHydrate).toBeFunction();
-expectTypeOf(autoHydrate).returns.toBeVoid();
-
-// ============================================================================
-// Test: enableClientEvents() function
-// ============================================================================
-
-// enableClientEvents should accept optional root element
-enableClientEvents();
-enableClientEvents(document);
-enableClientEvents(container);
-
-expectTypeOf(enableClientEvents).toBeFunction();
-expectTypeOf(enableClientEvents).returns.toBeVoid();
-
-// ============================================================================
-// Test: makeHydratable() function
-// ============================================================================
-
-const HydratableComponent = makeHydratable(MyComponent);
-
-// Should preserve the component function signature
-expectTypeOf(HydratableComponent).toMatchTypeOf<CoherentComponent>();
-
-// Should add isHydratable flag
-expectTypeOf(HydratableComponent.isHydratable).toEqualTypeOf<true>();
-
-// Should add hydrationOptions
-expectTypeOf(HydratableComponent.hydrationOptions).toMatchTypeOf<MakeHydratableOptions>();
-
-// Should add autoHydrate method
-expectTypeOf(HydratableComponent.autoHydrate).toBeFunction();
-
-// Should add getHydrationData method
-const hydrationData = HydratableComponent.getHydrationData({ title: 'Hello' }, { count: 0 });
-expectTypeOf(hydrationData.componentName).toBeString();
-expectTypeOf(hydrationData.props).toMatchTypeOf<Record<string, any>>();
-expectTypeOf(hydrationData.hydrationAttributes).toMatchTypeOf<Record<string, string | null>>();
-
-// Should add renderWithHydration method
-expectTypeOf(HydratableComponent.renderWithHydration).toBeFunction();
-expectTypeOf(HydratableComponent.renderWithHydration()).toMatchTypeOf<CoherentNode>();
-
-// makeHydratable should accept options
-const HydratableWithOptions = makeHydratable(MyComponent, {
-  componentName: 'MyCounter',
-  initialState: { count: 0 },
-});
-expectTypeOf(HydratableWithOptions.isHydratable).toEqualTypeOf<true>();
-
-// ============================================================================
-// Test: registerEventHandler() function
-// ============================================================================
-
-// registerEventHandler should accept id and StateAwareHandler
 const clickHandler: StateAwareHandler<{ count: number }, MouseEvent> = (event, state, setState) => {
   expectTypeOf(event).toMatchTypeOf<MouseEvent>();
   expectTypeOf(state).toMatchTypeOf<{ count: number }>();
   expectTypeOf(setState).toBeFunction();
   setState({ count: state.count + 1 });
 };
-
-registerEventHandler('my-click-handler', clickHandler);
-
-expectTypeOf(registerEventHandler).toBeFunction();
-expectTypeOf(registerEventHandler).returns.toBeVoid();
 
 // ============================================================================
 // Test: SerializableState type
@@ -566,14 +433,6 @@ expectTypeOf(permissiveMismatches).toMatchTypeOf<HydrationMismatch[]>();
 // ============================================================================
 // Test: Type guards and narrowing
 // ============================================================================
-
-// Verify null checks work properly
-const maybeInstance = legacyHydrate(container, componentFunction);
-if (maybeInstance !== null) {
-  // TypeScript should narrow to HydratedInstance
-  maybeInstance.rerender();
-  maybeInstance.setState({ count: 1 });
-}
 
 // Verify state extraction null check
 const maybeState = extractState(container);

@@ -28,13 +28,6 @@ import {
   ComponentState,
   // Hydration functions
   hydrate,
-  legacyHydrate,
-  hydrateAll,
-  hydrateBySelector,
-  autoHydrate,
-  enableClientEvents,
-  makeHydratable,
-  registerEventHandler,
   // State serialization
   serializeState,
   deserializeState,
@@ -67,10 +60,8 @@ import {
 import type {
   // Hydration types
   HydrateControl,
-  HydratedInstance,
   HydrationOptions,
   HydrationMismatch,
-  MakeHydratableOptions,
   // State types
   SerializableState,
   // Event types
@@ -155,25 +146,8 @@ const controlWithOpts = hydrate(MyComponent, container, {
 });
 expectTypeOf(controlWithOpts).toMatchTypeOf<HydrateControl>();
 
-// enableClientEvents returns void
-expectTypeOf(enableClientEvents).returns.toBeVoid();
-enableClientEvents();
-enableClientEvents(document);
-enableClientEvents(container);
-
-// makeHydratable returns enhanced component
-const hydratable = makeHydratable(MyComponent);
-expectTypeOf(hydratable).toMatchTypeOf<CoherentComponent>();
-expectTypeOf(hydratable.isHydratable).toEqualTypeOf<true>();
-expectTypeOf(hydratable.hydrationOptions).toMatchTypeOf<MakeHydratableOptions>();
-expectTypeOf(hydratable.autoHydrate).toBeFunction();
-expectTypeOf(hydratable.getHydrationData).toBeFunction();
-expectTypeOf(hydratable.renderWithHydration).toBeFunction();
-
-// registerEventHandler returns void
+// Handler used downstream in wrapEvent assertion below
 const handler: StateAwareHandler = (e, s, ss) => {};
-registerEventHandler('my-handler', handler);
-expectTypeOf(registerEventHandler).returns.toBeVoid();
 
 // ============================================================================
 // Test: State Serialization API
@@ -668,23 +642,11 @@ type IsEqual<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends 
 // hydrate returns HydrateControl (not null anymore - clean API)
 type _hydrate_returns_object = Assert<IsEqual<ReturnType<typeof hydrate> extends object ? true : false, true>>;
 
-// enableClientEvents returns void
-type _enableClientEvents_returns_void = Assert<IsEqual<ReturnType<typeof enableClientEvents>, void>>;
-
-// makeHydratable returns function with additional properties
-type _makeHydratable_returns_function = Assert<IsEqual<ReturnType<typeof makeHydratable> extends Function ? true : false, true>>;
-
-// registerEventHandler returns void
-type _registerEventHandler_returns_void = Assert<IsEqual<ReturnType<typeof registerEventHandler>, void>>;
-
 // createRouter returns Router
 type _createRouter_returns_router = Assert<IsEqual<ReturnType<typeof createRouter>, RouterFromModule>>;
 
 // Export types to ensure they're used
 export type {
   _hydrate_returns_object,
-  _enableClientEvents_returns_void,
-  _makeHydratable_returns_function,
-  _registerEventHandler_returns_void,
   _createRouter_returns_router,
 };
