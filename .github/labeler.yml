@@ -58,8 +58,8 @@ backend:
 # Build tools labels
 build-tools:
   - changed-files:
-      - any-glob-to-any-file: 
-          - packages/build-tools/**/*
+      - any-glob-to-any-file:
+          - packages/cli/src/build-tools/**/*
           - packages/profiler/**/*
 
 # Documentation labels

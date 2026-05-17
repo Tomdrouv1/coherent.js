@@ -51,7 +51,6 @@ Welcome to the official documentation for Coherent.js, a high-performance server
 ### 🧪 Testing & Tooling
 - [Testing Guide](testing/guide.md) - Testing utilities and matchers
 - [Profiler](profiler/README.md) - Performance profiling and metrics
-- [Build Tools](build-tools/README.md) - Vite, Webpack, and Rollup plugins
 
 ### 🧩 Extended Packages
 - [Forms Guide](forms/guide.md) - Form building, validation, and hydration
@@ -113,7 +112,6 @@ Coherent.js is a monorepo with multiple packages:
 - `@coherent.js/state` - Reactive state management
 - `@coherent.js/devtools` - Developer tools
 - `@coherent.js/profiler` - [Performance profiling](profiler/README.md)
-- `@coherent.js/build-tools` - [Build tool plugins](build-tools/README.md)
 
 ### Editor Tooling
 - `@coherent.js/language-server` - [LSP server](language-server/README.md)

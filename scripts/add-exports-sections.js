@@ -16,7 +16,6 @@ const packagesDir = path.join(__dirname, '../packages');
 // Packages that need exports sections (from audit)
 const packagesNeedingExports = [
   'adapters',
-  'build-tools',
   'client',
   'devtools',
   'express',
@@ -162,13 +161,6 @@ import { createHandler } from '@coherent.js/koa';`
       'Profiler utilities: `@coherent.js/profiler`'
     ],
     example: `import { createProfiler } from '@coherent.js/profiler';`
-  },
-  'build-tools': {
-    description: 'Build and development tools',
-    exports: [
-      'Build utilities: `@coherent.js/build-tools`'
-    ],
-    example: `import { buildProject } from '@coherent.js/build-tools';`
   },
   'adapters': {
     description: 'Framework adapters',

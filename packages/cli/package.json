@@ -14,7 +14,12 @@
     ".": {
       "import": "./dist/index.js"
     },
-    "./templates": "./templates/"
+    "./templates": "./templates/",
+    "./build-tools": "./src/build-tools/index.js",
+    "./build-tools/vite": "./src/build-tools/vite.js",
+    "./build-tools/webpack": "./src/build-tools/webpack.js",
+    "./build-tools/rollup": "./src/build-tools/rollup.js",
+    "./build-tools/loader": "./src/build-tools/coherent-loader.js"
   },
   "scripts": {
     "build": "node build.mjs",
@@ -30,6 +35,7 @@
     "types/",
     "dist/",
     "bin/",
+    "src/build-tools/",
     "templates/",
     "README.md",
     "LICENSE"
@@ -43,6 +49,22 @@
     "ora": "^8.2.0",
     "picocolors": "^1.1.1",
     "prompts": "^2.4.2"
+  },
+  "peerDependencies": {
+    "rollup": "^4.53.2",
+    "vite": "^7.2.2",
+    "webpack": "^5.102.1"
+  },
+  "peerDependenciesMeta": {
+    "vite": {
+      "optional": true
+    },
+    "webpack": {
+      "optional": true
+    },
+    "rollup": {
+      "optional": true
+    }
   },
   "license": "MIT",
   "repository": {

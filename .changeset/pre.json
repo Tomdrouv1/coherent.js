@@ -4,7 +4,6 @@
   "initialVersions": {
     "@coherent.js/adapters": "1.0.0-beta.5",
     "@coherent.js/api": "1.0.0-beta.5",
-    "@coherent.js/build-tools": "1.0.0-beta.5",
     "@coherent.js/cli": "1.0.0-beta.5",
     "@coherent.js/client": "1.0.0-beta.5",
     "@coherent.js/core": "1.0.0-beta.5",

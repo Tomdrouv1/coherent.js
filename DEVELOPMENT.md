@@ -30,8 +30,7 @@ coherent.js/
 │   ├── devtools/                       # @coherent.js/devtools - Developer tools
 │   ├── performance/                    # @coherent.js/performance - Performance utilities
 │   │
-│   ├── cli/                            # @coherent.js/cli - CLI tools
-│   ├── build-tools/                    # @coherent.js/build-tools - Build utilities
+│   ├── cli/                            # @coherent.js/cli - CLI tools (includes build-tools subpath)
 │   └── adapters/                       # @coherent.js/adapters - Framework adapters
 │
 ├── scripts/                            # Build and utility scripts
