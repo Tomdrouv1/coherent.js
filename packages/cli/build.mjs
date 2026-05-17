@@ -30,7 +30,9 @@ const buildConfig = {
     // Node.js built-ins
     'fs', 'path', 'url', 'child_process', 'os', 'util', 'stream', 'events',
     // Dependencies that should remain external
-    'commander', 'inquirer', 'chalk', 'ora', 'fs-extra', 'picocolors', 'prompts'
+    'commander', 'inquirer', 'chalk', 'ora', 'fs-extra', 'picocolors', 'prompts',
+    // Wave 4a HMR dev-server deps — kept external so they don't inflate dist/index.js
+    'ws', 'chokidar'
   ],
   define: {
     'process.env.NODE_ENV': '"production"'

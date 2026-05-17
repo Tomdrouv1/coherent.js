@@ -91,6 +91,9 @@ importers:
 
   packages/cli:
     dependencies:
+      chokidar:
+        specifier: 5.0.0
+        version: 5.0.0
       commander:
         specifier: ^12.1.0
         version: 12.1.0
@@ -115,6 +118,9 @@ importers:
       webpack:
         specifier: ^5.102.1
         version: 5.105.4(esbuild@0.28.0)
+      ws:
+        specifier: 8.20.0
+        version: 8.20.0
 
   packages/client:
     devDependencies:
