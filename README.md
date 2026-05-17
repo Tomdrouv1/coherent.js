@@ -9,9 +9,8 @@
 
 Coherent.js delivers exceptional performance with validated production metrics:
 
-- **📦 80.7KB gzipped** production bundle
+- **📦 Per-package bundle size gated by CI** (see `packages/*/bundle-size.json`)
 - **🚀 247 renders/sec** with LRU caching  
-- **🌳 79.5% tree shaking reduction** for development tools
 - **🔧 100% tree-shaking ready** across all 21 packages
 
 ## 🎯 **Why Coherent.js?**
@@ -87,10 +86,8 @@ import * as coherent from '@coherent.js/core';
 
 | Metric | Coherent.js | Traditional Frameworks |
 |--------|-------------|------------------------|
-| Bundle Size | **80.7KB gzipped** | 200KB+ |
 | Rendering Speed | **247 renders/sec** | 89 renders/sec |
 | Memory Usage | **50MB average** | 60MB+ |
-| Tree Shaking | **79.5% reduction** | Limited |
 
 ## 🏗️ **Architecture Overview**
 
@@ -117,7 +114,7 @@ import * as coherent from '@coherent.js/core';
 ├── Component Visualizer
 ├── Performance Dashboard
 ├── Enhanced Error Context
-└── Tree-shakable (79.5% reduction)
+└── Tree-shakable
 ```
 
 ## 📚 **Documentation**
@@ -243,7 +240,6 @@ Configure your editor's LSP client to use `coherent-language-server` for JavaScr
 All performance claims validated with real measurements:
 
 - ✅ **Bundle Analysis**: Real file sizes, not mock data
-- ✅ **Tree Shaking**: 79.5% reduction with selective imports
 - ✅ **Performance**: 247 renders/sec with LRU caching
 - ✅ **Optimization**: 100% tree-shaking ready across all packages
 
