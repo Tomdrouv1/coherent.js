@@ -1,7 +1,7 @@
 // Type definitions for Coherent.js Express.js Integration
 
 import { Request, Response, NextFunction, Application } from 'express';
-import { CoherentNode, ComponentFunction } from '../coherent';
+import type { CoherentNode } from '@coherent.js/core';
 
 export interface CoherentMiddlewareOptions {
   /**

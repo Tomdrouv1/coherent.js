@@ -350,7 +350,7 @@ export function getRuntimeDependencies(runtime) {
     'built-in': {},
     express: {
       express: '^4.19.2',
-      '@coherent.js/express': `^${cliVersion}`
+      '@coherent.js/integrations': `^${cliVersion}`
     },
     fastify: {
       fastify: '^4.28.1',

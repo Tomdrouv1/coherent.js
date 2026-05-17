@@ -16,8 +16,8 @@ api:
 # Integration labels
 integrations:
   - changed-files:
-      - any-glob-to-any-file: 
-          - packages/express/**/*
+      - any-glob-to-any-file:
+          - packages/integrations/**/*
           - packages/fastify/**/*
           - packages/koa/**/*
           - packages/nextjs/**/*

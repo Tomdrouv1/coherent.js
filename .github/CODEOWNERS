@@ -8,7 +8,7 @@ packages/client/ @Tomdrouv1
 packages/api/ @Tomdrouv1
 
 # Integrations
-packages/express/ @Tomdrouv1
+packages/integrations/ @Tomdrouv1
 packages/fastify/ @Tomdrouv1
 packages/koa/ @Tomdrouv1
 packages/nextjs/ @Tomdrouv1

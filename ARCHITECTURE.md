@@ -81,7 +81,7 @@ coherent.js/
 │   ├── api/                            # @coherent.js/api - API framework
 │   ├── state/                          # @coherent.js/state - Reactive state management
 │   │
-│   ├── express/                        # @coherent.js/express - Express.js integration
+│   ├── integrations/                   # @coherent.js/integrations - Framework adapters via subpath exports (express; more added in upcoming Wave 2c tasks)
 │   ├── fastify/                        # @coherent.js/fastify - Fastify integration
 │   ├── koa/                            # @coherent.js/koa - Koa.js integration
 │   ├── nextjs/                         # @coherent.js/nextjs - Next.js integration
@@ -298,7 +298,7 @@ All framework integrations use **shared rendering utilities** to eliminate code 
 All integrations follow this pattern:
 
 ```javascript
-// packages/express/src/coherent-express.js
+// packages/integrations/src/express/coherent-express.js
 import { 
   renderWithTemplate, 
   renderComponentFactory,
@@ -326,7 +326,7 @@ export function createCoherentHandler(componentFactory, options = {}) {
 
 ### Available Integrations
 
-1. **Express.js** (`@coherent.js/express`)
+1. **Express.js** (`@coherent.js/integrations/express`)
    - Middleware for automatic rendering
    - Route handler factory
    - Error handling

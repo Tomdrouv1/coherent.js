@@ -74,7 +74,7 @@ describe('Scaffold Matrix Tests', () => {
           // Runtime-specific deps
           if (runtime === 'express') {
             expect(packageJson.dependencies.express).toBeDefined();
-            expect(packageJson.dependencies['@coherent.js/express']).toBeDefined();
+            expect(packageJson.dependencies['@coherent.js/integrations']).toBeDefined();
           } else if (runtime === 'fastify') {
             expect(packageJson.dependencies.fastify).toBeDefined();
             expect(packageJson.dependencies['@coherent.js/fastify']).toBeDefined();

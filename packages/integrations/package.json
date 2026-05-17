@@ -1,0 +1,51 @@
+{
+  "name": "@coherent.js/integrations",
+  "version": "1.0.0-beta.8",
+  "description": "Framework integration adapters for Coherent.js: Express, Fastify, Koa, Next.js, Astro, Remix, SvelteKit.",
+  "type": "module",
+  "exports": {
+    "./express": {
+      "types": "./types/express/index.d.ts",
+      "import": "./src/express/index.js"
+    }
+  },
+  "files": [
+    "src/",
+    "types/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "node build.mjs",
+    "clean": "rm -rf dist/",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tomdrouv1/coherent.js.git"
+  },
+  "homepage": "https://github.com/Tomdrouv1/coherent.js",
+  "bugs": {
+    "url": "https://github.com/Tomdrouv1/coherent.js/issues"
+  },
+  "peerDependencies": {
+    "@coherent.js/core": "workspace:*",
+    "express": ">=4.18.0 < 6.0.0"
+  },
+  "peerDependenciesMeta": {
+    "express": {
+      "optional": true
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "sideEffects": false
+}
