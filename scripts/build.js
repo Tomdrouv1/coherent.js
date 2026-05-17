@@ -22,7 +22,7 @@ const builds = [
 
     // Express integration
     {
-        entryPoints: ['src/express/index.js'],
+        entryPoints: ['packages/integrations/src/express/index.js'],
         format: 'esm',
         outfile: 'dist/express.js',
         platform: 'node',
@@ -30,7 +30,7 @@ const builds = [
         external: ['express'],
     },
     {
-        entryPoints: ['src/express/index.js'],
+        entryPoints: ['packages/integrations/src/express/index.js'],
         format: 'cjs',
         outfile: 'dist/express.cjs',
         platform: 'node',

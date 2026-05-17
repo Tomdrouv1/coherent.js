@@ -171,7 +171,7 @@ export async function buildAll() {
     'api',
     'database',
     'client',
-    'express',
+    'integrations',
     'fastify',
     'koa',
     'nextjs'
@@ -226,7 +226,7 @@ function getEntryPoint(packageName) {
     'api': 'src/index.js',
     'database': 'src/index.js',
     'client': 'src/index.js',
-    'express': 'src/index.js',
+    'integrations': 'src/express/index.js',
     'fastify': 'src/index.js',
     'koa': 'src/index.js',
     'nextjs': 'src/index.js'
@@ -244,7 +244,7 @@ function getPackageExternals(packageName) {
     'api': ['@coherent.js/core'],
     'database': ['@coherent.js/core'],
     'client': ['@coherent.js/core'],
-    'express': ['@coherent.js/core'],
+    'integrations': ['@coherent.js/core'],
     'fastify': ['@coherent.js/core'],
     'koa': ['@coherent.js/core'],
     'nextjs': ['@coherent.js/core']

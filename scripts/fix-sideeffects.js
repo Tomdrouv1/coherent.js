@@ -22,7 +22,7 @@ const packagesToFix = [
   'tooling',
   'seo',
   'nextjs',
-  'express',
+  'integrations',
   'fastify',
   'koa',
   'adapters'

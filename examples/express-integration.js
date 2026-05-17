@@ -5,7 +5,7 @@
  */
 
 import express from 'express';
-import { createCoherentHandler, setupCoherent } from '@coherent.js/express';
+import { createCoherentHandler, setupCoherent } from '@coherent.js/integrations/express';
 
 const app = express();
 const PORT = process.env.PORT || 3000;

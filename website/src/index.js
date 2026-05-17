@@ -522,6 +522,6 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
 
   app.listen(port, () => {
     console.log(`Coherent.js website running at http://localhost:${port}`);
-    console.log('  Stack: Express + @coherent.js/express + @coherent.js/api + @coherent.js/core SSR');
+    console.log('  Stack: Express + @coherent.js/integrations/express + @coherent.js/api + @coherent.js/core SSR');
   });
 }

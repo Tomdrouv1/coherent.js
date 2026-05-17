@@ -104,7 +104,7 @@ const PACKAGE_EXPORTS = {
     'runMigrations',
     'DEFAULT_DB_CONFIG'
   ],
-  '@coherent.js/express': [
+  '@coherent.js/integrations/express': [
     'setupCoherent',
     'expressEngine'
   ],
@@ -450,7 +450,7 @@ describe('Import audit: no undefined exports referenced', () => {
   test('extractImports correctly parses named imports', () => {
     const code = `
       import { render, createComponent } from '@coherent.js/core';
-      import { setupCoherent } from '@coherent.js/express';
+      import { setupCoherent } from '@coherent.js/integrations/express';
     `;
 
     const imports = extractImports(code);
@@ -460,7 +460,7 @@ describe('Import audit: no undefined exports referenced', () => {
     expect(imports[0].names).toContain('createComponent');
     expect(imports[0].from).toBe('@coherent.js/core');
     expect(imports[1].names).toContain('setupCoherent');
-    expect(imports[1].from).toBe('@coherent.js/express');
+    expect(imports[1].from).toBe('@coherent.js/integrations/express');
   });
 
   test('extractImports handles as aliases', () => {
@@ -490,7 +490,7 @@ describe('Import audit: no undefined exports referenced', () => {
   test('validateImports allows valid exports', () => {
     const imports = [
       { names: ['render', 'createComponent'], from: '@coherent.js/core', isDefault: false },
-      { names: ['setupCoherent'], from: '@coherent.js/express', isDefault: false }
+      { names: ['setupCoherent'], from: '@coherent.js/integrations/express', isDefault: false }
     ];
 
     const errors = validateImports(imports);

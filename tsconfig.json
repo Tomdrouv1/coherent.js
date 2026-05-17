@@ -5,7 +5,7 @@
     { "path": "./packages/api" },
     { "path": "./packages/database" },
     { "path": "./packages/client" },
-    { "path": "./packages/express" },
+    { "path": "./packages/integrations" },
     { "path": "./packages/fastify" },
     { "path": "./packages/koa" },
     { "path": "./packages/nextjs" },

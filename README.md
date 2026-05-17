@@ -134,7 +134,7 @@ import * as coherent from '@coherent.js/core';
 |----------|------------|
 | Server-side rendering | `@coherent.js/core` |
 | Client-side hydration | `@coherent.js/core` + `@coherent.js/client` |
-| Express integration | `@coherent.js/core` + `@coherent.js/express` |
+| Express integration | `@coherent.js/core` + `@coherent.js/integrations` |
 | Fastify integration | `@coherent.js/core` + `@coherent.js/fastify` |
 | Next.js integration | `@coherent.js/core` + `@coherent.js/nextjs` |
 | State management | `@coherent.js/state` |
@@ -198,7 +198,7 @@ export default {
 - `@coherent.js/devtools` - Development tools (130.8KB source)
 
 ### **Integrations**
-- `@coherent.js/express` - Express.js adapter
+- `@coherent.js/integrations` - Framework integration adapters via subpath exports (`/express`; `/fastify`, `/koa`, `/nextjs`, `/astro`, `/remix`, `/sveltekit` in upcoming Wave 2c tasks)
 - `@coherent.js/fastify` - Fastify adapter
 - `@coherent.js/koa` - Koa adapter
 - `@coherent.js/nextjs` - Next.js integration

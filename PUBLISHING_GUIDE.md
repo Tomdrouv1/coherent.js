@@ -39,11 +39,11 @@
 8. `@coherent.js/forms` - Form utilities
 9. `@coherent.js/seo` - SEO optimization
 10. `@coherent.js/cli` - CLI tools (includes build-tools subpath)
-11. `@coherent.js/express` - Express.js integration
+11. `@coherent.js/integrations` - Framework integration adapters (subpaths: `/express`; `/fastify`, `/koa`, `/nextjs`, `/astro`, `/remix`, `/sveltekit` added in upcoming Wave 2c tasks)
 12. `@coherent.js/fastify` - Fastify integration
 13. `@coherent.js/koa` - Koa.js integration
 14. `@coherent.js/nextjs` - Next.js integration
-15. `@coherent.js/adapters` - Framework adapters
+15. `@coherent.js/adapters` - Framework adapters (Astro, Remix, SvelteKit)
 
 ---
 

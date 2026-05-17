@@ -96,7 +96,7 @@ Coherent.js is a monorepo with multiple packages:
 - `@coherent.js/api` - API framework
 
 ### Integration Packages
-- `@coherent.js/express` - Express.js adapter
+- `@coherent.js/integrations` - Framework integration adapters via subpath exports (`/express`; `/fastify`, `/koa`, `/nextjs`, `/astro`, `/remix`, `/sveltekit` in upcoming Wave 2c tasks)
 - `@coherent.js/fastify` - Fastify adapter
 - `@coherent.js/koa` - Koa adapter
 - `@coherent.js/nextjs` - Next.js integration

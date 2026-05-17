@@ -18,7 +18,6 @@ const packagesNeedingExports = [
   'adapters',
   'client',
   'devtools',
-  'express',
   'fastify',
   'i18n'
 ];
@@ -103,15 +102,6 @@ import { createModel } from '@coherent.js/database/model';`
     ],
     example: `import { createForm } from '@coherent.js/forms';
 import { validateForm } from '@coherent.js/forms/validation';`
-  },
-  'express': {
-    description: 'Express.js adapter for Coherent.js',
-    exports: [
-      'Express integration: `@coherent.js/express`',
-      'Middleware setup: `@coherent.js/express`'
-    ],
-    example: `import { setupCoherent } from '@coherent.js/express';
-import { renderComponent } from '@coherent.js/express';`
   },
   'fastify': {
     description: 'Fastify adapter for Coherent.js',

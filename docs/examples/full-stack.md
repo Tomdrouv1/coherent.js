@@ -496,7 +496,7 @@ const contactForm = hydrateForm('form[name="contact"]', {
 | **@coherent.js/client** | ❌ | ✅ Hydration | ✅ Router, HMR |
 | **@coherent.js/state** | ✅ Context API | ❌ | ✅ Reactive state |
 | **@coherent.js/forms** | ✅ Form builder | ✅ Form hydration | ✅ Client validation |
-| **@coherent.js/express** | ✅ Integration | ❌ | ❌ |
+| **@coherent.js/integrations/express** | ✅ Integration | ❌ | ❌ |
 
 ## 🚀 Deployment
 

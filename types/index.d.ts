@@ -18,7 +18,7 @@ export * from '../packages/client/types/index.js';
 // Framework Integrations Re-exports
 // ============================================================================
 
-export * as Express from '../packages/express/types/index.js';
+export * as Express from '../packages/integrations/types/express/index.js';
 export * as Koa from '../packages/koa/types/index.js';
 export * as NextJS from '../packages/nextjs/types/index.js';
 
@@ -187,7 +187,7 @@ export interface CoherentFramework {
 
   // Framework integrations
   integrations: {
-    express: typeof import('../packages/express/types/index.js');
+    express: typeof import('../packages/integrations/types/express/index.js');
     koa: typeof import('../packages/koa/types/index.js');
     nextjs: typeof import('../packages/nextjs/types/index.js');
   };
@@ -299,7 +299,7 @@ declare module '@coherent/client' {
 }
 
 declare module '@coherent/express' {
-  export * from '../packages/express/types/index.js';
+  export * from '../packages/integrations/types/express/index.js';
 }
 
 declare module '@coherent/koa' {
