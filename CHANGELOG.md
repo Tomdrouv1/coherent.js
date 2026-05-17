@@ -234,6 +234,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The Wave-4a follow-up about wiring `hmr-error` from the static handler on file-read failures is **abandoned**, not deferred — the browser already gets a 404 with a clear console message, and our minimal dev server has no build pipeline that would produce broadcast-worthy compile errors. Revisit if real users complain.
 - Template default-on for `--coherent` in `coherent create` is still **deferred** (now to Wave 5 or post-1.0). Scaffolded apps produce Node SSR projects today; reconciling them with the static-first dev server is a larger redesign than Wave 4 should swallow.
 
+### Added (Wave 4c)
+
+- **NEW: VS Code extension publish-readiness gate.** `scripts/check-vsix.mjs` unzips a freshly-built `.vsix` and asserts: required entries are present (extension entry, LSP server bundle, snippets, icon, manifest) and the `vsixmanifest`'s Identity Version matches `packages/vscode-extension/package.json`. Catches the common "shipped a broken vsix" failures before they reach the marketplace.
+- **NEW: `vsix` CI job.** Builds the extension and runs `check-vsix.mjs` on every PR. Uploads the built `.vsix` as a 30-day artifact so reviewers can sideload and smoke-test without rebuilding locally.
+- **NEW: `packages/vscode-extension/PUBLISHING.md`.** End-to-end maintainer documentation: marketplace publisher setup, PAT creation with the correct narrow scope (Marketplace:Manage only, 1-year max), `vsce login` flow, per-release sequence, local smoke-test, rollback options (unpublish-by-version, republish-with-fix, nuclear unpublish), and troubleshooting for the common failure modes.
+
+### Changed (Wave 4c)
+
+- **`packages/vscode-extension/package.json`**: added `vscode:prepublish` and `prepublishOnly` scripts (both alias `pnpm run build`). `vsce package` and `vsce publish` now always rebuild dist/ + server/ — no more "shipped a stale dist" footgun. Also added a `clean` script.
+- **`packages/vscode-extension/package.json` engines.vscode** bumped from `^1.85.0` to `^1.118.0` to satisfy vsce's enforcement that `engines.vscode >= @types/vscode` (which is pinned at `^1.118.0`). Surfaced during the Task 1 verification step — pre-existing latent bug that would have blocked any future packaging attempt.
+
+### Removed (Wave 4c)
+
+- **`packages/vscode-extension/coherent-language-support-1.0.0.vsix`** — 4-month-stale committed binary whose filename version (1.0.0) didn't even match the current package.json (1.0.0-beta.8). Built binaries belong on the marketplace, not in git. `packages/vscode-extension/.gitignore` now excludes `*.vsix` so future builds don't sneak back in.
+
+### Notes (Wave 4c)
+
+- **Actual `vsce publish` is NOT automated.** It requires the maintainer's Personal Access Token, which Claude can't and shouldn't handle. PUBLISHING.md documents the exact command. The Wave 4c gates ensure the .vsix is *publishable*; pressing the button is a human step.
+- **Version bump to `1.0.0` deferred to Wave 5.** The extension's `package.json` stays at `1.0.0-beta.8` matching the rest of the monorepo. Wave 5's release plan owns the coordinated bump.
+- **OpenVSX publish (for VS Code forks: VSCodium, Cursor, etc.) intentionally not added.** Not a 1.0 requirement. Easy follow-up if users on those forks ask for it.
+- **Absorbing `vscode-extension` into `@coherent.js/tooling`** (per spec Section 1's 12-package target) is still pending. Structural surgery; deserves its own plan. Wave 4c keeps the extension as a standalone workspace package.
+- **CI auto-publish on tag intentionally not added.** Storing a PAT in GitHub Actions secrets is a security surface we don't need to open for 1.0; manual publish is fine for the cadence we expect.
+
 ## [1.0.0-beta.8] - 2026-04-06
 
 ### Added
