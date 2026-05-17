@@ -18,7 +18,6 @@ integrations:
   - changed-files:
       - any-glob-to-any-file:
           - packages/integrations/**/*
-          - packages/adapters/**/*
 
 # Developer tools labels
 devtools:

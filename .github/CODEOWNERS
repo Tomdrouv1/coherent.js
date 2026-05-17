@@ -9,7 +9,6 @@ packages/api/ @Tomdrouv1
 
 # Integrations
 packages/integrations/ @Tomdrouv1
-packages/adapters/ @Tomdrouv1
 
 # Developer tools
 packages/devtools/ @Tomdrouv1

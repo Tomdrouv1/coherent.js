@@ -53,7 +53,6 @@ Welcome to the official documentation for Coherent.js, a high-performance server
 
 ### 🧩 Extended Packages
 - [Forms Guide](forms/guide.md) - Form building, validation, and hydration
-- [Adapters](adapters/README.md) - Astro, Remix, and SvelteKit adapters (experimental)
 
 ### 🛠️ Editor Support
 - [VS Code Extension](vscode-extension/README.md) - IntelliSense and snippets for VS Code
@@ -96,8 +95,7 @@ Coherent.js is a monorepo with multiple packages:
 - `@coherent.js/api` - API framework
 
 ### Integration Packages
-- `@coherent.js/integrations` - Framework integration adapters via subpath exports (`/express`, `/fastify`, `/koa`, `/nextjs`; `/astro`, `/remix`, `/sveltekit` in upcoming Wave 2c tasks)
-- `@coherent.js/adapters` - [Astro, Remix, SvelteKit adapters](adapters/README.md) (experimental)
+- `@coherent.js/integrations` - Framework integration adapters via subpath exports (`/express`, `/fastify`, `/koa`, `/nextjs`, `/astro`, `/remix`, `/sveltekit`)
 
 ### Feature Packages
 - `@coherent.js/database` - Database adapters

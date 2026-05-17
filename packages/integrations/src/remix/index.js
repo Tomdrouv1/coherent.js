@@ -1,8 +1,12 @@
-/**
- * Remix Adapter for Coherent.js
- *
- * Provides SSR integration and loader utilities for Remix projects.
- */
+// src/remix/index.js
+//
+// Public entry point for @coherent.js/integrations/remix. Provides SSR
+// integration and loader utilities for Remix projects.
+//
+// Remix must be installed as a peer dependency to use this integration.
+//
+// Usage:
+//   import { createRemixAdapter } from '@coherent.js/integrations/remix';
 
 import { render } from '@coherent.js/core';
 
@@ -17,7 +21,7 @@ import { render } from '@coherent.js/core';
  * const adapter = createRemixAdapter();
  * const html = adapter.renderComponent(MyComponent, { title: 'Hello' });
  */
-export function createRemixAdapter(options = {}) {
+export function createRemixAdapter(_options = {}) {
   return {
     /**
      * Render a Coherent.js component to HTML

@@ -182,7 +182,7 @@ export default [
     },
     {
         // Framework Adapters - needs flexible rules for framework integration
-        files: ['packages/adapters/**/*.js', 'packages/cli/src/build-tools/**/*.js'],
+        files: ['packages/integrations/**/*.js', 'packages/cli/src/build-tools/**/*.js'],
         languageOptions: {
             globals: {
                 // Common framework globals
