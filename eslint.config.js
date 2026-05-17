@@ -257,7 +257,8 @@ export default [
                 after: 'readonly',
                 beforeEach: 'readonly',
                 afterEach: 'readonly',
-                fetch: 'readonly'
+                fetch: 'readonly',
+                AbortSignal: 'readonly'
             }
         },
         rules: {
