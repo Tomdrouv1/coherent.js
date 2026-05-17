@@ -159,6 +159,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - All 7 integrations subpaths verified at runtime (express, fastify, koa, nextjs, astro, remix, sveltekit) — each exposes the same public API surface as its pre-merge standalone package.
 - Remaining 13 packages: api, cli, client, core, database, devtools, forms, i18n, integrations, seo, state, tooling, vscode-extension.
 
+### Added (Wave 3a)
+
+- **NEW: API surface snapshot gate.** `scripts/check-api-surface.mjs` walks each workspace package's `package.json` `exports` field, dynamic-imports each subpath, and snapshots the sorted list of exported symbol names to `packages/<name>/api-surface.txt`. CI runs the script in `--check` mode after build; any PR that changes a package's public exports without updating the snapshot fails the build. Reviewers see the surface diff explicitly, making accidental SemVer breakage impossible to merge unnoticed.
+- 12 baseline `api-surface.txt` files committed — one per importable package (vscode-extension excluded; not an npm-import package).
+
+### Notes (Wave 3a)
+
+- The snapshot is intentionally name-level only, not type-signature level. Adding/removing/renaming any public export trips the gate; changing a method's parameters on a class that's already exported does not. This trade-off matches the spec's 1-day time-cap on homegrown tooling; type-level snapshotting can be added later via `@microsoft/api-extractor` if needed.
+- The snapshot tool surfaced existing phantom paths in several packages' `exports` fields (api, database, devtools, client all have subpaths pointing at non-existent files). The baseline captures these as `# target file missing:` or `# import failed:` notes, so the gate enforces the current (broken) state and any cleanup of these phantoms will show as a reviewable diff.
+- The `devtools/.` root entry currently fails to import because of a cross-package phantom dep on `@coherent.js/core/src/performance/monitor.js` (which isn't in core's exports). The entire devtools root API is therefore snapshotted as an import-failure note. Fixing this in a follow-up will surface the full root API in the diff.
+- Wave 3a explicitly defers three Section-2 items to follow-on work: the `@internal` JSDoc sweep + `stripInternal` audit (per-package classification; the snapshot already catches any reclassification as a diff); the `experimental_` prefix pass (requires user input on which APIs are explicitly not SemVer-committed); and cleanup of phantom `require` → `*.cjs` declarations in package.json files (most packages still advertise `.cjs` paths their ESM-only build doesn't emit).
+- Perf CI gates (Section 4 of the spec) are tracked separately as Wave 3b.
+
 ## [1.0.0-beta.8] - 2026-04-06
 
 ### Added
