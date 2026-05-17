@@ -162,3 +162,39 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  vsix:
+    name: VSIX Build & Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.33.0
+
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.x
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Package VS Code extension
+        run: pnpm --filter coherent-language-support run package
+
+      - name: Check VSIX publish-readiness
+        run: node scripts/check-vsix.mjs
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: coherent-vscode-extension
+          path: packages/vscode-extension/*.vsix
+          retention-days: 30
