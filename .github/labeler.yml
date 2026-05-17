@@ -6,7 +6,6 @@ core:
       - any-glob-to-any-file: 
           - packages/core/**/*
           - packages/client/**/*
-          - packages/runtime/**/*
 
 # API framework labels
 api:

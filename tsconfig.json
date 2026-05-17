@@ -13,7 +13,6 @@
     { "path": "./packages/forms" },
     { "path": "./packages/i18n" },
     { "path": "./packages/performance" },
-    { "path": "./packages/runtime" },
     { "path": "./packages/seo" },
     { "path": "./packages/testing" },
     { "path": "./packages/devtools" },
