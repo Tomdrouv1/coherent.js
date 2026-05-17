@@ -72,6 +72,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `packages/forms/types/hmr.d.ts` advertises a callable API that now throws at runtime. Wave 3 (API surface lockdown) will reconcile types with runtime.
 - `examples/forms-complete-example.js` and `scripts/add-exports-sections.js` reference removed APIs. Pre-existing brokenness; fold into Wave 5 doc cleanup.
 
+### Removed (Wave 2a)
+
+- **BREAKING:** Removed `@coherent.js/runtime` package. The universal-runtime story (edge workers, Deno, Bun, Electron, Tauri) is post-1.0. Migration: there is no drop-in replacement in 1.0 — consumers should pin their existing `1.0.0-beta.8` version or use the underlying `@coherent.js/core` + framework-specific integration packages directly.
+- **BREAKING:** Removed `@coherent.js/web-components` package. The single-file Custom Elements integration had no consumers outside the also-removed runtime package. Consumers should pin `1.0.0-beta.8` if they need the integration, or fold the small amount of code into their own project.
+- **BREAKING (client):** Deleted `packages/client/src/hydration.js` and removed the `./hydration` subpath export from `@coherent.js/client/package.json`. Wave 1 already removed the legacy named exports from the main entry; this completes the removal by deleting the underlying file (1,857 lines) and its types. Modern hydration via `import { hydrate } from '@coherent.js/client'` is unchanged.
+- Deleted 5 client test files (`event-system.test.js`, `hydration-enhanced.test.js`, `auto-hydration.test.js`, `integration-real.test.js`, `key-reconciliation.test.js`) and three describe blocks in `core-logic.test.js` (`Hydration Core Logic`, `Integration Logic Tests`, `Performance and Edge Cases`) — all exercised the legacy hydration API only.
+
+### Changed (Wave 2a)
+
+- `scripts/add-exports-sections.js` no longer generates README sections for `runtime` or `web-components` packages (they don't exist); also removed the now-orphan `generateUsageSection` helper.
+- `scripts/shared-build.mjs` and `scripts/build.js` no longer hardcode `client/src/hydration.js` as the client entrypoint — both now use `src/index.js`.
+- `packages/client/build.mjs` entry point updated from `src/hydration.js` to `src/index.js`.
+- `website/package.json` no longer declares a dependency on `@coherent.js/runtime`.
+- `eslint.config.js` no longer contains runtime- or web-components-specific override blocks.
+- `tsconfig.json` no longer references the deleted packages in its project-references list.
+- `.github/CODEOWNERS` and `.github/labeler.yml` no longer reference the deleted packages.
+
+### Notes (Wave 2a)
+
+- Workspace shrank from 26 → 24 packages (`@coherent.js/runtime`, `@coherent.js/web-components` removed).
+- Test count: ~1792 → 1672 (drop of ~120 tests across deleted runtime suite, deleted web-components suite, 5 deleted legacy client hydration test files, and 3 deleted client describe blocks). Modern hydration coverage remains in `hydrate-api.test.js`, `mismatch-detection.test.js`, `state-serialization.test.js`, `vdom-diffing.test.js`, `dom-state-management.test.js`, `event-delegation.test.js`.
+- Pre-existing Wave 1 follow-up about `scripts/add-exports-sections.js` referencing removed APIs is partially addressed (runtime + web-components sections trimmed); the forms references it carried will be addressed in Wave 5 doc cleanup.
+
 ## [1.0.0-beta.8] - 2026-04-06
 
 ### Added
