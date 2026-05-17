@@ -22,8 +22,7 @@ const packagesNeedingExports = [
   'express',
   'fastify',
   'i18n',
-  'profiler',
-  'web-components'
+  'profiler'
 ];
 
 // Package-specific export information
@@ -177,13 +176,6 @@ import { createHandler } from '@coherent.js/koa';`
       'Adapter utilities: `@coherent.js/adapters`'
     ],
     example: `import { createAdapter } from '@coherent.js/adapters';`
-  },
-  'web-components': {
-    description: 'Web Components integration',
-    exports: [
-      'Web Components: `@coherent.js/web-components`'
-    ],
-    example: `import { defineComponent } from '@coherent.js/web-components';`
   },
   'nextjs': {
     description: 'Next.js integration',

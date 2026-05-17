@@ -28,8 +28,7 @@ const packagesToFix = [
   'koa',
   'profiler',
   'build-tools',
-  'adapters',
-  'web-components'
+  'adapters'
 ];
 
 console.log('🔧 Fixing sideEffects: false across all packages\n');

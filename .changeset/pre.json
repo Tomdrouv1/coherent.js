@@ -20,8 +20,7 @@
     "@coherent.js/profiler": "1.0.0-beta.5",
     "@coherent.js/seo": "1.0.0-beta.5",
     "@coherent.js/state": "1.0.0-beta.5",
-    "@coherent.js/testing": "1.0.0-beta.5",
-    "@coherent.js/web-components": "1.0.0-beta.5"
+    "@coherent.js/testing": "1.0.0-beta.5"
   },
   "changesets": []
 }

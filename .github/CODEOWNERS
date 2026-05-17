@@ -37,7 +37,6 @@ packages/database/ @Tomdrouv1
 # Build tools
 packages/build-tools/ @Tomdrouv1
 packages/profiler/ @Tomdrouv1
-packages/web-components/ @Tomdrouv1
 
 # Website & Documentation
 website/ @Tomdrouv1

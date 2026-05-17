@@ -16,7 +16,6 @@
     { "path": "./packages/seo" },
     { "path": "./packages/testing" },
     { "path": "./packages/devtools" },
-    { "path": "./packages/web-components" },
     { "path": "./packages/cli" },
     { "path": "./packages/profiler" },
     { "path": "./packages/state" },
