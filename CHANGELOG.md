@@ -95,6 +95,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Test count: ~1792 → 1672 (drop of ~120 tests across deleted runtime suite, deleted web-components suite, 5 deleted legacy client hydration test files, and 3 deleted client describe blocks). Modern hydration coverage remains in `hydrate-api.test.js`, `mismatch-detection.test.js`, `state-serialization.test.js`, `vdom-diffing.test.js`, `dom-state-management.test.js`, `event-delegation.test.js`.
 - Pre-existing Wave 1 follow-up about `scripts/add-exports-sections.js` referencing removed APIs is partially addressed (runtime + web-components sections trimmed); the forms references it carried will be addressed in Wave 5 doc cleanup.
 
+### Removed (Wave 2b)
+
+- **BREAKING:** Removed standalone `@coherent.js/build-tools` package. Its plugins (vite, webpack, rollup, loader) now ship as subpath exports of `@coherent.js/cli`. Migration: replace `import ... from '@coherent.js/build-tools/vite'` with `import ... from '@coherent.js/cli/build-tools/vite'`. The `@coherent.js/build-tools` package name is no longer published.
+- **BREAKING:** Removed standalone `@coherent.js/performance` package. Its utilities (cache, code-splitting, lazy-loading) now ship as subpath exports of `@coherent.js/devtools`. Migration: replace `import ... from '@coherent.js/performance/cache'` with `import ... from '@coherent.js/devtools/performance/cache'`.
+- **BREAKING:** Removed `@coherent.js/profiler` package. It contained 138 lines of placeholder scaffolding with no in-source consumers. `@coherent.js/devtools` already provides the substantive profiling code via its own `profiler.js`.
+- **BREAKING:** Removed standalone `@coherent.js/testing` package. Its Vitest matchers, render harness, and test utilities now ship as subpath exports of `@coherent.js/tooling`. Migration: replace `import ... from '@coherent.js/testing'` with `import ... from '@coherent.js/tooling/testing'`. TypeScript definitions preserved.
+- **BREAKING:** Removed standalone `@coherent.js/language-server` package. Its Language Server Protocol implementation and `coherent-language-server` binary now ship inside `@coherent.js/tooling`. Editor LSP configs that launched the binary by package-prefixed path should reference `@coherent.js/tooling` (or continue to invoke `coherent-language-server` if it's on PATH).
+- **BREAKING:** Removed `@coherent.js/language-service` package. It was a TypeScript-only stub with no consumers; deleted with no replacement.
+
+### Added (Wave 2b)
+
+- **NEW:** `@coherent.js/tooling` package consolidates dev-time tooling. Subpaths: `./testing`, `./testing/renderer`, `./testing/utils`, `./testing/matchers`, `./lsp`. Bin: `coherent-language-server`. TypeScript definitions ship for testing utilities (404 lines) and LSP server.
+- `@coherent.js/cli` now exposes `./build-tools`, `./build-tools/vite`, `./build-tools/webpack`, `./build-tools/rollup`, `./build-tools/loader` subpaths (absorbed from the deleted `@coherent.js/build-tools` package). Optional peer-deps for `vite`, `webpack`, `rollup` migrated to cli.
+- `@coherent.js/devtools` now exposes `./performance`, `./performance/cache`, `./performance/code-splitting`, `./performance/lazy-loading`, `./performance/dashboard` subpaths. The `./performance` aggregator re-exports both the absorbed utilities AND the pre-existing `PerformanceDashboard` to preserve backward compatibility for the 5 existing in-repo consumers of the dashboard.
+
+### Changed (Wave 2b)
+
+- `packages/cli/src/generators/package-scaffold.js` and `packages/cli/src/commands/create.js` updated to emit/display the new `@coherent.js/tooling/testing` import path when scaffolding new projects.
+- `examples/vite-integration/vite.config.js` updated to import from `@coherent.js/cli/build-tools/vite` and use the correct export name `createVitePlugin` (the prior `coherentVitePlugin` name never existed — pre-existing latent bug fixed in the same commit).
+- `examples/ecommerce-fullstack/package.json` swapped its `@coherent.js/build-tools` workspace dep for `@coherent.js/cli`.
+- `packages/vscode-extension/esbuild.config.mjs` updated to point at `../tooling/dist/lsp` instead of `../language-server/dist`. The vscode-extension itself remains a separate package — full absorption into `tooling/vscode-extension/` deferred to Wave 4 (paired with marketplace publish work).
+- `packages/devtools/build.mjs` updated to emit the 5 new performance entry points (4 absorbed + previously-unbuilt `performance-dashboard.js`).
+- `ARCHITECTURE.md` line 96 mislabel fixed (was advertising `performance-profiler/` for `@coherent.js/performance-profiler`; profiler deletion took the line with it).
+
+### Notes (Wave 2b)
+
+- Workspace shrank from 22 → 17 packages (5 deleted, 1 created; `vscode-extension` retained as a separate package pending Wave 4 absorption into `tooling/vscode-extension/`).
+- Test count: 1672 → 1670 (small drop from removed placeholder tests; 3 migrated performance tests preserved alongside 1 migrated testing utils test).
+- All package consolidations preserved test coverage end-to-end. No tests dropped for substance, only placeholders.
+- Pre-existing Wave 1 follow-up about `scripts/add-exports-sections.js` referencing removed APIs is now mostly addressed — the script still exists for backward compat but its entries for runtime/web-components/build-tools/performance/profiler/testing are all removed.
+
 ## [1.0.0-beta.8] - 2026-04-06
 
 ### Added
