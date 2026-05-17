@@ -60,6 +60,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+(No entries yet.)
+
+## [1.0.0-rc.1] - 2026-05-17
+
 ### Removed
 
 - **BREAKING (client):** Removed `legacyHydrate`, `hydrateAll`, `hydrateBySelector`, `enableClientEvents`, `makeHydratable`, `autoHydrate`, `registerEventHandler` from `@coherent.js/client` public exports. Use `hydrate()` instead. See [migration guide](https://coherentjs.dev/docs/migration/1.0#removed-legacy-hydration).
