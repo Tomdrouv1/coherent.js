@@ -1,0 +1,3 @@
+# Built extension bundles — produced by `pnpm run package`,
+# never committed. Distribute via marketplace, not git.
+*.vsix
