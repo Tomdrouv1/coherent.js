@@ -198,7 +198,7 @@ export default {
 - `@coherent.js/devtools` - Development tools (130.8KB source)
 
 ### **Integrations**
-- `@coherent.js/integrations` - Framework integration adapters via subpath exports (`/express`, `/fastify`, `/koa`, `/nextjs`; `/astro`, `/remix`, `/sveltekit` in upcoming Wave 2c tasks)
+- `@coherent.js/integrations` - Framework integration adapters via subpath exports (`/express`, `/fastify`, `/koa`, `/nextjs`, `/astro`, `/remix`, `/sveltekit`)
 
 ### **Tooling**
 - `@coherent.js/tooling` - Testing utilities (`/testing` subpath) and Language Server (`coherent-language-server` binary)

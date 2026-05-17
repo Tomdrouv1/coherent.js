@@ -21,11 +21,7 @@ const packagesToFix = [
   'i18n',
   'tooling',
   'seo',
-  'nextjs',
-  'integrations',
-  'fastify',
-  'koa',
-  'adapters'
+  'integrations'
 ];
 
 console.log('🔧 Fixing sideEffects: false across all packages\n');

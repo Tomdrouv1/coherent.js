@@ -6,7 +6,6 @@
     { "path": "./packages/database" },
     { "path": "./packages/client" },
     { "path": "./packages/integrations" },
-    { "path": "./packages/adapters" },
     { "path": "./packages/forms" },
     { "path": "./packages/i18n" },
     { "path": "./packages/seo" },

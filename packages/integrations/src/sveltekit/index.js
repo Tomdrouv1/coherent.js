@@ -1,8 +1,12 @@
-/**
- * SvelteKit Adapter for Coherent.js
- *
- * Provides server-side rendering and preprocessor integration for SvelteKit projects.
- */
+// src/sveltekit/index.js
+//
+// Public entry point for @coherent.js/integrations/sveltekit. Provides
+// server-side rendering and preprocessor integration for SvelteKit projects.
+//
+// SvelteKit must be installed as a peer dependency to use this integration.
+//
+// Usage:
+//   import { createSvelteKitAdapter } from '@coherent.js/integrations/sveltekit';
 
 import { render } from '@coherent.js/core';
 
@@ -16,7 +20,7 @@ import { render } from '@coherent.js/core';
  * const adapter = createSvelteKitAdapter();
  * const html = adapter.renderComponent(MyComponent, { title: 'Hello' });
  */
-export function createSvelteKitAdapter(options = {}) {
+export function createSvelteKitAdapter(_options = {}) {
   return {
     name: '@coherent.js/sveltekit',
 
@@ -71,7 +75,7 @@ export function createPreprocessor(options = {}) {
 
   return {
     name: 'coherent-preprocessor',
-    markup({ content, filename }) {
+    markup({ content, filename: _filename }) {
       // Find <coherent> blocks and render them to HTML
       const regex = new RegExp(`<${tag}>(.*?)</${tag}>`, 'gs');
       let transformed = content;
@@ -102,7 +106,7 @@ export function createPreprocessor(options = {}) {
  * @param {Object} [options] - Hook options
  * @returns {Object} SvelteKit handle function
  */
-export function createHandle(options = {}) {
+export function createHandle(_options = {}) {
   return async ({ event, resolve }) => {
     // Add Coherent.js render function to locals
     event.locals.coherent = {

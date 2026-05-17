@@ -81,7 +81,7 @@ coherent.js/
 │   ├── api/                            # @coherent.js/api - API framework
 │   ├── state/                          # @coherent.js/state - Reactive state management
 │   │
-│   ├── integrations/                   # @coherent.js/integrations - Framework adapters via subpath exports (express, fastify, koa, nextjs; more added in upcoming Wave 2c tasks)
+│   ├── integrations/                   # @coherent.js/integrations - Framework adapters via subpath exports (express, fastify, koa, nextjs, astro, remix, sveltekit)
 │   │
 │   ├── database/                       # @coherent.js/database - Database adapters
 │   ├── forms/                          # @coherent.js/forms - Form utilities & validation
@@ -91,8 +91,7 @@ coherent.js/
 │   ├── devtools/                       # @coherent.js/devtools - Developer tools, debugging, and performance utilities (cache, code-splitting, lazy-loading via /performance subpath)
 │   │
 │   ├── cli/                            # @coherent.js/cli - CLI tools (includes build-tools subpath)
-│   ├── vscode-extension/               # coherent-language-support - VS Code extension (bundles tooling LSP)
-│   └── adapters/                       # @coherent.js/adapters - Framework adapters
+│   └── vscode-extension/               # coherent-language-support - VS Code extension (bundles tooling LSP)
 │
 ├── scripts/                            # Build and utility scripts
 ├── examples/                           # Example applications

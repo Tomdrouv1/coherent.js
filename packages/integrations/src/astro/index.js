@@ -1,8 +1,12 @@
-/**
- * Astro Integration for Coherent.js
- *
- * Provides server-side rendering of Coherent.js components within Astro projects.
- */
+// src/astro/index.js
+//
+// Public entry point for @coherent.js/integrations/astro. Provides
+// server-side rendering of Coherent.js components within Astro projects.
+//
+// Astro must be installed as a peer dependency to use this integration.
+//
+// Usage:
+//   import { createAstroIntegration } from '@coherent.js/integrations/astro';
 
 import { render } from '@coherent.js/core';
 
@@ -16,7 +20,7 @@ import { render } from '@coherent.js/core';
  *
  * @example
  * // astro.config.mjs
- * import { createAstroIntegration } from '@coherent.js/adapters/astro';
+ * import { createAstroIntegration } from '@coherent.js/integrations/astro';
  * export default { integrations: [createAstroIntegration()] };
  */
 export function createAstroIntegration(options = {}) {
@@ -25,8 +29,8 @@ export function createAstroIntegration(options = {}) {
     hooks: {
       'astro:config:setup': ({ addRenderer, updateConfig }) => {
         addRenderer({
-          name: '@coherent.js/adapters/astro',
-          serverEntrypoint: '@coherent.js/adapters/astro',
+          name: '@coherent.js/integrations/astro',
+          serverEntrypoint: '@coherent.js/integrations/astro',
         });
 
         if (options.hydrate) {

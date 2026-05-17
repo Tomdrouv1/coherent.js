@@ -15,7 +15,6 @@ const packagesDir = path.join(__dirname, '../packages');
 
 // Packages that need exports sections (from audit)
 const packagesNeedingExports = [
-  'adapters',
   'client',
   'devtools',
   'i18n'
@@ -115,13 +114,6 @@ import { validateForm } from '@coherent.js/forms/validation';`
       'SEO utilities: `@coherent.js/seo`'
     ],
     example: `import { generateMetaTags } from '@coherent.js/seo';`
-  },
-  'adapters': {
-    description: 'Framework adapters',
-    exports: [
-      'Adapter utilities: `@coherent.js/adapters`'
-    ],
-    example: `import { createAdapter } from '@coherent.js/adapters';`
   },
 };
 

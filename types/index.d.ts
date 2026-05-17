@@ -19,8 +19,8 @@ export * from '../packages/client/types/index.js';
 // ============================================================================
 
 export * as Express from '../packages/integrations/types/express/index.js';
-export * as Koa from '../packages/koa/types/index.js';
-export * as NextJS from '../packages/nextjs/types/index.js';
+export * as Fastify from '../packages/integrations/types/fastify/index.js';
+export * as NextJS from '../packages/integrations/types/nextjs/index.js';
 
 // ============================================================================
 // CLI Tools Re-exports
@@ -188,8 +188,8 @@ export interface CoherentFramework {
   // Framework integrations
   integrations: {
     express: typeof import('../packages/integrations/types/express/index.js');
-    koa: typeof import('../packages/koa/types/index.js');
-    nextjs: typeof import('../packages/nextjs/types/index.js');
+    fastify: typeof import('../packages/integrations/types/fastify/index.js');
+    nextjs: typeof import('../packages/integrations/types/nextjs/index.js');
   };
 
   // Plugin system
@@ -302,12 +302,12 @@ declare module '@coherent/express' {
   export * from '../packages/integrations/types/express/index.js';
 }
 
-declare module '@coherent/koa' {
-  export * from '../packages/koa/types/index.js';
+declare module '@coherent/fastify' {
+  export * from '../packages/integrations/types/fastify/index.js';
 }
 
 declare module '@coherent/nextjs' {
-  export * from '../packages/nextjs/types/index.js';
+  export * from '../packages/integrations/types/nextjs/index.js';
 }
 
 declare module '@coherent/cli' {
