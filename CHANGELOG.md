@@ -210,7 +210,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Out of scope for Wave 4a, deferred to Wave 4b:** Playwright E2E suite covering the six audit-item flows from spec Section 5 (hydration golden path, event survival, mismatch detection, HMR component update, form input preservation across HMR, scroll preservation across HMR), template updates to make `--coherent` the default for scaffolded apps, VS Code marketplace publish.
 - **Out of scope, deferred to Wave 5 or post-1.0:** HTTPS/TLS for the dev server (use a reverse proxy; the client picks `wss://` automatically based on `location.protocol`), on-the-fly JSX/TS compilation (use vite/webpack via existing dev paths), full SSR routing (use the integrations package), module dependency graph (the client's `moduleTracker` already handles graph traversal).
 - **Compile-error overlay path** currently only fires on chokidar `error` events (watcher errors, not module-load errors). Wiring the static handler to broadcast `hmr-error` when it can't serve a `.js` file is a small follow-up — left out of Wave 4a to keep the protocol surface minimal while we get operational experience.
-- **`--no-hmr` flag** is parsed but not yet honored by the built-in server (always enabled). Trivial follow-up: when set, skip both the WebSocket server and the HTML script injection. Deferred.
+- **`--no-hmr` flag** is parsed but not yet honored by the built-in server (always enabled). Trivial follow-up: when set, skip both the WebSocket server and the HTML script injection. Deferred. *(Closed in Wave 4b.)*
+
+### Added (Wave 4b)
+
+- **NEW: Playwright E2E suite.** `e2e/` top-level dir with Chromium-only Playwright config, a tiny static-served fixture (`e2e/fixtures/hmr-basic/`), and four tests that exercise the Wave-4a HMR dev server in a real browser:
+  1. Bootstrap script tag is injected into served HTML and the `/__coherent_hmr_client.js` endpoint returns valid JS.
+  2. Browser receives `{type:'connected'}` over the WebSocket on load.
+  3. Touching a `.js` file fires `{type:'hmr-update', updateType:'component'}` reaching the browser with the correct `webPath`.
+  4. Touching a `.css` file fires the same with `updateType:'style'`.
+- **NEW: `e2e` CI job.** Runs parallel to the `test` matrix on a single ubuntu-latest + Node 22. Caches Playwright's browser download by lockfile hash so most CI runs skip the ~80MB Chromium pull. Uploads `playwright-report/` as a 7-day artifact on failure.
+- **`--no-hmr` flag now honored.** When set, the built-in dev server skips both the WebSocket server and the static handler's script injection; `/__coherent_hmr_client.js` returns 404. Useful for `coherent dev --coherent --no-hmr` plain-static-serve scenarios.
+
+### Changed (Wave 4b)
+
+- **`startDevServer` and `createStaticHandler`** gained a new `hmr: boolean` option (defaults to true — no behavior change unless explicitly disabled). Local var in `startDevServer` renamed `hmr` → `hmrServer` to avoid colliding with the new option.
+- **`pnpm-workspace.yaml`** now includes `e2e/fixtures/*` so fixture projects can declare workspace deps on framework packages.
+
+### Notes (Wave 4b)
+
+- Two of the spec's six audit-item E2E flows are not covered yet: SSR/hydration mismatch detection and event survival across DOM patches. Both test client-side framework features that already had unit coverage in `packages/client/` before Wave 4a; rerunning them in a browser is valuable but not blocking for 1.0. Deferred to Wave 4d (post-RC pass).
+- Multi-browser E2E (Firefox/WebKit) is intentionally out of scope. Chromium-only catches the bulk of protocol bugs at much lower CI cost; expand when a browser-specific bug actually appears.
+- The Wave-4a follow-up about wiring `hmr-error` from the static handler on file-read failures is **abandoned**, not deferred — the browser already gets a 404 with a clear console message, and our minimal dev server has no build pipeline that would produce broadcast-worthy compile errors. Revisit if real users complain.
+- Template default-on for `--coherent` in `coherent create` is still **deferred** (now to Wave 5 or post-1.0). Scaffolded apps produce Node SSR projects today; reconciling them with the static-first dev server is a larger redesign than Wave 4 should swallow.
 
 ## [1.0.0-beta.8] - 2026-04-06
 
