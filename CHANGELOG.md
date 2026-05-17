@@ -126,6 +126,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - All package consolidations preserved test coverage end-to-end. No tests dropped for substance, only placeholders.
 - Pre-existing Wave 1 follow-up about `scripts/add-exports-sections.js` referencing removed APIs is now mostly addressed — the script still exists for backward compat but its entries for runtime/web-components/build-tools/performance/profiler/testing are all removed.
 
+### Removed (Wave 2c)
+
+- **BREAKING:** Removed standalone `@coherent.js/express` package. Its Express.js adapter now ships as `@coherent.js/integrations/express`. Migration: replace `import ... from '@coherent.js/express'` with `import ... from '@coherent.js/integrations/express'`. Type definitions and runtime surface preserved (and aligned — pre-merge mismatch between the declared `.d.ts` and actual runtime exports was fixed during the move).
+- **BREAKING:** Removed standalone `@coherent.js/fastify` package. Now ships as `@coherent.js/integrations/fastify`. Phantom `renderComponent` declaration removed from the migrated `.d.ts`.
+- **BREAKING:** Removed standalone `@coherent.js/koa` package. Now ships as `@coherent.js/integrations/koa`. The Koa subpath ships without a `types` condition because the pre-merge `packages/koa/types/index.d.ts` declared an entirely phantom surface (`createComponentRoute`, `ssrMiddleware`, `errorMiddleware`, etc. — none of which existed at runtime). Future TypeScript support for Koa requires writing a fresh `.d.ts` from the actual runtime exports.
+- **BREAKING:** Removed standalone `@coherent.js/nextjs` package. Now ships as `@coherent.js/integrations/nextjs`. Migrated `.d.ts` was rewritten to add the missing `createNextIntegration` declaration (existed at runtime, missing from old types) and to drop the phantom `renderComponent`.
+- **BREAKING:** Removed standalone `@coherent.js/adapters` package. Its Astro, Remix, and SvelteKit adapters now ship as `@coherent.js/integrations/astro`, `@coherent.js/integrations/remix`, `@coherent.js/integrations/sveltekit`. Public APIs preserved verbatim.
+
+### Added (Wave 2c)
+
+- **NEW:** `@coherent.js/integrations` package consolidates ALL framework integration adapters. Subpaths: `./express`, `./fastify`, `./koa`, `./nextjs`, `./astro`, `./remix`, `./sveltekit`. Each previously shipped as its own package or (for the 3 SSG adapters) inside `@coherent.js/adapters`. Peer-dependencies for each framework declared optional, so consumers only need to install the ones they actually use.
+
+### Changed (Wave 2c)
+
+- `packages/cli/src/generators/runtime-scaffold.js` updated to scaffold new projects with a single `@coherent.js/integrations` dependency and framework-specific subpath imports (`import { setupCoherent } from '@coherent.js/integrations/express'` etc.). The pre-merge scaffold pinned each framework as a separate dep.
+- `packages/cli/test/scaffold-matrix.test.js` and `packages/cli/test/import-audit.test.js` updated to assert the new integrations dep + subpath patterns.
+- `examples/express-integration.js`, `examples/nextjs-integration.js`, `examples/vite-integration/vite.config.js` (externals collapsed to a single `@coherent.js/integrations` entry) all use the new import paths.
+- `website/src/index.js` log strings updated to mention `@coherent.js/integrations/express`.
+- Root `types/index.d.ts` aggregator file repointed all framework entries to the new integrations subpaths (Task 1 caught express; Tasks 2 follow-up caught koa/nextjs; Task 3 finalized including astro/remix/sveltekit + added fastify aggregator entry that was missing).
+- `CLAUDE.md` removed stale parenthetical that mentioned the now-deleted standalone packages.
+
+### Fixed (Wave 2c)
+
+- `packages/express/src/coherent-express.d.ts` had a broken `from '../coherent'` import (the file `coherent.d.ts` never existed). Rewritten to `from '@coherent.js/core'` during the move (Task 1).
+- `examples/vite-integration/vite.config.js` was importing `coherentVitePlugin` which never existed as an export of any version of `@coherent.js/build-tools` (the actual export is `createVitePlugin`). Fixed during Wave 2b Task 1 — flagging here for completeness since it's part of the consolidation story.
+
+### Notes (Wave 2c)
+
+- Workspace shrank from 17 → 13 packages (5 deleted, 1 created). Spec target is 12; current count 13 reflects the deliberate Wave-2b decision to defer `@coherent.js/vscode-extension` absorption into `tooling` to Wave 4 (paired with marketplace publish work). Wave 4 takes the workspace to 12.
+- Total tests after Wave 2c: 1653 (small net reduction from placeholder stub deletions during the consolidations; all substantive coverage preserved via per-framework test migration).
+- All 7 integrations subpaths verified at runtime (express, fastify, koa, nextjs, astro, remix, sveltekit) — each exposes the same public API surface as its pre-merge standalone package.
+- Remaining 13 packages: api, cli, client, core, database, devtools, forms, i18n, integrations, seo, state, tooling, vscode-extension.
+
 ## [1.0.0-beta.8] - 2026-04-06
 
 ### Added
