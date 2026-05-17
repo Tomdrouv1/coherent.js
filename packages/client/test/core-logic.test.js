@@ -102,13 +102,9 @@ describe('Hydration Core Logic', () => {
 });
 
 describe('HMR Core Logic', () => {
-  it('should test HMR module structure', async () => {
-    // Read the HMR file content to verify structure
-    const hmrContent = await import('../src/hmr.js');
-    
-    // The HMR module is an IIFE, so we test its structure indirectly
-    // We can verify it exports nothing (since it's self-executing)
-    expect(typeof hmrContent).toBe('object');
+  it('throws an informative migration error when legacy hmr.js is imported directly', async () => {
+    await expect(import('../src/hmr.js')).rejects.toThrow(/Coherent\.js 1\.0/);
+    await expect(import('../src/hmr.js')).rejects.toThrow(/coherentjs\.dev\/docs\/migration\/1\.0/);
   });
 
   it('should test HMR message processing logic', () => {

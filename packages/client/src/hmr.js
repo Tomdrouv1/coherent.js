@@ -1,34 +1,15 @@
 /**
- * Coherent.js HMR Client
+ * Coherent.js HMR — legacy module entrypoint
  *
- * @deprecated Import from '@coherent.js/client' or '@coherent.js/client/src/hmr/index.js' instead.
- * This file is kept for backward compatibility and auto-initializes HMR on import.
- *
- * Migration:
- *   // Old (deprecated)
- *   import '@coherent.js/client/src/hmr.js';
- *
- *   // New
- *   import { hmrClient } from '@coherent.js/client';
- *   hmrClient.connect();
+ * REMOVED in 1.0. This file existed in beta to auto-initialize HMR on import.
+ * Direct imports of this path now throw immediately so callers see the
+ * migration instruction instead of silent failures further down the call stack.
  *
  * @module @coherent.js/client/hmr
  */
 
-// Re-export all HMR modules for backward compatibility
-export * from './hmr/index.js';
-
-// Import hmrClient for auto-initialization
-import { hmrClient } from './hmr/index.js';
-
-/**
- * Legacy auto-initialization IIFE
- * Maintains backward compatibility with existing code that imports this file
- * for its side effect of auto-connecting to the dev server.
- */
-(function initHMR() {
-  if (typeof window === 'undefined') return;
-  if (window.__coherent_hmr_initialized) return;
-  window.__coherent_hmr_initialized = true;
-  hmrClient.connect();
-})();
+throw new Error(
+  "Coherent.js 1.0: importing '@coherent.js/client/src/hmr.js' was removed. " +
+  "Import { hmrClient } from '@coherent.js/client' and call hmrClient.connect() instead. " +
+  "See https://coherentjs.dev/docs/migration/1.0#removed-client-hmr-shim"
+);
