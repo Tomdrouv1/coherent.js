@@ -19,7 +19,7 @@ const packagesToFix = [
   'forms',
   'state',
   'i18n',
-  'testing',
+  'tooling',
   'seo',
   'nextjs',
   'express',

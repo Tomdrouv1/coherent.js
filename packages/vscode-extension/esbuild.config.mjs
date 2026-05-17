@@ -17,12 +17,13 @@ await esbuild.build({
 });
 
 // Copy language server from sibling package (if built)
-const serverSource = join(__dirname, '../language-server/dist');
+// Source moved from @coherent.js/language-server to @coherent.js/tooling/lsp.
+const serverSource = join(__dirname, '../tooling/dist/lsp');
 try {
   await access(serverSource);
   await mkdir(join(__dirname, 'server'), { recursive: true });
   await cp(serverSource, join(__dirname, 'server'), { recursive: true });
   console.log('Build complete: extension bundled, server copied to server/');
 } catch {
-  console.log('Build complete: extension bundled (language-server not yet built, skipping server copy)');
+  console.log('Build complete: extension bundled (tooling LSP not yet built, skipping server copy)');
 }

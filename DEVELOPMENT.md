@@ -26,10 +26,11 @@ coherent.js/
 │   ├── forms/                          # @coherent.js/forms - Form utilities
 │   ├── i18n/                           # @coherent.js/i18n - Internationalization
 │   ├── seo/                            # @coherent.js/seo - SEO tools
-│   ├── testing/                        # @coherent.js/testing - Testing utilities
+│   ├── tooling/                        # @coherent.js/tooling - Testing utilities (/testing subpath) and Language Server (coherent-language-server binary)
 │   ├── devtools/                       # @coherent.js/devtools - Developer tools and performance utilities (cache, code-splitting, lazy-loading via /performance subpath)
 │   │
 │   ├── cli/                            # @coherent.js/cli - CLI tools (includes build-tools subpath)
+│   ├── vscode-extension/               # coherent-language-support - VS Code extension (bundles tooling LSP)
 │   └── adapters/                       # @coherent.js/adapters - Framework adapters
 │
 ├── scripts/                            # Build and utility scripts

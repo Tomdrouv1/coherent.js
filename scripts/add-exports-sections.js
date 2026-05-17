@@ -145,13 +145,6 @@ import { createHandler } from '@coherent.js/koa';`
     ],
     example: `import { generateMetaTags } from '@coherent.js/seo';`
   },
-  'testing': {
-    description: 'Testing utilities for Coherent.js',
-    exports: [
-      'Testing utilities: `@coherent.js/testing`'
-    ],
-    example: `import { renderTest } from '@coherent.js/testing';`
-  },
   'adapters': {
     description: 'Framework adapters',
     exports: [

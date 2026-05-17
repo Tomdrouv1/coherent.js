@@ -16,12 +16,10 @@ packages/adapters/ @Tomdrouv1
 
 # Developer tools
 packages/devtools/ @Tomdrouv1
-packages/testing/ @Tomdrouv1
 packages/cli/ @Tomdrouv1
 
-# Editor tooling
-packages/language-server/ @Tomdrouv1
-packages/language-service/ @Tomdrouv1
+# Editor tooling (testing utilities + LSP server)
+packages/tooling/ @Tomdrouv1
 packages/vscode-extension/ @Tomdrouv1
 
 # Feature packages

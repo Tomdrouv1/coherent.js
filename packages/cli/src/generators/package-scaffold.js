@@ -432,11 +432,11 @@ export function getSitemap() {
 }
 
 /**
- * Generate @coherent.js/testing scaffolding
+ * Generate @coherent.js/tooling/testing scaffolding
  */
 export function generateTestingScaffolding() {
   const testHelper = `
-import { render, createTestContext } from '@coherent.js/testing';
+import { render, createTestContext } from '@coherent.js/tooling/testing';
 import { describe, it, expect } from 'vitest';
 
 /**
@@ -480,7 +480,7 @@ export function createMockContext(overrides = {}) {
 
   const exampleTest = `
 import { describe, it, expect } from 'vitest';
-import { render } from '@coherent.js/testing';
+import { render } from '@coherent.js/tooling/testing';
 import { HomePage } from '../src/components/HomePage.js';
 
 describe('HomePage', () => {
@@ -500,7 +500,7 @@ describe('HomePage', () => {
     'tests/helpers/testing.js': testHelper,
     'tests/components/HomePage.test.js': exampleTest,
     dependencies: {
-      '@coherent.js/testing': `^${cliVersion}`
+      '@coherent.js/tooling': `^${cliVersion}`
     }
   };
 }

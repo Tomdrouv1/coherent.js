@@ -35,7 +35,7 @@ The extension activates for: JavaScript, TypeScript, JSX, and TSX files.
 
 ## Architecture
 
-The extension is a Language Server Protocol (LSP) client that launches the bundled `@coherent.js/language-server`. The server runs via IPC for performance and provides completions, hover, diagnostics, and code actions.
+The extension is a Language Server Protocol (LSP) client that launches the bundled language server from `@coherent.js/tooling` (binary: `coherent-language-server`). The server runs via IPC for performance and provides completions, hover, diagnostics, and code actions.
 
 ```
 VS Code Extension (client)

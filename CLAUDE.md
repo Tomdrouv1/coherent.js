@@ -55,12 +55,13 @@ The project uses pnpm workspaces with packages in `/packages/`:
 - **`@coherent.js/fastify`** - Fastify integration adapter  
 - **`@coherent.js/koa`** - Koa.js integration adapter
 - **`@coherent.js/nextjs`** - Next.js integration adapter
-- **`@coherent.js/testing`** - Testing utilities and matchers
+- **`@coherent.js/tooling`** - Dev-time tooling: testing utilities (Vitest matchers, render harness) via `@coherent.js/tooling/testing`, and Language Server Protocol server (`coherent-language-server` binary)
 - **`@coherent.js/devtools`** - Developer tools (inspector, profiler, logger) and performance utilities (cache, code-splitting, lazy-loading via `/performance` subpath)
 - **`@coherent.js/cli`** - CLI tools for development and scaffolding
 - **`@coherent.js/i18n`** - Internationalization support
 - **`@coherent.js/forms`** - Form utilities and validation
 - **`@coherent.js/seo`** - SEO optimization tools
+- **`coherent-language-support`** - VS Code extension (bundles tooling LSP)
 
 ### Core Concepts
 

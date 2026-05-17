@@ -28,15 +28,14 @@ devtools:
   - changed-files:
       - any-glob-to-any-file:
           - packages/devtools/**/*
-          - packages/testing/**/*
+          - packages/tooling/**/*
           - packages/cli/**/*
 
 # Editor tooling labels
 editor-tooling:
   - changed-files:
       - any-glob-to-any-file:
-          - packages/language-server/**/*
-          - packages/language-service/**/*
+          - packages/tooling/**/*
           - packages/vscode-extension/**/*
 
 # Feature packages labels

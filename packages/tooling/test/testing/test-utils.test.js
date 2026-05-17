@@ -17,7 +17,7 @@ import {
   within,
   screen,
   userEvent
-} from '../src/test-utils.js';
+} from '../../src/testing/test-utils.js';
 
 describe('Test Utils', () => {
   beforeEach(() => {
