@@ -48,7 +48,6 @@ pnpm build
 - **devtools-demo.js** — Inspector, profiler, logger
 - **plugin-system-demo.js** — Plugin architecture, hooks, custom extensions
 - **error-boundary-demo.js** — Error handling, fallback UI, recovery
-- **runtime-features-demo.js** — Edge runtime and environment features
 - **performance-test.js** — Performance monitoring and cache benchmarks
 
 ### Testing

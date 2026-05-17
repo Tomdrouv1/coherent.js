@@ -3,7 +3,6 @@
 # Core framework
 packages/core/ @Tomdrouv1
 packages/client/ @Tomdrouv1
-packages/runtime/ @Tomdrouv1
 
 # API framework
 packages/api/ @Tomdrouv1
