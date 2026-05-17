@@ -19,7 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
                    ├─ Enhanced router and forms
                    └─ Improved documentation
 
-📅 2026-04-06  →  v1.0.0-beta.8  (CURRENT)
+📅 2026-05-17  →  v1.0.0-rc.1   (CURRENT)
+                   ├─ Comprehensive structural hardening (Waves 1-4)
+                   ├─ Workspace consolidated 21 → 12 packages
+                   ├─ Built-in HMR dev server + Playwright E2E
+                   └─ API surface + bundle size gates in CI
+
+📅 2026-04-06  →  v1.0.0-beta.8
                    ├─ Major website UI/UX overhaul
                    ├─ Website restructured as Coherent.js project
                    ├─ CI/CD and build fixes
@@ -48,7 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
                    ├─ API router fixes
                    └─ Missing package READMEs
 
-📅 Future      →  v1.0.0         (PLANNED)
+📅 Future      →  v1.0.0         (PLANNED — after rc soak)
                    └─ First stable release
 ```
 
