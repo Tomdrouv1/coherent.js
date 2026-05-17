@@ -13,12 +13,57 @@ export function Changelog() {
         // Timeline
         { section: { className: 'changelog-timeline', children: [
 
+          // v1.0.0-rc.1
+          { article: { className: 'changelog-entry', children: [
+            { div: { className: 'changelog-entry-header', children: [
+              { span: { className: 'changelog-version', text: 'v1.0.0-rc.1' } },
+              { span: { className: 'changelog-date', text: '2026-05-17' } },
+              { span: { className: 'changelog-badge changelog-badge-current', text: 'Current' } }
+            ] } },
+            { div: { className: 'changelog-changes', children: [
+              { h3: { text: 'Highlights' } },
+              { p: { text: 'Comprehensive v1.0 hardening across five waves. See MIGRATION-1.0.md in the repo for the full breaking-changes guide with copy-paste fixes.' } },
+              { h3: { text: 'Workspace consolidation (Waves 2a/2b/2c)' } },
+              { ul: { children: [
+                { li: { text: 'Workspace consolidated from 21+ packages to 12 published packages (plus the standalone VS Code extension).' } },
+                { li: { text: 'Framework integrations (express, fastify, koa, nextjs, adapters/*) → subpath exports of @coherent.js/integrations.' } },
+                { li: { text: 'Build tools (vite, webpack, rollup, loader) → subpath exports of @coherent.js/cli/build-tools.' } },
+                { li: { text: 'Performance utilities (cache, code-splitting, lazy-loading) → subpath exports of @coherent.js/devtools/performance.' } },
+                { li: { text: 'LSP + testing + language-service merged into @coherent.js/tooling.' } },
+                { li: { text: 'Dropped: @coherent.js/runtime, @coherent.js/web-components, @coherent.js/profiler (138 lines of placeholder).' } }
+              ] } },
+              { h3: { text: 'Removed APIs (Wave 1)' } },
+              { ul: { children: [
+                { li: { text: 'Client: legacyHydrate, hydrateAll, hydrateBySelector, enableClientEvents, makeHydratable, autoHydrate, registerEventHandler — use hydrate() instead.' } },
+                { li: { text: 'Client: direct imports of @coherent.js/client/src/hmr.js throw a migration error. Use { hmrClient } from @coherent.js/client.' } },
+                { li: { text: 'Forms: createForm, formValidators, enhancedForm removed. Use createFormBuilder + hydrateForm.' } }
+              ] } },
+              { h3: { text: 'New in 1.0' } },
+              { ul: { children: [
+                { li: { text: 'Built-in HMR dev server (`coherent dev --coherent`): HTTP + WebSocket + chokidar, no vite/webpack required for static-served projects.' } },
+                { li: { text: 'API surface lockdown: every public export is snapshotted to packages/<name>/api-surface.txt; CI gates accidental drift.' } },
+                { li: { text: 'Per-package bundle-size gates: each dist/index.js raw + gzipped size baselined to packages/<name>/bundle-size.json; CI fails on >±5% drift.' } },
+                { li: { text: 'Playwright E2E suite: six audit-item browser flows automated in CI (Chromium).' } },
+                { li: { text: 'VS Code extension publish-readiness check + dedicated CI job + PUBLISHING.md runbook.' } }
+              ] } },
+              { h3: { text: 'README claims cleaned up' } },
+              { ul: { children: [
+                { li: { text: 'Dropped: "42.7% improvement over OOP" (required maintaining an OOP-equivalent fixture).' } },
+                { li: { text: 'Dropped: "95%+ cache hit rate" (workload-dependent, dishonest as a framework property).' } },
+                { li: { text: 'Dropped: aggregate "80.7KB gzipped bundle" claim (replaced with per-package CI gates).' } },
+                { li: { text: 'Dropped: "79.5% tree-shake reduction" (no gate existed to defend the number).' } },
+                { li: { text: 'Retained: "247 renders/sec" (defensible from benchmarks/benchmark.js).' } }
+              ] } },
+              { h3: { text: 'Next' } },
+              { p: { text: 'Release candidate — 1-2 week soak before promoting to 1.0.0 stable. Install with `pnpm add @coherent.js/core@rc` to try it.' } }
+            ] } }
+          ] } },
+
           // v1.0.0-beta.8
           { article: { className: 'changelog-entry', children: [
             { div: { className: 'changelog-entry-header', children: [
               { span: { className: 'changelog-version', text: 'v1.0.0-beta.8' } },
-              { span: { className: 'changelog-date', text: '2026-04-06' } },
-              { span: { className: 'changelog-badge changelog-badge-current', text: 'Current' } }
+              { span: { className: 'changelog-date', text: '2026-04-06' } }
             ] } },
             { div: { className: 'changelog-changes', children: [
               { h3: { text: 'Added' } },
