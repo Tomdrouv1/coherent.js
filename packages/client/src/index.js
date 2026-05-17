@@ -33,16 +33,7 @@ export {
   formatPath,
 } from './hydration/index.js';
 
-// Legacy exports for backward compatibility
-export {
-  hydrate as legacyHydrate,
-  hydrateAll,
-  hydrateBySelector,
-  enableClientEvents,
-  makeHydratable,
-  autoHydrate,
-  registerEventHandler,
-} from './hydration.js';
+// 1.0: removed legacy hydration re-exports — see docs/migration/1.0#removed-legacy-hydration
 
 // HMR client (Phase 4)
 export {

@@ -43,13 +43,6 @@ export type {
 export {
   // Main hydration functions
   hydrate,
-  legacyHydrate,
-  hydrateAll,
-  hydrateBySelector,
-  autoHydrate,
-  enableClientEvents,
-  makeHydratable,
-  registerEventHandler,
   // State serialization
   serializeState,
   deserializeState,

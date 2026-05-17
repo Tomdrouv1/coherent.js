@@ -162,14 +162,7 @@ const PACKAGE_EXPORTS = {
     'serializeStateWithWarning',
     'detectMismatch',
     'reportMismatches',
-    'formatPath',
-    'legacyHydrate',
-    'hydrateAll',
-    'hydrateBySelector',
-    'enableClientEvents',
-    'makeHydratable',
-    'autoHydrate',
-    'registerEventHandler'
+    'formatPath'
   ]
 };
 

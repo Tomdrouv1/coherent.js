@@ -690,56 +690,6 @@ export function hydrate(
   options?: HydrationOptions
 ): HydrateControl;
 
-/**
- * Hydrate a single element (legacy API).
- * @deprecated Use the clean hydrate() API instead.
- */
-export function legacyHydrate(
-  element: HTMLElement,
-  component: CoherentComponent,
-  props?: Record<string, any>,
-  options?: { initialState?: SerializableState }
-): HydratedInstance | null;
-
-/** Hydrate multiple elements */
-export function hydrateAll(
-  elements: HTMLElement[],
-  components: CoherentComponent[],
-  propsArray?: Array<Record<string, any>>
-): Array<HydratedInstance | null>;
-
-export function hydrateBySelector(
-  selector: string,
-  component: CoherentComponent,
-  props?: Record<string, any>
-): Array<HydratedInstance | null>;
-
-export function enableClientEvents(rootElement?: Document | HTMLElement): void;
-
-export function makeHydratable<T extends CoherentComponent>(
-  component: T,
-  options?: MakeHydratableOptions
-): T & {
-  isHydratable: true;
-  hydrationOptions: MakeHydratableOptions;
-  autoHydrate(componentRegistry?: Record<string, any>): void;
-  getHydrationData(props?: Record<string, any>, state?: SerializableState | null): {
-    componentName: string;
-    props: Record<string, any>;
-    initialState?: SerializableState;
-    hydrationAttributes: Record<string, string | null>;
-  };
-  renderWithHydration(props?: Record<string, any>): CoherentNode;
-};
-
-/** Auto-hydrate elements on DOM ready */
-export function autoHydrate(componentRegistry?: Record<string, CoherentComponent>): void;
-
-export function registerEventHandler<S = any, E extends Event = Event>(
-  id: string,
-  handler: StateAwareHandler<S, E>
-): void;
-
 /** Register a component for auto-hydration */
 declare function registerComponent(
   name: string,
@@ -934,9 +884,6 @@ declare const coherentClient: {
   // Hydration
   extractInitialState: typeof extractInitialState;
   hydrate: typeof hydrate;
-  legacyHydrate: typeof legacyHydrate;
-  hydrateAll: typeof hydrateAll;
-  autoHydrate: typeof autoHydrate;
 
   // Component registration
   registerComponent: typeof registerComponent;
