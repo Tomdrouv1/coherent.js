@@ -257,6 +257,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Absorbing `vscode-extension` into `@coherent.js/tooling`** (per spec Section 1's 12-package target) is still pending. Structural surgery; deserves its own plan. Wave 4c keeps the extension as a standalone workspace package.
 - **CI auto-publish on tag intentionally not added.** Storing a PAT in GitHub Actions secrets is a security surface we don't need to open for 1.0; manual publish is fine for the cadence we expect.
 
+### Added (Wave 4d)
+
+- **NEW: 2 Playwright tests for hydration behavior** (`e2e/tests/hydrate.spec.js`):
+  - **Mismatch detection** — fixture serves SSR-shaped HTML whose text disagrees with the component output; asserts the `onMismatch` callback fires with a non-empty list containing the divergent text. Closes the deferred audit flow from Wave 4b.
+  - **Event survival across DOM patch** — hydrates a counter, clicks once (state updates, `patchDOM` re-renders the button text to "count is 1"), clicks again (state advances to 2, text updates again). Proves event handler registration survives the patch + re-register cycle. Closes the deferred audit flow from Wave 4b.
+- **NEW: `e2e/fixtures/hmr-hydrate/`** — second E2E fixture, single fixture / two modes (`?mode=mismatch` and `?mode=event`) so the two tests share HTML scaffolding without duplicating workspace plumbing. Both modes expose results via `window.__coherent_e2e` for Playwright assertions.
+
+### Notes (Wave 4d)
+
+- **Spec Section 5's six-item E2E checklist is now 100% automated.** Nothing carries over to RC.
+- The mismatch fixture uses hand-written SSR-shaped HTML, not the framework's actual SSR pipeline. Reasoning: the mismatch detector cares about "does what the server sent agree with what the client renders," which doesn't require invoking real SSR. Avoiding the build step keeps the fixture in static-file territory where the Wave-4a dev server lives.
+- The mismatch fixture's component nesting was adjusted during implementation to mirror the full `div > div > [button, p]` DOM shape (not the plan's flatter `div > [button, p]`). Reason: a structurally-shallow component triggers a `children_count` mismatch (1 vs 2) at the outer level and the detector never recurses into the `<p>` for the text comparison — the test's `/v1|v2/` regex wouldn't match. The corrected nesting lets `detectMismatch` walk down and produce the expected `text` mismatch with both snippets in the serialized output.
+- Scroll/form preservation E2E tests were not added. They test HMR-with-state-preservation (a different concern from hydration), already have unit coverage in `packages/client/test/state-capturer.test.js`, and Wave 4b's component-update test indirectly exercises the broadcast → re-import path. If a real bug ever surfaces, that's the time to add a dedicated browser test.
+- The fixture's event-mode click handler reaches the `setState` controls via `window.__coherent_e2e.controls` (stashed after `hydrate()` returns). This is a fixture-grade test convenience, NOT a recommended user pattern — in real apps the closure captures `setState` directly.
+
 ## [1.0.0-beta.8] - 2026-04-06
 
 ### Added
