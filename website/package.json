@@ -9,8 +9,8 @@
     "preview": "npx serve dist"
   },
   "dependencies": {
-    "@coherent.js/core": "1.0.0-beta.8",
-    "@coherent.js/client": "1.0.0-beta.8",
+    "@coherent.js/core": "1.0.0-rc.1",
+    "@coherent.js/client": "1.0.0-rc.1",
     "express": "5.2.1"
   }
 }
