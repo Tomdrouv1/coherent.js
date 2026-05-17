@@ -89,6 +89,12 @@ importers:
         specifier: ^4.1.2
         version: 4.1.2(@types/node@25.8.0)(jsdom@29.1.1)(vite@8.0.13(@types/node@25.8.0)(esbuild@0.28.0)(jiti@2.6.1)(terser@5.46.1)(tsx@4.22.1))
 
+  e2e/fixtures/hmr-hydrate:
+    dependencies:
+      '@coherent.js/client':
+        specifier: workspace:*
+        version: link:../../../packages/client
+
   packages/api:
     dependencies:
       '@coherent.js/core':

@@ -1,0 +1,9 @@
+{
+  "name": "@coherent.js/e2e-fixture-hmr-hydrate",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@coherent.js/client": "workspace:*"
+  }
+}
