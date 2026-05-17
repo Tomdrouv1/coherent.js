@@ -103,6 +103,8 @@ Configure the extension in VS Code settings:
 
 This extension is part of the [Coherent.js](https://github.com/Tomdrouv1/coherent.js) project. Contributions are welcome!
 
+Maintainers: see [`PUBLISHING.md`](./PUBLISHING.md) for the marketplace publish workflow.
+
 ## License
 
 MIT
