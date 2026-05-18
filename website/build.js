@@ -13,7 +13,7 @@ import { createHighlighter } from 'shiki';
 
 // Reuse the same rendering pipeline as the dev server
 import { renderFullPage, pageRoutes, getExamplesList, Layout } from './src/index.js';
-import { render } from '../packages/core/src/rendering/html-renderer.js';
+import { render } from '@coherent.js/core';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
