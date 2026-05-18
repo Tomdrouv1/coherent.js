@@ -23,7 +23,7 @@
     "test:coverage:ci": "vitest run --coverage --no-cache",
     "coverage:report": "node scripts/generate-coverage-report.js",
     "build": "pnpm run build:packages",
-    "build:packages": "pnpm -r --stream run build",
+    "build:packages": "pnpm --filter './packages/*' --stream run build",
     "build:types": "tsc --build",
     "publish:beta": "pnpm publish -r --access public --tag beta --no-git-checks",
     "publish:rc": "pnpm publish -r --access public --tag rc --no-git-checks",
