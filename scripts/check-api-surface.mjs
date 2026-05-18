@@ -76,8 +76,23 @@ async function snapshotSubpath(packageDir, subpath, exportValue) {
     const names = Object.keys(mod).sort();
     return { subpath, exports: names, note: null };
   } catch (err) {
-    return { subpath, exports: null, note: `import failed: ${err.message}` };
+    return { subpath, exports: null, note: `import failed: ${scrubPaths(err.message)}` };
   }
+}
+
+/**
+ * Strip machine-specific absolute paths from error messages so the
+ * snapshot is portable across macOS/Linux/Windows and across CI vs
+ * local dev. Replaces `REPO_ROOT` (in either filesystem form or
+ * file:// URL form) with `<repo>`.
+ */
+function scrubPaths(message) {
+  if (typeof message !== 'string') return message;
+  const repoUrl = pathToFileURL(REPO_ROOT + '/').href;
+  return message
+    .split(repoUrl).join('<repo>/')
+    .split(REPO_ROOT + '/').join('<repo>/')
+    .split(REPO_ROOT).join('<repo>');
 }
 
 function formatSnapshot(packageName, sections) {
