@@ -6,7 +6,7 @@
 # Package: @coherent.js/devtools
 
 == . ==
-# import failed: Package subpath './src/performance/monitor.js' is not defined by "exports" in <repo>/packages/devtools/node_modules/@coherent.js/core/package.json imported from <repo>/packages/devtools/dist/index.js
+# import failed (ERR_PACKAGE_PATH_NOT_EXPORTED)
 
 == ./errors ==
 # target file missing: ./dist/enhanced-errors.js
@@ -30,7 +30,7 @@ createLogger
 default
 
 == ./package.json ==
-# import failed: Module "<repo>/packages/devtools/package.json" needs an import attribute of "type: json"
+# import failed (ERR_IMPORT_ATTRIBUTE_MISSING)
 
 == ./performance ==
 BundleAnalyzer

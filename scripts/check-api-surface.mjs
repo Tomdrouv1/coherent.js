@@ -76,23 +76,16 @@ async function snapshotSubpath(packageDir, subpath, exportValue) {
     const names = Object.keys(mod).sort();
     return { subpath, exports: names, note: null };
   } catch (err) {
-    return { subpath, exports: null, note: `import failed: ${scrubPaths(err.message)}` };
+    // Record only the error CLASS, not the wording — Node varies the
+    // exact message text across versions (e.g., "Package subpath ... is
+    // not defined by exports" vs slight rewording on 20 → 22 → 24), and
+    // for our purposes the SemVer-relevant fact is "this subpath
+    // currently fails to import", not how Node phrases it. Keeping the
+    // raw message would re-introduce CI drift every time a Node version
+    // changes how it errors.
+    const code = err && err.code ? err.code : 'unknown';
+    return { subpath, exports: null, note: `import failed (${code})` };
   }
-}
-
-/**
- * Strip machine-specific absolute paths from error messages so the
- * snapshot is portable across macOS/Linux/Windows and across CI vs
- * local dev. Replaces `REPO_ROOT` (in either filesystem form or
- * file:// URL form) with `<repo>`.
- */
-function scrubPaths(message) {
-  if (typeof message !== 'string') return message;
-  const repoUrl = pathToFileURL(REPO_ROOT + '/').href;
-  return message
-    .split(repoUrl).join('<repo>/')
-    .split(REPO_ROOT + '/').join('<repo>/')
-    .split(REPO_ROOT).join('<repo>');
 }
 
 function formatSnapshot(packageName, sections) {
