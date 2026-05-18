@@ -1,5 +1,7 @@
 # Client-Side Hydration in Coherent.js
 
+> **1.0 update:** The legacy hydration helpers (`hydrateAll`, `hydrateBySelector`, `makeHydratable`, `autoHydrate`, `enableClientEvents`, `registerEventHandler`) were removed in 1.0. Use the unified `hydrate()` API documented below. See [`MIGRATION-1.0.md`](../../MIGRATION-1.0.md) for migration help.
+
 This guide covers how to add interactivity to server-rendered Coherent.js components through client-side hydration -- from basic setup to advanced patterns.
 
 ## What is Hydration?
@@ -31,89 +33,12 @@ const element = document.getElementById('my-component');
 const instance = hydrate(element, MyComponent, { initialProp: 'value' });
 ```
 
-### `hydrateAll(elements, components, propsArray)`
-
-Hydrates multiple elements with their corresponding components.
-
-```javascript
-import { hydrateAll } from '@coherent.js/client';
-
-const elements = [document.getElementById('counter'), document.getElementById('todo-list')];
-const components = [Counter, TodoList];
-const propsArray = [{ count: 0 }, { todos: [] }];
-
-const instances = hydrateAll(elements, components, propsArray);
-```
-
-### `hydrateBySelector(selector, component, props)`
-
-Finds elements by CSS selector and hydrates them.
-
-```javascript
-import { hydrateBySelector } from '@coherent.js/client';
-
-const instances = hydrateBySelector('.counter', Counter, { count: 0 });
-```
-
-### `makeHydratable(component)`
-
-Marks a component as hydratable and adds metadata for server-side rendering.
-
-```javascript
-import { makeHydratable } from '@coherent.js/client';
-
-const HydratableCounter = makeHydratable(Counter);
-```
-
-### `autoHydrate(registry)`
-
-Auto-hydrates all components found in the DOM using a component registry.
-
-```javascript
-import { autoHydrate, makeHydratable } from '@coherent.js/client';
-
-const componentRegistry = {
-  counter: makeHydratable(Counter, { componentName: 'counter' }),
-  todolist: makeHydratable(TodoList, { componentName: 'todolist' })
-};
-
-document.addEventListener('DOMContentLoaded', () => {
-  autoHydrate(componentRegistry);
-});
-```
-
-## Creating Hydratable Components
-
-Wrap components with `makeHydratable` and add `data-coherent-component` attributes:
-
-```javascript
-import { makeHydratable } from '@coherent.js/client';
-
-function GreetingComponent({ name = 'World' }) {
-  return {
-    div: {
-      className: 'greeting',
-      'data-coherent-component': 'greeting',
-      children: [
-        { h1: { text: `Hello, ${name}!` } },
-        { p: { text: 'Welcome to Coherent.js' } }
-      ]
-    }
-  };
-}
-
-export const Greeting = makeHydratable(GreetingComponent, {
-  componentName: 'greeting'
-});
-```
-
 ## Server-Side Rendering with Hydration
 
 ### Server-side (Node.js)
 
 ```javascript
 import { render } from '@coherent.js/core';
-import { makeHydratable } from '@coherent.js/client';
 
 function Counter(props) {
   return {
@@ -130,8 +55,7 @@ function Counter(props) {
   };
 }
 
-const HydratableCounter = makeHydratable(Counter);
-const html = render(HydratableCounter, { count: 0 });
+const html = render(Counter({ count: 0 }));
 
 res.send(`
 <!DOCTYPE html>
@@ -154,14 +78,13 @@ npx esbuild client.js --bundle --format=esm --outfile=public/hydration.js
 ### Client-side (Browser)
 
 ```javascript
-import { autoHydrate, makeHydratable } from '@coherent.js/client';
+import { hydrate } from '@coherent.js/client';
 import { Counter } from './components/Counter.js';
 
-window.componentRegistry = {
-  counter: makeHydratable(Counter, { componentName: 'counter' })
-};
-
-autoHydrate(window.componentRegistry);
+document.addEventListener('DOMContentLoaded', () => {
+  const counterEl = document.getElementById('counter');
+  if (counterEl) hydrate(Counter, counterEl);
+});
 ```
 
 ## Hydrating Stateful Components
@@ -202,7 +125,7 @@ const CounterView = (props) => {
 export const Counter = CounterComponent(CounterView);
 
 // client.js - Hydration
-import { hydrate, makeHydratable, autoHydrate } from '@coherent.js/client';
+import { hydrate } from '@coherent.js/client';
 import { Counter } from './components/Counter.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -403,24 +326,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const componentType = element.dataset.component;
     const lazyHydrator = createLazyHydrator(componentMap[componentType]);
     lazyHydrator(element);
-  });
-});
-```
-
-### Selective Event Binding
-
-```javascript
-import { enableClientEvents } from '@coherent.js/client';
-
-document.addEventListener('DOMContentLoaded', () => {
-  const interactiveSections = [
-    document.querySelector('.interactive-form'),
-    document.querySelector('.navigation'),
-    document.querySelector('.sidebar')
-  ];
-  
-  interactiveSections.forEach(section => {
-    if (section) enableClientEvents(section);
   });
 });
 ```

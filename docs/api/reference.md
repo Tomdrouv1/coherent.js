@@ -10,7 +10,7 @@ Use only the package entrypoints:
 
 ```javascript
 import { render } from '@coherent.js/core';
-import { hydrate, autoHydrate } from '@coherent.js/client';
+import { hydrate } from '@coherent.js/client';
 ```
 
 ## Core Rendering
@@ -432,118 +432,17 @@ const instance = hydrate(element, Counter, {}, {
 });
 ```
 
-### `hydrateAll(elements, components, propsArray?)`
+### Removed in 1.0
 
-Hydrates multiple elements with their corresponding components.
+The following client-side APIs were removed in 1.0.0 in favor of the unified `hydrate()` API documented above:
 
-**Parameters:**
-- `elements` (Array): Array of DOM elements to hydrate
-- `components` (Array): Array of Coherent component functions
-- `propsArray` (Array, optional): Array of component props
+- `legacyHydrate`, `hydrateAll`, `hydrateBySelector` — use `hydrate(component, container, options)` per root.
+- `makeHydratable` — any pure-object component is hydratable; no wrapper needed.
+- `autoHydrate(registry)` — call `hydrate()` explicitly for each root.
+- `enableClientEvents` — automatic; `hydrate()` initializes event delegation.
+- `registerEventHandler` — define handlers inline on the component (`onClick: () => {...}`).
 
-**Returns:** Array - Array of hydrated component instances
-
-**Example:**
-```javascript
-import { hydrateAll } from '@coherent.js/client';
-import { Header, Footer } from './components/Layout.js';
-
-const elements = [
-  document.getElementById('header'),
-  document.getElementById('footer')
-];
-const components = [Header, Footer];
-const instances = hydrateAll(elements, components);
-```
-
-### `hydrateBySelector(selector, component, props?)`
-
-Finds and hydrates all elements matching a CSS selector.
-
-**Parameters:**
-- `selector` (String): CSS selector to find elements
-- `component` (Function): The Coherent component function
-- `props` (Object, optional): Component props
-
-**Returns:** Array - Array of hydrated component instances
-
-**Example:**
-```javascript
-import { hydrateBySelector } from '@coherent.js/client';
-import { TodoItem } from './components/TodoItem.js';
-
-// Hydrate all todo items
-const instances = hydrateBySelector('[data-coherent-component="todoitem"]', TodoItem);
-```
-
-### `makeHydratable(component, options?)`
-
-Creates a hydratable version of a component with metadata for auto-hydration.
-
-**Parameters:**
-- `component` (Function): The component function to make hydratable
-- `options` (Object, optional): Hydration metadata
-  - `componentName` (String): Name for component registry
-  - `initialState` (Object): Default initial state
-
-**Returns:** Function - A hydratable component function with additional metadata
-
-**Example:**
-```javascript
-import { makeHydratable } from '@coherent.js/client';
-import { Counter } from './components/Counter.js';
-
-const HydratableCounter = makeHydratable(Counter, {
-  componentName: 'counter',
-  initialState: { count: 0 }
-});
-
-// Can be used in auto-hydration
-export { HydratableCounter };
-```
-
-### `autoHydrate(componentRegistry)`
-
-Automatically hydrates all components on a page based on data-coherent-component attributes.
-
-**Parameters:**
-- `componentRegistry` (Object): Registry mapping component names to hydratable components
-
-**Example:**
-```javascript
-import { autoHydrate, makeHydratable } from '@coherent.js/client';
-import { Counter } from './components/Counter.js';
-import { TodoList } from './components/TodoList.js';
-
-const componentRegistry = {
-  counter: makeHydratable(Counter),
-  todolist: makeHydratable(TodoList)
-};
-
-// Auto-hydrate when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-  autoHydrate(componentRegistry);
-});
-```
-
-### `enableClientEvents(rootElement?)`
-
-Enables client-side interactivity for elements with data-action attributes.
-
-**Parameters:**
-- `rootElement` (HTMLElement, optional): Root element to enable events on (default: document)
-
-**Example:**
-```javascript
-import { enableClientEvents } from '@coherent.js/client';
-
-// Enable events for entire document
-enableClientEvents();
-
-// Enable events for specific container
-const container = document.getElementById('interactive-section');
-enableClientEvents(container);
-```
+See [`MIGRATION-1.0.md`](../../MIGRATION-1.0.md) for before/after code samples.
 
 ### `extractInitialState(element, options?)`
 
@@ -563,23 +462,6 @@ const element = document.getElementById('counter');
 // <div id="counter" data-coherent-state='{"count": 5}'>
 const state = extractInitialState(element);
 // Returns: { count: 5 }
-```
-
-### `registerEventHandler(id, handler)`
-
-Registers a global event handler for use with data-action attributes.
-
-**Parameters:**
-- `id` (String): Unique identifier for the event handler
-- `handler` (Function): The event handler function
-
-**Example:**
-```javascript
-import { registerEventHandler } from '@coherent.js/client';
-
-registerEventHandler('my-click-handler', (event, state, setState) => {
-  console.log('Button clicked!', { event, state });
-});
 ```
 
 ## Framework Integrations

@@ -496,13 +496,13 @@ const router: Router = createRouter({
 Use with client-side hydration for optimal performance:
 
 ```javascript
-import { hydrateBySelector } from '@coherent.js/client';
+import { hydrate } from '@coherent.js/client';
 import { createRouter } from '@coherent.js/client/router';
 
 import { App } from './App.js';
 
 // Hydrate server-rendered content
-hydrateBySelector('#app', App);
+hydrate(App, document.getElementById('app'));
 
 // Start router after hydration
 const router = createRouter({ /* ... */ });

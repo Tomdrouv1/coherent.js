@@ -144,4 +144,4 @@ Returns a controller with: `validateField`, `validateForm`, `setFieldValue`, `ge
 
 - `hydrateForm` only runs in the browser (returns `null` on the server).
 - The `validators.js` and `validation.js` modules export overlapping names; use the module-level import to disambiguate.
-- The deprecated `createForm` / `formValidators` / `enhancedForm` exports from `forms.js` use a different validator shape (object with `.validate` method) and should not be mixed with the newer validator functions.
+- The `createForm` / `formValidators` / `enhancedForm` exports from `forms.js` were **removed in 1.0**. Use `createFormBuilder` + `hydrateForm` instead — see [`MIGRATION-1.0.md`](../../MIGRATION-1.0.md) for migration.
