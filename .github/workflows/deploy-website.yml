@@ -14,6 +14,9 @@ permissions:
   pages: write
   id-token: write
 
+env:
+  PNPM_CONFIG_MINIMUM_RELEASE_AGE: "0"
+
 concurrency:
   group: 'pages'
   cancel-in-progress: true

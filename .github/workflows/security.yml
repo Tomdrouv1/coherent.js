@@ -10,6 +10,9 @@ on:
 permissions:
   contents: read
 
+env:
+  PNPM_CONFIG_MINIMUM_RELEASE_AGE: "0"
+
 jobs:
   security:
     runs-on: ubuntu-latest
