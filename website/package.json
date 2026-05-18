@@ -8,9 +8,11 @@
     "start": "node src/index.js",
     "preview": "npx serve dist"
   },
+  "private": true,
   "dependencies": {
-    "@coherent.js/core": "1.0.0-rc.1",
-    "@coherent.js/client": "1.0.0-rc.1",
+    "@coherent.js/api": "workspace:*",
+    "@coherent.js/client": "workspace:*",
+    "@coherent.js/core": "workspace:*",
     "express": "5.2.1"
   }
 }

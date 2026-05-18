@@ -1,13 +1,18 @@
 import express from 'express';
-import { createRouter } from '../../packages/api/src/router.js';
+import { createRouter } from '@coherent.js/api';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readFileSync, readdirSync, statSync, existsSync } from 'fs';
-import { renderWithTemplate } from '../../packages/core/src/utils/render-utils.js';
-import { render } from '../../packages/core/src/rendering/html-renderer.js';
+import {
+  render,
+  renderWithTemplate,
+  performanceMonitor,
+  registerComponent,
+  getComponent,
+  createErrorBoundary,
+} from '@coherent.js/core';
 import { marked } from 'marked';
 import { createHighlighter } from 'shiki';
-import { performanceMonitor } from '../../packages/core/src/performance/monitor.js';
 
 // Initialize Shiki for syntax highlighting
 const highlighter = await createHighlighter({
@@ -47,8 +52,6 @@ export function highlightCode(code, lang = 'javascript') {
     return `<pre class="shiki"><code>${escaped}</code></pre>`;
   }
 }
-import { registerComponent, getComponent } from '../../packages/core/src/components/component-system.js';
-import { createErrorBoundary } from '../../packages/core/src/components/error-boundary.js';
 import { Examples } from './pages/Examples.js';
 import { Home } from './pages/Home.js';
 import { DocsPage, DocsIndexPage } from './pages/DocsPage.js';
