@@ -45,17 +45,17 @@
   },
   "dependencies": {
     "chokidar": "5.0.0",
-    "commander": "^12.1.0",
-    "glob": "11.1.0",
-    "ora": "^8.2.0",
-    "picocolors": "^1.1.1",
-    "prompts": "^2.4.2",
+    "commander": "12.1.0",
+    "glob": "13.0.6",
+    "ora": "8.2.0",
+    "picocolors": "1.1.1",
+    "prompts": "2.4.2",
     "ws": "8.20.1"
   },
   "peerDependencies": {
-    "rollup": "^4.53.2",
-    "vite": "^7.2.2",
-    "webpack": "^5.102.1"
+    "rollup": "4.53.2",
+    "vite": "7.2.2",
+    "webpack": "5.102.1"
   },
   "peerDependenciesMeta": {
     "vite": {
