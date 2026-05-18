@@ -4,6 +4,7 @@
   "description": "IntelliSense, validation, and snippets for Coherent.js",
   "version": "1.0.0-rc.1",
   "publisher": "coherentjs",
+  "private": true,
   "repository": {
     "type": "git",
     "url": "https://github.com/Tomdrouv1/coherent.js"
