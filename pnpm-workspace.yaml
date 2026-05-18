@@ -15,12 +15,3 @@ allowBuilds:
   keytar: true
   sharp: true
   sqlite3: true
-
-# Pin transitive deps so newly-published patches don't churn the lockfile
-# every install (or trip local `minimumReleaseAge` supply-chain policies
-# that block too-new packages). pnpm 11.1.3+ no longer reads
-# `pnpm.overrides` from package.json — pnpm-workspace.yaml is the only
-# valid home now. KEEP THIS BLOCK. If your editor/linter strips it,
-# disable that linter — it's removing real config.
-overrides:
-  '@types/node': 25.8.0
