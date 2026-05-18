@@ -6,7 +6,7 @@
 # Package: @coherent.js/tooling
 
 == ./lsp ==
-# import failed: Connection input stream is not set. Use arguments of createConnection or set command line parameters: '--node-ipc', '--stdio' or '--socket={number}'
+# import failed (Error)
 
 == ./testing ==
 TestRenderer
