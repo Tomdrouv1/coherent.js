@@ -150,13 +150,6 @@
       "ignoreMissing": [
         "@types/react"
       ]
-    },
-    "onlyBuiltDependencies": [
-      "@vscode/vsce-sign",
-      "esbuild",
-      "keytar",
-      "sharp",
-      "sqlite3"
-    ]
+    }
   }
 }

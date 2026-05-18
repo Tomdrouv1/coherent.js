@@ -2,3 +2,16 @@ packages:
   - 'packages/*'
   - 'e2e/fixtures/*'
   - 'website'
+
+# Allow these dependencies to run their install/build scripts.
+# pnpm 11+ blocks postinstall scripts by default; this allowlist
+# must live in pnpm-workspace.yaml for monorepos (the older
+# `pnpm.onlyBuiltDependencies` field in package.json is ignored
+# once pnpm-workspace.yaml exists). pnpm reads `allowBuilds`
+# with boolean values per package.
+allowBuilds:
+  '@vscode/vsce-sign': true
+  esbuild: true
+  keytar: true
+  sharp: true
+  sqlite3: true
