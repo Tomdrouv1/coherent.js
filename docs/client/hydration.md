@@ -16,22 +16,24 @@ import { MyComponent } from './components/MyComponent.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const element = document.getElementById('app');
-  hydrate(element, MyComponent, { name: 'World' });
+  hydrate(MyComponent, element, { initialState: { name: 'World' } });
 });
 ```
 
 ## Hydration Utilities
 
-### `hydrate(element, component, props, options)`
+### `hydrate(component, container, options)`
 
-Hydrates a single DOM element with a Coherent component.
+Hydrates a single DOM container with a Coherent component. Returns `{ unmount, rerender, getState, setState }` for lifecycle control.
 
 ```javascript
 import { hydrate } from '@coherent.js/client';
 
-const element = document.getElementById('my-component');
-const instance = hydrate(element, MyComponent, { initialProp: 'value' });
+const container = document.getElementById('my-component');
+const instance = hydrate(MyComponent, container, { initialState: { count: 0 } });
 ```
+
+Options: `initialState` (object — initial state for the component), `detectMismatch` (boolean — default `true` in dev), `strict` (boolean — throw on mismatch instead of warn), `onMismatch` (function — custom mismatch handler), `props` (object — additional props merged with state).
 
 ## Server-Side Rendering with Hydration
 
@@ -135,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
       count: parseInt(counterEl.getAttribute('data-initial-count') || '0'),
       step: 1
     };
-    hydrate(counterEl, Counter, {}, { initialState });
+    hydrate(Counter, counterEl, { initialState });
   }
 });
 ```
@@ -303,7 +305,7 @@ const createLazyHydrator = (component, props = {}) => {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          hydrate(entry.target, component, props);
+          hydrate(component, entry.target, { props });
           observer.unobserve(entry.target);
         }
       });
@@ -318,7 +320,7 @@ const createLazyHydrator = (component, props = {}) => {
 document.addEventListener('DOMContentLoaded', () => {
   // Hydrate immediately visible components
   const header = document.querySelector('.header');
-  if (header) hydrate(header, HeaderComponent);
+  if (header) hydrate(HeaderComponent, header);
   
   // Lazy hydrate below-fold components
   const lazyComponents = document.querySelectorAll('.lazy-component');
@@ -363,9 +365,9 @@ document.addEventListener('DOMContentLoaded', () => {
 ### Hydration Error Handling
 
 ```javascript
-const safeHydrate = async (element, component, props = {}) => {
+const safeHydrate = async (component, container, props = {}) => {
   try {
-    const instance = await hydrate(element, component, props);
+    const instance = await hydrate(component, container, { props });
     console.log('Successfully hydrated:', component.name || 'Anonymous component');
     return instance;
   } catch (error) {
@@ -468,7 +470,7 @@ Ensure functionality works without JavaScript:
 
 ```javascript
 try {
-  hydrate(element, Component, props);
+  hydrate(Component, container, { props });
   console.log('Hydration successful');
 } catch (error) {
   console.error('Hydration failed:', error);
@@ -478,8 +480,8 @@ try {
 ### 5. State Preservation
 
 ```javascript
-const initialState = extractStateFromDOM(element);
-hydrate(element, Component, props, { initialState });
+const initialState = extractStateFromDOM(container);
+hydrate(Component, container, { initialState, props });
 
 function extractStateFromDOM(element) {
   const stateAttr = element.getAttribute('data-coherent-state');
@@ -561,10 +563,10 @@ This error occurs when trying to hydrate in Node.js. Make sure hydration code on
 2. Use `instance.destroy()` when components are no longer needed
 
 ```javascript
-const instance = hydrate(element, Component, props);
+const instance = hydrate(Component, container, { props });
 // Later:
-if (instance && instance.destroy) {
-  instance.destroy();
+if (instance && instance.unmount) {
+  instance.unmount();
 }
 ```
 

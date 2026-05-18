@@ -402,20 +402,21 @@ const results = await executeQuery(query, db);
 
 ## Client-side Hydration
 
-### `hydrate(element, component, props?, options?)`
+### `hydrate(component, container, options?)`
 
-Hydrates a DOM element with a Coherent component to enable client-side interactivity.
+Hydrates a DOM container with a Coherent component to enable client-side interactivity.
 
 **Parameters:**
-- `element` (HTMLElement): The DOM element to hydrate
 - `component` (Function): The Coherent component function
-- `props` (Object, optional): Component props
+- `container` (HTMLElement): The DOM element to hydrate
 - `options` (Object, optional): Hydration options
-  - `initialState` (Object): Initial state for stateful components
-  - `enableCache` (Boolean): Enable component caching (default: true)
-  - `validateInput` (Boolean): Enable input validation (default: false)
+  - `initialState` (Object): Initial state for stateful components (merged with `props`)
+  - `props` (Object): Additional props passed to the component
+  - `detectMismatch` (Boolean): Enable SSR/component mismatch detection (default: `true` in dev, `false` in prod)
+  - `strict` (Boolean): Throw on mismatch instead of warning (default: `false`)
+  - `onMismatch` (Function): Custom mismatch handler called with the list of detected mismatches
 
-**Returns:** HydratedComponentInstance - Hydrated component instance with methods
+**Returns:** `{ unmount, rerender, getState, setState }` — instance handle for lifecycle control.
 
 **Example:**
 ```javascript
@@ -423,13 +424,17 @@ import { hydrate } from '@coherent.js/client';
 import { Counter } from './components/Counter.js';
 
 // Basic hydration
-const element = document.getElementById('counter');
-const instance = hydrate(element, Counter, { initialCount: 5 });
+const container = document.getElementById('counter');
+const instance = hydrate(Counter, container, { initialState: { count: 5 } });
 
-// With state initialization
-const instance = hydrate(element, Counter, {}, {
-  initialState: { count: 10, step: 2 }
+// With state initialization and additional props
+const instance = hydrate(Counter, container, {
+  initialState: { count: 10, step: 2 },
+  props: { theme: 'dark' },
 });
+
+// State-driven re-render
+instance.setState({ count: 11 });
 ```
 
 ### Removed in 1.0
