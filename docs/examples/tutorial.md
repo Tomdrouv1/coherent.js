@@ -120,14 +120,12 @@ export const Counter = withState({ count: 0 })(({ state, setState }) => ({
 Create `client.js`:
 
 ```javascript
-import { autoHydrate, makeHydratable } from '@coherent.js/client';
+import { hydrate } from '@coherent.js/client';
 import { Counter } from './components/Counter.js';
 
-window.componentRegistry = {
-  counter: makeHydratable(Counter, { componentName: 'counter' })
-};
-
-autoHydrate(window.componentRegistry);
+// Mount each interactive root explicitly:
+const counterEl = document.querySelector('[data-component="counter"]');
+if (counterEl) hydrate(Counter, counterEl);
 ```
 
 Bundle the client for the browser:
@@ -217,7 +215,7 @@ server.listen(3000, () => {
 1. **`render()`** - Renders components to HTML (SSR)
 2. **`dangerouslySetInnerContent()`** - Prevents HTML escaping for scripts/styles
 3. **`/hydration.js`** - Serves the client-side hydration bundle
-4. **`autoHydrate()`** - Makes server-rendered HTML interactive
+4. **`hydrate()`** - Called on each interactive root to make server-rendered HTML interactive
 
 ---
 
@@ -263,7 +261,7 @@ After HTML loads:
 ```
 Browser loads /hydration.js
         ↓
-autoHydrate() runs
+hydrate() is called on each interactive root
         ↓
 Finds data-coherent-component="counter"
         ↓
@@ -504,7 +502,7 @@ Before deploying, make sure:
 - [ ] Event handlers use `(event, state, setState)` signature
 - [ ] Scripts/styles use `dangerouslySetInnerContent()`
 - [ ] `/hydration.js` is served correctly
-- [ ] `autoHydrate()` is called on client
+- [ ] `hydrate()` is called on each interactive root
 - [ ] Browser console shows "✅ Hydration complete!"
 
 ---

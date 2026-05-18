@@ -1,12 +1,10 @@
 # Coherent.js Migration Guide
 
+> **Upgrading from 1.0.0-beta.* to 1.0.0?** See [`MIGRATION-1.0.md`](../../MIGRATION-1.0.md) at the repo root for the authoritative 1.0 breaking-changes guide. This page covers migrating from OTHER frameworks (React, Vue, Express, etc.) to Coherent.js.
+
 This guide helps developers migrate from traditional frameworks (React, Vue, Express, etc.) or template engines (Handlebars, EJS, etc.) to Coherent.js.
 
-Coherent.js delivers exceptional performance with validated production metrics:
-- **80.7KB gzipped** production bundle
-- **247 renders/sec** performance with LRU caching
-- **42.7% performance improvement** over traditional OOP
-- **79.5% tree shaking reduction** for DevTools
+Coherent.js focuses on small bundles and high SSR throughput. Bundle sizes are gated per-package in CI (see `packages/*/bundle-size.json` for the actual numbers); see `benchmarks/` for rendering benchmarks.
 
 ## Getting Started with Migration
 
@@ -175,7 +173,6 @@ function TodoList({ todos }) {
 
 ### React Performance Benefits
 
-- **42.7% faster rendering** with hybrid FP/OOP approach
 - **100% cacheable** pure functional components
 - **Better memory management** with OOP state encapsulation
 
@@ -365,9 +362,9 @@ const Counter = withState({ count: 0 })(({ state, stateUtils }) => {
 });
 
 // Client-side hydration
-import { autoHydrate } from '@coherent.js/client';
+import { hydrate } from '@coherent.js/client';
 document.addEventListener('DOMContentLoaded', () => {
-  autoHydrate({ counter: Counter });
+  hydrate(Counter, document.getElementById('counter-root'));
 });
 ```
 
@@ -378,6 +375,8 @@ document.addEventListener('DOMContentLoaded', () => {
 2. **Component Identification**: Uses explicit `data-coherent-component` attributes instead of React's reconciliation.
 
 3. **State Initialization**: Extract from DOM or pass through props rather than automatic matching.
+
+4. **Explicit mounting**: Call `hydrate()` for each interactive root — there is no automatic component registry scan.
 
 ### Progressive Enhancement Pattern
 
@@ -430,14 +429,7 @@ import { createPerformanceDashboard } from '@coherent.js/devtools/performance';
 
 ### Production Bundle Results
 
-```
-Core: 45.9KB gzipped
-State: 8.5KB gzipped
-API: 10.6KB gzipped
-DevTools (selective): 15.7KB gzipped
-Total: 80.7KB gzipped production bundle
-Tree Shaking: 79.5% reduction (128.8KB -> 27KB selective)
-```
+Bundle sizes are gated per-package in CI. See `packages/*/bundle-size.json` for current baselines.
 
 ### Build Configuration
 
@@ -485,7 +477,7 @@ export default {
 
 - [ ] Install `@coherent.js/client` package
 - [ ] Create hydration entry point (`hydration.js`)
-- [ ] Set up component registry for `autoHydrate`
+- [ ] Mount each interactive root with `hydrate(Component, container)`
 - [ ] Bundle hydration script for the browser
 - [ ] Add hydration script to HTML pages
 - [ ] Handle timing with `DOMContentLoaded` events
@@ -498,7 +490,7 @@ export default {
 - [ ] Test progressive enhancement (works without JS)
 - [ ] Implement selective hydration for performance
 - [ ] Configure tree shaking for production
-- [ ] Test bundle size (target: <85KB gzipped)
+- [ ] Test bundle size (see `packages/*/bundle-size.json` for per-package baselines)
 - [ ] Validate performance (target: 240+ renders/sec)
 - [ ] Update build/deployment processes
 
