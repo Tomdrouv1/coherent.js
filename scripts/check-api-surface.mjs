@@ -76,17 +76,6 @@ async function snapshotSubpath(packageDir, subpath, exportValue) {
     const names = Object.keys(mod).sort();
     return { subpath, exports: names, note: null };
   } catch (err) {
-    // Record only the error CLASS, not the wording — Node varies the
-    // exact message text across versions (e.g., "Package subpath ... is
-    // not defined by exports" vs slight rewording on 20 → 22 → 24), and
-    // for our purposes the SemVer-relevant fact is "this subpath
-    // currently fails to import", not how Node phrases it. Keeping the
-    // raw message would re-introduce CI drift every time a Node version
-    // changes how it errors.
-    // Prefer err.code (e.g., ERR_PACKAGE_PATH_NOT_EXPORTED) — it's the
-    // public-stable contract. Fall back to err.name (e.g., Error,
-    // TypeError, SyntaxError) for thrown plain Errors that have no code.
-    // Both are Node-version-stable, unlike err.message.
     const tag = (err && err.code) || (err && err.name) || 'unknown';
     return { subpath, exports: null, note: `import failed (${tag})` };
   }

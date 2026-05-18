@@ -143,7 +143,7 @@ import * as coherent from '@coherent.js/core';
 | Testing utilities | `@coherent.js/tooling/testing` |
 | Performance profiling & optimization | `@coherent.js/devtools/performance` |
 
-> All packages are ESM-only and require Node.js 20+. Install with `pnpm add @coherent.js/<name>`.
+> All packages are ESM-only and require Node.js 22+. Install with `pnpm add @coherent.js/<name>`.
 
 ## 🛠️ **Development Tools**
 

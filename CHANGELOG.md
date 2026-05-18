@@ -60,7 +60,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-(No entries yet.)
+### Changed
+
+- **BREAKING (minimum runtime):** `engines.node` bumped from `>=20.0.0` to `>=22.0.0` across all 13 published packages. Node 20 LTS ended 2026-04-30; we've stopped testing against it. Users on Node 20 should upgrade to Node 22 (active LTS) or Node 24 (LTS). CI now tests Node 22.x, 24.x, and 26.x.
+- **CI:** Test matrix dropped Node 20.x and added Node 26.x. Matrix is now `[22.x, 24.x, 26.x]`. The Node-24 `if:` guards for coverage upload + codecov stay on 24.x (current LTS) as the canonical artifact-producing version.
 
 ## [1.0.0-rc.1] - 2026-05-17
 
