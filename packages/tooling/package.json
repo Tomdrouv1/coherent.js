@@ -1,6 +1,6 @@
 {
   "name": "@coherent.js/tooling",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0-rc.2",
   "description": "Coherent.js dev-time tooling: testing utilities (Vitest matchers, render harness) and Language Server Protocol implementation.",
   "type": "module",
   "main": "./dist/testing/index.js",

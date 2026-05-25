@@ -79,14 +79,13 @@ export function createHandler(componentFactory, options = {}) {
  * @param {Object} options - Setup options
  */
 export function setupCoherent(app, options = {}) {
-  const {
-    useMiddleware = true,
-    enablePerformanceMonitoring = false
-  } = options;
+  const { useMiddleware = true, ...middlewareOptions } = options;
 
-  // Use middleware for automatic rendering
+  // Use middleware for automatic rendering. Forward everything except the
+  // setup-only flag so callers can supply `template`, `enablePerformanceMonitoring`,
+  // and any future middleware options.
   if (useMiddleware) {
-    app.use(coherentKoaMiddleware({ enablePerformanceMonitoring }));
+    app.use(coherentKoaMiddleware(middlewareOptions));
   }
 }
 

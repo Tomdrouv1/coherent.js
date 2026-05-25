@@ -1,10 +1,10 @@
 {
   "name": "@coherent.js/monorepo",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0-rc.2",
   "private": true,
   "description": "A lightweight, high-performance server-side rendering framework using pure JavaScript objects. Features include streaming renderer, performance monitoring, component composition, memoization, and integrations with Express.js, Fastify, and Next.js.",
   "type": "module",
-  "packageManager": "pnpm@11.1.3",
+  "packageManager": "pnpm@11.3.0",
   "engines": {
     "node": ">=22.0.0",
     "pnpm": ">=8.0.0"
@@ -132,17 +132,17 @@
     "@commitlint/cli": "21.0.1",
     "@commitlint/config-conventional": "21.0.1",
     "@playwright/test": "1.60.0",
-    "@types/node": "25.9.0",
-    "@vitest/coverage-v8": "4.1.6",
+    "@types/node": "25.9.1",
+    "@vitest/coverage-v8": "4.1.7",
     "chokidar": "5.0.0",
     "esbuild": "0.28.0",
     "eslint": "10.4.0",
     "husky": "9.1.7",
-    "marked": "18.0.3",
+    "marked": "18.0.4",
     "prettier": "3.8.3",
-    "shiki": "4.0.2",
+    "shiki": "4.1.0",
     "typescript": "6.0.3",
-    "vitest": "4.1.6",
-    "ws": "8.20.1"
+    "vitest": "4.1.7",
+    "ws": "8.21.0"
   }
 }

@@ -8,13 +8,20 @@ import { tmpdir } from 'node:os';
 import { join, sep } from 'node:path';
 import { createFileWatcher } from '../../src/dev-server/file-watcher.js';
 
-async function waitFor(predicate, { timeoutMs = 2000, intervalMs = 25 } = {}) {
+async function waitFor(predicate, { timeoutMs = 4000, intervalMs = 25 } = {}) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     if (predicate()) return;
     await new Promise((r) => setTimeout(r, intervalMs));
   }
   throw new Error('waitFor timed out');
+}
+
+// chokidar can take a moment after `ready` before it's actually receiving
+// FS events on macOS fsevents — give it a small breather so tests aren't
+// racing the watcher's first event subscription.
+async function settle(ms = 50) {
+  await new Promise((r) => setTimeout(r, ms));
 }
 
 describe('createFileWatcher', () => {
@@ -35,14 +42,20 @@ describe('createFileWatcher', () => {
   });
 
   test('emits a change payload with filePath, webPath, updateType on .js write', async () => {
+    // Pre-create the subdirectory before starting the watcher so chokidar
+    // is already watching it when the file write event fires (avoids a
+    // race where creating a new subdir and writing into it back-to-back
+    // can be missed on macOS fsevents).
+    mkdirSync(join(root, 'src'));
+
     watcher = await createFileWatcher({
       root,
       onChange: (c) => changes.push(c),
       onError: (e) => errors.push(e),
     });
+    await settle();
 
     const file = join(root, 'src', 'app.js');
-    mkdirSync(join(root, 'src'));
     writeFileSync(file, 'export const x = 1;');
 
     await waitFor(() => changes.length >= 1);
@@ -62,6 +75,7 @@ describe('createFileWatcher', () => {
       onChange: (c) => changes.push(c),
       onError: (e) => errors.push(e),
     });
+    await settle();
 
     const file = join(root, 'styles.css');
     writeFileSync(file, 'body { color: red; }');
@@ -76,6 +90,7 @@ describe('createFileWatcher', () => {
       onChange: (c) => changes.push(c),
       onError: (e) => errors.push(e),
     });
+    await settle();
 
     const file = join(root, 'image.png');
     writeFileSync(file, 'fake-png-bytes');
@@ -85,20 +100,27 @@ describe('createFileWatcher', () => {
   });
 
   test('debounces rapid writes to the same file into a single change', async () => {
+    // Use a debounce window comfortably larger than chokidar's per-event
+    // dispatch latency on macOS fsevents (which can be ~80-100ms).
+    // A 50ms window was too tight: the first event sometimes fired before
+    // the next FS event arrived to reset the timer, producing 2 changes.
+    const debounceMs = 200;
     watcher = await createFileWatcher({
       root,
       onChange: (c) => changes.push(c),
       onError: (e) => errors.push(e),
-      debounceMs: 50,
+      debounceMs,
     });
+    await settle();
 
     const file = join(root, 'rapid.js');
     writeFileSync(file, 'v1');
     writeFileSync(file, 'v2');
     writeFileSync(file, 'v3');
 
-    // Wait for the debounce window plus headroom
-    await new Promise((r) => setTimeout(r, 200));
+    // Wait for the debounce window plus comfortable headroom for the
+    // OS event queue to flush.
+    await new Promise((r) => setTimeout(r, debounceMs + 250));
 
     const rapidChanges = changes.filter((c) => c.filePath === file);
     expect(rapidChanges.length).toBe(1);
@@ -123,13 +145,17 @@ describe('createFileWatcher', () => {
   });
 
   test('webPath uses forward slashes even on platforms with backslash separators', async () => {
+    // Pre-create the nested dirs so chokidar is already watching them
+    // when we write — same race-avoidance as the .js write test above.
+    mkdirSync(join(root, 'nested', 'deeper'), { recursive: true });
+
     watcher = await createFileWatcher({
       root,
       onChange: (c) => changes.push(c),
       onError: (e) => errors.push(e),
     });
+    await settle();
 
-    mkdirSync(join(root, 'nested', 'deeper'), { recursive: true });
     writeFileSync(join(root, 'nested', 'deeper', 'leaf.js'), 'export {};');
 
     await waitFor(() => changes.length >= 1);

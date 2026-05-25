@@ -1,6 +1,6 @@
 {
   "name": "@coherent.js/integrations",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0-rc.2",
   "description": "Framework integration adapters for Coherent.js: Express, Fastify, Koa, Next.js, Astro, Remix, SvelteKit.",
   "type": "module",
   "exports": {
@@ -53,6 +53,9 @@
   "homepage": "https://github.com/Tomdrouv1/coherent.js",
   "bugs": {
     "url": "https://github.com/Tomdrouv1/coherent.js/issues"
+  },
+  "dependencies": {
+    "fastify-plugin": "^4.5.1"
   },
   "peerDependencies": {
     "@coherent.js/core": "workspace:*",

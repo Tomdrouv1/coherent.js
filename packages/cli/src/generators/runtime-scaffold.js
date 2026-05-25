@@ -170,7 +170,10 @@ export function generateExpressServer(options = {}) {
 
   if (hasApi) imports.push(`import apiRoutes from './api/routes.js';`);
   if (hasDatabase) imports.push(`import { initDatabase } from './db/index.js';`);
-  if (hasAuth) imports.push(`import { authMiddleware } from './middleware/auth.js';`);
+  if (hasAuth) {
+    imports.push(`import authRoutes from './api/auth.js';`);
+    imports.push(`import { authMiddleware } from './middleware/auth.js';`);
+  }
 
   const server = `
 ${imports.join('\n')}
@@ -186,8 +189,11 @@ app.use(express.static('public'));
 
 ${hasDatabase ? `// Initialize database
 await initDatabase();
-` : ''}${hasAuth ? `// Setup authentication
-app.use(authMiddleware);
+` : ''}${hasAuth ? `// Public auth routes (register/login; /me protects itself with authMiddleware)
+app.use('/api/auth', authRoutes);
+// Protect anything under /api/protected/* with the JWT middleware.
+// Add new protected routes here, not as a top-level app.use().
+app.use('/api/protected', authMiddleware);
 ` : ''}
 ${hasApi ? `// API routes - convert Coherent.js router to Express middleware
 app.use('/api', apiRoutes.toExpressRouter(express));
@@ -236,7 +242,10 @@ export function generateFastifyServer(options = {}) {
 
   if (hasApi) imports.push(`import apiRoutes from './api/routes.js';`);
   if (hasDatabase) imports.push(`import { initDatabase } from './db/index.js';`);
-  if (hasAuth) imports.push(`import { authPlugin } from './plugins/auth.js';`);
+  if (hasAuth) {
+    imports.push(`import { authPlugin } from './plugins/auth.js';`);
+    imports.push(`import authRoutes from './api/auth.js';`);
+  }
 
   const server = `
 ${imports.join('\n')}
@@ -246,21 +255,38 @@ const fastify = Fastify({
   logger: true
 });
 
+// Default HTML shell wrapping rendered components. Override per-route by
+// passing a custom \`template\` to setupCoherent or by responding with a
+// pre-rendered string.
+const APP_HTML_TEMPLATE = \`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coherent.js App</title>
+</head>
+<body>
+{{content}}
+</body>
+</html>\`;
+
 ${hasDatabase ? `// Initialize database
 await initDatabase();
 ` : ''}${hasAuth ? `// Register auth plugin
 await fastify.register(authPlugin);
 ` : ''}
-// Setup Coherent.js
-await fastify.register(setupCoherent);
+// Setup Coherent.js (registers as a plugin; setupCoherent forwards avvio's done callback)
+await fastify.register(setupCoherent, { template: APP_HTML_TEMPLATE });
 
-// Serve static files
+// Serve static files (resolve against project root, not src/index.js's directory)
 await fastify.register(import('@fastify/static'), {
-  root: new URL('./public', import.meta.url).pathname,
+  root: new URL('../public', import.meta.url).pathname,
   prefix: '/public/'
 });
 
-${hasApi ? `// API routes
+${hasAuth ? `// Auth routes (prefix /api/auth → /register, /login, /me)
+await fastify.register(authRoutes, { prefix: '/api/auth' });
+` : ''}${hasApi ? `// API routes
 await fastify.register(apiRoutes, { prefix: '/api' });
 ` : ''}
 // Main route - return Coherent.js component (auto-rendered by plugin)
@@ -296,7 +322,10 @@ export function generateKoaServer(options = {}) {
 
   if (hasApi) imports.push(`import apiRoutes from './api/routes.js';`);
   if (hasDatabase) imports.push(`import { initDatabase } from './db/index.js';`);
-  if (hasAuth) imports.push(`import { authMiddleware } from './middleware/auth.js';`);
+  if (hasAuth) {
+    imports.push(`import authRouter from './api/auth.js';`);
+    imports.push(`import { authMiddleware } from './middleware/auth.js';`);
+  }
 
   const server = `
 ${imports.join('\n')}
@@ -307,18 +336,37 @@ const router = new Router();
 
 const PORT = process.env.PORT || ${port};
 
+// Default HTML shell wrapping rendered components. Override per-route by
+// passing a custom \`template\` to setupCoherent or by setting ctx.body to a
+// pre-rendered string.
+const APP_HTML_TEMPLATE = \`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coherent.js App</title>
+</head>
+<body>
+{{content}}
+</body>
+</html>\`;
+
 ${hasDatabase ? `// Initialize database
 await initDatabase();
 ` : ''}
 // Middleware
 app.use(koaBody());
 app.use(serve('./public'));
-${hasAuth ? `app.use(authMiddleware);
-` : ''}
-// Setup Coherent.js
-setupCoherent(app);
 
-${hasApi ? `// API routes
+// Setup Coherent.js (wraps rendered components in APP_HTML_TEMPLATE)
+setupCoherent(app, { template: APP_HTML_TEMPLATE });
+
+${hasAuth ? `// Auth routes (public). Mount before the protected scope.
+router.use('/api/auth', authRouter.routes(), authRouter.allowedMethods());
+// Protected routes — anything declared under /api/protected/* requires a valid token.
+// Add new protected routes here, not as a top-level app.use().
+router.use('/api/protected', authMiddleware);
+` : ''}${hasApi ? `// API routes
 apiRoutes(router);
 ` : ''}
 // Main route - set body to Coherent.js component (auto-rendered by middleware)

@@ -93,10 +93,10 @@ export async function initDatabase()${returnType} {
       database: dbConfig.database,
       username: dbConfig.user,
       password: dbConfig.password,
-      pool: dbConfig.pool
+      pool: dbConfig.pool,
+      autoConnect: false
     });
 
-    // Wait for connection
     await db.connect();
 
     console.log('✓ Connected to PostgreSQL database');
@@ -140,10 +140,10 @@ export async function initDatabase()${returnType} {
       database: dbConfig.database,
       username: dbConfig.user,
       password: dbConfig.password,
-      pool: dbConfig.pool
+      pool: dbConfig.pool,
+      autoConnect: false
     });
 
-    // Wait for connection
     await db.connect();
 
     console.log('✓ Connected to MySQL database');
@@ -174,6 +174,7 @@ process.on('SIGINT', async () => {
     sqlite: `
 import { setupDatabase } from '@coherent.js/database';
 import { dbConfig } from './config.js';
+import { UserModel } from './models/User.js';
 import { mkdirSync } from 'fs';
 import { dirname } from 'path';
 
@@ -186,14 +187,21 @@ export async function initDatabase()${returnType} {
       mkdirSync(dirname(dbConfig.filename), { recursive: true });
     }
 
-    // Setup database with Coherent.js
+    // Setup database with Coherent.js.
+    // autoConnect: false — otherwise setupDatabase fires a non-awaited
+    // connect() that races our explicit await db.connect() below and
+    // can cause SQLITE_BUSY (WAL mode allows only one writer at a time).
     db = setupDatabase({
       type: 'sqlite',
-      database: dbConfig.filename || ':memory:'
+      database: dbConfig.filename || ':memory:',
+      autoConnect: false
     });
 
-    // Wait for connection
     await db.connect();
+
+    // Bootstrap schema (idempotent — uses CREATE TABLE IF NOT EXISTS).
+    // Add additional model.createTable() calls here as you add models.
+    await UserModel.createTable();
 
     console.log('✓ Connected to SQLite database');
 
@@ -232,10 +240,10 @@ export async function initDatabase()${returnType} {
     db = setupDatabase({
       type: 'mongodb',
       database: dbConfig.uri,
-      ...dbConfig.options
+      ...dbConfig.options,
+      autoConnect: false
     });
 
-    // Wait for connection
     await db.connect();
 
     console.log('✓ Connected to MongoDB database');
@@ -398,10 +406,14 @@ import { getDatabase } from '../index.js';
 
 ${interfaceDef}
 
+// Uses the @coherent.js/database manager API (db.query → { rows: [...] }).
+// Avoids RETURNING * for portability: it requires SQLite 3.35+, and the
+// adapter's pinned sqlite3 may bundle an older libsqlite. Instead we
+// follow INSERT/UPDATE with a SELECT on the known unique key.
 export class UserModel {
-  static createTable()${typeAnnotation} {
+  static async createTable()${typeAnnotation} {
     const db = getDatabase();
-    db.exec(\`
+    await db.query(\`
       CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email TEXT UNIQUE NOT NULL,
@@ -412,36 +424,39 @@ export class UserModel {
     \`);
   }
 
-  static create(data)${typeAnnotation} {
+  static async create(data)${typeAnnotation} {
     const db = getDatabase();
-    const stmt = db.prepare('INSERT INTO users (email, name) VALUES (?, ?)');
-    const result = stmt.run(data.email, data.name);
-    return { id: result.lastInsertRowid, ...data };
+    await db.query(
+      'INSERT INTO users (email, name) VALUES (?, ?)',
+      [data.email, data.name]
+    );
+    return this.findByEmail(data.email);
   }
 
-  static findById(id)${typeAnnotation} {
+  static async findById(id)${typeAnnotation} {
     const db = getDatabase();
-    const stmt = db.prepare('SELECT * FROM users WHERE id = ?');
-    return stmt.get(id);
+    const result = await db.query('SELECT * FROM users WHERE id = ?', [id]);
+    return result.rows[0];
   }
 
-  static findByEmail(email)${typeAnnotation} {
+  static async findByEmail(email)${typeAnnotation} {
     const db = getDatabase();
-    const stmt = db.prepare('SELECT * FROM users WHERE email = ?');
-    return stmt.get(email);
+    const result = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+    return result.rows[0];
   }
 
-  static update(id, data)${typeAnnotation} {
+  static async update(id, data)${typeAnnotation} {
     const db = getDatabase();
-    const stmt = db.prepare('UPDATE users SET email = ?, name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
-    stmt.run(data.email, data.name, id);
+    await db.query(
+      'UPDATE users SET email = ?, name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [data.email, data.name, id]
+    );
     return this.findById(id);
   }
 
-  static delete(id)${typeAnnotation} {
+  static async delete(id)${typeAnnotation} {
     const db = getDatabase();
-    const stmt = db.prepare('DELETE FROM users WHERE id = ?');
-    return stmt.run(id);
+    await db.query('DELETE FROM users WHERE id = ?', [id]);
   }
 }
 `,
@@ -540,7 +555,9 @@ export function getDatabaseDependencies(dbType) {
       '@coherent.js/database': `^${cliVersion}`
     },
     sqlite: {
-      'better-sqlite3': '^11.3.0',
+      // @coherent.js/database's SQLite adapter uses node-sqlite3 (peer dep),
+      // not better-sqlite3. Keep these in sync if the adapter changes.
+      sqlite3: '^5.1.7',
       '@coherent.js/database': `^${cliVersion}`
     },
     mongodb: {

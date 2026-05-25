@@ -41,13 +41,18 @@ describe('Fastify Integration', () => {
   });
 
   it('should setup coherent fastify', () => {
-    // Mock Fastify instance
+    // setupCoherent is now an alias for the fp-wrapped coherentFastify
+    // plugin, so the mock must expose decorateReply + addHook in addition
+    // to register. Previously setupCoherent just called fastify.register
+    // internally and never touched anything else on the instance.
     const mockFastify = {
-      register: () => {}
+      register: () => {},
+      decorateReply: () => {},
+      addHook: () => {}
     };
 
     expect(() => {
-      setupCoherent(mockFastify);
+      setupCoherent(mockFastify, {}, () => {});
     }).not.toThrow();
   });
 

@@ -1,6 +1,6 @@
 {
   "name": "@coherent.js/database",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0-rc.2",
   "description": "Database utilities and adapters for Coherent.js",
   "type": "module",
   "main": "dist/index.cjs",
@@ -57,7 +57,7 @@
     "url": "https://github.com/Tomdrouv1/coherent.js/issues"
   },
   "peerDependencies": {
-    "sqlite3": "5.0.0",
+    "sqlite3": ">=5.0.0",
     "@coherent.js/core": "workspace:*"
   },
   "peerDependenciesMeta": {

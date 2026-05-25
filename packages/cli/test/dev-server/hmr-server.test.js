@@ -30,29 +30,53 @@ async function startTestServer() {
   };
 }
 
-function waitForMessage(ws, predicate, timeoutMs = 2000) {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => {
-      ws.removeListener('message', onMessage);
-      reject(new Error(`timeout waiting for message after ${timeoutMs}ms`));
-    }, timeoutMs);
+/**
+ * Attach a message buffer to a WebSocket the moment it's created so we
+ * never miss messages that arrive before a later `await` returns. Returns
+ * a `next(predicate)` helper that resolves with the next (or already
+ * buffered) matching message.
+ *
+ * This avoids the classic listen-after-await race: the server sends a
+ * `connected` ack on `setTimeout(0)` after the WS handshake completes,
+ * which can arrive before a test attaches its message listener.
+ */
+function bufferMessages(ws) {
+  const buffer = [];
+  const waiters = [];
 
-    function onMessage(buf) {
-      let data;
-      try {
-        data = JSON.parse(buf.toString());
-      } catch {
+  ws.on('message', (buf) => {
+    let data;
+    try { data = JSON.parse(buf.toString()); } catch { return; }
+    for (let i = waiters.length - 1; i >= 0; i--) {
+      const w = waiters[i];
+      if (w.predicate(data)) {
+        waiters.splice(i, 1);
+        clearTimeout(w.timer);
+        w.resolve(data);
         return;
       }
-      if (predicate(data)) {
-        clearTimeout(timer);
-        ws.removeListener('message', onMessage);
-        resolve(data);
-      }
     }
-
-    ws.on('message', onMessage);
+    buffer.push(data);
   });
+
+  return {
+    next(predicate, timeoutMs = 2000) {
+      const match = buffer.findIndex(predicate);
+      if (match >= 0) {
+        const [d] = buffer.splice(match, 1);
+        return Promise.resolve(d);
+      }
+      return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          const i = waiters.indexOf(entry);
+          if (i >= 0) waiters.splice(i, 1);
+          reject(new Error(`timeout waiting for message after ${timeoutMs}ms`));
+        }, timeoutMs);
+        const entry = { predicate, resolve, timer };
+        waiters.push(entry);
+      });
+    },
+  };
 }
 
 function waitForOpen(ws) {
@@ -75,8 +99,9 @@ describe('createHmrServer', () => {
 
   test('sends {type: "connected"} ack on client connect', async () => {
     const client = new WebSocket(server.url);
+    const msgs = bufferMessages(client);
     await waitForOpen(client);
-    const msg = await waitForMessage(client, (d) => d.type === 'connected');
+    const msg = await msgs.next((d) => d.type === 'connected');
     expect(msg).toEqual({ type: 'connected' });
     client.close();
   });
@@ -84,18 +109,20 @@ describe('createHmrServer', () => {
   test('broadcast() reaches all connected clients', async () => {
     const a = new WebSocket(server.url);
     const b = new WebSocket(server.url);
+    const aMsgs = bufferMessages(a);
+    const bMsgs = bufferMessages(b);
     await Promise.all([waitForOpen(a), waitForOpen(b)]);
 
     // Drain the initial 'connected' acks before broadcasting
     await Promise.all([
-      waitForMessage(a, (d) => d.type === 'connected'),
-      waitForMessage(b, (d) => d.type === 'connected'),
+      aMsgs.next((d) => d.type === 'connected'),
+      bMsgs.next((d) => d.type === 'connected'),
     ]);
 
     const update = { type: 'hmr-update', filePath: '/abs/x.js', webPath: '/x.js' };
     const [recvA, recvB] = await Promise.all([
-      waitForMessage(a, (d) => d.type === 'hmr-update'),
-      waitForMessage(b, (d) => d.type === 'hmr-update'),
+      aMsgs.next((d) => d.type === 'hmr-update'),
+      bMsgs.next((d) => d.type === 'hmr-update'),
       Promise.resolve().then(() => server.hmr.broadcast(update)),
     ]);
 
@@ -107,8 +134,9 @@ describe('createHmrServer', () => {
 
   test('close() drops existing clients and rejects new connections', async () => {
     const a = new WebSocket(server.url);
+    const aMsgs = bufferMessages(a);
     await waitForOpen(a);
-    await waitForMessage(a, (d) => d.type === 'connected');
+    await aMsgs.next((d) => d.type === 'connected');
 
     const closed = new Promise((resolve) => a.once('close', resolve));
     server.hmr.close();

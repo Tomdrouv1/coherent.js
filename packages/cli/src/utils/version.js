@@ -15,24 +15,31 @@ let cachedVersion = null;
  * @returns {string} The CLI version string
  */
 export function getCLIVersion() {
-  // Return cached version if already loaded
   if (cachedVersion) {
     return cachedVersion;
   }
 
   try {
-    // Try to get the path of this module to determine CLI root
     const __filename = fileURLToPath(import.meta.url);
-    const __dirname = dirname(__filename);
-
-    // Look for package.json in CLI directory
-    const packagePath = join(__dirname, '..', '..', 'package.json');
-    const packageJson = JSON.parse(readFileSync(packagePath, 'utf-8'));
-    cachedVersion = packageJson.version;
-    return cachedVersion;
+    let dir = dirname(__filename);
+    // Walk up looking for the @coherent.js/cli package.json. Works from both
+    // src/utils (depth 2) and dist/index.js (depth 1), and survives future
+    // bundling moves.
+    while (dir && dir !== dirname(dir)) {
+      try {
+        const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf-8'));
+        if (pkg.name === '@coherent.js/cli' && typeof pkg.version === 'string') {
+          cachedVersion = pkg.version;
+          return cachedVersion;
+        }
+      } catch {
+        // not this dir; keep walking
+      }
+      dir = dirname(dir);
+    }
   } catch {
-    // Fallback to environment variable or default
-    cachedVersion = env.COHERENT_CLI_VERSION || '1.0.0-beta.5';
-    return cachedVersion;
+    // fall through to env/default
   }
+  cachedVersion = env.COHERENT_CLI_VERSION || '1.0.0-rc.2';
+  return cachedVersion;
 }

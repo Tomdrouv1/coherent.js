@@ -60,6 +60,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.2] - 2026-05-25
+
+Hotfix release. After milestone v1.0 archival, manual verification of `coherent create` revealed that several scaffold permutations could not boot. rc.2 fixes the boot-blocking bugs in CLI scaffolds and the Fastify/Koa/SQLite integrations. No public API was removed or renamed; the existing `setupCoherent` helper now has a working backward-compatible alias.
+
+End-to-end verification against the four primary permutations (basic + koa, basic + express, basic + fastify, fullstack + express + sqlite + jwt) now boots, serves a real HTML document, and (for the fullstack scaffold) walks register → login → /me → 401-on-unauth without code changes by the user.
+
+### Fixed
+
+- **`@coherent.js/integrations` (fastify):** `coherentFastify` is now wrapped with `fastify-plugin` (new dependency: `fastify-plugin ^4.5.1`) so its hooks and decorators apply to the parent context — without this, the `preSerialization` hook never fired for routes registered on the root fastify instance and every response was JSON-serialized as the raw component object. `setupCoherent` is now an alias for the wrapped plugin, so existing `await fastify.register(setupCoherent, opts)` callsites work; the previous version (which called `fastify.register(coherentFastify, options)` internally without honouring the plugin contract) caused `FastifyError: Plugin did not start in time: 'setupCoherent'` on boot.
+- **`@coherent.js/integrations` (fastify):** Auto-render hook changed from `onSend` to `preSerialization`, and now installs an identity `reply.serializer((p) => p)` so the rendered HTML string is sent verbatim instead of JSON-stringified. `onSend` runs after serialization (payload already a string) so the previous wiring never matched a component object.
+- **`@coherent.js/integrations` (koa):** `setupCoherent` now forwards `template` (and any future middleware options) through to `coherentKoaMiddleware`. Previously only `enablePerformanceMonitoring` was forwarded, so a caller's `template` was silently dropped and responses defaulted to the bare `<!DOCTYPE html>\n{{content}}` template.
+- **`@coherent.js/database`:** `peerDependencies.sqlite3` relaxed from the exact pin `"5.0.0"` to `">=5.0.0"` so the adapter can load a sqlite3 build whose bundled libsqlite supports modern syntax (e.g. `RETURNING`). The exact pin prevented npm/pnpm from hoisting newer compatible versions.
+- **`@coherent.js/cli` (sqlite scaffold):** Dependency switched from `better-sqlite3` to `sqlite3 ^5.1.7` so the generated `package.json` matches the peer that `@coherent.js/database`'s SQLite adapter actually loads. Previously fullstack + sqlite scaffolds crashed on boot with `Failed to load sqlite3 module`.
+- **`@coherent.js/cli` (sqlite UserModel):** Rewritten to use the `@coherent.js/database` manager API (`db.query` returning `{ rows }`) instead of better-sqlite3's `db.prepare` / `db.exec`, which the manager does not expose. `create`/`update` follow `INSERT/UPDATE` with `SELECT` on the unique key rather than `RETURNING *`, so the model is portable across libsqlite versions. All methods are now async.
+- **`@coherent.js/cli` (sqlite init):** `initDatabase()` now passes `autoConnect: false` to `setupDatabase()` and explicitly awaits `db.connect()`, plus calls `await UserModel.createTable()` after connecting. The previous wiring let `setupDatabase`'s fire-and-forget connect race the scaffold's explicit connect, intermittently causing `SQLITE_BUSY: database is locked`; and without `createTable()` the `users` table never existed when register/login ran. The same `autoConnect: false` is now also applied to the postgres/mysql/mongodb init templates as a defence in depth.
+- **`@coherent.js/cli` (fastify scaffold):** Static-file root changed from `new URL('./public', import.meta.url).pathname` (which resolved to `src/public`) to `new URL('../public', import.meta.url).pathname` so it points at the project's `public/` directory. Previously startup logged `"root" path "..../src/public" must exist`.
+- **`@coherent.js/cli` (fullstack auth wiring):**
+  - `src/index.js` now imports `auth.js` (express, fastify, koa) and mounts it under `/api/auth`. Previously the auth router was generated but never wired up — `/register`, `/login`, `/me` were unreachable.
+  - `authMiddleware` is no longer mounted as a top-level `app.use(...)`. Express now mounts it under `/api/protected`; Koa mounts it on the main router under `/api/protected`; Fastify continues to rely on the `authPlugin` decorator. Previously every request — including `GET /` — returned 401.
+- **`@coherent.js/cli` (koa + fastify HTML shell):** Scaffolds now pass an `APP_HTML_TEMPLATE` to `setupCoherent(app, { template })`. Generated apps wrap rendered components in a real `<html>/<head>/<body>` document instead of emitting `<!DOCTYPE html>` followed by a bare `<div>`.
+- **`@coherent.js/cli` (`getCLIVersion`):** Path resolution now walks up directories looking for `@coherent.js/cli` `package.json` so the helper works from both `src/utils` and bundled `dist/index.js`. The hardcoded fallback (previously `1.0.0-beta.5`, which slipped into rc.1 scaffolds via the dist build) is updated to `1.0.0-rc.2`. New scaffolds now correctly pin `@coherent.js/*` deps to `^1.0.0-rc.2`.
+
+### Added
+
+- **`@coherent.js/integrations`:** New runtime dependency `fastify-plugin ^4.5.1`. Required for the Fastify integration to break encapsulation and apply hooks to the user's root fastify instance.
+
+### Tests
+
+- **`packages/cli/test/dev-server/file-watcher.test.js`:** Stabilized two flaky tests. The `.js write` and `nested webPath` tests now pre-create the watched subdirectories before starting chokidar (avoids a macOS fsevents race where new directories aren't attached fast enough to catch the immediate write). The `debounces rapid writes` test uses `debounceMs: 200` (up from 50) so the window comfortably exceeds chokidar's per-event dispatch latency. Added a small `settle()` after `await createFileWatcher(...)` to give chokidar time to subscribe before the test writes.
+- **`packages/cli/test/dev-server/hmr-server.test.js`:** Replaced the post-await `waitForMessage` helper with a `bufferMessages` helper that attaches the WebSocket message listener at socket creation. The server sends its `connected` ack on `setTimeout(0)` after the WS handshake, which could arrive before a test could attach a listener after `await waitForOpen(client)`. The buffer pattern is race-free.
+- **`packages/integrations/test/fastify/fastify-integration.test.js`:** Updated `should setup coherent fastify` mock to include `decorateReply` and `addHook`. Required because `setupCoherent` is now an alias for the fp-wrapped plugin and runs the impl directly instead of indirecting through `fastify.register`.
+
+### Known gaps (carried into v1.1)
+
+- No automated boot test for scaffolds. The CLI suite (`scaffold-matrix`, `import-audit`, `scaffolding`, `templates`) only verifies file shape and `expect(content).toContain(...)` — it does not install, start, or curl the generated app. A v1.1 phase will add an end-to-end smoke harness.
+- `built-in` runtime + auth permutation still imports a non-existent `setupAuthRoutes` (the auth scaffold doesn't emit a `built-in` variant). Out of rc.2 scope; tracked for v1.1.
+- Scaffolded auth still does not hash passwords (`// you should implement proper password checking!` placeholder). Out of rc.2 scope; tracked for v1.1.
+- The MySQL UserModel `create` returns `result[0]` but `db.query` resolves to `{ rows: [...] }`. Out of rc.2 scope (no verified MySQL scaffold today); tracked for v1.1.
+
 ### Changed
 
 - **BREAKING (minimum runtime):** `engines.node` bumped from `>=20.0.0` to `>=22.0.0` across all 13 published packages. Node 20 LTS ended 2026-04-30; we've stopped testing against it. Users on Node 20 should upgrade to Node 22 (active LTS) or Node 24 (LTS). CI now tests Node 22.x, 24.x, and 26.x.
