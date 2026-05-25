@@ -33,6 +33,11 @@ on:
           - 'no'
           - 'yes'
         default: 'no'
+      otp:
+        description: '6-digit npm 2FA code (required if your npm account enforces 2FA for write operations)'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -66,6 +71,7 @@ jobs:
           VERSION: ${{ inputs.version }}
           DIST_TAG: ${{ inputs.dist_tag }}
           ALSO_LATEST: ${{ inputs.also_move_latest }}
+          OTP: ${{ inputs.otp }}
         run: |
           PACKAGES=(
             core
@@ -82,18 +88,27 @@ jobs:
             tooling
           )
 
+          # Optionally append --otp <code>; the variable expands to nothing
+          # when no OTP is supplied (npm tokens that bypass 2FA work fine
+          # without it; user-tokens with 2FA enforcement need it).
+          if [ -n "$OTP" ]; then
+            OTP_ARGS=(--otp "$OTP")
+          else
+            OTP_ARGS=()
+          fi
+
           fail=0
           for p in "${PACKAGES[@]}"; do
             pkg="@coherent.js/$p"
             echo "::group::$pkg -> $DIST_TAG@$VERSION"
-            if npm dist-tag add "$pkg@$VERSION" "$DIST_TAG"; then
+            if npm dist-tag add "$pkg@$VERSION" "$DIST_TAG" "${OTP_ARGS[@]}"; then
               echo "  ok: $pkg $DIST_TAG -> $VERSION"
             else
               echo "::error::Failed to move $DIST_TAG on $pkg"
               fail=1
             fi
             if [ "$ALSO_LATEST" = "yes" ] && [ "$DIST_TAG" != "latest" ]; then
-              if npm dist-tag add "$pkg@$VERSION" latest; then
+              if npm dist-tag add "$pkg@$VERSION" latest "${OTP_ARGS[@]}"; then
                 echo "  ok: $pkg latest -> $VERSION"
               else
                 echo "::error::Failed to move latest on $pkg"
