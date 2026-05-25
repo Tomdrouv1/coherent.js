@@ -2,87 +2,51 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-01-21)
+See: .planning/PROJECT.md (updated 2026-05-25 after v1.0)
 
 **Core value:** A developer can run `coherent create my-app`, get a working fullstack app with auth and database, and start building in 5 minutes
-**Current focus:** Milestone Complete - All phases executed
+**Current focus:** v1.0 shipped — planning v1.1 next
 
 ## Current Position
 
-Phase: 6 of 6 (IDE Support)
-Plan: 2/2 plans complete in Phase 6
-Status: MILESTONE COMPLETE
-Last activity: 2026-01-22 - Completed 06-02-PLAN.md
+Milestone: v1.0 Stabilization — **SHIPPED 2026-05-25**
+Next milestone: v1.1 (TBD via `/gsd:new-milestone`)
+Last activity: 2026-05-25 — Milestone archive
 
-Progress: [██████████] 100% (20 of 20 total plans)
+Progress: [██████████] 100% of v1.0 (20/20 plans, 32/32 requirements)
 
-## Performance Metrics
+## Recent Milestone
 
-**Velocity:**
-- Total plans completed: 20
-- Average duration: 7 min
-- Total execution time: 150 min
+**v1.0 Stabilization** — 6 phases, 20 plans, 32 requirements
+- Foundation, Hydration, CLI Scaffolding, HMR, TypeScript, IDE Support
+- Audit: PASSED (45/47 integration checks)
+- Tech debt carried forward: legacy `hydration.js`, HMR dev-server integration, marketplace publish
 
-**By Phase:**
-
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 01-foundation | 3 | 27 min | 9 min |
-| 02-hydration | 4 | 19 min | 5 min |
-| 03-cli-scaffolding | 3 | 17 min | 6 min |
-| 04-hot-module-replacement | 3 | 24 min | 8 min |
-| 05-typescript | 5 | 35 min | 7 min |
-| 06-ide-support | 2 | 20 min | 10 min |
-
-**Recent Trend:**
-- Last 5 plans: 05-03 (7 min), 05-04 (10 min), 05-05 (9 min), 06-01 (12 min), 06-02 (8 min)
-- Trend: Consistent performance
-
-*Updated after each plan completion*
+See: `MILESTONES.md` and `milestones/v1-ROADMAP.md`
 
 ## Accumulated Context
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
+Decisions log lives in PROJECT.md "Key Decisions" table. v1.0 added 10+ entries; nothing currently flagged as "Revisit" except the legacy `hydration.js` removal (target v1.1) and the deferred marketplace publish.
 
-| Date | Plan | Decision | Rationale |
-|------|------|----------|-----------|
-| 2026-01-22 | 06-01 | Build-time attribute extraction | Single source of truth from core types |
-| 2026-01-22 | 06-01 | Case-insensitive typo handling | classname -> className is common pattern |
-| 2026-01-22 | 06-01 | 300ms validation debounce | Balance responsiveness with performance |
-| 2026-01-22 | 06-01 | Provider registration in onInitialized | Ensures connection fully established |
-| 2026-01-22 | 06-02 | Bundle server in extension | Avoids npm dependency resolution, works offline |
-| 2026-01-22 | 06-02 | IPC transport for language client | More reliable than stdio for VS Code |
-| 2026-01-22 | 06-02 | CommonJS extension bundle | VS Code requirement |
-| 2026-01-22 | 06-02 | Marketplace publish deferred | User preference - VSIX ready for manual publish |
+### Pending Todos / Open Threads
 
-### Pending Todos
-
-None - milestone complete.
+- HMR dev-server integration to achieve true end-to-end HMR
+- Marketplace publish of the VS Code extension (VSIX hand-off ready)
+- Remove legacy `hydration.js` once consumers migrate
+- Browser hands-on verification of hydration/HMR (the 6 items the audit flagged)
+- Decide v1.1 scope (could include in-browser DevTools, progressive hydration, streaming SSR, codemods)
 
 ### Blockers/Concerns
 
-None - all phases verified.
+None blocking. The v1.0 audit flagged 2/47 integration soft-misses; both acceptable per audit reviewer.
 
 ## Session Continuity
 
-Last session: 2026-01-22T18:30:00Z
-Stopped at: Milestone complete - all 6 phases executed and verified
-Resume file: None
+Last session: 2026-05-25 — Completed `/gsd:complete-milestone 1`
+Stopped at: v1.0 archived, ready to plan v1.1
+Resume entry point: Run `/gsd:new-milestone` to start v1.1
 
-## Milestone Summary
-
-**Coherent.js Stabilization v1** - COMPLETE
-
-All 32 requirements satisfied:
-- Core Rendering: 4/4 ✓
-- Reconciliation: 4/4 ✓
-- Hydration: 7/7 ✓
-- CLI Scaffolding: 6/6 ✓
-- Hot Module Replacement: 4/4 ✓
-- TypeScript: 4/4 ✓
-- IDE Support: 4/4 ✓
-
-Next: Run `/gsd:audit-milestone` to verify cross-phase integration and E2E flows.
+---
+*Updated 2026-05-25 by complete-milestone workflow*
