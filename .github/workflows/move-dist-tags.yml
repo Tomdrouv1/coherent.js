@@ -1,0 +1,119 @@
+name: Move NPM dist-tags
+
+# Manually re-point dist-tags (latest, rc, beta) at an already-published
+# version across all @coherent.js/* packages. Useful when the publish
+# workflow used the wrong tag (e.g. an old publish.yml on a release tag's
+# commit) and you don't want to re-publish.
+#
+# All user-provided inputs are routed through env: with shell-quoted use
+# so they cannot be interpreted as shell syntax (no `${{ inputs.* }}`
+# interpolation directly inside `run:` scripts).
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to point the dist-tag at (e.g. 1.0.0-rc.2)'
+        required: true
+        type: string
+      dist_tag:
+        description: 'Which dist-tag to move'
+        required: true
+        type: choice
+        options:
+          - rc
+          - beta
+          - latest
+        default: rc
+      also_move_latest:
+        description: 'Also move `latest` to the same version?'
+        required: true
+        type: choice
+        options:
+          - 'no'
+          - 'yes'
+        default: 'no'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  retag:
+    name: Move dist-tags across all @coherent.js/* packages
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Use Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org/
+
+      - name: Validate version exists on npm
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if ! npm view "@coherent.js/cli@$VERSION" version > /dev/null 2>&1; then
+            echo "::error::@coherent.js/cli@$VERSION does not exist on npm."
+            exit 1
+          fi
+          echo "Verified @coherent.js/cli@$VERSION is published."
+
+      - name: Move dist-tag for all @coherent.js/* packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          VERSION: ${{ inputs.version }}
+          DIST_TAG: ${{ inputs.dist_tag }}
+          ALSO_LATEST: ${{ inputs.also_move_latest }}
+        run: |
+          PACKAGES=(
+            core
+            cli
+            integrations
+            database
+            client
+            api
+            devtools
+            forms
+            i18n
+            seo
+            state
+            tooling
+          )
+
+          fail=0
+          for p in "${PACKAGES[@]}"; do
+            pkg="@coherent.js/$p"
+            echo "::group::$pkg -> $DIST_TAG@$VERSION"
+            if npm dist-tag add "$pkg@$VERSION" "$DIST_TAG"; then
+              echo "  ok: $pkg $DIST_TAG -> $VERSION"
+            else
+              echo "::error::Failed to move $DIST_TAG on $pkg"
+              fail=1
+            fi
+            if [ "$ALSO_LATEST" = "yes" ] && [ "$DIST_TAG" != "latest" ]; then
+              if npm dist-tag add "$pkg@$VERSION" latest; then
+                echo "  ok: $pkg latest -> $VERSION"
+              else
+                echo "::error::Failed to move latest on $pkg"
+                fail=1
+              fi
+            fi
+            echo "::endgroup::"
+          done
+
+          exit $fail
+
+      - name: Summary
+        if: always()
+        env:
+          VERSION: ${{ inputs.version }}
+          DIST_TAG: ${{ inputs.dist_tag }}
+          ALSO_LATEST: ${{ inputs.also_move_latest }}
+        run: |
+          echo "## dist-tag move summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Version: \`$VERSION\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Moved dist-tag: \`$DIST_TAG\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Also moved \`latest\`: $ALSO_LATEST" >> "$GITHUB_STEP_SUMMARY"
