@@ -19,7 +19,7 @@
   "devDependencies": {
     "@coherent.js/devtools": "workspace:*",
     "@coherent.js/cli": "workspace:*",
-    "vitest": "^1.0.0"
+    "vitest": "^3.2.6"
   },
   "coherent": {
     "enableTreeShaking": true,
