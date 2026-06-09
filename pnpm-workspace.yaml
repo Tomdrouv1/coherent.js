@@ -15,3 +15,26 @@ allowBuilds:
   keytar: true
   sharp: true
   sqlite3: true
+
+# Force patched versions of transitive dependencies flagged HIGH/critical by
+# `pnpm audit`. Each pin is re-derived against the current lockfile and kept
+# within the existing major where one is available, to avoid breaking changes.
+overrides:
+  # node-tar path-traversal / hardlink-escape CVEs — no 6.x backport exists,
+  # the fix only lands in 7.5.11+. Only used at build time by node-gyp.
+  tar: '^7.5.11'
+  # rollup arbitrary file write via path traversal — fixed in 4.59.0.
+  rollup: '^4.59.0'
+  # vite server.fs.deny bypass — scope to the affected 7.0–7.3.1 line so the
+  # already-safe 7.3.3 / 8.x resolutions are left untouched.
+  'vite@>=7.0.0 <8.0.0': '^7.3.2'
+  # fastify request-handling DoS — fixed in 5.8.5 (stays on major 5).
+  fastify: '^5.8.5'
+  # fast-uri ReDoS — fixed in 3.1.2.
+  fast-uri: '^3.1.2'
+  # tmp arbitrary write via symlink — fixed in 0.2.6.
+  tmp: '^0.2.6'
+  # @remix-run/server-runtime advisory — fixed in 2.17.5 (stays on major 2).
+  '@remix-run/server-runtime': '^2.17.5'
+  # turbo-stream prototype-pollution — only fixed in 3.0.0.
+  turbo-stream: '^3.0.0'
