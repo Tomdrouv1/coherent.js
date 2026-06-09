@@ -127,8 +127,10 @@ jobs:
           DIST_TAG: ${{ inputs.dist_tag }}
           ALSO_LATEST: ${{ inputs.also_move_latest }}
         run: |
-          echo "## dist-tag move summary" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Version: \`$VERSION\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Moved dist-tag: \`$DIST_TAG\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Also moved \`latest\`: $ALSO_LATEST" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "## dist-tag move summary"
+            echo ""
+            echo "- Version: \`$VERSION\`"
+            echo "- Moved dist-tag: \`$DIST_TAG\`"
+            echo "- Also moved \`latest\`: $ALSO_LATEST"
+          } >> "$GITHUB_STEP_SUMMARY"
