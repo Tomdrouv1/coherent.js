@@ -81,7 +81,7 @@
     "vscode-languageserver-textdocument": "1.0.12"
   },
   "devDependencies": {
-    "tsx": "4.21.0",
+    "tsx": "4.22.4",
     "typescript": "5.9.3",
     "vitest": "1.6.1"
   },
