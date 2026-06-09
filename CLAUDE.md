@@ -146,3 +146,7 @@ The framework includes built-in performance monitoring and optimization:
 - Ensure all tests pass before submitting PRs
 - Run `pnpm lint` and `pnpm format` on changes
 - Update documentation when changing APIs
+
+### Commits
+- Do **not** add `Co-Authored-By` trailers or any AI/assistant attribution to commit messages or PR descriptions.
+- Use Conventional Commits (`type(scope): subject`) — enforced by commitlint via the `commit-msg` hook.
