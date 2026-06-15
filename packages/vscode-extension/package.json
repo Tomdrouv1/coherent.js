@@ -73,7 +73,7 @@
     "@types/vscode": "1.120.0",
     "@vscode/vsce": "3.9.2",
     "esbuild": "0.28.1",
-    "sharp": "0.34.5",
+    "sharp": "0.35.1",
     "typescript": "5.9.3"
   },
   "scripts": {
