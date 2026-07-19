@@ -82,6 +82,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Auth scaffolds actually authenticate.** Generated register handlers silently discarded the password (`// you should hash the password!`) and login handlers issued a valid JWT for **any** password on a known email — an authentication bypass in every generated project. Registration now hashes with scrypt (Node's built-in KDF — zero new dependencies; stored as `scrypt:<salt>:<hash>`) and login verifies with `timingSafeEqual`, across all four runtimes (express, fastify, koa, built-in), both JWT and session flavors. The database models gained the matching `password_hash` column/insert (it existed but was never written for postgres/mysql, and was missing entirely for sqlite).
+- **TypeScript auth/database scaffolds typecheck.** TS projects with auth or a database produced code that failed `tsc --noEmit` outright: implicit-`any` parameters throughout the auth middleware/routes and database models, an untyped `jwt.sign` expiresIn, a non-portable inferred express `Router` type, pino-incompatible `fastify.log.error` calls, and strict-mode errors in the built-in server's route matcher. All templates are now emitted with proper annotations when the project is TypeScript.
+- **Auth-only scaffolds boot.** `hasApi` conflated "api package selected" with "has auth", so a project with auth but without the api package imported a nonexistent `./api/routes.js` and crashed on startup.
+- **Session auth is only offered for express** — the generator only has session routes for express; other runtimes previously produced an empty routes file.
+
+### Added
+
+- Scaffold boot E2E gained two auth permutations (`js-built-in-auth-sqlite`, `ts-express-auth-sqlite`) that register, log in, assert a **wrong password is rejected with 401**, and fetch `/me` with the issued token — closing the tracked rc.2 gap.
+
 ## [1.0.0-rc.5] - 2026-07-19
 
 Dependency-truth release: what the published packages declare now matches what they need at runtime, and the audit is clean.

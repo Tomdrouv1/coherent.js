@@ -92,7 +92,9 @@ export async function scaffoldProject(projectPath, options) {
   // Generate main server file
   const serverContent = generateServerFile(runtime, {
     port: 3000,
-    hasApi: packages.includes('api') || auth,
+    // hasApi gates the './api/routes.js' import, which only exists when the
+    // api package was selected — auth has its own routes file and hasAuth flag.
+    hasApi: packages.includes('api'),
     hasDatabase: !!database,
     hasAuth: !!auth,
     isTypeScript
@@ -151,7 +153,7 @@ export async function scaffoldProject(projectPath, options) {
 
   // Generate auth scaffolding
   if (auth) {
-    const authScaffolding = generateAuthScaffolding(auth, runtime);
+    const authScaffolding = generateAuthScaffolding(auth, runtime, language);
 
     // Write auth middleware/plugin
     const authDir = runtime === 'fastify' ? 'plugins' : 'middleware';
@@ -274,8 +276,10 @@ function generatePackageJson(name, options) {
     Object.assign(base.devDependencies, getRuntimeTypeDependencies(runtime));
 
     // Add @types for auth packages if auth is enabled
-    if (auth) {
+    if (auth === 'jwt') {
       base.devDependencies['@types/jsonwebtoken'] = '^9.0.7';
+    } else if (auth === 'session') {
+      base.devDependencies['@types/express-session'] = '^1.18.0';
     }
   }
 
@@ -298,7 +302,7 @@ function generatePackageJson(name, options) {
 
   // Auth dependencies
   if (auth) {
-    const { dependencies: authDeps } = generateAuthScaffolding(auth, runtime);
+    const { dependencies: authDeps } = generateAuthScaffolding(auth, runtime, language);
     Object.assign(base.dependencies, authDeps);
   }
 

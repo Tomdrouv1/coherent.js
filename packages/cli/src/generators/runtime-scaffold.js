@@ -12,7 +12,7 @@ const cliVersion = getCLIVersion();
  * Generate built-in HTTP server setup
  */
 export function generateBuiltInServer(options = {}) {
-  const { port = 3000, hasApi = false, hasDatabase = false, hasAuth = false } = options;
+  const { port = 3000, hasApi = false, hasDatabase = false, hasAuth = false, isTypeScript = false } = options;
 
   const imports = [
     `import http from 'node:http';`,
@@ -72,7 +72,7 @@ ${hasApi || hasAuth ? `  // Handle API routes
     try {
       const content = await fs.promises.readFile(filePath);
       const ext = path.extname(filePath).toLowerCase();
-      const contentTypes = {
+      const contentTypes${isTypeScript ? ': Record<string, string>' : ''} = {
         '.html': 'text/html',
         '.js': 'text/javascript',
         '.css': 'text/css',
@@ -114,7 +114,7 @@ ${hasApi || hasAuth ? `  // Handle API routes
 });
 
 ${hasApi || hasAuth ? `// Route matching helper
-function matchRoute(routePattern, urlPath, requestMethod, routeMethod) {
+function matchRoute(routePattern${isTypeScript ? ': string' : ''}, urlPath${isTypeScript ? ': string' : ''}, requestMethod${isTypeScript ? ': string | undefined' : ''}, routeMethod${isTypeScript ? ': string' : ''}) {
   // Check HTTP method
   if (requestMethod !== routeMethod) {
     return null;
@@ -129,12 +129,16 @@ function matchRoute(routePattern, urlPath, requestMethod, routeMethod) {
     return null;
   }
 
-  const params = {};
+  const params${isTypeScript ? ': Record<string, string>' : ''} = {};
 
   // Match each segment
   for (let i = 0; i < routeSegments.length; i++) {
     const routeSegment = routeSegments[i];
     const urlSegment = urlSegments[i];
+
+    if (routeSegment === undefined || urlSegment === undefined) {
+      return null;
+    }
 
     // Check for parameter (e.g., :id)
     if (routeSegment.startsWith(':')) {

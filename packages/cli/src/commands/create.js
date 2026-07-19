@@ -207,17 +207,20 @@ export const createCommand = new Command('create')
         packages = template === 'fullstack' ? ['api'] : [];
       }
 
-      // Auth scaffolding
+      // Auth scaffolding (session routes are only generated for express)
       if (!options.skipPrompts && (packages.includes('api') || database)) {
+        const authChoices = [
+          { title: '🔑 JWT Authentication', value: 'jwt', description: 'Token-based auth with jsonwebtoken' },
+          ...(runtime === 'express'
+            ? [{ title: '🍪 Session Authentication', value: 'session', description: 'Cookie-based session auth' }]
+            : []),
+          { title: '❌ None', value: 'none', description: 'Skip authentication setup' }
+        ];
         const authResponse = await prompts({
           type: 'select',
           name: 'auth',
           message: 'Would you like to include authentication scaffolding?',
-          choices: [
-            { title: '🔑 JWT Authentication', value: 'jwt', description: 'Token-based auth with jsonwebtoken' },
-            { title: '🍪 Session Authentication', value: 'session', description: 'Cookie-based session auth' },
-            { title: '❌ None', value: 'none', description: 'Skip authentication setup' }
-          ],
+          choices: authChoices,
           initial: 0
         });
 
@@ -238,6 +241,11 @@ export const createCommand = new Command('create')
       });
 
       packages = pkgResponse.packages || [];
+    }
+
+    if (auth === 'session' && runtime !== 'express') {
+      console.error(picocolors.red('✖ Session auth scaffolding is only available for the express runtime. Use --auth jwt, or --runtime express.'));
+      process.exit(1);
     }
 
     // Package manager selection

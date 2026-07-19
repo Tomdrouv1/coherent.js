@@ -282,10 +282,16 @@ process.on('SIGINT', async () => {
 export function generateExampleModel(dbType, language = 'javascript') {
   const isTypeScript = language === 'typescript';
   const typeAnnotation = isTypeScript ? ': Promise<any>' : '';
+  const pUser = isTypeScript ? ': UserData' : '';
+  const pId = isTypeScript ? ': number' : '';
+  const pEmail = isTypeScript ? ': string' : '';
+  const pPartial = isTypeScript ? ': Partial<UserData>' : '';
   const interfaceDef = isTypeScript ? `
 interface UserData {
   email: string;
   name: string;
+  /** "scrypt:<salt>:<hash>" produced by the auth scaffold's hashPassword() */
+  passwordHash?: string;
 }` : '';
 
   const models = {
@@ -309,28 +315,28 @@ export class UserModel {
     \`);
   }
 
-  static async create(userData)${typeAnnotation} {
+  static async create(userData${pUser})${typeAnnotation} {
     const db = getDatabase();
     const result = await db.query(
-      'INSERT INTO users (email, name) VALUES ($1, $2) RETURNING *',
-      [userData.email, userData.name]
+      'INSERT INTO users (email, name, password_hash) VALUES ($1, $2, $3) RETURNING *',
+      [userData.email, userData.name, userData.passwordHash ?? null]
     );
     return result.rows[0];
   }
 
-  static async findById(id)${typeAnnotation} {
+  static async findById(id${pId})${typeAnnotation} {
     const db = getDatabase();
     const result = await db.query('SELECT * FROM users WHERE id = $1', [id]);
     return result.rows[0];
   }
 
-  static async findByEmail(email)${typeAnnotation} {
+  static async findByEmail(email${pEmail})${typeAnnotation} {
     const db = getDatabase();
     const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
     return result.rows[0];
   }
 
-  static async update(id, data)${typeAnnotation} {
+  static async update(id${pId}, data${pPartial})${typeAnnotation} {
     const db = getDatabase();
     const result = await db.query(
       'UPDATE users SET email = $1, name = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING *',
@@ -339,7 +345,7 @@ export class UserModel {
     return result.rows[0];
   }
 
-  static async delete(id)${typeAnnotation} {
+  static async delete(id${pId})${typeAnnotation} {
     const db = getDatabase();
     await db.query('DELETE FROM users WHERE id = $1', [id]);
   }
@@ -365,28 +371,28 @@ export class UserModel {
     \`);
   }
 
-  static async create(userData)${typeAnnotation} {
+  static async create(userData${pUser})${typeAnnotation} {
     const db = getDatabase();
     const result = await db.query(
-      'INSERT INTO users (email, name) VALUES (?, ?)',
-      [userData.email, userData.name]
+      'INSERT INTO users (email, name, password_hash) VALUES (?, ?, ?)',
+      [userData.email, userData.name, userData.passwordHash ?? null]
     );
     return result[0];
   }
 
-  static async findById(id)${typeAnnotation} {
+  static async findById(id${pId})${typeAnnotation} {
     const db = getDatabase();
     const result = await db.query('SELECT * FROM users WHERE id = ?', [id]);
     return result[0];
   }
 
-  static async findByEmail(email)${typeAnnotation} {
+  static async findByEmail(email${pEmail})${typeAnnotation} {
     const db = getDatabase();
     const result = await db.query('SELECT * FROM users WHERE email = ?', [email]);
     return result[0];
   }
 
-  static async update(id, data)${typeAnnotation} {
+  static async update(id${pId}, data${pPartial})${typeAnnotation} {
     const db = getDatabase();
     const result = await db.query(
       'UPDATE users SET email = ?, name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
@@ -395,7 +401,7 @@ export class UserModel {
     return result[0];
   }
 
-  static async delete(id)${typeAnnotation} {
+  static async delete(id${pId})${typeAnnotation} {
     const db = getDatabase();
     await db.query('DELETE FROM users WHERE id = ?', [id]);
   }
@@ -418,34 +424,35 @@ export class UserModel {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email TEXT UNIQUE NOT NULL,
         name TEXT NOT NULL,
+        password_hash TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     \`);
   }
 
-  static async create(data)${typeAnnotation} {
+  static async create(data${pUser})${typeAnnotation} {
     const db = getDatabase();
     await db.query(
-      'INSERT INTO users (email, name) VALUES (?, ?)',
-      [data.email, data.name]
+      'INSERT INTO users (email, name, password_hash) VALUES (?, ?, ?)',
+      [data.email, data.name, data.passwordHash ?? null]
     );
     return this.findByEmail(data.email);
   }
 
-  static async findById(id)${typeAnnotation} {
+  static async findById(id${pId})${typeAnnotation} {
     const db = getDatabase();
     const result = await db.query('SELECT * FROM users WHERE id = ?', [id]);
     return result.rows[0];
   }
 
-  static async findByEmail(email)${typeAnnotation} {
+  static async findByEmail(email${pEmail})${typeAnnotation} {
     const db = getDatabase();
     const result = await db.query('SELECT * FROM users WHERE email = ?', [email]);
     return result.rows[0];
   }
 
-  static async update(id, data)${typeAnnotation} {
+  static async update(id${pId}, data${pPartial})${typeAnnotation} {
     const db = getDatabase();
     await db.query(
       'UPDATE users SET email = ?, name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
@@ -454,7 +461,7 @@ export class UserModel {
     return this.findById(id);
   }
 
-  static async delete(id)${typeAnnotation} {
+  static async delete(id${pId})${typeAnnotation} {
     const db = getDatabase();
     await db.query('DELETE FROM users WHERE id = ?', [id]);
   }
@@ -474,23 +481,23 @@ export class UserModel {
     await db.collection('users').createIndex({ email: 1 }, { unique: true });
   }
 
-  static async create(userData)${typeAnnotation} {
+  static async create(userData${pUser})${typeAnnotation} {
     const db = getDatabase();
     const result = await db.collection('users').insertOne(userData);
     return { _id: result.insertedId, ...userData };
   }
 
-  static async findById(id)${typeAnnotation} {
+  static async findById(id${pId})${typeAnnotation} {
     const db = getDatabase();
     return await db.collection('users').findOne({ _id: id });
   }
 
-  static async findByEmail(email)${typeAnnotation} {
+  static async findByEmail(email${pEmail})${typeAnnotation} {
     const db = getDatabase();
     return await db.collection('users').findOne({ email });
   }
 
-  static async update(id, data)${typeAnnotation} {
+  static async update(id${pId}, data${pPartial})${typeAnnotation} {
     const db = getDatabase();
     const result = await db.collection('users').updateOne(
       { _id: id },
@@ -499,7 +506,7 @@ export class UserModel {
     return result.modifiedCount > 0 ? this.findById(id) : null;
   }
 
-  static async delete(id)${typeAnnotation} {
+  static async delete(id${pId})${typeAnnotation} {
     const db = getDatabase();
     const result = await db.collection('users').deleteOne({ _id: id });
     return result.deletedCount > 0;

@@ -4,47 +4,96 @@
  */
 
 /**
+ * Password-hashing helpers emitted into every auth middleware/plugin file.
+ * scrypt is Node's built-in KDF, so generated projects get real hashing
+ * with zero extra dependencies. Stored format: "scrypt:<salt>:<hash>" (hex).
+ */
+function passwordHelpers(ts) {
+  return `
+const scryptAsync = promisify(scrypt)${ts ? ' as (password: string, salt: string, keylen: number) => Promise<Buffer>' : ''};
+
+export async function hashPassword(password${ts ? ': string' : ''})${ts ? ': Promise<string>' : ''} {
+  const salt = randomBytes(16).toString('hex');
+  const derived = await scryptAsync(password, salt, 64);
+  return \`scrypt:\${salt}:\${derived.toString('hex')}\`;
+}
+
+export async function verifyPassword(password${ts ? ': string' : ''}, storedHash${ts ? ': unknown' : ''})${ts ? ': Promise<boolean>' : ''} {
+  const [scheme, salt, hash] = String(storedHash ?? '').split(':');
+  if (scheme !== 'scrypt' || !salt || !hash) return false;
+  const derived = await scryptAsync(password, salt, 64);
+  const expected = Buffer.from(hash, 'hex');
+  // timingSafeEqual, so the comparison doesn't leak how much of the hash matched
+  return expected.length === derived.length && timingSafeEqual(derived, expected);
+}
+`;
+}
+
+const CRYPTO_IMPORTS = `import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
+import { promisify } from 'node:util';`;
+
+/**
  * Generate JWT authentication middleware
  */
-export function generateJWTAuth(runtime) {
-  const middlewares = {
-    express: `
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
-
-export function generateToken(payload) {
+export function generateJWTAuth(runtime, language = 'javascript') {
+  const ts = language === 'typescript';
+  const helpers = passwordHelpers(ts);
+  const jwtConstants = `const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
+const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN || '7d')${ts ? " as jwt.SignOptions['expiresIn']" : ''};`;
+  const tokenPayload = ts
+    ? `
+export interface TokenPayload {
+  id: number;
+  email: string;
+}
+`
+    : '';
+  const tokenFns = `
+export function generateToken(payload${ts ? ': TokenPayload' : ''})${ts ? ': string' : ''} {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 }
 
-export function verifyToken(token) {
+export function verifyToken(token${ts ? ': string' : ''})${ts ? ': TokenPayload | null' : ''} {
   try {
-    return jwt.verify(token, JWT_SECRET);
+    return jwt.verify(token, JWT_SECRET)${ts ? ' as TokenPayload' : ''};
   } catch (error) {
     return null;
   }
 }
+`;
 
-export function authMiddleware(req, res, next) {
+  const middlewares = {
+    express: `
+import jwt from 'jsonwebtoken';
+${CRYPTO_IMPORTS}
+${ts ? "import type { Request, Response, NextFunction } from 'express';\n" : ''}
+${jwtConstants}
+${tokenPayload}${ts ? `
+export interface AuthenticatedRequest extends Request {
+  user?: TokenPayload;
+}
+` : ''}${helpers}${tokenFns}
+export function authMiddleware(req${ts ? ': AuthenticatedRequest' : ''}, res${ts ? ': Response' : ''}, next${ts ? ': NextFunction' : ''})${ts ? ': void' : ''} {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'No token provided' });
+    res.status(401).json({ error: 'No token provided' });
+    return;
   }
 
   const token = authHeader.substring(7);
   const decoded = verifyToken(token);
 
   if (!decoded) {
-    return res.status(401).json({ error: 'Invalid or expired token' });
+    res.status(401).json({ error: 'Invalid or expired token' });
+    return;
   }
 
   req.user = decoded;
   next();
 }
 
-export function optionalAuth(req, res, next) {
+export function optionalAuth(req${ts ? ': AuthenticatedRequest' : ''}, _res${ts ? ': Response' : ''}, next${ts ? ': NextFunction' : ''})${ts ? ': void' : ''} {
   const authHeader = req.headers.authorization;
 
   if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -60,24 +109,22 @@ export function optionalAuth(req, res, next) {
 `,
     fastify: `
 import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
-
-export function generateToken(payload) {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-}
-
-export function verifyToken(token) {
-  try {
-    return jwt.verify(token, JWT_SECRET);
-  } catch (error) {
-    return null;
+${CRYPTO_IMPORTS}
+${ts ? "import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';\n" : ''}
+${jwtConstants}
+${tokenPayload}${ts ? `
+declare module 'fastify' {
+  interface FastifyRequest {
+    user?: TokenPayload;
+  }
+  interface FastifyInstance {
+    authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+    optionalAuth: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
   }
 }
-
-export async function authPlugin(fastify, options) {
-  fastify.decorate('authenticate', async function(request, reply) {
+` : ''}${helpers}${tokenFns}
+export async function authPlugin(fastify${ts ? ': FastifyInstance' : ''}, _options${ts ? ': unknown' : ''})${ts ? ': Promise<void>' : ''} {
+  fastify.decorate('authenticate', async function(request${ts ? ': FastifyRequest' : ''}, reply${ts ? ': FastifyReply' : ''}) {
     const authHeader = request.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -96,7 +143,7 @@ export async function authPlugin(fastify, options) {
     request.user = decoded;
   });
 
-  fastify.decorate('optionalAuth', async function(request, reply) {
+  fastify.decorate('optionalAuth', async function(request${ts ? ': FastifyRequest' : ''}, _reply${ts ? ': FastifyReply' : ''}) {
     const authHeader = request.headers.authorization;
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -111,23 +158,11 @@ export async function authPlugin(fastify, options) {
 `,
     koa: `
 import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
-
-export function generateToken(payload) {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-}
-
-export function verifyToken(token) {
-  try {
-    return jwt.verify(token, JWT_SECRET);
-  } catch (error) {
-    return null;
-  }
-}
-
-export async function authMiddleware(ctx, next) {
+${CRYPTO_IMPORTS}
+${ts ? "import type { Context, Next } from 'koa';\n" : ''}
+${jwtConstants}
+${tokenPayload}${helpers}${tokenFns}
+export async function authMiddleware(ctx${ts ? ': Context' : ''}, next${ts ? ': Next' : ''})${ts ? ': Promise<void>' : ''} {
   const authHeader = ctx.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -149,7 +184,7 @@ export async function authMiddleware(ctx, next) {
   await next();
 }
 
-export async function optionalAuth(ctx, next) {
+export async function optionalAuth(ctx${ts ? ': Context' : ''}, next${ts ? ': Next' : ''})${ts ? ': Promise<void>' : ''} {
   const authHeader = ctx.headers.authorization;
 
   if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -165,23 +200,11 @@ export async function optionalAuth(ctx, next) {
 `,
     'built-in': `
 import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
-
-export function generateToken(payload) {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-}
-
-export function verifyToken(token) {
-  try {
-    return jwt.verify(token, JWT_SECRET);
-  } catch (error) {
-    return null;
-  }
-}
-
-export function authenticateRequest(req) {
+${CRYPTO_IMPORTS}
+${ts ? "import type { IncomingMessage } from 'node:http';\n" : ''}
+${jwtConstants}
+${tokenPayload}${helpers}${tokenFns}
+export function authenticateRequest(req${ts ? ': IncomingMessage' : ''})${ts ? ': TokenPayload | null' : ''} {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -200,11 +223,21 @@ export function authenticateRequest(req) {
 /**
  * Generate session-based authentication
  */
-export function generateSessionAuth(runtime) {
+export function generateSessionAuth(runtime, language = 'javascript') {
+  const ts = language === 'typescript';
+  const helpers = passwordHelpers(ts);
+
   const middlewares = {
     express: `
 import session from 'express-session';
-
+${CRYPTO_IMPORTS}
+${ts ? "import type { Express, Request, Response, NextFunction } from 'express';\n" : ''}${ts ? `
+declare module 'express-session' {
+  interface SessionData {
+    user?: { id: number; email: string };
+  }
+}
+` : ''}
 export const sessionConfig = {
   secret: process.env.SESSION_SECRET || 'your-session-secret-change-this',
   resave: false,
@@ -215,19 +248,20 @@ export const sessionConfig = {
     maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
   }
 };
-
-export function setupSession(app) {
+${helpers}
+export function setupSession(app${ts ? ': Express' : ''})${ts ? ': void' : ''} {
   app.use(session(sessionConfig));
 }
 
-export function authMiddleware(req, res, next) {
+export function authMiddleware(req${ts ? ': Request' : ''}, res${ts ? ': Response' : ''}, next${ts ? ': NextFunction' : ''})${ts ? ': void' : ''} {
   if (!req.session.user) {
-    return res.status(401).json({ error: 'Not authenticated' });
+    res.status(401).json({ error: 'Not authenticated' });
+    return;
   }
   next();
 }
 
-export function optionalAuth(req, res, next) {
+export function optionalAuth(_req${ts ? ': Request' : ''}, _res${ts ? ': Response' : ''}, next${ts ? ': NextFunction' : ''})${ts ? ': void' : ''} {
   // Session is always available, just proceed
   next();
 }
@@ -299,22 +333,25 @@ export async function optionalAuth(ctx, next) {
 /**
  * Generate authentication routes
  */
-export function generateAuthRoutes(runtime, authType) {
-  const userAccess = runtime === 'koa' ? 'ctx.state.user' : 'req.user';
-  const sessionUser = runtime === 'koa' ? 'ctx.session.user' : 'req.session.user';
+export function generateAuthRoutes(runtime, authType, language = 'javascript') {
+  const ts = language === 'typescript';
+  const credentialsCast = ts ? ' as { email?: string; name?: string; password?: string }' : '';
+  const loginCast = ts ? ' as { email?: string; password?: string }' : '';
+  // SQL models return snake_case rows; the Mongo model returns the document as-is.
+  const storedHash = 'user.password_hash ?? user.passwordHash';
 
   const jwtRoutes = {
     express: `
 import express from 'express';
-import { generateToken, authMiddleware } from '../middleware/auth.js';
+${ts ? "import type { Response, Router } from 'express';\n" : ''}import { generateToken, hashPassword, verifyPassword, authMiddleware${ts ? ', type AuthenticatedRequest' : ''} } from '../middleware/auth.js';
 import { UserModel } from '../db/models/User.js';
 
-const router = express.Router();
+const router${ts ? ': Router' : ''} = express.Router();
 
 // Register
 router.post('/register', async (req, res) => {
   try {
-    const { email, name, password } = req.body;
+    const { email, name, password } = req.body${credentialsCast};
 
     // Validate input
     if (!email || !name || !password) {
@@ -327,58 +364,63 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'User already exists' });
     }
 
-    // Create user (you should hash the password!)
-    const user = await UserModel.create({ email, name });
+    // Create user with a hashed password — never store the plain text
+    const passwordHash = await hashPassword(password);
+    const user = await UserModel.create({ email, name, passwordHash });
 
     // Generate token
     const token = generateToken({ id: user.id, email: user.email });
 
-    res.json({ user: { id: user.id, email: user.email, name: user.name }, token });
+    return res.json({ user: { id: user.id, email: user.email, name: user.name }, token });
   } catch (error) {
     console.error('Register error:', error);
-    res.status(500).json({ error: 'Registration failed' });
+    return res.status(500).json({ error: 'Registration failed' });
   }
 });
 
 // Login
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body${loginCast};
 
     // Validate input
     if (!email || !password) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Find user
+    // Find user and verify password (single 401 either way, so responses
+    // don't reveal which of the two failed)
     const user = await UserModel.findByEmail(email);
-    if (!user) {
+    const passwordOk = user && await verifyPassword(password, ${storedHash});
+    if (!passwordOk) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
-
-    // Verify password (you should implement proper password checking!)
 
     // Generate token
     const token = generateToken({ id: user.id, email: user.email });
 
-    res.json({ user: { id: user.id, email: user.email, name: user.name }, token });
+    return res.json({ user: { id: user.id, email: user.email, name: user.name }, token });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Login failed' });
+    return res.status(500).json({ error: 'Login failed' });
   }
 });
 
 // Get current user
-router.get('/me', authMiddleware, async (req, res) => {
+router.get('/me', authMiddleware, async (req${ts ? ': AuthenticatedRequest' : ''}, res${ts ? ': Response' : ''}) => {
   try {
-    const user = await UserModel.findById(${userAccess}.id);
+    const authUser = req.user;
+    if (!authUser) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+    const user = await UserModel.findById(authUser.id);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    res.json({ user: { id: user.id, email: user.email, name: user.name } });
+    return res.json({ user: { id: user.id, email: user.email, name: user.name } });
   } catch (error) {
     console.error('Get user error:', error);
-    res.status(500).json({ error: 'Failed to get user' });
+    return res.status(500).json({ error: 'Failed to get user' });
   }
 });
 
@@ -386,104 +428,91 @@ export default router;
 `,
     'built-in': `
 // Auth routes for built-in HTTP server
-import { generateToken, verifyToken } from '../middleware/auth.js';
+${ts ? "import type { IncomingMessage, ServerResponse } from 'node:http';\n" : ''}import { generateToken, verifyToken, hashPassword, verifyPassword } from '../middleware/auth.js';
 import { UserModel } from '../db/models/User.js';
 
 // Register handler
-export async function registerHandler(req, res) {
-  try {
-    // Parse JSON body
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk.toString();
-    });
-    
-    req.on('end', async () => {
-      try {
-        const { email, name, password } = JSON.parse(body);
+export async function registerHandler(req${ts ? ': IncomingMessage' : ''}, res${ts ? ': ServerResponse' : ''}) {
+  let body = '';
+  req.on('data', chunk => {
+    body += chunk.toString();
+  });
 
-        // Validate input
-        if (!email || !name || !password) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ error: 'Missing required fields' }));
-        }
+  req.on('end', async () => {
+    try {
+      const { email, name, password } = JSON.parse(body);
 
-        // Check if user exists
-        const existingUser = await UserModel.findByEmail(email);
-        if (existingUser) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ error: 'User already exists' }));
-        }
-
-        // Create user (you should hash the password!)
-        const user = await UserModel.create({ email, name });
-
-        // Generate token
-        const token = generateToken({ id: user.id, email: user.email });
-
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ user: { id: user.id, email: user.email, name: user.name }, token }));
-      } catch (error) {
-        console.error('Register error:', error);
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Registration failed' }));
+      // Validate input
+      if (!email || !name || !password) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: 'Missing required fields' }));
       }
-    });
-  } catch (error) {
-    console.error('Register error:', error);
-    res.writeHead(500, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Registration failed' }));
-  }
+
+      // Check if user exists
+      const existingUser = await UserModel.findByEmail(email);
+      if (existingUser) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: 'User already exists' }));
+      }
+
+      // Create user with a hashed password — never store the plain text
+      const passwordHash = await hashPassword(password);
+      const user = await UserModel.create({ email, name, passwordHash });
+
+      // Generate token
+      const token = generateToken({ id: user.id, email: user.email });
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ user: { id: user.id, email: user.email, name: user.name }, token }));
+    } catch (error) {
+      console.error('Register error:', error);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: 'Registration failed' }));
+    }
+  });
 }
 
 // Login handler
-export async function loginHandler(req, res) {
-  try {
-    // Parse JSON body
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk.toString();
-    });
-    
-    req.on('end', async () => {
-      try {
-        const { email, password } = JSON.parse(body);
+export async function loginHandler(req${ts ? ': IncomingMessage' : ''}, res${ts ? ': ServerResponse' : ''}) {
+  let body = '';
+  req.on('data', chunk => {
+    body += chunk.toString();
+  });
 
-        // Validate input
-        if (!email || !password) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ error: 'Missing required fields' }));
-        }
+  req.on('end', async () => {
+    try {
+      const { email, password } = JSON.parse(body);
 
-        // Find user
-        const user = await UserModel.findByEmail(email);
-        if (!user) {
-          res.writeHead(401, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ error: 'Invalid credentials' }));
-        }
-
-        // Verify password (you should implement proper password checking!)
-
-        // Generate token
-        const token = generateToken({ id: user.id, email: user.email });
-
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ user: { id: user.id, email: user.email, name: user.name }, token }));
-      } catch (error) {
-        console.error('Login error:', error);
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Login failed' }));
+      // Validate input
+      if (!email || !password) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: 'Missing required fields' }));
       }
-    });
-  } catch (error) {
-    console.error('Login error:', error);
-    res.writeHead(500, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Login failed' }));
-  }
+
+      // Find user and verify password (single 401 either way, so responses
+      // don't reveal which of the two failed)
+      const user = await UserModel.findByEmail(email);
+      const passwordOk = user && await verifyPassword(password, ${storedHash});
+      if (!passwordOk) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: 'Invalid credentials' }));
+      }
+
+      // Generate token
+      const token = generateToken({ id: user.id, email: user.email });
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ user: { id: user.id, email: user.email, name: user.name }, token }));
+    } catch (error) {
+      console.error('Login error:', error);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: 'Login failed' }));
+    }
+  });
 }
 
 // Get current user handler
-export async function meHandler(req, res) {
+export async function meHandler(req${ts ? ': IncomingMessage' : ''}, res${ts ? ': ServerResponse' : ''}) {
   try {
     // Verify token from Authorization header
     const authHeader = req.headers.authorization;
@@ -505,13 +534,13 @@ export async function meHandler(req, res) {
       res.writeHead(404, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ error: 'User not found' }));
     }
-    
+
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ user: { id: user.id, email: user.email, name: user.name } }));
+    return res.end(JSON.stringify({ user: { id: user.id, email: user.email, name: user.name } }));
   } catch (error) {
     console.error('Get user error:', error);
     res.writeHead(500, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Failed to get user' }));
+    return res.end(JSON.stringify({ error: 'Failed to get user' }));
   }
 }
 
@@ -537,14 +566,14 @@ export function setupAuthRoutes() {
 }
 `,
     fastify: `
-import { generateToken } from '../plugins/auth.js';
+${ts ? "import type { FastifyInstance } from 'fastify';\n" : ''}import { generateToken, hashPassword, verifyPassword } from '../plugins/auth.js';
 import { UserModel } from '../db/models/User.js';
 
-export default async function authRoutes(fastify, options) {
+export default async function authRoutes(fastify${ts ? ': FastifyInstance' : ''})${ts ? ': Promise<void>' : ''} {
   // Register
   fastify.post('/register', async (request, reply) => {
     try {
-      const { email, name, password } = request.body;
+      const { email, name, password } = request.body${credentialsCast};
 
       // Validate input
       if (!email || !name || !password) {
@@ -557,15 +586,16 @@ export default async function authRoutes(fastify, options) {
         return reply.code(400).send({ error: 'User already exists' });
       }
 
-      // Create user (you should hash the password!)
-      const user = await UserModel.create({ email, name });
+      // Create user with a hashed password — never store the plain text
+      const passwordHash = await hashPassword(password);
+      const user = await UserModel.create({ email, name, passwordHash });
 
       // Generate token
       const token = generateToken({ id: user.id, email: user.email });
 
       return { user: { id: user.id, email: user.email, name: user.name }, token };
     } catch (error) {
-      fastify.log.error('Register error:', error);
+      fastify.log.error({ err: error }, 'Register error');
       return reply.code(500).send({ error: 'Registration failed' });
     }
   });
@@ -573,27 +603,27 @@ export default async function authRoutes(fastify, options) {
   // Login
   fastify.post('/login', async (request, reply) => {
     try {
-      const { email, password } = request.body;
+      const { email, password } = request.body${loginCast};
 
       // Validate input
       if (!email || !password) {
         return reply.code(400).send({ error: 'Missing required fields' });
       }
 
-      // Find user
+      // Find user and verify password (single 401 either way, so responses
+      // don't reveal which of the two failed)
       const user = await UserModel.findByEmail(email);
-      if (!user) {
+      const passwordOk = user && await verifyPassword(password, ${storedHash});
+      if (!passwordOk) {
         return reply.code(401).send({ error: 'Invalid credentials' });
       }
-
-      // Verify password (you should implement proper password checking!)
 
       // Generate token
       const token = generateToken({ id: user.id, email: user.email });
 
       return { user: { id: user.id, email: user.email, name: user.name }, token };
     } catch (error) {
-      fastify.log.error('Login error:', error);
+      fastify.log.error({ err: error }, 'Login error');
       return reply.code(500).send({ error: 'Login failed' });
     }
   });
@@ -603,13 +633,17 @@ export default async function authRoutes(fastify, options) {
     onRequest: [fastify.authenticate]
   }, async (request, reply) => {
     try {
-      const user = await UserModel.findById(request.user.id);
+      const authUser = request.user;
+      if (!authUser) {
+        return reply.code(401).send({ error: 'Not authenticated' });
+      }
+      const user = await UserModel.findById(authUser.id);
       if (!user) {
         return reply.code(404).send({ error: 'User not found' });
       }
       return { user: { id: user.id, email: user.email, name: user.name } };
     } catch (error) {
-      fastify.log.error('Get user error:', error);
+      fastify.log.error({ err: error }, 'Get user error');
       return reply.code(500).send({ error: 'Failed to get user' });
     }
   });
@@ -617,7 +651,7 @@ export default async function authRoutes(fastify, options) {
 `,
     koa: `
 import Router from '@koa/router';
-import { generateToken, authMiddleware } from '../middleware/auth.js';
+import { generateToken, hashPassword, verifyPassword, authMiddleware } from '../middleware/auth.js';
 import { UserModel } from '../db/models/User.js';
 
 const router = new Router();
@@ -625,7 +659,7 @@ const router = new Router();
 // Register
 router.post('/register', async (ctx) => {
   try {
-    const { email, name, password } = ctx.request.body;
+    const { email, name, password } = ctx.request.body${credentialsCast};
 
     // Validate input
     if (!email || !name || !password) {
@@ -642,8 +676,9 @@ router.post('/register', async (ctx) => {
       return;
     }
 
-    // Create user (you should hash the password!)
-    const user = await UserModel.create({ email, name });
+    // Create user with a hashed password — never store the plain text
+    const passwordHash = await hashPassword(password);
+    const user = await UserModel.create({ email, name, passwordHash });
 
     // Generate token
     const token = generateToken({ id: user.id, email: user.email });
@@ -659,7 +694,7 @@ router.post('/register', async (ctx) => {
 // Login
 router.post('/login', async (ctx) => {
   try {
-    const { email, password } = ctx.request.body;
+    const { email, password } = ctx.request.body${loginCast};
 
     // Validate input
     if (!email || !password) {
@@ -668,15 +703,15 @@ router.post('/login', async (ctx) => {
       return;
     }
 
-    // Find user
+    // Find user and verify password (single 401 either way, so responses
+    // don't reveal which of the two failed)
     const user = await UserModel.findByEmail(email);
-    if (!user) {
+    const passwordOk = user && await verifyPassword(password, ${storedHash});
+    if (!passwordOk) {
       ctx.status = 401;
       ctx.body = { error: 'Invalid credentials' };
       return;
     }
-
-    // Verify password (you should implement proper password checking!)
 
     // Generate token
     const token = generateToken({ id: user.id, email: user.email });
@@ -692,7 +727,13 @@ router.post('/login', async (ctx) => {
 // Get current user
 router.get('/me', authMiddleware, async (ctx) => {
   try {
-    const user = await UserModel.findById(${userAccess}.id);
+    const authUser = ctx.state.user;
+    if (!authUser) {
+      ctx.status = 401;
+      ctx.body = { error: 'Not authenticated' };
+      return;
+    }
+    const user = await UserModel.findById(authUser.id);
     if (!user) {
       ctx.status = 404;
       ctx.body = { error: 'User not found' };
@@ -713,15 +754,15 @@ export default router;
   const sessionRoutes = {
     express: `
 import express from 'express';
-import { authMiddleware } from '../middleware/auth.js';
+${ts ? "import type { Request, Response, Router } from 'express';\n" : ''}import { authMiddleware, hashPassword, verifyPassword } from '../middleware/auth.js';
 import { UserModel } from '../db/models/User.js';
 
-const router = express.Router();
+const router${ts ? ': Router' : ''} = express.Router();
 
 // Register
 router.post('/register', async (req, res) => {
   try {
-    const { email, name, password } = req.body;
+    const { email, name, password } = req.body${credentialsCast};
 
     if (!email || !name || !password) {
       return res.status(400).json({ error: 'Missing required fields' });
@@ -732,62 +773,71 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'User already exists' });
     }
 
-    const user = await UserModel.create({ email, name });
+    // Create user with a hashed password — never store the plain text
+    const passwordHash = await hashPassword(password);
+    const user = await UserModel.create({ email, name, passwordHash });
 
-    ${sessionUser} = { id: user.id, email: user.email };
+    req.session.user = { id: user.id, email: user.email };
 
-    res.json({ user: { id: user.id, email: user.email, name: user.name } });
+    return res.json({ user: { id: user.id, email: user.email, name: user.name } });
   } catch (error) {
     console.error('Register error:', error);
-    res.status(500).json({ error: 'Registration failed' });
+    return res.status(500).json({ error: 'Registration failed' });
   }
 });
 
 // Login
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body${loginCast};
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
+    // Find user and verify password (single 401 either way, so responses
+    // don't reveal which of the two failed)
     const user = await UserModel.findByEmail(email);
-    if (!user) {
+    const passwordOk = user && await verifyPassword(password, ${storedHash});
+    if (!passwordOk) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    ${sessionUser} = { id: user.id, email: user.email };
+    req.session.user = { id: user.id, email: user.email };
 
-    res.json({ user: { id: user.id, email: user.email, name: user.name } });
+    return res.json({ user: { id: user.id, email: user.email, name: user.name } });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Login failed' });
+    return res.status(500).json({ error: 'Login failed' });
   }
 });
 
 // Logout
-router.post('/logout', (req, res) => {
+router.post('/logout', (req${ts ? ': Request' : ''}, res${ts ? ': Response' : ''}) => {
   req.session.destroy((err) => {
     if (err) {
       return res.status(500).json({ error: 'Logout failed' });
     }
     res.clearCookie('connect.sid');
-    res.json({ message: 'Logged out successfully' });
+    return res.json({ message: 'Logged out successfully' });
   });
 });
 
 // Get current user
-router.get('/me', authMiddleware, async (req, res) => {
+router.get('/me', authMiddleware, async (req${ts ? ': Request' : ''}, res${ts ? ': Response' : ''}) => {
   try {
-    const user = await UserModel.findById(${sessionUser}.id);
+    const sessionUser = req.session.user;
+    if (!sessionUser) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+    const user = await UserModel.findById(sessionUser.id);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    res.json({ user: { id: user.id, email: user.email, name: user.name } });
+    return res.json({ user: { id: user.id, email: user.email, name: user.name } });
   } catch (error) {
     console.error('Get user error:', error);
-    res.status(500).json({ error: 'Failed to get user' });
+    return res.status(500).json({ error: 'Failed to get user' });
   }
 });
 
@@ -850,12 +900,12 @@ SESSION_SECRET=your-session-secret-change-this-in-production
 /**
  * Generate complete auth scaffolding
  */
-export function generateAuthScaffolding(authType, runtime) {
+export function generateAuthScaffolding(authType, runtime, language = 'javascript') {
   const isJWT = authType === 'jwt';
 
   return {
-    middleware: isJWT ? generateJWTAuth(runtime) : generateSessionAuth(runtime),
-    routes: generateAuthRoutes(runtime, authType),
+    middleware: isJWT ? generateJWTAuth(runtime, language) : generateSessionAuth(runtime, language),
+    routes: generateAuthRoutes(runtime, authType, language),
     dependencies: getAuthDependencies(authType, runtime),
     env: generateAuthEnv(authType)
   };
