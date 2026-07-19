@@ -9,10 +9,20 @@
 # import failed (ERR_PACKAGE_PATH_NOT_EXPORTED)
 
 == ./errors ==
-# target file missing: ./dist/enhanced-errors.js
+EnhancedErrorHandler
+createEnhancedErrorHandler
+default
+handleEnhancedError
 
 == ./hybrid ==
-# target file missing: ./dist/hybrid-integration-tools.js
+HybridPerformanceMonitor
+HybridVisualizer
+StateFlowTracker
+createHybridPerformanceMonitor
+createHybridVisualizer
+createStateFlowTracker
+default
+visualizeHybridArchitecture
 
 == ./inspector ==
 ComponentInspector
@@ -102,4 +112,8 @@ measure
 profile
 
 == ./visualizer ==
-# target file missing: ./dist/component-visualizer.js
+ComponentVisualizer
+createComponentVisualizer
+default
+logComponentTree
+visualizeComponent

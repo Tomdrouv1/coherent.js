@@ -110,17 +110,41 @@ async function snapshotPackage(pkg) {
     const section = await snapshotSubpath(pkg.dir, subpath, pkg.pkgJson.exports[subpath]);
     sections.push(section);
   }
-  return { name: pkg.name, dir: pkg.dir, content: formatSnapshot(`@coherent.js/${pkg.name}`, sections) };
+  const missingTargets = sections
+    .filter(({ note }) => note && note.startsWith('target file missing'))
+    .map(({ subpath, note }) => `${subpath}: ${note}`);
+  return { name: pkg.name, dir: pkg.dir, missingTargets, content: formatSnapshot(`@coherent.js/${pkg.name}`, sections) };
+}
+
+// A subpath whose target file doesn't exist is always a hard failure — it
+// means the published package would ship a broken export. Reported in both
+// modes so --write can't bake breakage into the baselines.
+function reportMissingTargets(results) {
+  const broken = results.filter(({ missingTargets }) => missingTargets.length > 0);
+  if (broken.length === 0) return false;
+  console.error('❌ Export targets missing (build the packages first, or fix the exports map):');
+  for (const { name, missingTargets } of broken) {
+    for (const entry of missingTargets) {
+      console.error(`  - ${name}: ${entry}`);
+    }
+  }
+  return true;
 }
 
 async function runWrite() {
   const packages = listPackages();
   console.log(`📸 Generating API surface snapshots for ${packages.length} packages...`);
+  const results = [];
   for (const pkg of packages) {
-    const { name, dir, content } = await snapshotPackage(pkg);
-    const target = join(dir, 'api-surface.txt');
-    writeFileSync(target, content, 'utf8');
-    console.log(`  ✓ ${name}: wrote ${target.replace(REPO_ROOT + '/', '')}`);
+    const result = await snapshotPackage(pkg);
+    results.push(result);
+    const target = join(result.dir, 'api-surface.txt');
+    writeFileSync(target, result.content, 'utf8');
+    console.log(`  ✓ ${result.name}: wrote ${target.replace(REPO_ROOT + '/', '')}`);
+  }
+  if (reportMissingTargets(results)) {
+    process.exitCode = 1;
+    return;
   }
   console.log('Done. Review the diffs before committing.');
 }
@@ -129,8 +153,11 @@ async function runCheck() {
   const packages = listPackages();
   console.log(`🔒 Checking API surface against committed snapshots (${packages.length} packages)...`);
   const failures = [];
+  const results = [];
   for (const pkg of packages) {
-    const { name, dir, content } = await snapshotPackage(pkg);
+    const result = await snapshotPackage(pkg);
+    results.push(result);
+    const { name, dir, content } = result;
     const target = join(dir, 'api-surface.txt');
     if (!existsSync(target)) {
       failures.push({ name, reason: `missing baseline: ${target.replace(REPO_ROOT + '/', '')}` });
@@ -141,7 +168,12 @@ async function runCheck() {
       failures.push({ name, reason: `drift detected — re-run \`node scripts/check-api-surface.mjs --write\` and commit the updated ${target.replace(REPO_ROOT + '/', '')}` });
     }
   }
+  const hasMissingTargets = reportMissingTargets(results);
   if (failures.length === 0) {
+    if (hasMissingTargets) {
+      process.exitCode = 1;
+      return;
+    }
     console.log('✅ All API surfaces match committed snapshots.');
     return;
   }

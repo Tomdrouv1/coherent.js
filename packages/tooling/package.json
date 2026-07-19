@@ -6,24 +6,24 @@
   "main": "./dist/testing/index.js",
   "types": "./types/testing/index.d.ts",
   "exports": {
+    ".": {
+      "types": "./types/testing/index.d.ts",
+      "import": "./dist/testing/index.js"
+    },
     "./testing": {
       "types": "./types/testing/index.d.ts",
-      "development": "./src/testing/index.js",
       "import": "./dist/testing/index.js"
     },
     "./testing/renderer": {
       "types": "./types/testing/index.d.ts",
-      "development": "./src/testing/test-renderer.js",
       "import": "./dist/testing/test-renderer.js"
     },
     "./testing/utils": {
       "types": "./types/testing/index.d.ts",
-      "development": "./src/testing/test-utils.js",
       "import": "./dist/testing/test-utils.js"
     },
     "./testing/matchers": {
       "types": "./types/testing/index.d.ts",
-      "development": "./src/testing/matchers.js",
       "import": "./dist/testing/matchers.js"
     },
     "./lsp": {

@@ -2,6 +2,9 @@ import { build } from 'esbuild';
 
 const entries = [
   'src/index.js',
+  'src/component-visualizer.js',
+  'src/enhanced-errors.js',
+  'src/hybrid-integration-tools.js',
   'src/inspector.js',
   'src/profiler.js',
   'src/logger.js',

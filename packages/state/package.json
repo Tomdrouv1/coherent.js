@@ -7,23 +7,18 @@
   "exports": {
     ".": {
       "types": "./types/index.d.ts",
-      "development": "./src/index.js",
       "default": "./dist/index.js"
     },
     "./reactive": {
-      "development": "./src/reactive-state.js",
       "default": "./dist/reactive-state.js"
     },
     "./persistence": {
-      "development": "./src/state-persistence.js",
       "default": "./dist/state-persistence.js"
     },
     "./validation": {
-      "development": "./src/state-validation.js",
       "default": "./dist/state-validation.js"
     },
     "./manager": {
-      "development": "./src/state-manager.js",
       "default": "./dist/state-manager.js"
     }
   },

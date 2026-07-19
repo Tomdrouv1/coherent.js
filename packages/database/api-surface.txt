@@ -25,13 +25,26 @@ withPagination
 withTransaction
 
 == ./connection ==
-# target file missing: ./dist/connection-manager.js
+DatabaseManager
+createDatabaseManager
 
 == ./middleware ==
-# target file missing: ./dist/middleware.js
+withConnectionPool
+withDatabase
+withHealthCheck
+withModel
+withPagination
+withQueryValidation
+withTransaction
 
 == ./migration ==
-# target file missing: ./dist/migration.js
+Migration
+SchemaBuilder
+TableBuilder
+createMigration
+createSchemaBuilder
+createTableBuilder
 
 == ./model ==
-# target file missing: ./dist/model.js
+Model
+createModel

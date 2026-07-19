@@ -5,7 +5,10 @@
   "type": "module",
   "main": "./dist/index.js",
   "exports": {
-    ".": "./dist/index.js",
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./dist/index.js"
+    },
     "./form-builder": "./dist/form-builder.js",
     "./hydration": "./dist/form-hydration.js",
     "./validation": "./dist/validation.js",

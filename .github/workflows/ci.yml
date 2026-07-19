@@ -71,6 +71,14 @@ jobs:
       - name: Check API surface
         run: node scripts/check-api-surface.mjs --check
 
+      - name: Validate package exports (publint)
+        run: |
+          for dir in packages/*/; do
+            case "$dir" in *vscode-extension*) continue ;; esac
+            echo "── publint $dir"
+            pnpm dlx publint "$dir" || exit 1
+          done
+
       - name: Check bundle size
         run: node scripts/check-bundle-size.mjs --check
 

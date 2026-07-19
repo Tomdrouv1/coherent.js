@@ -5,7 +5,10 @@
   "type": "module",
   "main": "./dist/index.js",
   "exports": {
-    ".": "./dist/index.js",
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./dist/index.js"
+    },
     "./translator": "./dist/translator.js",
     "./formatters": "./dist/formatters.js",
     "./locale": "./dist/locale.js"

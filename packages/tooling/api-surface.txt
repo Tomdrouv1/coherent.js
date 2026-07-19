@@ -5,6 +5,29 @@
 #
 # Package: @coherent.js/tooling
 
+== . ==
+TestRenderer
+TestRendererResult
+act
+assertions
+cleanup
+createMock
+createSpy
+createTestRenderer
+customMatchers
+default
+extendExpect
+fireEvent
+renderComponent
+renderComponentAsync
+screen
+shallowRender
+userEvent
+waitFor
+waitForElement
+waitForElementToBeRemoved
+within
+
 == ./lsp ==
 # import failed (Error)
 

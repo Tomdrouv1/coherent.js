@@ -5,7 +5,10 @@
   "type": "module",
   "main": "./dist/index.js",
   "exports": {
-    ".": "./dist/index.js",
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./dist/index.js"
+    },
     "./meta": "./dist/meta.js",
     "./sitemap": "./dist/sitemap.js",
     "./structured-data": "./dist/structured-data.js"

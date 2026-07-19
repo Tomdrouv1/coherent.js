@@ -35,6 +35,3 @@ createVitePlugin
 == ./build-tools/webpack ==
 CoherentWebpackPlugin
 createWebpackPlugin
-
-== ./templates ==
-# directory export (no snapshot)

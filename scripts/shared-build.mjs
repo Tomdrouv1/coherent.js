@@ -33,11 +33,15 @@ export const commonConfig = {
 };
 
 /**
- * Build a package with both ESM and CJS formats
+ * Build a package with both ESM and CJS formats.
+ *
+ * Pass `entries` ({ name: 'src/file.js', ... }) when the package's exports map
+ * declares subpaths — every name is built to `<outDir>/<name>.js`/`.cjs`.
  */
 export async function buildPackage({
   packageName,
   entryPoint,
+  entries,
   outDir = 'dist',
   external = [],
   additionalConfig = {},
@@ -51,24 +55,28 @@ export async function buildPackage({
 
   console.log(`🏗️  Building ${packageName}...`);
 
-  // Build ESM version
-  if (formats.includes('esm')) {
-    await build({
-      ...config,
-      entryPoints: [entryPoint],
-      format: 'esm',
-      outfile: `${outDir}/index.js`,
-    });
-  }
+  const entryMap = entries ?? { index: entryPoint };
 
-  // Build CJS version (only for Node.js packages)
-  if (formats.includes('cjs')) {
-    await build({
-      ...config,
-      entryPoints: [entryPoint],
-      format: 'cjs',
-      outfile: `${outDir}/index.cjs`,
-    });
+  for (const [name, src] of Object.entries(entryMap)) {
+    // Build ESM version
+    if (formats.includes('esm')) {
+      await build({
+        ...config,
+        entryPoints: [src],
+        format: 'esm',
+        outfile: `${outDir}/${name}.js`,
+      });
+    }
+
+    // Build CJS version (only for Node.js packages)
+    if (formats.includes('cjs')) {
+      await build({
+        ...config,
+        entryPoints: [src],
+        format: 'cjs',
+        outfile: `${outDir}/${name}.cjs`,
+      });
+    }
   }
 
   console.log(`✅ Built ${packageName} successfully`);

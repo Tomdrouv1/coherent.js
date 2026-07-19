@@ -14,7 +14,6 @@
     ".": {
       "import": "./dist/index.js"
     },
-    "./templates": "./templates/",
     "./build-tools": "./src/build-tools/index.js",
     "./build-tools/vite": "./src/build-tools/vite.js",
     "./build-tools/webpack": "./src/build-tools/webpack.js",
