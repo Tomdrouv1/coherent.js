@@ -367,4 +367,44 @@ describe('DatabaseManager', () => {
       await expect(db.testConnection()).rejects.toThrow('Health check failed');
     });
   });
+
+  describe('collection', () => {
+    it('should delegate to the pool for document adapters', async () => {
+      const fakeCollection = { insertOne: vi.fn(), findOne: vi.fn() };
+      mockPool.collection = vi.fn(() => fakeCollection);
+      db = new DatabaseManager({ adapter: mockAdapter, store: { name: 'docs' } });
+      await db.connect();
+
+      expect(db.collection('users')).toBe(fakeCollection);
+      expect(mockPool.collection).toHaveBeenCalledWith('users');
+    });
+
+    it('should throw when not connected', () => {
+      db = new DatabaseManager({ adapter: mockAdapter, store: { name: 'docs' } });
+      expect(() => db.collection('users')).toThrow('Database not connected');
+    });
+
+    it('should throw a clear _error for non-document adapters', async () => {
+      db = new DatabaseManager({ adapter: mockAdapter, store: { name: 'sql' } });
+      await db.connect();
+      expect(() => db.collection('users')).toThrow('only available for document databases');
+    });
+  });
+
+  describe('close', () => {
+    it('should fall back to adapter.disconnect when closePool is missing', async () => {
+      const disconnect = vi.fn();
+      const adapter = {
+        createPool: vi.fn().mockResolvedValue(mockPool),
+        testConnection: vi.fn().mockResolvedValue(true),
+        disconnect
+      };
+      db = new DatabaseManager({ adapter, store: { name: 'doc' } });
+      await db.connect();
+      await db.close();
+
+      expect(disconnect).toHaveBeenCalled();
+      expect(db.isConnected).toBe(false);
+    });
+  });
 });
