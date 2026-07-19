@@ -46,9 +46,17 @@ const PERMUTATIONS = [
       packages: ['api', 'i18n', 'forms', 'seo', 'testing']
     },
     port: 4314
+  },
+  {
+    name: 'js-built-in-auth-sqlite',
+    options: { language: 'javascript', runtime: 'built-in', packages: [], database: 'sqlite', auth: 'jwt' },
+    port: 4315
+  },
+  {
+    name: 'ts-express-auth-sqlite',
+    options: { language: 'typescript', runtime: 'express', packages: ['api'], database: 'sqlite', auth: 'jwt' },
+    port: 4316
   }
-  // TODO(v1.1): fullstack + database + auth permutations once the tracked
-  // auth-scaffold gaps (password hashing, built-in setupAuthRoutes) close.
 ];
 
 function run(cmd, args, opts = {}) {
@@ -138,6 +146,42 @@ async function bootAndProbe(projectPath, permutation) {
       const postBody = await postRes.json();
       if (postBody.name !== 'Ada') {
         throw new Error(`POST /api/users returned ${JSON.stringify(postBody)}`);
+      }
+    }
+
+    if (permutation.options.auth === 'jwt') {
+      const base = `http://127.0.0.1:${port}/api/auth`;
+      const postJson = (path, payload) =>
+        fetch(`${base}${path}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+      const regRes = await postJson('/register', { email: 'ada@example.com', name: 'Ada', password: 'correct horse' });
+      const regBody = await regRes.json();
+      if (!regRes.ok || !regBody.token) {
+        throw new Error(`register failed (${regRes.status}): ${JSON.stringify(regBody)}`);
+      }
+
+      const loginRes = await postJson('/login', { email: 'ada@example.com', password: 'correct horse' });
+      const loginBody = await loginRes.json();
+      if (!loginRes.ok || !loginBody.token) {
+        throw new Error(`login with correct password failed (${loginRes.status}): ${JSON.stringify(loginBody)}`);
+      }
+
+      // The regression this suite exists for: login must actually check the password.
+      const badRes = await postJson('/login', { email: 'ada@example.com', password: 'wrong password' });
+      if (badRes.status !== 401) {
+        throw new Error(`login with WRONG password returned ${badRes.status} — password is not being verified`);
+      }
+
+      const meRes = await fetch(`${base}/me`, {
+        headers: { Authorization: `Bearer ${loginBody.token}` }
+      });
+      const meBody = await meRes.json();
+      if (!meRes.ok || meBody.user?.email !== 'ada@example.com') {
+        throw new Error(`GET /me failed (${meRes.status}): ${JSON.stringify(meBody)}`);
       }
     }
   } catch (error) {

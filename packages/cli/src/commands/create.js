@@ -207,17 +207,21 @@ export const createCommand = new Command('create')
         packages = template === 'fullstack' ? ['api'] : [];
       }
 
-      // Auth scaffolding
-      if (!options.skipPrompts && (packages.includes('api') || database)) {
+      // Auth scaffolding needs the generated UserModel, so it requires a SQL
+      // database; session routes are only generated for express.
+      if (!options.skipPrompts && database && database !== 'mongodb') {
+        const authChoices = [
+          { title: '🔑 JWT Authentication', value: 'jwt', description: 'Token-based auth with jsonwebtoken' },
+          ...(runtime === 'express'
+            ? [{ title: '🍪 Session Authentication', value: 'session', description: 'Cookie-based session auth' }]
+            : []),
+          { title: '❌ None', value: 'none', description: 'Skip authentication setup' }
+        ];
         const authResponse = await prompts({
           type: 'select',
           name: 'auth',
           message: 'Would you like to include authentication scaffolding?',
-          choices: [
-            { title: '🔑 JWT Authentication', value: 'jwt', description: 'Token-based auth with jsonwebtoken' },
-            { title: '🍪 Session Authentication', value: 'session', description: 'Cookie-based session auth' },
-            { title: '❌ None', value: 'none', description: 'Skip authentication setup' }
-          ],
+          choices: authChoices,
           initial: 0
         });
 
@@ -238,6 +242,21 @@ export const createCommand = new Command('create')
       });
 
       packages = pkgResponse.packages || [];
+    }
+
+    if (auth && !database) {
+      console.error(picocolors.red('✖ Auth scaffolding requires a database (it generates login against the User model). Add --database sqlite|postgres|mysql.'));
+      process.exit(1);
+    }
+
+    if (auth && database === 'mongodb') {
+      console.error(picocolors.red('✖ Auth scaffolding requires a SQL database (sqlite, postgres, mysql) — MongoDB auth is not supported yet.'));
+      process.exit(1);
+    }
+
+    if (auth === 'session' && runtime !== 'express') {
+      console.error(picocolors.red('✖ Session auth scaffolding is only available for the express runtime. Use --auth jwt, or --runtime express.'));
+      process.exit(1);
     }
 
     // Package manager selection
