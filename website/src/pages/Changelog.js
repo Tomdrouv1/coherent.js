@@ -13,12 +13,38 @@ export function Changelog() {
         // Timeline
         { section: { className: 'changelog-timeline', children: [
 
+          // v1.0.0-rc.2
+          { article: { className: 'changelog-entry', children: [
+            { div: { className: 'changelog-entry-header', children: [
+              { span: { className: 'changelog-version', text: 'v1.0.0-rc.2' } },
+              { span: { className: 'changelog-date', text: '2026-05-25' } },
+              { span: { className: 'changelog-badge changelog-badge-current', text: 'Current' } }
+            ] } },
+            { div: { className: 'changelog-changes', children: [
+              { h3: { text: 'Highlights' } },
+              { p: { text: 'Hotfix release. Manual verification of `coherent create` revealed that several scaffold permutations could not boot; rc.2 fixes the boot-blocking bugs in CLI scaffolds and the Fastify/Koa/SQLite integrations. No public API was removed or renamed.' } },
+              { h3: { text: 'Fixed' } },
+              { ul: { children: [
+                { li: { text: 'Fastify integration: coherentFastify is now wrapped with fastify-plugin so hooks and decorators apply to the parent context; auto-render moved from onSend to preSerialization with an identity serializer so rendered HTML is sent verbatim.' } },
+                { li: { text: 'Koa integration: setupCoherent forwards the template option through to the middleware instead of silently dropping it.' } },
+                { li: { text: 'Database: sqlite3 peer dependency relaxed from an exact 5.0.0 pin to >=5.0.0.' } },
+                { li: { text: 'CLI sqlite scaffolds: switched from better-sqlite3 to sqlite3, rewrote UserModel on the database manager API, and fixed init racing that intermittently caused SQLITE_BUSY.' } },
+                { li: { text: 'CLI fullstack scaffolds: auth routes are now actually mounted under /api/auth, and authMiddleware no longer 401s every request including GET /.' } },
+                { li: { text: 'CLI fastify scaffold: static-file root now points at the project public/ directory; koa and fastify scaffolds wrap pages in a real HTML shell.' } },
+                { li: { text: 'CLI version resolution: scaffolds correctly pin @coherent.js/* deps to ^1.0.0-rc.2 (previously a stale 1.0.0-beta.5 fallback could slip in).' } }
+              ] } },
+              { h3: { text: 'Changed' } },
+              { ul: { children: [
+                { li: { text: 'BREAKING: minimum Node.js version is now 22 (engines.node >=22.0.0 across all published packages). CI tests Node 22.x, 24.x, and 26.x.' } }
+              ] } }
+            ] } }
+          ] } },
+
           // v1.0.0-rc.1
           { article: { className: 'changelog-entry', children: [
             { div: { className: 'changelog-entry-header', children: [
               { span: { className: 'changelog-version', text: 'v1.0.0-rc.1' } },
-              { span: { className: 'changelog-date', text: '2026-05-17' } },
-              { span: { className: 'changelog-badge changelog-badge-current', text: 'Current' } }
+              { span: { className: 'changelog-date', text: '2026-05-17' } }
             ] } },
             { div: { className: 'changelog-changes', children: [
               { h3: { text: 'Highlights' } },

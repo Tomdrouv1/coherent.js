@@ -101,22 +101,22 @@ const port = process.env.PORT || 3000;
 // Shared rendering — exported for use by build.js
 // ---------------------------------------------------------------------------
 
-export function renderFullPage({ currentPath, componentName, props = {}, title = 'Coherent.js', scripts = [] }) {
+export function renderFullPage({ currentPath, componentName, props = {}, title = 'Coherent.js', scripts = [], description }) {
   const Component = getComponent(componentName);
   const SafeComponent = withPageErrorBoundary(Component);
   const content = SafeComponent(props);
   const layoutPath = currentPath === '/' ? '' : currentPath.replace(/^\//, '');
-  const page = Layout({ title, currentPath: layoutPath, content, scripts });
+  const page = Layout({ title, currentPath: layoutPath, content, scripts, description });
   return renderWithTemplate(page, { template: '<!DOCTYPE html>\n{{content}}' });
 }
 
 export const pageRoutes = [
-  { path: '/', component: 'Home', title: 'Coherent.js - Modern Object-Based UI Framework', props: { highlightCode }, scripts: ['/coherent-hydrate.js', '/counter-demo.js'] },
-  { path: '/playground', component: 'Playground', title: 'Playground - Coherent.js', scripts: ['/codemirror-editor.js', '/playground.js'] },
-  { path: '/performance', component: 'Performance', title: 'Performance - Coherent.js', scripts: ['/performance.js'] },
-  { path: '/coverage', component: 'Coverage', title: 'Coverage - Coherent.js' },
-  { path: '/starter-app', component: 'StarterApp', title: 'Starter App - Coherent.js', props: { highlightCode } },
-  { path: '/changelog', component: 'Changelog', title: 'Changelog - Coherent.js' },
+  { path: '/', component: 'Home', title: 'Coherent.js - Modern Object-Based UI Framework', props: { highlightCode }, scripts: ['/coherent-hydrate.js', '/counter-demo.js'], description: 'Fast server-side rendering and hydration with plain JavaScript objects. Minimal API, no JSX, no build step.' },
+  { path: '/playground', component: 'Playground', title: 'Playground - Coherent.js', scripts: ['/codemirror-editor.js', '/playground.js'], description: 'Try Coherent.js in the browser — edit object components and see the rendered HTML live.' },
+  { path: '/performance', component: 'Performance', title: 'Performance - Coherent.js', scripts: ['/performance.js'], description: 'Interactive benchmarks for Coherent.js server-side rendering performance.' },
+  { path: '/coverage', component: 'Coverage', title: 'Coverage - Coherent.js', description: 'Test coverage reports for the Coherent.js packages.' },
+  { path: '/starter-app', component: 'StarterApp', title: 'Starter App - Coherent.js', props: { highlightCode }, description: 'Build your first Coherent.js app in 10 minutes with the starter application.' },
+  { path: '/changelog', component: 'Changelog', title: 'Changelog - Coherent.js', description: 'Release notes and version history for Coherent.js.' },
 ];
 
 export { getExamplesList, Layout };
@@ -127,6 +127,51 @@ export { getExamplesList, Layout };
 
 function slugify(str) {
   return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
+
+/**
+ * Rewrite relative links in rendered docs HTML so they work as site URLs.
+ * Markdown docs cross-link each other as relative *.md paths; the site serves
+ * them as extensionless directory URLs. Links that resolve outside docs/ are
+ * pointed at the GitHub repository instead.
+ * `docDir` is the doc's directory relative to docs/ ('' for root-level files).
+ */
+export function rewriteDocLinks(html, docDir) {
+  return html.replace(/href="([^"]+)"/g, (match, href) => {
+    if (/^(https?:|mailto:|#)/.test(href)) return match;
+    // Root-absolute links: only /docs/*.md needs rewriting (site pages are fine)
+    if (href.startsWith('/') && !/^\/docs\/.+\.md(#|$)/i.test(href)) return match;
+    const [pathPart, hash] = href.split('#');
+    if (!pathPart) return match;
+    const anchor = hash ? `#${hash}` : '';
+    const isDir = pathPart.endsWith('/');
+
+    // Resolve against the repo root: docs/<docDir>/<href> (absolute /docs/...
+    // links are already repo-root-relative)
+    const base = pathPart.startsWith('/') ? pathPart.slice(1) : `docs/${docDir ? `${docDir}/` : ''}${pathPart}`;
+    const segments = base.split('/');
+    const out = [];
+    for (const seg of segments) {
+      if (seg === '' || seg === '.') continue;
+      if (seg === '..') {
+        if (out.length === 0) return match; // escapes the repo — leave as-is
+        out.pop();
+      } else {
+        out.push(seg);
+      }
+    }
+    const resolved = out.join('/');
+
+    if (resolved.startsWith('docs/')) {
+      if (!/\.md$/i.test(resolved)) return match; // assets / extensionless — leave
+      const slug = resolved.slice('docs/'.length).replace(/\.md$/i, '').split('/').map(slugify).join('/');
+      return `href="docs/${slug}${anchor}"`;
+    }
+
+    // Resolves outside docs/ (examples, root README, …) — link to the repo
+    const kind = isDir ? 'tree' : 'blob';
+    return `href="https://github.com/Tomdrouv1/coherent.js/${kind}/main/${resolved}${anchor}"`;
+  });
 }
 
 // Logical section order for the docs sidebar
@@ -154,6 +199,8 @@ function getDocsSidebar() {
       for (const entry of entries) {
         const rel = base ? `${base}/${entry.name}` : entry.name;
         if (entry.isDirectory()) {
+          // Internal working documents, not user documentation
+          if (!base && entry.name === 'superpowers') continue;
           scan(join(dir, entry.name), rel);
         } else if (entry.name.endsWith('.md')) {
           const section = rel.includes('/') ? rel.split('/')[0] : null;
@@ -258,6 +305,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
         props: route.props,
         title: route.title,
         scripts: route.scripts,
+        description: route.description,
       });
       res.type('html').send(html);
     });
@@ -306,7 +354,8 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     }
 
     const md = readFileSync(mdFile, 'utf-8');
-    const htmlBody = marked.parse(md);
+    const docDir = slug.includes('/') ? slug.split('/').slice(0, -1).join('/') : '';
+    const htmlBody = rewriteDocLinks(marked.parse(md), docDir);
     const title = (md.match(/^#\s+(.+)$/m) || [null, 'Documentation'])[1];
 
     // Extract headings from the rendered HTML (not raw markdown) for accurate matching

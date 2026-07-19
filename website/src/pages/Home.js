@@ -1,5 +1,13 @@
 // Home.js - simple landing content
-import { Island } from '../../../packages/core/src/index.js';
+import { readFileSync } from 'node:fs';
+import { Island } from '@coherent.js/core';
+
+// Framework version shown in the hero badge — sourced from the monorepo root
+// package.json so it can't drift from the released version.
+const { version } = JSON.parse(
+  readFileSync(new URL('../../../package.json', import.meta.url), 'utf8')
+);
+const versionBadgeUrl = `https://img.shields.io/badge/version-${version.replace(/-/g, '--')}-blue`;
 
 // Counter component wrapped with Island() for automatic hydration attributes
 const CounterIsland = Island(function CounterComponent() {
@@ -50,7 +58,7 @@ export function Home({ highlightCode } = {}) {
           { h1: { className: 'title', text: 'Coherent.js' } },
           { p: { className: 'lead', text: 'Fast SSR and hydration with plain JS objects. Minimal API. Maximum clarity.' } },
           { div: { className: 'badges', children: [
-            { img: { src: 'https://img.shields.io/badge/version-1.0.0--rc.1-blue', alt: 'version', className: 'badge' } }
+            { img: { src: versionBadgeUrl, alt: `version ${version}`, className: 'badge' } }
           ] } },
           { div: { className: 'cta', children: [
             { a: { className: 'button primary', href: 'starter-app', text: 'Get Started' } },

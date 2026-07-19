@@ -46,7 +46,7 @@ export const StarterAppPage = ({ highlightCode } = {}) => ({
                             children: [
                               { p: { text: '⏱️ Time to complete: 10 minutes', className: 'starter-meta-item' } },
                               { p: { text: '📊 Difficulty: Beginner', className: 'starter-meta-item' } },
-                              { p: { text: '📦 Prerequisites: Node.js 18+', className: 'starter-meta-item' } }
+                              { p: { text: '📦 Prerequisites: Node.js 22+', className: 'starter-meta-item' } }
                             ]
                           }
                         }
@@ -68,8 +68,8 @@ export const StarterAppPage = ({ highlightCode } = {}) => ({
                     div: {
                       className: 'code-wrapper',
                       html: highlightCode
-                        ? highlightCode('# Clone the repository\ngit clone https://github.com/coherentjs/coherent.git\ncd coherent/examples/starter-app\n\n# Run the server\nnode server.js\n\n# Open http://localhost:3000', 'bash')
-                        : '<pre class="code-block"><code># Clone the repository\ngit clone https://github.com/coherentjs/coherent.git\ncd coherent/examples/starter-app\n\n# Run the server\nnode server.js\n\n# Open http://localhost:3000</code></pre>'
+                        ? highlightCode('# Clone the repository\ngit clone https://github.com/Tomdrouv1/coherent.js.git\ncd coherent.js/examples/starter-app\n\n# Run the server\nnode server.js\n\n# Open http://localhost:3000', 'bash')
+                        : '<pre class="code-block"><code># Clone the repository\ngit clone https://github.com/Tomdrouv1/coherent.js.git\ncd coherent.js/examples/starter-app\n\n# Run the server\nnode server.js\n\n# Open http://localhost:3000</code></pre>'
                     }
                   },
                   {

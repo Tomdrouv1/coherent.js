@@ -97,7 +97,7 @@ export function DocsIndexPage() {
                     },
                     {
                       a: {
-                        href: 'docs/migration/from-other-frameworks',
+                        href: 'docs/migration/guide',
                         className: 'docs-card',
                         children: [
                           { h3: { text: '🔄 Migration Guide' } },
@@ -148,7 +148,7 @@ export function DocsIndexPage() {
                     },
                     {
                       a: {
-                        href: 'docs/client/hydration-guide',
+                        href: 'docs/client/hydration',
                         className: 'docs-card',
                         children: [
                           { h3: { text: '💧 Hydration' } },
@@ -290,11 +290,11 @@ export function DocsIndexPage() {
                     },
                     {
                       a: {
-                        href: 'docs/DOCS_INDEX',
+                        href: 'https://github.com/Tomdrouv1/coherent.js/tree/main/docs',
                         className: 'docs-card',
                         children: [
-                          { h3: { text: '📚 Complete Index' } },
-                          { p: { text: 'Organized access to all documentation.' } },
+                          { h3: { text: '📚 Browse on GitHub' } },
+                          { p: { text: 'The complete documentation source, including guides not yet on this site.' } },
                           { span: { className: 'docs-card-arrow', text: '→' } }
                         ]
                       }

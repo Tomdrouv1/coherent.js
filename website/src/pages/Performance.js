@@ -1,4 +1,4 @@
-import { withState } from "../../../packages/core/src/index.js";
+import { withState } from "@coherent.js/core";
 
 // Performance.js - Interactive performance testing page with Coherent.js state management
 const PerformanceComponent = withState({

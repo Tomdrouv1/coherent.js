@@ -12,7 +12,7 @@ import { marked } from 'marked';
 import { createHighlighter } from 'shiki';
 
 // Reuse the same rendering pipeline as the dev server
-import { renderFullPage, pageRoutes, getExamplesList, Layout } from './src/index.js';
+import { renderFullPage, pageRoutes, getExamplesList, Layout, rewriteDocLinks } from './src/index.js';
 import { render } from '@coherent.js/core';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -57,10 +57,24 @@ async function ensureDir(dir) {
   await fs.mkdir(dir, { recursive: true });
 }
 
+const SITE_URL = 'https://coherentjs.dev';
+const builtRoutes = [];
+
 async function writePage(route, html) {
   const dir = path.join(DIST_DIR, route);
   await ensureDir(dir);
   await fs.writeFile(path.join(dir, 'index.html'), html);
+  builtRoutes.push(route.split(path.sep).join('/'));
+}
+
+async function writeSitemap() {
+  const urls = builtRoutes
+    .map((route) => (route ? `${SITE_URL}/${route}` : `${SITE_URL}/`))
+    .map((url) => `  <url><loc>${url}</loc></url>`)
+    .join('\n');
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
+  await fs.writeFile(path.join(DIST_DIR, 'sitemap.xml'), xml);
+  console.log(`Wrote sitemap.xml (${builtRoutes.length} URLs)`);
 }
 
 function escapeHtml(s) {
@@ -86,6 +100,7 @@ async function buildPages() {
       props: route.props,
       title: route.title,
       scripts: route.scripts,
+      description: route.description,
     });
     const dir = route.path === '/' ? '' : route.path.replace(/^\//, '');
     await writePage(dir, html);
@@ -114,6 +129,8 @@ async function collectDocs(dir, base = '') {
     for (const entry of entries) {
       const rel = base ? `${base}/${entry.name}` : entry.name;
       if (entry.isDirectory()) {
+        // Internal working documents, not user documentation
+        if (!base && entry.name === 'superpowers') continue;
         docs.push(...await collectDocs(path.join(dir, entry.name), rel));
       } else if (entry.name.endsWith('.md')) {
         docs.push({ rel, full: path.join(dir, entry.name) });
@@ -174,9 +191,11 @@ async function buildDocs() {
 
   for (const d of docs) {
     const md = await fs.readFile(d.full, 'utf8');
-    const htmlBody = marked.parse(md);
+    const rel = d.rel.replace(/\\/g, '/');
+    const docDir = rel.includes('/') ? rel.split('/').slice(0, -1).join('/') : '';
+    const htmlBody = rewriteDocLinks(marked.parse(md), docDir);
     const title = (md.match(/^#\s+(.+)$/m) || [null, 'Documentation'])[1];
-    const slug = d.rel.replace(/\.md$/i, '').replace(/\\/g, '/').split('/').map(slugify).join('/');
+    const slug = rel.replace(/\.md$/i, '').split('/').map(slugify).join('/');
 
     // Docs pages still use placeholder approach for breadcrumbs/TOC
     const page = Layout({ title: `${title} | Coherent.js Docs`, sidebar, currentPath: `docs/${slug}`, baseHref: '/' });
@@ -228,6 +247,9 @@ async function main() {
 
   // Build docs with Shiki highlighting
   await buildDocs();
+
+  // Sitemap covers every page written above
+  await writeSitemap();
 
   console.log(`\nBuilt website to ${DIST_DIR}`);
 }

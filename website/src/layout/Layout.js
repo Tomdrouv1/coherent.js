@@ -8,6 +8,10 @@ const navLinks = [
   { href: 'changelog', label: 'Changelog', match: (p) => p.startsWith('changelog') },
 ];
 
+const SITE_URL = 'https://coherentjs.dev';
+const DEFAULT_DESCRIPTION =
+  'Coherent.js — Lightweight, fast SSR with object-based components and great DX.';
+
 export function Layout({
   title = 'Coherent.js',
   sidebar = [],
@@ -15,9 +19,14 @@ export function Layout({
   baseHref = '/',
   content = null,
   scripts = [],
+  description = DEFAULT_DESCRIPTION,
 }) {
+  const pathSegment = currentPath === '/' ? '' : currentPath.replace(/^\//, '');
+  const canonicalUrl = pathSegment ? `${SITE_URL}/${pathSegment}` : `${SITE_URL}/`;
+
   return {
     html: {
+      lang: 'en',
       children: [
         {
           head: {
@@ -32,12 +41,21 @@ export function Layout({
               {
                 meta: {
                   name: 'description',
-                  content:
-                    'Coherent.js — Lightweight, fast SSR with object-based components and great DX.',
+                  content: description,
                 },
               },
               { meta: { name: 'theme-color', content: '#0b0e14' } },
               { title: { text: title } },
+              { link: { rel: 'canonical', href: canonicalUrl } },
+              { meta: { property: 'og:type', content: 'website' } },
+              { meta: { property: 'og:site_name', content: 'Coherent.js' } },
+              { meta: { property: 'og:title', content: title } },
+              { meta: { property: 'og:description', content: description } },
+              { meta: { property: 'og:url', content: canonicalUrl } },
+              { meta: { property: 'og:image', content: `${SITE_URL}/coherent-logo.svg` } },
+              { meta: { name: 'twitter:card', content: 'summary' } },
+              { meta: { name: 'twitter:title', content: title } },
+              { meta: { name: 'twitter:description', content: description } },
               { base: { href: baseHref } },
               {
                 link: {
