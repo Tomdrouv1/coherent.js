@@ -412,27 +412,6 @@ export function measure<T>(name: string, fn: () => T): T;
  */
 export function profile<T>(fn: () => T): { result: T; duration: number };
 
-/**
- * Create a profiler that tracks render performance
- */
-export function createRenderProfiler(config?: ProfilerOptions): {
-  start(label: string): void;
-  end(label: string): number;
-  measure<T>(label: string, fn: () => T): T;
-  measureAsync<T>(label: string, fn: () => Promise<T>): Promise<T>;
-  getMetrics(): ProfileReport;
-  reset(): void;
-  onRender(callback: (result: ProfilerResult) => void): () => void;
-};
-
-/**
- * HOC to add profiling to a component
- */
-export function withProfiling<P extends ComponentProps>(
-  component: (props: P) => CoherentNode,
-  name?: string
-): (props: P) => CoherentNode;
-
 // ============================================================================
 // DevTools Configuration
 // ============================================================================
@@ -478,19 +457,6 @@ export interface DevToolsInstance {
   /** Check if enabled */
   isEnabled(): boolean;
 }
-
-/**
- * Create a devtools instance
- */
-export function createDevtools(config?: DevToolsConfig): DevToolsInstance;
-
-/**
- * HOC to add devtools tracking to a component
- */
-export function withDevtools<T extends (...args: unknown[]) => CoherentNode>(
-  component: T,
-  name?: string
-): T;
 
 // ============================================================================
 // DevTools Class

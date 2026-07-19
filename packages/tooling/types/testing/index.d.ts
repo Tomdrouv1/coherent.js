@@ -45,6 +45,38 @@ export interface RenderResult {
   getAllByText(text: string | RegExp): Element[];
 }
 
+/** String-level match returned by TestRendererResult query helpers */
+export interface TestRendererMatch {
+  text: string;
+  html: string;
+  exists: boolean;
+  testId?: string;
+  className?: string;
+}
+
+/**
+ * Result of renderComponent()/renderComponentAsync() — the rendered HTML
+ * plus string-level query helpers over it.
+ */
+export class TestRendererResult {
+  constructor(component: CoherentNode, html: string, container?: unknown);
+  component: CoherentNode;
+  html: string;
+  container: unknown;
+  getByTestId(testId: string): TestRendererMatch;
+  queryByTestId(testId: string): TestRendererMatch | null;
+  getByText(text: string | RegExp): TestRendererMatch;
+  queryByText(text: string | RegExp): TestRendererMatch | null;
+  getByClassName(className: string): TestRendererMatch;
+  queryByClassName(className: string): TestRendererMatch | null;
+  getAllByTagName(tagName: string): TestRendererMatch[];
+  exists(selector: string, type?: 'testId' | 'text' | 'className'): boolean;
+  getHTML(): string;
+  getComponent(): CoherentNode;
+  toSnapshot(): string;
+  debug(): void;
+}
+
 /**
  * Test renderer class
  */
@@ -87,11 +119,6 @@ export function createTestRenderer(): TestRenderer;
  * Shallow render a component
  */
 export function shallowRender(component: CoherentNode): RenderResult;
-
-/**
- * Render a node to HTML string
- */
-export function renderToString(node: CoherentNode): string;
 
 // ============================================================================
 // Custom Matchers for Coherent.js
@@ -253,25 +280,6 @@ export function createSpy<T extends (...args: unknown[]) => unknown>(
 ): Mock<T>;
 
 /**
- * Mock a component
- */
-export function mockComponent<P extends ComponentProps = ComponentProps>(
-  name: string,
-  render?: (props: P) => CoherentNode
-): CoherentComponent<P>;
-
-/**
- * Create test state with reset capability
- */
-export function createTestState<T extends Record<string, unknown>>(
-  initial: T
-): {
-  getState: () => T;
-  setState: (updates: Partial<T>) => void;
-  reset: () => void;
-};
-
-/**
  * Cleanup all mocks and rendered components
  */
 export function cleanup(): void;
@@ -325,14 +333,6 @@ export const userEvent: {
 // ============================================================================
 // Assertion Utilities
 // ============================================================================
-
-/**
- * Assert element structure matches expected
- */
-export function assertElementStructure(
-  element: CoherentElement,
-  expected: Partial<CoherentElement>
-): void;
 
 /**
  * Standard assertions

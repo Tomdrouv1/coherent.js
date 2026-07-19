@@ -391,66 +391,9 @@ export interface Logger {
 // Main CLI Functions
 // ============================================================================
 
-/** Create a new project */
-export function createProject(options: CreateProjectOptions): Promise<void>;
-
-/** Generate component */
-export function generateComponent(options: GenerateComponentOptions): Promise<GenerationResult>;
-
-/** Generate page */
-export function generatePage(options: GeneratePageOptions): Promise<GenerationResult>;
-
-/** Generate API route */
-export function generateApi(options: GenerateApiOptions): Promise<GenerationResult>;
-
-/** Generate model */
-export function generateModel(options: GenerateModelOptions): Promise<GenerationResult>;
-
-/** Start development server */
-export function startDevServer(options?: Partial<DevServerConfig>): Promise<void>;
-
-/** Build project */
-export function buildProject(config?: Partial<BuildConfig>): Promise<void>;
-
-/** Run tests */
-export function runTests(options?: { watch?: boolean; coverage?: boolean }): Promise<void>;
-
-/** Lint project */
-export function lintProject(options?: { fix?: boolean }): Promise<void>;
-
-/** Format project */
-export function formatProject(): Promise<void>;
-
 // ============================================================================
 // CLI Utilities
 // ============================================================================
-
-/** Parse command line arguments */
-export function parseArgs(argv: string[]): { command: string; args: string[]; options: CLIOptions };
-
-/** Load project configuration */
-export function loadConfig(path?: string): Promise<CoherentConfig>;
-
-/** Save project configuration */
-export function saveConfig(config: CoherentConfig, path?: string): Promise<void>;
-
-/** Get project templates */
-export function getTemplates(): ProjectTemplate[];
-
-/** Get available generators */
-export function getGenerators(): CodeGenerator[];
-
-/** Create logger instance */
-export function createLogger(level?: 'debug' | 'info' | 'warn' | 'error'): Logger;
-
-/** Create file system utilities */
-export function createFileSystem(): FileSystem;
-
-/** Create plugin manager */
-export function createPluginManager(): PluginManager;
-
-/** Validate project structure */
-export function validateProject(path: string): Promise<ValidationResult>;
 
 // ============================================================================
 // Default Export

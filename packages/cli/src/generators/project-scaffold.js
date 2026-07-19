@@ -94,7 +94,8 @@ export async function scaffoldProject(projectPath, options) {
     port: 3000,
     hasApi: packages.includes('api') || auth,
     hasDatabase: !!database,
-    hasAuth: !!auth
+    hasAuth: !!auth,
+    isTypeScript
   });
   writeFileSync(join(projectPath, `src/index${fileExtension}`), serverContent);
 

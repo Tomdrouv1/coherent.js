@@ -883,26 +883,12 @@ export function createDatabaseManager(config: DatabaseConfig): DatabaseManager;
 /** Create a connection */
 export function createConnection(config: DatabaseConfig): Promise<DatabaseConnection>;
 
-/**
- * Create a connection from database-specific configuration.
- * Provides better type inference for database-specific options.
- */
-export function createTypedConnection<T extends DatabaseSpecificConfig>(
-  config: T
-): Promise<DatabaseConnection>;
-
 /** Run migrations */
 export function runMigrations(
   connection: DatabaseConnection,
   migrations: Migration[],
   options?: { target?: string }
 ): Promise<MigrationStatus[]>;
-
-/** Database adapter creators */
-export function createPostgreSQLAdapter(config: PostgreSQLConfig | DatabaseConfig): DatabaseAdapter;
-export function createMySQLAdapter(config: MySQLConfig | DatabaseConfig): DatabaseAdapter;
-export function createSQLiteAdapter(config: SQLiteConfig | DatabaseConfig): DatabaseAdapter;
-export function createMongoDBAdapter(config: MongoDBConfig | DatabaseConfig): DatabaseAdapter;
 
 /** Middleware functions */
 export function withDatabase(options?: DatabaseMiddlewareOptions): any;

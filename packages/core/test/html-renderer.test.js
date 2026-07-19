@@ -91,6 +91,36 @@ describe('HTML Renderer', () => {
     });
   });
 
+  describe('Void Elements', () => {
+    it('renders void elements with attributes and no closing tag', () => {
+      expect(render({ meta: { charset: 'utf-8' } })).toBe('<meta charset="utf-8">');
+      expect(render({ img: { src: 'x.png', alt: 'x' } })).toBe('<img src="x.png" alt="x">');
+      expect(render({ input: { type: 'text', name: 'q' } })).toBe('<input type="text" name="q">');
+      expect(render({ link: { rel: 'stylesheet', href: 'a.css' } })).toBe('<link rel="stylesheet" href="a.css">');
+    });
+
+    it('renders bare void elements without a closing tag', () => {
+      expect(render({ br: {} })).toBe('<br>');
+      expect(render({ hr: {} })).toBe('<hr>');
+    });
+
+    it('renders void elements correctly inside children', () => {
+      const html = render({
+        head: {
+          children: [
+            { meta: { charset: 'utf-8' } },
+            { title: { text: 'T' } }
+          ]
+        }
+      });
+      expect(html).toBe('<head><meta charset="utf-8"><title>T</title></head>');
+    });
+
+    it('drops content on void elements like a browser would', () => {
+      expect(render({ br: { text: 'ignored' } })).toBe('<br>');
+    });
+  });
+
   describe('Error Handling', () => {
     it('should throw errors for empty objects', () => {
       expect(() => render({})).toThrow('Invalid component structure');
