@@ -74,7 +74,8 @@ async function snapshotSubpath(packageDir, subpath, exportValue) {
   try {
     const mod = await import(pathToFileURL(absPath).href);
     const names = Object.keys(mod).sort();
-    return { subpath, exports: names, note: null };
+    const runtimeVersion = typeof mod.VERSION === 'string' ? mod.VERSION : null;
+    return { subpath, exports: names, runtimeVersion, note: null };
   } catch (err) {
     const tag = (err && err.code) || (err && err.name) || 'unknown';
     return { subpath, exports: null, note: `import failed (${tag})` };
@@ -114,7 +115,24 @@ async function snapshotPackage(pkg) {
     .filter(({ note }) => note && note.startsWith('target file missing'))
     .map(({ subpath, note }) => `${subpath}: ${note}`);
   const phantomTypes = checkTypesParity(pkg, sections);
-  return { name: pkg.name, dir: pkg.dir, missingTargets, phantomTypes, content: formatSnapshot(`@coherent.js/${pkg.name}`, sections) };
+  // A runtime VERSION export must match the manifest — hardcoded version
+  // strings drift silently otherwise (core shipped 1.0.0-beta.8 until rc.4).
+  const staleVersions = sections
+    .filter(({ runtimeVersion }) => runtimeVersion && runtimeVersion !== pkg.pkgJson.version)
+    .map(({ subpath, runtimeVersion }) => `${subpath}: runtime VERSION is ${runtimeVersion} but package.json says ${pkg.pkgJson.version}`);
+  return { name: pkg.name, dir: pkg.dir, missingTargets, phantomTypes, staleVersions, content: formatSnapshot(`@coherent.js/${pkg.name}`, sections) };
+}
+
+function reportStaleVersions(results) {
+  const broken = results.filter(({ staleVersions }) => staleVersions && staleVersions.length > 0);
+  if (broken.length === 0) return false;
+  console.error('❌ Stale VERSION exports (rebuild the package, or fix the constant):');
+  for (const { name, staleVersions } of broken) {
+    for (const entry of staleVersions) {
+      console.error(`  - ${name}: ${entry}`);
+    }
+  }
+  return true;
 }
 
 /**
@@ -235,7 +253,7 @@ async function runWrite() {
     writeFileSync(target, result.content, 'utf8');
     console.log(`  ✓ ${result.name}: wrote ${target.replace(REPO_ROOT + '/', '')}`);
   }
-  const failed = reportMissingTargets(results) | reportPhantomTypes(results);
+  const failed = reportMissingTargets(results) | reportPhantomTypes(results) | reportStaleVersions(results);
   if (failed) {
     process.exitCode = 1;
     return;
@@ -264,8 +282,9 @@ async function runCheck() {
   }
   const hasMissingTargets = reportMissingTargets(results);
   const hasPhantomTypes = reportPhantomTypes(results);
+  const hasStaleVersions = reportStaleVersions(results);
   if (failures.length === 0) {
-    if (hasMissingTargets || hasPhantomTypes) {
+    if (hasMissingTargets || hasPhantomTypes || hasStaleVersions) {
       process.exitCode = 1;
       return;
     }
