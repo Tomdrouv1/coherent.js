@@ -45,6 +45,38 @@ export interface RenderResult {
   getAllByText(text: string | RegExp): Element[];
 }
 
+/** String-level match returned by TestRendererResult query helpers */
+export interface TestRendererMatch {
+  text: string;
+  html: string;
+  exists: boolean;
+  testId?: string;
+  className?: string;
+}
+
+/**
+ * Result of renderComponent()/renderComponentAsync() — the rendered HTML
+ * plus string-level query helpers over it.
+ */
+export class TestRendererResult {
+  constructor(component: CoherentNode, html: string, container?: unknown);
+  component: CoherentNode;
+  html: string;
+  container: unknown;
+  getByTestId(testId: string): TestRendererMatch;
+  queryByTestId(testId: string): TestRendererMatch | null;
+  getByText(text: string | RegExp): TestRendererMatch;
+  queryByText(text: string | RegExp): TestRendererMatch | null;
+  getByClassName(className: string): TestRendererMatch;
+  queryByClassName(className: string): TestRendererMatch | null;
+  getAllByTagName(tagName: string): TestRendererMatch[];
+  exists(selector: string, type?: 'testId' | 'text' | 'className'): boolean;
+  getHTML(): string;
+  getComponent(): CoherentNode;
+  toSnapshot(): string;
+  debug(): void;
+}
+
 /**
  * Test renderer class
  */

@@ -12,13 +12,11 @@ import { join, resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { createRequire } from 'node:module';
 import process from 'node:process';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..');
 const PACKAGES_DIR = join(REPO_ROOT, 'packages');
-const require = createRequire(join(REPO_ROOT, 'package.json'));
 
 const { scaffoldProject } = await import(
   new URL('../packages/cli/src/generators/project-scaffold.js', import.meta.url)
@@ -78,7 +76,8 @@ function linkWorkspaceDeps(projectPath, hasFastify) {
     // The linked integrations package resolves the monorepo's fastify copy;
     // pin the project to the same version so TS sees one set of fastify types
     // (real installs share a single copy via peer resolution).
-    const fastifyVersion = require('fastify/package.json').version;
+    const fastifyManifest = fileURLToPath(import.meta.resolve('fastify/package.json'));
+    const fastifyVersion = JSON.parse(readFileSync(fastifyManifest, 'utf8')).version;
     pkg.pnpm = { overrides: { fastify: fastifyVersion } };
   }
   writeFileSync(pkgPath, JSON.stringify(pkg, null, 2));
@@ -114,9 +113,12 @@ async function bootAndProbe(projectPath, permutation) {
   let output = '';
   child.stdout.on('data', (d) => { output += d; });
   child.stderr.on('data', (d) => { output += d; });
+  const spawnFailure = new Promise((_, reject) => {
+    child.on('error', (error) => reject(new Error(`server process failed to spawn: ${error.message}`)));
+  });
 
   try {
-    const res = await waitForServer(port);
+    const res = await Promise.race([waitForServer(port), spawnFailure]);
     const html = await res.text();
     if (!html.includes('<h1>')) {
       throw new Error(`homepage did not render a heading:\n${html.slice(0, 300)}`);

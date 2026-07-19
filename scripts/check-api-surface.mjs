@@ -119,13 +119,19 @@ async function snapshotPackage(pkg) {
 
 /**
  * Extract value-export names declared in a .d.ts file.
- * Only definitive value declarations (function/const/class/let/var) are
- * returned — brace re-exports may cover interfaces and are intentionally
- * excluded so type-only names can't be misread as runtime values.
+ * Direct declarations (function/const/class/let/var) count as values.
+ * `export { a, b } from './x'` counts a braced name only when the source
+ * file declares it as a value — interfaces and other type-only names in a
+ * brace list can't be misread as runtime values.
  */
+const dtsValueCache = new Map();
+
 function parseDtsValueExports(dtsPath) {
-  const source = readFileSync(dtsPath, 'utf8');
+  if (dtsValueCache.has(dtsPath)) return dtsValueCache.get(dtsPath);
   const names = new Set();
+  dtsValueCache.set(dtsPath, names); // registered before recursion to break cycles
+  const source = readFileSync(dtsPath, 'utf8');
+
   const patterns = [
     /^export\s+(?:declare\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/gm,
     /^export\s+(?:declare\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)/gm,
@@ -135,6 +141,26 @@ function parseDtsValueExports(dtsPath) {
     let m;
     while ((m = re.exec(source)) !== null) names.add(m[1]);
   }
+
+  const reexportRe = /^export\s*\{([^}]+)\}\s*from\s*['"]([^'"]+)['"]/gm;
+  let m;
+  while ((m = reexportRe.exec(source)) !== null) {
+    const specifier = m[2];
+    if (!specifier.startsWith('.')) continue;
+    let targetPath = resolve(dirname(dtsPath), specifier.replace(/\.js$/i, '.d.ts'));
+    if (!existsSync(targetPath)) {
+      targetPath = resolve(dirname(dtsPath), specifier, 'index.d.ts');
+      if (!existsSync(targetPath)) continue;
+    }
+    const sourceValues = parseDtsValueExports(targetPath);
+    for (const entry of m[1].split(',')) {
+      const spec = entry.trim();
+      if (!spec || spec.startsWith('type ')) continue;
+      const [original, alias] = spec.split(/\s+as\s+/).map((s) => s.trim());
+      if (sourceValues.has(original)) names.add(alias || original);
+    }
+  }
+
   return names;
 }
 
@@ -164,7 +190,7 @@ function checkTypesParity(pkg, sections) {
     const runtime = new Set(section.exports);
     for (const name of declared) {
       if (!runtime.has(name)) {
-        phantoms.push(`${section.subpath}: \`${name}\` declared in ${typesPath.replace(REPO_ROOT + '/', '')} but not exported at runtime`);
+        phantoms.push(`${section.subpath}: \`${name}\` declared in ${typesPath.replace(`${REPO_ROOT}/`, '')} but not exported at runtime`);
       }
     }
   }
