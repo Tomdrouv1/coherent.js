@@ -13,12 +13,36 @@ export function Changelog() {
         // Timeline
         { section: { className: 'changelog-timeline', children: [
 
+          // v1.0.0-rc.4
+          { article: { className: 'changelog-entry', children: [
+            { div: { className: 'changelog-entry-header', children: [
+              { span: { className: 'changelog-version', text: 'v1.0.0-rc.4' } },
+              { span: { className: 'changelog-date', text: '2026-07-19' } },
+              { span: { className: 'changelog-badge changelog-badge-current', text: 'Current' } }
+            ] } },
+            { div: { className: 'changelog-changes', children: [
+              { h3: { text: 'Highlights' } },
+              { p: { text: 'Renderer correctness and type-truth follow-up to rc.3, plus the release guardrails that would have caught both bug classes earlier.' } },
+              { h3: { text: 'Fixed' } },
+              { ul: { children: [
+                { li: { text: 'Void elements (meta, img, input, br, link, …) render without closing tags — the renderer previously emitted invalid HTML like <meta></meta> on every page.' } },
+                { li: { text: '69 phantom type declarations removed across eight packages: .d.ts files declared values that do not exist at runtime, so broken consumer code typechecked and then crashed.' } },
+                { li: { text: 'tooling testing subpaths ship per-slice declaration files matching their runtime exports; ObjectRouter’s type gained its real methods (get/post/…, toExpressRouter, createServer).' } },
+                { li: { text: 'Express TypeScript scaffolds typecheck: typed error-middleware parameters.' } }
+              ] } },
+              { h3: { text: 'Added' } },
+              { ul: { children: [
+                { li: { text: 'Types-parity gate: CI fails when a declaration promises a value the runtime does not export.' } },
+                { li: { text: 'Scaffold boot E2E: generated projects are installed, typechecked, tested, booted, and probed over HTTP — nightly and on PRs.' } }
+              ] } }
+            ] } }
+          ] } },
+
           // v1.0.0-rc.3
           { article: { className: 'changelog-entry', children: [
             { div: { className: 'changelog-entry-header', children: [
               { span: { className: 'changelog-version', text: 'v1.0.0-rc.3' } },
-              { span: { className: 'changelog-date', text: '2026-07-19' } },
-              { span: { className: 'changelog-badge changelog-badge-current', text: 'Current' } }
+              { span: { className: 'changelog-date', text: '2026-07-19' } }
             ] } },
             { div: { className: 'changelog-changes', children: [
               { h3: { text: 'Highlights' } },
