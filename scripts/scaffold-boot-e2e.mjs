@@ -1,15 +1,8 @@
 #!/usr/bin/env node
 /**
- * Scaffold Boot E2E
- *
- * The gap that let rc.1 and rc.2 ship broken scaffolds: nothing installed,
- * typechecked, tested, and *booted* the projects `coherent create` produces.
- * This harness does exactly that for representative permutations, against the
- * workspace packages (linked via `link:` deps), so scaffold or integration
- * regressions surface before publish.
- *
- * Requires built packages (`pnpm run build:packages`) — run locally with
- * `pnpm run e2e:scaffold`, or via .github/workflows/scaffold-e2e.yml.
+ * Installs, typechecks, tests, and boots representative `coherent create`
+ * permutations against the workspace packages (linked via `link:` deps).
+ * Requires built packages (`pnpm run build:packages`).
  *
  * @module scripts/scaffold-boot-e2e
  */
@@ -98,7 +91,7 @@ async function waitForServer(port, timeoutMs = 30_000) {
       const res = await fetch(`http://127.0.0.1:${port}/`);
       if (res.ok) return res;
     } catch {
-      // not up yet
+      // server not accepting connections yet
     }
     await new Promise((r) => setTimeout(r, 300));
   }

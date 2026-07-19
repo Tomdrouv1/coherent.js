@@ -1,7 +1,4 @@
-/**
- * Types for the `@coherent.js/tooling/testing/utils` subpath — the slice of
- * the shared testing declarations this module actually exports at runtime.
- */
+// The slice of the shared testing declarations this subpath exports at runtime.
 export {
   act,
   cleanup,

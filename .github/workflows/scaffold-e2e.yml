@@ -1,10 +1,5 @@
 name: Scaffold Boot E2E
 
-# The gap that let rc.1 and rc.2 ship broken scaffolds: nothing installed,
-# typechecked, tested, and booted the projects `coherent create` produces.
-# This workflow runs scripts/scaffold-boot-e2e.mjs against the workspace
-# packages for representative permutations.
-
 on:
   workflow_dispatch:
   schedule:

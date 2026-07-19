@@ -1,7 +1,4 @@
-/**
- * Types for the `@coherent.js/tooling/testing/matchers` subpath — the slice of
- * the shared testing declarations this module actually exports at runtime.
- */
+// The slice of the shared testing declarations this subpath exports at runtime.
 export {
   assertions,
   customMatchers,

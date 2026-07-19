@@ -372,8 +372,7 @@ class HTMLRenderer extends BaseRenderer {
             ? `<${tagName} ${attributeString}>`
             : `<${tagName}>`;
 
-        // Void elements take no closing tag and cannot have content (per the
-        // HTML spec); any text/children are dropped like a browser would.
+        // Void elements: no closing tag; any text/children are dropped.
         if (isVoidElement(tagName)) {
             if (options.enableCache && this.cache && RendererUtils.isCacheable(element, options)) {
                 const cacheKey = RendererUtils.generateCacheKey(tagName, element);
