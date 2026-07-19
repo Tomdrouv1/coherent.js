@@ -60,8 +60,7 @@
 - @types/node 24.10.1 - Node.js type definitions
 
 **Build & Dev:**
-- @codecov/vite-plugin 1.9.1 - Coverage reporting integration
-- concurrently 9.2.1 - Running multiple commands in parallel
+- @codecov/vite-plugin 2.0.1 - Coverage reporting integration
 
 ## Configuration
 
