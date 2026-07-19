@@ -13,12 +13,36 @@ export function Changelog() {
         // Timeline
         { section: { className: 'changelog-timeline', children: [
 
+          // v1.0.0-rc.5
+          { article: { className: 'changelog-entry', children: [
+            { div: { className: 'changelog-entry-header', children: [
+              { span: { className: 'changelog-version', text: 'v1.0.0-rc.5' } },
+              { span: { className: 'changelog-date', text: '2026-07-19' } },
+              { span: { className: 'changelog-badge changelog-badge-current', text: 'Current' } }
+            ] } },
+            { div: { className: 'changelog-changes', children: [
+              { h3: { text: 'Highlights' } },
+              { p: { text: 'Dependency-truth release: what the published packages declare now matches what they need at runtime, and the audit is clean.' } },
+              { h3: { text: 'Fixed' } },
+              { ul: { children: [
+                { li: { text: 'core VERSION reports the real version — it had been hardcoded at 1.0.0-beta.8 since that release. Now substituted from the manifest at build time, with a CI gate so it cannot drift again.' } },
+                { li: { text: 'coherent-language-server no longer crashes on a clean install: the LSP uses the TypeScript compiler API at runtime, and typescript is now a real dependency of @coherent.js/tooling.' } },
+                { li: { text: 'CLI: ws bumped off an exact-pinned vulnerable version (memory-exhaustion DoS, fixed in 8.21.0), and the optional bundler peers (rollup, vite, webpack) are ranges instead of exact pins — no more unmet-peer warnings on newer versions.' } },
+                { li: { text: 'database JSDoc examples import from @coherent.js/database (was the nonexistent @coherent/database).' } }
+              ] } },
+              { h3: { text: 'Changed' } },
+              { ul: { children: [
+                { li: { text: 'Dependencies updated to latest: commander 15 and ora 9 (cli), fastify-plugin 6 (integrations), vscode-languageserver/client 10 (tooling + VS Code extension).' } },
+                { li: { text: 'pnpm audit reports zero vulnerabilities — overrides added for the remaining low/moderate transitive advisories.' } }
+              ] } }
+            ] } }
+          ] } },
+
           // v1.0.0-rc.4
           { article: { className: 'changelog-entry', children: [
             { div: { className: 'changelog-entry-header', children: [
               { span: { className: 'changelog-version', text: 'v1.0.0-rc.4' } },
-              { span: { className: 'changelog-date', text: '2026-07-19' } },
-              { span: { className: 'changelog-badge changelog-badge-current', text: 'Current' } }
+              { span: { className: 'changelog-date', text: '2026-07-19' } }
             ] } },
             { div: { className: 'changelog-changes', children: [
               { h3: { text: 'Highlights' } },

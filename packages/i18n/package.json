@@ -1,6 +1,6 @@
 {
   "name": "@coherent.js/i18n",
-  "version": "1.0.0-rc.4",
+  "version": "1.0.0-rc.5",
   "description": "Internationalization support for Coherent.js applications",
   "type": "module",
   "main": "./dist/index.js",

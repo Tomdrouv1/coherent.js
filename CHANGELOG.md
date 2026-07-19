@@ -19,7 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
                    ├─ Enhanced router and forms
                    └─ Improved documentation
 
-📅 2026-07-19  →  v1.0.0-rc.4   (CURRENT)
+📅 2026-07-19  →  v1.0.0-rc.5   (CURRENT)
+                   ├─ core VERSION reports the real version (was hardcoded beta.8)
+                   ├─ LSP's typescript dependency declared; CLI ws/peer ranges fixed
+                   ├─ Dependencies updated to latest majors
+                   └─ pnpm audit: zero vulnerabilities
+
+📅 2026-07-19  →  v1.0.0-rc.4   (RELEASED)
                    ├─ Void elements render valid HTML
                    ├─ 69 phantom type declarations removed; types-parity gate
                    └─ Scaffold boot E2E in CI
@@ -75,6 +81,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ```
 
 ## [Unreleased]
+
+## [1.0.0-rc.5] - 2026-07-19
+
+Dependency-truth release: what the published packages declare now matches what they need at runtime, and the audit is clean.
+
+### Fixed
+
+- **core: `VERSION` reports the real version.** The constant was hardcoded at `1.0.0-beta.8` and had been stale for every release since. It is now substituted from the manifest at build time (esbuild `define`, a literal in both the ESM and CJS bundles) with a package.json fallback when running from source, and `check-api-surface` gained a stale-VERSION gate comparing each package's runtime `VERSION` export against its manifest so it cannot drift again.
+- **tooling: `typescript` is a real dependency.** The LSP providers import the TypeScript compiler API at runtime, but `typescript` was declared only as a devDependency — `coherent-language-server` crashed with `ERR_MODULE_NOT_FOUND` on a clean install. Pinned to `^5.9.3`: the Go-native typescript 7 does not ship the programmatic compiler API the analyzer is built on.
+- **cli: `ws` no longer exact-pinned to a vulnerable version.** The `8.20.1` pin shipped the ws memory-exhaustion DoS to npm consumers — workspace overrides don't travel with published packages. Now `^8.21.1`.
+- **cli: optional bundler peers are ranges** (`rollup ^4.53.0`, `vite >=6 <9`, `webpack ^5.104.1`) instead of exact pins, so consumers on any newer patch/minor stop getting unmet-peer warnings.
+- **database: JSDoc examples import from `@coherent.js/database`** (was the nonexistent `@coherent/database`).
+
+### Changed
+
+- **Dependencies updated to latest:** commander 12 → 15 and ora 8 → 9 (cli), fastify-plugin 4 → 6 (integrations; peer range unchanged — the plugin passes explicit `fastify: '>=4.0.0'` metadata, verified against the fastify scaffold boot E2E), vscode-languageserver/client 9 → 10 in tandem (tooling + vscode-extension; v10 dropped the `/node.js` export subpath).
+- Legacy `scripts/build.js` deleted — bit-rotted (referenced a nonexistent entry point) and invoked by nothing.
+
+### Security
+
+- pnpm overrides for the remaining low/moderate transitive advisories (qs, postcss, ip-address, js-yaml, esbuild, webpack, cookie, @tootallnate/once). `pnpm audit` now reports **zero vulnerabilities**.
 
 ## [1.0.0-rc.4] - 2026-07-19
 
