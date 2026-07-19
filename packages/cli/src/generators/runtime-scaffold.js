@@ -161,7 +161,7 @@ function matchRoute(routePattern, urlPath, requestMethod, routeMethod) {
  * Generate Express server setup
  */
 export function generateExpressServer(options = {}) {
-  const { port = 3000, hasApi = false, hasDatabase = false, hasAuth = false } = options;
+  const { port = 3000, hasApi = false, hasDatabase = false, hasAuth = false, isTypeScript = false } = options;
 
   const imports = [
     `import express from 'express';`,
@@ -216,7 +216,9 @@ app.get('/', (_req, res) => {
 });
 
 // Error handling (Express identifies error middleware by its 4-parameter signature)
-app.use((err, _req, res, _next) => {
+app.use((${isTypeScript
+    ? 'err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction'
+    : 'err, _req, res, _next'}) => {
   console.error(err.stack);
   res.status(500).send('Something broke!');
 });

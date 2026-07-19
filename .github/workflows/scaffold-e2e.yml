@@ -1,0 +1,49 @@
+name: Scaffold Boot E2E
+
+# The gap that let rc.1 and rc.2 ship broken scaffolds: nothing installed,
+# typechecked, tested, and booted the projects `coherent create` produces.
+# This workflow runs scripts/scaffold-boot-e2e.mjs against the workspace
+# packages for representative permutations.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Nightly at 04:17 UTC
+    - cron: '17 4 * * *'
+  pull_request:
+    paths:
+      - 'packages/cli/**'
+      - 'packages/integrations/**'
+      - 'packages/core/**'
+      - 'packages/api/**'
+      - 'scripts/scaffold-boot-e2e.mjs'
+      - '.github/workflows/scaffold-e2e.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  scaffold-boot:
+    name: Scaffold, install, typecheck, test, boot
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm run build:packages
+
+      - name: Run scaffold boot E2E
+        run: node scripts/scaffold-boot-e2e.mjs

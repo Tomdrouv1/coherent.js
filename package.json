@@ -66,6 +66,7 @@
     "perf:gate": "node benchmarks/perf-gate.js",
     "test:node": "pnpm -r run test:node",
     "e2e": "playwright test",
+    "e2e:scaffold": "node scripts/scaffold-boot-e2e.mjs",
     "e2e:install": "playwright install --with-deps chromium",
     "e2e:report": "playwright show-report"
   },
