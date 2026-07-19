@@ -19,6 +19,10 @@ export function generateTsConfig() {
       allowSyntheticDefaultImports: true,
       esModuleInterop: true,
 
+      // Optional package scaffolding is generated as plain .js; compile it
+      // alongside the .ts sources so imports resolve and dist/ is complete.
+      allowJs: true,
+
       // Emit
       outDir: './dist',
       declaration: true,

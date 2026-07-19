@@ -4,8 +4,7 @@
  * Only active in development environment for zero production overhead
  */
 
-import { performanceMonitor } from '@coherent.js/core/src/performance/monitor.js';
-import { validateComponent, isCoherentObject } from '@coherent.js/core/src/core/object-utils.js';
+import { performanceMonitor, validateComponent, isCoherentObject } from '@coherent.js/core';
 
 /**
  * Main DevTools class

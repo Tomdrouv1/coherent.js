@@ -6,7 +6,7 @@ import { writeFileSync, mkdirSync, copyFileSync, constants, readFileSync, append
 import { join, dirname } from 'node:path';
 import { execSync } from 'node:child_process';
 import { getCLIVersion } from '../utils/version.js';
-import { generateServerFile, getRuntimeDependencies } from './runtime-scaffold.js';
+import { generateServerFile, getRuntimeDependencies, getRuntimeTypeDependencies } from './runtime-scaffold.js';
 import { generateDatabaseScaffolding } from './database-scaffold.js';
 import { generateAuthScaffolding } from './auth-scaffold.js';
 import { generateDockerScaffolding, generateHealthCheck } from './docker-scaffold.js';
@@ -180,7 +180,7 @@ export async function scaffoldProject(projectPath, options) {
 
   // Generate optional package scaffolding
   if (packages.length > 0) {
-    const { files } = generatePackageScaffolding(packages);
+    const { files } = generatePackageScaffolding(packages, { projectName: name });
 
     Object.entries(files).forEach(([filePath, content]) => {
       const fullPath = join(projectPath, filePath);
@@ -190,7 +190,11 @@ export async function scaffoldProject(projectPath, options) {
   }
 
   // Generate common files
-  generateCommonFiles(projectPath, name);
+  generateCommonFiles(projectPath, name, {
+    fileExtension,
+    packageManager,
+    hasApi: packages.includes('api') || !!auth
+  });
 
   // Install dependencies
   if (!skipInstall) {
@@ -245,18 +249,19 @@ function generatePackageJson(name, options) {
       build: 'tsc',
       start: 'node dist/index.js',
       typecheck: 'tsc --noEmit',
-      test: 'tsx tests/*.test.ts'
+      test: 'vitest run'
     } : {
       dev: 'node src/index.js',
       build: 'coherent build',
       start: 'node src/index.js',
-      test: 'node --test tests/*.test.js'
+      test: 'vitest run'
     },
     dependencies: {
       '@coherent.js/core': `^${cliVersion}`
     },
     devDependencies: {
-      '@coherent.js/cli': `^${cliVersion}`
+      '@coherent.js/cli': `^${cliVersion}`,
+      vitest: '^4.1.10'
     }
   };
 
@@ -265,6 +270,7 @@ function generatePackageJson(name, options) {
     const tsDeps = getTypeScriptDependencies();
     Object.assign(base.devDependencies, tsDeps);
     base.devDependencies.tsx = '^4.19.2'; // For running TypeScript files directly
+    Object.assign(base.devDependencies, getRuntimeTypeDependencies(runtime));
 
     // Add @types for auth packages if auth is enabled
     if (auth) {
@@ -436,7 +442,10 @@ export function Button(props = {}) {
 /**
  * Generate common files (README, gitignore, etc.)
  */
-function generateCommonFiles(projectPath, name) {
+function generateCommonFiles(projectPath, name, options = {}) {
+  const { fileExtension = '.js', packageManager = 'npm', hasApi = false } = options;
+  const runCmd = packageManager === 'npm' ? 'npm run' : packageManager;
+
   // README.md
   const readme = `# ${name}
 
@@ -446,16 +455,16 @@ A Coherent.js application built with pure JavaScript objects.
 
 \`\`\`bash
 # Install dependencies
-pnpm install
+${packageManager} install
 
 # Start development server
-pnpm run dev
+${runCmd} dev
 
 # Build for production
-pnpm run build
+${runCmd} build
 
 # Run tests
-pnpm test
+${packageManager} test
 \`\`\`
 
 ## Project Structure
@@ -464,9 +473,9 @@ pnpm test
 src/
   components/     # Reusable components
   pages/         # Page components
-  api/           # API routes
-  utils/         # Utility functions
-  index.js       # Main entry point
+${hasApi ? `  api/           # API routes
+` : ''}  utils/         # Utility functions
+  index${fileExtension}       # Main entry point
 public/          # Static assets
 tests/           # Test files
 \`\`\`
@@ -474,7 +483,7 @@ tests/           # Test files
 ## Learn More
 
 - [Coherent.js Documentation](https://github.com/Tomdrouv1/coherent.js)
-- [API Reference](https://github.com/Tomdrouv1/coherent.js/tree/main/docs/api-reference.md)
+- [API Reference](https://github.com/Tomdrouv1/coherent.js/blob/main/docs/api/reference.md)
 
 ## License
 
@@ -560,5 +569,5 @@ describe('Basic Component Rendering', () => {
   });
 });`;
 
-  writeFileSync(join(projectPath, 'tests/basic.test.js'), testFile);
+  writeFileSync(join(projectPath, `tests/basic.test${fileExtension}`), testFile);
 }

@@ -26,25 +26,15 @@ async function createUser(data) {
   return { id: 1, ...data };
 }
 
-// Router Definitions (for Express/Fastify/Koa usage)
-router.get('/users/:id', {
-  params: {
-    id: { type: 'number', required: true }
-  },
-  handler: async (req, res) => {
-    const { id } = req.params;
-    return getUserById(id);
-  }
+// Router Definitions (for Express/Fastify/Koa usage).
+// Handlers return plain data; the router serializes objects as JSON.
+router.get('/users/:id', async (req) => {
+  const id = Number(req.params.id);
+  return getUserById(id);
 });
 
-router.post('/users', {
-  body: {
-    name: { type: 'string', required: true, minLength: 2 },
-    email: { type: 'string', required: true, pattern: /^[^@]+@[^@]+\\.[^@]+$/ }
-  },
-  handler: async (req, res) => {
-    return createUser(req.body);
-  }
+router.post('/users', async (req) => {
+  return createUser(req.body);
 });
 
 // Handler for GET /api/users/:id (Built-in Server)
@@ -184,22 +174,21 @@ export function InteractiveCounter(props = {}) {
   };
 }
 
-// Client-side hydration logic
-if (typeof window !== 'undefined') {
-  export function hydrateCounter(element) {
-    let count = parseInt(element.getAttribute('data-count') || '0');
-    const valueSpan = element.querySelector('.counter-value');
+// Client-side hydration logic (safe to import on the server; only does
+// anything when called with a DOM element in the browser)
+export function hydrateCounter(element) {
+  let count = parseInt(element.getAttribute('data-count') || '0');
+  const valueSpan = element.querySelector('.counter-value');
 
-    element.addEventListener('click', (e) => {
-      if (e.target.matches('[data-action="increment"]')) {
-        count++;
-        valueSpan.textContent = count;
-      } else if (e.target.matches('[data-action="decrement"]')) {
-        count--;
-        valueSpan.textContent = count;
-      }
-    });
-  }
+  element.addEventListener('click', (e) => {
+    if (e.target.matches('[data-action="increment"]')) {
+      count++;
+      valueSpan.textContent = count;
+    } else if (e.target.matches('[data-action="decrement"]')) {
+      count--;
+      valueSpan.textContent = count;
+    }
+  });
 }
 `;
 
@@ -217,24 +206,31 @@ if (typeof window !== 'undefined') {
  */
 export function generateI18nScaffolding() {
   const config = `
-import { createI18n } from '@coherent.js/i18n';
+import { readFileSync } from 'node:fs';
+import { createTranslator } from '@coherent.js/i18n';
 
-export const i18n = createI18n({
+const loadLocale = (locale) =>
+  JSON.parse(readFileSync(new URL(\`./locales/\${locale}.json\`, import.meta.url), 'utf8'));
+
+export const translator = createTranslator({
   defaultLocale: 'en',
-  locales: ['en', 'fr', 'es'],
-  fallbackLocale: 'en',
-  messages: {
-    en: () => import('./locales/en.json'),
-    fr: () => import('./locales/fr.json'),
-    es: () => import('./locales/es.json')
-  }
+  fallbackLocale: 'en'
 });
+
+for (const locale of ['en', 'fr', 'es']) {
+  translator.addTranslations(locale, loadLocale(locale));
+}
+
+// Usage:
+//   translator.t('common.welcome')
+//   translator.t('common.hello', { name: 'Ada' })
+//   translator.setLocale('fr')
 `;
 
   const enLocale = JSON.stringify({
     common: {
       welcome: 'Welcome',
-      hello: 'Hello, {name}!',
+      hello: 'Hello, {{name}}!',
       loading: 'Loading...'
     },
     nav: {
@@ -247,7 +243,7 @@ export const i18n = createI18n({
   const frLocale = JSON.stringify({
     common: {
       welcome: 'Bienvenue',
-      hello: 'Bonjour, {name}!',
+      hello: 'Bonjour, {{name}}!',
       loading: 'Chargement...'
     },
     nav: {
@@ -260,7 +256,7 @@ export const i18n = createI18n({
   const esLocale = JSON.stringify({
     common: {
       welcome: 'Bienvenido',
-      hello: '¡Hola, {name}!',
+      hello: '¡Hola, {{name}}!',
       loading: 'Cargando...'
     },
     nav: {
@@ -286,53 +282,18 @@ export const i18n = createI18n({
  */
 export function generateFormsScaffolding() {
   const exampleForm = `
-import { createFormBuilder, validators } from '@coherent.js/forms';
+import { createFormBuilder } from '@coherent.js/forms';
 
-export function ContactForm(props = {}) {
+export function ContactForm() {
   const form = createFormBuilder({
-    fields: {
-      name: {
-        type: 'text',
-        label: 'Name',
-        required: true,
-        validators: [validators.minLength(2)]
-      },
-      email: {
-        type: 'email',
-        label: 'Email',
-        required: true,
-        validators: [validators.email()]
-      },
-      message: {
-        type: 'textarea',
-        label: 'Message',
-        required: true,
-        validators: [validators.minLength(10)]
-      }
-    },
-    onSubmit: async (data) => {
-      // Handle form submission
-      console.log('Form submitted:', data);
-    }
+    fields: [
+      { name: 'name', type: 'text', label: 'Name', required: true },
+      { name: 'email', type: 'email', label: 'Email', required: true },
+      { name: 'message', type: 'textarea', label: 'Message', required: true }
+    ]
   });
 
-  return {
-    form: {
-      className: 'contact-form',
-      children: [
-        form.renderField('name'),
-        form.renderField('email'),
-        form.renderField('message'),
-        {
-          button: {
-            type: 'submit',
-            className: 'submit-button',
-            text: 'Submit'
-          }
-        }
-      ]
-    }
-  };
+  return form.buildForm({ submitText: 'Submit' });
 }
 `;
 
@@ -349,22 +310,18 @@ export function ContactForm(props = {}) {
  */
 export function generateDevtoolsScaffolding() {
   const config = `
-import { setupDevtools } from '@coherent.js/devtools';
+import { inspect, createProfiler, createLogger } from '@coherent.js/devtools';
 
-export function initDevtools(app) {
-  if (process.env.NODE_ENV === 'development') {
-    setupDevtools(app, {
-      // Enable component inspector
-      inspector: true,
-      // Enable performance profiling
-      profiler: true,
-      // Enable state debugger
-      stateDebugger: true,
-      // Custom panel port (optional)
-      port: 3001
-    });
+// Dev-time helpers — import these where useful during development.
+export const profiler = createProfiler();
+export const logger = createLogger();
 
-    console.log('🛠️  Devtools enabled at http://localhost:3001');
+/**
+ * Log a component tree analysis to the console (development only).
+ */
+export function inspectComponent(component) {
+  if (process.env.NODE_ENV !== 'production') {
+    return inspect(component);
   }
 }
 `;
@@ -380,35 +337,33 @@ export function initDevtools(app) {
 /**
  * Generate @coherent.js/seo scaffolding
  */
-export function generateSeoScaffolding() {
+export function generateSeoScaffolding(projectName = 'My App') {
   const metaHelper = `
-import { createMetaTags, generateSitemap } from '@coherent.js/seo';
+import { generateMeta, generateSitemap } from '@coherent.js/seo';
 
 export function getPageMeta(page, data = {}) {
   const baseUrl = process.env.BASE_URL || 'https://example.com';
 
   const metaConfigs = {
     home: {
-      title: 'Welcome to Coherent.js',
-      description: 'A high-performance server-side rendering framework',
-      image: \`\${baseUrl}/images/og-home.jpg\`,
-      url: baseUrl
+      title: 'Welcome to ${projectName}',
+      description: 'A ${projectName} application built with Coherent.js',
+      image: { url: \`\${baseUrl}/images/og-home.jpg\` },
+      canonical: baseUrl
     },
     about: {
-      title: 'About Us - Coherent.js',
-      description: 'Learn more about Coherent.js and our mission',
-      image: \`\${baseUrl}/images/og-about.jpg\`,
-      url: \`\${baseUrl}/about\`
+      title: 'About - ${projectName}',
+      description: 'Learn more about ${projectName}',
+      image: { url: \`\${baseUrl}/images/og-about.jpg\` },
+      canonical: \`\${baseUrl}/about\`
     }
   };
 
   const config = metaConfigs[page] || metaConfigs.home;
 
-  return createMetaTags({
+  return generateMeta({
     ...config,
-    siteName: 'Coherent.js',
-    twitterHandle: '@coherent.js',
-    type: 'website',
+    siteName: '${projectName}',
     locale: 'en_US',
     ...data
   });
@@ -436,61 +391,36 @@ export function getSitemap() {
  */
 export function generateTestingScaffolding() {
   const testHelper = `
-import { render, createTestContext } from '@coherent.js/tooling/testing';
+import { renderComponent } from '@coherent.js/tooling/testing';
 import { describe, it, expect } from 'vitest';
 
 /**
- * Example component test
+ * Reusable smoke test for any component
  */
 export function testComponent(Component, props = {}) {
   describe(Component.name || 'Component', () => {
-    it('should render without errors', () => {
-      const html = render(Component(props));
-      expect(html).toBeTruthy();
+    it('renders without errors', () => {
+      const { html } = renderComponent(Component(props));
       expect(html).toBeTypeOf('string');
+      expect(html.length).toBeGreaterThan(0);
     });
-
-    it('should contain expected content', () => {
-      const html = render(Component(props));
-      // Add your assertions here
-    });
-  });
-}
-
-/**
- * Create a test context with mocked dependencies
- */
-export function createMockContext(overrides = {}) {
-  return createTestContext({
-    req: {
-      url: '/',
-      method: 'GET',
-      headers: {},
-      ...overrides.req
-    },
-    res: {
-      status: 200,
-      headers: {},
-      ...overrides.res
-    },
-    ...overrides
   });
 }
 `;
 
   const exampleTest = `
 import { describe, it, expect } from 'vitest';
-import { render } from '@coherent.js/tooling/testing';
-import { HomePage } from '../src/components/HomePage.js';
+import { renderComponent } from '@coherent.js/tooling/testing';
+import { HomePage } from '../../src/components/HomePage.js';
 
 describe('HomePage', () => {
   it('should render the home page', () => {
-    const html = render(HomePage({}));
+    const { html } = renderComponent(HomePage({}));
     expect(html).toContain('Welcome');
   });
 
   it('should render with custom props', () => {
-    const html = render(HomePage({ title: 'Custom Title' }));
+    const { html } = renderComponent(HomePage({ title: 'Custom Title' }));
     expect(html).toContain('Custom Title');
   });
 });
@@ -525,7 +455,8 @@ export function getPackageDependencies(packageName) {
 /**
  * Generate scaffolding for selected packages
  */
-export function generatePackageScaffolding(packages) {
+export function generatePackageScaffolding(packages, options = {}) {
+  const { projectName = 'My App' } = options;
   const files = {};
   const dependencies = {};
 
@@ -549,7 +480,7 @@ export function generatePackageScaffolding(packages) {
         scaffolding = generateDevtoolsScaffolding();
         break;
       case 'seo':
-        scaffolding = generateSeoScaffolding();
+        scaffolding = generateSeoScaffolding(projectName);
         break;
       case 'testing':
         scaffolding = generateTestingScaffolding();

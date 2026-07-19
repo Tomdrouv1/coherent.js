@@ -53,12 +53,8 @@ coherent create my-app --skip-install --skip-git
 - `--skip-git` - Skip git initialization
 
 **Available Templates:**
-- `basic` - Simple Coherent.js app with routing
+- `basic` - Simple Coherent.js app with routing (choose any runtime interactively)
 - `fullstack` - API + SSR with database integration (includes runtime, database, and package selection)
-- `express` - Coherent.js with Express.js (deprecated - use basic with Express runtime)
-- `fastify` - Coherent.js with Fastify (deprecated - use basic with Fastify runtime)
-- `components` - Reusable component library
-- `custom` - **New!** Choose your own runtime, database, and packages
 
 **Interactive Setup:**
 
@@ -353,21 +349,22 @@ The CLI automatically detects your project setup and adapts accordingly:
 
 ## 🧪 Testing
 
-Generated components and pages include test files:
+Generated components and pages include test files (Vitest is added to the
+scaffolded project's devDependencies):
 
 ```javascript
 // Button.test.js
-import { test } from 'node:test';
-import assert from 'node:assert';
+import { describe, it, expect } from 'vitest';
 import { render } from '@coherent.js/core';
 import { Button } from './Button.js';
 
-test('Button renders correctly', () => {
-  const component = Button({ text: 'Test' });
-  const html = render(component);
-  
-  assert(html.includes('Test'));
-  assert(html.includes('<button'));
+describe('Button', () => {
+  it('renders correctly', () => {
+    const html = render(Button({ text: 'Test' }));
+
+    expect(html).toContain('Test');
+    expect(html).toContain('<button');
+  });
 });
 ```
 
@@ -492,7 +489,7 @@ MIT © [Coherent.js Team](https://github.com/Tomdrouv1/coherent.js)
 ## 🔗 Links
 
 - [Coherent.js Documentation](https://github.com/Tomdrouv1/coherent.js)
-- [API Reference](https://github.com/Tomdrouv1/coherent.js/blob/main/docs/api-reference.md)
+- [API Reference](https://github.com/Tomdrouv1/coherent.js/blob/main/docs/api/reference.md)
 - [Examples](https://github.com/Tomdrouv1/coherent.js/tree/main/examples)
 - [Issues & Bug Reports](https://github.com/Tomdrouv1/coherent.js/issues)
 

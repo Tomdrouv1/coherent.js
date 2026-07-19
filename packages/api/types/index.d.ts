@@ -183,7 +183,19 @@ export interface ObjectRouter {
   addRoutes(routes: RouteObject): void;
   use(middleware: Middleware): void;
   use(path: string, middleware: Middleware): void;
-  handle(req: ApiRequest, res: ApiResponse, next?: NextFunction): void;
+  /**
+   * Handle a raw Node request/response pair. The router parses query, params
+   * and body itself, so a plain IncomingMessage is accepted.
+   */
+  handle(
+    req: IncomingMessage,
+    res: ServerResponse,
+    options?: {
+      corsOrigin?: string;
+      rateLimit?: { windowMs?: number; maxRequests?: number };
+      maxBodySize?: number;
+    }
+  ): Promise<void>;
   getRoutes(): RouteObject;
   mount(app: any): void;
 }

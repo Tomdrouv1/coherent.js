@@ -4,10 +4,11 @@
  */
 
 import { describe, test, expect, beforeAll, afterAll } from 'vitest';
-import { mkdtemp, rm, readFile } from 'fs/promises';
+import { mkdtemp, rm, readFile, readdir } from 'fs/promises';
 import { existsSync } from 'fs';
-import { join } from 'path';
+import { join, extname } from 'path';
 import { tmpdir } from 'os';
+import { transform } from 'esbuild';
 import { scaffoldProject } from '../src/generators/project-scaffold.js';
 
 // Test utilities
@@ -184,6 +185,77 @@ describe('Scaffold Matrix Tests', () => {
           }
         });
       }
+    }
+  });
+
+  describe('P0: every generated source file parses', () => {
+    const allPackages = ['api', 'client', 'i18n', 'forms', 'devtools', 'seo', 'testing'];
+    const configs = [
+      { label: 'js-built-in-all-packages', language: 'javascript', runtime: 'built-in', packages: allPackages },
+      { label: 'js-koa-api', language: 'javascript', runtime: 'koa', packages: ['api'] },
+      { label: 'ts-fastify-all-packages', language: 'typescript', runtime: 'fastify', packages: allPackages },
+      { label: 'ts-express-api', language: 'typescript', runtime: 'express', packages: ['api'] }
+    ];
+
+    for (const config of configs) {
+      test(`${config.label}: all .js/.ts files are syntactically valid`, async () => {
+        const tempDir = await createTempDir();
+
+        try {
+          await scaffoldProject(tempDir, {
+            name: config.label,
+            template: 'basic',
+            runtime: config.runtime,
+            language: config.language,
+            packages: config.packages,
+            skipInstall: true,
+            skipGit: true
+          });
+
+          const entries = await readdir(tempDir, { recursive: true, withFileTypes: true });
+          const sourceFiles = entries
+            .filter((e) => e.isFile() && ['.js', '.ts'].includes(extname(e.name)))
+            .map((e) => join(e.parentPath, e.name));
+          expect(sourceFiles.length).toBeGreaterThan(3);
+
+          for (const file of sourceFiles) {
+            const code = await readFile(file, 'utf-8');
+            const loader = extname(file) === '.ts' ? 'ts' : 'js';
+            // transform() throws on any syntax error, with the offending file named
+            await transform(code, { loader }).catch((error) => {
+              throw new Error(`Generated file does not parse: ${file}\n${error.message}`);
+            });
+          }
+        } finally {
+          await cleanupTempDir(tempDir);
+        }
+      });
+
+      test(`${config.label}: test setup is runnable (vitest dep, matching script and file)`, async () => {
+        const tempDir = await createTempDir();
+
+        try {
+          await scaffoldProject(tempDir, {
+            name: config.label,
+            template: 'basic',
+            runtime: config.runtime,
+            language: config.language,
+            packages: config.packages,
+            skipInstall: true,
+            skipGit: true
+          });
+
+          const pkg = JSON.parse(await readFile(join(tempDir, 'package.json'), 'utf-8'));
+          const ext = config.language === 'typescript' ? '.ts' : '.js';
+
+          // The test file the scaffold writes must be runnable by the test script
+          expect(pkg.scripts.test).toBe('vitest run');
+          expect(pkg.devDependencies.vitest).toBeDefined();
+          expect(existsSync(join(tempDir, `tests/basic.test${ext}`))).toBe(true);
+        } finally {
+          await cleanupTempDir(tempDir);
+        }
+      });
     }
   });
 
