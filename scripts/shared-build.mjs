@@ -47,10 +47,15 @@ export async function buildPackage({
   additionalConfig = {},
   formats = ['esm', 'cjs'] // Allow specifying which formats to build
 }) {
+  const manifest = JSON.parse(await readFile('package.json', 'utf-8'));
   const config = {
     ...commonConfig,
     external: [...commonConfig.external, ...external],
     ...additionalConfig
+  };
+  config.define = {
+    ...config.define,
+    __COHERENT_VERSION__: JSON.stringify(manifest.version)
   };
 
   console.log(`🏗️  Building ${packageName}...`);

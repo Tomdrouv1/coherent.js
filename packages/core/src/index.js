@@ -2,13 +2,13 @@
  * Coherent.js - Object-Based Rendering Framework
  * A pure JavaScript framework for server-side rendering using natural object syntax
  *
- * @version 1.0.0-beta.8
  * @author Coherent Framework Team
  * @license MIT
  */
 
 
 // Performance monitoring
+import { readFileSync } from 'node:fs';
 import { performanceMonitor } from './performance/monitor.js';
 
 // Unified HTML renderer
@@ -425,8 +425,13 @@ export function deepClone(obj) {
   return cloned;
 }
 
-// Version info — hardcoded to avoid import.meta.url issues in CJS builds
-export const VERSION = '1.0.0-beta.8';
+/* global __COHERENT_VERSION__ */
+// Substituted with the manifest version by esbuild `define` at build time
+// (a literal, so it works in both the ESM and CJS bundles); the fallback
+// covers running from source inside the monorepo.
+export const VERSION = typeof __COHERENT_VERSION__ !== 'undefined'
+  ? __COHERENT_VERSION__
+  : JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 
 // Performance monitoring export
 export { performanceMonitor };
