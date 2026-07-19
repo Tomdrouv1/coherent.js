@@ -47,7 +47,7 @@ export const DEFAULT_DB_CONFIG = {
  * @returns {DatabaseManager} Configured database manager
  * 
  * @example
- * import { setupDatabase } from '@coherent/database';
+ * import { setupDatabase } from '@coherent.js/database';
  * 
  * const db = setupDatabase({
  *   type: 'postgresql',

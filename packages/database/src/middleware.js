@@ -13,7 +13,7 @@
  * @returns {Function} Middleware function
  * 
  * @example
- * import { withDatabase } from '@coherent/database';
+ * import { withDatabase } from '@coherent.js/database';
  * 
  * const router = new SimpleRouter();
  * router.use(withDatabase(db));
