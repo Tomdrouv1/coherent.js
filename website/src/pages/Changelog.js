@@ -13,12 +13,37 @@ export function Changelog() {
         // Timeline
         { section: { className: 'changelog-timeline', children: [
 
+          // v1.0.0-rc.6
+          { article: { className: 'changelog-entry', children: [
+            { div: { className: 'changelog-entry-header', children: [
+              { span: { className: 'changelog-version', text: 'v1.0.0-rc.6' } },
+              { span: { className: 'changelog-date', text: '2026-07-20' } },
+              { span: { className: 'changelog-badge changelog-badge-current', text: 'Current' } }
+            ] } },
+            { div: { className: 'changelog-changes', children: [
+              { h3: { text: 'Highlights' } },
+              { p: { text: 'Scaffold-integrity and packaging release: generated auth actually authenticates, MongoDB works against a real API, and the packages are ESM-only.' } },
+              { h3: { text: 'Fixed' } },
+              { ul: { children: [
+                { li: { text: 'Auth scaffolds hash passwords with scrypt and verify them at login — generated register handlers previously discarded the password and login accepted any password for a known email.' } },
+                { li: { text: 'TypeScript auth and database scaffolds pass strict typecheck; auth-only scaffolds boot; session auth is only offered where routes exist (express); auth requires a SQL database.' } },
+                { li: { text: 'MongoDB repaired end to end: the adapter gained collection() (it had no write operations), the manager exposes it, the generated config/init use the real connection shape, and models normalize _id to a string id.' } },
+                { li: { text: 'MySQL scaffold model reads the adapter\u2019s real result shape (result.rows) — every method silently returned undefined before.' } },
+                { li: { text: 'Boot E2E gained auth permutations that assert a wrong password is rejected with 401.' } }
+              ] } },
+              { h3: { text: 'Changed' } },
+              { ul: { children: [
+                { li: { text: 'ESM-only packaging: CJS bundles removed; require() keeps working on Node 22.12+ via native require(esm). Export maps resolve types + default everywhere — import-only maps had locked CJS consumers out entirely.' } },
+                { li: { text: 'engines.node floor raised to >=22.12.0.' } }
+              ] } }
+            ] } }
+          ] } },
+
           // v1.0.0-rc.5
           { article: { className: 'changelog-entry', children: [
             { div: { className: 'changelog-entry-header', children: [
               { span: { className: 'changelog-version', text: 'v1.0.0-rc.5' } },
-              { span: { className: 'changelog-date', text: '2026-07-19' } },
-              { span: { className: 'changelog-badge changelog-badge-current', text: 'Current' } }
+              { span: { className: 'changelog-date', text: '2026-07-19' } }
             ] } },
             { div: { className: 'changelog-changes', children: [
               { h3: { text: 'Highlights' } },

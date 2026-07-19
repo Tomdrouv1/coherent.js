@@ -19,7 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
                    ├─ Enhanced router and forms
                    └─ Improved documentation
 
-📅 2026-07-19  →  v1.0.0-rc.5   (CURRENT)
+📅 2026-07-20  →  v1.0.0-rc.6   (CURRENT)
+                   ├─ ESM-only packaging; require() served by native require(esm)
+                   ├─ Auth scaffolds hash & verify passwords (were an auth bypass)
+                   ├─ MongoDB adapter/scaffold repaired (collection() API)
+                   └─ engines.node floor: >=22.12.0
+
+📅 2026-07-19  →  v1.0.0-rc.5   (RELEASED)
                    ├─ core VERSION reports the real version (was hardcoded beta.8)
                    ├─ LSP's typescript dependency declared; CLI ws/peer ranges fixed
                    ├─ Dependencies updated to latest majors
@@ -81,6 +87,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ```
 
 ## [Unreleased]
+
+## [1.0.0-rc.6] - 2026-07-20
+
+Scaffold-integrity and packaging release: generated auth actually authenticates, MongoDB works against a real API, and the packages are ESM-only.
 
 ### Changed
 
