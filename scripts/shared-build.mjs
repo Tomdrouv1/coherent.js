@@ -50,10 +50,11 @@ function findNearestManifest(entryPoint) {
 }
 
 /**
- * Build a package with both ESM and CJS formats.
+ * Build a package (ESM only — the published packages dropped their CJS
+ * bundles for 1.0; node >=22.12 supports require(esm) natively).
  *
  * Pass `entries` ({ name: 'src/file.js', ... }) when the package's exports map
- * declares subpaths — every name is built to `<outDir>/<name>.js`/`.cjs`.
+ * declares subpaths — every name is built to `<outDir>/<name>.js`.
  */
 export async function buildPackage({
   packageName,
@@ -61,8 +62,7 @@ export async function buildPackage({
   entries,
   outDir = 'dist',
   external = [],
-  additionalConfig = {},
-  formats = ['esm', 'cjs'] // Allow specifying which formats to build
+  additionalConfig = {}
 }) {
   const manifest = JSON.parse(await readFile(findNearestManifest(entries ? Object.values(entries)[0] : entryPoint), 'utf-8'));
   const config = {
@@ -80,25 +80,12 @@ export async function buildPackage({
   const entryMap = entries ?? { index: entryPoint };
 
   for (const [name, src] of Object.entries(entryMap)) {
-    // Build ESM version
-    if (formats.includes('esm')) {
-      await build({
-        ...config,
-        entryPoints: [src],
-        format: 'esm',
-        outfile: `${outDir}/${name}.js`,
-      });
-    }
-
-    // Build CJS version (only for Node.js packages)
-    if (formats.includes('cjs')) {
-      await build({
-        ...config,
-        entryPoints: [src],
-        format: 'cjs',
-        outfile: `${outDir}/${name}.cjs`,
-      });
-    }
+    await build({
+      ...config,
+      entryPoints: [src],
+      format: 'esm',
+      outfile: `${outDir}/${name}.js`,
+    });
   }
 
   console.log(`✅ Built ${packageName} successfully`);
@@ -163,127 +150,4 @@ export async function buildBrowserPackage({
   }
 
   console.log(`✅ Built browser package ${packageName} successfully`);
-}
-
-/**
- * Generate package.json for built packages with correct exports
- */
-export async function generatePackageExports(packagePath) {
-  const packageJsonPath = path.join(packagePath, 'package.json');
-  const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf-8'));
-
-  // Ensure consistent exports configuration
-  packageJson.exports = {
-    ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs",
-      "types": "./dist/index.d.ts"
-    }
-  };
-
-  // Ensure files array includes dist
-  if (!packageJson.files) {
-    packageJson.files = [];
-  }
-  if (!packageJson.files.includes('dist/')) {
-    packageJson.files.unshift('dist/');
-  }
-
-  await writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
-}
-
-/**
- * Build all packages in dependency order
- */
-export async function buildAll() {
-  const buildOrder = [
-    'core',
-    'api',
-    'database',
-    'client',
-    'integrations',
-    'fastify',
-    'koa',
-    'nextjs'
-  ];
-
-  // First pass: Build JavaScript bundles
-  for (const pkg of buildOrder) {
-    try {
-      const packagePath = `packages/${pkg}`;
-      const entryPoint = `${packagePath}/${getEntryPoint(pkg)}`;
-
-      if (pkg === 'client') {
-        await buildBrowserPackage({
-          packageName: `@coherent.js/${pkg}`,
-          entryPoint: entryPoint,
-          outDir: `${packagePath}/dist`
-        });
-      } else {
-        await buildPackage({
-          packageName: `@coherent.js/${pkg}`,
-          entryPoint: entryPoint,
-          outDir: `${packagePath}/dist`,
-          external: getPackageExternals(pkg)
-        });
-      }
-
-      await generatePackageExports(packagePath);
-    } catch (error) {
-      console.error(`❌ Failed to build ${pkg}:`, error);
-      process.exit(1);
-    }
-  }
-
-  // Second pass: Generate TypeScript declarations
-  console.log('🔧 Generating TypeScript declarations...');
-  try {
-    await generateDeclarations('.');
-  } catch (error) {
-    console.warn('⚠️  TypeScript declaration generation failed:', error.message);
-    console.log('📝 Continuing without type declarations...');
-  }
-
-  console.log('🎉 All packages built successfully!');
-}
-
-/**
- * Get entry point for each package
- */
-function getEntryPoint(packageName) {
-  const entryPoints = {
-    'core': 'src/index.js',
-    'api': 'src/index.js',
-    'database': 'src/index.js',
-    'client': 'src/index.js',
-    'integrations': 'src/express/index.js',
-    'fastify': 'src/index.js',
-    'koa': 'src/index.js',
-    'nextjs': 'src/index.js'
-  };
-
-  return entryPoints[packageName] || `src/index.js`;
-}
-
-/**
- * Get package-specific externals
- */
-function getPackageExternals(packageName) {
-  const externals = {
-    'core': [],
-    'api': ['@coherent.js/core'],
-    'database': ['@coherent.js/core'],
-    'client': ['@coherent.js/core'],
-    'integrations': ['@coherent.js/core'],
-    'fastify': ['@coherent.js/core'],
-    'koa': ['@coherent.js/core'],
-    'nextjs': ['@coherent.js/core']
-  };
-
-  return externals[packageName] || [];
-}
-
-// If run directly, build all packages
-if (import.meta.url === `file://${process.argv[1]}`) {
-  buildAll().catch(console.error);
 }

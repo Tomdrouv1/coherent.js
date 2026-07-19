@@ -8,27 +8,27 @@
   "exports": {
     ".": {
       "types": "./types/testing/index.d.ts",
-      "import": "./dist/testing/index.js"
+      "default": "./dist/testing/index.js"
     },
     "./testing": {
       "types": "./types/testing/index.d.ts",
-      "import": "./dist/testing/index.js"
+      "default": "./dist/testing/index.js"
     },
     "./testing/renderer": {
       "types": "./types/testing/renderer.d.ts",
-      "import": "./dist/testing/test-renderer.js"
+      "default": "./dist/testing/test-renderer.js"
     },
     "./testing/utils": {
       "types": "./types/testing/utils.d.ts",
-      "import": "./dist/testing/test-utils.js"
+      "default": "./dist/testing/test-utils.js"
     },
     "./testing/matchers": {
       "types": "./types/testing/matchers.d.ts",
-      "import": "./dist/testing/matchers.js"
+      "default": "./dist/testing/matchers.js"
     },
     "./lsp": {
       "types": "./dist/lsp/server.d.ts",
-      "import": "./dist/lsp/server.js"
+      "default": "./dist/lsp/server.js"
     }
   },
   "bin": {
@@ -90,7 +90,7 @@
     "registry": "https://registry.npmjs.org/"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.12.0"
   },
   "sideEffects": false
 }

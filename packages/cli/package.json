@@ -12,7 +12,8 @@
   },
   "exports": {
     ".": {
-      "import": "./dist/index.js"
+      "types": "./types/index.d.ts",
+      "default": "./dist/index.js"
     },
     "./build-tools": "./src/build-tools/index.js",
     "./build-tools/vite": "./src/build-tools/vite.js",
@@ -40,7 +41,7 @@
     "LICENSE"
   ],
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.12.0"
   },
   "dependencies": {
     "chokidar": "5.0.0",

@@ -167,12 +167,11 @@ Each package should follow this structure:
   "version": "1.0.0-beta.1",
   "description": "PACKAGE_DESCRIPTION",
   "type": "module",
-  "main": "./src/index.js",
+  "main": "./dist/index.js",
   "exports": {
     ".": {
-      "development": "./src/index.js",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "types": "./types/index.d.ts",
+      "default": "./dist/index.js"
     }
   },
   "keywords": [

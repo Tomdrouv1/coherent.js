@@ -40,6 +40,26 @@ See the quick-scan table below for the full list with one-line fixes. The remain
 | `@coherent.js/forms/forms` subpath export removed | Source file is gone |
 | `@coherent.js/forms/advanced-validation` subpath export removed | Source file is gone |
 | `createFormBuilder({ fields: [...] })` now actually registers passed fields | Previously a silent no-op; this is a bugfix that may surprise callers who relied on the no-op behavior — but no such caller is known |
+| CJS bundles removed — all packages are ESM-only | `require('@coherent.js/*')` still works on Node >= 22.12 via native require(esm). TypeScript CJS consumers need TS 5.8+ with `--module nodenext`. Bundlers are unaffected. |
+| `engines.node` floor raised to `>=22.12.0` | 22.12 is the LTS patch where require(esm) shipped unflagged |
+
+---
+
+## ESM-only packaging
+
+The published packages no longer ship CommonJS bundles (`dist/*.cjs`). Every
+export map now resolves `types` + `default` to the ESM build.
+
+Why: Node >= 22.12 loads ESM through `require()` natively, so the CJS copies
+only added weight and the classic dual-package hazard — an app importing ESM
+while a dependency requires CJS would get **two** module instances (two client
+event registries, two state stores) with subtly broken behavior.
+
+What you need:
+
+- **Node consumers** (`import` or `require`): Node >= 22.12 — nothing else.
+- **TypeScript CJS projects**: TypeScript 5.8+ with `--module nodenext`.
+- **Bundlers** (vite/webpack/rollup/esbuild): unaffected; they consume ESM.
 
 ---
 

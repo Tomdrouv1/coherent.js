@@ -8,40 +8,40 @@
   "exports": {
     ".": {
       "types": "./types/index.d.ts",
-      "import": "./dist/index.js"
+      "default": "./dist/index.js"
     },
     "./visualizer": {
-      "import": "./dist/component-visualizer.js"
+      "default": "./dist/component-visualizer.js"
     },
     "./performance": {
-      "import": "./dist/performance/index.js"
+      "default": "./dist/performance/index.js"
     },
     "./performance/cache": {
-      "import": "./dist/performance/cache.js"
+      "default": "./dist/performance/cache.js"
     },
     "./performance/code-splitting": {
-      "import": "./dist/performance/code-splitting.js"
+      "default": "./dist/performance/code-splitting.js"
     },
     "./performance/lazy-loading": {
-      "import": "./dist/performance/lazy-loading.js"
+      "default": "./dist/performance/lazy-loading.js"
     },
     "./performance/dashboard": {
-      "import": "./dist/performance-dashboard.js"
+      "default": "./dist/performance-dashboard.js"
     },
     "./errors": {
-      "import": "./dist/enhanced-errors.js"
+      "default": "./dist/enhanced-errors.js"
     },
     "./hybrid": {
-      "import": "./dist/hybrid-integration-tools.js"
+      "default": "./dist/hybrid-integration-tools.js"
     },
     "./inspector": {
-      "import": "./dist/inspector.js"
+      "default": "./dist/inspector.js"
     },
     "./profiler": {
-      "import": "./dist/profiler.js"
+      "default": "./dist/profiler.js"
     },
     "./logger": {
-      "import": "./dist/logger.js"
+      "default": "./dist/logger.js"
     },
     "./package.json": "./package.json"
   },
@@ -82,7 +82,7 @@
     "access": "public"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.12.0"
   },
   "sideEffects": false
 }

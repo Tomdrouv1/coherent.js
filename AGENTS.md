@@ -26,7 +26,7 @@ Primary packages (examples, not exhaustive):
 
 ## Environment & Tooling Requirements
 
-- Use Node 20+ only.
+- Use Node 22.12+ only (the `engines` floor of every package).
 - Use pnpm for all installs and scripts; do not use npm/yarn.
 - ESM only: prefer `import`/`export`; avoid `require()` outside of `dist/*` or scripts that explicitly support CJS.
 - Respect conditional exports: `@coherent.js/core` maps `development` to `./src/index.js` and production to `./dist/*`. Dev tooling may import from `src` directly.
@@ -123,14 +123,15 @@ Safety/operational constraints:
 
 ## @coherent.js/core Specifics
 
-- Conditional exports:
+- Conditional exports (ESM-only since 1.0.0-rc.6 — no `development` condition,
+  it pointed at unshipped `src/` and broke Vite/Vitest consumers; no CJS
+  bundles, node >=22.12 serves `require()` via native require(esm)):
   ```json
   {
     "exports": {
       ".": {
-        "development": "./src/index.js",
-        "import": "./dist/index.js",
-        "require": "./dist/index.cjs"
+        "types": "./types/index.d.ts",
+        "default": "./dist/index.js"
       }
     }
   }
@@ -176,7 +177,7 @@ pnpm website:dev
 ## Do / Don't Checklist
 
 Do:
-- Use Node 20+, pnpm, and ESM imports.
+- Use Node 22.12+, pnpm, and ESM imports.
 - Prefer package-scoped tests for focused runs.
 - Keep tests hermetic; use shims for browser APIs.
 - Maintain consistent code style and follow `eslint.config.js` rules.
