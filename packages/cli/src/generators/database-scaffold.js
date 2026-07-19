@@ -54,10 +54,9 @@ export const dbConfig = {
 `,
     mongodb: `
 export const dbConfig = {
-  uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/coherent_db',
+  url: process.env.MONGODB_URI || 'mongodb://localhost:27017',
+  database: process.env.MONGODB_DB || 'coherent_db',
   options: {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
     serverSelectionTimeoutMS: 5000,
     socketTimeoutMS: 45000,
   }
@@ -118,7 +117,7 @@ export function getDatabase()${typeAnnotation} {
 // Graceful shutdown
 process.on('SIGINT', async () => {
   if (db) {
-    await db.disconnect();
+    await db.close();
     console.log('Database connection closed');
   }
   process.exit(0);
@@ -165,7 +164,7 @@ export function getDatabase()${typeAnnotation} {
 // Graceful shutdown
 process.on('SIGINT', async () => {
   if (db) {
-    await db.disconnect();
+    await db.close();
     console.log('Database connection closed');
   }
   process.exit(0);
@@ -222,7 +221,7 @@ export function getDatabase()${typeAnnotation} {
 // Graceful shutdown
 process.on('SIGINT', async () => {
   if (db) {
-    await db.disconnect();
+    await db.close();
     console.log('Database closed');
   }
   process.exit(0);
@@ -231,20 +230,26 @@ process.on('SIGINT', async () => {
     mongodb: `
 import { setupDatabase } from '@coherent.js/database';
 import { dbConfig } from './config.js';
+import { UserModel } from './models/User.js';
 
 let db${typeAnnotation};
 
 export async function initDatabase()${returnType} {
   try {
-    // Setup database with Coherent.js
+    // The adapter reads url/database/options. autoConnect: false so the
+    // explicit await db.connect() below is the only connection attempt.
     db = setupDatabase({
       type: 'mongodb',
-      database: dbConfig.uri,
-      ...dbConfig.options,
+      url: dbConfig.url,
+      database: dbConfig.database,
+      options: dbConfig.options,
       autoConnect: false
     });
 
     await db.connect();
+
+    // Collections are created lazily; ensure indexes up front.
+    await UserModel.createCollection();
 
     console.log('✓ Connected to MongoDB database');
 
@@ -265,7 +270,7 @@ export function getDatabase()${typeAnnotation} {
 // Graceful shutdown
 process.on('SIGINT', async () => {
   if (db) {
-    await db.disconnect();
+    await db.close();
     console.log('Database connection closed');
   }
   process.exit(0);
@@ -471,46 +476,51 @@ export class UserModel {
 `,
     mongodb: `
 import { getDatabase } from '../index.js';
-
+import { ObjectId } from 'mongodb';
+${isTypeScript ? "import type { Collection } from 'mongodb';\n" : ''}
 ${interfaceDef}
 
 export class UserModel {
-  static async createCollection()${typeAnnotation} {
-    const db = getDatabase();
-    await db.createCollection('users');
+  static collection()${isTypeScript ? ': Collection' : ''} {
+    return getDatabase().collection('users');
+  }
 
-    // Create index for email uniqueness
-    await db.collection('users').createIndex({ email: 1 }, { unique: true });
+  static async createCollection()${typeAnnotation} {
+    // Collections are created lazily; enforce email uniqueness up front.
+    await this.collection().createIndex({ email: 1 }, { unique: true });
+  }
+
+  // Normalize the driver's ObjectId _id into a string id for app code.
+  static toUser(doc${isTypeScript ? ': Record<string, unknown> | null' : ''}) {
+    if (!doc) return null;
+    const { _id, ...rest } = doc;
+    return { id: String(_id), ...rest };
   }
 
   static async create(userData${pUser})${typeAnnotation} {
-    const db = getDatabase();
-    const result = await db.collection('users').insertOne(userData);
-    return { _id: result.insertedId, ...userData };
+    const now = new Date();
+    const result = await this.collection().insertOne({ ...userData, createdAt: now, updatedAt: now });
+    return { id: result.insertedId.toString(), ...userData };
   }
 
   static async findById(id${pIdMongo})${typeAnnotation} {
-    const db = getDatabase();
-    return await db.collection('users').findOne({ _id: id });
+    return this.toUser(await this.collection().findOne({ _id: new ObjectId(id) }));
   }
 
   static async findByEmail(email${pEmail})${typeAnnotation} {
-    const db = getDatabase();
-    return await db.collection('users').findOne({ email });
+    return this.toUser(await this.collection().findOne({ email }));
   }
 
   static async update(id${pIdMongo}, data${pPartial})${typeAnnotation} {
-    const db = getDatabase();
-    const result = await db.collection('users').updateOne(
-      { _id: id },
+    const result = await this.collection().updateOne(
+      { _id: new ObjectId(id) },
       { $set: { ...data, updatedAt: new Date() } }
     );
     return result.modifiedCount > 0 ? this.findById(id) : null;
   }
 
   static async delete(id${pIdMongo})${typeAnnotation} {
-    const db = getDatabase();
-    const result = await db.collection('users').deleteOne({ _id: id });
+    const result = await this.collection().deleteOne({ _id: new ObjectId(id) });
     return result.deletedCount > 0;
   }
 }
@@ -543,7 +553,8 @@ DB_PASSWORD=password
 DB_PATH=./data/database.sqlite
 `,
     mongodb: `# MongoDB Configuration
-MONGODB_URI=mongodb://localhost:27017/coherent_db
+MONGODB_URI=mongodb://localhost:27017
+MONGODB_DB=coherent_db
 `
   };
 

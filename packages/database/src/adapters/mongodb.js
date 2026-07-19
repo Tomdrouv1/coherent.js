@@ -162,8 +162,22 @@ export function createMongoDBAdapter() {
   }
 
   /**
+   * Get a raw driver collection for document operations
+   * (insertOne, findOne, updateOne, deleteOne, createIndex, …)
+   *
+   * @param {string} name - Collection name
+   * @returns {Object} MongoDB driver Collection
+   */
+  function collection(name) {
+    if (!db) {
+      throw new Error('Database connection not established. Call connect() first.');
+    }
+    return db.collection(name);
+  }
+
+  /**
    * Disconnect from the database
-   * 
+   *
    * @returns {Promise<void>}
    */
   async function disconnect() {
@@ -172,6 +186,15 @@ export function createMongoDBAdapter() {
       client = null;
       db = null;
     }
+  }
+
+  /**
+   * Close the connection — DatabaseManager.close() calls closePool()
+   *
+   * @returns {Promise<void>}
+   */
+  async function closePool() {
+    await disconnect();
   }
 
   /**
@@ -216,10 +239,12 @@ export function createMongoDBAdapter() {
     connect,
     query,
     execute,
+    collection,
     beginTransaction,
     commit,
     rollback,
     disconnect,
+    closePool,
     getConnection,
     ping,
     escape

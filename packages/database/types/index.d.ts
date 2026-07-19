@@ -120,6 +120,10 @@ export interface DatabaseConfig {
   ssl?: boolean | object;
   extra?: object;
   autoConnect?: boolean;
+  /** Connection URL (MongoDB) */
+  url?: string;
+  /** Driver client options (MongoDB) */
+  options?: Record<string, unknown>;
   connectionTimeout?: number;
   acquireTimeout?: number;
   timeout?: number;
@@ -171,12 +175,24 @@ export interface Transaction {
 }
 
 /** Database manager interface */
+/** Minimal surface of a document-store collection (the MongoDB driver Collection). */
+export interface DocumentCollection {
+  insertOne(doc: Record<string, unknown>): Promise<{ insertedId: unknown }>;
+  findOne(filter: Record<string, unknown>, options?: Record<string, unknown>): Promise<Record<string, unknown> | null>;
+  updateOne(filter: Record<string, unknown>, update: Record<string, unknown>): Promise<{ modifiedCount: number }>;
+  deleteOne(filter: Record<string, unknown>): Promise<{ deletedCount: number }>;
+  createIndex(spec: Record<string, unknown>, options?: Record<string, unknown>): Promise<string>;
+}
+
 export interface DatabaseManager {
   readonly connections: Map<string, DatabaseConnection>;
   readonly config: DatabaseConfig;
   initialized: boolean;
 
   connect(): Promise<void>;
+  /** Document-store collection access (MongoDB adapter only; throws otherwise). */
+  collection(name: string): DocumentCollection;
+  close(): Promise<void>;
   disconnect(): Promise<void>;
   getConnection(name?: string): DatabaseConnection;
   addConnection(name: string, connection: DatabaseConnection): void;

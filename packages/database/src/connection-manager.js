@@ -319,6 +319,29 @@ export class DatabaseManager extends EventEmitter {
   }
 
   /**
+   * Get a document-store collection (MongoDB)
+   *
+   * @param {string} name - Collection name
+   * @returns {Object} Raw driver collection (insertOne, findOne, updateOne, …)
+   * @throws {Error} If not connected, or the adapter is not a document store
+   *
+   * @example
+   * const users = db.collection('users');
+   * await users.insertOne({ email: 'ada@example.com' });
+   */
+  collection(name) {
+    if (!this.isConnected) {
+      throw new Error('Database not connected. Call connect() first.');
+    }
+
+    if (this.pool && typeof this.pool.collection === 'function') {
+      return this.pool.collection(name);
+    }
+
+    throw new Error(`collection() is not supported by the '${this.config.type}' adapter — it is only available for document databases (mongodb)`);
+  }
+
+  /**
    * Start a database transaction
    *
    * @returns {Promise<Object>} Transaction object
@@ -395,9 +418,13 @@ export class DatabaseManager extends EventEmitter {
       this.healthCheckInterval = null;
     }
 
-    // Close connection pool
+    // Close connection pool (connect-style adapters expose disconnect instead)
     if (this.pool && this.adapter) {
-      await this.adapter.closePool(this.pool);
+      if (typeof this.adapter.closePool === 'function') {
+        await this.adapter.closePool(this.pool);
+      } else if (typeof this.adapter.disconnect === 'function') {
+        await this.adapter.disconnect();
+      }
     }
 
     this.isConnected = false;
