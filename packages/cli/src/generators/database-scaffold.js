@@ -286,6 +286,8 @@ export function generateExampleModel(dbType, language = 'javascript') {
   const pId = isTypeScript ? ': number' : '';
   const pEmail = isTypeScript ? ': string' : '';
   const pPartial = isTypeScript ? ': Partial<UserData>' : '';
+  const pUpdate = isTypeScript ? ": Pick<UserData, 'email' | 'name'>" : '';
+  const pIdMongo = isTypeScript ? ': string' : '';
   const interfaceDef = isTypeScript ? `
 interface UserData {
   email: string;
@@ -336,7 +338,7 @@ export class UserModel {
     return result.rows[0];
   }
 
-  static async update(id${pId}, data${pPartial})${typeAnnotation} {
+  static async update(id${pId}, data${pUpdate})${typeAnnotation} {
     const db = getDatabase();
     const result = await db.query(
       'UPDATE users SET email = $1, name = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING *',
@@ -377,28 +379,28 @@ export class UserModel {
       'INSERT INTO users (email, name, password_hash) VALUES (?, ?, ?)',
       [userData.email, userData.name, userData.passwordHash ?? null]
     );
-    return result[0];
+    return this.findById(result.insertId);
   }
 
   static async findById(id${pId})${typeAnnotation} {
     const db = getDatabase();
     const result = await db.query('SELECT * FROM users WHERE id = ?', [id]);
-    return result[0];
+    return result.rows[0];
   }
 
   static async findByEmail(email${pEmail})${typeAnnotation} {
     const db = getDatabase();
     const result = await db.query('SELECT * FROM users WHERE email = ?', [email]);
-    return result[0];
+    return result.rows[0];
   }
 
-  static async update(id${pId}, data${pPartial})${typeAnnotation} {
+  static async update(id${pId}, data${pUpdate})${typeAnnotation} {
     const db = getDatabase();
-    const result = await db.query(
+    await db.query(
       'UPDATE users SET email = ?, name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
       [data.email, data.name, id]
     );
-    return result[0];
+    return this.findById(id);
   }
 
   static async delete(id${pId})${typeAnnotation} {
@@ -452,7 +454,7 @@ export class UserModel {
     return result.rows[0];
   }
 
-  static async update(id${pId}, data${pPartial})${typeAnnotation} {
+  static async update(id${pId}, data${pUpdate})${typeAnnotation} {
     const db = getDatabase();
     await db.query(
       'UPDATE users SET email = ?, name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
@@ -487,7 +489,7 @@ export class UserModel {
     return { _id: result.insertedId, ...userData };
   }
 
-  static async findById(id${pId})${typeAnnotation} {
+  static async findById(id${pIdMongo})${typeAnnotation} {
     const db = getDatabase();
     return await db.collection('users').findOne({ _id: id });
   }
@@ -497,7 +499,7 @@ export class UserModel {
     return await db.collection('users').findOne({ email });
   }
 
-  static async update(id${pId}, data${pPartial})${typeAnnotation} {
+  static async update(id${pIdMongo}, data${pPartial})${typeAnnotation} {
     const db = getDatabase();
     const result = await db.collection('users').updateOne(
       { _id: id },
@@ -506,7 +508,7 @@ export class UserModel {
     return result.modifiedCount > 0 ? this.findById(id) : null;
   }
 
-  static async delete(id${pId})${typeAnnotation} {
+  static async delete(id${pIdMongo})${typeAnnotation} {
     const db = getDatabase();
     const result = await db.collection('users').deleteOne({ _id: id });
     return result.deletedCount > 0;
