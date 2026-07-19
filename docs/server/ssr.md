@@ -671,6 +671,6 @@ async function generateSitemap() {
 
 ## Next Steps
 
-- [Express Integration](./express-integration.md) - Use with Express.js
-- [Client-Side Hydration](../client-side/hydration.md) - Add interactivity
-- [Performance Optimization](../performance/optimization.md) - Advanced performance techniques
+- [Express Integration](../deployment/integrations.md) - Use with Express.js
+- [Client-Side Hydration](../client/hydration.md) - Add interactivity
+- [Performance Optimization](../deployment/performance.md) - Advanced performance techniques

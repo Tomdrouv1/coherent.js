@@ -5,29 +5,18 @@ Welcome to the official documentation for Coherent.js, a high-performance server
 ## 📚 Documentation Structure
 
 ### 🚀 Getting Started
-- [Introduction](getting-started/index.md) - Overview and philosophy
 - [Quick Start](getting-started/quick-start.md) - 5-minute setup guide
 - [Installation](getting-started/installation.md) - Detailed setup instructions
-
-### 📦 Core Framework
-- [Framework Overview](core/index.md) - Core concepts and architecture
-- [Hydration](core/hydration.md) - Client-side hydration guide
-- [Events](core/events.md) - Event handling system
-- [Routing](core/routing.md) - Object-based routing
-- [Styling](core/styling.md) - CSS integration
 
 ### 🧩 Components
 - [Basic Components](components/basics.md) - Building with pure objects
 - [Advanced Components](components/advanced.md) - Complex patterns
 - [State Management](components/state.md) - Component state
-- [Advanced State](components/state-advanced.md) - Complex state patterns
-- [Reactive State](components/reactive-state.md) - @coherent.js/state package
 - [Styling Components](components/styling.md) - Component styling
 
 ### 🌊 Client-Side
+- [Hydration](client/hydration.md) - Make components interactive
 - [Router](client/router.md) - Client-side routing
-- [Hydration Guide](client/hydration-guide.md) - Practical hydration
-- [Advanced Hydration](client/hydration-advanced.md) - Complex patterns
 
 ### 🏗️ Server-Side
 - [SSR Guide](server/ssr.md) - Server-side rendering
@@ -40,7 +29,6 @@ Welcome to the official documentation for Coherent.js, a high-performance server
 ### 🌐 API Framework
 - [Reference](api/reference.md) - Complete API documentation
 - [Usage](api/usage.md) - Practical examples
-- [Roadmap](api/roadmap.md) - Future enhancements
 
 ### ☁️ Deployment
 - [Guide](deployment/index.md) - Deployment strategies
@@ -52,10 +40,12 @@ Welcome to the official documentation for Coherent.js, a high-performance server
 - [Testing Guide](testing/guide.md) - Testing utilities and matchers
 
 ### 🧩 Extended Packages
-- [Forms Guide](forms/guide.md) - Form building, validation, and hydration
+- [Forms](packages/forms.md) - Form building, validation, and hydration
+- [i18n](packages/i18n.md) - Translations, formatters, and locale management
+- [SEO](packages/seo.md) - Meta tags, sitemaps, and structured data
 
 ### 🛠️ Editor Support
-- [VS Code Extension](vscode-extension/README.md) - IntelliSense and snippets for VS Code
+- [VS Code Extension](packages/vscode-extension.md) - IntelliSense and snippets for VS Code
 - LSP server for any editor — ships with `@coherent.js/tooling` (binary: `coherent-language-server`)
 
 ### 🔧 Advanced
@@ -67,7 +57,7 @@ Welcome to the official documentation for Coherent.js, a high-performance server
 - [Tutorial](examples/tutorial.md) - Step-by-step guide
 
 ### 🔄 Migration
-- [From Other Frameworks](migration/from-other-frameworks.md) - React/Vue migration
+- [From Other Frameworks](migration/guide.md) - React/Vue migration
 - [Package Reorganization](migration/package-reorg.md) - v1.0.0-beta.2 upgrade
 
 ## 🎯 Quick Navigation
@@ -75,15 +65,15 @@ Welcome to the official documentation for Coherent.js, a high-performance server
 ### I want to...
 - **Get started quickly** → [Quick Start](getting-started/quick-start.md)
 - **Build components** → [Basic Components](components/basics.md)
-- **Add interactivity** → [Hydration](core/hydration.md)
+- **Add interactivity** → [Hydration](client/hydration.md)
 - **Manage state** → [State Management](components/state.md)
 - **Handle routing** → [Router](client/router.md)
 - **Work with databases** → [Database Integration](database/index.md)
 - **Deploy to production** → [Deployment Guide](deployment/index.md)
-- **Migrate from React/Vue** → [Migration Guide](migration/from-other-frameworks.md)
-- **Build forms** → [Forms Guide](forms/guide.md)
+- **Migrate from React/Vue** → [Migration Guide](migration/guide.md)
+- **Build forms** → [Forms Guide](packages/forms.md)
 - **Test components** → [Testing Guide](testing/guide.md)
-- **Set up VS Code** → [VS Code Extension](vscode-extension/README.md)
+- **Set up VS Code** → [VS Code Extension](packages/vscode-extension.md)
 
 ## 📦 Package Reference
 
@@ -99,16 +89,16 @@ Coherent.js is a monorepo with multiple packages:
 
 ### Feature Packages
 - `@coherent.js/database` - Database adapters
-- `@coherent.js/forms` - [Form utilities](forms/guide.md)
-- `@coherent.js/i18n` - Internationalization
-- `@coherent.js/seo` - SEO tools
+- `@coherent.js/forms` - [Form utilities](packages/forms.md)
+- `@coherent.js/i18n` - [Internationalization](packages/i18n.md)
+- `@coherent.js/seo` - [SEO tools](packages/seo.md)
 - `@coherent.js/tooling` - [Testing utilities](testing/guide.md) (`/testing` subpath) and Language Server (`coherent-language-server` binary)
 - `@coherent.js/state` - Reactive state management
 - `@coherent.js/devtools` - Developer tools, performance profiling, and optimization utilities (cache, code-splitting, lazy-loading via `/performance` subpath)
 
 ### Editor Tooling
 - `@coherent.js/tooling` - LSP server (binary: `coherent-language-server`) and testing utilities (`/testing` subpath)
-- `coherent-language-support` - [VS Code extension](vscode-extension/README.md)
+- `coherent-language-support` - [VS Code extension](packages/vscode-extension.md)
 
 ## 🆘 Getting Help
 

@@ -16,7 +16,7 @@ Coherent.js provides a pure object-based query builder for building and executin
 ## Basic Usage
 
 ```javascript
-import { createQuery, executeQuery } from 'coherent/database';
+import { createQuery, executeQuery } from '@coherent.js/database';
 
 // Create a query
 const query = createQuery({
@@ -189,7 +189,7 @@ const query = createQuery({
 For backwards compatibility, the old `QueryBuilder` interface is still available:
 
 ```javascript
-import { QueryBuilder } from 'coherent/database';
+import { QueryBuilder } from '@coherent.js/database';
 
 // Create query
 const query = QueryBuilder.create({

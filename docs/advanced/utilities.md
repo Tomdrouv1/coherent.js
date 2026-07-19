@@ -514,9 +514,9 @@ console.log('Render time:', stats.averageRenderTime);
 ## See Also
 
 - [ARCHITECTURE.md](../../ARCHITECTURE.md) - Framework architecture
-- [API Reference](../api-reference.md) - Complete API documentation
-- [Framework Integrations](../framework-integrations.md) - Integration guides
-- [Performance Optimizations](../performance-optimizations.md) - Performance tips
+- [API Reference](../api/reference.md) - Complete API documentation
+- [Framework Integrations](../deployment/integrations.md) - Integration guides
+- [Performance Optimizations](../deployment/performance.md) - Performance tips
 
 ---
 

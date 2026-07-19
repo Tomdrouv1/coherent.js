@@ -2,6 +2,7 @@ packages:
   - 'packages/*'
   - 'e2e/fixtures/*'
   - 'website'
+  - 'examples'
 
 # Allow these dependencies to run their install/build scripts.
 # pnpm 11+ blocks postinstall scripts by default; this allowlist

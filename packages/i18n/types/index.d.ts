@@ -58,14 +58,6 @@ export interface TranslationFunction {
   (key: TranslationKey, params: Record<string, string | number>, count: number): string;
 }
 
-/**
- * Create a typed translator for a specific message shape
- * @template T - The translation messages type
- */
-export function createTypedTranslator<T extends TranslationMessages>(
-  messages: T
-): (key: FlattenKeys<T>, params?: Record<string, string | number>) => string;
-
 // ============================================================================
 // I18n Configuration
 // ============================================================================
@@ -179,20 +171,6 @@ export interface I18nInstance {
   getMessages(): TranslationMessages;
 }
 
-/**
- * Create an i18n instance
- */
-export function createI18n(config: I18nConfig): I18nInstance;
-
-/**
- * Hook to get the translation function (for component usage)
- */
-export function useTranslation(): TranslationFunction;
-
-/**
- * Hook to get and set the current locale
- */
-export function useLocale(): [string, (locale: string) => Promise<void>];
 
 // ============================================================================
 // Translator Class
@@ -447,6 +425,16 @@ export function detectLocale(): string;
 /**
  * Normalize a locale code (e.g., 'en_US' -> 'en-US')
  */
+export function getLocaleDirection(locale: string): 'ltr' | 'rtl';
+
+export function getLocaleDisplayName(locale: string, displayLocale?: string): string;
+
+export function getSupportedLocales(): string[];
+
+export function matchLocale(requestedLocale: string, availableLocales: string[], defaultLocale?: string): string;
+
+export function parseLocale(locale: string): { language: string; region: string | null; script: string | null; full: string };
+
 export function normalizeLocale(locale: string): string;
 
 /**
@@ -458,19 +446,3 @@ export function isRTL(locale: string): boolean;
 // Component Helpers
 // ============================================================================
 
-/**
- * Create a translated component node
- */
-export function translatedNode(
-  key: TranslationKey,
-  tagName?: string,
-  params?: Record<string, string | number>
-): CoherentNode;
-
-/**
- * Create an i18n context provider component
- */
-export function createI18nProvider(
-  i18n: I18nInstance,
-  children: CoherentNode
-): CoherentNode;

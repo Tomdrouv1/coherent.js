@@ -739,6 +739,6 @@ process.on('exit', async () => {
 
 ## Next Steps
 
-- [Database Models](./models.md) - Structure your data with models
-- [Migrations](./migrations.md) - Manage schema changes
-- [Advanced Queries](./advanced-queries.md) - Complex query patterns
+- [Database Models](index.md) - Structure your data with models
+- [Migrations](index.md) - Manage schema changes
+- [Advanced Queries](query-builder-api.md) - Complex query patterns

@@ -12,7 +12,67 @@ Coherent.js can be integrated with:
 - **Hono** - Ultrafast web framework for edge environments
 - **Raw Node.js** - Direct HTTP server implementation
 
-## Express.js Integration
+## ⚡ The official integrations package (recommended)
+
+Before hand-rolling anything, reach for `@coherent.js/integrations` — it ships
+ready-made adapters as subpath exports:
+
+```bash
+pnpm add @coherent.js/integrations
+```
+
+**Express** — mount the middleware (auto-renders returned/`res.send()` component objects) or use handlers:
+
+```javascript
+import express from 'express';
+import { coherentMiddleware, createCoherentHandler } from '@coherent.js/integrations/express';
+
+const app = express();
+app.use(coherentMiddleware());
+
+app.get('/', createCoherentHandler(() => ({
+  h1: { text: 'Hello from Express' }
+})));
+```
+
+**Fastify** — register the plugin, then return component objects straight from routes:
+
+```javascript
+import Fastify from 'fastify';
+import { setupCoherent } from '@coherent.js/integrations/fastify';
+
+const fastify = Fastify();
+await fastify.register(setupCoherent, {
+  template: '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"></head><body>{{content}}</body></html>'
+});
+
+fastify.get('/', async () => ({ h1: { text: 'Hello from Fastify' } }));
+```
+
+**Koa** — set up the middleware, then assign component objects to `ctx.body`:
+
+```javascript
+import Koa from 'koa';
+import { setupCoherent } from '@coherent.js/integrations/koa';
+
+const app = new Koa();
+setupCoherent(app, { template: undefined /* optional HTML shell with {{content}} */ });
+
+app.use(async (ctx) => {
+  ctx.body = { h1: { text: 'Hello from Koa' } };
+});
+```
+
+**Next.js** — wrap components for the pages or app router:
+
+```javascript
+import { createCoherentNextHandler, createCoherentAppRouterHandler } from '@coherent.js/integrations/nextjs';
+```
+
+The sections below show *manual* integration patterns — useful to understand
+what the adapters do under the hood, or when you want full control.
+
+## Manual Express.js Integration
 
 Express.js is the most popular Node.js framework, and Coherent.js integrates seamlessly with it for both simple and complex applications.
 
@@ -246,7 +306,7 @@ app.get('/admin/performance', (req, res) => {
 });
 ```
 
-## Fastify Integration
+## Manual Fastify Integration
 
 Fastify is a high-performance alternative to Express with built-in support for JSON schemas, logging, and plugins. Coherent.js integrates perfectly with Fastify's architecture.
 
@@ -505,7 +565,7 @@ npm install next react react-dom
 
 ```javascript
 // pages/api/home.js
-import { createCoherentNextHandler } from 'coherent/nextjs';
+import { createCoherentNextHandler } from '@coherent.js/integrations/nextjs';
 
 function HomePage({ name }) {
   return {
@@ -529,7 +589,7 @@ export default createCoherentNextHandler((req, res) => {
 
 ```javascript
 // app/home/route.js
-import { createCoherentAppRouterHandler } from 'coherent/nextjs';
+import { createCoherentAppRouterHandler } from '@coherent.js/integrations/nextjs';
 
 function HomePage({ name }) {
   return {
@@ -572,7 +632,7 @@ app.use(coherentMiddleware({
 Performance metrics are automatically collected and can be accessed through the performance monitor:
 
 ```javascript
-import { performanceMonitor } from 'coherent/performance';
+import { performanceMonitor } from '@coherent.js/core';
 
 // Get performance statistics
 const stats = performanceMonitor.getStats();
@@ -675,7 +735,7 @@ server.listen(3000, () => {
 });
 ```
 
-## Koa Integration
+## Manual Koa Integration
 
 Koa provides a lightweight, expressive middleware framework for Node.js.
 

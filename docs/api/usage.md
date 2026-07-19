@@ -185,7 +185,7 @@ const routes = {
 You can also validate query parameters and path parameters:
 
 ```javascript
-import { withQueryValidation, withParamsValidation } from 'coherent/api';
+import { withQueryValidation, withParamsValidation } from '@coherent.js/api';
 
 const querySchema = {
   type: 'object',
@@ -225,7 +225,7 @@ The API framework provides utilities for serializing complex data types like Dat
 ### Usage
 
 ```javascript
-import { serializeForJSON } from 'coherent/api';
+import { serializeForJSON } from '@coherent.js/api';
 
 router.get('/events', (req, res) => {
   const events = [
@@ -258,7 +258,7 @@ router.get('/events', (req, res) => {
 You can use the serialization middleware to add serialization helpers to request and response objects:
 
 ```javascript
-import { withSerialization } from 'coherent/api';
+import { withSerialization } from '@coherent.js/api';
 
 router.get('/events', 
   withSerialization(),
@@ -279,7 +279,7 @@ The API framework provides utilities for generating OpenAPI documentation automa
 ### Usage
 
 ```javascript
-import { withOpenApi } from 'coherent/api';
+import { withOpenApi } from '@coherent.js/api';
 
 const listUsersOpenApi = withOpenApi({
   summary: 'List all users',
@@ -326,7 +326,7 @@ router.get('/users',
 ```javascript
 import express from 'express';
 import apiRouter from './api-router.js';
-import { createOpenApiHandler, createSwaggerUIHandler } from 'coherent/api';
+import { createOpenApiHandler, createSwaggerUIHandler } from '@coherent.js/api';
 
 const app = express();
 
@@ -356,7 +356,7 @@ The API framework provides a comprehensive middleware system for common API conc
 ### Authentication Middleware
 
 ```javascript
-import { withAuth } from 'coherent/api';
+import { withAuth } from '@coherent.js/api';
 
 const verifyToken = (token) => {
   // Verify token and return user object
@@ -378,7 +378,7 @@ router.get('/users',
 ### Authorization Middleware
 
 ```javascript
-import { withPermission } from 'coherent/api';
+import { withPermission } from '@coherent.js/api';
 
 const checkPermission = (user, req) => {
   // Check if user has permission for this request
@@ -397,7 +397,7 @@ router.delete('/users/:id',
 ### Logging Middleware
 
 ```javascript
-import { withLogging } from 'coherent/api';
+import { withLogging } from '@coherent.js/api';
 
 // Apply globally
 router.use(withLogging({ level: 'info' }));
@@ -414,7 +414,7 @@ router.get('/users',
 ### CORS Middleware
 
 ```javascript
-import { withCors } from 'coherent/api';
+import { withCors } from '@coherent.js/api';
 
 // Apply globally
 router.use(withCors({
@@ -426,7 +426,7 @@ router.use(withCors({
 ### Rate Limiting Middleware
 
 ```javascript
-import { withRateLimit } from 'coherent/api';
+import { withRateLimit } from '@coherent.js/api';
 
 // Apply globally
 router.use(withRateLimit({
@@ -438,7 +438,7 @@ router.use(withRateLimit({
 ### Input Sanitization Middleware
 
 ```javascript
-import { withSanitization } from 'coherent/api';
+import { withSanitization } from '@coherent.js/api';
 
 // Apply globally
 router.use(withSanitization({
@@ -451,7 +451,7 @@ router.use(withSanitization({
 ### Custom Middleware
 
 ```javascript
-import { createApiMiddleware } from 'coherent/api';
+import { createApiMiddleware } from '@coherent.js/api';
 
 const customMiddleware = createApiMiddleware((req, res, next) => {
   // Custom logic here

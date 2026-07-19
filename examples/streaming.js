@@ -310,7 +310,7 @@ const StreamingDemo = () => {
                             }
                           },
                           { h4: { text: 'Example Implementation:' } },
-                          { pre: { text: `import { renderToStream } from '@coherent/core';
+                          { pre: { text: `import { renderToStream } from '@coherent.js/core';
 
 // Express route with streaming
 app.get('/data', async (req, res) => {

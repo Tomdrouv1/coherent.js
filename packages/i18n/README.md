@@ -30,7 +30,7 @@ Internationalization utilities
 ### Example Usage
 
 ```javascript
-import { createI18n } from '@coherent.js/i18n';
+import { createTranslator, createFormatters, createLocaleManager } from '@coherent.js/i18n';
 ```
 
 > **Note**: All exports are tree-shakable. Import only what you need for optimal bundle size.
@@ -38,44 +38,38 @@ import { createI18n } from '@coherent.js/i18n';
 
 JavaScript (ESM):
 ```js
-import { createTranslator } from '@coherent.js/i18n/translator';
+import { createTranslator } from '@coherent.js/i18n';
 
-const t = createTranslator({
-  en: { hello: 'Hello, {name}!' },
-  fr: { hello: 'Bonjour, {name} !' }
-}, { locale: 'en' });
+const translator = createTranslator({ defaultLocale: 'en' });
+translator.addTranslations('en', { hello: 'Hello, {{name}}!' });
+translator.addTranslations('fr', { hello: 'Bonjour, {{name}} !' });
 
-console.log(t('hello', { name: 'Coherent' }));
+console.log(translator.t('hello', { name: 'Coherent' })); // Hello, Coherent!
+translator.setLocale('fr');
+console.log(translator.t('hello', { name: 'Coherent' })); // Bonjour, Coherent !
 ```
 
 TypeScript:
 ```ts
-import { createTranslator } from '@coherent.js/i18n/translator';
+import { createTranslator } from '@coherent.js/i18n';
 
-type Messages = {
-  hello: string;
-};
+const translator = createTranslator({ defaultLocale: 'en' });
+translator.addTranslations('en', { hello: 'Hello, {{name}}!' });
 
-const t = createTranslator<{ en: Messages; fr: Messages }>({
-  en: { hello: 'Hello, {name}!' },
-  fr: { hello: 'Bonjour, {name} !' }
-}, { locale: 'en' });
-
-console.log(t('hello', { name: 'TS' }));
+console.log(translator.t('hello', { name: 'TS' }));
 ```
 
 ### Formatters and locale
 
 ```js
-import { createFormatters } from '@coherent.js/i18n/formatters';
-import { createLocaleManager } from '@coherent.js/i18n/locale';
+import { createFormatters, createLocaleManager } from '@coherent.js/i18n';
 
-const locale = createLocaleManager('en-US');
-const fmt = createFormatters(locale.current());
+const locales = createLocaleManager({ defaultLocale: 'en-US' });
+const fmt = createFormatters(locales.getLocale());
 
-fmt.date(new Date());
-fmt.number(12345.678);
-fmt.currency(1999.99, 'USD');
+fmt.date.format(new Date());        // 1/15/2026
+fmt.number.format(12345.678);       // 12,345.678
+fmt.currency.format(1999.99);       // $1,999.99
 ```
 
 ## Exports

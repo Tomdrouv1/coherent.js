@@ -74,7 +74,7 @@ userForm.addValidator('email', (value) => {
 
 ```javascript
 // ✅ Tree-shakable imports (recommended)
-import { renderToString } from '@coherent.js/core';
+import { render } from '@coherent.js/core';
 import { createFormState } from '@coherent.js/state';
 import { logComponentTree } from '@coherent.js/devtools/visualizer';
 
@@ -120,8 +120,8 @@ import * as coherent from '@coherent.js/core';
 ## 📚 **Documentation**
 
 - **[Getting Started](docs/getting-started/quick-start.md)** - 5-minute setup
-- **[Production Guide](docs/production-guide.md)** - Bundle optimization & deployment
-- **[Migration Guide](docs/migration-guide.md)** - From React/Vue/Express
+- **[Deployment Guide](docs/deployment/index.md)** - Production deployment
+- **[Migration Guide](docs/migration/guide.md)** - From React/Vue/Express
 - **[API Reference](docs/api/reference.md)** - Complete documentation
 - **[Examples](examples/)** - Full-stack applications
 

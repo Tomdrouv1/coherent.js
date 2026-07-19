@@ -442,6 +442,6 @@ While Coherent.js still supports the `data-action`/`data-target` pattern, the fu
 
 Now that you understand basic components, explore:
 
-1. [State Management](./state-management.md) - Handle dynamic data
+1. [State Management](state.md) - Handle dynamic data
 2. [Component Styling](./styling.md) - Make components look great
-3. [Advanced Components](./advanced-components.md) - Complex patterns and optimization
+3. [Advanced Components](advanced.md) - Complex patterns and optimization

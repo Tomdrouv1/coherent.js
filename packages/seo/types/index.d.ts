@@ -139,21 +139,6 @@ export interface SEOConfig {
  */
 export function generateMeta(config: SEOConfig): CoherentNode[];
 
-/**
- * Generate JSON-LD script tag from data
- */
-export function generateJsonLd(data: Record<string, unknown>): CoherentNode;
-
-/**
- * Create a reusable SEO component from configuration
- */
-export function createSEOComponent(config: SEOConfig): () => CoherentNode;
-
-/**
- * Merge multiple SEO configurations (later configs override earlier)
- */
-export function mergeSEOConfig(...configs: Partial<SEOConfig>[]): SEOConfig;
-
 // ============================================================================
 // Meta Builder
 // ============================================================================
@@ -241,11 +226,6 @@ export class MetaBuilder {
  * Create a MetaBuilder instance
  */
 export function createMetaBuilder(tags?: MetaTags): MetaBuilder;
-
-/**
- * Generate meta nodes from flat tags
- */
-export function generateMeta(tags: MetaTags): CoherentNode;
 
 // ============================================================================
 // Sitemap Generator

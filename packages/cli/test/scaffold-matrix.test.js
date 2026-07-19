@@ -3,7 +3,7 @@
  * Tests scaffold permutations systematically for template x runtime x database x auth combinations
  */
 
-import { describe, test, expect, beforeAll, afterAll } from 'vitest';
+import { describe, test, expect } from 'vitest';
 import { mkdtemp, rm, readFile, readdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join, extname } from 'path';

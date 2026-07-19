@@ -511,6 +511,6 @@ router.start('#app');
 
 ## See Also
 
-- [Client-Side Hydration](/docs/client-side-hydration-guide.md)
-- [Code Splitting](/docs/advanced/code-splitting.md)
-- [Performance Optimizations](/docs/performance-optimizations.md)
+- [Client-Side Hydration](hydration.md)
+- [Code Splitting](../deployment/performance.md)
+- [Performance Optimizations](../deployment/performance.md)

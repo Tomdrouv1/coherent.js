@@ -483,7 +483,6 @@ export {
 
 // Enhanced FP composition tools
 export { hoc, compose } from './components/enhanced-composition.js';
-import { hoc, compose } from './components/enhanced-composition.js';
 
 /**
  * Functional programming utilities

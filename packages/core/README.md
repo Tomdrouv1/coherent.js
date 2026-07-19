@@ -27,9 +27,9 @@ Requirements:
 
 JavaScript (ESM):
 ```js
-import { renderToString } from '@coherent.js/core';
+import { render } from '@coherent.js/core';
 
-const html = await renderToString({
+const html = render({
   div: { class: 'greeting', text: 'Hello Coherent' }
 });
 
@@ -38,28 +38,21 @@ console.log(html);
 
 TypeScript:
 ```ts
-import { renderToString } from '@coherent.js/core';
+import { render } from '@coherent.js/core';
 
-async function main() {
-  const html = await renderToString({
-    div: { class: 'greeting', text: 'Hello Coherent (TS)' }
-  });
-  console.log(html);
-}
-
-main();
+const html = render({
+  div: { class: 'greeting', text: 'Hello Coherent (TS)' }
+});
+console.log(html);
 ```
 
 ## Exports overview
 
-The package uses conditional exports; in development it may resolve to `src` while production resolves to `dist`.
+The package ships built ESM and CJS bundles under `dist/` with types under `types/`.
 
 Key APIs (selected):
 - Rendering
-  - `renderToString(input, options?)`
-  - `render(input)` (alias of `renderToString`)
-  - `renderScopedComponent(input)` – applies scoped attributes and style processing
-  - `renderUnsafe(input)` – render without encapsulation
+  - `render(input, options?)` – renders a component object to an HTML string
 - Component system (re-exported from internal modules)
   - `createComponent`, `defineComponent`, `registerComponent`, `getComponent`, `getRegisteredComponents`
   - State helpers: `withState`, `withStateUtils`, `createStateManager`
@@ -73,7 +66,7 @@ Tip: When working in the monorepo website/dev flow, imports can resolve to `src`
 ## Minimal component example
 
 ```js
-import { createComponent, renderToString } from '@coherent.js/core';
+import { createComponent, render } from '@coherent.js/core';
 
 const Counter = createComponent(({ count = 0 }) => ({
   div: {
@@ -84,12 +77,12 @@ const Counter = createComponent(({ count = 0 }) => ({
   }
 }));
 
-const html = await renderToString(Counter({ count: 2 }));
+const html = render(Counter({ count: 2 }));
 ```
 
 TypeScript:
 ```ts
-import { createComponent, renderToString } from '@coherent.js/core';
+import { createComponent, render } from '@coherent.js/core';
 
 type Props = { count?: number };
 
@@ -100,7 +93,7 @@ const Counter = createComponent((props: Props) => ({
   }
 }));
 
-const html = await renderToString(Counter({ count: 2 }));
+const html = render(Counter({ count: 2 }));
 ```
 
 ## Development

@@ -275,7 +275,7 @@ const ExpressIntegrationDemo = () => {
                           { p: { text: 'Install the Express integration:' } },
                           { pre: { text: 'npm install @coherent/express' } },
                           { p: { text: 'Configure your Express app:' } },
-                          { pre: { text: `import { setupCoherent } from '@coherent/express';
+                          { pre: { text: `import { setupCoherent } from '@coherent.js/integrations/express';
 
 setupCoherent(app, {
   useMiddleware: true,

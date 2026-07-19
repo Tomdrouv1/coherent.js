@@ -8,8 +8,7 @@
  */
 
 import { eventDelegation, handlerRegistry } from './events/index.js';
-import { extractState, serializeState } from './hydration/index.js';
-import { detectMismatch, reportMismatches } from './hydration/index.js';
+import { extractState, detectMismatch, reportMismatches } from './hydration/index.js';
 
 /**
  * Hydrate a server-rendered component
@@ -46,6 +45,7 @@ export function hydrate(component, container, options = {}) {
   // Extract options with defaults
   const {
     initialState: providedState,
+    // eslint-disable-next-line no-restricted-globals -- statically replaced by esbuild `define` at build time
     detectMismatch: shouldDetectMismatch = process.env.NODE_ENV !== 'production',
     strict = false,
     onMismatch,

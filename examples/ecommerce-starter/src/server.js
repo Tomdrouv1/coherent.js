@@ -10,7 +10,7 @@ const app = express();
 app.use(express.urlencoded({ extended: false }));
 
 // In-memory cart (per-server session for simplicity)
-let cart = [];
+const cart = [];
 
 // Product listing
 app.get('/', (_req, res) => {

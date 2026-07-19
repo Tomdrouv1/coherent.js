@@ -496,4 +496,4 @@ export default {
 
 ---
 
-For more details, see [Advanced Components](../components/advanced-components.md), [Hydration Guide](../client/hydration.md), and [Performance Optimizations](../performance-optimizations.md).
+For more details, see [Advanced Components](../components/advanced.md), [Hydration Guide](../client/hydration.md), and [Performance Optimizations](../deployment/performance.md).

@@ -532,11 +532,11 @@ CLIENT_BUNDLE_URL=/static/bundle.js
 
 ## 📚 Next Steps
 
-- [Server-Side Rendering Guide](/docs/server-side/ssr-guide.md)
-- [Client-Side Hydration](/docs/client-side-hydration-guide.md)
-- [Client Router](/docs/client-side/client-router.md)
-- [Reactive State Management](/docs/components/reactive-state.md)
-- [Full-Stack Forms](/docs/components/forms.md)
+- [Server-Side Rendering Guide](../server/ssr.md)
+- [Client-Side Hydration](../client/hydration.md)
+- [Client Router](../client/router.md)
+- [Reactive State Management](../components/state.md)
+- [Full-Stack Forms](../packages/forms.md)
 
 ---
 

@@ -518,8 +518,8 @@ You've built a complete full-stack Coherent.js application!
 - ✅ Event Handling
 - ✅ Component Structure
 
-**Next:** Check out the [starter-app example](../examples/starter-app/) for a complete working template!
+**Next:** Check out the [starter-app example](../../examples/starter-app) for a complete working template!
 
 ---
 
-**Questions?** Check the [documentation](./README.md) or [examples](../examples/)
+**Questions?** Check the [documentation](../../examples/README.md) or [examples](../../examples/)

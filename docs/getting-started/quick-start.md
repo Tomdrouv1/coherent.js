@@ -26,9 +26,9 @@ const component = {
 ### 1. Installation
 
 ```bash
-npm install @coherent.js/core@beta
+npm install @coherent.js/core@rc
 # or
-pnpm add @coherent.js/core@beta
+pnpm add @coherent.js/core@rc
 ```
 
 > **Note**: Coherent.js 1.0 is currently in release-candidate. Install with `pnpm add @coherent.js/core@rc`. The stable release follows after a 1-2 week soak.
@@ -151,22 +151,6 @@ const MyCard = Card({
 });
 ```
 
-### Factory Functions Over Classes
-
-Coherent.js emphasizes factory functions for a pure object approach:
-
-```javascript
-// ✅ Recommended: Factory functions
-import { render } from '@coherent.js/core';
-
-const db = render({ type: 'sqlite', database: ':memory:' });
-const query = render({ table: 'users', select: ['*'] });
-
-// ✅ Also available: Direct class access (for advanced use)
-import { render } from '@coherent.js/core';
-const db = new render(config);
-```
-
 ## Framework Features Overview
 
 ### 🎨 Components & Rendering
@@ -204,7 +188,7 @@ Now that you understand the basics, explore these guides based on what you want 
 
 #### 🖥️ **Building Web Apps?**
 1. [Server-Side Rendering](../server/ssr.md) - Fast initial loads
-2. [Client-Side Hydration](../client/hydration-guide.md) - Add interactivity
+2. [Client-Side Hydration](../client/hydration.md) - Add interactivity
 3. [Framework Integrations](../deployment/integrations.md) - Full web apps
 
 #### 💾 **Working with Data?**
@@ -222,12 +206,11 @@ Now that you understand the basics, explore these guides based on what you want 
 Check out our [enhanced example browser](../../examples/) with categorized examples:
 
 - **🚀 Getting Started**: `basic-usage.js`
-- **🧩 Components**: `component-composition.js`, `context-example.js`
-- **💾 Database**: `database-queries.js`, `pure-object-models.js`
-- **🛣️ Routing**: `router-demo.js`, `enhanced-router-demo.js`
+- **🧩 Components**: `component-composition.js`, `state-management-demo.js`
+- **🛣️ Routing**: `client-router-demo.js`
 - **💻 Client-Side**: `hydration-demo.js`
-- **🖥️ Server-Side**: `express-integration.js`, `nextjs-integration.js`
-- **⚡ Performance**: `performance-test.js`, `memoization.js`
+- **🖥️ Server-Side**: `express-integration.js`, `nextjs-integration.js`, `streaming.js`
+- **🛠️ Tooling**: `devtools-demo.js`, `error-boundary-demo.js`
 
 ## Development Server
 
@@ -240,7 +223,7 @@ npm run dev
 
 ## Getting Help
 
-- 📖 [Full API Reference](../api-reference.md)
+- 📖 [Full API Reference](../api/reference.md)
 - 🎯 [Examples Browser](../../examples/)
 - 🐛 [GitHub Issues](https://github.com/Tomdrouv1/coherent.js/issues)
 - 💬 [Discussions](https://github.com/Tomdrouv1/coherent.js/discussions)

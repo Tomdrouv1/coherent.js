@@ -182,10 +182,10 @@ my-coherent-app/
 
 Now that you have Coherent.js installed and running:
 
-1. **[Learn Component Basics →](/docs/components/basic-components)** - Master the object syntax
+1. **[Learn Component Basics →](../components/basics.md)** - Master the object syntax
 2. **[Explore Examples →](/examples)** - See real-world patterns
-3. **[Server Integration →](/docs/framework-integrations)** - Connect with your favorite framework
-4. **[Performance Tips →](/docs/performance-optimizations)** - Optimize for production
+3. **[Server Integration →](../deployment/integrations.md)** - Connect with your favorite framework
+4. **[Performance Tips →](../deployment/performance.md)** - Optimize for production
 
 ## 🔧 Development Tools
 
@@ -256,8 +256,8 @@ const Button = {
 
 ## 📚 Resources
 
-- **[API Reference](/docs/api-reference)** - Complete function documentation
+- **[API Reference](../api/reference.md)** - Complete function documentation
 - **[Examples](/examples)** - Practical code samples
 - **[GitHub Repository](https://github.com/Tomdrouv1/coherent.js)** - Source code and issues
 
-Ready to dive deeper? **[Continue to Component Basics →](/docs/components/basic-components)**
+Ready to dive deeper? **[Continue to Component Basics →](../components/basics.md)**

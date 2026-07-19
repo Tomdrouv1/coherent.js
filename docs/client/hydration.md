@@ -580,4 +580,4 @@ Hydration requires a modern browser with support for ES modules. For older brows
 
 - [Basic Components](../components/basics.md) - Component creation guide
 - [State Management](../components/state.md) - Using withState
-- [Performance Guide](../performance-optimizations.md) - Optimization strategies
+- [Performance Guide](../deployment/performance.md) - Optimization strategies

@@ -1295,4 +1295,4 @@ const Counter = withState({ count: 0 }, {
 
 ---
 
-For more advanced patterns and performance optimizations, see the [Performance Guide](../performance-optimizations.md) and [Advanced Components](./advanced-components.md).
+For more advanced patterns and performance optimizations, see the [Performance Guide](../deployment/performance.md) and [Advanced Components](advanced.md).

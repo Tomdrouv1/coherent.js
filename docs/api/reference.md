@@ -339,7 +339,7 @@ Gets performance optimization recommendations.
 
 **Example:**
 ```javascript
-import { createDatabaseManager } from '@coherent.js/core';
+import { createDatabaseManager } from '@coherent.js/database';
 
 // Recommended approach
 const db = createDatabaseManager({
@@ -359,7 +359,7 @@ const db = createDatabaseManager({
 
 **Example:**
 ```javascript
-import { createQuery } from '@coherent.js/core';
+import { createQuery } from '@coherent.js/database';
 
 // Pure object approach
 const query = createQuery({
@@ -381,7 +381,7 @@ const query = createQuery({
 
 **Example:**
 ```javascript
-import { createQuery, executeQuery, createDatabaseManager } from '@coherent.js/core';
+import { createQuery, executeQuery, createDatabaseManager } from '@coherent.js/database';
 
 const db = createDatabaseManager({ type: 'sqlite', database: ':memory:' });
 const query = createQuery({ table: 'users', select: ['*'] });
