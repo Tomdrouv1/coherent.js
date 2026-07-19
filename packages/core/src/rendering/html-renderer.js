@@ -372,6 +372,19 @@ class HTMLRenderer extends BaseRenderer {
             ? `<${tagName} ${attributeString}>`
             : `<${tagName}>`;
 
+        // Void elements take no closing tag and cannot have content (per the
+        // HTML spec); any text/children are dropped like a browser would.
+        if (isVoidElement(tagName)) {
+            if (options.enableCache && this.cache && RendererUtils.isCacheable(element, options)) {
+                const cacheKey = RendererUtils.generateCacheKey(tagName, element);
+                if (cacheKey) {
+                    this.cache.set(cacheKey, openingTag);
+                }
+            }
+            this.recordPerformance(tagName, startTime, false);
+            return openingTag;
+        }
+
         // Handle raw HTML injection (unescaped) — for SSR use cases like syntax highlighting
         if (_rawHtml !== undefined) {
             const rawContent = typeof _rawHtml === 'function' ? String(_rawHtml()) : String(_rawHtml);
