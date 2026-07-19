@@ -199,11 +199,6 @@ export function createFormBuilder<T extends Record<string, unknown> = Record<str
 export function buildForm(config: FormConfig): CoherentNode;
 
 /**
- * Render a single form field
- */
-export function renderField<T = unknown>(field: FormField<T>): CoherentNode;
-
-/**
  * Validate a single field value
  * @returns Error message or null if valid
  */
@@ -386,24 +381,6 @@ export const validators: {
 // ============================================================================
 // Form Utilities
 // ============================================================================
-
-/**
- * Parse FormData to typed object
- */
-export function parseFormData<T extends Record<string, unknown>>(formData: FormData): T;
-
-/**
- * Serialize object to FormData
- */
-export function toFormData(data: Record<string, unknown>): FormData;
-
-/**
- * Create a form group (fieldset)
- */
-export function createFieldGroup(
-  legend: string,
-  fields: FormField[]
-): CoherentNode;
 
 // 1.0: removed deprecated SPA APIs — createForm, formValidators, enhancedForm,
 // createAsyncValidator, combineValidators, conditionalValidator.

@@ -88,11 +88,6 @@ export function createTestRenderer(): TestRenderer;
  */
 export function shallowRender(component: CoherentNode): RenderResult;
 
-/**
- * Render a node to HTML string
- */
-export function renderToString(node: CoherentNode): string;
-
 // ============================================================================
 // Custom Matchers for Coherent.js
 // ============================================================================
@@ -253,25 +248,6 @@ export function createSpy<T extends (...args: unknown[]) => unknown>(
 ): Mock<T>;
 
 /**
- * Mock a component
- */
-export function mockComponent<P extends ComponentProps = ComponentProps>(
-  name: string,
-  render?: (props: P) => CoherentNode
-): CoherentComponent<P>;
-
-/**
- * Create test state with reset capability
- */
-export function createTestState<T extends Record<string, unknown>>(
-  initial: T
-): {
-  getState: () => T;
-  setState: (updates: Partial<T>) => void;
-  reset: () => void;
-};
-
-/**
  * Cleanup all mocks and rendered components
  */
 export function cleanup(): void;
@@ -325,14 +301,6 @@ export const userEvent: {
 // ============================================================================
 // Assertion Utilities
 // ============================================================================
-
-/**
- * Assert element structure matches expected
- */
-export function assertElementStructure(
-  element: CoherentElement,
-  expected: Partial<CoherentElement>
-): void;
 
 /**
  * Standard assertions

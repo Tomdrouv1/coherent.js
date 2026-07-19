@@ -73,35 +73,9 @@ export type StoreMiddleware<T> = (
   payload?: unknown
 ) => T | void;
 
-/**
- * Create a typed state store
- */
-export function createStore<T extends Record<string, unknown>>(
-  options: StoreOptions<T>
-): Store<T>;
-
 // ============================================================================
 // Selector Types
 // ============================================================================
-
-/**
- * Create a derived selector from store state
- * @template T - Store state type
- * @template R - Return type of selector
- */
-export function createSelector<T extends Record<string, unknown>, R>(
-  store: Store<T>,
-  selector: (state: T) => R
-): () => R;
-
-/**
- * Create a memoized selector with dependencies
- */
-export function createMemoizedSelector<T extends Record<string, unknown>, D extends unknown[], R>(
-  store: Store<T>,
-  dependencies: (...args: D) => unknown[],
-  selector: (state: T, ...deps: D) => R
-): (...args: D) => R;
 
 // ============================================================================
 // Action Types
@@ -115,23 +89,6 @@ export function createMemoizedSelector<T extends Record<string, unknown>, D exte
 export type Action<T, P = void> = P extends void
   ? () => Partial<T>
   : (payload: P) => Partial<T>;
-
-/**
- * Create typed action creators
- */
-export function createActions<
-  T extends Record<string, unknown>,
-  A extends Record<string, Action<T, unknown>>
->(
-  store: Store<T>,
-  actions: A
-): {
-  [K in keyof A]: A[K] extends Action<T, infer P>
-    ? P extends void
-      ? () => void
-      : (payload: P) => void
-    : never;
-};
 
 // ============================================================================
 // Reactive State Types

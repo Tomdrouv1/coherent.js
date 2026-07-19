@@ -175,14 +175,34 @@ export interface RouterConfig {
   strict?: boolean;
 }
 
+/** Options accepted when registering a route */
+export interface RouteRegistrationOptions {
+  middleware?: Middleware[];
+  name?: string;
+  version?: string;
+}
+
 /** Object router interface */
 export interface ObjectRouter {
   routes: RouteObject;
   config: RouterConfig;
-  addRoute(path: string, definition: RouteDefinition): void;
+  addRoute(method: string, path: string, handler: RouteHandler, options?: RouteRegistrationOptions): void;
   addRoutes(routes: RouteObject): void;
+  get(path: string, handler: RouteHandler, options?: RouteRegistrationOptions): void;
+  post(path: string, handler: RouteHandler, options?: RouteRegistrationOptions): void;
+  put(path: string, handler: RouteHandler, options?: RouteRegistrationOptions): void;
+  patch(path: string, handler: RouteHandler, options?: RouteRegistrationOptions): void;
+  delete(path: string, handler: RouteHandler, options?: RouteRegistrationOptions): void;
   use(middleware: Middleware): void;
   use(path: string, middleware: Middleware): void;
+  /**
+   * Adapt the router to an Express router. Pass the express module itself;
+   * the returned value is whatever `express.Router()` produces, so it plugs
+   * straight into `app.use(path, router.toExpressRouter(express))`.
+   */
+  toExpressRouter<RouterType>(express: { Router: () => RouterType }): RouterType;
+  /** Create a bare node:http server that delegates every request to handle(). */
+  createServer(options?: Record<string, unknown>): import('http').Server;
   /**
    * Handle a raw Node request/response pair. The router parses query, params
    * and body itself, so a plain IncomingMessage is accepted.
@@ -482,14 +502,6 @@ export class NotFoundError extends ApiError {
  * Thrown when operation conflicts with current state (HTTP 409).
  */
 export class ConflictError extends ApiError {
-  constructor(message?: string);
-}
-
-/**
- * Bad request error class.
- * Thrown when request is malformed (HTTP 400).
- */
-export class BadRequestError extends ApiError {
   constructor(message?: string);
 }
 

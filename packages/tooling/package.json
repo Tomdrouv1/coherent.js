@@ -15,15 +15,15 @@
       "import": "./dist/testing/index.js"
     },
     "./testing/renderer": {
-      "types": "./types/testing/index.d.ts",
+      "types": "./types/testing/renderer.d.ts",
       "import": "./dist/testing/test-renderer.js"
     },
     "./testing/utils": {
-      "types": "./types/testing/index.d.ts",
+      "types": "./types/testing/utils.d.ts",
       "import": "./dist/testing/test-utils.js"
     },
     "./testing/matchers": {
-      "types": "./types/testing/index.d.ts",
+      "types": "./types/testing/matchers.d.ts",
       "import": "./dist/testing/matchers.js"
     },
     "./lsp": {

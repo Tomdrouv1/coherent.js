@@ -113,7 +113,74 @@ async function snapshotPackage(pkg) {
   const missingTargets = sections
     .filter(({ note }) => note && note.startsWith('target file missing'))
     .map(({ subpath, note }) => `${subpath}: ${note}`);
-  return { name: pkg.name, dir: pkg.dir, missingTargets, content: formatSnapshot(`@coherent.js/${pkg.name}`, sections) };
+  const phantomTypes = checkTypesParity(pkg, sections);
+  return { name: pkg.name, dir: pkg.dir, missingTargets, phantomTypes, content: formatSnapshot(`@coherent.js/${pkg.name}`, sections) };
+}
+
+/**
+ * Extract value-export names declared in a .d.ts file.
+ * Only definitive value declarations (function/const/class/let/var) are
+ * returned — brace re-exports may cover interfaces and are intentionally
+ * excluded so type-only names can't be misread as runtime values.
+ */
+function parseDtsValueExports(dtsPath) {
+  const source = readFileSync(dtsPath, 'utf8');
+  const names = new Set();
+  const patterns = [
+    /^export\s+(?:declare\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/gm,
+    /^export\s+(?:declare\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)/gm,
+    /^export\s+(?:declare\s+)?(?:abstract\s+)?class\s+([A-Za-z_$][\w$]*)/gm,
+  ];
+  for (const re of patterns) {
+    let m;
+    while ((m = re.exec(source)) !== null) names.add(m[1]);
+  }
+  return names;
+}
+
+function resolveTypesPath(pkg, subpath, exportValue) {
+  if (exportValue && typeof exportValue === 'object' && typeof exportValue.types === 'string') {
+    return resolve(pkg.dir, exportValue.types);
+  }
+  if (subpath === '.' && typeof pkg.pkgJson.types === 'string') {
+    return resolve(pkg.dir, pkg.pkgJson.types);
+  }
+  return null;
+}
+
+/**
+ * Types-parity gate: every value export declared in a subpath's .d.ts must
+ * exist at runtime. Phantom declarations let broken consumer code typecheck
+ * and then crash (`createI18n is not a function`), so they are a hard failure.
+ */
+function checkTypesParity(pkg, sections) {
+  const phantoms = [];
+  for (const section of sections) {
+    if (!section.exports) continue; // no runtime snapshot to compare against
+    const exportValue = pkg.pkgJson.exports[section.subpath];
+    const typesPath = resolveTypesPath(pkg, section.subpath, exportValue);
+    if (!typesPath || !existsSync(typesPath)) continue;
+    const declared = parseDtsValueExports(typesPath);
+    const runtime = new Set(section.exports);
+    for (const name of declared) {
+      if (!runtime.has(name)) {
+        phantoms.push(`${section.subpath}: \`${name}\` declared in ${typesPath.replace(REPO_ROOT + '/', '')} but not exported at runtime`);
+      }
+    }
+  }
+  return phantoms;
+}
+
+function reportPhantomTypes(results) {
+  const broken = results.filter(({ phantomTypes }) => phantomTypes && phantomTypes.length > 0);
+  if (broken.length === 0) return false;
+  console.error('❌ Phantom type declarations (typed but missing at runtime):');
+  for (const { name, phantomTypes } of broken) {
+    for (const entry of phantomTypes) {
+      console.error(`  - ${name}: ${entry}`);
+    }
+  }
+  return true;
 }
 
 // A subpath whose target file doesn't exist is always a hard failure — it
@@ -142,7 +209,8 @@ async function runWrite() {
     writeFileSync(target, result.content, 'utf8');
     console.log(`  ✓ ${result.name}: wrote ${target.replace(REPO_ROOT + '/', '')}`);
   }
-  if (reportMissingTargets(results)) {
+  const failed = reportMissingTargets(results) | reportPhantomTypes(results);
+  if (failed) {
     process.exitCode = 1;
     return;
   }
@@ -169,8 +237,9 @@ async function runCheck() {
     }
   }
   const hasMissingTargets = reportMissingTargets(results);
+  const hasPhantomTypes = reportPhantomTypes(results);
   if (failures.length === 0) {
-    if (hasMissingTargets) {
+    if (hasMissingTargets || hasPhantomTypes) {
       process.exitCode = 1;
       return;
     }

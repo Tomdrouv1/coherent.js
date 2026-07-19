@@ -564,15 +564,6 @@ export function checkPeerDependencies(
 export function hasChildren(component: unknown): boolean;
 export function normalizeChildren(children: unknown): unknown[];
 
-/** Escape HTML characters in text */
-export function escapeHtml(text: string): string;
-
-/** Check if tag is a void element */
-export function isVoidElement(tagName: string): boolean;
-
-/** Format HTML attributes */
-export function formatAttributes(attrs: HTMLAttributes): string;
-
 /** Higher-order component for state management */
 export const withState: WithStateHOC;
 
@@ -581,15 +572,6 @@ export function memo<T extends (...args: any[]) => any>(
   fn: T,
   options?: MemoOptions
 ): MemoizedFunction<T>;
-
-/** Component memoization */
-export function memoComponent<P extends ComponentProps>(
-  component: CoherentComponent<P>,
-  options?: { propsEqual?: (a: P, b: P) => boolean; name?: string }
-): CoherentComponent<P>;
-
-/** Higher-order component for props transformation */
-export const withProps: WithPropsHOC;
 
 /** Validate component structure */
 export function validateComponent(obj: any, name?: string): boolean;
@@ -609,44 +591,9 @@ export function isLazy<T>(value: any): value is LazyWrapper<T>;
 /** Evaluate lazy values recursively */
 export function evaluateLazy<T>(obj: T, ...args: any[]): T;
 
-/** Create lazy component */
-export function lazyComponent<P extends ComponentProps>(
-  componentFactory: () => CoherentComponent<P>,
-  options?: LazyOptions
-): LazyWrapper<CoherentComponent<P>>;
-
 // ============================================================================
 // Component System Classes and Functions
 // ============================================================================
-
-/** Component class constructor */
-export class Component implements ComponentInstance {
-  constructor(definition?: ComponentDefinition);
-
-  name: string;
-  props: ComponentProps;
-  state: ComponentStateManager;
-  children: ComponentInstance[];
-  parent: ComponentInstance | null;
-  rendered: CoherentNode | null;
-  isMounted: boolean;
-  isDestroyed: boolean;
-  definition: ComponentDefinition;
-  hooks: Required<ComponentLifecycleHooks>;
-  methods: ComponentMethods;
-  computed: ComputedProperties;
-  computedCache: Map<string, any>;
-  watchers: ComponentWatchers;
-
-  render(props?: ComponentProps): CoherentNode;
-  mount(): ComponentInstance;
-  update(): ComponentInstance;
-  destroy(): ComponentInstance;
-  clone(overrides?: Partial<ComponentDefinition>): ComponentInstance;
-  getMetadata(): ComponentMetadata;
-  callHook(hookName: keyof ComponentLifecycleHooks, ...args: any[]): any;
-  handleError(error: Error, context?: string): void;
-}
 
 /** Create a component instance */
 export function createComponent(definition: ComponentDefinition | CoherentComponent): Component;
@@ -668,39 +615,9 @@ export function getComponent<P extends ComponentProps>(name: string): CoherentCo
 /** Get all registered components */
 export function getRegisteredComponents(): Map<string, CoherentComponent>;
 
-/** Create a higher-order component */
-export function createHOC<P extends ComponentProps, E extends ComponentProps>(
-  enhancer: (WrappedComponent: CoherentComponent<P>, props: E) => CoherentNode
-): (WrappedComponent: CoherentComponent<P>) => CoherentComponent<E>;
-
 // ============================================================================
 // State Management Functions
 // ============================================================================
-
-/** Create a state container */
-export function createState(initialState?: Record<string, any>): StateContainer;
-
-/** Global state manager instance */
-export const globalStateManager: GlobalStateManager;
-
-/** Provide context to children */
-export function provideContext<T>(key: string, value: T): void;
-
-/** Create a context provider component */
-export function createContextProvider<T>(
-  key: string,
-  value: T,
-  children: CoherentNode
-): ContextProvider;
-
-/** Restore context to previous value */
-export function restoreContext(key: string): void;
-
-/** Clear all context stacks */
-export function clearAllContexts(): void;
-
-/** Use context value */
-export function useContext<T>(key: string): T | undefined;
 
 // ============================================================================
 // Virtual DOM Types (Additional)
@@ -714,14 +631,6 @@ export interface VNode {
   key?: string | number;
 }
 
-/** VDOM operation types */
-export const VDOM_OPERATIONS: {
-  CREATE: string;
-  REMOVE: string;
-  REPLACE: string;
-  UPDATE: string;
-};
-
 /** VDOM patch operation */
 export interface VDOMPatch {
   type: string;
@@ -731,53 +640,13 @@ export interface VDOMPatch {
   props?: Record<string, any>;
 }
 
-/** Create a virtual node */
-export function createVNode(type: string | Function, props?: Record<string, any>, children?: VNode[]): VNode;
-
-/** Convert object to virtual node */
-export function objectToVNode(component: CoherentNode, depth?: number): VNode;
-
-/** Diff two virtual nodes */
-export function diff(oldVNode: VNode, newVNode: VNode, patches?: VDOMPatch[], path?: (string | number)[]): VDOMPatch[];
-
-/** Apply patches to DOM element */
-export function patch(element: HTMLElement, patches: VDOMPatch[]): void;
-
-/** VDOM differ class */
-export class VDOMDiffer {
-  diff(oldVNode: VNode, newVNode: VNode): VDOMPatch[];
-  patch(element: HTMLElement, patches: VDOMPatch[]): void;
-}
-
 // ============================================================================
 // CSS Management (Additional)
 // ============================================================================
 
-/** CSS manager for component styles */
-export class CSSManager {
-  addStyles(componentId: string, styles: string | Record<string, any>): void;
-  removeStyles(componentId: string): void;
-  getStyles(componentId?: string): string;
-  getAllStyles(): string;
-  clearStyles(): void;
-  hasStyles(componentId: string): boolean;
-}
-
 // ============================================================================
 // Performance Monitoring (Additional)
 // ============================================================================
-
-/** Performance monitor class */
-export class PerformanceMonitor {
-  startRender(id?: string): string;
-  endRender(id: string): number;
-  recordRender(type: string, duration: number, metadata?: any): void;
-  getMetrics(): Record<string, any>;
-  clearMetrics(): void;
-  enableMonitoring(): void;
-  disableMonitoring(): void;
-  isEnabled(): boolean;
-}
 
 /** Global performance monitor instance */
 export const performanceMonitor: PerformanceMonitor;
@@ -804,26 +673,9 @@ export interface CacheManager {
   prune(): void;
 }
 
-/** Create cache manager */
-export function createCacheManager(options?: CacheManagerOptions): CacheManager;
-
-/** Global cache manager instance */
-export const cacheManager: CacheManager;
-
 // ============================================================================
 // Bundle Optimization (Additional)
 // ============================================================================
-
-/** Bundle optimizer class */
-export class BundleOptimizer {
-  analyze(bundle: any): any;
-  optimize(bundle: any): any;
-  splitChunks(bundle: any): any[];
-  treeshake(bundle: any): any;
-}
-
-/** Global bundle optimizer instance */
-export const bundleOptimizer: BundleOptimizer;
 
 // ============================================================================
 // Component Cache (Additional)
@@ -849,9 +701,6 @@ export const VERSION: string;
 
 /** Composition utilities */
 export const compose: ComposeUtils;
-
-/** Component utilities */
-export const componentUtils: ComponentUtils;
 
 /** Default export with all core functionality */
 declare const coherent: {
