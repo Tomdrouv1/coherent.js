@@ -1,4 +1,5 @@
 import { build } from 'esbuild';
+import { existsSync } from 'fs';
 import { readFile, writeFile } from 'fs/promises';
 import { spawn } from 'child_process';
 import process, { env } from 'node:process';
@@ -33,6 +34,22 @@ export const commonConfig = {
 };
 
 /**
+ * Locate the package.json owning an entry point, walking up from its
+ * directory (entry points may be package-relative or repo-relative).
+ */
+function findNearestManifest(entryPoint) {
+  let dir = path.resolve(path.dirname(entryPoint));
+  for (let i = 0; i < 6; i++) {
+    const candidate = path.join(dir, 'package.json');
+    if (existsSync(candidate)) return candidate;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return 'package.json';
+}
+
+/**
  * Build a package with both ESM and CJS formats.
  *
  * Pass `entries` ({ name: 'src/file.js', ... }) when the package's exports map
@@ -47,7 +64,7 @@ export async function buildPackage({
   additionalConfig = {},
   formats = ['esm', 'cjs'] // Allow specifying which formats to build
 }) {
-  const manifest = JSON.parse(await readFile('package.json', 'utf-8'));
+  const manifest = JSON.parse(await readFile(findNearestManifest(entries ? Object.values(entries)[0] : entryPoint), 'utf-8'));
   const config = {
     ...commonConfig,
     external: [...commonConfig.external, ...external],
