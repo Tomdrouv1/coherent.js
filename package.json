@@ -44,7 +44,7 @@
     "example:hydration": "node examples/hydration-test.js",
     "example:memoization": "node examples/memoization-test.js",
     "example:composition": "node examples/component-composition.js",
-    "lint": "eslint packages/*/src/**/*.js packages/*/test/**/*.js examples/**/*.js scripts/**/*.js scripts/**/*.mjs --max-warnings=0",
+    "lint": "eslint 'packages/*/src/**/*.js' 'packages/*/test/**/*.js' 'examples/**/*.js' 'scripts/**/*.js' 'scripts/**/*.mjs' --max-warnings=0",
     "lint:fix": "eslint packages/*/src/**/*.js packages/*/test/**/*.js examples/**/*.js scripts/**/*.js scripts/**/*.mjs --fix",
     "format": "prettier --write packages/ tests/ examples/",
     "format:check": "prettier --check packages/ tests/ examples/",
