@@ -20,7 +20,7 @@ import {
   InitializeResult,
   CodeActionKind,
   DidChangeConfigurationNotification,
-} from 'vscode-languageserver/node.js';
+} from 'vscode-languageserver/node';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
 // Import providers
@@ -93,7 +93,7 @@ connection.onInitialized(() => {
   }
 
   if (hasWorkspaceFolderCapability) {
-    connection.workspace.onDidChangeWorkspaceFolders((_event) => {
+    connection.workspace.onDidChangeWorkspaceFolders((_event: unknown) => {
       console.error('[coherent-lsp] Workspace folder change event received');
     });
   }

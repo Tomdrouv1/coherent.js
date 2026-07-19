@@ -10,8 +10,8 @@
  *
  * @see https://microsoft.github.io/language-server-protocol/
  */
-import { TextDocuments } from 'vscode-languageserver/node.js';
+import { TextDocuments } from 'vscode-languageserver/node';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-export declare const connection: import("vscode-languageserver/node.js")._Connection<import("vscode-languageserver/node.js")._, import("vscode-languageserver/node.js")._, import("vscode-languageserver/node.js")._, import("vscode-languageserver/node.js")._, import("vscode-languageserver/node.js")._, import("vscode-languageserver/node.js")._, import("vscode-languageserver/lib/common/inlineCompletion.proposed.js").InlineCompletionFeatureShape, import("vscode-languageserver/node.js")._>;
+export declare const connection: import("vscode-languageserver/node")._Connection<import("vscode-languageserver/node")._, import("vscode-languageserver/node")._, import("vscode-languageserver/node")._, import("vscode-languageserver/node")._, import("vscode-languageserver/node")._, import("vscode-languageserver/node")._, import("vscode-languageserver/node")._, import("vscode-languageserver/node")._>;
 export declare const documents: TextDocuments<TextDocument>;
 //# sourceMappingURL=server.d.ts.map

@@ -49,3 +49,21 @@ overrides:
   'form-data@>=4.0.0 <4.0.6': '^4.0.6'
   # ws memory-exhaustion DoS from tiny fragments — fixed in 8.21.0.
   'ws@>=8.0.0 <8.21.0': '^8.21.0'
+  # qs stringify DoS on null entries in comma-format arrays — fixed in 6.15.2.
+  'qs@>=6.11.1 <6.15.2': '^6.15.2'
+  # postcss XSS via unescaped </style> in stringified output — fixed in 8.5.10.
+  'postcss@>=8.0.0 <8.5.10': '^8.5.10'
+  # ip-address XSS in Address6 HTML-emitting methods — fixed in 10.1.1.
+  'ip-address@<=10.1.0': '^10.1.1'
+  # js-yaml quadratic-complexity DoS in merge-key handling — fixed in 3.15.0
+  # (scoped to the 3.x line so js-yaml 4 consumers are untouched).
+  'js-yaml@<3.15.0': '^3.15.0'
+  # esbuild arbitrary file read from the dev server on Windows — fixed in 0.28.1.
+  'esbuild@>=0.27.3 <0.28.1': '^0.28.1'
+  # webpack buildHttp allowedUris bypasses (SSRF) — fixed in 5.104.1.
+  'webpack@>=5.49.0 <5.104.1': '^5.104.1'
+  # cookie accepts out-of-bounds characters in name/path/domain — fixed in 0.7.0.
+  'cookie@<0.7.0': '^0.7.0'
+  # @tootallnate/once incorrect control-flow scoping — fixed in 2.0.1. Only
+  # reached at build time via sqlite3 > node-gyp's proxy-aware fetch chain.
+  '@tootallnate/once@<2.0.1': '^2.0.1'
