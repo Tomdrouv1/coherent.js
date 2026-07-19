@@ -19,7 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
                    ├─ Enhanced router and forms
                    └─ Improved documentation
 
-📅 2026-07-19  →  v1.0.0-rc.3   (CURRENT)
+📅 2026-07-19  →  v1.0.0-rc.4   (CURRENT)
+                   ├─ Void elements render valid HTML
+                   ├─ 69 phantom type declarations removed; types-parity gate
+                   └─ Scaffold boot E2E in CI
+
+📅 2026-07-19  →  v1.0.0-rc.3   (RELEASED)
                    ├─ Published exports maps fixed for every package
                    ├─ CLI scaffolds work out of the box (vitest, strict TS, api glue)
                    ├─ Docs/examples aligned with real APIs; site link audit
@@ -70,6 +75,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ```
 
 ## [Unreleased]
+
+## [1.0.0-rc.4] - 2026-07-19
+
+Renderer correctness and type-truth follow-up to rc.3, plus the release guardrails that would have caught both bug classes earlier.
+
+### Fixed
+
+- **core: void elements render without closing tags.** The object-element render path emitted invalid HTML like `<meta charset="utf-8"></meta>` for every void element (`meta`, `img`, `input`, `br`, `link`, …) on every page. Void elements now emit the bare opening tag per the HTML spec; any text/children are dropped the way a browser would. Rendered output changes byte-for-byte wherever void elements appear.
+- **Phantom type declarations removed (69 across api, cli, core, database, devtools, forms, state, tooling).** Hand-written `.d.ts` files declared values that don't exist at runtime — broken consumer code typechecked and then crashed (`createI18n is not a function` was this class). Notables: core's `escapeHtml`/`isVoidElement`/`createVNode` exist only on the default-export object, cli declared an entirely fictional programmatic API, forms declared `renderField`. Names were removed rather than added to the runtime; promoting any of them to real named exports is a deliberate 1.x decision.
+- **tooling: testing subpath types match their modules.** The four `./testing*` subpaths shared one union declaration file, so every subpath promised every name; each now ships a per-slice declaration file, and `TestRendererResult` is declared with its real string-level query API.
+- **api: `ObjectRouter` type matches the implementation** — gained `get`/`post`/`put`/`patch`/`delete`, `toExpressRouter` (typed via a structural generic over the passed express module), `createServer`, and a corrected `addRoute` signature.
+- **cli: express TypeScript scaffolds typecheck** — strict TS cannot infer express's 4-arity error-middleware parameters; the template now emits typed parameters for TS projects.
+
+### Added
+
+- **Types-parity gate:** `check-api-surface` hard-fails when a `.d.ts` declares a value (function/const/class, including brace re-exports resolved against their source declarations) that is missing from the runtime exports — in both `--write` and `--check`, so phantoms can't return.
+- **Scaffold boot E2E:** `scripts/scaffold-boot-e2e.mjs` + nightly/PR workflow — scaffolds four representative permutations against the workspace packages, then runs each generated project's install, typecheck, and tests, boots the server, and probes `/` and the `/api` routes over HTTP. Closes the tracked rc.2 gap that let rc.1 and rc.2 ship scaffolds that could not boot.
+
+### Security
+
+- pnpm overrides for the four high-severity transitive advisories the audit gate blocks on: undici (6.x and 7.x lines), astro SSRF, form-data CRLF injection, and ws DoS. `pnpm audit --audit-level high` is clean.
+
+### CI
+
+- The publint step skips manifest-less directories (it hard-failed on a `packages/adapters` dist remnant resurrected from the build cache — this had CI on main red since the step landed in rc.3).
 
 ## [1.0.0-rc.3] - 2026-07-19
 
