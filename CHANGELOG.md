@@ -82,6 +82,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **ESM-only packaging.** All published packages dropped their CommonJS bundles; export maps resolve `types` + `default` to the ESM build. Node >= 22.12 loads these through `require()` natively, so CJS consumers keep working — while the dual-package hazard (two module instances of the client event registry / state stores when an app mixed `import` and `require`) is gone, and the `require` condition of api/core/database no longer points at bundles TypeScript had no declarations for (the original `.d.cts` gap: the ESM-flavored `.d.ts` was lying about the CJS entry). Also fixed along the way: the other packages' export maps used the `import` condition alone, so `require()` of them failed with `ERR_PACKAGE_PATH_NOT_EXPORTED` even on require(esm)-capable Node. TypeScript CJS consumers need TS 5.8+ with `--module nodenext`; see MIGRATION-1.0.md.
+- **`engines.node` floor raised to `>=22.12.0`** — the LTS patch where require(esm) shipped unflagged.
+- Legacy `buildAll`/`generatePackageExports` helpers deleted from `scripts/shared-build.mjs` (referenced packages that no longer exist; nothing invoked them).
+
 ### Fixed
 
 - **Auth scaffolds actually authenticate.** Generated register handlers silently discarded the password (`// you should hash the password!`) and login handlers issued a valid JWT for **any** password on a known email — an authentication bypass in every generated project. Registration now hashes with scrypt (Node's built-in KDF — zero new dependencies; stored as `scrypt:<salt>:<hash>`) and login verifies with `timingSafeEqual`, across all four runtimes (express, fastify, koa, built-in), both JWT and session flavors. The database models gained the matching `password_hash` column/insert (it existed but was never written for postgres/mysql, and was missing entirely for sqlite).

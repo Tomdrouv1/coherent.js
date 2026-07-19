@@ -3,30 +3,25 @@
   "version": "1.0.0-rc.5",
   "description": "Database utilities and adapters for Coherent.js",
   "type": "module",
-  "main": "dist/index.cjs",
+  "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "./types/index.d.ts",
   "exports": {
     ".": {
       "types": "./types/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "default": "./dist/index.js"
     },
     "./model": {
-      "import": "./dist/model.js",
-      "require": "./dist/model.cjs"
+      "default": "./dist/model.js"
     },
     "./migration": {
-      "import": "./dist/migration.js",
-      "require": "./dist/migration.cjs"
+      "default": "./dist/migration.js"
     },
     "./connection": {
-      "import": "./dist/connection-manager.js",
-      "require": "./dist/connection-manager.cjs"
+      "default": "./dist/connection-manager.js"
     },
     "./middleware": {
-      "import": "./dist/middleware.js",
-      "require": "./dist/middleware.cjs"
+      "default": "./dist/middleware.js"
     }
   },
   "scripts": {
@@ -46,7 +41,7 @@
     "LICENSE"
   ],
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.12.0"
   },
   "license": "MIT",
   "repository": {
