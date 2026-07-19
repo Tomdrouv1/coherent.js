@@ -39,3 +39,13 @@ overrides:
   '@remix-run/server-runtime': '^2.17.5'
   # turbo-stream prototype-pollution — only fixed in 3.0.0.
   turbo-stream: '^3.0.0'
+  # undici TLS-validation bypass, WebSocket DoS, cross-origin routing —
+  # fixed in 6.27.0 (6.x line, via @codecov/vite-plugin) and 7.28.0 (7.x).
+  'undici@<6.27.0': '^6.27.0'
+  'undici@>=7.0.0 <7.28.0': '^7.28.0'
+  # astro prerendered-error-page SSRF — fixed in 6.4.6.
+  'astro@<6.4.6': '^6.4.6'
+  # form-data CRLF injection — fixed in 4.0.6 (via @vscode/vsce).
+  'form-data@>=4.0.0 <4.0.6': '^4.0.6'
+  # ws memory-exhaustion DoS from tiny fragments — fixed in 8.21.0.
+  'ws@>=8.0.0 <8.21.0': '^8.21.0'

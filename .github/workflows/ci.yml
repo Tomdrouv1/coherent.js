@@ -75,6 +75,9 @@ jobs:
         run: |
           for dir in packages/*/; do
             case "$dir" in *vscode-extension*) continue ;; esac
+            # Skip directories without a manifest (e.g. dist remnants of
+            # removed packages restored from the build cache).
+            [ -f "$dir/package.json" ] || continue
             echo "── publint $dir"
             pnpm dlx publint "$dir" || exit 1
           done
