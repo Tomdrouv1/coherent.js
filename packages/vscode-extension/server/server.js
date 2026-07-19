@@ -10,7 +10,7 @@
  *
  * @see https://microsoft.github.io/language-server-protocol/
  */
-import { createConnection, TextDocuments, ProposedFeatures, TextDocumentSyncKind, CodeActionKind, DidChangeConfigurationNotification, } from 'vscode-languageserver/node.js';
+import { createConnection, TextDocuments, ProposedFeatures, TextDocumentSyncKind, CodeActionKind, DidChangeConfigurationNotification, } from 'vscode-languageserver/node';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 // Import providers
 import { registerDiagnosticProvider } from './providers/diagnostics.js';
