@@ -55,7 +55,7 @@
     "url": "https://github.com/Tomdrouv1/coherent.js/issues"
   },
   "dependencies": {
-    "fastify-plugin": "^4.5.1"
+    "fastify-plugin": "^6.0.0"
   },
   "peerDependencies": {
     "@coherent.js/core": "workspace:*",

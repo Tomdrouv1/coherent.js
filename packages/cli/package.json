@@ -44,9 +44,9 @@
   },
   "dependencies": {
     "chokidar": "5.0.0",
-    "commander": "12.1.0",
+    "commander": "15.0.0",
     "glob": "13.0.6",
-    "ora": "8.2.0",
+    "ora": "9.4.1",
     "picocolors": "1.1.1",
     "prompts": "2.4.2",
     "ws": "^8.21.1"
