@@ -40,6 +40,6 @@ export function getCLIVersion() {
   } catch {
     // fall through to env/default
   }
-  cachedVersion = env.COHERENT_CLI_VERSION || '1.0.0-rc.2';
+  cachedVersion = env.COHERENT_CLI_VERSION || '1.0.0-rc.3';
   return cachedVersion;
 }

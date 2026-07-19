@@ -13,12 +13,37 @@ export function Changelog() {
         // Timeline
         { section: { className: 'changelog-timeline', children: [
 
+          // v1.0.0-rc.3
+          { article: { className: 'changelog-entry', children: [
+            { div: { className: 'changelog-entry-header', children: [
+              { span: { className: 'changelog-version', text: 'v1.0.0-rc.3' } },
+              { span: { className: 'changelog-date', text: '2026-07-19' } },
+              { span: { className: 'changelog-badge changelog-badge-current', text: 'Current' } }
+            ] } },
+            { div: { className: 'changelog-changes', children: [
+              { h3: { text: 'Highlights' } },
+              { p: { text: 'Quality release driven by end-to-end verification: consuming the published packages from a real project, scaffolding projects and running their scripts, executing every documented code sample, and link-auditing the built website.' } },
+              { h3: { text: 'Fixed' } },
+              { ul: { children: [
+                { li: { text: 'Published exports maps: the development condition pointing at unshipped src/ broke every Vite/Vitest consumer of core, client, devtools, state, and tooling — removed. Client subpaths (./events, ./router, ./hmr) and main now resolve to built dist output. Phantom subpath exports in api, database, and devtools now have real build outputs.' } },
+                { li: { text: '@coherent.js/devtools was unimportable when installed (deep @coherent.js/core/src imports) — now imports the public entry.' } },
+                { li: { text: 'CLI scaffolds work out of the box: runnable test setup, strict-TypeScript-clean templates for all four runtimes, working /api routing glue for fastify and koa, and no more fabricated APIs (createI18n, createMetaTags, renderField, setupDevtools).' } },
+                { li: { text: 'Docs and examples aligned with the real APIs: renderToString → render, phantom type declarations removed, 30+ dead cross-links fixed, examples are runnable again (node examples/<file>.js).' } },
+                { li: { text: 'Website: broken links, stale version badge (now version-driven), SEO/a11y basics (lang, canonical, Open Graph, sitemap, robots.txt, 404 page).' } }
+              ] } },
+              { h3: { text: 'Added' } },
+              { ul: { children: [
+                { li: { text: 'CI gates: publint on every publishable package, api-surface check hard-fails on missing export targets, scaffold-matrix parses every generated file.' } },
+                { li: { text: 'New docs: testing guide, i18n and seo package pages.' } }
+              ] } }
+            ] } }
+          ] } },
+
           // v1.0.0-rc.2
           { article: { className: 'changelog-entry', children: [
             { div: { className: 'changelog-entry-header', children: [
               { span: { className: 'changelog-version', text: 'v1.0.0-rc.2' } },
-              { span: { className: 'changelog-date', text: '2026-05-25' } },
-              { span: { className: 'changelog-badge changelog-badge-current', text: 'Current' } }
+              { span: { className: 'changelog-date', text: '2026-05-25' } }
             ] } },
             { div: { className: 'changelog-changes', children: [
               { h3: { text: 'Highlights' } },

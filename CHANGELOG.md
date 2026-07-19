@@ -19,7 +19,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
                    ├─ Enhanced router and forms
                    └─ Improved documentation
 
-📅 2026-05-17  →  v1.0.0-rc.1   (CURRENT)
+📅 2026-07-19  →  v1.0.0-rc.3   (CURRENT)
+                   ├─ Published exports maps fixed for every package
+                   ├─ CLI scaffolds work out of the box (vitest, strict TS, api glue)
+                   ├─ Docs/examples aligned with real APIs; site link audit
+                   └─ publint + hardened api-surface/scaffold gates in CI
+
+📅 2026-05-25  →  v1.0.0-rc.2   (RELEASED)
+                   ├─ Scaffold boot-blocking hotfixes
+                   ├─ Fastify/Koa integration fixes
+                   └─ Node >=22 across all packages
+
+📅 2026-05-17  →  v1.0.0-rc.1   (RELEASED)
                    ├─ Comprehensive structural hardening (Waves 1-4)
                    ├─ Workspace consolidated 21 → 12 packages
                    ├─ Built-in HMR dev server + Playwright E2E
@@ -59,6 +70,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ```
 
 ## [Unreleased]
+
+## [1.0.0-rc.3] - 2026-07-19
+
+Quality release driven by end-to-end verification: consuming the published packages from a real project, scaffolding projects and running their scripts, executing every documented code sample, and link-auditing the built website.
+
+### Fixed
+
+- **Published exports maps (all packages):** Removed the `development` condition (pointing at unshipped `src/`) from core, client, devtools, state, and tooling — it broke every Vite/Vitest consumer with "Failed to resolve entry" in dev/test mode. `@coherent.js/client`'s `main` and its `./events`/`./router`/`./hmr` subpaths pointed at unshipped `src/` for **all** consumers; the client now builds all four entries with code splitting (shared event-registry singletons) and resolves from `dist/`. Phantom subpath exports in api (`./router`, `./middleware`, `./security`, `./validation`, `./serialization`), database (`./model`, `./migration`, `./connection`, `./middleware`), and devtools (`./visualizer`, `./errors`, `./hybrid`, all `require` conditions) now have real build outputs or were dropped. Monorepo tests resolve package source via vitest aliases instead of the removed `development` condition.
+- **`@coherent.js/devtools` was unimportable when installed:** `dev-tools.js` deep-imported `@coherent.js/core/src/*` paths that are not exported (`ERR_PACKAGE_PATH_NOT_EXPORTED`); it now imports the public entry.
+- **CLI scaffolds work out of the box.** `pnpm test` (vitest now a devDependency, matching script and test-file extension in both languages), `pnpm typecheck` (strict-TS-clean server templates for all four runtimes, `allowJs` so the generated `.js` package scaffolding compiles into `dist/`, runtime `@types` for TS projects), and the api package's routing glue (the object router was registered directly as a fastify plugin and called as a function in koa — both runtime failures; delegation now hands the raw request to `router.handle()` with body-stream handling). Scaffold templates no longer call fabricated APIs (`createI18n`, `createMetaTags`, `renderField`, `setupDevtools`, tooling's `render`/`createTestContext`) and the client template's `export`-inside-`if` SyntaxError is fixed. Scaffold pins moved to fastify ^5 / express ^5 — the majors the monorepo itself tests against.
+- **`ObjectRouter.handle()` type signature** now matches the implementation (accepts raw `IncomingMessage`/`ServerResponse` plus an options object, returns a Promise).
+- **Website:** broken docs links, wrong clone URL, stale rc.1 badge (now version-driven), missing rc.2 changelog entry, `lang`/canonical/Open Graph/Twitter meta, robots.txt, generated sitemap.xml, 404 page; internal `docs/superpowers` plans are no longer published. Markdown docs' relative `*.md` cross-links are rewritten to site URLs at render time.
+- **Docs and examples aligned with real APIs:** `renderToString` → `render`, i18n/seo/forms/tooling samples rewritten against verified APIs, phantom type declarations removed from i18n and seo (`createI18n`, `useTranslation`, `generateJsonLd`, …), unscoped `coherent/*` import paths scoped, 30+ dead cross-links fixed, new testing/i18n/seo doc pages. `examples/` is now a workspace package so `node examples/<file>.js` actually resolves `@coherent.js/*`; the two `html`-tagged-template examples were rewritten as runnable object-syntax examples.
+
+### Added
+
+- **CI gates:** publint runs on every publishable package after build; `check-api-surface` hard-fails on missing export targets (instead of snapshotting the breakage into baselines); scaffold-matrix tests parse every generated file with esbuild and assert the generated test setup is coherent.
+- **Docs:** `docs/testing/guide.md`, `docs/packages/i18n.md`, `docs/packages/seo.md`.
+
+### Changed
+
+- **Lint script globs are quoted** so eslint expands them (sh's non-recursive `**` silently skipped deeper files; the new `examples/node_modules` directory — whose `@coherent.js` name matches `*.js` — broke the script entirely).
+- `engines.vscode` follows the `@types/vscode` 1.125 bump (vsce refuses to package otherwise).
 
 ## [1.0.0-rc.2] - 2026-05-25
 
