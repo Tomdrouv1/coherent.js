@@ -12,6 +12,7 @@
   },
   "exports": {
     ".": {
+      "types": "./types/index.d.ts",
       "default": "./dist/index.js"
     },
     "./build-tools": "./src/build-tools/index.js",
