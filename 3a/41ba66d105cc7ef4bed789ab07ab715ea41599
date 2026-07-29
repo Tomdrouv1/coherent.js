@@ -1,0 +1,62 @@
+packages/cli/src/index.js
+  s_71335d6184abbf::t_17ec220ce01186 38-40
+packages/cli/src/commands/create.js
+  s_71335d6184abbf::t_46e3dbf85026ca 14
+  s_71335d6184abbf::t_6c7f6e26b42355 45-50,53-54
+packages/cli/src/generators/project-scaffold.js
+  s_71335d6184abbf::t_40b2dcd2ecf40e 8,18,264,267
+packages/cli/src/commands/generate.js
+  s_71335d6184abbf::t_16cbe826edfabe 30-31
+  s_71335d6184abbf::t_35972c81d71b3e 55-59
+  s_71335d6184abbf::t_8a12683dd7fd3f 13
+packages/cli/src/commands/build.js
+  s_71335d6184abbf::t_09ebd930a00e93 10-13,25-69,71-89,91-108,110-111
+  s_71335d6184abbf::t_d9f31e77e33bbd 138-139
+  s_71335d6184abbf::t_e34c709e1fe9a4 145,163-164
+  s_71335d6184abbf::t_f025acd1d0a9b7 14-24
+  s_71335d6184abbf::t_6f878d1d285111 149-156,162,165-166
+  s_71335d6184abbf::t_fff0facf32ace4 236
+  s_71335d6184abbf::t_f4f689bb930330 192
+  s_71335d6184abbf::t_080f05670dc60c 70,90,109
+  s_71335d6184abbf::t_dd01eb60de5675 248
+packages/cli/src/generators/package-scaffold.js
+  s_71335d6184abbf::t_40b2dcd2ecf40e 6,10,106,200,276,304,333,385,434
+packages/cli/test/unknown-command.test.js
+  s_71335d6184abbf::t_15bbfc61ee73e1 1-78
+packages/cli/src/generators/component-generator.js
+  s_71335d6184abbf::t_9bafd79271878e 382,392-393
+packages/cli/src/utils/version.js
+  s_71335d6184abbf::t_511deba2749bb3 46-60
+packages/cli/test/interactive.test.js
+  s_71335d6184abbf::t_d2fe31bbd38242 1-22,25-27,34-36,41-113
+  s_71335d6184abbf::t_4ba2bc77c9ea96 23-24,28-33,37-40
+packages/cli/test/build-detection.test.js
+  s_71335d6184abbf::t_2c3731756b796a 1-167
+packages/cli/src/utils/interactive.js
+  s_71335d6184abbf::t_d47d8190605f69 1-42
+packages/cli/test/generator-output.test.js
+  s_71335d6184abbf::t_7bdd4652b9ba4b 1-105
+packages/cli/src/generators/database-scaffold.js
+  s_71335d6184abbf::t_40b2dcd2ecf40e 6,10,572,576,582,586
+packages/cli/test/dependency-range.test.js
+  s_71335d6184abbf::t_861db2a5822f66 1-9,24-35,38-41,71-74
+  s_71335d6184abbf::t_e9a93589df1e00 10-23,36-37,42-70
+packages/cli/src/generators/runtime-scaffold.js
+  s_71335d6184abbf::t_40b2dcd2ecf40e 6,10,429,434,441
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "3a41ba66d105cc7ef4bed789ab07ab715ea41599",
+  "prompts": {},
+  "sessions": {
+    "s_71335d6184abbf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a6c388b7-e5a1-4fdf-a7f8-330799ac2726",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Thomas Drouvin <thomas.drouvin@gmail.com>"
+    }
+  }
+}
