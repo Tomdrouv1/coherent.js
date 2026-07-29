@@ -157,10 +157,30 @@ export function restoreContext(key) {
 
 /**
  * Clear all context stacks (useful for cleanup after rendering)
+ *
+ * useContext() reads from globalState, which is module-level and therefore
+ * shared by every render in the process. Clearing only contextStacks left the
+ * values themselves in place, so a context provided while rendering one
+ * request stayed readable while rendering the next — and became unrecoverable,
+ * since restoreContext() bails out once a key's stack is gone.
+ *
+ * Unwind each tracked key to the value it held before its first
+ * provideContext() — the bottom of that key's stack. Only keys that were
+ * actually provided as contexts are touched, so unrelated global state
+ * survives, which is what the previous implementation was trying to protect.
  */
 export function clearAllContexts() {
+    for (const [key, stack] of contextStacks) {
+        const beforeFirstProvide = stack[0];
+
+        if (beforeFirstProvide === undefined) {
+            globalState.delete(key);
+        } else {
+            globalState.set(key, beforeFirstProvide);
+        }
+    }
+
     contextStacks.clear();
-    // Note: This doesn't clear globalState as it might contain other data
 }
 
 /**
