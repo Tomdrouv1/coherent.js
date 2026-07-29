@@ -3,9 +3,10 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
-    "baseUrl": "./",
     "paths": {
-      "@coherent.js/core": ["./dist"]
+      "@coherent.js/core": [
+        "./dist"
+      ]
     }
   },
   "include": [

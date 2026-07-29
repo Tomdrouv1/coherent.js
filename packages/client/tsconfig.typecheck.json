@@ -3,12 +3,19 @@
   "compilerOptions": {
     "noEmit": true,
     "rootDir": ".",
-    "baseUrl": ".",
     "paths": {
-      "@coherent.js/client": ["./types/index.d.ts"],
-      "@coherent.js/client/router": ["./types/router.d.ts"],
-      "@coherent.js/client/hmr": ["./types/hmr.d.ts"],
-      "@coherent.js/core": ["../core/types/index.d.ts"]
+      "@coherent.js/client": [
+        "./types/index.d.ts"
+      ],
+      "@coherent.js/client/router": [
+        "./types/router.d.ts"
+      ],
+      "@coherent.js/client/hmr": [
+        "./types/hmr.d.ts"
+      ],
+      "@coherent.js/core": [
+        "../core/types/index.d.ts"
+      ]
     },
     "allowJs": false,
     "checkJs": false,
