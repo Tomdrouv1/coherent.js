@@ -453,49 +453,62 @@ export function createComponent(definition) {
     }
 
     const instance = new Component(definition);
+    const callable = (props = {}) => instance.render(props);
 
-    // Calling the component renders it with the supplied props. This is the
-    // contract the docs, the READMEs and the CLI generators all rely on:
-    //   render(Counter({ count: 2 }))
-    const component = (props = {}) => instance.render(props);
-
-    // Lifecycle methods return `this` purely for chaining, so hand back the
-    // callable rather than the bare instance to keep the chain callable.
+    // Lifecycle methods return `this` for chaining; hand back the proxy.
     const CHAINABLE = new Set(['mount', 'update', 'destroy']);
 
-    // Expose the Component API on the callable. Methods stay bound to the
-    // instance because COMPONENT_METADATA is keyed by instance identity.
-    Object.getOwnPropertyNames(Component.prototype).forEach(key => {
-        if (key === 'constructor' || typeof instance[key] !== 'function') return;
-
-        component[key] = CHAINABLE.has(key)
-            ? (...args) => {
-                instance[key](...args);
-                return component;
+    // A Proxy rather than a one-time key copy: `mounted() { this.timerId = x }`
+    // runs after this returns, and a snapshot would never see it.
+    return new Proxy(callable, {
+        get(target, key, receiver) {
+            if (key === 'clone') {
+                return (overrides = {}) =>
+                    createComponent({...instance.definition, ...overrides});
             }
-            : instance[key].bind(instance);
+
+            const value = Reflect.get(instance, key, instance);
+
+            if (typeof value === 'function') {
+                return CHAINABLE.has(key)
+                    ? (...args) => {
+                        value.apply(instance, args);
+                        return receiver;
+                    }
+                    // COMPONENT_METADATA is keyed by instance identity, so
+                    // `this` must be the instance, never the proxy.
+                    : value.bind(instance);
+            }
+
+            return value !== undefined || Reflect.has(instance, key)
+                ? value
+                : Reflect.get(target, key, receiver);
+        },
+
+        set(target, key, value) {
+            return Reflect.set(instance, key, value, instance);
+        },
+
+        has(target, key) {
+            return Reflect.has(instance, key) || Reflect.has(target, key);
+        },
+
+        deleteProperty(target, key) {
+            return Reflect.deleteProperty(instance, key);
+        },
+
+        ownKeys() {
+            return Reflect.ownKeys(instance);
+        },
+
+        getOwnPropertyDescriptor(target, key) {
+            const descriptor = Reflect.getOwnPropertyDescriptor(instance, key);
+            // Proxy invariant: reported own keys must be configurable.
+            return descriptor
+                ? {...descriptor, configurable: true}
+                : Reflect.getOwnPropertyDescriptor(target, key);
+        }
     });
-
-    // Cloning a callable component yields another callable component.
-    component.clone = (overrides = {}) =>
-        createComponent({...instance.definition, ...overrides});
-
-    // Mirror instance properties (name, props, state, children, computed
-    // getters, user-defined methods, ...) so reads and writes reach the
-    // instance. defineProperty is required because a function's own `name`
-    // and `length` are not writable.
-    Object.keys(instance).forEach(key => {
-        Object.defineProperty(component, key, {
-            get: () => instance[key],
-            set: value => {
-                instance[key] = value;
-            },
-            enumerable: true,
-            configurable: true
-        });
-    });
-
-    return component;
 }
 
 /**

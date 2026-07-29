@@ -119,6 +119,27 @@ describe('createComponent returns a callable component', () => {
     expect(render(clone({ className: 'z' }))).toBe('<div class="eyebrow z"></div>');
   });
 
+  it('exposes properties a lifecycle hook assigns after construction', () => {
+    const component = createComponent({
+      name: 'Timer',
+      render: () => ({ div: {} }),
+      mounted() { this.timerId = 42; }
+    });
+
+    component.mount();
+
+    expect(component.timerId).toBe(42);
+  });
+
+  it('writes through to the instance for new keys', () => {
+    const component = Eyebrow();
+
+    component.late = 'value';
+
+    expect(component.late).toBe('value');
+    expect('late' in component).toBe(true);
+  });
+
   it('accepts an object definition as before', () => {
     const Titled = createComponent({
       name: 'Titled',
