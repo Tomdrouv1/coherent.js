@@ -1,0 +1,19 @@
+.github/workflows/move-dist-tags.yml
+  s_71335d6184abbf::t_7df73bdf793ec6 100-121,126,128
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "b4aca74c8fe27619eb63e9b6746e3d973c9c82b0",
+  "prompts": {},
+  "sessions": {
+    "s_71335d6184abbf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a6c388b7-e5a1-4fdf-a7f8-330799ac2726",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Thomas Drouvin <thomas.drouvin@gmail.com>"
+    }
+  }
+}
