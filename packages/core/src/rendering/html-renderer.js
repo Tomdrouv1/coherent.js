@@ -163,6 +163,12 @@ class HTMLRenderer extends BaseRenderer {
             return '';
         }
 
+        // Before cycle tracking: a marker is an inert leaf, so the same one
+        // may appear twice without that being a cycle.
+        if (isTrustedContent(component)) {
+            return component.__html;
+        }
+
         // Detect circular references (objects only)
         if (typeof component === 'object' && component !== null && !Array.isArray(component)) {
             if (options.seenObjects && options.seenObjects.has(component)) {
@@ -180,11 +186,6 @@ class HTMLRenderer extends BaseRenderer {
 
         // Use base class depth validation
         this.validateDepth(depth);
-
-        // Content marked by dangerouslySetInnerContent() is emitted verbatim.
-        if (isTrustedContent(component)) {
-            return component.__html;
-        }
 
         try {
             // Use base class component type processing
@@ -671,7 +672,6 @@ export async function* renderToStream(component, options = {}) {
         if (typeof comp === 'object') {
             for (const [tagName, props] of Object.entries(comp)) {
                 if (typeof props === 'object' && props !== null) {
-                    // `html` is raw content, not an attribute.
                     const { children, text, html: rawHtml, ...attributes } = props;
                     const attrsStr = formatAttributes(attributes);
                     const openTag = attrsStr ? `<${tagName} ${attrsStr}>` : `<${tagName}>`;

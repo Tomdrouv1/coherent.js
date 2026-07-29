@@ -62,6 +62,21 @@ describe('dangerouslySetInnerContent', () => {
     }
   });
 
+  // A marker is an inert leaf, so reusing one is not a cycle.
+  it('renders the same marker more than once', () => {
+    const marker = dangerouslySetInnerContent(RAW);
+
+    expect(render({ div: { children: [marker, marker] } }))
+      .toBe(`<div>${RAW}${RAW}</div>`);
+  });
+
+  it('still detects genuine circular references', () => {
+    const node = { div: { children: [] } };
+    node.div.children.push(node);
+
+    expect(() => render(node)).toThrow(/[Cc]ircular/);
+  });
+
   it('still escapes untrusted strings', () => {
     expect(render({ div: { text: RAW } })).toBe('<div>&lt;em&gt;bold&lt;/em&gt;</div>');
   });
