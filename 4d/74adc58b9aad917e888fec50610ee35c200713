@@ -1,0 +1,25 @@
+packages/cli/test/dev-server/ws-helpers.js
+  s_71335d6184abbf::t_a51f7f58e3cac0 26,78
+  s_71335d6184abbf::t_e73fbe7c7414e3 1-25,27-77,79-86
+packages/cli/test/dev-server/integration.test.js
+  s_71335d6184abbf::t_564dc0aaa06d40 45-48,50,52
+  s_71335d6184abbf::t_525e084b36bee7 15
+packages/cli/test/dev-server/hmr-server.test.js
+  s_71335d6184abbf::t_d8b3056d67bd27 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "4d74adc58b9aad917e888fec50610ee35c200713",
+  "prompts": {},
+  "sessions": {
+    "s_71335d6184abbf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a6c388b7-e5a1-4fdf-a7f8-330799ac2726",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Thomas Drouvin <thomas.drouvin@gmail.com>"
+    }
+  }
+}
