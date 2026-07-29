@@ -28,8 +28,20 @@ export default defineConfig({
     hookTimeout: 10000,
     teardownTimeout: 10000,
 
-    // Retry flaky tests automatically
-    retry: env.CI ? 2 : 0, // Retry 2 times in CI, 0 locally
+    // No retries, in CI or locally.
+    //
+    // This used to be `env.CI ? 2 : 0`, which had it backwards: a flake failed
+    // the pre-commit hook on a developer's machine while the same flake was
+    // retried into a green build in CI. Vitest does annotate the run with
+    // "(retry xN)", but the job still passes and the summary still reports the
+    // test as passed, so nothing forces anyone to look.
+    //
+    // A flake that fails CI gets fixed; a flake that is retried away does not.
+    // The dev-server HMR race found this way was a genuine listen-after-await
+    // bug, not infrastructure noise. If runner noise ever does make this
+    // painful, re-add retries deliberately along with a way to surface which
+    // tests needed them.
+    retry: 0,
 
     // Better reporting for CI
     reporters: env.CI

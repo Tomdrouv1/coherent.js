@@ -6,6 +6,7 @@
 # Package: @coherent.js/core
 
 == . ==
+Component
 ComponentCache
 ComponentLifecycle
 DOMEventIntegration
@@ -16,10 +17,12 @@ HTMLNestingError
 Island
 LIFECYCLE_PHASES
 VERSION
+cacheManager
 checkPeerDependencies
 compose
 createActionHandlers
 createAsyncErrorBoundary
+createCacheManager
 createComponent
 createComponentCache
 createElement
@@ -30,6 +33,7 @@ createEventBus
 createEventComponent
 createEventHandlers
 createGlobalErrorHandler
+createHOC
 createLazyIntegration
 createLifecycleHooks
 createStateManager
@@ -40,8 +44,10 @@ default
 defineComponent
 emit
 emitSync
+escapeHtml
 evaluateLazy
 eventSystem
+formatAttributes
 fp
 getComponent
 getRegisteredComponents
@@ -57,9 +63,12 @@ isCoherentComponent
 isCoherentObject
 isLazy
 isPeerDependencyAvailable
+isTrustedContent
+isVoidElement
 lazy
 lifecycleUtils
 memo
+memoComponent
 memoize
 normalizeChildren
 off

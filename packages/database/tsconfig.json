@@ -3,16 +3,21 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
-    "baseUrl": "./",
     "paths": {
-      "@coherent.js/core": ["../core/dist"],
-      "@coherent.js/database": ["./dist"]
+      "@coherent.js/core": [
+        "../core/dist"
+      ],
+      "@coherent.js/database": [
+        "./dist"
+      ]
     }
   },
   "include": [
     "src/**/*"
   ],
   "references": [
-    { "path": "../core/tsconfig.json" }
+    {
+      "path": "../core/tsconfig.json"
+    }
   ]
 }

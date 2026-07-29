@@ -595,8 +595,44 @@ export function evaluateLazy<T>(obj: T, ...args: any[]): T;
 // Component System Classes and Functions
 // ============================================================================
 
-/** Create a component instance */
-export function createComponent(definition: ComponentDefinition | CoherentComponent): Component;
+/** Stateful component class backing createComponent() */
+export class Component implements ComponentInstance {
+  constructor(definition?: ComponentDefinition);
+
+  name: string;
+  props: ComponentProps;
+  state: ComponentStateManager;
+  children: ComponentInstance[];
+  parent: ComponentInstance | null;
+  rendered: CoherentNode | null;
+  isMounted: boolean;
+  isDestroyed: boolean;
+  definition: ComponentDefinition;
+  hooks: Required<ComponentLifecycleHooks>;
+  methods: ComponentMethods;
+  computed: ComputedProperties;
+  computedCache: Map<string, any>;
+  watchers: ComponentWatchers;
+
+  render(props?: ComponentProps): CoherentNode;
+  mount(): ComponentInstance;
+  update(): ComponentInstance;
+  destroy(): ComponentInstance;
+  clone(overrides?: Partial<ComponentDefinition>): ComponentInstance;
+  getMetadata(): ComponentMetadata;
+  callHook(hookName: keyof ComponentLifecycleHooks, ...args: any[]): any;
+  handleError(error: Error, context?: string): void;
+}
+
+/**
+ * Create a component.
+ *
+ * The result is callable -- `render(Counter({ count: 2 }))` -- and also carries
+ * the full Component instance API (`render`, `mount`, `state`, ...).
+ */
+export function createComponent<P extends ComponentProps = ComponentProps>(
+  definition: ComponentDefinition | CoherentComponent
+): CoherentComponent<P> & ComponentInstance;
 
 /** Define a component factory */
 export function defineComponent<P extends ComponentProps>(
@@ -614,6 +650,29 @@ export function getComponent<P extends ComponentProps>(name: string): CoherentCo
 
 /** Get all registered components */
 export function getRegisteredComponents(): Map<string, CoherentComponent>;
+
+/** Create a higher-order component */
+export function createHOC<P extends ComponentProps = ComponentProps>(
+  enhancer: (component: CoherentComponent<P>, props: P) => CoherentNode
+): (component: CoherentComponent<P>) => CoherentComponent<P>;
+
+/**
+ * Options for memoComponent().
+ *
+ * Distinct from MemoOptions: memoComponent compares props and state rather
+ * than raw memo arguments.
+ */
+export interface MemoComponentOptions<P extends ComponentProps = ComponentProps> {
+  propsEqual?: (a: P, b: P) => boolean;
+  stateEqual?: (a: ComponentState, b: ComponentState) => boolean;
+  name?: string;
+}
+
+/** Memoize a component */
+export function memoComponent<P extends ComponentProps = ComponentProps>(
+  component: CoherentComponent<P>,
+  options?: MemoComponentOptions<P>
+): MemoizedFunction<CoherentComponent<P>>;
 
 // ============================================================================
 // State Management Functions
@@ -649,6 +708,22 @@ export interface VDOMPatch {
 // ============================================================================
 
 /** Global performance monitor instance */
+/** Performance monitor surface, as implemented by performance/monitor.js */
+export interface PerformanceMonitor {
+  startRender(componentName?: string): string;
+  endRender(renderId: string): number;
+  recordMetric(name: string, value: number, tags?: Record<string, any>): void;
+  addMetric(name: string, value: number, tags?: Record<string, any>): void;
+  measure<T>(name: string, fn: () => T): T;
+  measureAsync<T>(name: string, fn: () => Promise<T>): Promise<T>;
+  addAlertRule(rule: Record<string, any>): void;
+  generateReport(): Record<string, any>;
+  getStats(): Record<string, any>;
+  reset(): void;
+  start(): void;
+  stop(): void;
+}
+
 export const performanceMonitor: PerformanceMonitor;
 
 // ============================================================================
@@ -673,6 +748,12 @@ export interface CacheManager {
   prune(): void;
 }
 
+/** Shared cache manager instance */
+export const cacheManager: CacheManager;
+
+/** Create a cache manager */
+export function createCacheManager(options?: CacheManagerOptions): CacheManager;
+
 // ============================================================================
 // Bundle Optimization (Additional)
 // ============================================================================
@@ -691,6 +772,31 @@ export class ComponentCache {
 
 /** Create component cache */
 export function createComponentCache(options?: CacheManagerOptions): ComponentCache;
+
+// ============================================================================
+// HTML Utilities
+// ============================================================================
+
+/** Escape HTML special characters in text */
+export function escapeHtml(text: string): string;
+
+/** Check whether a tag is a void element */
+export function isVoidElement(tagName: string): boolean;
+
+/** Serialize props into an HTML attribute string */
+export function formatAttributes(props: Record<string, any>): string;
+
+/** Mark content as trusted so it is emitted without escaping */
+export function dangerouslySetInnerContent(content: string): TrustedContent;
+
+/** Content marked trusted by dangerouslySetInnerContent() */
+export interface TrustedContent {
+  __html: string;
+  __trusted: true;
+}
+
+/** Detect content marked by dangerouslySetInnerContent() */
+export function isTrustedContent(value: unknown): value is TrustedContent;
 
 // ============================================================================
 // Utility Types and Constants

@@ -13,6 +13,20 @@ export function escapeHtml(text) {
     .replace(/'/g, '&#39;');
 }
 
+/**
+ * Detect content marked trusted by `dangerouslySetInnerContent()`.
+ * Such values are emitted verbatim instead of being escaped.
+ *
+ * @param {*} value - Candidate value
+ * @returns {boolean} True when the value is a trusted-content marker
+ */
+export function isTrustedContent(value) {
+  return Boolean(value) &&
+    typeof value === 'object' &&
+    value.__trusted === true &&
+    typeof value.__html === 'string';
+}
+
 export function unescapeHtml(text) {
   if (typeof text !== 'string') return text;
 

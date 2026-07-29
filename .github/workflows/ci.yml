@@ -91,6 +91,12 @@ jobs:
       - name: Type check
         run: pnpm run typecheck
 
+      # Per-package typechecks were never gated, so every package config
+      # silently stopped compiling when TypeScript 7 removed `baseUrl` and
+      # `moduleResolution: node`. Gate them now that all seven pass.
+      - name: Type check packages
+        run: pnpm run typecheck:packages
+
       - name: Unit tests with coverage
         run: pnpm run test:coverage:ci
         env:
