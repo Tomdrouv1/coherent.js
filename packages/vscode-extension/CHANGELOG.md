@@ -1,10 +1,13 @@
 # Change Log
 
+## 1.0.0
+
 All notable changes to the "Coherent.js Language Support" extension.
 
 ## [1.0.0] - 2026-01-22
 
 ### Added
+
 - Autocomplete for HTML elements and attributes
 - Element-specific attribute validation
 - HTML nesting validation
