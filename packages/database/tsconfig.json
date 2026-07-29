@@ -13,6 +13,6 @@
     "src/**/*"
   ],
   "references": [
-    { "path": "../core" }
+    { "path": "../core/tsconfig.json" }
   ]
 }

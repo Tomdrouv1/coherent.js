@@ -1,17 +1,17 @@
 {
   "files": [],
   "references": [
-    { "path": "./packages/core" },
-    { "path": "./packages/api" },
-    { "path": "./packages/database" },
-    { "path": "./packages/client" },
-    { "path": "./packages/integrations" },
-    { "path": "./packages/forms" },
-    { "path": "./packages/i18n" },
-    { "path": "./packages/seo" },
-    { "path": "./packages/tooling" },
-    { "path": "./packages/devtools" },
-    { "path": "./packages/cli" },
-    { "path": "./packages/state" },
+    { "path": "./packages/core/tsconfig.json" },
+    { "path": "./packages/api/tsconfig.json" },
+    { "path": "./packages/database/tsconfig.json" },
+    { "path": "./packages/client/tsconfig.json" },
+    { "path": "./packages/integrations/tsconfig.json" },
+    { "path": "./packages/forms/tsconfig.json" },
+    { "path": "./packages/i18n/tsconfig.json" },
+    { "path": "./packages/seo/tsconfig.json" },
+    { "path": "./packages/tooling/tsconfig.json" },
+    { "path": "./packages/devtools/tsconfig.json" },
+    { "path": "./packages/cli/tsconfig.json" },
+    { "path": "./packages/state/tsconfig.json" }
   ]
 }
