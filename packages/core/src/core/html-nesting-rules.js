@@ -21,13 +21,15 @@ export const FORBIDDEN_CHILDREN = {
     a: new Set(['a']),  // Links cannot nest
     button: new Set(['button', 'a', 'input', 'select', 'textarea', 'label']),
     label: new Set(['label']),
-    // Table structure restrictions
-    thead: new Set(['thead', 'tbody', 'tfoot', 'caption', 'colgroup', 'tr']),
+    // Table structure restrictions.
+    // thead/tbody/tfoot take "zero or more tr elements", so <tr> is allowed.
+    thead: new Set(['thead', 'tbody', 'tfoot', 'caption', 'colgroup']),
     tbody: new Set(['thead', 'tbody', 'tfoot', 'caption', 'colgroup']),
     tfoot: new Set(['thead', 'tbody', 'tfoot', 'caption', 'colgroup']),
     tr: new Set(['tr', 'thead', 'tbody', 'tfoot', 'table']),
-    td: new Set(['td', 'th', 'tr', 'thead', 'tbody', 'tfoot', 'table']),
-    th: new Set(['td', 'th', 'tr', 'thead', 'tbody', 'tfoot', 'table']),
+    // td/th take flow content, which includes <table> -- nested tables are valid.
+    td: new Set(['td', 'th', 'tr', 'thead', 'tbody', 'tfoot']),
+    th: new Set(['td', 'th', 'tr', 'thead', 'tbody', 'tfoot']),
     // Other common restrictions
     select: new Set(['select', 'input', 'textarea']),
     option: new Set(['option', 'optgroup']),

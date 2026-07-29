@@ -12,33 +12,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { WebSocket } from 'ws';
 import { startDevServer } from '../../src/dev-server/index.js';
-
-function waitForMessage(ws, predicate, timeoutMs = 4000) {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => {
-      ws.removeListener('message', onMessage);
-      reject(new Error(`timeout waiting for message after ${timeoutMs}ms`));
-    }, timeoutMs);
-
-    function onMessage(buf) {
-      let data;
-      try { data = JSON.parse(buf.toString()); } catch { return; }
-      if (predicate(data)) {
-        clearTimeout(timer);
-        ws.removeListener('message', onMessage);
-        resolve(data);
-      }
-    }
-    ws.on('message', onMessage);
-  });
-}
-
-function waitForOpen(ws) {
-  return new Promise((resolve, reject) => {
-    ws.once('open', resolve);
-    ws.once('error', reject);
-  });
-}
+import { bufferMessages, waitForOpen } from './ws-helpers.js';
 
 describe('startDevServer (integration)', () => {
   let root;
@@ -68,10 +42,14 @@ describe('startDevServer (integration)', () => {
     server = await startDevServer({ root, port: 0, host: '127.0.0.1', open: false, log: false });
 
     const client = new WebSocket(`ws://127.0.0.1:${server.port}`);
-    await waitForOpen(client);
-    await waitForMessage(client, (d) => d.type === 'connected');
+    // Subscribe before awaiting anything: the `connected` ack can land in the
+    // same tick as the handshake, and ws does not buffer 'message' events.
+    const messages = bufferMessages(client);
 
-    const updatePromise = waitForMessage(client, (d) => d.type === 'hmr-update');
+    await waitForOpen(client);
+    await messages.next((d) => d.type === 'connected');
+
+    const updatePromise = messages.next((d) => d.type === 'hmr-update');
 
     // Touch the file *after* the watcher is ready (startDevServer awaits ready).
     writeFileSync(join(root, 'src', 'app.js'), 'export const v = 2;');
