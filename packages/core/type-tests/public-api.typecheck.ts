@@ -279,21 +279,27 @@ expectTypeOf(componentInstance.render).toBeFunction();
 expectTypeOf(componentInstance.name).toBeString();
 
 // ============================================================================
-// State Management / Virtual DOM -- NOT IMPLEMENTED
+// State Management / Virtual DOM -- NOT PART OF THIS PACKAGE
 // ============================================================================
 //
-// These sections asserted an API that does not exist anywhere in
-// packages/core/src. They only ever "passed" because tsconfig.typecheck.json
-// set `baseUrl`, which TypeScript 7 removed -- tsc aborted on the config
-// before it type-checked a single line, hiding all of it.
+// Both sections asserted imports from @coherent.js/core that core does not
+// export. They only ever "passed" because tsconfig.typecheck.json set
+// `baseUrl`, which TypeScript 7 removed -- tsc aborted on the config before it
+// type-checked a single line, hiding all of it.
 //
-// State management: createState, globalStateManager, provideContext,
-//   useContext, createContextProvider, restoreContext, clearAllContexts
-// Virtual DOM:      createVNode, objectToVNode, diff, patch
+// State management -- createState, globalStateManager, provideContext,
+//   useContext, createContextProvider, restoreContext, clearAllContexts --
+//   is implemented and typed, but in @coherent.js/state, not here. Assert it
+//   from that package rather than re-exporting it through core.
+//
+// Virtual DOM -- createVNode, objectToVNode, diff, patch -- has no
+//   implementation in any package. packages/client/src/hydrate.js patches
+//   attributes and text directly and notes that "full reconciliation would be
+//   in a separate module". Note that in Coherent.js the plain object already
+//   is the node, so createVNode/objectToVNode would be near-identity.
 //
 // The VNode / VDOMPatch / StateContainer / GlobalStateManager / ContextProvider
-// types remain declared in types/index.d.ts. Restore these assertions together
-// with the implementations.
+// types remain declared in types/index.d.ts.
 // ============================================================================
 // Caching
 // ============================================================================

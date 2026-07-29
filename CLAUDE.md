@@ -51,6 +51,7 @@ The project uses pnpm workspaces with packages in `/packages/`:
 - **`@coherent.js/api`** - API framework with validation, routing, and OpenAPI generation  
 - **`@coherent.js/database`** - Database layer with adapters for PostgreSQL, MySQL, SQLite, MongoDB
 - **`@coherent.js/client`** - Client-side hydration and progressive enhancement utilities
+- **`@coherent.js/state`** - Reactive state containers, observables, persistence, validation, and the SSR context API (`provideContext` / `useContext` / `createContextProvider`)
 - **`@coherent.js/integrations`** - Framework integration adapters bundled as subpath exports (`/express`, `/fastify`, `/koa`, `/nextjs`, `/astro`, `/remix`, `/sveltekit`)
 - **`@coherent.js/tooling`** - Dev-time tooling: testing utilities (Vitest matchers, render harness) via `@coherent.js/tooling/testing`, and Language Server Protocol server (`coherent-language-server` binary)
 - **`@coherent.js/devtools`** - Developer tools (inspector, profiler, logger) and performance utilities (cache, code-splitting, lazy-loading via `/performance` subpath)
