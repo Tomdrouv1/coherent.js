@@ -1,0 +1,23 @@
+CLAUDE.md
+  s_71335d6184abbf::t_9200e2801a5b85 54
+.github/workflows/ci.yml
+  s_71335d6184abbf::t_e8c28a5759d06c 94-99
+packages/core/type-tests/public-api.typecheck.ts
+  s_71335d6184abbf::t_f4eade0044769c 282,285-288,290-299,302
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "5c318d35944968bdbb35bf5464efc9877744795d",
+  "prompts": {},
+  "sessions": {
+    "s_71335d6184abbf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a6c388b7-e5a1-4fdf-a7f8-330799ac2726",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Thomas Drouvin <thomas.drouvin@gmail.com>"
+    }
+  }
+}
