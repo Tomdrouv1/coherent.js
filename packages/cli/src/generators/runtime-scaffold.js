@@ -3,10 +3,11 @@
  * Generates server setup code for different runtime environments
  */
 
-import { getCLIVersion } from '../utils/version.js';
+import { getCLIVersion, getDependencyRange } from '../utils/version.js';
 
 // Get current CLI version automatically
 const cliVersion = getCLIVersion();
+const cliRange = getDependencyRange(cliVersion);
 
 /**
  * Generate built-in HTTP server setup
@@ -425,19 +426,19 @@ export function getRuntimeDependencies(runtime) {
     'built-in': {},
     express: {
       express: '^5.0.0',
-      '@coherent.js/integrations': `^${cliVersion}`
+      '@coherent.js/integrations': cliRange
     },
     fastify: {
       fastify: '^5.0.0',
       '@fastify/static': '^8.0.0',
-      '@coherent.js/integrations': `^${cliVersion}`
+      '@coherent.js/integrations': cliRange
     },
     koa: {
       koa: '^2.15.3',
       '@koa/router': '^13.0.1',
       'koa-body': '^6.0.1',
       'koa-static': '^5.0.0',
-      '@coherent.js/integrations': `^${cliVersion}`
+      '@coherent.js/integrations': cliRange
     }
   };
 

@@ -35,7 +35,9 @@ export async function createCLI() {
   program
     .name('coherent')
     .description(picocolors.cyan('🚀 Coherent.js CLI - Build modern web applications with pure JavaScript objects'))
-    .version(version, '-v, --version', 'display version number');
+    .version(version, '-v, --version', 'display version number')
+    // Point at --help on a bad command/option instead of leaving a bare error.
+    .showHelpAfterError('(run "coherent --help" to see available commands)');
 
   // Banner
   const banner = `

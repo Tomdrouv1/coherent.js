@@ -43,3 +43,18 @@ export function getCLIVersion() {
   cachedVersion = env.COHERENT_CLI_VERSION || '1.0.0-rc.6';
   return cachedVersion;
 }
+
+/**
+ * Build the dependency range scaffolded projects should depend on.
+ *
+ * A caret on a prerelease (^1.0.0-rc.6) also satisfies the eventual stable
+ * 1.0.0 and every later 1.x, so a project scaffolded against an RC would
+ * silently jump off the line it was generated for. Pin prereleases exactly
+ * and keep the caret for stable releases.
+ *
+ * @param {string} [version] - Version to build a range for
+ * @returns {string} A semver range
+ */
+export function getDependencyRange(version = getCLIVersion()) {
+  return version.includes('-') ? version : `^${version}`;
+}

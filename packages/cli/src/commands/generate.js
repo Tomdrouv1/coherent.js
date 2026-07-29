@@ -10,6 +10,7 @@ import { generateComponent } from '../generators/component-generator.js';
 import { generatePage } from '../generators/page-generator.js';
 import { generateAPI } from '../generators/api-generator.js';
 import { validateComponentName } from '../utils/validation.js';
+import { requireInteractive } from '../utils/interactive.js';
 
 export const generateCommand = new Command('generate')
   .alias('g')
@@ -26,6 +27,8 @@ export const generateCommand = new Command('generate')
 
     // Interactive type selection if not provided
     if (!generationType) {
+      requireInteractive('the generation type', 'coherent generate <type> <name>');
+
       const response = await prompts({
         type: 'select',
         name: 'type',
@@ -49,6 +52,11 @@ export const generateCommand = new Command('generate')
 
     // Interactive name input if not provided
     if (!itemName) {
+      requireInteractive(
+        `the ${generationType} name`,
+        `coherent generate ${generationType} <name>`
+      );
+
       const response = await prompts({
         type: 'text',
         name: 'name',

@@ -3,10 +3,11 @@
  * Generates database configuration and setup files
  */
 
-import { getCLIVersion } from '../utils/version.js';
+import { getCLIVersion, getDependencyRange } from '../utils/version.js';
 
 // Get current CLI version automatically
 const cliVersion = getCLIVersion();
+const cliRange = getDependencyRange(cliVersion);
 
 /**
  * Generate database configuration file
@@ -568,21 +569,21 @@ export function getDatabaseDependencies(dbType) {
   const deps = {
     postgres: {
       pg: '^8.12.0',
-      '@coherent.js/database': `^${cliVersion}`
+      '@coherent.js/database': cliRange
     },
     mysql: {
       'mysql2': '^3.11.0',
-      '@coherent.js/database': `^${cliVersion}`
+      '@coherent.js/database': cliRange
     },
     sqlite: {
       // @coherent.js/database's SQLite adapter uses node-sqlite3 (peer dep),
       // not better-sqlite3. Keep these in sync if the adapter changes.
       sqlite3: '^5.1.7',
-      '@coherent.js/database': `^${cliVersion}`
+      '@coherent.js/database': cliRange
     },
     mongodb: {
       mongodb: '^6.9.0',
-      '@coherent.js/database': `^${cliVersion}`
+      '@coherent.js/database': cliRange
     }
   };
 

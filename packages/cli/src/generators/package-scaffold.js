@@ -3,10 +3,11 @@
  * Generates basic scaffolding for optional @coherent.js packages
  */
 
-import { getCLIVersion } from '../utils/version.js';
+import { getCLIVersion, getDependencyRange } from '../utils/version.js';
 
 // Get current CLI version automatically
 const cliVersion = getCLIVersion();
+const cliRange = getDependencyRange(cliVersion);
 
 /**
  * Generate @coherent.js/api scaffolding
@@ -102,7 +103,7 @@ export default router;
   return {
     'src/api/routes.js': routes,
     dependencies: {
-      '@coherent.js/api': `^${cliVersion}`
+      '@coherent.js/api': cliRange
     }
   };
 }
@@ -196,7 +197,7 @@ export function hydrateCounter(element) {
     'public/js/hydration.js': hydration,
     'src/components/InteractiveCounter.js': interactiveExample,
     dependencies: {
-      '@coherent.js/client': `^${cliVersion}`
+      '@coherent.js/client': cliRange
     }
   };
 }
@@ -272,7 +273,7 @@ for (const locale of ['en', 'fr', 'es']) {
     'src/i18n/locales/fr.json': frLocale,
     'src/i18n/locales/es.json': esLocale,
     dependencies: {
-      '@coherent.js/i18n': `^${cliVersion}`
+      '@coherent.js/i18n': cliRange
     }
   };
 }
@@ -300,7 +301,7 @@ export function ContactForm() {
   return {
     'src/components/ContactForm.js': exampleForm,
     dependencies: {
-      '@coherent.js/forms': `^${cliVersion}`
+      '@coherent.js/forms': cliRange
     }
   };
 }
@@ -329,7 +330,7 @@ export function inspectComponent(component) {
   return {
     'src/utils/devtools.js': config,
     dependencies: {
-      '@coherent.js/devtools': `^${cliVersion}`
+      '@coherent.js/devtools': cliRange
     }
   };
 }
@@ -381,7 +382,7 @@ export function getSitemap() {
   return {
     'src/utils/seo.js': metaHelper,
     dependencies: {
-      '@coherent.js/seo': `^${cliVersion}`
+      '@coherent.js/seo': cliRange
     }
   };
 }
@@ -430,7 +431,7 @@ describe('HomePage', () => {
     'tests/helpers/testing.js': testHelper,
     'tests/components/HomePage.test.js': exampleTest,
     dependencies: {
-      '@coherent.js/tooling': `^${cliVersion}`
+      '@coherent.js/tooling': cliRange
     }
   };
 }
