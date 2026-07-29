@@ -85,6 +85,9 @@ jobs:
       - name: Check bundle size
         run: node scripts/check-bundle-size.mjs --check
 
+      - name: Check Claude settings are portable
+        run: node scripts/check-claude-settings.mjs
+
       - name: Lint
         run: pnpm run lint
 
