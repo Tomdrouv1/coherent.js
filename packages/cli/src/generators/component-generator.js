@@ -378,9 +378,8 @@ describe('${name}', () => {
 
     expect(html).toContain('test-class');
   });
-});
 
-it('renders children correctly', () => {
+  it('renders children correctly', () => {
     const children = [
       { p: { text: 'Test child content' } }
     ];
@@ -390,7 +389,8 @@ it('renders children correctly', () => {
 
     expect(html).toContain('Test child content');
   });
-});`;
+});
+`;
 }
 
 /**

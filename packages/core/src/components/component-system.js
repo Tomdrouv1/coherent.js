@@ -120,6 +120,7 @@ export class Component {
         this.rendered = null;
         this.isMounted = false;
         this.isDestroyed = false;
+        this.isHandlingError = false;
 
         // Lifecycle hooks
         this.hooks = {
@@ -249,16 +250,33 @@ export class Component {
 
     /**
      * Handle component errors
+     *
+     * @param {Error} _error - The error to handle
+     * @param {string} [context] - Where the error came from, accumulated as it
+     *   propagates up so the parent sees the full "Child -> render" trail
      */
-    handleError(_error) {
-        console.error(`Component Error in ${this.name}:`, _error);
+    handleError(_error, context = '') {
+        // callHook() funnels a throwing hook back here, so an errorCaptured
+        // hook that itself throws would recurse until the stack blows.
+        if (this.isHandlingError) {
+            console.error(`Component Error in ${this.name} (errorCaptured hook):`, _error);
+            return;
+        }
 
-        // Call _error hook
-        this.callHook('errorCaptured', _error);
+        this.isHandlingError = true;
+        try {
+            const origin = context ? `${this.name} (${context})` : this.name;
+            console.error(`Component Error in ${origin}:`, _error);
 
-        // Propagate to parent
-        if (this.parent && this.parent.handleError) {
-            this.parent.handleError(_error, `${this.name} -> ${context}`);
+            // Call _error hook
+            this.callHook('errorCaptured', _error);
+
+            // Propagate to parent
+            if (this.parent && this.parent.handleError) {
+                this.parent.handleError(_error, context ? `${this.name} -> ${context}` : this.name);
+            }
+        } finally {
+            this.isHandlingError = false;
         }
     }
 
@@ -434,7 +452,50 @@ export function createComponent(definition) {
         };
     }
 
-    return new Component(definition);
+    const instance = new Component(definition);
+
+    // Calling the component renders it with the supplied props. This is the
+    // contract the docs, the READMEs and the CLI generators all rely on:
+    //   render(Counter({ count: 2 }))
+    const component = (props = {}) => instance.render(props);
+
+    // Lifecycle methods return `this` purely for chaining, so hand back the
+    // callable rather than the bare instance to keep the chain callable.
+    const CHAINABLE = new Set(['mount', 'update', 'destroy']);
+
+    // Expose the Component API on the callable. Methods stay bound to the
+    // instance because COMPONENT_METADATA is keyed by instance identity.
+    Object.getOwnPropertyNames(Component.prototype).forEach(key => {
+        if (key === 'constructor' || typeof instance[key] !== 'function') return;
+
+        component[key] = CHAINABLE.has(key)
+            ? (...args) => {
+                instance[key](...args);
+                return component;
+            }
+            : instance[key].bind(instance);
+    });
+
+    // Cloning a callable component yields another callable component.
+    component.clone = (overrides = {}) =>
+        createComponent({...instance.definition, ...overrides});
+
+    // Mirror instance properties (name, props, state, children, computed
+    // getters, user-defined methods, ...) so reads and writes reach the
+    // instance. defineProperty is required because a function's own `name`
+    // and `length` are not writable.
+    Object.keys(instance).forEach(key => {
+        Object.defineProperty(component, key, {
+            get: () => instance[key],
+            set: value => {
+                instance[key] = value;
+            },
+            enumerable: true,
+            configurable: true
+        });
+    });
+
+    return component;
 }
 
 /**

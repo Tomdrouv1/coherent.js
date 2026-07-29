@@ -72,9 +72,47 @@ describe('HTML Nesting Validation', () => {
             expect(FORBIDDEN_CHILDREN.tr.has('tr')).toBe(true);
             expect(FORBIDDEN_CHILDREN.td.has('td')).toBe(true);
         });
+
+        // Regression: <tr> was forbidden inside <thead>, and <table> inside
+        // <td>/<th>, so every table render warned about valid markup.
+        it('allows tr inside the table row groups', () => {
+            expect(FORBIDDEN_CHILDREN.thead.has('tr')).toBe(false);
+            expect(FORBIDDEN_CHILDREN.tbody.has('tr')).toBe(false);
+            expect(FORBIDDEN_CHILDREN.tfoot.has('tr')).toBe(false);
+        });
+
+        it('allows nested tables inside cells', () => {
+            expect(FORBIDDEN_CHILDREN.td.has('table')).toBe(false);
+            expect(FORBIDDEN_CHILDREN.th.has('table')).toBe(false);
+        });
     });
 
     describe('render integration', () => {
+        it('renders a full table without warning', () => {
+            const html = render({
+                table: {
+                    children: [
+                        { thead: { children: [{ tr: { children: [{ th: { text: 'H' } }] } }] } },
+                        { tbody: { children: [{ tr: { children: [{ td: { text: 'C' } }] } }] } },
+                        { tfoot: { children: [{ tr: { children: [{ td: { text: 'F' } }] } }] } }
+                    ]
+                }
+            });
+
+            expect(html).toContain('<thead><tr><th>H</th></tr></thead>');
+            expect(html).toContain('<tbody><tr><td>C</td></tr></tbody>');
+            expect(consoleWarnSpy).not.toHaveBeenCalled();
+        });
+
+        it('renders a nested table inside a cell without warning', () => {
+            const html = render({
+                td: { children: [{ table: { children: [{ tr: { children: [{ td: { text: 'n' } }] } }] } }] }
+            });
+
+            expect(html).toContain('<table><tr><td>n</td></tr></table>');
+            expect(consoleWarnSpy).not.toHaveBeenCalled();
+        });
+
         it('warns when rendering p > div', () => {
             const component = {
                 p: {

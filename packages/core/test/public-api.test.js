@@ -19,4 +19,28 @@ describe('@coherent.js/core public API', () => {
     expect(core).toHaveProperty('hasChildren');
     expect(core).toHaveProperty('normalizeChildren');
   });
+
+  // Regression: type-tests/public-api.typecheck.ts asserted these, but they
+  // were never re-exported from index.js. The mismatch stayed invisible
+  // because tsconfig.typecheck.json set `baseUrl`, removed in TypeScript 7,
+  // so tsc aborted on the config before checking anything.
+  it.each([
+    'Component',
+    'createHOC',
+    'memoComponent',
+    'escapeHtml',
+    'isVoidElement',
+    'formatAttributes',
+    'cacheManager',
+    'createCacheManager'
+  ])('exports %s', name => {
+    expect(core[name]).toBeDefined();
+  });
+
+  it('exports a single escapeHtml implementation', () => {
+    // index.js used to carry a second copy escaping ' as &#x27; while the
+    // renderer used &#39;, so the package shipped two different escapers.
+    expect(core.escapeHtml("it's")).toBe('it&#39;s');
+    expect(core.default.escapeHtml).toBe(core.escapeHtml);
+  });
 });

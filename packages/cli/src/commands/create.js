@@ -11,6 +11,7 @@ import { resolve } from 'path';
 import { spawn } from 'child_process';
 import { scaffoldProject } from '../generators/project-scaffold.js';
 import { validateProjectName } from '../utils/validation.js';
+import { isInteractive, requireInteractive } from '../utils/interactive.js';
 
 // Helper function to get default Docker port for database
 function getDefaultDockerPort(database) {
@@ -41,8 +42,16 @@ export const createCommand = new Command('create')
   .action(async (name, options) => {
     let projectName = name;
 
+    // Without a terminal there is nobody to answer, so fall back to the
+    // defaults --skip-prompts already provides rather than hanging.
+    if (!isInteractive()) {
+      options.skipPrompts = true;
+    }
+
     // Interactive project name if not provided
     if (!projectName) {
+      requireInteractive('the project name', 'coherent create <project-name>');
+
       const response = await prompts({
         type: 'text',
         name: 'name',
