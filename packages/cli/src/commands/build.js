@@ -86,14 +86,29 @@ export function hasCoherentDependency(startDir) {
   return false;
 }
 
+/**
+ * Package managers this command is willing to invoke.
+ *
+ * detectPackageManager() must only ever return a member of this set. The
+ * result is interpolated into a shell command, and `packageManager` comes
+ * from a package.json that may not be trustworthy — a value like
+ * `"x; rm -rf ~ ;@1"` would otherwise execute on `coherent build`. Matching
+ * against a fixed set means the interpolated value is always one of four
+ * literals, never attacker-controlled text.
+ */
+const SUPPORTED_PACKAGE_MANAGERS = new Set(['npm', 'pnpm', 'yarn', 'bun']);
+
 /** Detect the package manager in use, falling back to npm. */
 export function detectPackageManager(startDir) {
   for (const dir of ancestorDirectories(startDir)) {
     const manifest = readPackageJson(dir);
     const declared = manifest?.packageManager;
     if (typeof declared === 'string') {
-      const name = declared.split('@')[0].trim();
-      if (name) return name;
+      // corepack format: "<name>@<version>[+hash]"
+      const name = declared.split('@')[0].trim().toLowerCase();
+      // An unrecognised name is ignored rather than trusted, so detection
+      // falls through to the lockfiles below.
+      if (SUPPORTED_PACKAGE_MANAGERS.has(name)) return name;
     }
 
     if (existsSync(join(dir, 'pnpm-lock.yaml'))) return 'pnpm';
@@ -153,6 +168,9 @@ export const buildCommand = new Command('build')
 
       if (buildScript && !isSelfReferential(buildScript)) {
         spinner.text = `Running build script with ${packageManager}...`;
+        // Safe to interpolate: detectPackageManager() only returns a member of
+        // SUPPORTED_PACKAGE_MANAGERS. shell:true is kept because npm/pnpm/yarn
+        // are .cmd shims on Windows and are not directly executable.
         execSync(`${packageManager} run build`, {
           stdio: options.watch ? 'inherit' : 'pipe',
           cwd: process.cwd(),

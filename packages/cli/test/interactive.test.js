@@ -7,9 +7,10 @@
  * (exit 13) — unusable in CI, and no indication of what went wrong.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll } from 'vitest';
 import { execFile } from 'child_process';
 import { mkdtemp, rm } from 'fs/promises';
+import { writeFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { fileURLToPath } from 'url';
@@ -18,7 +19,27 @@ import { isInteractive } from '../src/utils/interactive.js';
 
 const execFileAsync = promisify(execFile);
 
-const CLI_BIN = fileURLToPath(new URL('../bin/coherent.js', import.meta.url));
+const CLI_SRC = fileURLToPath(new URL('../src/index.js', import.meta.url));
+
+// bin/coherent.js imports ../dist/index.js first and only falls back to src,
+// so spawning it would test whatever was last built rather than the working
+// tree — green or red depending on when someone ran `pnpm build`, and on which
+// branch. Drive the source through a tiny entry module instead.
+let entry;
+let entryDir;
+
+beforeAll(async () => {
+  entryDir = await mkdtemp(join(tmpdir(), 'coherent-interactive-entry-'));
+  entry = join(entryDir, 'entry.mjs');
+  writeFileSync(
+    entry,
+    `import { createCLI } from ${JSON.stringify(CLI_SRC)};\nawait createCLI();\n`
+  );
+});
+
+afterAll(async () => {
+  await rm(entryDir, { recursive: true, force: true });
+});
 
 const ENV_KEYS = ['COHERENT_NON_INTERACTIVE', 'COHERENT_INTERACTIVE', 'CI'];
 const savedEnv = {};
@@ -68,7 +89,7 @@ describe('isInteractive', () => {
 
 async function runCli(args, cwd) {
   try {
-    const { stdout, stderr } = await execFileAsync(process.execPath, [CLI_BIN, ...args], {
+    const { stdout, stderr } = await execFileAsync(process.execPath, [entry, ...args], {
       cwd,
       timeout: 60_000,
       // No stdin: exactly the condition that used to hang.

