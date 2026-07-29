@@ -1,0 +1,66 @@
+packages/core/types/index.d.ts
+  s_71335d6184abbf::t_5278c90fa7fc7e 654-658,671-673,676
+  s_71335d6184abbf::t_b050d3baaa526a 711-726
+  s_71335d6184abbf::t_cb06c8cbffea8d 776-799
+  s_71335d6184abbf::t_a811e7d5f70e44 598-626
+  s_71335d6184abbf::t_1a26029ff86fa4 659-669,674-675
+  s_71335d6184abbf::t_2080a3b73bdc26 751-755
+  s_71335d6184abbf::t_26fbc8620e5591 627-635
+  s_71335d6184abbf::t_26ce89eeb8e91a 670
+  s_71335d6184abbf::t_32e23e21a32625 756
+  s_71335d6184abbf::t_ea15d7c41d6a6b 800
+packages/core/test/components.test.js
+  s_71335d6184abbf::t_845d352ceac747 53-130
+  s_71335d6184abbf::t_23a6482c061b78 3
+packages/core/test/trusted-content.test.js
+  s_71335d6184abbf::t_fdd4d1c67338d8 1-87
+packages/core/test/component-errors.test.js
+  s_71335d6184abbf::t_120fbc66540c60 1-89
+packages/core/src/core/html-utils.js
+  s_71335d6184abbf::t_1231d35c2d51d1 16-29
+packages/core/type-tests/public-api.typecheck.ts
+  s_71335d6184abbf::t_4ad6e3ac7cea98 282,284-296
+  s_71335d6184abbf::t_97532bb6a23494 73-74
+  s_71335d6184abbf::t_f4576f539521cc 340-349,356-357
+  s_71335d6184abbf::t_199202a1afa43a 420
+  s_71335d6184abbf::t_5502439a79293a 41-42
+packages/core/test/html-nesting.test.js
+  s_71335d6184abbf::t_8d6a6f63d060c4 91-115
+  s_71335d6184abbf::t_d1be114a4d8801 75-87
+packages/core/test/public-api.test.js
+  s_71335d6184abbf::t_26374b0aa3ceaa 22-45
+packages/core/src/core/html-nesting-rules.js
+  s_71335d6184abbf::t_4b47b0c9face1a 24-26,30-32
+packages/core/src/components/component-system.js
+  s_71335d6184abbf::t_d9059ce3b1e048 123,253-256,258-269,271-272,274-279,455-498
+packages/core/src/rendering/html-renderer.js
+  s_71335d6184abbf::t_1490914278652e 395-398,403-405
+  s_71335d6184abbf::t_4f6ca1f1d58268 184-188
+  s_71335d6184abbf::t_5183cccecbe8dd 674-675,687-692
+  s_71335d6184abbf::t_8bcba049cd1c99 16
+  s_71335d6184abbf::t_92f2910266cccd 406,638-642
+  s_71335d6184abbf::t_288f1f908da3f5 407
+  s_71335d6184abbf::t_479632ceb9c2e7 643
+packages/core/src/index.js
+  s_71335d6184abbf::t_1ea835767f3f80 13
+  s_71335d6184abbf::t_7717eb3078334c 151
+  s_71335d6184abbf::t_330fd88321259f 267,272,274,286,288-296
+  s_71335d6184abbf::t_ee560a123128a4 283-285,287
+  s_71335d6184abbf::t_c00bf6dfb823da 297
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "2d2935e0ba12cef0b626881f4714e10d99151136",
+  "prompts": {},
+  "sessions": {
+    "s_71335d6184abbf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a6c388b7-e5a1-4fdf-a7f8-330799ac2726",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Thomas Drouvin <thomas.drouvin@gmail.com>"
+    }
+  }
+}
