@@ -6,6 +6,7 @@ import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { createServer } from 'node:http';
 import { WebSocket } from 'ws';
 import { createHmrServer } from '../../src/dev-server/hmr-server.js';
+import { bufferMessages, waitForOpen } from './ws-helpers.js';
 
 /**
  * Spin up an HTTP server on a random port + attach the HMR server.
@@ -28,62 +29,6 @@ async function startTestServer() {
       await new Promise((resolve) => httpServer.close(resolve));
     },
   };
-}
-
-/**
- * Attach a message buffer to a WebSocket the moment it's created so we
- * never miss messages that arrive before a later `await` returns. Returns
- * a `next(predicate)` helper that resolves with the next (or already
- * buffered) matching message.
- *
- * This avoids the classic listen-after-await race: the server sends a
- * `connected` ack on `setTimeout(0)` after the WS handshake completes,
- * which can arrive before a test attaches its message listener.
- */
-function bufferMessages(ws) {
-  const buffer = [];
-  const waiters = [];
-
-  ws.on('message', (buf) => {
-    let data;
-    try { data = JSON.parse(buf.toString()); } catch { return; }
-    for (let i = waiters.length - 1; i >= 0; i--) {
-      const w = waiters[i];
-      if (w.predicate(data)) {
-        waiters.splice(i, 1);
-        clearTimeout(w.timer);
-        w.resolve(data);
-        return;
-      }
-    }
-    buffer.push(data);
-  });
-
-  return {
-    next(predicate, timeoutMs = 2000) {
-      const match = buffer.findIndex(predicate);
-      if (match >= 0) {
-        const [d] = buffer.splice(match, 1);
-        return Promise.resolve(d);
-      }
-      return new Promise((resolve, reject) => {
-        const timer = setTimeout(() => {
-          const i = waiters.indexOf(entry);
-          if (i >= 0) waiters.splice(i, 1);
-          reject(new Error(`timeout waiting for message after ${timeoutMs}ms`));
-        }, timeoutMs);
-        const entry = { predicate, resolve, timer };
-        waiters.push(entry);
-      });
-    },
-  };
-}
-
-function waitForOpen(ws) {
-  return new Promise((resolve, reject) => {
-    ws.once('open', resolve);
-    ws.once('error', reject);
-  });
 }
 
 describe('createHmrServer', () => {
