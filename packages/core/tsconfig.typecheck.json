@@ -3,9 +3,10 @@
   "compilerOptions": {
     "noEmit": true,
     "rootDir": ".",
-    "baseUrl": ".",
     "paths": {
-      "@coherent.js/core": ["./types/index.d.ts"]
+      "@coherent.js/core": [
+        "./types/index.d.ts"
+      ]
     },
     "strict": true,
     "noImplicitAny": true,

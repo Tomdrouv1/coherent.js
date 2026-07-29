@@ -4,18 +4,26 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "target": "esnext",
-    "moduleResolution": "node",
-    "lib": ["ES2020", "DOM"],
-    "baseUrl": "./",
+    "moduleResolution": "bundler",
+    "lib": [
+      "ES2020",
+      "DOM"
+    ],
     "paths": {
-      "@coherent.js/core": ["../core/dist"],
-      "@coherent.js/client": ["./dist"]
+      "@coherent.js/core": [
+        "../core/dist"
+      ],
+      "@coherent.js/client": [
+        "./dist"
+      ]
     }
   },
   "include": [
     "src/**/*"
   ],
   "references": [
-    { "path": "../core/tsconfig.json" }
+    {
+      "path": "../core/tsconfig.json"
+    }
   ]
 }
