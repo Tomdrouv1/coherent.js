@@ -110,7 +110,10 @@ jobs:
 
             echo "::error::Failed to move $tag on $spec"
             local log
-            log="$(ls -t "$HOME"/.npm/_logs/*.log 2>/dev/null | head -1)"
+            # find rather than ls: shellcheck SC2012, and npm's log names are
+            # timestamped so newest-by-mtime is what we want.
+            log="$(find "$HOME/.npm/_logs" -type f -name '*.log' -printf '%T@ %p\n' 2>/dev/null \
+              | sort -rn | head -1 | cut -d' ' -f2-)"
             if [ -n "$log" ]; then
               echo "--- npm debug log ($log) ---"
               tail -40 "$log"
