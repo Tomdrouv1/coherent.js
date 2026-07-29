@@ -38,20 +38,8 @@ import {
   defineComponent,
   createComponent,
 
-  // State management
-  createState,
-  globalStateManager,
-  provideContext,
-  useContext,
-  createContextProvider,
-  restoreContext,
-  clearAllContexts,
-
-  // Virtual DOM
-  createVNode,
-  objectToVNode,
-  diff,
-  patch,
+  // State management and Virtual DOM are not implemented -- see the
+  // "NOT IMPLEMENTED" section below.
 
   // Performance
   performanceMonitor,
@@ -78,15 +66,12 @@ import type {
   StrictCoherentElement,
   RenderOptions,
   HTMLAttributes,
-  StateContainer,
-  GlobalStateManager,
-  VNode,
-  VDOMPatch,
   CacheManager,
   CacheManagerOptions,
   CoherentComponent,
   ComponentProps,
-  ContextProvider,
+  // StateContainer, GlobalStateManager, VNode, VDOMPatch and ContextProvider
+  // are still declared in types/index.d.ts but have no implementation to test.
 } from '@coherent.js/core';
 
 // ============================================================================
@@ -294,94 +279,21 @@ expectTypeOf(componentInstance.render).toBeFunction();
 expectTypeOf(componentInstance.name).toBeString();
 
 // ============================================================================
-// State Management
+// State Management / Virtual DOM -- NOT IMPLEMENTED
 // ============================================================================
-
-// createState returns StateContainer
-expectTypeOf(createState).returns.toMatchTypeOf<StateContainer>();
-expectTypeOf(createState()).toMatchTypeOf<StateContainer>();
-expectTypeOf(createState({ count: 0 })).toMatchTypeOf<StateContainer>();
-
-const state = createState({ count: 0, name: 'test' });
-expectTypeOf(state.get).toBeFunction();
-expectTypeOf(state.set).toBeFunction();
-expectTypeOf(state.has).toBeFunction();
-expectTypeOf(state.delete).toBeFunction();
-expectTypeOf(state.clear).returns.toMatchTypeOf<StateContainer>();
-expectTypeOf(state.toObject).returns.toMatchTypeOf<Record<string, unknown>>();
-expectTypeOf(state._internal).toMatchTypeOf<Map<string, unknown>>();
-
-// Method chaining
-expectTypeOf(state.set('key', 'value')).toMatchTypeOf<StateContainer>();
-expectTypeOf(state.clear()).toMatchTypeOf<StateContainer>();
-
-// globalStateManager
-expectTypeOf(globalStateManager).toMatchTypeOf<GlobalStateManager>();
-expectTypeOf(globalStateManager.set).toBeFunction();
-expectTypeOf(globalStateManager.get).toBeFunction();
-expectTypeOf(globalStateManager.has).toBeFunction();
-expectTypeOf(globalStateManager.clear).toBeFunction();
-expectTypeOf(globalStateManager.createRequestState).returns.toMatchTypeOf<StateContainer>();
-
-const requestState = globalStateManager.createRequestState();
-expectTypeOf(requestState).toMatchTypeOf<StateContainer>();
-
-// Context functions
-expectTypeOf(provideContext).toBeFunction();
-provideContext('theme', { dark: true });
-
-expectTypeOf(useContext).returns.toMatchTypeOf<unknown>();
-const themeContext = useContext<{ dark: boolean }>('theme');
-expectTypeOf(themeContext).toMatchTypeOf<{ dark: boolean } | undefined>();
-
-expectTypeOf(createContextProvider).returns.toMatchTypeOf<ContextProvider>();
-const provider = createContextProvider('theme', { dark: false }, { div: {} });
-expectTypeOf(provider).toMatchTypeOf<ContextProvider>();
-
-expectTypeOf(restoreContext).toBeFunction();
-restoreContext('theme');
-
-expectTypeOf(clearAllContexts).toBeFunction();
-clearAllContexts();
-
-// ============================================================================
-// Virtual DOM
-// ============================================================================
-
-// createVNode returns VNode
-expectTypeOf(createVNode).returns.toMatchTypeOf<VNode>();
-const vnode = createVNode('div', { className: 'test' }, []);
-expectTypeOf(vnode.type).toMatchTypeOf<string | Function>();
-expectTypeOf(vnode.props).toMatchTypeOf<Record<string, unknown>>();
-expectTypeOf(vnode.children).toMatchTypeOf<VNode[]>();
-expectTypeOf(vnode.key).toMatchTypeOf<string | number | undefined>();
-
-// objectToVNode converts CoherentNode to VNode
-expectTypeOf(objectToVNode).parameter(0).toMatchTypeOf<CoherentNode>();
-expectTypeOf(objectToVNode).returns.toMatchTypeOf<VNode>();
-const convertedVNode = objectToVNode({ div: { text: 'hello' } });
-expectTypeOf(convertedVNode).toMatchTypeOf<VNode>();
-
-// objectToVNode with depth parameter
-expectTypeOf(objectToVNode).toBeCallableWith({ div: {} }, 10);
-
-// diff returns patches
-expectTypeOf(diff).returns.toMatchTypeOf<VDOMPatch[]>();
-const oldVNode = createVNode('div', {}, []);
-const newVNode = createVNode('div', { className: 'updated' }, []);
-const patches = diff(oldVNode, newVNode);
-expectTypeOf(patches).toMatchTypeOf<VDOMPatch[]>();
-
-// VDOMPatch structure
-expectTypeOf(patches[0]?.type).toMatchTypeOf<string | undefined>();
-expectTypeOf(patches[0]?.path).toMatchTypeOf<(string | number)[] | undefined>();
-
-// patch applies to HTMLElement
-declare const element: HTMLElement;
-expectTypeOf(patch).parameter(0).toMatchTypeOf<HTMLElement>();
-expectTypeOf(patch).parameter(1).toMatchTypeOf<VDOMPatch[]>();
-patch(element, patches);
-
+//
+// These sections asserted an API that does not exist anywhere in
+// packages/core/src. They only ever "passed" because tsconfig.typecheck.json
+// set `baseUrl`, which TypeScript 7 removed -- tsc aborted on the config
+// before it type-checked a single line, hiding all of it.
+//
+// State management: createState, globalStateManager, provideContext,
+//   useContext, createContextProvider, restoreContext, clearAllContexts
+// Virtual DOM:      createVNode, objectToVNode, diff, patch
+//
+// The VNode / VDOMPatch / StateContainer / GlobalStateManager / ContextProvider
+// types remain declared in types/index.d.ts. Restore these assertions together
+// with the implementations.
 // ============================================================================
 // Caching
 // ============================================================================
@@ -425,20 +337,24 @@ expectTypeOf(lfuCache.strategy).toMatchTypeOf<'lru' | 'fifo' | 'lfu' | undefined
 
 expectTypeOf(performanceMonitor.startRender).returns.toBeString();
 expectTypeOf(performanceMonitor.endRender).returns.toBeNumber();
-expectTypeOf(performanceMonitor.recordRender).toBeFunction();
-expectTypeOf(performanceMonitor.getMetrics).returns.toMatchTypeOf<Record<string, unknown>>();
-expectTypeOf(performanceMonitor.clearMetrics).toBeFunction();
-expectTypeOf(performanceMonitor.enableMonitoring).toBeFunction();
-expectTypeOf(performanceMonitor.disableMonitoring).toBeFunction();
-expectTypeOf(performanceMonitor.isEnabled).returns.toBeBoolean();
+expectTypeOf(performanceMonitor.recordMetric).toBeFunction();
+expectTypeOf(performanceMonitor.addMetric).toBeFunction();
+expectTypeOf(performanceMonitor.measure).toBeFunction();
+expectTypeOf(performanceMonitor.measureAsync).toBeFunction();
+expectTypeOf(performanceMonitor.addAlertRule).toBeFunction();
+expectTypeOf(performanceMonitor.generateReport).returns.toMatchTypeOf<Record<string, unknown>>();
+expectTypeOf(performanceMonitor.getStats).returns.toMatchTypeOf<Record<string, unknown>>();
+expectTypeOf(performanceMonitor.reset).toBeFunction();
+expectTypeOf(performanceMonitor.start).toBeFunction();
+expectTypeOf(performanceMonitor.stop).toBeFunction();
 
 // Performance workflow
 const renderId = performanceMonitor.startRender('test-component');
 expectTypeOf(renderId).toBeString();
 const duration = performanceMonitor.endRender(renderId);
 expectTypeOf(duration).toBeNumber();
-const metrics = performanceMonitor.getMetrics();
-expectTypeOf(metrics).toMatchTypeOf<Record<string, unknown>>();
+const stats = performanceMonitor.getStats();
+expectTypeOf(stats).toMatchTypeOf<Record<string, unknown>>();
 
 // ============================================================================
 // Lazy and Memo Functions (Additional to components.typecheck.ts)
@@ -495,22 +411,13 @@ void allComponents;
 void withLogging;
 void DefinedTestComponent;
 void componentInstance;
-void state;
-void requestState;
-void themeContext;
-void provider;
-void vnode;
-void convertedVNode;
-void oldVNode;
-void newVNode;
-void patches;
 void cacheOptions;
 void customCache;
 void fifoCache;
 void lfuCache;
 void renderId;
 void duration;
-void metrics;
+void stats;
 void memoizedAdd;
 void lazyData;
 void strictDiv;

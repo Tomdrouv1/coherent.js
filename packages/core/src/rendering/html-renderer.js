@@ -13,6 +13,7 @@ import { validateNesting } from '../core/html-nesting-rules.js';
 
 import {
     escapeHtml,
+    isTrustedContent,
     isVoidElement,
     formatAttributes,
     minifyHtml
@@ -179,6 +180,11 @@ class HTMLRenderer extends BaseRenderer {
 
         // Use base class depth validation
         this.validateDepth(depth);
+
+        // Content marked by dangerouslySetInnerContent() is emitted verbatim.
+        if (isTrustedContent(component)) {
+            return component.__html;
+        }
 
         try {
             // Use base class component type processing
@@ -386,9 +392,17 @@ class HTMLRenderer extends BaseRenderer {
 
         // Handle raw HTML injection (unescaped) — for SSR use cases like syntax highlighting
         if (_rawHtml !== undefined) {
-            const rawContent = typeof _rawHtml === 'function' ? String(_rawHtml()) : String(_rawHtml);
+            const resolvedHtml = typeof _rawHtml === 'function' ? _rawHtml() : _rawHtml;
+            const rawContent = isTrustedContent(resolvedHtml)
+                ? resolvedHtml.__html
+                : String(resolvedHtml);
             const result = `${openingTag}${rawContent}</${tagName}>`;
             return result;
+        }
+
+        // Content marked by dangerouslySetInnerContent() is emitted verbatim.
+        if (isTrustedContent(text)) {
+            return `${openingTag}${text.__html}</${tagName}>`;
         }
 
         // Handle text content
@@ -621,6 +635,12 @@ export async function* renderToStream(component, options = {}) {
         // Handle null/undefined
         if (comp === null || comp === undefined) return;
 
+        // Content marked by dangerouslySetInnerContent() is emitted verbatim.
+        if (isTrustedContent(comp)) {
+            yield* write(comp.__html);
+            return;
+        }
+
         // Handle primitives
         if (typeof comp === 'string' || typeof comp === 'number') {
             yield* write(escapeHtml(String(comp)));
@@ -651,7 +671,8 @@ export async function* renderToStream(component, options = {}) {
         if (typeof comp === 'object') {
             for (const [tagName, props] of Object.entries(comp)) {
                 if (typeof props === 'object' && props !== null) {
-                    const { children, text, ...attributes } = props;
+                    // `html` is raw content, not an attribute.
+                    const { children, text, html: rawHtml, ...attributes } = props;
                     const attrsStr = formatAttributes(attributes);
                     const openTag = attrsStr ? `<${tagName} ${attrsStr}>` : `<${tagName}>`;
 
@@ -663,7 +684,12 @@ export async function* renderToStream(component, options = {}) {
 
                     yield* write(openTag);
 
-                    if (text !== undefined) {
+                    if (rawHtml !== undefined) {
+                        const resolved = typeof rawHtml === 'function' ? rawHtml() : rawHtml;
+                        yield* write(isTrustedContent(resolved) ? resolved.__html : String(resolved));
+                    } else if (isTrustedContent(text)) {
+                        yield* write(text.__html);
+                    } else if (text !== undefined) {
                         yield* write(escapeHtml(String(text)));
                     } else if (children) {
                         yield* streamComponent(children, depth + 1);

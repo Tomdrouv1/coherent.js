@@ -10,6 +10,7 @@
 // Performance monitoring
 import { readFileSync } from 'node:fs';
 import { performanceMonitor } from './performance/monitor.js';
+import { escapeHtml } from './core/html-utils.js';
 
 // Unified HTML renderer
 import { render as renderWithHtmlRenderer } from './rendering/html-renderer.js';
@@ -132,17 +133,6 @@ function applyScopeToElement(element, scopeId) {
   return element;
 }
 
-// Core HTML utilities
-function escapeHtml(text) {
-  if (typeof text !== 'string') return text;
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;');
-}
-
 /**
  * Mark content as safe/trusted to skip HTML escaping
  * USE WITH EXTREME CAUTION - only for developer-controlled content
@@ -158,39 +148,7 @@ export function dangerouslySetInnerContent(content) {
   };
 }
 
-/**
- * Check if content is marked as safe
- */
-function _isTrustedContent(value) {
-  return value && typeof value === 'object' && value.__trusted === true && typeof value.__html === 'string';
-}
-
-function _isVoidElement(tagName) {
-  const voidElements = new Set([
-    'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
-    'link', 'meta', 'param', 'source', 'track', 'wbr'
-  ]);
-  return voidElements.has(tagName.toLowerCase());
-}
-
-function _formatAttributes(attrs) {
-  if (!attrs || typeof attrs !== 'object') return '';
-
-  return Object.entries(attrs)
-    .filter(([, value]) => value !== null && value !== undefined && value !== false)
-    .map(([key, value]) => {
-      // Execute functions to get the actual value
-      if (typeof value === 'function') {
-        value = value();
-      }
-
-      // Convert className to class
-      const attrName = key === 'className' ? 'class' : key;
-      if (value === true) return attrName;
-      return `${attrName}="${escapeHtml(String(value))}"`;
-    })
-    .join(' ');
-}
+export { isTrustedContent } from './core/html-utils.js';
 
 // Hydration attribute injection
 function injectHydrationAttributes(component, options) {
@@ -306,11 +264,14 @@ function renderScopedComponent(component) {
 
 // Component system - Re-export from component-system for unified API
 export {
+  Component,
   withState,
   withStateUtils,
   createStateManager,
   createComponent,
+  createHOC,
   defineComponent,
+  memoComponent,
   registerComponent,
   getComponent,
   getRegisteredComponents,
@@ -318,6 +279,21 @@ export {
   isLazy,
   evaluateLazy
 } from './components/component-system.js';
+
+// HTML utilities. escapeHtml is also imported below for the default export;
+// index.js used to carry a second copy that escaped ' as &#x27; instead of
+// &#39;, so the package shipped two different escapers.
+export {
+  escapeHtml,
+  isVoidElement,
+  formatAttributes
+} from './core/html-utils.js';
+
+// Cache management
+export {
+  cacheManager,
+  createCacheManager
+} from './performance/cache-manager.js';
 
 // Component lifecycle exports
 export {
