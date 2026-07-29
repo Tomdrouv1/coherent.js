@@ -97,23 +97,35 @@ jobs:
             OTP_ARGS=()
           fi
 
+          # npm prints only "E400 Bad Request" and writes the registry's actual
+          # response to a debug log the runner then discards, which left a
+          # failed run with nothing to diagnose. Run verbose and dump the log.
+          move_tag() {
+            local spec="$1" tag="$2"
+
+            if npm dist-tag add "$spec" "$tag" --loglevel verbose "${OTP_ARGS[@]}"; then
+              echo "  ok: $spec -> $tag"
+              return 0
+            fi
+
+            echo "::error::Failed to move $tag on $spec"
+            local log
+            log="$(ls -t "$HOME"/.npm/_logs/*.log 2>/dev/null | head -1)"
+            if [ -n "$log" ]; then
+              echo "--- npm debug log ($log) ---"
+              tail -40 "$log"
+              echo "--- end npm debug log ---"
+            fi
+            return 1
+          }
+
           fail=0
           for p in "${PACKAGES[@]}"; do
             pkg="@coherent.js/$p"
             echo "::group::$pkg -> $DIST_TAG@$VERSION"
-            if npm dist-tag add "$pkg@$VERSION" "$DIST_TAG" "${OTP_ARGS[@]}"; then
-              echo "  ok: $pkg $DIST_TAG -> $VERSION"
-            else
-              echo "::error::Failed to move $DIST_TAG on $pkg"
-              fail=1
-            fi
+            move_tag "$pkg@$VERSION" "$DIST_TAG" || fail=1
             if [ "$ALSO_LATEST" = "yes" ] && [ "$DIST_TAG" != "latest" ]; then
-              if npm dist-tag add "$pkg@$VERSION" latest "${OTP_ARGS[@]}"; then
-                echo "  ok: $pkg latest -> $VERSION"
-              else
-                echo "::error::Failed to move latest on $pkg"
-                fail=1
-              fi
+              move_tag "$pkg@$VERSION" latest || fail=1
             fi
             echo "::endgroup::"
           done
