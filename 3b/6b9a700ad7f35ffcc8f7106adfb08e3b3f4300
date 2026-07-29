@@ -1,0 +1,35 @@
+packages/forms/tsconfig.json
+  s_d6c93b63722821::t_4258ebe18b2adb 16
+packages/devtools/tsconfig.json
+  s_d6c93b63722821::t_4258ebe18b2adb 16
+packages/seo/tsconfig.json
+  s_d6c93b63722821::t_4258ebe18b2adb 16
+packages/i18n/tsconfig.json
+  s_d6c93b63722821::t_4258ebe18b2adb 16
+tsconfig.json
+  s_d6c93b63722821::t_4d68161e30987c 4-15
+packages/database/tsconfig.json
+  s_d6c93b63722821::t_4258ebe18b2adb 16
+packages/api/tsconfig.json
+  s_d6c93b63722821::t_4258ebe18b2adb 16
+packages/client/tsconfig.json
+  s_d6c93b63722821::t_4258ebe18b2adb 19
+packages/state/tsconfig.json
+  s_d6c93b63722821::t_4258ebe18b2adb 16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "3b6b9a700ad7f35ffcc8f7106adfb08e3b3f4300",
+  "prompts": {},
+  "sessions": {
+    "s_d6c93b63722821": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d79bd3e8-1a24-4e0c-abf3-7f06366d367a",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Thomas Drouvin <thomas.drouvin@gmail.com>"
+    }
+  }
+}
