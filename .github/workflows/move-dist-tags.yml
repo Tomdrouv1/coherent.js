@@ -88,10 +88,11 @@ jobs:
             tooling
           )
 
-          # Optionally append --otp <code>; the variable expands to nothing
-          # when no OTP is supplied (npm tokens that bypass 2FA work fine
-          # without it; user-tokens with 2FA enforcement need it).
+          # workflow_dispatch inputs are not masked the way secrets are, and
+          # the OTP reaches npm on the command line, so it can surface in
+          # verbose output or the debug log dumped below.
           if [ -n "$OTP" ]; then
+            echo "::add-mask::$OTP"
             OTP_ARGS=(--otp "$OTP")
           else
             OTP_ARGS=()
