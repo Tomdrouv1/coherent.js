@@ -391,41 +391,40 @@ export interface Logger {
 // Main CLI Functions
 // ============================================================================
 
-// ============================================================================
-// CLI Utilities
-// ============================================================================
+/**
+ * A Commander command. Typed structurally so consumers need no direct
+ * dependency on `commander`.
+ */
+export interface CoherentCommand {
+  name(): string;
+  description(): string;
+  parseAsync(argv?: string[]): Promise<unknown>;
+  [member: string]: unknown;
+}
+
+/**
+ * Build the `coherent` program from `process.argv` and run it.
+ *
+ * Prints help and returns early when invoked with no arguments, and exits the
+ * process with code 1 when a command fails.
+ */
+export function createCLI(): Promise<void>;
 
 // ============================================================================
-// Default Export
+// Commands
 // ============================================================================
 
-declare const coherentCli: {
-  // Project creation
-  createProject: typeof createProject;
+/** `coherent create` — scaffold a new project */
+export const createCommand: CoherentCommand;
 
-  // Generators
-  generateComponent: typeof generateComponent;
-  generatePage: typeof generatePage;
-  generateApi: typeof generateApi;
-  generateModel: typeof generateModel;
+/** `coherent generate` — scaffold components, pages, APIs and models */
+export const generateCommand: CoherentCommand;
 
-  // Development
-  startDevServer: typeof startDevServer;
-  buildProject: typeof buildProject;
-  runTests: typeof runTests;
-  lintProject: typeof lintProject;
-  formatProject: typeof formatProject;
+/** `coherent build` — build a project for production */
+export const buildCommand: CoherentCommand;
 
-  // Utilities
-  parseArgs: typeof parseArgs;
-  loadConfig: typeof loadConfig;
-  saveConfig: typeof saveConfig;
-  getTemplates: typeof getTemplates;
-  getGenerators: typeof getGenerators;
-  createLogger: typeof createLogger;
-  createFileSystem: typeof createFileSystem;
-  createPluginManager: typeof createPluginManager;
-  validateProject: typeof validateProject;
-};
+/** `coherent dev` — start the development server */
+export const devCommand: CoherentCommand;
 
-export default coherentCli;
+/** `coherent debug` — profile components and application performance */
+export const debugCommand: CoherentCommand;

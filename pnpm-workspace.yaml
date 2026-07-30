@@ -21,9 +21,8 @@ allowBuilds:
 # `pnpm audit`. Each pin is re-derived against the current lockfile and kept
 # within the existing major where one is available, to avoid breaking changes.
 overrides:
-  # node-tar path-traversal / hardlink-escape CVEs — no 6.x backport exists,
-  # the fix only lands in 7.5.11+. Only used at build time by node-gyp.
-  tar: '^7.5.11'
+  # node-tar path traversal, decompression DoS and PAX crashes — fixed in 7.5.21.
+  'tar@<7.5.21': '^7.5.21'
   # rollup arbitrary file write via path traversal — fixed in 4.59.0.
   rollup: '^4.59.0'
   # vite server.fs.deny bypass — scope to the affected 7.0–7.3.1 line so the
@@ -31,8 +30,10 @@ overrides:
   'vite@>=7.0.0 <8.0.0': '^7.3.2'
   # fastify request-handling DoS — fixed in 5.8.5 (stays on major 5).
   fastify: '^5.8.5'
-  # fast-uri ReDoS — fixed in 3.1.2.
-  fast-uri: '^3.1.2'
+  # find-my-way HTTP/2 DDoS — 9.6.1 was never published, 9.7.0 is the first fix.
+  'find-my-way@<9.6.1': '^9.7.0'
+  # fast-uri ReDoS and host confusion via IDN/backslash — fixed in 3.1.4.
+  'fast-uri@>=3.0.0 <3.1.4': '^3.1.4'
   # tmp arbitrary write via symlink — fixed in 0.2.6.
   tmp: '^0.2.6'
   # @remix-run/server-runtime advisory — fixed in 2.17.5 (stays on major 2).
@@ -43,16 +44,17 @@ overrides:
   # fixed in 6.27.0 (6.x line, via @codecov/vite-plugin) and 7.28.0 (7.x).
   'undici@<6.27.0': '^6.27.0'
   'undici@>=7.0.0 <7.28.0': '^7.28.0'
-  # astro prerendered-error-page SSRF — fixed in 6.4.6.
-  'astro@<6.4.6': '^6.4.6'
+  # astro SSRF and three XSS advisories — only fixed on 7.x, within the
+  # `>=4.0.0` optional-peer range. Needs Node >=22.12.
+  'astro@>=4.0.0 <7.0.10': '^7.1.6'
   # form-data CRLF injection — fixed in 4.0.6 (via @vscode/vsce).
   'form-data@>=4.0.0 <4.0.6': '^4.0.6'
   # ws memory-exhaustion DoS from tiny fragments — fixed in 8.21.0.
   'ws@>=8.0.0 <8.21.0': '^8.21.0'
   # qs stringify DoS on null entries in comma-format arrays — fixed in 6.15.2.
   'qs@>=6.11.1 <6.15.2': '^6.15.2'
-  # postcss XSS via unescaped </style> in stringified output — fixed in 8.5.10.
-  'postcss@>=8.0.0 <8.5.10': '^8.5.10'
+  # postcss XSS via unescaped </style> and source-map path traversal — 8.5.18.
+  'postcss@>=8.0.0 <8.5.18': '^8.5.18'
   # ip-address XSS in Address6 HTML-emitting methods — fixed in 10.1.1.
   'ip-address@<=10.1.0': '^10.1.1'
   # js-yaml quadratic-complexity DoS in merge-key handling — fixed in 3.15.0
@@ -67,3 +69,24 @@ overrides:
   # @tootallnate/once incorrect control-flow scoping — fixed in 2.0.1. Only
   # reached at build time via sqlite3 > node-gyp's proxy-aware fetch chain.
   '@tootallnate/once@<2.0.1': '^2.0.1'
+  # brace-expansion unbounded expansion DoS — no 1.x backport, and 5.0.8 still
+  # ships a CommonJS entry, so minimatch@3 keeps working.
+  'brace-expansion@<5.0.8': '^5.0.8'
+  # svgo removeScripts left executable script content in place — fixed in 4.0.2.
+  'svgo@>=4.0.0 <4.0.2': '^4.0.2'
+  # linkify-it quadratic-complexity DoS on `mailto:` links — fixed in 5.0.2.
+  'linkify-it@<5.0.2': '^5.0.2'
+  # body-parser DoS on invalid input — fixed in 2.3.0 (stays on major 2).
+  'body-parser@>=2.0.0 <2.3.0': '^2.3.0'
+  # sharp inherited libvips CVEs — fixed in 0.35.0, reached via astro and next.
+  'sharp@<0.35.0': '^0.35.3'
+  # next App Router proxy bypass, three SSRFs, two DoS and cache confusion —
+  # all fixed in 16.2.11.
+  'next@>=16.0.0 <16.2.11': '^16.2.11'
+  # SvelteKit prototype pollution and remote form payload DoS — fixed in 2.69.1.
+  '@sveltejs/kit@<2.69.1': '>=2.69.1 <2.70.2'
+
+# Upper bounds only, to keep resolution inside minimumReleaseAge — not security
+# pins. Drop each one once its latest release has aged past the cutoff.
+  'vite@>=8.0.0': '>=8.1.5 <8.2.0'
+  '@napi-rs/wasm-runtime': '>=1.2.0 <1.2.1'

@@ -9,6 +9,8 @@
 export {
     Observable,
     ReactiveState,
+    StateError,
+    globalErrorHandler,
     createReactiveState,
     observable,
     computed,
@@ -80,6 +82,10 @@ export {
 
 // Re-export enhanced state patterns
 export {
+    FormState,
+    ListState,
+    ModalState,
+    RouterState,
     createFormState,
     createListState,
     createModalState,

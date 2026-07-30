@@ -122,6 +122,32 @@ export function setupCoherent(
 ): void;
 
 /**
+ * Verify Express is installed, then return a setup function that applies
+ * {@link setupCoherent} to an app and returns it.
+ *
+ * Rejects when Express is not resolvable, and the returned function throws
+ * when handed something that is not an Express app.
+ *
+ * @param options Configuration forwarded to setupCoherent
+ */
+export function createExpressIntegration(
+  options?: SetupCoherentExpressOptions
+): Promise<(app: Application) => Application>;
+
+/**
+ * A classic Express view engine that renders the component passed as the
+ * `options` argument.
+ *
+ * Kept for consumers migrating from the standalone `@coherent.js/express`
+ * package; new code should prefer {@link setupCoherent}.
+ */
+export function expressEngine(): (
+  filePath: string,
+  options: unknown,
+  callback: (err: Error | null, html?: string) => void
+) => void;
+
+/**
  * Default export with all utilities
  */
 declare const coherentExpress: {
@@ -129,6 +155,7 @@ declare const coherentExpress: {
   createCoherentHandler: typeof createCoherentHandler;
   enhancedExpressEngine: typeof enhancedExpressEngine;
   setupCoherent: typeof setupCoherent;
+  createExpressIntegration: typeof createExpressIntegration;
 };
 
 export default coherentExpress;

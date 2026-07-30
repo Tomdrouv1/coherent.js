@@ -6,486 +6,358 @@
 import type { CoherentNode } from '@coherent.js/core';
 
 // ============================================================================
-// Meta Tag Types
+// Meta Tags
 // ============================================================================
 
-/**
- * Generic meta tag definition
- */
-export interface MetaTag {
+/** Attributes of a `<meta>` element. */
+export interface MetaAttributes {
   /** Meta name attribute (for standard meta tags) */
   name?: string;
   /** Meta property attribute (for Open Graph, etc.) */
   property?: string;
   /** Meta content value */
-  content: string;
+  content?: string | number;
   /** HTTP-equiv attribute */
-  httpEquiv?: string;
+  'http-equiv'?: string;
+  /** Character set, for `<meta charset>` */
+  charset?: string;
+  [attribute: string]: unknown;
 }
 
-/**
- * Open Graph image configuration
- */
-export interface OpenGraphImage {
-  /** Image URL */
-  url: string;
-  /** Image width in pixels */
-  width?: number;
-  /** Image height in pixels */
-  height?: number;
-  /** Image alt text */
-  alt?: string;
-  /** Image MIME type */
+/** Attributes of a `<link>` element. */
+export interface LinkAttributes {
+  rel?: string;
+  href?: string;
+  hreflang?: string;
   type?: string;
+  sizes?: string;
+  [attribute: string]: unknown;
 }
 
-/**
- * Open Graph meta configuration
- */
-export interface OpenGraphMeta {
-  /** Page title */
-  title: string;
-  /** Page description */
-  description?: string;
-  /** Content type */
-  type?: 'website' | 'article' | 'book' | 'profile' | 'video.movie' | 'video.episode' | 'music.song' | 'music.album';
-  /** Page URL */
-  url?: string;
-  /** Image(s) for sharing */
-  image?: string | OpenGraphImage | (string | OpenGraphImage)[];
-  /** Site name */
+/** Twitter Card types. */
+export type TwitterCardType = 'summary' | 'summary_large_image' | 'app' | 'player';
+
+/** Site-wide values a builder falls back to. */
+export interface MetaDefaults {
+  /** Site name, used by `siteName()` when called with no argument */
   siteName?: string;
-  /** Locale (e.g., 'en_US') */
+  /** Site base URL */
+  siteUrl?: string;
+  /** Default locale (e.g. `'en_US'`) */
   locale?: string;
-  /** Alternate locales */
-  alternateLocales?: string[];
-  /** Audio URL */
-  audio?: string;
-  /** Video URL */
-  video?: string;
-  /** Determiner (a, an, the, auto, or empty) */
-  determiner?: 'a' | 'an' | 'the' | 'auto' | '';
-}
-
-/**
- * Twitter Card meta configuration
- */
-export interface TwitterMeta {
-  /** Card type */
-  card?: 'summary' | 'summary_large_image' | 'app' | 'player';
-  /** Twitter @username of website */
-  site?: string;
-  /** Twitter @username of content creator */
-  creator?: string;
-  /** Card title (defaults to og:title) */
-  title?: string;
-  /** Card description (defaults to og:description) */
-  description?: string;
-  /** Card image (defaults to og:image) */
-  image?: string;
-  /** Image alt text */
-  imageAlt?: string;
-  /** App ID for app cards */
-  appIdIphone?: string;
-  /** App ID for iPad */
-  appIdIpad?: string;
-  /** App ID for Google Play */
-  appIdGooglePlay?: string;
-}
-
-/**
- * Comprehensive SEO configuration
- */
-export interface SEOConfig {
-  /** Page title */
-  title: string;
-  /** Title template (e.g., '%s | My Site') */
-  titleTemplate?: string;
-  /** Page description */
-  description?: string;
-  /** Canonical URL */
-  canonical?: string;
-  /** Robots directives (e.g., 'index, follow') */
-  robots?: string;
-  /** Additional meta tags */
-  meta?: MetaTag[];
-  /** Open Graph configuration */
-  openGraph?: OpenGraphMeta;
-  /** Twitter Card configuration */
-  twitter?: TwitterMeta;
-  /** JSON-LD structured data */
-  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
-  /** Keywords (comma-separated or array) */
-  keywords?: string | string[];
-  /** Author name */
-  author?: string;
-  /** Viewport settings */
-  viewport?: string;
-  /** Character set */
-  charset?: string;
-  /** Language code */
-  language?: string;
-  /** Theme color */
-  themeColor?: string;
-}
-
-// ============================================================================
-// SEO Generation Functions
-// ============================================================================
-
-/**
- * Generate meta tags from SEO configuration
- * @returns Array of meta element nodes
- */
-export function generateMeta(config: SEOConfig): CoherentNode[];
-
-// ============================================================================
-// Meta Builder
-// ============================================================================
-
-/**
- * All meta tags in a flat structure
- */
-export interface MetaTags {
-  title?: string;
-  description?: string;
-  keywords?: string | string[];
-  author?: string;
-  robots?: string;
-  canonical?: string;
-  viewport?: string;
-  charset?: string;
-  language?: string;
-  themeColor?: string;
-  // Open Graph
-  ogTitle?: string;
-  ogDescription?: string;
-  ogImage?: string;
-  ogUrl?: string;
-  ogType?: string;
-  ogSiteName?: string;
-  ogLocale?: string;
-  // Twitter Card
-  twitterCard?: 'summary' | 'summary_large_image' | 'app' | 'player';
-  twitterSite?: string;
-  twitterCreator?: string;
-  twitterTitle?: string;
-  twitterDescription?: string;
-  twitterImage?: string;
-  // Custom meta tags
+  /** Twitter @username, emitted as `twitter:site` by `twitterCard()` */
+  twitterHandle?: string;
   [key: string]: unknown;
 }
 
-/**
- * Fluent builder for meta tags
- */
-export class MetaBuilder {
-  constructor(tags?: MetaTags);
+/** Options for `image()`. */
+export interface MetaImageOptions {
+  width?: number | string;
+  height?: number | string;
+  alt?: string;
+}
 
-  /** Set page title */
-  setTitle(title: string): this;
-
-  /** Set page description */
-  setDescription(description: string): this;
-
-  /** Set keywords */
-  setKeywords(keywords: string | string[]): this;
-
-  /** Set author */
-  setAuthor(author: string): this;
-
-  /** Set robots directive */
-  setRobots(robots: string): this;
-
-  /** Set canonical URL */
-  setCanonical(url: string): this;
-
-  /** Set viewport */
-  setViewport(viewport: string): this;
-
-  /** Set Open Graph properties */
-  setOpenGraph(tags: Partial<OpenGraphMeta>): this;
-
-  /** Set Twitter Card properties */
-  setTwitterCard(tags: Partial<TwitterMeta>): this;
-
-  /** Add a custom meta tag */
-  addCustomTag(name: string, content: string, type?: 'name' | 'property'): this;
-
-  /** Build as CoherentNode */
-  build(): CoherentNode;
-
-  /** Alias for build */
-  render(): CoherentNode;
-
-  /** Convert to HTML string */
-  toHTML(): string;
+/** Options for `article()`. */
+export interface ArticleMetaOptions {
+  publishedTime?: string;
+  modifiedTime?: string;
+  author?: string;
+  section?: string;
+  tags?: string[];
 }
 
 /**
- * Create a MetaBuilder instance
+ * Fluent builder for SEO meta tags.
+ *
+ * Every setter is chainable and appends to `tags`; `build()` returns the
+ * accumulated nodes, ready to spread into a `<head>`.
+ *
+ * ```ts
+ * const tags = new MetaBuilder({ siteName: 'Acme' })
+ *   .title('Pricing', { template: '%s | Acme' })
+ *   .description('Plans and pricing')
+ *   .build();
+ * ```
  */
-export function createMetaBuilder(tags?: MetaTags): MetaBuilder;
+export class MetaBuilder {
+  constructor(defaults?: MetaDefaults);
+
+  /** Site-wide fallbacks passed to the constructor */
+  defaults: MetaDefaults;
+  /** Nodes accumulated so far */
+  tags: CoherentNode[];
+
+  /** Set the page title, plus `og:title` and `twitter:title` */
+  title(title: string, options?: { template?: string }): this;
+
+  /** Set the description, plus `og:description` and `twitter:description` */
+  description(description: string): this;
+
+  /** Add a canonical `<link>`, plus `og:url` */
+  canonical(url: string): this;
+
+  /** Set the keywords meta tag */
+  keywords(keywords: string | string[]): this;
+
+  /** Set the robots meta tag */
+  robots(directives: string | string[]): this;
+
+  /** Add an `og:<property>` meta tag */
+  og(property: string, content: string | number): this;
+
+  /** Add a `twitter:<name>` meta tag */
+  twitter(name: string, content: string | number): this;
+
+  /** Add sharing image tags for both Open Graph and Twitter */
+  image(url: string, options?: MetaImageOptions): this;
+
+  /** Mark the page as an article and add `article:*` tags */
+  article(options?: ArticleMetaOptions): this;
+
+  /** Set the Twitter card type, plus `twitter:site` when a handle is configured */
+  twitterCard(type?: TwitterCardType): this;
+
+  /** Set `og:locale`, plus one `og:locale:alternate` per alternate */
+  locale(locale: string, alternates?: string[]): this;
+
+  /** Set `og:site_name`, defaulting to the configured site name */
+  siteName(name?: string): this;
+
+  /** Append an arbitrary `<meta>` tag */
+  meta(attributes: MetaAttributes): this;
+
+  /** Append an arbitrary `<link>` tag */
+  link(attributes: LinkAttributes): this;
+
+  /** Return the accumulated tags */
+  build(): CoherentNode[];
+
+  /** Discard the accumulated tags */
+  reset(): this;
+}
+
+/** Create a {@link MetaBuilder}. */
+export function createMetaBuilder(defaults?: MetaDefaults): MetaBuilder;
+
+/** Options for {@link generateMeta}. */
+export interface GenerateMetaOptions {
+  /** Site-wide fallbacks for the underlying builder */
+  defaults?: MetaDefaults;
+  title?: string;
+  /** Title template (e.g. `'%s | My Site'`) */
+  titleTemplate?: string;
+  description?: string;
+  canonical?: string;
+  keywords?: string | string[];
+  image?: { url: string } & MetaImageOptions;
+  robots?: string | string[];
+  article?: ArticleMetaOptions;
+  /** Card type, or `false` to omit Twitter card tags entirely */
+  twitterCard?: TwitterCardType | false;
+  locale?: string;
+  alternateLocales?: string[];
+  siteName?: string;
+}
+
+/** Build meta tags in one call. */
+export function generateMeta(options?: GenerateMetaOptions): CoherentNode[];
 
 // ============================================================================
 // Sitemap Generator
 // ============================================================================
 
-/**
- * Sitemap entry configuration
- */
-export interface SitemapEntry {
-  /** Page URL */
-  url: string;
-  /** Last modification date */
-  lastmod?: string | Date;
-  /** Change frequency */
+/** Per-URL sitemap options. */
+export interface SitemapEntryOptions {
+  /** Last modification date; defaults to today (`YYYY-MM-DD`) */
+  lastmod?: string;
+  /** Change frequency; defaults to `'weekly'` */
   changefreq?: 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never';
-  /** Priority (0.0 to 1.0) */
+  /** Priority from 0.0 to 1.0; defaults to `0.5` */
   priority?: number;
-  /** Image entries */
-  images?: Array<{
-    loc: string;
-    title?: string;
-    caption?: string;
-  }>;
-  /** Video entries */
-  videos?: Array<{
-    thumbnail_loc: string;
-    title: string;
-    description: string;
-    content_loc?: string;
-    player_loc?: string;
-  }>;
-  /** Alternate language versions */
-  alternates?: Array<{
-    hreflang: string;
-    href: string;
-  }>;
+  [key: string]: unknown;
 }
 
-/**
- * Sitemap generator options
- */
+/** A stored sitemap entry, with the URL resolved against the hostname. */
+export interface SitemapEntry extends SitemapEntryOptions {
+  loc: string;
+}
+
+/** Sitemap generator options. */
 export interface SitemapOptions {
-  /** Site hostname (e.g., 'https://example.com') */
-  hostname: string;
-  /** Cache time in milliseconds */
-  cacheTime?: number;
-  /** XML namespaces */
-  xmlNs?: Record<string, string>;
-  /** XSL stylesheet URL */
-  xslUrl?: string;
+  /** Site hostname (e.g. `'https://example.com'`), prepended to relative URLs */
+  hostname?: string;
+  /** urlset XML namespace */
+  xmlns?: string;
+  [key: string]: unknown;
 }
 
-/**
- * Sitemap generator class
- */
+/** Generates an XML sitemap. */
 export class SitemapGenerator {
-  constructor(options: SitemapOptions);
+  constructor(options?: SitemapOptions);
 
-  /** Add a URL entry */
-  addUrl(entry: SitemapEntry): this;
+  options: SitemapOptions;
+  /** Entries added so far */
+  urls: SitemapEntry[];
 
-  /** Add multiple URL entries */
-  addUrls(entries: SitemapEntry[]): this;
+  /** Add one URL, relative or absolute */
+  add(url: string, options?: SitemapEntryOptions): this;
 
-  /** Remove a URL entry */
-  removeUrl(url: string): this;
+  /** Add several URLs, as strings or as `{ url, ...options }` objects */
+  addMultiple(urls: Array<string | ({ url: string } & SitemapEntryOptions)>): this;
 
-  /** Generate sitemap XML string */
+  /** Resolve a relative URL against the configured hostname */
+  normalizeUrl(url: string): string;
+
+  /** Render the sitemap XML */
   generate(): string;
 
-  /** Alias for generate */
-  toXML(): string;
+  /** Escape XML special characters */
+  escapeXml(value: unknown): string;
 
-  /** Export entries as JSON */
-  toJSON(): SitemapEntry[];
+  /** Discard all entries */
+  clear(): this;
+
+  /** Number of entries added */
+  count(): number;
 }
 
-/**
- * Create a sitemap generator
- */
-export function createSitemapGenerator(options: SitemapOptions): SitemapGenerator;
+/** Create a {@link SitemapGenerator}. */
+export function createSitemapGenerator(options?: SitemapOptions): SitemapGenerator;
 
-/**
- * Generate sitemap XML from entries
- */
-export function generateSitemap(entries: SitemapEntry[], options: SitemapOptions): string;
+/** Build sitemap XML in one call. */
+export function generateSitemap(
+  urls: Array<string | ({ url: string } & SitemapEntryOptions)>,
+  options?: SitemapOptions
+): string;
 
 // ============================================================================
 // Structured Data (JSON-LD)
 // ============================================================================
 
-/**
- * Supported structured data types
- */
-export type StructuredDataType =
-  | 'Article'
-  | 'BlogPosting'
-  | 'NewsArticle'
-  | 'WebPage'
-  | 'WebSite'
-  | 'Organization'
-  | 'Person'
-  | 'Product'
-  | 'Review'
-  | 'Event'
-  | 'Recipe'
-  | 'BreadcrumbList'
-  | 'LocalBusiness'
-  | 'FAQPage'
-  | 'HowTo'
-  | 'VideoObject'
-  | 'ImageObject'
-  | 'SoftwareApplication'
-  | 'Course'
-  | 'JobPosting';
-
-/**
- * Structured data object
- */
+/** A schema.org object. */
 export interface StructuredData {
   '@context': string;
-  '@type': StructuredDataType | StructuredDataType[];
+  '@type': string;
   [key: string]: unknown;
 }
 
-/**
- * Fluent builder for structured data
- */
-export class StructuredDataBuilder {
-  constructor(type: StructuredDataType);
-
-  /** Change the schema type */
-  setType(type: StructuredDataType): this;
-
-  /** Set a single property */
-  setProperty(key: string, value: unknown): this;
-
-  /** Set multiple properties */
-  setProperties(properties: Record<string, unknown>): this;
-
-  /** Add value to an array property */
-  addToArray(key: string, value: unknown): this;
-
-  /** Build the structured data object */
-  build(): StructuredData;
-
-  /** Convert to JSON string */
-  toJSON(): string;
-
-  /** Build as JSON-LD script node */
-  toJSONLD(): CoherentNode;
-}
-
-/**
- * Create a structured data builder
- */
-export function createStructuredData(
-  type: StructuredDataType,
-  properties?: Record<string, unknown>
-): StructuredDataBuilder;
-
-/**
- * Generate structured data object
- */
-export function generateStructuredData(
-  type: StructuredDataType,
-  properties: Record<string, unknown>
-): StructuredData;
-
-// ============================================================================
-// Common Structured Data Types
-// ============================================================================
-
-/**
- * Article structured data
- */
-export interface ArticleData {
-  headline: string;
-  image: string | string[];
-  datePublished: string;
-  dateModified?: string;
-  author: {
-    '@type': 'Person' | 'Organization';
-    name: string;
-  };
-  publisher: {
-    '@type': 'Organization';
-    name: string;
-    logo: {
-      '@type': 'ImageObject';
-      url: string;
-    };
-  };
-  description?: string;
-  mainEntityOfPage?: string;
-}
-
-/**
- * Product structured data
- */
-export interface ProductData {
-  name: string;
-  image: string | string[];
-  description: string;
-  brand?: {
-    '@type': 'Brand';
-    name: string;
-  };
-  offers?: {
-    '@type': 'Offer';
-    price: number;
-    priceCurrency: string;
-    availability?: string;
-    url?: string;
-  };
-  aggregateRating?: {
-    '@type': 'AggregateRating';
-    ratingValue: number;
-    reviewCount: number;
-  };
-}
-
-/**
- * Breadcrumb structured data
- */
-export interface BreadcrumbData {
-  itemListElement: Array<{
-    '@type': 'ListItem';
-    position: number;
-    name: string;
-    item?: string;
-  }>;
-}
-
-/**
- * Organization structured data
- */
 export interface OrganizationData {
   name: string;
   url?: string;
   logo?: string;
   description?: string;
-  sameAs?: string[];
-  contactPoint?: {
-    '@type': 'ContactPoint';
-    telephone: string;
-    contactType: string;
+  contactPoint?: Record<string, unknown>;
+  /** Emitted as `sameAs` */
+  socialLinks?: string[];
+}
+
+export interface WebSiteData {
+  name: string;
+  url?: string;
+  description?: string;
+  searchAction?: {
+    target: string;
+    /** Defaults to `'required name=search_term_string'` */
+    queryInput?: string;
   };
 }
 
-/**
- * FAQ Page structured data
- */
-export interface FAQPageData {
-  mainEntity: Array<{
-    '@type': 'Question';
-    name: string;
-    acceptedAnswer: {
-      '@type': 'Answer';
-      text: string;
-    };
-  }>;
+export interface ArticleData {
+  headline: string;
+  description?: string;
+  image?: string | string[];
+  author?: { name: string; url?: string };
+  publisher?: { name: string; logo?: string };
+  datePublished?: string;
+  dateModified?: string;
 }
+
+export interface ProductData {
+  name: string;
+  description?: string;
+  image?: string | string[];
+  brand?: string;
+  offers?: {
+    price: number | string;
+    /** Defaults to `'USD'` */
+    currency?: string;
+    /** Defaults to `'https://schema.org/InStock'` */
+    availability?: string;
+    url?: string;
+  };
+  rating?: { value: number; count: number };
+}
+
+export interface BreadcrumbItem {
+  name: string;
+  url?: string;
+}
+
+export interface FAQItem {
+  question: string;
+  answer: string;
+}
+
+export interface PersonData {
+  name: string;
+  url?: string;
+  image?: string;
+  jobTitle?: string;
+  /** Emitted as `worksFor` */
+  organization?: string;
+  /** Emitted as `sameAs` */
+  socialLinks?: string[];
+}
+
+/** The schema shorthands {@link generateStructuredData} understands. */
+export type StructuredDataType =
+  | 'organization'
+  | 'website'
+  | 'article'
+  | 'product'
+  | 'breadcrumb'
+  | 'faq'
+  | 'person';
+
+/**
+ * Accumulates schema.org objects and renders them as one JSON-LD script node.
+ */
+export class StructuredDataBuilder {
+  constructor();
+
+  /** Schemas added so far */
+  schemas: StructuredData[];
+
+  /** Add a schema object verbatim */
+  add(schema: Record<string, unknown>): this;
+
+  organization(data: OrganizationData): this;
+  website(data: WebSiteData): this;
+  article(data: ArticleData): this;
+  product(data: ProductData): this;
+  breadcrumb(items: BreadcrumbItem[]): this;
+  faq(questions: FAQItem[]): this;
+  person(data: PersonData): this;
+
+  /** Render a `<script type="application/ld+json">` node, or `null` if empty */
+  build(): CoherentNode | null;
+
+  /** Serialize the schemas as a JSON string */
+  toJSON(): string;
+
+  /** Discard all schemas */
+  clear(): this;
+}
+
+/** Create a {@link StructuredDataBuilder}. */
+export function createStructuredData(): StructuredDataBuilder;
+
+/**
+ * Build a single schema and render it as a JSON-LD script node.
+ *
+ * An unrecognized `type` adds `data` verbatim.
+ */
+export function generateStructuredData(
+  type: StructuredDataType | (string & {}),
+  data: Record<string, unknown>
+): CoherentNode | null;

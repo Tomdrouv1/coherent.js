@@ -264,14 +264,19 @@ describe('PerformanceProfiler', () => {
       expect(result).toBe('test');
     });
 
+    // The profiler times with Date.now(), which has 1 ms resolution, and
+    // setTimeout may fire a fraction early — so a 5 ms sleep asserted as >= 5
+    // failed under load. Sleep long enough that the floor still proves the
+    // duration tracks the work without asserting timer precision the platform
+    // never promised.
     it('should handle async functions with measure', async () => {
       const result = await measure('async-test', async () => {
-        await new Promise(resolve => setTimeout(resolve, 5));
+        await new Promise(resolve => setTimeout(resolve, 25));
         return 'async-result';
       });
 
       expect(result.value).toBe('async-result');
-      expect(result.duration).toBeGreaterThanOrEqual(5);
+      expect(result.duration).toBeGreaterThanOrEqual(20);
     });
   });
 

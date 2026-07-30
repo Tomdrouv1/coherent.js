@@ -313,32 +313,70 @@ export interface CustomEventData {
 // Event Delegation Types (Plan 02-01)
 // ============================================================================
 
-/** Event delegation instance interface */
-export interface EventDelegation {
-  /** Initialize event delegation on document (idempotent) */
-  initialize(): void;
-  /** Destroy delegation and remove all listeners */
+/** A component whose state a delegated handler may read and write */
+export interface HandlerComponentRef {
+  getState?: () => any;
+  setState?: (state: any) => void;
+  [key: string]: any;
+}
+
+/** A registered handler and the component it belongs to */
+export interface RegisteredHandler {
+  handler: StateAwareHandler;
+  componentRef: HandlerComponentRef | null;
+}
+
+/**
+ * Routes document-level events to handlers registered by id.
+ *
+ * Focus and blur are delegated in the capture phase, since they do not bubble.
+ */
+export class EventDelegation {
+  constructor(registry?: HandlerRegistry);
+
+  registry: HandlerRegistry;
+  initialized: boolean;
+  root: Document | Element | null;
+  /** Event types delegated from the root */
+  eventTypes: string[];
+
+  /** Attach listeners to `root`; idempotent, and a no-op without a document */
+  initialize(root?: Document | Element | null): void;
+
+  /** Dispatch one delegated event to its registered handler */
+  handleEvent(event: Event, eventType: string): void;
+
+  /** Remove every listener attached by `initialize()` */
   destroy(): void;
-  /** Check if delegation is initialized */
+
   isInitialized(): boolean;
 }
 
-/** Handler registry interface */
-export interface HandlerRegistry {
-  /** Register a handler by ID */
+/** Stores delegated event handlers by id. */
+export class HandlerRegistry {
+  constructor();
+
+  handlers: Map<string, RegisteredHandler>;
+
+  /** Register a handler, optionally bound to a component */
   register(
-    id: string,
+    handlerId: string,
     handler: StateAwareHandler,
-    componentRef?: { getState: () => any; setState: (state: any) => void }
+    componentRef?: HandlerComponentRef | null
   ): void;
-  /** Unregister a handler by ID */
-  unregister(id: string): boolean;
-  /** Get a handler by ID */
-  get(id: string): { handler: StateAwareHandler; componentRef?: any } | undefined;
-  /** Check if handler exists */
-  has(id: string): boolean;
-  /** Clear all handlers */
+
+  /** Remove a handler; `false` when the id was not registered */
+  unregister(handlerId: string): boolean;
+
+  get(handlerId: string): RegisteredHandler | undefined;
+  has(handlerId: string): boolean;
   clear(): void;
+
+  /** Ids of every handler registered against one component */
+  getByComponent(componentRef: HandlerComponentRef | null): string[];
+
+  /** How many handlers are registered */
+  get size(): number;
 }
 
 // ============================================================================

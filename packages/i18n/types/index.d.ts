@@ -3,354 +3,236 @@
  * @module @coherent.js/i18n
  */
 
-import type { CoherentNode } from '@coherent.js/core';
-
 // ============================================================================
-// Translation Key Types
+// Translation Messages
 // ============================================================================
 
-/**
- * Translation key type (can be extended for type-safe translations)
- */
+/** Translation key, dot-separated for nested lookups (`'home.title'`). */
 export type TranslationKey = string;
 
 /**
- * Nested translation messages object
+ * A translation tree. Leaves are strings, or plural objects keyed by CLDR
+ * category (`one`, `other`, ...) selected via a `count` parameter.
  */
 export type TranslationMessages = {
-  [key: string]: string | TranslationMessages;
+  [key: string]: string | PluralForms | TranslationMessages;
 };
 
-/**
- * Helper type to flatten nested keys with dot notation
- * @example FlattenKeys<{ home: { title: 'Title' } }> = 'home.title'
- */
-export type FlattenKeys<T, Prefix extends string = ''> = T extends string
-  ? Prefix
-  : {
-      [K in keyof T]: FlattenKeys<
-        T[K],
-        `${Prefix}${Prefix extends '' ? '' : '.'}${K & string}`
-      >;
-    }[keyof T];
+/** Plural variants for one key, selected by `Intl.PluralRules`. */
+export interface PluralForms {
+  zero?: string;
+  one?: string;
+  two?: string;
+  few?: string;
+  many?: string;
+  other?: string;
+}
 
-// ============================================================================
-// Translation Function Types
-// ============================================================================
-
-/**
- * Translation function with overloads for different use cases
- */
-export interface TranslationFunction {
-  /**
-   * Translate a key
-   */
-  (key: TranslationKey): string;
-
-  /**
-   * Translate a key with interpolation parameters
-   */
-  (key: TranslationKey, params: Record<string, string | number>): string;
-
-  /**
-   * Translate a key with interpolation and pluralization
-   */
-  (key: TranslationKey, params: Record<string, string | number>, count: number): string;
+/** Interpolation parameters; `count` also drives plural selection. */
+export interface TranslationParams {
+  count?: number;
+  [param: string]: unknown;
 }
 
 // ============================================================================
-// I18n Configuration
+// Translator
 // ============================================================================
 
-/**
- * I18n configuration options
- */
-export interface I18nConfig {
-  /** Default locale code (e.g., 'en', 'en-US') */
-  defaultLocale: string;
-  /** List of supported locale codes */
-  supportedLocales: string[];
-  /** Fallback locale when translation is missing */
-  fallbackLocale?: string;
-  /** Async function to load messages for a locale */
-  loadMessages?: (locale: string) => Promise<TranslationMessages>;
-  /** Pre-loaded messages by locale */
-  messages?: Record<string, TranslationMessages>;
-  /** Handler for missing translation keys */
-  missingKeyHandler?: (key: string, locale: string) => string;
-  /** Interpolation settings */
-  interpolation?: {
-    /** Interpolation prefix (default: '{{') */
-    prefix?: string;
-    /** Interpolation suffix (default: '}}') */
-    suffix?: string;
-    /** Escape HTML in interpolated values */
-    escapeHtml?: boolean;
-  };
-  /** Enable pluralization support */
-  pluralization?: boolean;
-  /** Context separator for contextual translations */
-  contextSeparator?: string;
-}
-
-// ============================================================================
-// I18n Instance
-// ============================================================================
-
-/**
- * I18n instance interface
- */
-export interface I18nInstance {
-  /** Current locale code */
-  readonly locale: string;
-
-  /** Translation function */
-  t: TranslationFunction;
-
-  /**
-   * Change the current locale
-   */
-  setLocale(locale: string): Promise<void>;
-
-  /**
-   * Get the current locale code
-   */
-  getLocale(): string;
-
-  /**
-   * Get list of supported locales
-   */
-  getSupportedLocales(): string[];
-
-  /**
-   * Check if a translation key exists
-   */
-  hasTranslation(key: TranslationKey): boolean;
-
-  /**
-   * Format a number according to locale
-   */
-  formatNumber(value: number, options?: Intl.NumberFormatOptions): string;
-
-  /**
-   * Format a date according to locale
-   */
-  formatDate(value: Date | number | string, options?: Intl.DateTimeFormatOptions): string;
-
-  /**
-   * Format a currency value
-   */
-  formatCurrency(
-    value: number,
-    currency: string,
-    options?: Intl.NumberFormatOptions
-  ): string;
-
-  /**
-   * Format a relative time (e.g., "3 days ago")
-   */
-  formatRelativeTime(
-    value: number,
-    unit: Intl.RelativeTimeFormatUnit,
-    options?: Intl.RelativeTimeFormatOptions
-  ): string;
-
-  /**
-   * Format a list (e.g., "A, B, and C")
-   */
-  formatList(values: string[], options?: Intl.ListFormatOptions): string;
-
-  /**
-   * Add messages for a locale
-   */
-  addMessages(messages: TranslationMessages, locale?: string): void;
-
-  /**
-   * Get all messages for current locale
-   */
-  getMessages(): TranslationMessages;
-}
-
-
-// ============================================================================
-// Translator Class
-// ============================================================================
-
-/**
- * Translator options
- */
 export interface TranslatorOptions {
-  /** Current locale code */
-  locale: string;
-  /** Translation messages for current locale */
-  messages: TranslationMessages;
-  /** Fallback locale code */
+  /** Locale used until `setLocale()` is called; defaults to `'en'` */
+  defaultLocale?: string;
+  /** Locale consulted when a key is missing; defaults to `'en'` */
   fallbackLocale?: string;
-  /** Fallback messages */
-  fallbackMessages?: TranslationMessages;
-  /** Interpolation settings */
+  /** Called instead of returning the key when a translation is missing */
+  missingKeyHandler?: ((key: string, locale: string) => string) | null;
   interpolation?: {
+    /** Defaults to `'{{'` */
     prefix?: string;
+    /** Defaults to `'}}'` */
     suffix?: string;
   };
-  /** Enable pluralization */
-  pluralization?: boolean;
-  /** Context separator */
-  contextSeparator?: string;
+  [option: string]: unknown;
 }
 
 /**
- * Translator class
+ * Holds translations per locale and resolves keys with interpolation,
+ * pluralization and fallback.
+ *
+ * ```ts
+ * const t = new Translator({ defaultLocale: 'fr' });
+ * t.addTranslations('fr', { greeting: 'Bonjour {{name}}' });
+ * t.t('greeting', { name: 'Ada' }); // 'Bonjour Ada'
+ * ```
  */
 export class Translator {
-  constructor(options: TranslatorOptions);
+  constructor(options?: TranslatorOptions);
 
-  /**
-   * Translate a key
-   */
-  t(key: string, params?: Record<string, unknown>): string;
+  options: TranslatorOptions;
+  translations: Map<string, TranslationMessages>;
+  currentLocale: string;
+  loadedLocales: Set<string>;
 
-  /**
-   * Alias for t()
-   */
-  translate(key: string, params?: Record<string, unknown>): string;
+  /** Deep-merge messages into a locale */
+  addTranslations(locale: string, translations: TranslationMessages): void;
 
-  /**
-   * Check if a translation exists
-   */
-  has(key: string): boolean;
+  /** Recursively merge `source` into `target` */
+  deepMerge(target: TranslationMessages, source: TranslationMessages): TranslationMessages;
 
-  /**
-   * Set the current locale
-   */
+  /** Switch the active locale */
   setLocale(locale: string): void;
 
-  /**
-   * Get the current locale
-   */
+  /** The active locale */
   getLocale(): string;
 
   /**
-   * Add translation messages
+   * Resolve a key. Falls back to the fallback locale, then to
+   * `missingKeyHandler`, then to the key itself.
    */
-  addMessages(messages: TranslationMessages, locale?: string): void;
+  t(key: TranslationKey, params?: TranslationParams, locale?: string | null): string;
 
-  /**
-   * Remove translation messages
-   */
-  removeMessages(keys: string[], locale?: string): void;
+  /** Look a key up in one locale without fallback; `null` if absent */
+  getTranslation(
+    key: TranslationKey,
+    locale: string
+  ): string | PluralForms | TranslationMessages | null;
+
+  /** Pick the plural form matching `count` */
+  selectPlural(pluralObject: PluralForms, count: number, locale: string): string;
+
+  /** Substitute `{{param}}` placeholders */
+  interpolate(str: string, params: TranslationParams): string;
+
+  /** Whether a key resolves in the given (or current) locale */
+  has(key: TranslationKey, locale?: string | null): boolean;
+
+  /** All messages for a locale, or `{}` */
+  getTranslations(locale?: string | null): TranslationMessages;
+
+  /** Locales that have been marked loaded */
+  getLoadedLocales(): string[];
+
+  /** Drop a locale's messages, resetting the current locale if it was active */
+  removeLocale(locale: string): void;
+
+  /** Drop every locale and reset to the default */
+  clear(): void;
 }
 
-/**
- * Create a translator instance
- */
-export function createTranslator(options: TranslatorOptions): Translator;
+/** Create a {@link Translator}. */
+export function createTranslator(options?: TranslatorOptions): Translator;
 
 /**
- * Create a scoped translator (prefixes all keys)
+ * Wrap a translator so every key is prefixed with `namespace`.
  */
-export function createScopedTranslator(translator: Translator, scope: string): Translator;
+export function createScopedTranslator(
+  translator: Translator,
+  namespace: string
+): {
+  t(key: TranslationKey, params?: TranslationParams, locale?: string | null): string;
+  has(key: TranslationKey, locale?: string | null): boolean;
+  getLocale(): string;
+  setLocale(locale: string): void;
+};
 
 // ============================================================================
 // Formatters
 // ============================================================================
 
-/**
- * Date formatter options
- */
-export interface DateFormatterOptions {
-  locale?: string;
-  timeZone?: string;
-  dateStyle?: 'full' | 'long' | 'medium' | 'short';
-  timeStyle?: 'full' | 'long' | 'medium' | 'short';
-  format?: string;
-}
-
-/**
- * Date formatter class
- */
+/** Locale-aware date and time formatting. */
 export class DateFormatter {
-  constructor(locale?: string, options?: DateFormatterOptions);
+  constructor(locale?: string);
 
-  /** Format a date */
-  format(date: Date | number | string): string;
+  locale: string;
 
-  /** Format as relative time (e.g., "2 hours ago") */
-  formatRelative(date: Date | number | string): string;
+  /** Format with explicit `Intl.DateTimeFormat` options */
+  format(date: Date | number | string, options?: Intl.DateTimeFormatOptions): string;
 
-  /** Format distance between dates */
-  formatDistance(date: Date | number | string, baseDate?: Date | number): string;
+  /** Short date (e.g. `1/15/25`) */
+  short(date: Date | number | string): string;
+
+  /** Medium date (e.g. `Jan 15, 2025`) */
+  medium(date: Date | number | string): string;
+
+  /** Long date (e.g. `January 15, 2025`) */
+  long(date: Date | number | string): string;
+
+  /** Full date, including weekday */
+  full(date: Date | number | string): string;
+
+  /** Time only */
+  time(date: Date | number | string, options?: Intl.DateTimeFormatOptions): string;
+
+  /** Date and time together */
+  dateTime(date: Date | number | string, options?: Intl.DateTimeFormatOptions): string;
+
+  /** Relative to now (e.g. `2 hours ago`) */
+  relative(date: Date | number | string): string;
 }
 
-/**
- * Number formatter options
- */
-export interface NumberFormatterOptions {
-  locale?: string;
-  style?: 'decimal' | 'currency' | 'percent' | 'unit';
-  currency?: string;
-  minimumFractionDigits?: number;
-  maximumFractionDigits?: number;
-  useGrouping?: boolean;
-}
-
-/**
- * Number formatter class
- */
+/** Locale-aware number formatting. */
 export class NumberFormatter {
-  constructor(locale?: string, options?: NumberFormatterOptions);
+  constructor(locale?: string);
 
-  /** Format a number */
-  format(value: number): string;
+  locale: string;
 
-  /** Format as compact notation */
-  formatCompact(value: number): string;
+  /** Format with explicit `Intl.NumberFormat` options */
+  format(value: number, options?: Intl.NumberFormatOptions): string;
 
-  /** Format as percentage */
-  formatPercent(value: number): string;
+  /** Fixed number of fraction digits; defaults to 2 */
+  decimal(value: number, decimals?: number): string;
+
+  /** Percentage; `value` is a ratio, so `0.42` renders as `42%` */
+  percent(value: number, decimals?: number): string;
+
+  /** Compact notation (e.g. `1.2K`) */
+  compact(value: number): string;
+
+  /** Value with a unit (e.g. `5 km`) */
+  unit(value: number, unit: string, options?: Intl.NumberFormatOptions): string;
 }
 
-/**
- * Currency formatter options
- */
-export interface CurrencyFormatterOptions {
-  locale?: string;
-  currency: string;
-  display?: 'symbol' | 'code' | 'name';
-}
-
-/**
- * Currency formatter class
- */
+/** Locale-aware currency formatting. */
 export class CurrencyFormatter {
-  constructor(locale?: string, options?: CurrencyFormatterOptions);
+  constructor(locale?: string, defaultCurrency?: string);
 
-  /** Format a currency value */
-  format(value: number): string;
+  locale: string;
+
+  /** Format using the given currency, or the configured default */
+  format(value: number, currency?: string | null, options?: Intl.NumberFormatOptions): string;
+
+  /** No fraction digits */
+  whole(value: number, currency?: string | null): string;
+
+  /** Symbol notation (`$1.00`) */
+  symbol(value: number, currency?: string | null): string;
+
+  /** Narrow symbol notation */
+  narrowSymbol(value: number, currency?: string | null): string;
+
+  /** Code notation (`USD 1.00`) */
+  code(value: number, currency?: string | null): string;
 }
 
-/**
- * List formatter options
- */
-export interface ListFormatterOptions {
-  locale?: string;
-  type?: 'conjunction' | 'disjunction' | 'unit';
-  style?: 'long' | 'short' | 'narrow';
-}
-
-/**
- * List formatter class
- */
+/** Locale-aware list formatting. */
 export class ListFormatter {
-  constructor(locale?: string, options?: ListFormatterOptions);
+  constructor(locale?: string);
 
-  /** Format a list of items */
-  format(list: string[]): string;
+  locale: string;
+
+  /** Format with explicit `Intl.ListFormat` options */
+  format(items: string[], options?: Intl.ListFormatOptions): string;
+
+  /** Conjunction (`A, B, and C`) */
+  and(items: string[]): string;
+
+  /** Disjunction (`A, B, or C`) */
+  or(items: string[]): string;
+
+  /** Unit list (`A, B, C`) */
+  unit(items: string[]): string;
 }
 
-/**
- * All formatters for a locale
- */
+/** Every formatter for one locale. */
 export interface Formatters {
   date: DateFormatter;
   number: NumberFormatter;
@@ -358,91 +240,114 @@ export interface Formatters {
   list: ListFormatter;
 }
 
-/**
- * Create all formatters for a locale
- */
-export function createFormatters(locale: string): Formatters;
+/** Create all four formatters for a locale. */
+export function createFormatters(
+  locale?: string,
+  options?: { defaultCurrency?: string }
+): Formatters;
 
 // ============================================================================
-// Locale Management
+// Locale Utilities
 // ============================================================================
 
-/**
- * Locale configuration
- */
-export interface LocaleConfig {
-  /** Locale code (e.g., 'en-US') */
-  code: string;
-  /** English name */
-  name: string;
-  /** Native name */
-  nativeName: string;
-  /** Text direction */
-  direction?: 'ltr' | 'rtl';
-  /** Date format pattern */
-  dateFormat?: string;
-  /** Time format pattern */
-  timeFormat?: string;
-  /** First day of week (0 = Sunday, 1 = Monday, etc.) */
-  firstDayOfWeek?: number;
+/** Text direction. */
+export type LocaleDirection = 'ltr' | 'rtl';
+
+/** A locale code split into its parts. */
+export interface ParsedLocale {
+  language: string;
+  region: string | null;
+  script: string | null;
+  full: string;
 }
 
-/**
- * Locale manager class
- */
-export class LocaleManager {
-  constructor(locales: LocaleConfig[]);
-
-  /** Add a locale configuration */
-  addLocale(locale: LocaleConfig): void;
-
-  /** Remove a locale */
-  removeLocale(code: string): void;
-
-  /** Get locale configuration */
-  getLocale(code: string): LocaleConfig | undefined;
-
-  /** Get all locale configurations */
-  getAllLocales(): LocaleConfig[];
-
-  /** Set current locale */
-  setCurrentLocale(code: string): void;
-
-  /** Get current locale configuration */
-  getCurrentLocale(): LocaleConfig;
-}
-
-/**
- * Create a locale manager
- */
-export function createLocaleManager(locales: LocaleConfig[]): LocaleManager;
-
-/**
- * Detect user's preferred locale
- */
+/** The environment's preferred locale, or `'en'` outside a browser. */
 export function detectLocale(): string;
 
 /**
- * Normalize a locale code (e.g., 'en_US' -> 'en-US')
+ * Lowercase a locale code and normalize the separator. The region is dropped
+ * unless `keepRegion` is set, so `'en_US'` gives `'en'`, or `'en-us'` when
+ * kept. Empty input gives `'en'`.
  */
-export function getLocaleDirection(locale: string): 'ltr' | 'rtl';
+export function normalizeLocale(locale: string | null | undefined, keepRegion?: boolean): string;
 
-export function getLocaleDisplayName(locale: string, displayLocale?: string): string;
+/** Split a locale code into language, region and script. */
+export function parseLocale(locale: string): ParsedLocale;
 
-export function getSupportedLocales(): string[];
+/** Text direction for a locale. */
+export function getLocaleDirection(locale: string): LocaleDirection;
 
-export function matchLocale(requestedLocale: string, availableLocales: string[], defaultLocale?: string): string;
-
-export function parseLocale(locale: string): { language: string; region: string | null; script: string | null; full: string };
-
-export function normalizeLocale(locale: string): string;
-
-/**
- * Check if a locale uses RTL text direction
- */
+/** Whether a locale is right-to-left. */
 export function isRTL(locale: string): boolean;
 
-// ============================================================================
-// Component Helpers
-// ============================================================================
+/** Human-readable name of a locale, rendered in `displayLocale`. */
+export function getLocaleDisplayName(locale: string, displayLocale?: string): string;
 
+/**
+ * Pick the closest available locale, falling back to the language subtag and
+ * finally to `defaultLocale`.
+ */
+export function matchLocale(
+  requestedLocale: string,
+  availableLocales: string[],
+  defaultLocale?: string
+): string;
+
+/** The environment's preferred locales, most preferred first. */
+export function getSupportedLocales(): string[];
+
+export interface LocaleManagerOptions {
+  /** Locale used when detection and storage yield nothing; defaults to `'en'` */
+  defaultLocale?: string;
+  /** Locales this app ships; defaults to `['en']` */
+  availableLocales?: string[];
+  /** localStorage key; defaults to `'coherent-locale'` */
+  storageKey?: string;
+  /** Detect from the environment on construction; defaults to `true` */
+  autoDetect?: boolean;
+  [option: string]: unknown;
+}
+
+/** Called after the locale changes. */
+export type LocaleChangeListener = (newLocale: string, oldLocale: string) => void;
+
+/**
+ * Tracks the active locale, persisting it to localStorage where available.
+ */
+export class LocaleManager {
+  constructor(options?: LocaleManagerOptions);
+
+  options: LocaleManagerOptions;
+  currentLocale: string;
+  listeners: LocaleChangeListener[];
+
+  /** Detect the environment locale and match it against the available ones */
+  detectAndMatch(): string;
+
+  /** The active locale */
+  getLocale(): string;
+
+  /** Match, store and broadcast a new locale; a no-op if unchanged */
+  setLocale(locale: string): void;
+
+  /** Subscribe to locale changes; returns an unsubscribe function */
+  onChange(listener: LocaleChangeListener): () => void;
+
+  /** Invoke every listener, swallowing listener errors */
+  notifyListeners(oldLocale: string, newLocale: string): void;
+
+  /** Persist the active locale, ignoring storage failures */
+  saveToStorage(): void;
+
+  /** Restore a persisted locale, ignoring storage failures */
+  loadFromStorage(): void;
+
+  /** Copy of the configured available locales */
+  getAvailableLocales(): string[];
+
+  /** Whether a locale is in the available list */
+  isAvailable(locale: string): boolean;
+}
+
+/** Create a {@link LocaleManager}. */
+export function createLocaleManager(options?: LocaleManagerOptions): LocaleManager;

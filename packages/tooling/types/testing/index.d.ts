@@ -3,7 +3,7 @@
  * @module @coherent.js/testing
  */
 
-import type { CoherentNode, CoherentElement, CoherentComponent, ComponentProps } from '@coherent.js/core';
+import type { CoherentNode, CoherentElement, CoherentComponent } from '@coherent.js/core';
 
 // ============================================================================
 // Test Renderer Types
@@ -78,20 +78,33 @@ export class TestRendererResult {
 }
 
 /**
- * Test renderer class
+ * Renders one component repeatedly, tracking how many times.
+ *
+ * The component and options are fixed at construction; `render()` and
+ * `update()` return a queryable {@link TestRendererResult}.
  */
 export class TestRenderer {
-  /** Render a component */
-  render(component: CoherentNode, options?: RenderOptions): RenderResult;
+  constructor(component: CoherentNode, options?: RenderOptions);
 
-  /** Render a component asynchronously */
-  renderAsync(component: CoherentNode, options?: RenderOptions): Promise<RenderResult>;
+  component: CoherentNode | null;
+  options: RenderOptions;
+  result: TestRendererResult | null;
+  renderCount: number;
 
-  /** Shallow render (no children) */
-  shallow(component: CoherentNode): RenderResult;
+  /** Render the current component and record the result */
+  render(): TestRendererResult;
 
-  /** Cleanup all renders */
-  cleanup(): void;
+  /** Swap in a new component and re-render */
+  update(newComponent: CoherentNode): TestRendererResult;
+
+  /** The most recent result, or `null` before the first render */
+  getResult(): TestRendererResult | null;
+
+  /** How many times `render()` has run */
+  getRenderCount(): number;
+
+  /** Drop the component and its result */
+  unmount(): void;
 }
 
 /**
@@ -176,33 +189,17 @@ export interface EventOptions {
 }
 
 /**
- * Fire DOM events on elements
+ * Simulate an event on a test element.
+ *
+ * Calls the element's `on<eventType>` handler with a synthetic event built
+ * from `eventData`. Throws when `element` is missing.
  */
-export const fireEvent: {
-  /** Fire any event */
-  (element: Element, event: Event): boolean;
-  /** Fire click event */
-  click(element: Element, options?: EventOptions): boolean;
-  /** Fire change event */
-  change(element: Element, options?: EventOptions & { target?: { value?: unknown } }): boolean;
-  /** Fire input event */
-  input(element: Element, options?: EventOptions & { target?: { value?: unknown } }): boolean;
-  /** Fire submit event */
-  submit(element: Element, options?: EventOptions): boolean;
-  /** Fire keydown event */
-  keyDown(element: Element, options?: EventOptions & { key?: string; code?: string }): boolean;
-  /** Fire keyup event */
-  keyUp(element: Element, options?: EventOptions & { key?: string; code?: string }): boolean;
-  /** Fire focus event */
-  focus(element: Element, options?: EventOptions): boolean;
-  /** Fire blur event */
-  blur(element: Element, options?: EventOptions): boolean;
-  /** Fire mouseenter event */
-  mouseEnter(element: Element, options?: EventOptions): boolean;
-  /** Fire mouseleave event */
-  mouseLeave(element: Element, options?: EventOptions): boolean;
-  [key: string]: unknown;
-};
+export function fireEvent(
+  element: unknown,
+  eventType: string,
+  eventData?: EventOptions
+): unknown;
+
 
 /**
  * Wait options
@@ -318,16 +315,15 @@ export const screen: Within;
  * User event simulation
  */
 export const userEvent: {
-  click(element: Element): Promise<void>;
-  dblClick(element: Element): Promise<void>;
-  type(element: Element, text: string, options?: { delay?: number }): Promise<void>;
-  clear(element: Element): Promise<void>;
-  selectOptions(element: Element, values: string | string[]): Promise<void>;
-  tab(options?: { shift?: boolean }): Promise<void>;
-  hover(element: Element): Promise<void>;
-  unhover(element: Element): Promise<void>;
-  upload(element: Element, files: File | File[]): Promise<void>;
-  paste(element: Element, text: string): Promise<void>;
+  /** Fire keydown/input/keyup per character, optionally spaced by `delay` ms */
+  type(element: unknown, text: string, options?: { delay?: number }): Promise<void>;
+  click(element: unknown): Promise<void>;
+  dblClick(element: unknown): Promise<void>;
+  /** Set the value to the empty string and fire `change` */
+  clear(element: unknown): Promise<void>;
+  selectOptions(element: unknown, values: string | string[]): Promise<void>;
+  /** Move focus to the next focusable element */
+  tab(): Promise<void>;
 };
 
 // ============================================================================
@@ -338,12 +334,16 @@ export const userEvent: {
  * Standard assertions
  */
 export const assertions: {
-  assertElement(element: unknown): asserts element is Element;
-  assertHTMLElement(element: unknown): asserts element is HTMLElement;
-  assertInDocument(element: Element | null): asserts element is Element;
-  assertVisible(element: Element): void;
-  assertHasAttribute(element: Element, attr: string): void;
-  assertHasClass(element: Element, className: string): void;
+  /** Throw unless the match's text equals `text` */
+  assertHasText(element: TestRendererMatch | null, text: string): void;
+  /** Throw unless the match exists */
+  assertExists(element: TestRendererMatch | null): void;
+  /** Throw unless the match's className contains `className` */
+  assertHasClass(element: TestRendererMatch | null, className: string): void;
+  /** Throw unless the HTML, or a result's HTML, contains `substring` */
+  assertContainsHTML(html: string | { html?: string } | null, substring: string): void;
+  /** Throw unless the render produced non-empty HTML */
+  assertRendered(result: { html?: string } | null): void;
 };
 
 // ============================================================================

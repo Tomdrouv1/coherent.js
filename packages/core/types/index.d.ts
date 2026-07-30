@@ -5,8 +5,10 @@
  * @version 1.0.0-beta.1
  */
 
-// Re-export strict element types
+// Re-export strict element types. `export *` re-exports without binding the
+// names locally, so CoherentNode below needs its own import.
 export * from './elements';
+import type { StrictCoherentElement } from './elements';
 
 // ============================================================================
 // Basic Types
@@ -762,16 +764,116 @@ export function createCacheManager(options?: CacheManagerOptions): CacheManager;
 // Component Cache (Additional)
 // ============================================================================
 
-/** Component cache class */
+/** Options for {@link ComponentCache} */
+export interface ComponentCacheOptions {
+  /** Entries retained before least-used eviction; defaults to `1000` */
+  maxSize?: number;
+  /** Entry lifetime in ms; defaults to `300000` */
+  defaultTTL?: number;
+  /** Expiry sweep interval in ms, or `0` to disable; defaults to `60000` */
+  cleanupInterval?: number;
+  /** Track hits, misses and evictions; defaults to `true` */
+  enableStats?: boolean;
+  [option: string]: unknown;
+}
+
+/** Per-entry overrides for {@link ComponentCache.set} */
+export interface ComponentCacheEntryOptions {
+  /** Keys that invalidate this entry */
+  dependencies?: string[];
+  /** Lifetime in ms; defaults to the cache's `defaultTTL` */
+  ttl?: number;
+  /** Exempt from expiry */
+  persistent?: boolean;
+}
+
+export interface ComponentCacheStats {
+  size: number;
+  maxSize: number;
+  hits: number;
+  misses: number;
+  /** Percentage, as a fixed-2 string, or `0` before any request */
+  hitRate: string | number;
+  evictions: number;
+  cleanups: number;
+  invalidations: number;
+  dependencies: number;
+  /** Rough estimate in KB */
+  memoryUsage: number;
+}
+
+/**
+ * Caches rendered components with TTL, least-used eviction and
+ * dependency-based invalidation.
+ *
+ * `cache` is the backing Map, not a method — write through `set()`.
+ */
 export class ComponentCache {
-  cache(key: string, component: CoherentNode): void;
-  get(key: string): CoherentNode | undefined;
-  invalidate(key: string): void;
-  invalidateAll(): void;
+  constructor(options?: ComponentCacheOptions);
+
+  options: ComponentCacheOptions;
+  /** Backing store, keyed by cache key */
+  cache: Map<string, unknown>;
+  /** Dependency key to the cache keys that depend on it */
+  dependencies: Map<string, Set<string>>;
+
+  /** Derive a stable key from a component and its props */
+  generateKey(
+    component: unknown,
+    props?: Record<string, unknown>,
+    context?: Record<string, unknown>
+  ): string;
+
+  /**
+   * Read an entry, recording a hit or miss. Returns a deep clone, or `null`
+   * when absent or expired. Any `dependencies` passed are added to the entry.
+   */
+  get(key: string, dependencies?: string[]): CoherentNode | null;
+
+  /** Store an entry, evicting the least-used one when the cache is full */
+  set(key: string, component: CoherentNode, options?: ComponentCacheEntryOptions): boolean;
+
+  /** Whether a live, unexpired entry exists */
+  has(key: string): boolean;
+
+  /** Drop every entry depending on `dependency`; returns how many */
+  invalidate(dependency: string): number;
+
+  /** Drop every entry depending on any of `dependencies`; returns how many */
+  invalidateMultiple(dependencies: string[]): number;
+
+  /** Drop every entry */
+  clear(): void;
+
+  /** Drop expired entries; returns how many */
+  cleanup(): number;
+
+  getStats(): ComponentCacheStats;
+
+  /** Rough memory estimate in KB */
+  estimateMemoryUsage(): number;
+
+  /** Most-accessed entries, hottest first */
+  getHotComponents(limit?: number): Array<{
+    key: string;
+    accessCount: number;
+    component: CoherentNode;
+    dependencies: string[];
+  }>;
+
+  /** Tuning suggestions derived from the current stats */
+  getRecommendations(): Array<{
+    type: string;
+    message: string;
+    priority: 'HIGH' | 'MEDIUM' | 'LOW';
+  }>;
+
+  /** Stop the cleanup timer and drop every entry */
+  destroy(): void;
 }
 
 /** Create component cache */
-export function createComponentCache(options?: CacheManagerOptions): ComponentCache;
+export function createComponentCache(options?: ComponentCacheOptions): ComponentCache;
 
 // ============================================================================
 // HTML Utilities
@@ -821,3 +923,497 @@ declare const coherent: {
 };
 
 export default coherent;
+
+// ============================================================================
+// Object Factory
+// ============================================================================
+
+/**
+ * Build a single-element node.
+ *
+ * @throws when `tag` is not a known HTML element.
+ */
+export function createElement(tag: string, props?: Record<string, unknown>): CoherentNode;
+
+/** Build a text node from any value. */
+export function createTextNode(text: unknown): CoherentNode;
+
+/**
+ * Shorthand element factories: `h.div({ text: 'hi' })` is
+ * `createElement('div', { text: 'hi' })`.
+ */
+export const h: Record<string, (props?: Record<string, unknown>) => CoherentNode>;
+
+// ============================================================================
+// HTML Nesting Validation
+// ============================================================================
+
+/** Children the HTML spec forbids, keyed by parent tag. */
+export const FORBIDDEN_CHILDREN: Record<string, Set<string>>;
+
+/** Raised by {@link validateNesting} when `throwOnError` is set. */
+export class HTMLNestingError extends Error {
+  constructor(message: string, context?: { parent?: string; child?: string; path?: string });
+  parent?: string;
+  child?: string;
+  path?: string;
+}
+
+/**
+ * Check one parent/child pair against {@link FORBIDDEN_CHILDREN}.
+ *
+ * Returns `true` when the nesting is legal. Otherwise warns (outside
+ * production) and returns `false`, or throws {@link HTMLNestingError} when
+ * `throwOnError` is set. Browsers silently reparent invalid nesting, which
+ * shows up later as a hydration mismatch.
+ */
+export function validateNesting(
+  parentTag: string,
+  childTag: string,
+  path?: string,
+  options?: { warn?: boolean; throwOnError?: boolean }
+): boolean;
+
+// ============================================================================
+// Component Lifecycle
+// ============================================================================
+
+/** Lifecycle phase names. */
+export const LIFECYCLE_PHASES: {
+  readonly BEFORE_CREATE: 'beforeCreate';
+  readonly CREATED: 'created';
+  readonly BEFORE_MOUNT: 'beforeMount';
+  readonly MOUNTED: 'mounted';
+  readonly BEFORE_UPDATE: 'beforeUpdate';
+  readonly UPDATED: 'updated';
+  readonly BEFORE_UNMOUNT: 'beforeUnmount';
+  readonly UNMOUNTED: 'unmounted';
+  readonly ERROR: '_error';
+};
+
+/** One of the {@link LIFECYCLE_PHASES} values. */
+export type LifecyclePhase =
+  | 'beforeCreate'
+  | 'created'
+  | 'beforeMount'
+  | 'mounted'
+  | 'beforeUpdate'
+  | 'updated'
+  | 'beforeUnmount'
+  | 'unmounted'
+  | '_error';
+
+/**
+ * Tracks one component's phase, hooks, state and cleanup.
+ *
+ * Timers, listeners and subscriptions registered through the instance are
+ * released on unmount, so prefer them over the globals.
+ */
+export class ComponentLifecycle {
+  constructor(component: unknown, options?: Record<string, unknown>);
+
+  component: unknown;
+  id: string;
+  options: Record<string, unknown>;
+  phase: LifecyclePhase | null;
+  hooks: Map<string, Array<(...args: never[]) => unknown>>;
+  state: Map<string, unknown>;
+  props: Record<string, unknown>;
+  context: Record<string, unknown>;
+  isMounted: boolean;
+  isDestroyed: boolean;
+  children: Set<ComponentLifecycle>;
+  parent: ComponentLifecycle | null;
+
+  /** Register a callback for a phase */
+  hook(phase: LifecyclePhase, callback: (...args: never[]) => unknown): this;
+
+  addChild(child: ComponentLifecycle): void;
+  removeChild(child: ComponentLifecycle): void;
+
+  /** Add a listener released on unmount */
+  addEventListener(
+    element: unknown,
+    event: string,
+    listener: (event: unknown) => void,
+    options?: Record<string, unknown>
+  ): void;
+
+  /** Register an unsubscribe called on unmount */
+  addSubscription(unsubscribe: () => void): void;
+
+  /** `setTimeout` cleared on unmount */
+  setTimeout(callback: () => void, delay: number): unknown;
+  /** `setInterval` cleared on unmount */
+  setInterval(callback: () => void, interval: number): unknown;
+
+  /** Counts of hooks, children, timers and subscriptions */
+  getStats(): Record<string, unknown>;
+}
+
+/**
+ * Component-scoped event emitter used by the lifecycle system. Reachable
+ * through {@link eventSystem}; the class itself is not exported.
+ */
+declare class ComponentEventSystem {
+  constructor();
+  emit(eventName: string, data?: unknown, target?: unknown): unknown;
+  on(eventName: string, handler: (event: unknown) => void, componentId?: string | null): () => void;
+  off(eventName: string, handler: (event: unknown) => void, componentId?: string | null): void;
+  once(eventName: string, handler: (event: unknown) => void, componentId?: string | null): () => void;
+  /** Release every handler for a component */
+  cleanup(componentId: string): void;
+  getStats(): Record<string, unknown>;
+}
+
+/** Process-wide {@link ComponentEventSystem}. */
+export const eventSystem: ComponentEventSystem;
+
+/**
+ * Build a hook registrar per lifecycle phase. Each registers against the
+ * instance currently being created, and is a no-op outside that window.
+ */
+export function createLifecycleHooks(): Record<LifecyclePhase, (callback: (...args: never[]) => unknown) => void>;
+
+/** Shared {@link createLifecycleHooks} result. */
+export const useHooks: Record<LifecyclePhase, (callback: (...args: never[]) => unknown) => void>;
+
+/** Helpers for reaching lifecycle instances from a component. */
+export const lifecycleUtils: {
+  /** The instance attached to a component, if any */
+  getLifecycle(component: unknown): ComponentLifecycle | undefined;
+  /** Wrap a component with a lifecycle and expose its mount hooks */
+  createWithLifecycle(
+    component: unknown,
+    options?: Record<string, unknown>
+  ): {
+    component: unknown;
+    lifecycle: ComponentLifecycle;
+    mount: (...args: never[]) => unknown;
+    unmount: (...args: never[]) => unknown;
+    update: (...args: never[]) => unknown;
+  };
+  /** Every live instance */
+  getAllInstances(): ComponentLifecycle[];
+  findById(id: string): ComponentLifecycle | undefined;
+  /** Emit through {@link eventSystem}, targeting a component */
+  emit(component: unknown, eventName: string, data?: unknown): unknown;
+  /** Listen for a component's events; returns an unsubscribe function */
+  listen(component: unknown, eventName: string, handler: (event: unknown) => void): () => void;
+};
+
+/** Wrap a component so a {@link ComponentLifecycle} is created around renders. */
+export function withLifecycle(
+  component: CoherentComponent | CoherentNode,
+  options?: Record<string, unknown>
+): (props?: Record<string, unknown>) => CoherentNode;
+
+// ============================================================================
+// Error Boundaries
+// ============================================================================
+
+export interface ErrorBoundaryOptions {
+  /** Rendered instead of the children when a render throws */
+  fallback?: CoherentNode | ((error: Error, reset: () => void) => CoherentNode);
+  /** Notified when a render throws */
+  onError?: (error: Error, errorInfo: Record<string, unknown>) => void;
+  /** Clear the error when any of these values change */
+  resetKeys?: unknown[];
+  [option: string]: unknown;
+}
+
+/** Wrap children so a render error shows a fallback instead of propagating. */
+export function createErrorBoundary(options?: ErrorBoundaryOptions): CoherentComponent;
+
+/** Build a fallback node for an error boundary. */
+export function createErrorFallback(options?: Record<string, unknown>): CoherentNode;
+
+/** Wrap components in an error boundary. */
+export function withErrorBoundary(
+  options: ErrorBoundaryOptions,
+  components: CoherentComponent | CoherentComponent[]
+): CoherentComponent;
+
+/** An error boundary that also catches rejections from async children. */
+export function createAsyncErrorBoundary(options?: ErrorBoundaryOptions): CoherentComponent;
+
+export interface GlobalErrorHandlerOptions {
+  /** Cap on retained errors */
+  maxErrors?: number;
+  /** Notified for every captured error */
+  onError?: (error: Error, context: Record<string, unknown>) => void;
+  [option: string]: unknown;
+}
+
+/** Collects errors that escaped every boundary. */
+export class GlobalErrorHandler {
+  constructor(options?: GlobalErrorHandlerOptions);
+
+  /** Record an error with context */
+  captureError(error: Error, context?: Record<string, unknown>): void;
+  /** Retained errors */
+  getErrors(): Array<{ error: Error; context: Record<string, unknown>; timestamp: number }>;
+  clearErrors(): void;
+  /** Counts by type and recency */
+  getStats(): Record<string, unknown>;
+  enable(): void;
+  disable(): void;
+}
+
+/** Create a {@link GlobalErrorHandler}. */
+export function createGlobalErrorHandler(options?: GlobalErrorHandlerOptions): GlobalErrorHandler;
+
+// ============================================================================
+// Event Bus
+// ============================================================================
+
+/** Called when a subscribed event fires. */
+export type EventListener = (data: unknown, event: string) => unknown;
+
+export interface EventListenerOptions {
+  /** Higher runs first when `enablePriority` is set */
+  priority?: number;
+  /** Skip the listener when this returns false */
+  condition?: (data: unknown) => boolean;
+  [option: string]: unknown;
+}
+
+export interface EventBusOptions {
+  /** Log every emit; defaults to `false` */
+  debug?: boolean;
+  /** Track emit timings; defaults to `true` */
+  performance?: boolean;
+  /** Listeners per event before warning; defaults to `100` */
+  maxListeners?: number;
+  /** Allow `a:*` patterns; defaults to `true` */
+  enableWildcards?: boolean;
+  /** Allow async listeners; defaults to `true` */
+  enableAsync?: boolean;
+  /** Wildcard segment separator; defaults to `':'` */
+  wildcardSeparator?: string;
+  /** Honor listener priority; defaults to `true` */
+  enablePriority?: boolean;
+  defaultPriority?: number;
+  errorHandler?: ((error: Error, event: string, data: unknown) => void) | null;
+  filters?: {
+    /** Only these events pass; `null` allows all */
+    allowList?: string[] | null;
+    blockList?: string[];
+  };
+  throttle?: {
+    enabled?: boolean;
+    defaultDelay?: number;
+    events?: Record<string, number>;
+  };
+  batching?: {
+    enabled?: boolean;
+    maxBatchSize?: number;
+    flushInterval?: number;
+  };
+  [option: string]: unknown;
+}
+
+export interface EventBusStats {
+  eventsEmitted: number;
+  listenersExecuted: number;
+  errorsOccurred: number;
+  averageEmitTime: number;
+  throttledEvents: number;
+  filteredEvents: number;
+}
+
+/**
+ * Pub/sub bus with wildcards, priorities, middleware, throttling and
+ * batching, plus a named-action registry for DOM handlers.
+ */
+export class EventBus {
+  constructor(options?: EventBusOptions);
+
+  options: EventBusOptions;
+  listeners: Map<string, unknown[]>;
+  actionHandlers: Map<string, (...args: never[]) => unknown>;
+  middleware: Array<(event: string, data: unknown, next: () => void) => void>;
+
+  /** Add middleware run before listeners */
+  use(middleware: (event: string, data: unknown, next: () => void) => void): this;
+
+  /** Emit, honoring batching and throttling */
+  emit(event: string, data?: unknown): Promise<unknown>;
+
+  /** Emit immediately, ignoring batching and throttling */
+  emitSync(event: string, data?: unknown): void;
+
+  /** Subscribe; returns the listener id for {@link EventBus.off} */
+  on(event: string, listener: EventListener, options?: EventListenerOptions): string;
+
+  /** Subscribe for one emit */
+  once(event: string, listener: EventListener, options?: EventListenerOptions): string;
+
+  /** Unsubscribe by listener id; `false` when not found */
+  off(event: string, listenerId: string): boolean;
+
+  /** Drop every listener for an event, or for all events */
+  removeAllListeners(event?: string): void;
+
+  /** Listeners matching an event, wildcards included */
+  getEventListeners(event: string): unknown[];
+
+  /** Register a named action for DOM handlers */
+  registerAction(action: string, handler: (...args: never[]) => unknown): void;
+  /** Register several named actions */
+  registerActions(actions: Record<string, (...args: never[]) => unknown>): void;
+  getRegisteredActions(): string[];
+  /** Invoke a registered action */
+  handleAction(action: string, element?: unknown, event?: unknown, data?: unknown): unknown;
+
+  getStats(): EventBusStats;
+  resetStats(): void;
+
+  /** Drop every listener, action and timer */
+  destroy(): void;
+}
+
+/** Create an {@link EventBus}. */
+export function createEventBus(options?: EventBusOptions): EventBus;
+
+/** Process-wide {@link EventBus} backing the module-level helpers. */
+export const globalEventBus: EventBus;
+
+/** {@link EventBus.emit} on {@link globalEventBus}. */
+export const emit: EventBus['emit'];
+/** {@link EventBus.emitSync} on {@link globalEventBus}. */
+export const emitSync: EventBus['emitSync'];
+/** {@link EventBus.on} on {@link globalEventBus}. */
+export const on: EventBus['on'];
+/** {@link EventBus.once} on {@link globalEventBus}. */
+export const once: EventBus['once'];
+/** {@link EventBus.off} on {@link globalEventBus}. */
+export const off: EventBus['off'];
+/** {@link EventBus.registerAction} on {@link globalEventBus}. */
+export const registerAction: EventBus['registerAction'];
+/** {@link EventBus.handleAction} on {@link globalEventBus}. */
+export const handleAction: EventBus['handleAction'];
+
+// ============================================================================
+// Event System Integration
+// ============================================================================
+
+/** Wire a component to an event bus. */
+export function withEventBus(
+  options?: Record<string, unknown>
+): (component: CoherentComponent) => CoherentComponent;
+
+/** Give a component state that updates in response to bus events. */
+export function withEventState(
+  initialState?: Record<string, unknown>,
+  options?: Record<string, unknown>
+): (component: CoherentComponent) => CoherentComponent;
+
+/** Factories for the common data-action handler shapes. */
+export const createActionHandlers: Record<string, (...args: never[]) => unknown>;
+
+/** Factories for the common DOM event handler shapes. */
+export const createEventHandlers: Record<string, (...args: never[]) => unknown>;
+
+/** Wrap a component so its declared events are wired to the bus. */
+export function createEventComponent(
+  component: CoherentComponent,
+  options?: Record<string, unknown>
+): CoherentComponent;
+
+/**
+ * Bridges DOM events to an {@link EventBus} through delegated listeners.
+ *
+ * Browser-only: constructing it outside a document is inert.
+ */
+export class DOMEventIntegration {
+  constructor(eventBus?: EventBus, options?: Record<string, unknown>);
+
+  /** Attach delegated listeners */
+  initialize(root?: unknown): void;
+  /** Detach every listener */
+  destroy(): void;
+}
+
+/** Process-wide {@link DOMEventIntegration} bound to {@link globalEventBus}. */
+export const globalDOMIntegration: DOMEventIntegration;
+
+/** Initialize {@link globalDOMIntegration}. */
+export function initializeDOMIntegration(options?: Record<string, unknown>): DOMEventIntegration;
+
+// ============================================================================
+// State Management
+// ============================================================================
+
+export interface StateManagerConfig {
+  initialState?: Record<string, unknown>;
+  /** Reducers combined into a root reducer, keyed by state slice */
+  reducers?: Record<string, (state: unknown, action: unknown) => unknown>;
+  actions?: Record<string, (...args: never[]) => unknown>;
+  middleware?: Array<(...args: never[]) => unknown>;
+  /** Applied to the config before the manager is built */
+  plugins?: Array<(config: Record<string, unknown>) => Record<string, unknown>>;
+}
+
+/** Build a reducer-based state manager from slice reducers and actions. */
+export function createStateManager(config: StateManagerConfig): Record<string, unknown>;
+
+/** Presets over `withState` for the common state shapes. */
+export const withStateUtils: {
+  /** Component-local state */
+  local(initialState: Record<string, unknown>): ReturnType<typeof withState>;
+  /** State mirrored to localStorage under `key` */
+  persistent(initialState: Record<string, unknown>, key: string): ReturnType<typeof withState>;
+  /** State driven by a reducer */
+  reducer(
+    initialState: Record<string, unknown>,
+    reducer: (state: unknown, action: unknown) => unknown,
+    actions?: Record<string, (...args: never[]) => unknown>
+  ): ReturnType<typeof withState>;
+  [preset: string]: (...args: never[]) => unknown;
+};
+
+// ============================================================================
+// Composition and Utilities
+// ============================================================================
+
+/** Higher-order component factories. */
+export const hoc: {
+  /** Merge extra props into a component */
+  withProps(additionalProps: Record<string, unknown>): (component: CoherentComponent) => CoherentComponent;
+  /** Render only when `condition` holds */
+  withCondition(condition: (props: Record<string, unknown>) => boolean): (component: CoherentComponent) => CoherentComponent;
+  /** Show a placeholder while `props.loading` is set */
+  withLoading(loadingComponent: CoherentNode): (component: CoherentComponent) => CoherentComponent;
+  /** Show a fallback when `props.error` is set */
+  withError(errorComponent: CoherentNode): (component: CoherentComponent) => CoherentComponent;
+  /** Cache renders by a derived key */
+  withMemo(getMemoKey: (props: Record<string, unknown>) => string): (component: CoherentComponent) => CoherentComponent;
+};
+
+/** Functional helpers. */
+export const fp: {
+  /** Curried map: `fp.map(fn)(array)` */
+  map<T, R>(fn: (value: T, index: number, array: T[]) => R): (array: T[]) => R[];
+};
+
+/** Cache a component's renders, keyed by `keyGenerator`. */
+export function memoize<C extends CoherentComponent>(
+  component: C,
+  keyGenerator?: (props: Record<string, unknown>) => string,
+  options?: ComponentCacheEntryOptions
+): C;
+
+/** Mark a component as an interactive island for client-side hydration. */
+export function Island(componentFn: CoherentComponent): CoherentComponent;
+
+/** Shadow DOM helpers; browser-only. */
+export const shadowDOM: {
+  isShadowDOMSupported(): boolean;
+  createShadowComponent(
+    element: unknown,
+    componentDef: CoherentNode,
+    options?: Record<string, unknown>
+  ): unknown;
+  renderWithBestEncapsulation(componentDef: CoherentNode, containerElement?: unknown): unknown;
+};

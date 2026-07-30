@@ -3,7 +3,7 @@
  * @module @coherent.js/forms
  */
 
-import type { CoherentNode, CoherentElement, StrictCoherentElement } from '@coherent.js/core';
+import type { CoherentNode } from '@coherent.js/core';
 
 // ============================================================================
 // Form Field Types
@@ -113,80 +113,126 @@ export interface FieldValidation<T = unknown> {
  * Form configuration options
  */
 export interface FormConfig {
-  /** Form fields */
-  fields?: FormField[];
+  /** Fields, as an array of `{ name, ...config }` or keyed by field name */
+  fields?: FormField[] | Record<string, Omit<FormField, 'name'>>;
   /** Form action URL */
   action?: string;
   /** Form submission method */
-  method?: 'get' | 'post';
+  method?: 'get' | 'post' | (string & {});
+  /** Form name attribute; defaults to `'form'` */
+  name?: string;
   /** Form CSS class name */
   className?: string;
   /** Submit button text */
   submitText?: string;
   /** Form submit handler */
-  onSubmit?: (data: FormData) => void | Promise<void>;
+  onSubmit?: (data: Record<string, unknown>) => void | Promise<void>;
   /** Form encoding type */
   enctype?: 'application/x-www-form-urlencoded' | 'multipart/form-data' | 'text/plain';
   /** Whether to disable browser validation */
   novalidate?: boolean;
   /** Form ID */
   id?: string;
+  /** Validate a field as it changes; defaults to `true` */
+  validateOnChange?: boolean;
+  /** Validate a field when it loses focus; defaults to `true` */
+  validateOnBlur?: boolean;
+  [option: string]: unknown;
 }
 
 /**
- * Typed form builder with generic form data shape
+ * Accumulates fields and renders them as a Coherent component.
+ *
+ * Every mutator is chainable, and `build()`, `render()` and `buildForm()` all
+ * return the same node — `toHTML()` is that node rendered to a string.
+ *
+ * ```ts
+ * const form = new FormBuilder({ name: 'signup' })
+ *   .field('email', { type: 'email', label: 'Email', required: true })
+ *   .setAction('/subscribe')
+ *   .setMethod('post')
+ *   .build();
+ * ```
+ *
  * @template T - The shape of the form data
  */
-export interface FormBuilder<T extends Record<string, unknown> = Record<string, unknown>> {
-  /**
-   * Add a field to the form
-   * @template K - The key in the form data
-   */
-  addField<K extends keyof T>(name: K, field: Omit<FormField<T[K]>, 'name'>): FormBuilder<T>;
+export class FormBuilder<T extends Record<string, unknown> = Record<string, unknown>> {
+  constructor(options?: FormConfig);
 
-  /**
-   * Remove a field from the form
-   */
-  removeField(name: keyof T): FormBuilder<T>;
+  options: FormConfig;
+  fields: Map<string, FormField>;
+  values: Partial<T>;
+  errors: Record<string, string>;
+  touched: Record<string, boolean>;
 
-  /**
-   * Set the form action URL
-   */
-  setAction(action: string): FormBuilder<T>;
+  /** Define a field */
+  field<K extends keyof T & string>(name: K, config?: Omit<FormField<T[K]>, 'name'>): this;
+  /** Alias of {@link FormBuilder.field} */
+  addField<K extends keyof T & string>(name: K, config?: Omit<FormField<T[K]>, 'name'>): this;
+  removeField(name: keyof T & string): this;
+  /** Merge changes into an existing field */
+  updateField(name: keyof T & string, config: Partial<FormField>): this;
 
-  /**
-   * Set the form submission method
-   */
-  setMethod(method: 'get' | 'post'): FormBuilder<T>;
-
-  /**
-   * Set the form submit handler
-   */
-  onSubmit(handler: (data: T) => void | Promise<void>): FormBuilder<T>;
-
-  /**
-   * Build the form as a CoherentNode
-   */
-  build(): CoherentNode;
-
-  /**
-   * Render the form (alias for build)
-   */
-  render(): CoherentNode;
-
-  /**
-   * Validate form data
-   */
-  validate(data: unknown): { valid: boolean; errors: Record<keyof T, string[]> };
-
-  /**
-   * Get current field definitions
-   */
+  /** Every field definition, in insertion order */
   getFields(): FormField[];
+  getField(name: keyof T & string): FormField | undefined;
+
+  /** Group fields for layout */
+  addGroup(name: string, config?: Record<string, unknown>): this;
+  getGroup(name: string): Record<string, unknown> | undefined;
+
+  setValue<K extends keyof T & string>(name: K, value: T[K]): this;
+  setValues(values: Partial<T>): this;
+  getValue<K extends keyof T & string>(name: K): T[K] | undefined;
+  getValues(): Partial<T>;
+
+  /** Run one field's validators; returns the error or `null` */
+  validateField(name: keyof T & string): string | null;
+
+  /**
+   * Validate every visible field and store the result. Returns the errors
+   * keyed by field name — empty when the form is valid.
+   */
+  validate(): Record<string, string>;
+
+  getFieldError(name: keyof T & string): string | null;
+  hasErrors(): boolean;
+  clearErrors(): this;
+  isValid(): boolean;
+  /** Mark a field as touched */
+  touch(name: keyof T & string): void;
+  /** Whether any value differs from its initial value */
+  isDirty(): boolean;
+
+  onSubmit(handler: (data: Partial<T>) => void | Promise<void>): this;
+  onError(handler: (error: unknown) => void): this;
+  isSubmitting(): boolean;
+
+  setAction(action: string): this;
+  setMethod(method: 'get' | 'post' | (string & {})): this;
+
+  /** Build the form component */
+  buildForm(options?: FormConfig): CoherentNode;
+  /** Alias of {@link FormBuilder.buildForm} */
+  build(options?: FormConfig): CoherentNode;
+  /** Alias of {@link FormBuilder.buildForm} */
+  render(options?: FormConfig): CoherentNode;
+  /** The built form, rendered to an HTML string */
+  toHTML(options?: FormConfig): string;
+
+  /** Build the node for one field, including its label and error */
+  buildField(name: keyof T & string): CoherentNode;
+
+  /** Copy of the current values */
+  serialize(): Partial<T>;
+  /** Whether a field's `showWhen`/`showIf` condition currently holds */
+  isFieldVisible(name: keyof T & string): boolean;
+  /** Restore default values and clear errors and touched state */
+  reset(): this;
 }
 
 /**
- * Create a typed form builder
+ * Create a form builder, optionally seeding it from `config.fields`.
  * @template T - The shape of the form data
  */
 export function createFormBuilder<T extends Record<string, unknown> = Record<string, unknown>>(
@@ -194,35 +240,12 @@ export function createFormBuilder<T extends Record<string, unknown> = Record<str
 ): FormBuilder<T>;
 
 /**
- * Build a form from configuration
+ * Build a form component from configuration, in one call.
+ *
+ * `fields` may be an array of `{ name, ...config }` objects or an object
+ * keyed by field name; passing a bare array is shorthand for `{ fields }`.
  */
-export function buildForm(config: FormConfig): CoherentNode;
-
-/**
- * Validate a single field value
- * @returns Error message or null if valid
- */
-export function validateField<T>(field: FormField<T>, value: unknown): string | null;
-
-// ============================================================================
-// Form Builder Class
-// ============================================================================
-
-/**
- * Form builder class implementation
- */
-export class FormBuilder<T extends Record<string, unknown> = Record<string, unknown>> {
-  constructor(config?: FormConfig);
-  addField<K extends keyof T>(name: K, field: Omit<FormField<T[K]>, 'name'>): this;
-  removeField(name: keyof T): this;
-  setAction(action: string): this;
-  setMethod(method: 'get' | 'post'): this;
-  onSubmit(handler: (data: T) => void | Promise<void>): this;
-  build(): CoherentNode;
-  render(): CoherentNode;
-  validate(data: unknown): { valid: boolean; errors: Record<keyof T, string[]> };
-  getFields(): FormField[];
-}
+export function buildForm(config?: FormConfig | FormField[]): CoherentNode;
 
 // ============================================================================
 // Form Hydration Types
@@ -232,51 +255,75 @@ export class FormBuilder<T extends Record<string, unknown> = Record<string, unkn
  * Options for hydrating a form on the client
  */
 export interface HydrationOptions {
-  /** Enable validation */
-  validation?: boolean;
-  /** Enable real-time validation as user types */
-  realTimeValidation?: boolean;
-  /** Form submit handler */
-  onSubmit?: (event: Event, data: FormData) => void | Promise<void>;
-  /** Validation error handler */
-  onValidate?: (errors: ValidationErrors) => void;
-  /** Prevent default form submission */
-  preventSubmit?: boolean;
+  /** Validate a field when it loses focus; defaults to `true` */
+  validateOnBlur?: boolean;
+  /** Validate a field as it changes; defaults to `false` */
+  validateOnChange?: boolean;
+  /** Validate everything on submit; defaults to `true` */
+  validateOnSubmit?: boolean;
+  /** Only show a field's error once it has been touched; defaults to `true` */
+  showErrorsOnTouch?: boolean;
+  /** Debounce window for change validation, in ms; defaults to `300` */
+  debounce?: number;
+  /**
+   * Called instead of the browser's native submit. Return `false` to cancel,
+   * or a promise to defer completion.
+   */
+  onSubmit?: (data: Record<string, unknown>, event: Event) => unknown;
+  /** Called with the field errors on a failed submit, or a rejected `onSubmit` */
+  onError?: (errors: ValidationErrors | unknown) => void;
+  /** Called after a promise returned by `onSubmit` resolves */
+  onSuccess?: (data: Record<string, unknown>) => void;
+  [option: string]: unknown;
 }
 
 /**
- * Hydrated form interface for client-side interaction
+ * Controller returned by {@link hydrateForm}.
  */
 export interface HydratedForm {
-  /** The form DOM element */
-  element: HTMLFormElement;
-  /** Validate all form fields */
-  validate(): ValidationResult;
-  /** Reset form to initial values */
-  reset(): void;
-  /** Get current form data */
-  getData(): FormData;
-  /** Get form data as object */
-  getValues<T = Record<string, unknown>>(): T;
-  /** Set form field values */
-  setData(data: Record<string, unknown>): void;
-  /** Set a single field value */
-  setValue(name: string, value: unknown): void;
-  /** Destroy hydration and clean up event listeners */
-  destroy(): void;
-  /** Check if form is valid */
-  isValid(): boolean;
-  /** Get validation errors */
+  /** Validate one field and record the result */
+  validateField(name: string): string | null;
+  /** Validate every field; `true` when all pass */
+  validateForm(): boolean;
+
+  setFieldValue(name: string, value: unknown): void;
+  getFieldValue(name: string): unknown;
+
+  /** Error currently shown for a field, or `undefined` */
+  getError(name: string): string | undefined;
+  /** Copy of the current errors */
   getErrors(): ValidationErrors;
+  /** Copy of the current values */
+  getValues(): Record<string, unknown>;
+
+  setTouched(name: string, touched?: boolean): void;
+
+  /** Restore initial values and clear errors */
+  reset(): void;
+  /** Detach every listener and cancel pending debounces */
+  destroy(): void;
+
+  isValid(): boolean;
+  isSubmitting(): boolean;
+
+  /** Snapshot of values, errors, touched flags and submit state */
+  getState(): {
+    values: Record<string, unknown>;
+    errors: ValidationErrors;
+    touched: Record<string, boolean>;
+    isSubmitting: boolean;
+  };
 }
 
 /**
- * Hydrate a form element for client-side interactivity
+ * Attach client-side behavior to a server-rendered form.
+ *
+ * Returns `null` outside a browser, or when the selector matches nothing.
  */
 export function hydrateForm(
-  formElement: HTMLFormElement | string,
+  formSelector: HTMLFormElement | string,
   options?: HydrationOptions
-): HydratedForm;
+): HydratedForm | null;
 
 // ============================================================================
 // Validation Types
@@ -286,9 +333,9 @@ export function hydrateForm(
  * Validation result
  */
 export interface ValidationResult {
-  /** Whether all fields are valid */
-  valid: boolean;
-  /** Validation errors by field name */
+  /** Whether every field passed */
+  isValid: boolean;
+  /** The first error per failing field; passing fields are absent */
   errors: ValidationErrors;
 }
 
@@ -296,86 +343,159 @@ export interface ValidationResult {
  * Validation errors mapped by field name
  */
 export interface ValidationErrors {
-  [fieldName: string]: string[];
+  [fieldName: string]: string;
 }
 
 /**
- * Validator function type
+ * A field check: returns an error message, or `null` when the value passes.
+ *
+ * The second argument is the whole form, so validators like
+ * `validators.matches` can compare fields.
  */
 export interface Validator {
-  (value: unknown): boolean | string | Promise<boolean | string>;
+  (value: unknown, formData?: Record<string, unknown>): string | null;
 }
 
 /**
- * Form validator class
+ * Per-field validators. A field maps to one validator or a list run in order,
+ * stopping at the first error.
+ */
+export type ValidationSchema = Record<string, Validator | Validator[]>;
+
+/**
+ * Runs a {@link ValidationSchema} and tracks errors and touched fields.
+ *
+ * ```ts
+ * const validator = new FormValidator({
+ *   email: [validators.required(), validators.email()]
+ * });
+ * const { isValid, errors } = validator.validate({ email: '' });
+ * ```
  */
 export class FormValidator {
-  constructor(rules: Record<string, Validator[]>);
-  /** Synchronous validation */
-  validate(data: Record<string, unknown>): ValidationResult;
-  /** Asynchronous validation */
-  validateAsync(data: Record<string, unknown>): Promise<ValidationResult>;
-  /** Add a validation rule */
-  addRule(field: string, validator: Validator): void;
-  /** Remove a validation rule */
-  removeRule(field: string, validator: Validator): void;
-  /** Clear all rules for a field */
-  clearRules(field: string): void;
+  constructor(schema?: ValidationSchema);
+
+  schema: ValidationSchema;
+  /** Errors from the last `validate()` call */
+  errors: ValidationErrors;
+  touched: Record<string, boolean>;
+
+  /**
+   * Check one field. Returns the first error, or `null` when it passes or has
+   * no validators.
+   */
+  validateField(
+    name: string,
+    value: unknown,
+    formData?: Record<string, unknown>
+  ): string | null;
+
+  /**
+   * Check every field in `formData` plus any schema field it omits, and store
+   * the result in `errors`.
+   */
+  validate(formData: Record<string, unknown>): ValidationResult;
+
+  /** Mark a field as touched */
+  touch(name: string): void;
+  isTouched(name: string): boolean;
+
+  /** Error recorded for a field by the last `validate()`, or `null` */
+  getError(name: string): string | null;
+  hasError(name: string): boolean;
+
+  clearErrors(): void;
+  clearTouched(): void;
+  /** Clear both errors and touched state */
+  reset(): void;
 }
 
 /**
  * Create a form validator
  */
-export function createValidator(rules: Record<string, Validator[]>): FormValidator;
+export function createValidator(schema?: ValidationSchema): FormValidator;
 
 /**
- * Validate data against rules
+ * Validate data against a schema with a throwaway validator
  */
 export function validate(
-  data: Record<string, unknown>,
-  rules: Record<string, Validator[]>
+  formData: Record<string, unknown>,
+  schema?: ValidationSchema
 ): ValidationResult;
+
+/**
+ * Run a list of validators against one value, returning the first error or
+ * `null`.
+ */
+export function validateField(
+  value: unknown,
+  validatorList: Validator[],
+  formData?: Record<string, unknown>
+): string | null;
+
+/**
+ * Run per-field validator lists over a whole form. Returns `null` when
+ * everything passes, rather than an empty object.
+ */
+export function validateForm(
+  formData: Record<string, unknown>,
+  fieldValidators: Record<string, Validator[]>
+): ValidationErrors | null;
+
+/**
+ * Add a validator to {@link validators} under `name`.
+ *
+ * Unlike the built-ins, which are factories, this stores `validatorFn`
+ * directly — so use it as `validators[name]`, not `validators[name]()`.
+ * Registering over a built-in therefore changes that name's calling
+ * convention.
+ */
+export function registerValidator(name: string, validatorFn: Validator): void;
+
+/**
+ * Combine validators into one that returns the first error, or `null`.
+ */
+export function composeValidators(...validatorFns: Validator[]): Validator;
 
 // ============================================================================
 // Built-in Validators
 // ============================================================================
 
 /**
- * Built-in validator functions
+ * Built-in validator factories. Each returns a {@link Validator}, so call it
+ * before putting it in a schema: `validators.required()`, not
+ * `validators.required`.
+ *
+ * Validators added with {@link registerValidator} also appear here, but are
+ * stored as bare validators rather than factories.
  */
 export const validators: {
-  /** Require a value to be present */
+  /** Reject `null`, `undefined` and the empty string */
   required(message?: string): Validator;
-  /** Validate email format */
+  /** Validate email format; empty values pass */
   email(message?: string): Validator;
-  /** Minimum string length */
-  minLength(length: number, message?: string): Validator;
-  /** Maximum string length */
-  maxLength(length: number, message?: string): Validator;
+  /** Minimum length; empty values pass */
+  minLength(min: number, message?: string): Validator;
+  /** Maximum length; empty values pass */
+  maxLength(max: number, message?: string): Validator;
   /** Minimum numeric value */
-  min(value: number, message?: string): Validator;
+  min(min: number, message?: string): Validator;
   /** Maximum numeric value */
-  max(value: number, message?: string): Validator;
-  /** Pattern matching */
-  pattern(regex: RegExp, message?: string): Validator;
-  /** Match another field's value */
-  matches(field: string, message?: string): Validator;
-  /** Validate URL format */
+  max(max: number, message?: string): Validator;
+  /** Parseable as a URL; empty values pass */
   url(message?: string): Validator;
-  /** Validate as number */
-  number(message?: string): Validator;
-  /** Validate as integer */
-  integer(message?: string): Validator;
-  /** Validate as positive number */
-  positive(message?: string): Validator;
-  /** Validate as negative number */
-  negative(message?: string): Validator;
-  /** Validate date format */
-  date(message?: string): Validator;
-  /** Custom validation function */
-  custom(fn: (value: unknown) => boolean | string, message?: string): Validator;
-  /** Async validation function */
-  async(fn: (value: unknown) => Promise<boolean | string>): Validator;
+  /** Match a regular expression; empty values pass */
+  pattern(regex: RegExp, message?: string): Validator;
+  /** Equal another field's value */
+  matches(fieldName: string, message?: string): Validator;
+  /** One of a fixed set; empty values pass */
+  oneOf(options: unknown[], message?: string): Validator;
+  /** Fail when `fn` returns falsy */
+  custom(
+    fn: (value: unknown, formData?: Record<string, unknown>) => boolean,
+    message?: string
+  ): Validator;
+  [name: string]: Validator | ((...args: never[]) => Validator);
 };
 
 // ============================================================================
