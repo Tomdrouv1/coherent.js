@@ -1,0 +1,48 @@
+packages/client/types/index.d.ts
+  s_71335d6184abbf::t_7fe383b0c6a097 375-379
+packages/core/types/index.d.ts
+  s_71335d6184abbf::t_7fe383b0c6a097 1302-1304,1310
+packages/forms/test/register-validator.test.js
+  s_71335d6184abbf::t_d7f1cd23832221 53-57,59
+packages/state/types/index.d.ts
+  s_71335d6184abbf::t_6b11f7dddd13e6 507-516,525,528-532,558-571
+  s_71335d6184abbf::t_9236320295e13d 572
+scripts/check-type-surface.mjs
+  s_71335d6184abbf::t_0c0c08241038b1 306-309,311-312,318-321
+  s_71335d6184abbf::t_81877588fb3e9d 44,143-145,147-148
+  s_71335d6184abbf::t_bdf3fe164c40d7 298
+  s_71335d6184abbf::t_8bb9e0263f1e16 168-181
+  s_71335d6184abbf::t_1088517cc1dae1 322
+pnpm-workspace.yaml
+  s_71335d6184abbf::t_14db56fdf16d4b 25,34,36,49,74,76,78,82,85
+  s_71335d6184abbf::t_e0ffcb2e1a8740 87-90
+packages/tooling/types/testing/utils.d.ts
+  s_71335d6184abbf::t_7fe383b0c6a097 16-18
+packages/forms/test/form-output.test.js
+  s_71335d6184abbf::t_d7f1cd23832221 50-72
+packages/forms/bundle-size.json
+  s_71335d6184abbf::t_f941a60cc3f181 3-4
+packages/forms/types/index.d.ts
+  s_71335d6184abbf::t_30c4ce719a768a 447-451,469-470
+packages/forms/src/form-builder.js
+  s_71335d6184abbf::t_f9635ab1a20c7d 425-426,429
+  s_71335d6184abbf::t_87d775bb27a87b 415-424,427-428,430-445
+pnpm-lock.yaml
+  s_71335d6184abbf::t_1789f9251d75ab 8,12-13,19,30-32,34-36,324
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.18",
+  "base_commit_sha": "46c41e5d325712139f012671cd21b6fc605472f3",
+  "prompts": {},
+  "sessions": {
+    "s_71335d6184abbf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a6c388b7-e5a1-4fdf-a7f8-330799ac2726",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Thomas Drouvin <thomas.drouvin@gmail.com>"
+    }
+  }
+}
