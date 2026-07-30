@@ -1,5 +1,12 @@
 # @coherent.js/database
 
+## 1.0.1
+
+### Patch Changes
+
+- Updated dependencies [2063331]
+  - @coherent.js/core@1.0.1
+
 ## 1.0.0
 
 ### Patch Changes
