@@ -6,8 +6,13 @@
 # Package: @coherent.js/state
 
 == . ==
+FormState
+ListState
+ModalState
 Observable
 ReactiveState
+RouterState
+StateError
 clearAllContexts
 computed
 createContextProvider
@@ -20,6 +25,7 @@ createRouterState
 createState
 createValidatedState
 default
+globalErrorHandler
 globalStateManager
 observable
 provideContext

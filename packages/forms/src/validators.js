@@ -1,10 +1,12 @@
 /**
  * Coherent.js Forms - Validators
- * 
+ *
  * Form validation utilities
- * 
+ *
  * @module forms/validators
  */
+
+import { validators as packageValidators } from './validation.js';
 
 /**
  * Built-in validators with signature: (value, options, translator, allValues) => errorMessage | null
@@ -415,9 +417,16 @@ export function createValidator(validatorFn, message) {
 
 /**
  * Register a custom validator
+ *
+ * index.js re-exports validation.js's `validators`, which shadows this
+ * module's object in the star export — so registering only here left
+ * `validators[name]` undefined for every consumer. Register in both: the
+ * package registry so callers can reach it, and the local one so `get()` and
+ * `compose()` keep resolving it by name.
  */
 export function registerValidator(name, validatorFn) {
   validators[name] = validatorFn;
+  packageValidators[name] = validatorFn;
 }
 
 /**
