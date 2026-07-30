@@ -1,0 +1,176 @@
+{
+  "//": "Baseline of pre-existing type-surface drift, recorded when the gate was added in 1.0.1. Entries are debt, not approval: each one is a declared API that does not exist, or a real export TypeScript users cannot see. Remove entries as they are fixed; the gate fails on anything not listed.",
+  "@coherent.js/cli": {
+    "undeclared": [
+      "buildCommand",
+      "createCLI",
+      "createCommand",
+      "debugCommand",
+      "devCommand",
+      "generateCommand"
+    ]
+  },
+  "@coherent.js/client": {
+    "undeclared": [
+      "EventDelegation",
+      "HandlerRegistry"
+    ]
+  },
+  "@coherent.js/core": {
+    "missingMethod": [
+      "ComponentCache.cache",
+      "ComponentCache.invalidateAll"
+    ],
+    "undeclared": [
+      "ComponentLifecycle",
+      "createActionHandlers",
+      "createAsyncErrorBoundary",
+      "createElement",
+      "createErrorBoundary",
+      "createErrorFallback",
+      "createEventBus",
+      "createEventComponent",
+      "createEventHandlers",
+      "createGlobalErrorHandler",
+      "createLifecycleHooks",
+      "createStateManager",
+      "createTextNode",
+      "DOMEventIntegration",
+      "emit",
+      "emitSync",
+      "EventBus",
+      "eventSystem",
+      "FORBIDDEN_CHILDREN",
+      "fp",
+      "globalDOMIntegration",
+      "GlobalErrorHandler",
+      "globalEventBus",
+      "h",
+      "handleAction",
+      "hoc",
+      "HTMLNestingError",
+      "initializeDOMIntegration",
+      "Island",
+      "LIFECYCLE_PHASES",
+      "lifecycleUtils",
+      "memoize",
+      "off",
+      "on",
+      "once",
+      "registerAction",
+      "shadowDOM",
+      "useHooks",
+      "validateNesting",
+      "withErrorBoundary",
+      "withEventBus",
+      "withEventState",
+      "withLifecycle",
+      "withStateUtils"
+    ]
+  },
+  "@coherent.js/devtools": {
+    "missingMethod": [
+      "DevTools.clear",
+      "DevTools.disable",
+      "DevTools.enable",
+      "DevTools.getReport",
+      "DevTools.isEnabled",
+      "PerformanceProfiler.end",
+      "PerformanceProfiler.getReport",
+      "PerformanceProfiler.measureAsync",
+      "PerformanceProfiler.reset"
+    ],
+    "undeclared": [
+      "ComponentVisualizer",
+      "createComponentVisualizer",
+      "createEnhancedErrorHandler",
+      "createPerformanceDashboard",
+      "EnhancedErrorHandler",
+      "handleEnhancedError",
+      "logComponentTree",
+      "PerformanceDashboard",
+      "showPerformanceDashboard",
+      "visualizeComponent"
+    ]
+  },
+  "@coherent.js/forms": {
+    "missingMethod": [
+      "FormValidator.addRule",
+      "FormValidator.clearRules",
+      "FormValidator.removeRule",
+      "FormValidator.validateAsync"
+    ],
+    "undeclared": [
+      "composeValidators",
+      "registerValidator",
+      "validateForm"
+    ]
+  },
+  "@coherent.js/i18n": {
+    "missingMethod": [
+      "DateFormatter.formatDistance",
+      "DateFormatter.formatRelative",
+      "LocaleManager.addLocale",
+      "LocaleManager.getAllLocales",
+      "LocaleManager.getCurrentLocale",
+      "LocaleManager.removeLocale",
+      "LocaleManager.setCurrentLocale",
+      "NumberFormatter.formatCompact",
+      "NumberFormatter.formatPercent",
+      "Translator.addMessages",
+      "Translator.removeMessages",
+      "Translator.translate"
+    ]
+  },
+  "@coherent.js/seo": {
+    "missingMethod": [
+      "MetaBuilder.addCustomTag",
+      "MetaBuilder.render",
+      "MetaBuilder.setAuthor",
+      "MetaBuilder.setCanonical",
+      "MetaBuilder.setDescription",
+      "MetaBuilder.setKeywords",
+      "MetaBuilder.setOpenGraph",
+      "MetaBuilder.setRobots",
+      "MetaBuilder.setTitle",
+      "MetaBuilder.setTwitterCard",
+      "MetaBuilder.setViewport",
+      "MetaBuilder.toHTML",
+      "SitemapGenerator.addUrl",
+      "SitemapGenerator.addUrls",
+      "SitemapGenerator.removeUrl",
+      "SitemapGenerator.toJSON",
+      "SitemapGenerator.toXML",
+      "StructuredDataBuilder.addToArray",
+      "StructuredDataBuilder.setProperties",
+      "StructuredDataBuilder.setProperty",
+      "StructuredDataBuilder.setType",
+      "StructuredDataBuilder.toJSONLD"
+    ]
+  },
+  "@coherent.js/state": {
+    "missingMethod": [
+      "Observable.get",
+      "Observable.notify",
+      "Observable.set",
+      "Observable.subscribe",
+      "Observable.unsubscribe",
+      "ReactiveState.getState",
+      "ReactiveState.reset",
+      "ReactiveState.update"
+    ],
+    "undeclared": [
+      "createFormState",
+      "createListState",
+      "createModalState",
+      "createRouterState"
+    ]
+  },
+  "@coherent.js/tooling": {
+    "missingMethod": [
+      "TestRenderer.cleanup",
+      "TestRenderer.renderAsync",
+      "TestRenderer.shallow"
+    ]
+  }
+}

@@ -71,6 +71,9 @@ jobs:
       - name: Check API surface
         run: node scripts/check-api-surface.mjs --check
 
+      - name: Check type surface matches runtime
+        run: node scripts/check-type-surface.mjs
+
       - name: Validate package exports (publint)
         run: |
           for dir in packages/*/; do
