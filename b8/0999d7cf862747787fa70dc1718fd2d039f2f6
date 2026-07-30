@@ -1,0 +1,26 @@
+packages/forms/test/form-output.test.js
+  s_71335d6184abbf::t_ce52807fb245ff 1-128
+packages/forms/src/form-builder.js
+  s_71335d6184abbf::t_1d0967490febf7 9-10
+  s_71335d6184abbf::t_b66a2972b7cb08 356-360
+  s_71335d6184abbf::t_297f2a81c3a230 518,520-547
+  s_71335d6184abbf::t_f297226fcd4888 617-627,629-630,633-640,643
+  s_71335d6184abbf::t_dc58f7bd7053a5 490-492,496,502-517
+  s_71335d6184abbf::t_157786c0ef9281 519
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.18",
+  "base_commit_sha": "b80999d7cf862747787fa70dc1718fd2d039f2f6",
+  "prompts": {},
+  "sessions": {
+    "s_71335d6184abbf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a6c388b7-e5a1-4fdf-a7f8-330799ac2726",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Thomas Drouvin <thomas.drouvin@gmail.com>"
+    }
+  }
+}
