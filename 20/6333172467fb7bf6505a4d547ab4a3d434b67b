@@ -1,0 +1,21 @@
+package.json
+  s_71335d6184abbf::t_ac347afa6d17e8 3
+.changeset/eighty-donkeys-argue.md
+  s_71335d6184abbf::t_72f16b24f5c88b 1-49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.18",
+  "base_commit_sha": "206333172467fb7bf6505a4d547ab4a3d434b67b",
+  "prompts": {},
+  "sessions": {
+    "s_71335d6184abbf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a6c388b7-e5a1-4fdf-a7f8-330799ac2726",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Thomas Drouvin <thomas.drouvin@gmail.com>"
+    }
+  }
+}
