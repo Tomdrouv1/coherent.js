@@ -6,6 +6,8 @@
  * @module forms/form-builder
  */
 
+import { render as renderToHTML } from '@coherent.js/core';
+
 /**
  * Form Builder
  * Helps create form components with validation
@@ -351,19 +353,11 @@ export class FormBuilder {
   /**
    * Convert form to HTML string
    */
-  toHTML() {
-    const fields = this.getFields();
-    let html = `<form name="${this.options.name}">`;
-    
-    fields.forEach(field => {
-      html += `<div class="form-field">`;
-      html += `<label for="${field.name}">${field.label}</label>`;
-      html += `<input type="${field.type}" name="${field.name}" id="${field.name}">`;
-      html += `</div>`;
-    });
-    
-    html += `</form>`;
-    return html;
+  toHTML(options = {}) {
+    // Delegates to buildForm() so there is one source of truth. The previous
+    // hand-rolled string builder dropped action, method and every field
+    // attribute beyond type/name/id, and interpolated values unescaped.
+    return renderToHTML(this.buildForm(options));
   }
 
   /**
@@ -493,23 +487,64 @@ export class FormBuilder {
       fields.push(this.buildField(name));
     }
 
-    if (options.submitButton !== false) {
+    const settings = { ...this.options, ...options };
+
+    if (settings.submitButton !== false) {
       fields.push({
         button: {
           type: 'submit',
-          text: options.submitText || 'Submit',
+          text: settings.submitText || 'Submit',
           className: 'submit-button'
         }
       });
     }
 
-    return {
-      form: {
-        onsubmit: 'handleSubmit(event)',
-        novalidate: true,
-        children: fields
-      }
-    };
+    const form = {};
+
+    // Emitted before the handler so the markup reads action-first, and so a
+    // form still submits to the right place without JavaScript.
+    if (settings.action) form.action = settings.action;
+    if (settings.method) form.method = settings.method;
+    if (settings.name) form.name = settings.name;
+    if (settings.id) form.id = settings.id;
+    if (settings.className) form.className = settings.className;
+    if (settings.enctype) form.enctype = settings.enctype;
+
+    form.onsubmit = 'handleSubmit(event)';
+    form.novalidate = true;
+    form.children = fields;
+
+    return { form };
+  }
+
+  /**
+   * Set the form action URL
+   */
+  setAction(action) {
+    this.options.action = action;
+    return this;
+  }
+
+  /**
+   * Set the form submission method
+   */
+  setMethod(method) {
+    this.options.method = method;
+    return this;
+  }
+
+  /**
+   * Build the form component (alias for buildForm)
+   */
+  build(options = {}) {
+    return this.buildForm(options);
+  }
+
+  /**
+   * Render the form to a component (alias for buildForm)
+   */
+  render(options = {}) {
+    return this.buildForm(options);
   }
 
   /**
@@ -579,16 +614,33 @@ export function createFormBuilder(options = {}) {
 }
 
 /**
- * Quick form builder helper
+ * Build a form component from a configuration object.
+ *
+ * Returns a renderable component, as the type declarations have always said.
+ * It previously returned the FormBuilder itself, so `render(buildForm(...))`
+ * threw "Invalid component structure". Use createFormBuilder() when you want
+ * the builder.
+ *
+ * @param {Object} config - Form configuration; `fields` may be an array of
+ *   field objects or an object keyed by field name. Remaining keys (action,
+ *   method, name, className, enctype, submitText) configure the form element.
+ * @returns {Object} A Coherent.js component
  */
-export function buildForm(fields, options = {}) {
+export function buildForm(config = {}) {
+  const { fields = [], ...options } = Array.isArray(config) ? { fields: config } : config;
   const builder = new FormBuilder(options);
 
-  for (const [name, config] of Object.entries(fields)) {
-    builder.field(name, config);
+  if (Array.isArray(fields)) {
+    for (const field of fields) {
+      if (field && field.name) builder.field(field.name, field);
+    }
+  } else {
+    for (const [name, field] of Object.entries(fields)) {
+      builder.field(name, field);
+    }
   }
 
-  return builder;
+  return builder.buildForm(options);
 }
 
 export default {
