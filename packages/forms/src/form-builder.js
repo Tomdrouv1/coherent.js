@@ -412,6 +412,37 @@ export class FormBuilder {
     // Note: Event handlers are attached during hydration, not inline
     // This enables progressive enhancement and CSP compliance
 
+    // textarea and select are elements, not input types. `type="textarea"` is
+    // not valid HTML — browsers render it as a single-line text box.
+    if (field.type === 'textarea' || field.type === 'select') {
+      const { type: _type, value: _value, ...rest } = inputProps;
+      const props = { ...rest };
+
+      if (field.type === 'textarea') {
+        return { textarea: { ...props, text: String(value) } };
+      }
+
+      const { placeholder: _placeholder, ...selectProps } = props;
+
+      return {
+        select: {
+          ...selectProps,
+          children: (field.options ?? []).map(option => {
+            const { value: optionValue, label = optionValue } =
+              typeof option === 'object' && option !== null ? option : { value: option };
+
+            return {
+              option: {
+                value: optionValue,
+                selected: String(optionValue) === String(value) || undefined,
+                text: String(label)
+              }
+            };
+          })
+        }
+      };
+    }
+
     return {
       input: inputProps
     };

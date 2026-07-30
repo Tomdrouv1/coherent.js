@@ -504,6 +504,16 @@ export const validators: {
 // State Patterns
 // ============================================================================
 
+/**
+ * A field check for {@link FormState}. Returns the error message, or a falsy
+ * value when the field passes — the opposite of {@link Validator}, which
+ * returns `true` for valid.
+ */
+export type FieldCheck<V = unknown, T = Record<string, unknown>> = (
+  value: V,
+  allValues: T
+) => string | false | null | undefined;
+
 /** Form values, errors and submission flags in one container. */
 export class FormState<T extends Record<string, unknown> = Record<string, unknown>> {
   constructor(initialValues?: T, options?: ReactiveStateOptions);
@@ -512,9 +522,14 @@ export class FormState<T extends Record<string, unknown> = Record<string, unknow
   getValue<K extends keyof T & string>(field: K): T[K];
   setError(field: keyof T & string, error: string | null): void;
   /** Register a check run whenever the field changes */
-  addValidator(field: keyof T & string, validator: Validator): void;
+  addValidator<K extends keyof T & string>(field: K, validator: FieldCheck<T[K], T>): void;
   /** Run every validator; `true` when all pass */
   validateAll(): boolean;
+  /**
+   * Validate, then await `onSubmit`. Resolves `false` when validation fails or
+   * `onSubmit` throws, recording the error under `_form`.
+   */
+  submit(onSubmit: (values: T) => unknown): Promise<boolean>;
   /** Restore the initial values and drop errors */
   reset(): void;
 
@@ -539,6 +554,21 @@ export class ListState<T = unknown> {
   filter(filters: Record<string, unknown>): void;
   sort(sortBy: string, order?: 'asc' | 'desc'): void;
   setPage(page: number): void;
+
+  /**
+   * Replace the items with whatever `loader` resolves to, toggling `loading`.
+   * Resolves `[]` and records `error` when the loader throws.
+   */
+  load(loader: (filters: Record<string, unknown>) => T[] | Promise<T[]>): Promise<T[]>;
+
+  /** Items matching the current filters */
+  get filteredItems(): T[];
+  /** {@link ListState.filteredItems} in the current sort order */
+  get sortedItems(): T[];
+  /** The current page of {@link ListState.sortedItems} */
+  get paginatedItems(): T[];
+  /** Page count for the current filters and page size */
+  get totalPages(): number;
 
   watchItems(callback: Watcher<T[]>): () => void;
   watchLoading(callback: Watcher<boolean>): () => void;

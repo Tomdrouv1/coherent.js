@@ -13,6 +13,9 @@ export {
   within
 } from './index.js';
 
+// `export type {}` re-exports without binding locally, so the signatures below
+// need their own import.
+import type { EventOptions } from './index.js';
 export type { EventOptions, WaitOptions } from './index.js';
 
 // Per-event shorthands. They live on this module only -- ./testing does not

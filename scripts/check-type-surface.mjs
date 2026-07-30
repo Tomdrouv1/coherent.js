@@ -41,7 +41,7 @@ const PACKAGES_DIR = resolve(REPO_ROOT, 'packages');
 const ALLOWLIST_PATH = resolve(REPO_ROOT, 'scripts', 'type-surface-allowlist.json');
 
 /** Top-level value declarations: things that must exist at runtime. */
-const VALUE_EXPORT = /^export\s+(?:declare\s+)?(?:async\s+)?(?:function|const|let|var|class|enum)\s+([A-Za-z_$][\w$]*)/gm;
+const VALUE_EXPORT = /^export\s+(?:declare\s+)?(?:abstract\s+)?(?:async\s+)?(?:function|const|let|var|class|enum)\s+([A-Za-z_$][\w$]*)/gm;
 
 /** `export { a, b as c }` and `export { a } from './x'`, but not `export type {`. */
 const EXPORT_LIST = /^export\s+(?!type[\s{])\{([^}]*)\}/gm;
@@ -140,9 +140,12 @@ function constBody(source, name) {
  */
 function declaredMembers(body, { methodsOnly = false } = {}) {
   const members = new Set();
+  // `static`, `abstract`, `readonly` and get/set accessors all sit between the
+  // indent and the member name.
+  const modifiers = '(?:(?:static|abstract|readonly|get|set)\\s+)*';
   const shape = methodsOnly
-    ? /^\s+(?:readonly\s+)?([A-Za-z_$][\w$]*)\s*(\??)\s*[<(]/
-    : /^\s+(?:readonly\s+)?([A-Za-z_$][\w$]*)\s*(\??)\s*[<(:]/;
+    ? new RegExp(`^\\s+${modifiers}([A-Za-z_$][\\w$]*)\\s*(\\??)\\s*[<(]`)
+    : new RegExp(`^\\s+${modifiers}([A-Za-z_$][\\w$]*)\\s*(\\??)\\s*[<(:]`);
 
   // Braces and parens both nest: a member spelled across several lines puts
   // its parameters and its return-type literal at a deeper level than itself.
@@ -160,6 +163,20 @@ function declaredMembers(body, { methodsOnly = false } = {}) {
     }
   }
   return members;
+}
+
+/**
+ * Whether `target` or anything it inherits from defines `member`.
+ *
+ * Descriptor lookup rather than a property read: reading a declared accessor
+ * would invoke the getter against the prototype, where instance fields do not
+ * exist, and throw.
+ */
+function hasMember(target, member) {
+  for (let object = target; object; object = Object.getPrototypeOf(object)) {
+    if (Object.getOwnPropertyDescriptor(object, member)) return true;
+  }
+  return false;
 }
 
 function runtimeTarget(entry) {
@@ -278,7 +295,7 @@ for (const name of packages) {
 
       const target = isClass ? value.prototype : value;
       for (const member of declaredMembers(body, { methodsOnly: isClass })) {
-        if (target[member] !== undefined) continue;
+        if (hasMember(target, member)) continue;
         if (allowed(label, 'missingMethod', `${symbol}.${member}`)) continue;
         findings.push({ pkg: label, kind: 'missingMethod', symbol: `${symbol}.${member}` });
       }
@@ -286,13 +303,22 @@ for (const name of packages) {
   }
 }
 
+// A build regression that empties dist/ would leave every entry point skipped.
+// Reporting success then would silently disable the gate rather than fail it.
+const nothingChecked = checked === 0;
+
 if (process.argv.includes('--json')) {
-  console.log(JSON.stringify({ findings, skipped }, null, 2));
-  process.exit(findings.length ? 1 : 0);
+  console.log(JSON.stringify({ checked, findings, skipped }, null, 2));
+  process.exit(findings.length || nothingChecked ? 1 : 0);
 }
 
 console.log(`🔒 Comparing declared types against runtime exports (${checked} entry points)...`);
 for (const note of skipped) console.log(`   skipped ${note}`);
+
+if (nothingChecked) {
+  console.error('\n❌ No entry point could be checked. Run `pnpm build` first.');
+  process.exit(1);
+}
 
 if (!findings.length) {
   console.log('✅ Every declared value export exists at runtime, and vice versa.');

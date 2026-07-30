@@ -50,9 +50,12 @@ describe('registerValidator', () => {
     expect(validator.validate({ message: 'hello' }).isValid).toBe(true);
   });
 
-  it('overwrites an existing name', () => {
-    register('email', () => 'replaced');
+  // Not a built-in: registerValidator writes to validators.js's local registry
+  // too, which afterEach cannot reach — overwriting `email` would leak there.
+  it('overwrites a name it already registered', () => {
+    register('seatCount', () => 'first');
+    register('seatCount', () => 'second');
 
-    expect(validators.email()).toBe('replaced');
+    expect(validators.seatCount()).toBe('second');
   });
 });

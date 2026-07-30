@@ -444,6 +444,11 @@ export function validateForm(
 
 /**
  * Add a validator to {@link validators} under `name`.
+ *
+ * Unlike the built-ins, which are factories, this stores `validatorFn`
+ * directly — so use it as `validators[name]`, not `validators[name]()`.
+ * Registering over a built-in therefore changes that name's calling
+ * convention.
  */
 export function registerValidator(name: string, validatorFn: Validator): void;
 
@@ -461,7 +466,8 @@ export function composeValidators(...validatorFns: Validator[]): Validator;
  * before putting it in a schema: `validators.required()`, not
  * `validators.required`.
  *
- * Custom validators added with {@link registerValidator} also appear here.
+ * Validators added with {@link registerValidator} also appear here, but are
+ * stored as bare validators rather than factories.
  */
 export const validators: {
   /** Reject `null`, `undefined` and the empty string */

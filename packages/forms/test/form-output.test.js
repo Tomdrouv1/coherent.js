@@ -47,7 +47,29 @@ describe('buildForm', () => {
 
     expect(html).toContain('type="email"');
     expect(html).toContain('type="number"');
-    expect(html).toContain('type="textarea"');
+  });
+
+  // `<input type="textarea">` is not a textarea — browsers render it as a
+  // single-line text box.
+  it('renders a textarea field as a textarea element', () => {
+    const html = render(buildForm(CONFIG));
+
+    expect(html).toContain('<textarea');
+    expect(html).not.toContain('type="textarea"');
+  });
+
+  it('renders a select field with its options', () => {
+    const html = render(buildForm({
+      fields: [{ name: 'plan', type: 'select', label: 'Plan', options: [
+        { value: 'free', label: 'Free' },
+        { value: 'pro', label: 'Pro' }
+      ] }]
+    }));
+
+    expect(html).toContain('<select');
+    expect(html).toContain('<option value="free">Free</option>');
+    expect(html).toContain('<option value="pro">Pro</option>');
+    expect(html).not.toContain('type="select"');
   });
 
   it('never emits a stringified object', () => {

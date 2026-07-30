@@ -372,8 +372,11 @@ export class HandlerRegistry {
   has(handlerId: string): boolean;
   clear(): void;
 
-  /** Every handler registered against one component */
-  getByComponent(componentRef: HandlerComponentRef): RegisteredHandler[];
+  /** Ids of every handler registered against one component */
+  getByComponent(componentRef: HandlerComponentRef | null): string[];
+
+  /** How many handlers are registered */
+  get size(): number;
 }
 
 // ============================================================================

@@ -1299,13 +1299,15 @@ export const handleAction: EventBus['handleAction'];
 // ============================================================================
 
 /** Wire a component to an event bus. */
-export function withEventBus(options?: Record<string, unknown>): CoherentComponent;
+export function withEventBus(
+  options?: Record<string, unknown>
+): (component: CoherentComponent) => CoherentComponent;
 
 /** Give a component state that updates in response to bus events. */
 export function withEventState(
   initialState?: Record<string, unknown>,
   options?: Record<string, unknown>
-): CoherentComponent;
+): (component: CoherentComponent) => CoherentComponent;
 
 /** Factories for the common data-action handler shapes. */
 export const createActionHandlers: Record<string, (...args: never[]) => unknown>;
