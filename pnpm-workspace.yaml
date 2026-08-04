@@ -32,8 +32,8 @@ overrides:
   fastify: '^5.8.5'
   # find-my-way HTTP/2 DDoS — 9.6.1 was never published, 9.7.0 is the first fix.
   'find-my-way@<9.6.1': '^9.7.0'
-  # fast-uri ReDoS and host confusion via IDN/backslash — fixed in 3.1.4.
-  'fast-uri@>=3.0.0 <3.1.4': '^3.1.4'
+  # fast-uri ReDoS and host confusion via IDN/backslash — fixed in 3.1.5.
+  'fast-uri@>=3.0.0 <3.1.5': '^3.1.5'
   # tmp arbitrary write via symlink — fixed in 0.2.6.
   tmp: '^0.2.6'
   # @remix-run/server-runtime advisory — fixed in 2.17.5 (stays on major 2).
@@ -43,7 +43,7 @@ overrides:
   # undici TLS-validation bypass, WebSocket DoS, cross-origin routing —
   # fixed in 6.27.0 (6.x line, via @codecov/vite-plugin) and 7.28.0 (7.x).
   'undici@<6.27.0': '^6.27.0'
-  'undici@>=7.0.0 <7.28.0': '^7.28.0'
+  'undici@>=7.0.0 <7.29.0': '^7.29.0'
   # astro SSRF and three XSS advisories — only fixed on 7.x, within the
   # `>=4.0.0` optional-peer range. Needs Node >=22.12.
   'astro@>=4.0.0 <7.0.10': '^7.1.6'
@@ -55,8 +55,9 @@ overrides:
   'qs@>=6.11.1 <6.15.2': '^6.15.2'
   # postcss XSS via unescaped </style> and source-map path traversal — 8.5.18.
   'postcss@>=8.0.0 <8.5.18': '^8.5.18'
-  # ip-address XSS in Address6 HTML-emitting methods — fixed in 10.1.1.
-  'ip-address@<=10.1.0': '^10.1.1'
+  # ip-address XSS in Address6, and Address4 decoding leading-zero octets as
+  # decimal — fixed in 10.3.1.
+  'ip-address@<=10.3.0': '^10.3.1'
   # js-yaml quadratic-complexity DoS in merge-key handling — fixed in 3.15.0
   # (scoped to the 3.x line so js-yaml 4 consumers are untouched).
   'js-yaml@<3.15.0': '^3.15.0'
@@ -71,7 +72,7 @@ overrides:
   '@tootallnate/once@<2.0.1': '^2.0.1'
   # brace-expansion unbounded expansion DoS — no 1.x backport, and 5.0.8 still
   # ships a CommonJS entry, so minimatch@3 keeps working.
-  'brace-expansion@<5.0.8': '^5.0.8'
+  'brace-expansion@<5.0.9': '^5.0.9'
   # svgo removeScripts left executable script content in place — fixed in 4.0.2.
   'svgo@>=4.0.0 <4.0.2': '^4.0.2'
   # linkify-it quadratic-complexity DoS on `mailto:` links — fixed in 5.0.2.
