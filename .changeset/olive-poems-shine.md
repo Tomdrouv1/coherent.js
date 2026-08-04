@@ -1,5 +1,16 @@
 ---
 "@coherent.js/forms": minor
+"@coherent.js/core": minor
+"@coherent.js/state": minor
+"@coherent.js/seo": minor
+"@coherent.js/i18n": minor
+"@coherent.js/devtools": minor
+"@coherent.js/tooling": minor
+"@coherent.js/integrations": minor
+"@coherent.js/client": minor
+"@coherent.js/cli": minor
+"@coherent.js/api": minor
+"@coherent.js/database": minor
 ---
 
 Let the form builder express a production form.
@@ -50,3 +61,9 @@ string values render as inline handlers, which would reintroduce per field the
 script this release stopped emitting on the form.
 
 Controls also no longer carry an empty `class=""` or `placeholder=""`.
+
+Peer ranges on workspace packages move from `workspace:*` to `workspace:^`.
+`workspace:*` publishes as an exact pin — `@coherent.js/forms@1.0.1` required
+`@coherent.js/core` at exactly `1.0.1` — so upgrading any one package
+conflicted with every other, and every release had to move all twelve in
+lockstep. `^` lets a consumer take a core minor without republishing the rest.

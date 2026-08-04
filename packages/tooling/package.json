@@ -74,7 +74,7 @@
     "url": "https://github.com/Tomdrouv1/coherent.js/issues"
   },
   "peerDependencies": {
-    "@coherent.js/core": "workspace:*"
+    "@coherent.js/core": "workspace:^"
   },
   "dependencies": {
     "typescript": "^5.9.3",

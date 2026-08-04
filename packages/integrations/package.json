@@ -58,7 +58,7 @@
     "fastify-plugin": "^6.0.0"
   },
   "peerDependencies": {
-    "@coherent.js/core": "workspace:*",
+    "@coherent.js/core": "workspace:^",
     "@remix-run/server-runtime": ">=2.0.0",
     "@sveltejs/kit": ">=2.0.0",
     "astro": ">=4.0.0",

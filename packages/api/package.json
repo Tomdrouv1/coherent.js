@@ -56,7 +56,7 @@
     "url": "https://github.com/Tomdrouv1/coherent.js/issues"
   },
   "peerDependencies": {
-    "@coherent.js/core": "workspace:*"
+    "@coherent.js/core": "workspace:^"
   },
   "devDependencies": {
     "@coherent.js/state": "workspace:*"

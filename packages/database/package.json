@@ -54,7 +54,7 @@
   },
   "peerDependencies": {
     "sqlite3": ">=5.0.0",
-    "@coherent.js/core": "workspace:*"
+    "@coherent.js/core": "workspace:^"
   },
   "peerDependenciesMeta": {
     "sqlite3": {

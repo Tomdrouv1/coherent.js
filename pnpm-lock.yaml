@@ -55,7 +55,7 @@ importers:
         version: 6.21.0(socks@2.8.7)
       mysql2:
         specifier: '>=3.0.0 < 4.0.0'
-        version: 3.20.0(@types/node@26.1.1)
+        version: 3.20.0(@types/node@26.1.2)
       pg:
         specifier: '>=8.8.0 < 9.0.0'
         version: 8.20.0
@@ -160,7 +160,7 @@ importers:
   packages/api:
     dependencies:
       '@coherent.js/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
     devDependencies:
       '@coherent.js/state':
@@ -211,7 +211,7 @@ importers:
   packages/database:
     dependencies:
       '@coherent.js/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
       sqlite3:
         specifier: '>=5.0.0'
@@ -220,28 +220,28 @@ importers:
   packages/devtools:
     dependencies:
       '@coherent.js/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
 
   packages/forms:
     dependencies:
       '@coherent.js/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
       '@coherent.js/state':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../state
 
   packages/i18n:
     dependencies:
       '@coherent.js/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
 
   packages/integrations:
     dependencies:
       '@coherent.js/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
       '@remix-run/server-runtime':
         specifier: ^2.17.5
@@ -274,19 +274,19 @@ importers:
   packages/seo:
     dependencies:
       '@coherent.js/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
 
   packages/state:
     dependencies:
       '@coherent.js/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
 
   packages/tooling:
     dependencies:
       '@coherent.js/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
       typescript:
         specifier: ^5.9.3
@@ -8972,9 +8972,9 @@ snapshots:
 
   mute-stream@0.0.8: {}
 
-  mysql2@3.20.0(@types/node@26.1.1):
+  mysql2@3.20.0(@types/node@26.1.2):
     dependencies:
-      '@types/node': 26.1.1
+      '@types/node': 26.1.2
       aws-ssl-profiles: 1.1.2
       denque: 2.1.0
       generate-function: 2.3.1
