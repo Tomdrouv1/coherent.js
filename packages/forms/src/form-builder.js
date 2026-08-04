@@ -9,6 +9,65 @@
 import { render as renderToHTML } from '@coherent.js/core';
 
 /**
+ * Class applied to each structural slot. Consumers override any subset via
+ * the `classNames` option; hydrateForm accepts `invalid` and `error` so the
+ * client writes the same names the server rendered.
+ */
+export const DEFAULT_CLASS_NAMES = {
+  /** Wrapper around label, control and error */
+  field: 'form-field',
+  label: '',
+  /** Base class on the control, before any per-field className */
+  control: '',
+  /** Added to the control while it has a visible error */
+  invalid: 'error',
+  /** The error message element */
+  error: 'error-message',
+  submit: 'submit-button'
+};
+
+/**
+ * Attribute names are interpolated into the markup unescaped by
+ * formatAttributes, so a passthrough has to reject anything that is not a
+ * plain name — otherwise `{'x onclick=alert(1)': ''}` injects an attribute.
+ */
+const VALID_ATTRIBUTE_NAME = /^[A-Za-z_:][-A-Za-z0-9_:.]*$/;
+
+/**
+ * `onclick` and friends are syntactically valid names, and a string value
+ * renders as an inline handler — script execution from whatever produced the
+ * field config, and the thing this builder stopped emitting on the form
+ * itself. Handlers belong in hydration.
+ */
+const EVENT_HANDLER_NAME = /^on/i;
+
+function safeAttributes(attributes) {
+  if (!attributes || typeof attributes !== 'object') return {};
+
+  const safe = {};
+  for (const [name, value] of Object.entries(attributes)) {
+    if (!VALID_ATTRIBUTE_NAME.test(name)) {
+      console.warn(`[coherent.js/forms] Ignoring invalid attribute name: ${JSON.stringify(name)}`);
+      continue;
+    }
+    if (EVENT_HANDLER_NAME.test(name)) {
+      console.warn(
+        `[coherent.js/forms] Ignoring inline event handler "${name}". ` +
+        'Attach handlers with hydrateForm instead.'
+      );
+      continue;
+    }
+    safe[name] = value;
+  }
+  return safe;
+}
+
+/** Join class names, dropping empties so no element carries `class=""`. */
+function joinClasses(...names) {
+  return names.filter(Boolean).join(' ');
+}
+
+/**
  * Form Builder
  * Helps create form components with validation
  */
@@ -281,12 +340,10 @@ export class FormBuilder {
   validate() {
     const errors = {};
 
-    for (const [name, field] of this.fields) {
-      // Skip hidden fields (support both showWhen and showIf)
-      const showCondition = field.showWhen || field.showIf;
-      if (showCondition && !showCondition(this.values)) {
-        continue;
-      }
+    for (const [name] of this.fields) {
+      // The same predicate buildForm() renders by, so a field that is not on
+      // the page can never block submission.
+      if (!this.isFieldVisible(name)) continue;
 
       const error = this.validateField(name);
       if (error) {
@@ -370,7 +427,7 @@ export class FormBuilder {
   /**
    * Build input component with validation metadata for hydration
    */
-  buildInput(name) {
+  buildInput(name, classNames = this.resolveClassNames()) {
     const field = this.fields.get(name);
     if (!field) return null;
 
@@ -388,16 +445,28 @@ export class FormBuilder {
       .filter(Boolean)
       .join(',');
 
+    const controlClass = joinClasses(
+      classNames.control,
+      field.className,
+      error && isTouched ? classNames.invalid : null
+    );
+
     const inputProps = {
+      // Spread first: name, id, type and the aria-* pair below are the
+      // builder's own invariants, and hydration keys off them.
+      ...safeAttributes(field.attributes),
       type: field.type,
       name: field.name,
       id: field.name,
       value: value,
-      placeholder: field.placeholder,
       'aria-invalid': error ? 'true' : 'false',
-      'aria-describedby': error ? `${name}-error` : undefined,
-      className: error && isTouched ? 'error' : ''
+      'aria-describedby': error ? `${name}-error` : undefined
     };
+
+    if (field.placeholder) inputProps.placeholder = field.placeholder;
+    if (controlClass) inputProps.className = controlClass;
+    if (field.disabled) inputProps.disabled = true;
+    if (field.readonly) inputProps.readonly = true;
 
     // Add validation metadata for client-side hydration
     if (field.required) {
@@ -451,89 +520,86 @@ export class FormBuilder {
   /**
    * Build label component
    */
-  buildLabel(name) {
+  buildLabel(name, classNames = this.resolveClassNames()) {
     const field = this.fields.get(name);
     if (!field) return null;
 
-    return {
-      label: {
-        for: field.name,
-        text: field.label
-      }
-    };
+    const props = { for: field.name, text: field.label };
+    if (classNames.label) props.className = classNames.label;
+
+    return { label: props };
   }
 
   /**
    * Build error component
    */
-  buildError(name) {
+  buildError(name, classNames = this.resolveClassNames()) {
     const error = this.errors[name];
     const isTouched = this.touched[name];
 
     if (!error || !isTouched) return null;
 
-    return {
-      div: {
-        id: `${name}-error`,
-        className: 'error-message',
-        role: 'alert',
-        text: error
-      }
-    };
+    const props = { id: `${name}-error`, role: 'alert', text: error };
+    if (classNames.error) props.className = classNames.error;
+
+    return { div: props };
+  }
+
+  /**
+   * Merge configured class names over the defaults
+   */
+  resolveClassNames(overrides = {}) {
+    return { ...DEFAULT_CLASS_NAMES, ...this.options.classNames, ...overrides };
   }
 
   /**
    * Build complete field component
    */
-  buildField(name) {
+  buildField(name, classNames = this.resolveClassNames()) {
     const field = this.fields.get(name);
     if (!field) return null;
 
     const children = [
-      this.buildLabel(name),
-      this.buildInput(name)
+      this.buildLabel(name, classNames),
+      this.buildInput(name, classNames)
     ];
 
-    const error = this.buildError(name);
+    const error = this.buildError(name, classNames);
     if (error) {
       children.push(error);
     }
 
-    return {
-      div: {
-        className: 'form-field',
-        'data-field': name,
-        children
-      }
-    };
+    // data-field is the structural hook hydrateForm uses to find the wrapper,
+    // so classes stay entirely the consumer's to choose.
+    const props = { 'data-field': name, children };
+    if (classNames.field) props.className = classNames.field;
+
+    return { div: props };
   }
 
   /**
    * Build entire form
    */
   buildForm(options = {}) {
+    const settings = { ...this.options, ...options };
+    const classNames = this.resolveClassNames(options.classNames);
     const fields = [];
 
     for (const [name] of this.fields) {
-      fields.push(this.buildField(name));
+      // validate() has always skipped fields hidden by showWhen/showIf; render
+      // agreed with it only by accident, because nothing was ever hidden.
+      if (!this.isFieldVisible(name)) continue;
+      fields.push(this.buildField(name, classNames));
     }
 
-    const settings = { ...this.options, ...options };
-
     if (settings.submitButton !== false) {
-      fields.push({
-        button: {
-          type: 'submit',
-          text: settings.submitText || 'Submit',
-          className: 'submit-button'
-        }
-      });
+      const button = { type: 'submit', text: settings.submitText || 'Submit' };
+      if (classNames.submit) button.className = classNames.submit;
+      fields.push({ button });
     }
 
     const form = {};
 
-    // Emitted before the handler so the markup reads action-first, and so a
-    // form still submits to the right place without JavaScript.
     if (settings.action) form.action = settings.action;
     if (settings.method) form.method = settings.method;
     if (settings.name) form.name = settings.name;
@@ -541,8 +607,18 @@ export class FormBuilder {
     if (settings.className) form.className = settings.className;
     if (settings.enctype) form.enctype = settings.enctype;
 
-    form.onsubmit = 'handleSubmit(event)';
-    form.novalidate = true;
+    // Plain HTML by default: the form posts to `action` and the browser runs
+    // its own validation with JavaScript off. hydrateForm binds its own submit
+    // listener, so it never needed the inline handler this used to emit — and
+    // an inline handler breaks under a strict CSP besides.
+    if (settings.enhance) {
+      form.onsubmit = typeof settings.enhance === 'string'
+        ? settings.enhance
+        : 'handleSubmit(event)';
+    }
+
+    if (settings.novalidate === true) form.novalidate = true;
+
     form.children = fields;
 
     return { form };
@@ -598,14 +674,18 @@ export class FormBuilder {
   isFieldVisible(name) {
     const field = this.fields.get(name);
     if (!field) return false;
-    
+
+    // visible:false wins outright — a showWhen that happens to return true
+    // must not resurrect a field the caller switched off.
+    if (field.visible === false) return false;
+
     // Support both showWhen and showIf
     const showCondition = field.showWhen || field.showIf;
     if (showCondition) {
       return showCondition(this.values);
     }
-    
-    return field.visible !== false;
+
+    return true;
   }
 
   /**

@@ -1,13 +1,19 @@
 {
   "$schema": "https://unpkg.com/@changesets/config@3.0.0/schema.json",
+  "//": "linked, not fixed, plus onlyUpdatePeerDependentsWhenOutOfRange: nine packages peerDepend on @coherent.js/core, and changesets majors a peer dependent whenever its peer bumps. With peer ranges pinned as workspace:* that was right — the published range was an exact version — so every minor resolved to a major. Peer ranges are workspace:^ now, so a core minor stays in range and this option stops the escalation.",
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "fixed": [
-    ["@coherent.js/*"]
+  "fixed": [],
+  "linked": [
+    [
+      "@coherent.js/*"
+    ]
   ],
-  "linked": [],
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": []
+  "ignore": [],
+  "___experimentalUnsafeOptions_WILL_CHANGE_IN_PATCH": {
+    "onlyUpdatePeerDependentsWhenOutOfRange": true
+  }
 }

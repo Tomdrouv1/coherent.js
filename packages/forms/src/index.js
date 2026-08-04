@@ -7,7 +7,7 @@
  */
 
 // SERVER-SIDE: Build forms with validation metadata
-export { FormBuilder, createFormBuilder, buildForm } from './form-builder.js';
+export { FormBuilder, createFormBuilder, buildForm, DEFAULT_CLASS_NAMES } from './form-builder.js';
 
 // CLIENT-SIDE: Hydrate server-rendered forms
 export { hydrateForm } from './form-hydration.js';

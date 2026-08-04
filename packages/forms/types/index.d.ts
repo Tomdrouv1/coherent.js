@@ -58,6 +58,10 @@ export interface FormField<T = unknown> {
   placeholder?: string;
   /** Whether field is required */
   required?: boolean;
+  /** Render the field; `false` omits it from the built form */
+  visible?: boolean;
+  /** Render the field only when this returns true for the current values */
+  showWhen?: (values: Record<string, unknown>) => boolean;
   /** Whether field is disabled */
   disabled?: boolean;
   /** Whether field is readonly */
@@ -72,8 +76,17 @@ export interface FormField<T = unknown> {
   validators?: Validator[];
   /** Field-specific validation configuration */
   validation?: FieldValidation<T>;
-  /** Additional HTML attributes */
+  /**
+   * Extra attributes on the control, for things the field config has no
+   * dedicated option for — `autocomplete`, `maxlength`, `tabindex`, `data-*`.
+   *
+   * Applied before the builder's own attributes, so `name`, `id`, `type` and
+   * the `aria-*` pair cannot be overridden. Names that are not valid HTML
+   * attribute names are dropped with a warning.
+   */
   attributes?: Record<string, unknown>;
+  /** Class on the control, appended to `classNames.control` */
+  className?: string;
   /** Transform function to convert raw input to typed value */
   transform?: (value: unknown) => T;
 }
@@ -110,6 +123,28 @@ export interface FieldValidation<T = unknown> {
 // ============================================================================
 
 /**
+ * Class applied to each structural slot of a built form.
+ *
+ * The wrapper is found by hydration through its `data-field` attribute, not
+ * its class, so every one of these is free for the consumer to choose.
+ */
+export interface FormClassNames {
+  /** Wrapper around label, control and error */
+  field: string;
+  label: string;
+  /** Base class on the control, before any per-field `className` */
+  control: string;
+  /** Added to the control while it has a visible error */
+  invalid: string;
+  /** The error message element */
+  error: string;
+  submit: string;
+}
+
+/** The class names a form uses when `classNames` does not override them. */
+export const DEFAULT_CLASS_NAMES: FormClassNames;
+
+/**
  * Form configuration options
  */
 export interface FormConfig {
@@ -129,8 +164,20 @@ export interface FormConfig {
   onSubmit?: (data: Record<string, unknown>) => void | Promise<void>;
   /** Form encoding type */
   enctype?: 'application/x-www-form-urlencoded' | 'multipart/form-data' | 'text/plain';
-  /** Whether to disable browser validation */
+  /**
+   * Emit `novalidate`, turning off the browser's own validation. Defaults to
+   * `false` — leaving native validation working with JavaScript disabled.
+   */
   novalidate?: boolean;
+  /**
+   * Emit an inline `onsubmit` handler. `true` uses `handleSubmit(event)`; a
+   * string is used verbatim. Off by default, so the form submits natively —
+   * {@link hydrateForm} binds its own listener and needs nothing inline, and
+   * an inline handler is blocked by a strict CSP.
+   */
+  enhance?: boolean | string;
+  /** Class names for each structural slot; see {@link DEFAULT_CLASS_NAMES} */
+  classNames?: Partial<FormClassNames>;
   /** Form ID */
   id?: string;
   /** Validate a field as it changes; defaults to `true` */
@@ -220,8 +267,17 @@ export class FormBuilder<T extends Record<string, unknown> = Record<string, unkn
   /** The built form, rendered to an HTML string */
   toHTML(options?: FormConfig): string;
 
+  /** Merge configured class names over {@link DEFAULT_CLASS_NAMES} */
+  resolveClassNames(overrides?: Partial<FormClassNames>): FormClassNames;
+
   /** Build the node for one field, including its label and error */
-  buildField(name: keyof T & string): CoherentNode;
+  buildField(name: keyof T & string, classNames?: FormClassNames): CoherentNode;
+  /** Build one field's control */
+  buildInput(name: keyof T & string, classNames?: FormClassNames): CoherentNode | null;
+  /** Build one field's label */
+  buildLabel(name: keyof T & string, classNames?: FormClassNames): CoherentNode | null;
+  /** Build one field's error message, or `null` when it has none to show */
+  buildError(name: keyof T & string, classNames?: FormClassNames): CoherentNode | null;
 
   /** Copy of the current values */
   serialize(): Partial<T>;
@@ -265,6 +321,12 @@ export interface HydrationOptions {
   showErrorsOnTouch?: boolean;
   /** Debounce window for change validation, in ms; defaults to `300` */
   debounce?: number;
+  /**
+   * Class names the client writes. Pass the same `invalid` and `error` given
+   * to {@link buildForm}, or the classes added on failure will not match what
+   * the server rendered.
+   */
+  classNames?: Partial<Pick<FormClassNames, 'invalid' | 'error'>>;
   /**
    * Called instead of the browser's native submit. Return `false` to cancel,
    * or a promise to defer completion.
