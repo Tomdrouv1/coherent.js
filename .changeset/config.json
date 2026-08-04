@@ -1,11 +1,14 @@
 {
   "$schema": "https://unpkg.com/@changesets/config@3.0.0/schema.json",
+  "//": "linked, not fixed: on @changesets/cli 2.31.1 a fixed group silently escalates a minor bump to a major (a minor resolved to 2.0.0). linked keeps released packages version-synced without that.",
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "fixed": [
-    ["@coherent.js/*"]
+  "fixed": [],
+  "linked": [
+    [
+      "@coherent.js/*"
+    ]
   ],
-  "linked": [],
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",

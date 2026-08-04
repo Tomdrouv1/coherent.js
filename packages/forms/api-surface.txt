@@ -6,6 +6,7 @@
 # Package: @coherent.js/forms
 
 == . ==
+DEFAULT_CLASS_NAMES
 FormBuilder
 FormValidator
 buildForm
@@ -20,6 +21,7 @@ validateForm
 validators
 
 == ./form-builder ==
+DEFAULT_CLASS_NAMES
 FormBuilder
 buildForm
 createFormBuilder

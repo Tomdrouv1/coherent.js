@@ -8,6 +8,7 @@
  */
 
 import { validators } from './validators.js';
+import { DEFAULT_CLASS_NAMES } from './form-builder.js';
 
 /**
  * Hydrate a server-rendered form with client-side validation and behavior
@@ -38,7 +39,14 @@ export function hydrateForm(formSelector, options = {}) {
     validateOnSubmit: true,
     showErrorsOnTouch: true,
     debounce: 300,
-    ...options
+    ...options,
+    // Must match whatever the server rendered, so pass the same names given to
+    // buildForm's `classNames` when they were customised.
+    classNames: {
+      invalid: DEFAULT_CLASS_NAMES.invalid,
+      error: DEFAULT_CLASS_NAMES.error,
+      ...options.classNames
+    }
   };
 
   // Form state
@@ -109,12 +117,13 @@ export function hydrateForm(formSelector, options = {}) {
   function createErrorElement(name, inputElement) {
     const errorDiv = document.createElement('div');
     errorDiv.id = `${name}-error`;
-    errorDiv.className = 'error-message';
+    if (opts.classNames.error) errorDiv.className = opts.classNames.error;
     errorDiv.setAttribute('role', 'alert');
     errorDiv.style.display = 'none';
 
-    // Insert after input or its parent field wrapper
-    const fieldWrapper = inputElement.closest('.form-field') || inputElement.parentElement;
+    // Insert after input or its parent field wrapper. Keyed off data-field
+    // rather than a class, so consumers can name the wrapper what they like.
+    const fieldWrapper = inputElement.closest('[data-field]') || inputElement.parentElement;
     fieldWrapper.appendChild(errorDiv);
 
     return errorDiv;
@@ -204,13 +213,13 @@ export function hydrateForm(formSelector, options = {}) {
       errorElement.textContent = error;
       errorElement.style.display = 'block';
       element.setAttribute('aria-invalid', 'true');
-      element.classList.add('error');
+      if (opts.classNames.invalid) element.classList.add(opts.classNames.invalid);
     } else {
       // Hide error
       errorElement.textContent = '';
       errorElement.style.display = 'none';
       element.setAttribute('aria-invalid', 'false');
-      element.classList.remove('error');
+      if (opts.classNames.invalid) element.classList.remove(opts.classNames.invalid);
     }
   }
 
