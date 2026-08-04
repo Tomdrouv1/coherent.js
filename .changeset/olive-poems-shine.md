@@ -38,8 +38,15 @@ builder.field('website', {
 });
 ```
 
-**Hidden fields are no longer rendered.** `buildForm()` ignored `visible: false`
-and `showWhen`, while `validate()` had always skipped them — so a conditionally
-hidden field rendered but was never validated. Both now agree.
+**Hidden fields are no longer rendered or validated.** `buildForm()` ignored
+`visible: false` and `showWhen`, while `validate()` skipped only `showWhen` —
+so a conditionally hidden field rendered but was never validated, and a
+`visible: false` field could block submission with an error for a control that
+was never on the page. Both now use one predicate, and `visible: false` is
+final rather than something a truthy `showWhen` can override.
+
+Attributes named `on*` are refused: they are syntactically valid names whose
+string values render as inline handlers, which would reintroduce per field the
+script this release stopped emitting on the form.
 
 Controls also no longer carry an empty `class=""` or `placeholder=""`.

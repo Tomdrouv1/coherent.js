@@ -115,6 +115,20 @@ describe('field attributes', () => {
     expect(html).not.toContain('hijacked');
   });
 
+  // Emitting these would reintroduce, per field, exactly the inline script
+  // this release stopped putting on the form element.
+  it.each(['onclick', 'onsubmit', 'ONERROR'])('refuses the inline handler %s', name => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const html = render(buildForm({
+      fields: [{ name: 'q', type: 'text', attributes: { [name]: 'alert(1)' } }]
+    }));
+
+    expect(html).not.toContain('alert(1)');
+    expect(html.toLowerCase()).not.toContain(name.toLowerCase());
+    expect(warn).toHaveBeenCalled();
+  });
+
   // formatAttributes escapes attribute values but interpolates names raw.
   it('drops attribute names that are not valid HTML names', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -178,6 +192,24 @@ describe('field visibility', () => {
 
     expect(html).toContain('name="shown"');
     expect(html).not.toContain('name="hidden"');
+  });
+
+  it('does not validate a field it did not render', () => {
+    const builder = createFormBuilder({
+      fields: [{ name: 'hidden', type: 'text', required: true, visible: false }]
+    });
+
+    expect(render(builder.buildForm())).not.toContain('name="hidden"');
+    expect(builder.validate()).toEqual({});
+  });
+
+  it('treats visible:false as final, even against a true showWhen', () => {
+    const builder = createFormBuilder({
+      fields: [{ name: 'q', type: 'text', visible: false, showWhen: () => true }]
+    });
+
+    expect(builder.isFieldVisible('q')).toBe(false);
+    expect(render(builder.buildForm())).not.toContain('name="q"');
   });
 
   it('renders and validates the same set of fields', () => {

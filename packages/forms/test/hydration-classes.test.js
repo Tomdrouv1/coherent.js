@@ -25,8 +25,14 @@ function element(tag, attributes = {}) {
     className: '',
     classList: {
       _set: new Set(),
-      add(name) { this._set.add(name); },
-      remove(name) { this._set.delete(name); },
+      // A real DOMTokenList throws on a token containing whitespace.
+      _assertToken(name) {
+        if (/\s/.test(name)) {
+          throw new Error(`InvalidCharacterError: ${JSON.stringify(name)}`);
+        }
+      },
+      add(name) { this._assertToken(name); this._set.add(name); },
+      remove(name) { this._assertToken(name); this._set.delete(name); },
       contains(name) { return this._set.has(name); }
     },
     value: '',
@@ -144,6 +150,27 @@ describe('error class names', () => {
     expect(created[0].className).toBe('contact-form__error');
     expect(input.classList.contains('is-invalid')).toBe(true);
     expect(input.classList.contains('error')).toBe(false);
+  });
+
+  // classList.add/remove take one token each — a space-separated value throws
+  // InvalidCharacterError in a real DOM.
+  it('applies a multi-token invalid class one token at a time', () => {
+    const { form, input } = formWithField('contact-form__field');
+
+    const controller = hydrateForm(form, {
+      classNames: { invalid: 'is-invalid has-error' }
+    });
+    controller.setTouched('email');
+    controller.validateField('email');
+
+    expect(input.classList.contains('is-invalid')).toBe(true);
+    expect(input.classList.contains('has-error')).toBe(true);
+
+    controller.setFieldValue('email', 'someone@example.com');
+    controller.validateField('email');
+
+    expect(input.classList.contains('is-invalid')).toBe(false);
+    expect(input.classList.contains('has-error')).toBe(false);
   });
 
   it('removes the configured invalid class once the field passes', () => {

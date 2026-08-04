@@ -33,16 +33,31 @@ export const DEFAULT_CLASS_NAMES = {
  */
 const VALID_ATTRIBUTE_NAME = /^[A-Za-z_:][-A-Za-z0-9_:.]*$/;
 
+/**
+ * `onclick` and friends are syntactically valid names, and a string value
+ * renders as an inline handler — script execution from whatever produced the
+ * field config, and the thing this builder stopped emitting on the form
+ * itself. Handlers belong in hydration.
+ */
+const EVENT_HANDLER_NAME = /^on/i;
+
 function safeAttributes(attributes) {
   if (!attributes || typeof attributes !== 'object') return {};
 
   const safe = {};
   for (const [name, value] of Object.entries(attributes)) {
-    if (VALID_ATTRIBUTE_NAME.test(name)) {
-      safe[name] = value;
-    } else {
+    if (!VALID_ATTRIBUTE_NAME.test(name)) {
       console.warn(`[coherent.js/forms] Ignoring invalid attribute name: ${JSON.stringify(name)}`);
+      continue;
     }
+    if (EVENT_HANDLER_NAME.test(name)) {
+      console.warn(
+        `[coherent.js/forms] Ignoring inline event handler "${name}". ` +
+        'Attach handlers with hydrateForm instead.'
+      );
+      continue;
+    }
+    safe[name] = value;
   }
   return safe;
 }
@@ -325,12 +340,10 @@ export class FormBuilder {
   validate() {
     const errors = {};
 
-    for (const [name, field] of this.fields) {
-      // Skip hidden fields (support both showWhen and showIf)
-      const showCondition = field.showWhen || field.showIf;
-      if (showCondition && !showCondition(this.values)) {
-        continue;
-      }
+    for (const [name] of this.fields) {
+      // The same predicate buildForm() renders by, so a field that is not on
+      // the page can never block submission.
+      if (!this.isFieldVisible(name)) continue;
 
       const error = this.validateField(name);
       if (error) {
@@ -661,14 +674,18 @@ export class FormBuilder {
   isFieldVisible(name) {
     const field = this.fields.get(name);
     if (!field) return false;
-    
+
+    // visible:false wins outright — a showWhen that happens to return true
+    // must not resurrect a field the caller switched off.
+    if (field.visible === false) return false;
+
     // Support both showWhen and showIf
     const showCondition = field.showWhen || field.showIf;
     if (showCondition) {
       return showCondition(this.values);
     }
-    
-    return field.visible !== false;
+
+    return true;
   }
 
   /**

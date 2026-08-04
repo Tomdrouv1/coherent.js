@@ -200,6 +200,16 @@ export function hydrateForm(formSelector, options = {}) {
   }
 
   /**
+   * The invalid class as individual tokens.
+   *
+   * classList.add/remove take one token each — passing `'is-invalid has-error'`
+   * throws InvalidCharacterError.
+   */
+  function invalidClasses() {
+    return opts.classNames.invalid ? opts.classNames.invalid.trim().split(/\s+/) : [];
+  }
+
+  /**
    * Display error message
    */
   function displayError(name, error) {
@@ -213,13 +223,13 @@ export function hydrateForm(formSelector, options = {}) {
       errorElement.textContent = error;
       errorElement.style.display = 'block';
       element.setAttribute('aria-invalid', 'true');
-      if (opts.classNames.invalid) element.classList.add(opts.classNames.invalid);
+      invalidClasses().forEach(name => element.classList.add(name));
     } else {
       // Hide error
       errorElement.textContent = '';
       errorElement.style.display = 'none';
       element.setAttribute('aria-invalid', 'false');
-      if (opts.classNames.invalid) element.classList.remove(opts.classNames.invalid);
+      invalidClasses().forEach(name => element.classList.remove(name));
     }
   }
 
