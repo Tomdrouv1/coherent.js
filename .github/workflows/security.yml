@@ -1,11 +1,19 @@
 name: Security Checks
 
+# An audit result depends on the advisory database as much as on the lockfile,
+# so it goes stale on its own. Filtering by path meant this only ran when a PR
+# happened to touch a manifest: 28 advisories, one of them critical, built up
+# unnoticed while main stayed green, and were found only because an unrelated
+# PR added a script to five package.json files.
 on:
   pull_request:
     branches: [main]
-    paths:
-      - '**/package.json'
-      - 'pnpm-lock.yaml'
+  push:
+    branches: [main]
+  # New advisories land against a lockfile nobody touched.
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
 
 permissions:
   contents: read
