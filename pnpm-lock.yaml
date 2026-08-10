@@ -112,8 +112,8 @@ importers:
         specifier: 4.1.10
         version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(vite@7.3.5(@types/node@26.1.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.9))
       ws:
-        specifier: 8.21.1
-        version: 8.21.1
+        specifier: 8.21.2
+        version: 8.21.2
 
   e2e/fixtures/hmr-basic:
     dependencies:
@@ -197,8 +197,8 @@ importers:
         specifier: ^5.104.1
         version: 5.108.4(csso@5.0.5)(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.25)
       ws:
-        specifier: ^8.21.1
-        version: 8.21.1
+        specifier: ^8.21.2
+        version: 8.21.2
 
   packages/client:
     devDependencies:
@@ -5325,8 +5325,8 @@ packages:
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
 
-  ws@8.21.1:
-    resolution: {integrity: sha512-+0NTnW77fFN/DjQi6k/Sq/Yvk4Sgajw7urW8V+asjXnRgDs9gyGkdb7EzgfhA4goXsRIZKE28fzIXBHEzhuiWw==}
+  ws@8.21.2:
+    resolution: {integrity: sha512-54dMVAo4WIe6SKy3vBgN+9bJZqqQ8IMRevAkOLQALhi49qkkQDQfWdAZ8KQlXiEabw88ARXXdUrlvtbKQX+aKw==}
     engines: {node: '>=10.0.0'}
     peerDependencies:
       bufferutil: ^4.0.1
@@ -10549,7 +10549,7 @@ snapshots:
 
   wrappy@1.0.2: {}
 
-  ws@8.21.1: {}
+  ws@8.21.2: {}
 
   wsl-utils@0.1.0:
     dependencies:
