@@ -139,9 +139,9 @@
     "esbuild": "0.28.1",
     "eslint": "10.8.0",
     "husky": "9.1.7",
-    "marked": "18.0.7",
+    "marked": "18.0.9",
     "prettier": "3.9.6",
-    "shiki": "4.3.1",
+    "shiki": "4.4.2",
     "typescript": "7.0.2",
     "vitest": "4.1.10",
     "ws": "8.21.1"
