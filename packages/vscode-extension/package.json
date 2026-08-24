@@ -70,7 +70,7 @@
     "vscode-languageclient": "10.1.0"
   },
   "devDependencies": {
-    "@types/vscode": "1.125.0",
+    "@types/vscode": "1.134.0",
     "@vscode/vsce": "3.9.2",
     "esbuild": "0.28.2",
     "sharp": "0.35.3",
