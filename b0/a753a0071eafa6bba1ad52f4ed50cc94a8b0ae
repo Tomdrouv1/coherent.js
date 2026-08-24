@@ -1,0 +1,26 @@
+pnpm-workspace.yaml
+  s_f258f2806e9db7::t_15693a5e8bbf35 6-10
+examples/ecommerce-fullstack/package.json
+  s_f258f2806e9db7::t_7cb02a552fc3bc 12,23
+  s_f258f2806e9db7::t_15693a5e8bbf35 5,24
+examples/ecommerce-starter/package.json
+  s_f258f2806e9db7::t_15693a5e8bbf35 5
+pnpm-lock.yaml
+  s_f258f2806e9db7::t_979366c6ce48be 115,162-198,2431-2433,2512-2515,2703-2706,2738-2740,2804-2811,3130-3133,3210-3213,3471-3474,3926-3929,3937-3939,3951-3954,4142-4144,4416-4418,4623-4626,4798-4801,4806-4809,5197-5200,5379-5382,7345,7356-7361,7370-7377,7679-7680,7831-7847,8043-8046,8070-8071,8135-8140,8469-8504,8623-8634,8986-8989,9419-9420,9425-9426,9433-9434,9571-9572,9863-9864,10041-10047,10278-10295,10312-10320,10765-10769,10922-10923,10979-10993,11002-11028,11057-11084
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "b0a753a0071eafa6bba1ad52f4ed50cc94a8b0ae",
+  "prompts": {},
+  "sessions": {
+    "s_f258f2806e9db7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6ca327a6-95e6-4156-aa90-d8f1a04e3d85",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Thomas Drouvin <thomas.drouvin@gmail.com>"
+    }
+  }
+}
