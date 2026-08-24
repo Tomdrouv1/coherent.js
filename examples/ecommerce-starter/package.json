@@ -2,6 +2,7 @@
   "name": "coherent-ecommerce-starter",
   "version": "1.0.0",
   "description": "Production-ready e-commerce site showcasing Coherent.js hybrid architecture",
+  "private": true,
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
