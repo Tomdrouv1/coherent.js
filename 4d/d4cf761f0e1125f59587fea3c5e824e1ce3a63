@@ -1,0 +1,23 @@
+.github/dependabot.yml
+  s_f258f2806e9db7::t_f33ab0713b4e42 19-22
+packages/vscode-extension/package.json
+  s_f258f2806e9db7::t_99b0ab57133395 73
+pnpm-lock.yaml
+  s_f258f2806e9db7::t_0d282d1f884516 24,26-27,317-318,1977-1978,3574-3575,4076-4077,5688,5977,7074,7151,7601,8919,9384,9743,9840,9871
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "4dd4cf761f0e1125f59587fea3c5e824e1ce3a63",
+  "prompts": {},
+  "sessions": {
+    "s_f258f2806e9db7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6ca327a6-95e6-4156-aa90-d8f1a04e3d85",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Thomas Drouvin <thomas.drouvin@gmail.com>"
+    }
+  }
+}
