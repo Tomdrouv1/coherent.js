@@ -3,6 +3,11 @@ packages:
   - 'e2e/fixtures/*'
   - 'website'
   - 'examples'
+  # The nested example apps declare `workspace:*` deps, which only resolve
+  # inside the workspace. Leaving them out meant they were unresolvable and,
+  # worse, invisible to `pnpm audit` — a critical vitest advisory sat open in
+  # ecommerce-fullstack because no lockfile ever covered it.
+  - 'examples/*'
 
 # Allow these dependencies to run their install/build scripts.
 # pnpm 11+ blocks postinstall scripts by default; this allowlist

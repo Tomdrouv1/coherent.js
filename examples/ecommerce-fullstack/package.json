@@ -2,13 +2,14 @@
   "name": "coherent-ecommerce-fullstack",
   "version": "1.0.0",
   "description": "Production-ready e-commerce application showcasing Coherent.js hybrid architecture",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "coherent dev",
     "build": "coherent build",
     "start": "coherent start",
     "analyze": "node ../../scripts/analyze-bundle-size.js",
-    "test": "vitest",
+    "test": "vitest run --passWithNoTests",
     "validate": "node scripts/validate-production.js"
   },
   "dependencies": {
@@ -19,7 +20,8 @@
   "devDependencies": {
     "@coherent.js/devtools": "workspace:*",
     "@coherent.js/cli": "workspace:*",
-    "vitest": "^1.0.0"
+    "vite": "^8.1.5",
+    "vitest": "^4.1.11"
   },
   "coherent": {
     "enableTreeShaking": true,
