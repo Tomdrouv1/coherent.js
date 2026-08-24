@@ -42,7 +42,10 @@ overrides:
   turbo-stream: '^3.0.0'
   # undici TLS-validation bypass, WebSocket DoS, cross-origin routing —
   # fixed in 6.27.0 (6.x line, via @codecov/vite-plugin) and 7.28.0 (7.x).
-  'undici@<6.27.0': '^6.27.0'
+  # 6.28.0 then added cookie-attribute injection, CRLF injection via a
+  # blob-like body `type`, and retry-interceptor response desync; the 7.x
+  # line already carries all three below 7.29.0.
+  'undici@<6.28.0': '^6.28.0'
   'undici@>=7.0.0 <7.29.0': '^7.29.0'
   # astro SSRF and three XSS advisories — only fixed on 7.x, within the
   # `>=4.0.0` optional-peer range. Needs Node >=22.12.
@@ -55,12 +58,17 @@ overrides:
   'qs@>=6.11.1 <6.15.2': '^6.15.2'
   # postcss XSS via unescaped </style> and source-map path traversal — 8.5.18.
   'postcss@>=8.0.0 <8.5.18': '^8.5.18'
+  # nanoid custom generators loop indefinitely when size is zero — fixed in
+  # 3.3.18 (scoped to the 3.x line reached through postcss).
+  'nanoid@<3.3.18': '^3.3.18'
   # ip-address XSS in Address6, and Address4 decoding leading-zero octets as
   # decimal — fixed in 10.3.1.
   'ip-address@<=10.3.0': '^10.3.1'
-  # js-yaml quadratic-complexity DoS in merge-key handling — fixed in 3.15.0
-  # (scoped to the 3.x line so js-yaml 4 consumers are untouched).
-  'js-yaml@<3.15.0': '^3.15.0'
+  # js-yaml quadratic-complexity DoS in merge-key handling — fixed in 3.15.0,
+  # then quadratic CPU consumption in !!omap resolution (CVE-2026-59870), whose
+  # fix landed separately on each line: 3.15.1 and 4.3.1.
+  'js-yaml@<3.15.1': '^3.15.1'
+  'js-yaml@>=4.0.0 <4.3.1': '^4.3.1'
   # esbuild arbitrary file read from the dev server on Windows — fixed in 0.28.1.
   'esbuild@>=0.27.3 <0.28.1': '^0.28.1'
   # webpack buildHttp allowedUris bypasses (SSRF) — fixed in 5.104.1.
@@ -84,8 +92,10 @@ overrides:
   # next App Router proxy bypass, three SSRFs, two DoS and cache confusion —
   # all fixed in 16.2.11.
   'next@>=16.0.0 <16.2.11': '^16.2.11'
-  # SvelteKit prototype pollution and remote form payload DoS — fixed in 2.69.1.
-  '@sveltejs/kit@<2.69.1': '>=2.69.1 <2.70.2'
+  # SvelteKit prototype pollution and remote form payload DoS — fixed in 2.69.1,
+  # then O(n^2) ReDoS in Accept-header content negotiation — fixed in 2.70.2.
+  # Capped below 2.70.3, which is newer than the minimumReleaseAge cutoff.
+  '@sveltejs/kit@<2.70.2': '>=2.70.2 <2.70.3'
 
 # Upper bounds only, to keep resolution inside minimumReleaseAge — not security
 # pins. Drop each one once its latest release has aged past the cutoff.

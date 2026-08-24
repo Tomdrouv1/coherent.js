@@ -16,6 +16,10 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
+      # @types/vscode declares the *minimum* VS Code API the extension targets,
+      # so `vsce package` fails when it drifts above engines.vscode. Bump it by
+      # hand, together with engines.vscode in packages/vscode-extension.
+      - dependency-name: "@types/vscode"
     # Only update development dependencies (except for major versions)
     groups:
       development-dependencies:
