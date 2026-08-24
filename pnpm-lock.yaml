@@ -14,7 +14,7 @@ overrides:
   tmp: ^0.2.6
   '@remix-run/server-runtime': ^2.17.5
   turbo-stream: ^3.0.0
-  undici@<6.27.0: ^6.27.0
+  undici@<6.28.0: ^6.28.0
   undici@>=7.0.0 <7.29.0: ^7.29.0
   astro@>=4.0.0 <7.0.10: ^7.1.6
   form-data@>=4.0.0 <4.0.6: ^4.0.6
@@ -35,7 +35,7 @@ overrides:
   body-parser@>=2.0.0 <2.3.0: ^2.3.0
   sharp@<0.35.0: ^0.35.3
   next@>=16.0.0 <16.2.11: ^16.2.11
-  '@sveltejs/kit@<2.69.1': '>=2.69.1 <2.70.2'
+  '@sveltejs/kit@<2.70.2': '>=2.70.2 <2.70.3'
   vite@>=8.0.0: '>=8.1.5 <8.2.0'
   '@napi-rs/wasm-runtime': '>=1.2.0 <1.2.1'
 
@@ -249,8 +249,8 @@ importers:
         specifier: ^2.17.5
         version: 2.17.5(typescript@5.9.3)
       '@sveltejs/kit':
-        specifier: '>=2.69.1 <2.70.2'
-        version: 2.70.1(@sveltejs/vite-plugin-svelte@7.1.2(svelte@5.55.7)(vite@7.3.5(@types/node@26.2.0)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.12)))(svelte@5.55.7)(typescript@5.9.3)(vite@7.3.5(@types/node@26.2.0)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.12))
+        specifier: '>=2.70.2 <2.70.3'
+        version: 2.70.2(@sveltejs/vite-plugin-svelte@7.1.2(svelte@5.55.7)(vite@7.3.5(@types/node@26.2.0)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.12)))(svelte@5.55.7)(typescript@5.9.3)(vite@7.3.5(@types/node@26.2.0)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.12))
       astro:
         specifier: ^7.1.6
         version: 7.1.6(@azure/identity@4.13.1(supports-color@8.1.1))(@emnapi/core@2.0.0-alpha.3)(@emnapi/runtime@2.0.0-alpha.3)(@types/node@26.2.0)(jiti@2.6.1)(rollup@4.60.4)(terser@5.46.1)(tsx@4.23.12)
@@ -1872,8 +1872,8 @@ packages:
     peerDependencies:
       acorn: ^8.9.0
 
-  '@sveltejs/kit@2.70.1':
-    resolution: {integrity: sha512-nY9SPHGOZro3doud9vZXDBwl9tCZIouuJztjgSHs6PAIrv9M/z5O7eOhPV5xU7CgVHA976Jwu3BA1hIFvXztkA==}
+  '@sveltejs/kit@2.70.2':
+    resolution: {integrity: sha512-RzRoRpuR2KXqc5yMO0akQHDZeT4AslOlznGITURsqHaVbtyYP4Wn3eE3gxj9JcDyNYO0crkxhdwFHc+2vkVm6w==}
     engines: {node: '>=18.13'}
     hasBin: true
     peerDependencies:
@@ -5133,8 +5133,8 @@ packages:
   undici-types@8.3.0:
     resolution: {integrity: sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ==}
 
-  undici@6.27.0:
-    resolution: {integrity: sha512-YmfV3YnEDzXRC5lZ2jWtWWHKGUm1zIt8AhesR1tens+HTNv+YZlN/dp6G727LOvMJ8xjP9Be7Y2Sdr96LDm+pg==}
+  undici@6.28.0:
+    resolution: {integrity: sha512-LIY910g9TI13YS95lrMFrs8Rm/u/irgHeTWoKCoteeJ04CUJ92eEfj0rVn+7VKMPBpUPiUoBKfhNyLI23EE/KA==}
     engines: {node: '>=18.17'}
 
   undici@7.29.0:
@@ -5613,17 +5613,17 @@ snapshots:
       '@octokit/plugin-rest-endpoint-methods': 17.0.0(@octokit/core@7.0.6)
       '@octokit/request': 10.0.9
       '@octokit/request-error': 7.1.0
-      undici: 6.27.0
+      undici: 6.28.0
 
   '@actions/http-client@3.0.2':
     dependencies:
       tunnel: 0.0.6
-      undici: 6.27.0
+      undici: 6.28.0
 
   '@actions/http-client@4.0.1':
     dependencies:
       tunnel: 0.0.6
-      undici: 6.27.0
+      undici: 6.28.0
 
   '@actions/io@3.0.2': {}
 
@@ -7019,21 +7019,17 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@sveltejs/acorn-typescript@1.0.11(acorn@8.17.0)':
-    dependencies:
-      acorn: 8.17.0
-
   '@sveltejs/acorn-typescript@1.0.11(acorn@8.18.0)':
     dependencies:
       acorn: 8.18.0
 
-  '@sveltejs/kit@2.70.1(@sveltejs/vite-plugin-svelte@7.1.2(svelte@5.55.7)(vite@7.3.5(@types/node@26.2.0)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.12)))(svelte@5.55.7)(typescript@5.9.3)(vite@7.3.5(@types/node@26.2.0)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.12))':
+  '@sveltejs/kit@2.70.2(@sveltejs/vite-plugin-svelte@7.1.2(svelte@5.55.7)(vite@7.3.5(@types/node@26.2.0)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.12)))(svelte@5.55.7)(typescript@5.9.3)(vite@7.3.5(@types/node@26.2.0)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.12))':
     dependencies:
       '@standard-schema/spec': 1.1.0
-      '@sveltejs/acorn-typescript': 1.0.11(acorn@8.17.0)
+      '@sveltejs/acorn-typescript': 1.0.11(acorn@8.18.0)
       '@sveltejs/vite-plugin-svelte': 7.1.2(svelte@5.55.7)(vite@7.3.5(@types/node@26.2.0)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.12))
       '@types/cookie': 0.6.0
-      acorn: 8.17.0
+      acorn: 8.18.0
       cookie: 0.7.2
       devalue: 5.8.1
       esm-env: 1.2.2
@@ -10572,7 +10568,7 @@ snapshots:
 
   undici-types@8.3.0: {}
 
-  undici@6.27.0: {}
+  undici@6.28.0: {}
 
   undici@7.29.0: {}
 
