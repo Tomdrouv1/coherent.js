@@ -76,7 +76,7 @@ jobs:
         run: pnpm run website:build
 
       - name: Download coverage artifacts (cross-workflow)
-        uses: dawidd6/action-download-artifact@v21
+        uses: dawidd6/action-download-artifact@v24
         with:
           workflow: ci.yml
           name: coverage-report
