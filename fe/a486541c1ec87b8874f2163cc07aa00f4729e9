@@ -1,0 +1,22 @@
+pnpm-lock.yaml
+  s_f258f2806e9db7::t_0d282d1f884516 24,26-27
+  s_f258f2806e9db7::t_99397e13628eeb 3574-3575,4076-4077,5688,5977,7074,7601,8919,9384,9743,9840,9871
+pnpm-workspace.yaml
+  s_f258f2806e9db7::t_a4bc97e37034ba 58-60,64-68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "fea486541c1ec87b8874f2163cc07aa00f4729e9",
+  "prompts": {},
+  "sessions": {
+    "s_f258f2806e9db7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6ca327a6-95e6-4156-aa90-d8f1a04e3d85",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Thomas Drouvin <thomas.drouvin@gmail.com>"
+    }
+  }
+}
