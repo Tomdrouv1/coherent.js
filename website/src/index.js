@@ -2,7 +2,7 @@ import express from 'express';
 import { createRouter } from '@coherent.js/api';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { readFileSync, readdirSync, statSync, existsSync } from 'fs';
+import { readFileSync, readdirSync, statSync } from 'fs';
 import {
   render,
   renderWithTemplate,
@@ -12,6 +12,7 @@ import {
   createErrorBoundary,
 } from '@coherent.js/core';
 import { marked } from 'marked';
+import { containedPath, resolveDocFile } from './docs-path.js';
 import { createHighlighter } from 'shiki';
 
 // Initialize Shiki for syntax highlighting
@@ -335,14 +336,10 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     if (!slug) { res.redirect('/docs'); return; }
     const docsDir = join(repoRoot, 'docs');
 
-    // Try exact match, then with .md extension, then as index
-    const candidates = [
-      join(docsDir, `${slug}.md`),
-      join(docsDir, slug, 'index.md'),
-      join(docsDir, `${slug}/README.md`),
-    ];
-
-    const mdFile = candidates.find(f => existsSync(f));
+    // Tries the slug as a file, then as a directory index. Returns null for
+    // anything that resolves outside docsDir, so a slug like '../../secrets'
+    // cannot read arbitrary markdown off the filesystem.
+    const mdFile = resolveDocFile(docsDir, slug);
     if (!mdFile) {
       res.status(404).type('html').send(renderFullPage({
         currentPath: '/docs',
@@ -418,12 +415,12 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
           GET: {
             handler: (req, res) => {
               const { filename } = req.params;
-              if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+              const filePath = containedPath(join(repoRoot, 'examples'), filename);
+              if (!filePath) {
                 res.writeHead(400, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ error: 'Invalid filename' }));
                 return;
               }
-              const filePath = join(repoRoot, 'examples', filename);
               try {
                 if (!statSync(filePath).isFile()) {
                   res.writeHead(404, { 'Content-Type': 'application/json' });
