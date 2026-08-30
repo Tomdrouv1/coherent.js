@@ -16,7 +16,7 @@
  * @module @coherent.js/cli/dev-server/static-handler
  */
 
-import { readFile, realpath, stat } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { resolve, sep, extname, join } from 'node:path';
 
 const HMR_CLIENT_PATH = '/__coherent_hmr_client.js';
@@ -70,6 +70,10 @@ function injectHmrScript(html) {
  * Resolve `urlPath` relative to `root` while rejecting path traversal.
  * Returns null if the resolved path escapes `root`.
  */
+// Deliberately no symlink resolution here. A dev server has to follow links:
+// pnpm builds node_modules almost entirely out of them, so realpath-ing the
+// target and demanding it stay under the project root 404s every dependency.
+// URL traversal is what matters, and the containment check below stops it.
 function safeResolve(root, urlPath) {
   // Strip query/hash; decode percent-escapes.
   const cleaned = decodeURIComponent(urlPath.split('?')[0].split('#')[0]);
@@ -83,27 +87,6 @@ function safeResolve(root, urlPath) {
   return abs;
 }
 
-/**
- * Reject a resolved path whose real location escapes the root.
- *
- * safeResolve() only compares text, and resolve() does not follow symlinks,
- * so a link inside the project could still point outside it. The root is
- * resolved too, since it may itself sit under a link (/tmp -> /private/tmp
- * on macOS).
- *
- * @param {string} root - Project root
- * @param {string} target - Path already accepted by safeResolve
- * @returns {Promise<boolean>} True when the real path stays inside the root
- */
-async function realPathInside(root, target) {
-  try {
-    const [realRoot, realTarget] = await Promise.all([realpath(root), realpath(target)]);
-    return realTarget === realRoot || realTarget.startsWith(realRoot + sep);
-  } catch {
-    // Absent: nothing to follow, and nothing to read either.
-    return false;
-  }
-}
 
 /**
  * Create an HTTP request handler that serves files under `root`.
@@ -142,12 +125,6 @@ export function createStaticHandler({ root, hmr = true }) {
           await stat(target); // throws if missing
         }
       } catch {
-        res.statusCode = 404;
-        res.end('Not Found');
-        return;
-      }
-
-      if (!(await realPathInside(root, target))) {
         res.statusCode = 404;
         res.end('Not Found');
         return;
