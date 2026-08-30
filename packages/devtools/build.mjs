@@ -16,7 +16,7 @@ const entries = [
 ];
 
 for (const entry of entries) {
-  const outfile = entry.replace('src/', 'dist/').replace('.js', '.js');
+  const outfile = entry.replace('src/', 'dist/');
 
   await build({
     entryPoints: [entry],
