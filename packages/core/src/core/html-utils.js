@@ -156,13 +156,42 @@ export function formatAttributes(props) {
   return formatted.trim();
 }
 
+/**
+ * Remove HTML comments.
+ *
+ * Scans with indexOf rather than /<!--[\s\S]*?-->/g. The lazy quantifier in
+ * that pattern restarts at every position when no terminator follows, so a
+ * run of unclosed `<!--` cost O(n^2) — 20,000 of them took 307ms. It also
+ * left an unterminated comment in the output, `<!--` and all.
+ *
+ * An unterminated comment consumes the rest of the input, which is how the
+ * HTML spec has parsers treat one.
+ *
+ * @param {string} html - Markup to strip comments from
+ * @returns {string} Markup with comments removed
+ */
+function stripComments(html) {
+  let out = '';
+  let cursor = 0;
+
+  for (;;) {
+    const start = html.indexOf('<!--', cursor);
+    if (start === -1) return out + html.slice(cursor);
+
+    out += html.slice(cursor, start);
+
+    const end = html.indexOf('-->', start + 4);
+    if (end === -1) return out;
+
+    cursor = end + 3;
+  }
+}
+
 export function minifyHtml(html, options = {}) {
   if (!options.minify) return html;
 
   return (
-    html
-      // Remove comments
-      .replace(/<!--[\s\S]*?-->/g, '')
+    stripComments(html)
       // Remove extra whitespace
       .replace(/\s+/g, ' ')
       // Remove whitespace around tags

@@ -132,12 +132,16 @@ function renderComponentContent(obj) {
         })
         .join(' ');
       
-      const openTag = attrsStr ? `<${tagName} ${attrsStr}>` : `<${tagName}>`;
-      
+      // Built directly rather than via openTag.replace('>', ' />'), which
+      // rewrites the first '>' in the string — an attribute value carrying
+      // one would be corrupted instead of the tag being closed.
+      const attrsPart = attrsStr ? ` ${attrsStr}` : '';
+      const openTag = `<${tagName}${attrsPart}>`;
+
       // Handle void elements
       if (['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
            'link', 'meta', 'param', 'source', 'track', 'wbr'].includes(tagName)) {
-        return openTag.replace('>', ' />');
+        return `<${tagName}${attrsPart} />`;
       }
       
       let content = '';

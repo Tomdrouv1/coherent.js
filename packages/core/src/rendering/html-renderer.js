@@ -674,10 +674,15 @@ export async function* renderToStream(component, options = {}) {
                 if (typeof props === 'object' && props !== null) {
                     const { children, text, html: rawHtml, ...attributes } = props;
                     const attrsStr = formatAttributes(attributes);
-                    const openTag = attrsStr ? `<${tagName} ${attrsStr}>` : `<${tagName}>`;
+                    // Built directly rather than via openTag.replace('>', ' />'),
+                    // which rewrites the first '>' in the string — an attribute
+                    // value carrying one would be corrupted instead of the tag
+                    // being closed.
+                    const attrsPart = attrsStr ? ` ${attrsStr}` : '';
+                    const openTag = `<${tagName}${attrsPart}>`;
 
                     if (isVoidElement(tagName)) {
-                        yield* write(openTag.replace('>', ' />'));
+                        yield* write(`<${tagName}${attrsPart} />`);
                         elementCount++;
                         return;
                     }
