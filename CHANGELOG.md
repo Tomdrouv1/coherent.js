@@ -82,11 +82,89 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
                    ├─ API router fixes
                    └─ Missing package READMEs
 
-📅 Future      →  v1.0.0         (PLANNED — after rc soak)
+📅 2026-07-29  →  v1.0.0         (RELEASED)
                    └─ First stable release
+
+📅 2026-07-30  →  v1.0.1         (RELEASED)
+                   ├─ Published types match the runtime
+                   └─ Every open dependency advisory cleared
+
+📅 2026-08-04  →  v1.1.0         (RELEASED)
+                   ├─ Forms work without JavaScript
+                   ├─ Field attributes honoured
+                   └─ Peer ranges unpinned
+
+📅 2026-08-30  →  v1.1.2         (RELEASED)
+                   ├─ Request bodies no longer rewritten
+                   ├─ CORS credentials scoped to named origins
+                   └─ Twelve regexes made linear
 ```
 
 ## [Unreleased]
+
+## [1.1.2] - 2026-08-30
+
+Security release closing the static-analysis backlog, and the defects found underneath it.
+
+Published as 1.1.2 rather than 1.1.1: `@coherent.js/core@1.1.1` had been published and unpublished long before, and npm never allows a version number to be reused, so the 1.1.1 run stopped after `@coherent.js/cli` and `@coherent.js/client`. Those two versions remain on npm and are superseded by this one.
+
+### Fixed
+
+- **Request bodies are no longer rewritten during parsing.** `@coherent.js/api` ran a blocklist of regexes over every string in a parsed JSON body and rebuilt every container as a plain object. Arrays reached handlers as objects — `{"tags":["a","b"]}` arrived as `{"tags":{"0":"a","1":"b"}}`, so `req.body.tags.map()` threw — and ordinary prose was mutated, with `"I love javascript: the language"` arriving as `"I love  the language"`. The regexes never matched `</script >`, `data:` URLs or `<scr<script>ipt>` anyway. Only `__proto__`, `constructor` and `prototype` are stripped now, so keys like `__typename` survive where the old `__`-prefix filter dropped them.
+- **CORS credentials go only to an origin you named.** `Access-Control-Allow-Credentials: true` was paired with a caller-supplied origin, so anything able to steer `corsOrigin` could read authenticated responses. `corsOrigin` now takes a string or an array, is matched against the request `Origin` and echoed back with `Vary: Origin`; an unlisted origin receives no CORS headers. `'*'` is served without credentials — browsers reject that pairing — and a malformed value warns and falls back rather than throwing.
+- **Email validation is linear.** The pattern shared by `forms`, `state` and `api` let a dotted domain split at every dot, so a non-matching address cost O(n²): 50,000 dots took 2.9s to reject and now take under a millisecond. `a@b..c` is rejected everywhere, and `api` no longer accepts addresses containing spaces, tabs or newlines.
+- **Eight more regexes made linear**, each measured: route compilation in `api` (4.7s → 2ms), comment stripping in `core` (307ms → 1ms), HMR stack parsing in `client` (4.7s → 0ms), the complexity heuristic in `devtools`, and the three tag counters behind `toBeValidHTML` in `tooling`. `minifyHtml` also stops leaving an unterminated comment in its output.
+- **Void elements are built as self-closing tags** rather than by rewriting the first `>` in the string, so an attribute value carrying one cannot corrupt the tag.
+- **The HMR error overlay narrows error line and column to integers** before they reach markup — `line` lands inside a quoted attribute — and escapes the stored editor name.
+- **Profiler session ids come from `crypto.getRandomValues`** rather than `Math.random`.
+
+### Changed
+
+- `corsOrigin` accepts `string | string[]`; the array form previously produced a single invalid comma-joined header.
+
+## [1.1.1] - 2026-08-30
+
+Partial release. Reached npm as `@coherent.js/cli` and `@coherent.js/client` only, then stopped: `@coherent.js/core@1.1.1` could not be published because that version number had been used and unpublished long before. Content is identical to 1.1.2, which supersedes it.
+
+## [1.1.0] - 2026-08-04
+
+Makes `@coherent.js/forms` able to express a production form, and unpins the peer ranges that forced all-or-nothing upgrades.
+
+### Fixed
+
+- **Forms work without JavaScript.** Every form carried `onsubmit="handleSubmit(event)"` — naming a global the package never defines, since `hydrateForm` binds its own listener — plus `novalidate`, which disabled the browser validation a no-JS submission depends on, and `novalidate: false` was ignored. Both are off by default now: the form posts to its `action` and validates natively. `enhance: true` and `novalidate: true` opt back in. This also stops the builder emitting markup a strict CSP blocks.
+- **`FormField.attributes` is honoured.** It was declared and read by nothing, so `autocomplete`, `maxlength`, `tabindex` and `data-*` were silently dropped. They are applied before the builder's own props, so `name`, `id`, `type` and the `aria-*` pair cannot be overridden. Attribute names are validated and `on*` names refused, since their string values would render as inline handlers.
+- **Class names are configurable.** A `classNames` option covers the wrapper, label, control, invalid state, error message and submit button, defaulting to the previous values and exported as `DEFAULT_CLASS_NAMES`. `hydrateForm` keys off the `data-field` attribute the builder already emitted rather than `.form-field`, and takes the same `classNames`.
+
+### Changed
+
+- Peer ranges use `workspace:^` rather than an exact pin, so a `core` minor no longer forces every dependent package to a major.
+
+## [1.0.1] - 2026-07-30
+
+Makes published type declarations match the runtime, and clears every open dependency advisory.
+
+### Fixed
+
+- **`@coherent.js/forms` is usable again.** `buildForm()` returned the builder where its declaration promised a `CoherentNode`, so `render(buildForm(config))` threw; the `<form>` element dropped `action`, `method` and `name`; `toHTML()` emitted a near-empty form with unescaped labels; and `setAction`, `setMethod`, `build` and `render` were declared but absent.
+- **`textarea` and `select` render as real elements.** They were emitted as `<input type="textarea">` and `<input type="select">`, which are not valid controls — browsers fall back to a single-line text box.
+- **`registerValidator()` was a silent no-op.** Two modules export a const named `validators`, and the star export shadowed one of them, so registrations never reached the object consumers get.
+- **Eight more packages had the same drift** between declaration and implementation — `seo.MetaBuilder`, `state.Observable`, `i18n.Translator`, `devtools.DevTools` and `forms.FormValidator` each declared a different vocabulary than they implemented.
+
+### Added
+
+- CI gates declared types against runtime exports, so this class of drift cannot ship again.
+
+## [1.0.0] - 2026-07-29
+
+First stable release, cut after building a production SSR site on rc.6 and repairing what that surfaced.
+
+### Fixed
+
+- Eleven defects found building a production SSR site on rc.6.
+- `clearAllContexts` no longer leaks contexts across renders.
+- Component access is forwarded through a `Proxy`, and trusted markers are reused rather than recreated.
+- TypeScript project configs are referenced by file path.
 
 ## [1.0.0-rc.6] - 2026-07-20
 
