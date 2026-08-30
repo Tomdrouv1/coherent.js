@@ -5,6 +5,40 @@
  */
 
 /**
+ * Email shape check: a local part, then a dotted domain.
+ *
+ * Domain labels use `[^\s@.]` rather than `[^\s@]` so that the literal dot
+ * separators are the only thing that can match a dot. Allowing `[^\s@]+` on
+ * both sides of `\.` makes the split ambiguous, and a non-matching subject
+ * with many dots ("a@" + "a." * n + " ") then costs O(n²) backtracking —
+ * CodeQL js/polynomial-redos.
+ *
+ * @private
+ */
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
+
+/**
+ * Longest address RFC 5321 permits, used to bound work before matching.
+ * @private
+ */
+const EMAIL_MAX_LENGTH = 254;
+
+/**
+ * Test whether a value has the shape of an email address.
+ * @private
+ * @param {unknown} value - Value to check
+ * @returns {boolean} True if the value looks like an email address
+ */
+function isEmailShaped(value) {
+  return (
+    typeof value === 'string' &&
+    value.length <= EMAIL_MAX_LENGTH &&
+    EMAIL_PATTERN.test(value)
+  );
+}
+
+
+/**
  * @typedef {Object} ValidationOptions
  * @property {Object} [schema] - JSON Schema for validation
  * @property {Object<string, Function>} [validators] - Custom validator functions
@@ -265,7 +299,7 @@ class SchemaValidator {
   validateFormat(value, format, path) {
     const errors = [];
     const formats = {
-      email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+      email: EMAIL_PATTERN,
       url: /^https?:\/\/.+/,
       uuid: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
       date: /^\d{4}-\d{2}-\d{2}$/,
@@ -726,7 +760,7 @@ export const validators = {
    */
   email: (value) => {
     if (typeof value !== 'string') return 'Email must be a string';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Invalid email format';
+    if (!isEmailShaped(value)) return 'Invalid email format';
     return true;
   },
 

@@ -7,6 +7,7 @@
  */
 
 import { validators as packageValidators } from './validation.js';
+import { isEmailShaped } from './patterns.js';
 
 /**
  * Built-in validators with signature: (value, options, translator, allValues) => errorMessage | null
@@ -21,8 +22,7 @@ export const validators = {
 
   email: (value) => {
     if (!value) return null;
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(value)) {
+    if (!isEmailShaped(value)) {
       return 'Please enter a valid email address';
     }
     return null;

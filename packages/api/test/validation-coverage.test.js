@@ -7,6 +7,43 @@ import { ValidationError } from '../src/errors.js';
 import { validateAgainstSchema, validateField, withValidation } from '../src/validation.js';
 
 describe('API Validation Utilities', () => {
+  describe('email format', () => {
+    const schema = {
+      type: 'object',
+      properties: { email: { type: 'string', format: 'email' } },
+    };
+    const emailErrors = (email) =>
+      validateAgainstSchema(schema, { email }).errors.map((e) => e.message);
+
+    it('accepts a well-formed address', () => {
+      expect(emailErrors('user@example.com')).toEqual([]);
+    });
+
+    it('rejects addresses with embedded whitespace', () => {
+      expect(emailErrors('a b@c.d')).toContain('Invalid email format');
+      expect(emailErrors('a@b c.d')).toContain('Invalid email format');
+      expect(emailErrors(' a@b.c')).toContain('Invalid email format');
+    });
+
+    it('rejects consecutive dots in the domain', () => {
+      expect(emailErrors('a@b..c')).toContain('Invalid email format');
+    });
+
+    it('handles a pathological dotted subject quickly', () => {
+      // Built before timing starts: allocating the string is slower than the
+      // match itself.
+      const subject = `a@${'a.'.repeat(50_000)} `;
+
+      const started = Date.now();
+      const errors = emailErrors(subject);
+      const elapsed = Date.now() - started;
+
+      expect(errors).toContain('Invalid email format');
+      // The ambiguous pattern this replaced took ~2.9s on this input.
+      expect(elapsed).toBeLessThan(500);
+    });
+  });
+
   describe('validateAgainstSchema', () => {
     it('should validate empty object schema successfully', () => {
       const schema = { type: 'object' };

@@ -7,6 +7,7 @@
  */
 
 import { render as renderToHTML } from '@coherent.js/core';
+import { isEmailShaped } from './patterns.js';
 
 /**
  * Class applied to each structural slot. Consumers override any subset via
@@ -66,7 +67,6 @@ function safeAttributes(attributes) {
 function joinClasses(...names) {
   return names.filter(Boolean).join(' ');
 }
-
 /**
  * Form Builder
  * Helps create form components with validation
@@ -289,8 +289,7 @@ export class FormBuilder {
     // Type-based validation
     if (value) {
       if (field.type === 'email') {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(value)) {
+        if (!isEmailShaped(value)) {
           const error = 'Please enter a valid email address';
           this.errors[name] = error;
           return error;

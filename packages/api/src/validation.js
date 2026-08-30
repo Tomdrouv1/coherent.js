@@ -3,6 +3,40 @@
  * @fileoverview Schema-based validation utilities
  */
 
+/**
+ * Email shape check: a local part, then a dotted domain.
+ *
+ * Domain labels use `[^\s@.]` rather than `[^\s@]` so that the literal dot
+ * separators are the only thing that can match a dot. Allowing `[^\s@]+` on
+ * both sides of `\.` makes the split ambiguous, and a non-matching subject
+ * with many dots ("a@" + "a." * n + " ") then costs O(n²) backtracking —
+ * CodeQL js/polynomial-redos.
+ *
+ * @private
+ */
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
+
+/**
+ * Longest address RFC 5321 permits, used to bound work before matching.
+ * @private
+ */
+const EMAIL_MAX_LENGTH = 254;
+
+/**
+ * Test whether a value has the shape of an email address.
+ * @private
+ * @param {unknown} value - Value to check
+ * @returns {boolean} True if the value looks like an email address
+ */
+function isEmailShaped(value) {
+  return (
+    typeof value === 'string' &&
+    value.length <= EMAIL_MAX_LENGTH &&
+    EMAIL_PATTERN.test(value)
+  );
+}
+
+
 import { ValidationError } from './errors.js';
 
 /**
@@ -120,7 +154,7 @@ function validateField(schema, value, fieldName) {
       });
     }
 
-    if (schema.format === 'email' && !/^[^@]+@[^@]+\.[^@]+$/.test(value)) {
+    if (schema.format === 'email' && !isEmailShaped(value)) {
       errors.push({
         field: fieldName,
         message: 'Invalid email format'

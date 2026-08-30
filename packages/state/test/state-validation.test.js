@@ -415,6 +415,24 @@ describe('State Validation', () => {
       expect(validators.email(123)).toContain('must be a string');
     });
 
+    it('email validator rejects consecutive dots and embedded whitespace', () => {
+      expect(validators.email('a@b..c')).toContain('Invalid email');
+      expect(validators.email('a b@c.d')).toContain('Invalid email');
+      expect(validators.email('a@b.c ')).toContain('Invalid email');
+    });
+
+    it('email validator handles a pathological dotted subject quickly', () => {
+      const subject = `a@${'a.'.repeat(50_000)} `;
+
+      const started = Date.now();
+      const result = validators.email(subject);
+      const elapsed = Date.now() - started;
+
+      expect(result).toContain('Invalid email');
+      // The ambiguous pattern this replaced took ~2.9s on this input.
+      expect(elapsed).toBeLessThan(500);
+    });
+
     it('url validator', () => {
       expect(validators.url('https://example.com')).toBe(true);
       expect(validators.url('invalid')).toContain('Invalid URL');

@@ -6,6 +6,8 @@
  * @module forms/validation
  */
 
+import { isEmailShaped } from './patterns.js';
+
 /**
  * Built-in validators
  */
@@ -46,7 +48,7 @@ export const validators = {
   },
 
   email: (message = 'Invalid email address') => (value) => {
-    if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+    if (value && !isEmailShaped(value)) {
       return message;
     }
     return null;
