@@ -13,7 +13,7 @@ import {
 } from '@coherent.js/core';
 import { marked } from 'marked';
 import { containedPath, escapeHtml, resolveDocFile } from './docs-path.js';
-import { rateLimit } from './rate-limit.js';
+import { rateLimit } from 'express-rate-limit';
 import { createHighlighter } from 'shiki';
 
 // Initialize Shiki for syntax highlighting
@@ -333,7 +333,12 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
 
   // Dynamic docs routes — reads markdown from docs/ and renders with Layout.
   // Rate-limited because every request stats and reads files.
-  const docsLimiter = rateLimit({ windowMs: 60_000, max: 240 });
+  const docsLimiter = rateLimit({
+    windowMs: 60_000,
+    limit: 240,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+  });
   app.get('/docs/{*slug}', docsLimiter, (req, res) => {
     const slug = Array.isArray(req.params.slug) ? req.params.slug.join('/') : req.params.slug;
     if (!slug) { res.redirect('/docs'); return; }
@@ -548,7 +553,12 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
 
   // Playground execution — direct Express route (API router hangs with Express).
   // Each request spawns a node process, so this limit is much tighter.
-  const playgroundLimiter = rateLimit({ windowMs: 60_000, max: 20 });
+  const playgroundLimiter = rateLimit({
+    windowMs: 60_000,
+    limit: 20,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+  });
   app.post('/__playground/run', playgroundLimiter, (req, res) => {
     const { code } = req.body;
     if (!code) return res.status(400).json({ code: 1, stderr: 'No code provided' });

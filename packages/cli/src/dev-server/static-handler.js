@@ -16,7 +16,7 @@
  * @module @coherent.js/cli/dev-server/static-handler
  */
 
-import { readFile, stat } from 'node:fs/promises';
+import { readFile, realpath, stat } from 'node:fs/promises';
 import { resolve, sep, extname, join } from 'node:path';
 
 const HMR_CLIENT_PATH = '/__coherent_hmr_client.js';
@@ -84,6 +84,28 @@ function safeResolve(root, urlPath) {
 }
 
 /**
+ * Reject a resolved path whose real location escapes the root.
+ *
+ * safeResolve() only compares text, and resolve() does not follow symlinks,
+ * so a link inside the project could still point outside it. The root is
+ * resolved too, since it may itself sit under a link (/tmp -> /private/tmp
+ * on macOS).
+ *
+ * @param {string} root - Project root
+ * @param {string} target - Path already accepted by safeResolve
+ * @returns {Promise<boolean>} True when the real path stays inside the root
+ */
+async function realPathInside(root, target) {
+  try {
+    const [realRoot, realTarget] = await Promise.all([realpath(root), realpath(target)]);
+    return realTarget === realRoot || realTarget.startsWith(realRoot + sep);
+  } catch {
+    // Absent: nothing to follow, and nothing to read either.
+    return false;
+  }
+}
+
+/**
  * Create an HTTP request handler that serves files under `root`.
  *
  * @param {Object} options
@@ -120,6 +142,12 @@ export function createStaticHandler({ root, hmr = true }) {
           await stat(target); // throws if missing
         }
       } catch {
+        res.statusCode = 404;
+        res.end('Not Found');
+        return;
+      }
+
+      if (!(await realPathInside(root, target))) {
         res.statusCode = 404;
         res.end('Not Found');
         return;

@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, symlinkSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, sep } from 'node:path';
 import { containedPath, escapeHtml, resolveDocFile } from '../website/src/docs-path.js';
@@ -31,6 +31,12 @@ beforeAll(() => {
   // Shares a prefix with docsDir but is a different directory.
   mkdirSync(join(root, 'docs-private'), { recursive: true });
   writeFileSync(join(root, 'docs-private', 'secret.md'), '# Also secret');
+
+  // Links that live inside docsDir but point outside it.
+  mkdirSync(join(root, 'outside'), { recursive: true });
+  writeFileSync(join(root, 'outside', 'index.md'), '# Outside');
+  symlinkSync(join(root, 'SECRET.md'), join(docsDir, 'escape.md'));
+  symlinkSync(join(root, 'outside'), join(docsDir, 'linkdir'));
 });
 
 afterAll(() => {
@@ -139,5 +145,30 @@ describe('escapeHtml', () => {
 
   it('leaves ordinary text untouched', () => {
     expect(escapeHtml('Getting Started')).toBe('Getting Started');
+  });
+});
+
+describe('symlink containment', () => {
+  // resolve() does not follow links, so textual containment alone let a
+  // symlink inside docs/ serve a file outside it.
+  it('refuses a symlink pointing at a file outside the root', () => {
+    expect(resolveDocFile(docsDir, 'escape')).toBeNull();
+  });
+
+  it('refuses a symlink pointing at a directory outside the root', () => {
+    expect(resolveDocFile(docsDir, 'linkdir')).toBeNull();
+  });
+
+  it('refuses the linked path through containedPath too', () => {
+    expect(containedPath(docsDir, 'escape.md')).toBeNull();
+  });
+
+  it('still resolves ordinary files', () => {
+    expect(resolveDocFile(docsDir, 'guide')).toBe(join(docsDir, 'guide.md'));
+  });
+
+  it('still returns a path for something that does not exist yet', () => {
+    // 404 handling depends on this: a missing file is not an escape.
+    expect(containedPath(docsDir, 'nope.md')).toBe(join(docsDir, 'nope.md'));
   });
 });

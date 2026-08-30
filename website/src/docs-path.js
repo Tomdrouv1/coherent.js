@@ -7,8 +7,22 @@
  * @module website/docs-path
  */
 
-import { existsSync } from 'node:fs';
+import { existsSync, realpathSync } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
+
+/**
+ * True when `target` is `root` itself or sits inside it.
+ *
+ * The trailing separator matters: without it a sibling whose name merely
+ * extends the root ('/srv/docs-private' against '/srv/docs') would pass.
+ *
+ * @param {string} root - Containing directory, already resolved
+ * @param {string} target - Candidate path, already resolved
+ * @returns {boolean} True when target is contained by root
+ */
+function isInside(root, target) {
+  return target === root || target.startsWith(root + sep);
+}
 
 /**
  * Resolve `relativePath` against `rootDir`, or null if it escapes.
@@ -29,7 +43,20 @@ import { join, resolve, sep } from 'node:path';
 export function containedPath(rootDir, relativePath) {
   const root = resolve(rootDir);
   const abs = resolve(join(root, relativePath));
-  if (abs !== root && !abs.startsWith(root + sep)) return null;
+  if (!isInside(root, abs)) return null;
+
+  // Textual containment is not enough on its own: a symlink sitting inside
+  // the root can still point outside it, and resolve() does not follow links.
+  // Re-check the real path of whatever actually exists. The root is resolved
+  // too, since it may itself sit under a link (/tmp -> /private/tmp on macOS).
+  // realpathSync throws when the path is absent, which is harmless — a path
+  // that does not exist is never read, and the check above already stands.
+  try {
+    if (!isInside(realpathSync(root), realpathSync(abs))) return null;
+  } catch {
+    // Nothing there to follow.
+  }
+
   return abs;
 }
 
