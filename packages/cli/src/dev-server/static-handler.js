@@ -70,10 +70,22 @@ function injectHmrScript(html) {
  * Resolve `urlPath` relative to `root` while rejecting path traversal.
  * Returns null if the resolved path escapes `root`.
  */
-// Deliberately no symlink resolution here. A dev server has to follow links:
-// pnpm builds node_modules almost entirely out of them, so realpath-ing the
-// target and demanding it stay under the project root 404s every dependency.
-// URL traversal is what matters, and the containment check below stops it.
+// Deliberately no symlink resolution here, and it should stay that way.
+//
+// A dev server has to follow links: pnpm builds node_modules almost entirely
+// out of them, so realpath-ing the target and demanding it stay under the
+// project root 404s every dependency. That was tried and reverted.
+//
+// The residual risk is a symlink planted inside the project pointing at
+// something else on disk. Reaching it requires write access to the project
+// tree — and anything with that can already run code through an install
+// script or an imported module, which is strictly more powerful than reading
+// a file. The server also binds localhost by default (see dev-server/index.js),
+// so it is not reachable off the machine unless a host is passed explicitly.
+//
+// URL traversal is the risk that matters here, and the containment check
+// below stops it: '..', percent-encoded variants and absolute paths are all
+// refused.
 function safeResolve(root, urlPath) {
   // Strip query/hash; decode percent-escapes.
   const cleaned = decodeURIComponent(urlPath.split('?')[0].split('#')[0]);
