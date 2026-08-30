@@ -1,5 +1,47 @@
 # @coherent.js/tooling
 
+## 1.1.1
+
+### Patch Changes
+
+- Close out the CodeQL backlog: 28 alerts, plus the defects found underneath them.
+
+  **Request bodies are no longer rewritten.** `@coherent.js/api` ran a blocklist
+  of regexes over every string in a parsed JSON body and rebuilt every container
+  as a plain object. Arrays arrived at handlers as objects — `{"tags":["a","b"]}`
+  became `{"tags":{"0":"a","1":"b"}}`, so `req.body.tags.map()` threw — and
+  ordinary prose was mangled, with `"I love javascript: the language"` reaching
+  handlers as `"I love  the language"`. The regexes bought nothing: they never
+  matched `</script >`, `data:` URLs or `<scr<script>ipt>`. Bodies now pass
+  through untouched apart from `__proto__`, `constructor` and `prototype`, and
+  keys like `__typename` survive where the old filter dropped every `__` prefix.
+
+  **CORS credentials go only to an origin you named.** `corsOrigin` accepts a
+  string or an array and is matched against the request `Origin`, echoed back with
+  `Vary: Origin`; an unlisted origin gets no CORS headers.
+  `Access-Control-Allow-Credentials` is sent only when `corsOrigin` is set, so the
+  development default no longer offers credentials to an origin the router picked
+  itself. `'*'` is served as-is but never with credentials, a pairing browsers
+  reject anyway; a malformed value warns and falls back rather than throwing.
+
+  **Email validation is linear.** The pattern shared by `forms`, `state` and `api`
+  split a dotted domain at every dot, so a non-matching address cost O(n²): 50,000
+  dots took 2.9 seconds to reject, and now take under a millisecond. Consecutive
+  dots (`a@b..c`) are now rejected everywhere, and `api` no longer accepts
+  addresses containing spaces, tabs or newlines.
+
+  **Six more regexes made linear**, each measured: route compilation in `api`
+  (4.7s → 2ms), comment stripping in `core` (307ms → 1ms), HMR stack parsing in
+  `client` (4.7s → 0ms), the complexity heuristic in `devtools`, and the three
+  tag counters behind `toBeValidHTML` in `tooling`. `minifyHtml` also stops
+  leaving an unterminated comment in its output.
+
+  **Smaller hardening.** `core` builds self-closing void elements directly instead
+  of rewriting the first `>` in the tag. The `client` HMR overlay narrows error
+  line and column to integers before they reach markup, one of them inside a
+  quoted attribute. `devtools` seeds profiler session ids from
+  `crypto.getRandomValues` rather than `Math.random`.
+
 ## 1.1.0
 
 ### Minor Changes
