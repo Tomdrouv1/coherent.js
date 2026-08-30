@@ -50,8 +50,7 @@ function parseBody(req, maxSize = 1024 * 1024) { // 1MB limit
         const contentType = req.headers['content-type'] || '';
         if (contentType.includes('application/json')) {
           const parsed = body ? JSON.parse(body) : {};
-          // Basic input sanitization
-          resolve(sanitizeInput(parsed));
+          resolve(stripUnsafeKeys(parsed));
         } else {
           resolve({});
         }
@@ -65,29 +64,33 @@ function parseBody(req, maxSize = 1024 * 1024) { // 1MB limit
 }
 
 /**
- * Basic input sanitization
+ * Strip prototype-polluting keys from a parsed JSON body.
+ *
+ * Values are passed through untouched. Escaping is the renderer's job —
+ * `@coherent.js/core` escapes on the way out — and rewriting request data
+ * here corrupts legitimate input while stopping no real attack: a blocklist
+ * of `<script>` / `javascript:` / `on*=` never matched `</script >`,
+ * `data:` URLs or nested payloads like `<scr<script>ipt>` anyway.
+ *
+ * Structure is preserved: arrays stay arrays.
+ *
  * @private
+ * @param {*} value - Parsed JSON value
+ * @returns {*} The value with unsafe keys removed
  */
-function sanitizeInput(obj) {
-  if (typeof obj !== 'object' || obj === null) return obj;
+function stripUnsafeKeys(value) {
+  if (Array.isArray(value)) return value.map(stripUnsafeKeys);
+  if (typeof value !== 'object' || value === null) return value;
 
-  const sanitized = {};
-  for (const [key, value] of Object.entries(obj)) {
-    // Remove potentially dangerous keys
-    if (key.startsWith('__') || key.includes('prototype')) continue;
-
-    if (typeof value === 'string') {
-      // Basic XSS prevention
-      sanitized[key] = value.replace(/<script[^>]*>.*?<\/script>/gi, '')
-                           .replace(/javascript:/gi, '')
-                           .replace(/on\w+=/gi, '');
-    } else if (typeof value === 'object') {
-      sanitized[key] = sanitizeInput(value);
-    } else {
-      sanitized[key] = value;
-    }
+  const cleaned = {};
+  for (const [key, child] of Object.entries(value)) {
+    // Assigning `__proto__` on an object literal reassigns its prototype;
+    // `constructor` and `prototype` are dropped so that a downstream deep
+    // merge cannot be walked into Object.prototype either.
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+    cleaned[key] = stripUnsafeKeys(child);
   }
-  return sanitized;
+  return cleaned;
 }
 
 /**
