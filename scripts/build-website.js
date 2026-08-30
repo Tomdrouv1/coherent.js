@@ -96,7 +96,10 @@ function enhanceHeadings(html){
   // ensure h2/h3 have ids and collect them
   const headings = [];
   const newHtml = html.replace(/<(h[23])(\s+[^>]*)?>(.*?)<\/h[23]>/gi, (m, tag, attrs = '', inner) => {
-    const text = inner.replace(/<[^>]+>/g,'').trim();
+    // Strip tags, then drop any leftover angle brackets: /<[^>]+>/ alone
+    // leaves '<script' behind on malformed input like '<a <script'. This is
+    // a plain-text label, so stray brackets are not worth preserving.
+    const text = inner.replace(/<[^<>]*>/g,'').replace(/[<>]/g,'').trim();
     
     // Generate simple IDs for function names
     let id;

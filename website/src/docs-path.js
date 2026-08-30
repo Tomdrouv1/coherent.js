@@ -53,3 +53,22 @@ export function resolveDocFile(docsDir, slug) {
   }
   return null;
 }
+
+/**
+ * Escape text for interpolation into HTML markup.
+ *
+ * Covers both text and quoted-attribute positions, so one helper is enough
+ * for the small amount of markup this server assembles by hand.
+ *
+ * @param {*} value - Value to escape
+ * @returns {string} Escaped text
+ */
+export function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}

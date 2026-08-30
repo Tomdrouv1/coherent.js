@@ -12,7 +12,8 @@ import {
   createErrorBoundary,
 } from '@coherent.js/core';
 import { marked } from 'marked';
-import { containedPath, resolveDocFile } from './docs-path.js';
+import { containedPath, escapeHtml, resolveDocFile } from './docs-path.js';
+import { rateLimit } from './rate-limit.js';
 import { createHighlighter } from 'shiki';
 
 // Initialize Shiki for syntax highlighting
@@ -330,8 +331,10 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     res.type('html').send(html);
   });
 
-  // Dynamic docs routes — reads markdown from docs/ and renders with Layout
-  app.get('/docs/{*slug}', (req, res) => {
+  // Dynamic docs routes — reads markdown from docs/ and renders with Layout.
+  // Rate-limited because every request stats and reads files.
+  const docsLimiter = rateLimit({ windowMs: 60_000, max: 240 });
+  app.get('/docs/{*slug}', docsLimiter, (req, res) => {
     const slug = Array.isArray(req.params.slug) ? req.params.slug.join('/') : req.params.slug;
     if (!slug) { res.redirect('/docs'); return; }
     const docsDir = join(repoRoot, 'docs');
@@ -362,16 +365,22 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     while ((hMatch = htmlHeadingRegex.exec(htmlBody)) !== null) {
       const level = hMatch[1].toLowerCase();
       const innerHtml = hMatch[2];
-      // Strip HTML tags to get plain text for the TOC label
-      const plainText = innerHtml.replace(/<[^>]+>/g, '').trim();
+      // Strip tags, then drop any leftover angle brackets: /<[^>]+>/ alone
+      // leaves '<script' behind on malformed input like '<a <script'. This
+      // is a plain-text label, so stray brackets are not worth preserving.
+      const plainText = innerHtml.replace(/<[^<>]*>/g, '').replace(/[<>]/g, '').trim();
       const id = slugify(plainText);
       headings.push({ level, text: plainText, id, original: hMatch[0] });
     }
 
-    const currentDocPath = `docs/${slug}`;
+    // `slug` comes from the URL and `h.text` from the document, and both land
+    // in markup here — h.text in element content, the slug inside a quoted
+    // href. h.id is safe unescaped in either position, and in the inline
+    // handler, because slugify() reduces it to [a-z0-9-].
+    const currentDocPath = escapeHtml(`docs/${slug}`);
     const tocHtml = headings.length > 0
       ? `<div class="toc-box"><div class="toc-title">On this page</div><ul class="toc-list">${headings.map(h =>
-          `<li class="${h.level}"><a href="${currentDocPath}#${h.id}" data-toc-target="${h.id}" onclick="event.preventDefault(); document.getElementById('${h.id}')?.scrollIntoView({behavior: 'smooth', block: 'start'});">${h.text}</a></li>`
+          `<li class="${h.level}"><a href="${currentDocPath}#${h.id}" data-toc-target="${h.id}" onclick="event.preventDefault(); document.getElementById('${h.id}')?.scrollIntoView({behavior: 'smooth', block: 'start'});">${escapeHtml(h.text)}</a></li>`
         ).join('')}</ul></div>`
       : '';
 
@@ -537,8 +546,10 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     res.json(index);
   });
 
-  // Playground execution — direct Express route (API router hangs with Express)
-  app.post('/__playground/run', (req, res) => {
+  // Playground execution — direct Express route (API router hangs with Express).
+  // Each request spawns a node process, so this limit is much tighter.
+  const playgroundLimiter = rateLimit({ windowMs: 60_000, max: 20 });
+  app.post('/__playground/run', playgroundLimiter, (req, res) => {
     const { code } = req.body;
     if (!code) return res.status(400).json({ code: 1, stderr: 'No code provided' });
     if (code.length > 102400) return res.status(400).json({ code: 1, stderr: 'Code exceeds maximum size (100KB)' });

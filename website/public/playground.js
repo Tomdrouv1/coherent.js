@@ -657,15 +657,15 @@ async function loadExampleFile(fileName) {
     if (outputEl) {
       if (isJavaScript) {
         outputEl.innerHTML = `
-          <strong>📄 Loaded ${fileName}</strong><br>
+          <strong>📄 Loaded ${escapeHtmlText(fileName)}</strong><br>
           <span style="color: #3b82f6;">🚀 JavaScript/Coherent.js code loaded!</span><br>
-          <span style="color: #6b7280;">Click "<strong>🚀 Execute Code</strong>" to run this code in the playground, or run locally with: <code style="background: #000; color: #3bf77d; padding: 2px 4px; border-radius: 3px;">node examples/${fileName}</code></span>
+          <span style="color: #6b7280;">Click "<strong>🚀 Execute Code</strong>" to run this code in the playground, or run locally with: <code style="background: #000; color: #3bf77d; padding: 2px 4px; border-radius: 3px;">node examples/${escapeHtmlText(fileName)}</code></span>
         `;
       } else {
         outputEl.innerHTML = `
-          <strong>📄 Loaded ${fileName}</strong><br>
+          <strong>📄 Loaded ${escapeHtmlText(fileName)}</strong><br>
           <span style="color: #059669;">📝 Code file loaded for editing</span><br>
-          <span style="color: #6b7280;">You can edit this code and run it locally with: <code style="background: #000; color: #3bf77d; padding: 2px 4px; border-radius: 3px;">node examples/${fileName}</code></span>
+          <span style="color: #6b7280;">You can edit this code and run it locally with: <code style="background: #000; color: #3bf77d; padding: 2px 4px; border-radius: 3px;">node examples/${escapeHtmlText(fileName)}</code></span>
         `;
       }
       outputEl.className = 'output-status';

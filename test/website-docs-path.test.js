@@ -10,7 +10,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, sep } from 'node:path';
-import { containedPath, resolveDocFile } from '../website/src/docs-path.js';
+import { containedPath, escapeHtml, resolveDocFile } from '../website/src/docs-path.js';
 
 let root;
 let docsDir;
@@ -115,5 +115,29 @@ describe('resolveDocFile', () => {
     // arrives here already as '..'.
     expect(resolveDocFile(docsDir, '..%2fSECRET')).toBeNull();
     expect(resolveDocFile(docsDir, '../SECRET')).toBeNull();
+  });
+});
+
+describe('escapeHtml', () => {
+  it.each([
+    ['<img src=x onerror=alert(1)>', '&lt;img src=x onerror=alert(1)&gt;'],
+    ['x"onmouseover="alert(1)', 'x&quot;onmouseover=&quot;alert(1)'],
+    ["it's", 'it&#39;s'],
+    ['a & b', 'a &amp; b'],
+  ])('escapes %j', (input, expected) => {
+    expect(escapeHtml(input)).toBe(expected);
+  });
+
+  it('escapes the ampersand first, so entities are not double-decoded', () => {
+    expect(escapeHtml('&lt;')).toBe('&amp;lt;');
+  });
+
+  it('returns an empty string for null and undefined', () => {
+    expect(escapeHtml(null)).toBe('');
+    expect(escapeHtml(undefined)).toBe('');
+  });
+
+  it('leaves ordinary text untouched', () => {
+    expect(escapeHtml('Getting Started')).toBe('Getting Started');
   });
 });
