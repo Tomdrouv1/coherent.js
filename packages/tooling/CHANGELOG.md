@@ -1,5 +1,17 @@
 # @coherent.js/tooling
 
+## 1.1.2
+
+### Patch Changes
+
+- Contain symlinked paths in the dev server, and release the 1.1.1 content.
+
+  **The dev server no longer serves a symlink that points outside the project.** `resolve()` does not follow links, so containment that only compared text let a link inside the served directory return a file outside it. Both the path check and the file read now compare the real path, resolving the root as well since it may itself sit under a link. A path that does not exist is still handled as a 404 rather than an error.
+
+  **Everything else here is the 1.1.1 content**, which reached npm only as `@coherent.js/cli` and `@coherent.js/client` before the run stopped: `@coherent.js/core@1.1.1` had been published and unpublished long before, and npm never allows a version number to be reused. 1.1.2 is clean for all twelve packages and realigns them.
+
+  That content is unchanged from the 1.1.1 entry: request bodies are no longer rewritten during parsing, CORS credentials go only to an origin you named, email validation and eight other regexes are linear rather than quadratic, void elements are built rather than patched, HMR overlay line numbers are narrowed to integers, and profiler ids come from `crypto.getRandomValues`.
+
 ## 1.1.1
 
 ### Patch Changes
