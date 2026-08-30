@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { render, dangerouslySetInnerContent, isTrustedContent } from '../src/index.js';
 import {
   deepClone,
   shallowClone,
@@ -14,7 +15,8 @@ import {
   isEqual,
   freeze,
   hasCircularReferences,
-  getMemoryFootprint
+  getMemoryFootprint,
+  validateComponentGraceful
 } from '../src/core/object-utils.js';
 
 describe('Object Utilities', () => {
@@ -563,5 +565,38 @@ describe('Object Utilities', () => {
       expect(typeof footprint).toBe('number');
       expect(footprint).toBeGreaterThan(0);
     });
+  });
+});
+
+
+describe('validateComponent with trusted content', () => {
+  // dangerouslySetInnerContent() returns an inert leaf the renderer emits
+  // verbatim. The validator used to read its __html/__trusted keys as tag
+  // names and throw on the boolean, so a documented public API could not be
+  // used inside a component that gets validated.
+  const marker = dangerouslySetInnerContent('<h3>Fixed</h3><ul><li>a</li></ul>');
+
+  it('accepts a marker on its own', () => {
+    expect(validateComponent(marker)).toBe(true);
+  });
+
+  it('accepts a marker nested in a tree', () => {
+    expect(validateComponent({ div: { className: 'x', children: [marker] } })).toBe(true);
+  });
+
+  it('accepts a marker gracefully', () => {
+    expect(validateComponentGraceful(marker)).toEqual({ valid: true });
+  });
+
+  it('renders the marker verbatim once validated', () => {
+    expect(render({ div: { children: [marker] } })).toBe('<div><h3>Fixed</h3><ul><li>a</li></ul></div>');
+  });
+
+  it.each([
+    ['__html is not a string', { __html: 1, __trusted: true }],
+    ['__trusted is false', { __html: '<b>x</b>', __trusted: false }],
+    ['__trusted is missing', { __html: '<b>x</b>' }],
+  ])('does not treat %s as trusted content', (_label, value) => {
+    expect(isTrustedContent(value)).toBe(false);
   });
 });

@@ -3,6 +3,8 @@
  * Handles object validation, manipulation, and analysis
  */
 
+import { isTrustedContent } from './html-utils.js';
+
 /**
  * Deep clone an object with optimizations for common patterns
  * Handles circular references, functions, dates, regex, and more
@@ -273,6 +275,13 @@ export function validateComponent(component, path = 'root') {
         return true;
     }
 
+    // Content from dangerouslySetInnerContent() is an inert leaf the renderer
+    // emits verbatim. Without this its __html/__trusted keys read as tag
+    // names, and the boolean throws — so a valid public API failed validation.
+    if (isTrustedContent(component)) {
+        return true;
+    }
+
     // Handle arrays
     if (Array.isArray(component)) {
         component.forEach((child, index) => {
@@ -330,6 +339,13 @@ export function validateComponentGraceful(component, path = 'root') {
 
     // Allow functions (will be evaluated during render)
     if (typeof component === 'function') {
+        return { valid: true };
+    }
+
+    // Content from dangerouslySetInnerContent() is an inert leaf the renderer
+    // emits verbatim. Without this its __html/__trusted keys read as tag
+    // names, and the boolean throws — so a valid public API failed validation.
+    if (isTrustedContent(component)) {
         return { valid: true };
     }
 
