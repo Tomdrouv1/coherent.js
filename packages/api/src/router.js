@@ -138,6 +138,20 @@ function checkRateLimit(ip, windowMs = 60000, maxRequests = 100) {
  */
 const DEFAULT_CORS_ORIGIN = 'http://localhost:3000';
 
+/** Warnings already emitted, so a per-request policy cannot spam the log. */
+const warnedCorsMessages = new Set();
+
+/**
+ * Warn about a CORS misconfiguration once per distinct message.
+ * @private
+ * @param {string} message - Warning text
+ */
+function warnCorsOnce(message) {
+  if (warnedCorsMessages.has(message)) return;
+  warnedCorsMessages.add(message);
+  console.warn(`[coherent.js/api] ${message}`);
+}
+
 /**
  * Normalise a `corsOrigin` option into a CORS policy.
  *
@@ -146,34 +160,40 @@ const DEFAULT_CORS_ORIGIN = 'http://localhost:3000';
  * alongside an origin we picked ourselves would invite any site that can
  * influence the configured value to read authenticated responses.
  *
+ * A misconfigured value warns and degrades rather than throwing, so
+ * upgrading cannot take a running server down. `'*'` still serves
+ * `Access-Control-Allow-Origin: *`, just without credentials — a
+ * combination browsers reject anyway, so nothing that worked is lost.
+ *
  * @private
  * @param {string|string[]|null|undefined} corsOrigin - Configured origin(s)
  * @returns {{origins: string[], allowCredentials: boolean, explicit: boolean}}
- * @throws {TypeError} If an origin is not a non-empty string, or is '*'
  */
 function resolveCorsPolicy(corsOrigin) {
-  if (corsOrigin === undefined || corsOrigin === null) {
-    return { origins: [DEFAULT_CORS_ORIGIN], allowCredentials: false, explicit: false };
-  }
+  const fallback = { origins: [DEFAULT_CORS_ORIGIN], allowCredentials: false, explicit: false };
+  if (corsOrigin === undefined || corsOrigin === null) return fallback;
 
   const origins = Array.isArray(corsOrigin) ? corsOrigin : [corsOrigin];
-  if (origins.length === 0) {
-    throw new TypeError('corsOrigin must not be an empty array');
+
+  if (origins.length === 0 || origins.some(origin => typeof origin !== 'string' || origin === '')) {
+    warnCorsOnce(
+      'corsOrigin must be a non-empty string or an array of them. ' +
+        `Ignoring ${JSON.stringify(corsOrigin)} and serving ${DEFAULT_CORS_ORIGIN} without credentials.`
+    );
+    return fallback;
   }
 
-  for (const origin of origins) {
-    if (typeof origin !== 'string' || origin === '') {
-      throw new TypeError(
-        `corsOrigin entries must be non-empty strings, received ${typeof origin}`
-      );
+  if (origins.includes('*')) {
+    if (origins.length > 1) {
+      warnCorsOnce("corsOrigin '*' allows every origin; the others listed alongside it have no effect.");
     }
-    if (origin === '*') {
-      throw new TypeError(
-        "corsOrigin '*' cannot be combined with credentialed CORS. " +
-          'List the origins you trust, or omit corsOrigin to serve the ' +
-          'development default without credentials.'
-      );
-    }
+    warnCorsOnce(
+      "corsOrigin '*' cannot carry credentials, so Access-Control-Allow-Credentials is not sent. " +
+        'List the origins you trust to enable credentialed requests.'
+    );
+    // explicit:false routes this through the unconditional branch below, so
+    // '*' is sent as-is with no Origin matching and no Vary.
+    return { origins: ['*'], allowCredentials: false, explicit: false };
   }
 
   return { origins, allowCredentials: true, explicit: true };

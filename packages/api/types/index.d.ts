@@ -179,8 +179,11 @@ export interface RouterConfig {
    * `Access-Control-Allow-Credentials: true` is sent only when this is set;
    * omit it and the router serves the development default
    * (`http://localhost:3000`) without credentials. A request whose `Origin`
-   * is not on the list receives no CORS headers. `'*'` throws, since it
-   * cannot be combined with credentials.
+   * is not on the list receives no CORS headers.
+   *
+   * `'*'` is served as-is but never with credentials, since browsers reject
+   * that combination. A malformed value warns and falls back to the
+   * development default rather than throwing.
    */
   corsOrigin?: string | string[];
 }

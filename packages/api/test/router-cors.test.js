@@ -2,7 +2,7 @@
  * Tests for CORS header handling in the object router.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRouter } from '../src/router.js';
 
 function createMockRes() {
@@ -128,33 +128,56 @@ describe('router CORS headers', () => {
     });
   });
 
-  describe('invalid corsOrigin', () => {
-    const build = (corsOrigin) => () => createRouter({}, { corsOrigin });
+  describe('misconfigured corsOrigin', () => {
+    // Degrading rather than throwing means upgrading cannot take a running
+    // server down over a config value that previously "worked".
+    let warn;
 
-    it("rejects '*' because it cannot carry credentials", () => {
-      expect(build('*')).toThrow(TypeError);
-      expect(build('*')).toThrow(/cannot be combined with credentialed CORS/);
+    beforeEach(() => {
+      warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     });
 
-    it("rejects '*' inside an allowlist", () => {
-      expect(build(['https://app.example', '*'])).toThrow(TypeError);
+    afterEach(() => {
+      warn.mockRestore();
     });
 
-    it('rejects an empty allowlist', () => {
-      expect(build([])).toThrow(/must not be an empty array/);
+    // Each case asserts its own warning: warnings are emitted once per
+    // distinct message for the life of the process, so a later test cannot
+    // observe a warning an earlier one already consumed.
+    it("serves '*' without credentials rather than throwing, and says so", async () => {
+      const headers = await headersFor({ corsOrigin: '*' }, 'https://anything.example');
+
+      expect(headers['Access-Control-Allow-Origin']).toBe('*');
+      expect(headers['Access-Control-Allow-Credentials']).toBeUndefined();
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('cannot carry credentials'));
     });
 
-    it('rejects non-string entries', () => {
-      expect(build(42)).toThrow(/non-empty strings/);
-      expect(build([null])).toThrow(/non-empty strings/);
+    it("lets '*' win over origins listed beside it, with a warning", async () => {
+      const headers = await headersFor(
+        { corsOrigin: ['https://app.example', '*'] },
+        'https://evil.example'
+      );
+
+      expect(headers['Access-Control-Allow-Origin']).toBe('*');
+      expect(headers['Access-Control-Allow-Credentials']).toBeUndefined();
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('have no effect'));
     });
 
-    it('rejects an empty string', () => {
-      expect(build('')).toThrow(/non-empty strings/);
-    });
+    it.each([[[]], [42], ['']])(
+      'falls back to the default without credentials for %p',
+      async (corsOrigin) => {
+        const headers = await headersFor({ corsOrigin });
 
-    it('fails at construction, not on the first request', () => {
-      expect(build('*')).toThrow();
+        expect(headers['Access-Control-Allow-Origin']).toBe('http://localhost:3000');
+        expect(headers['Access-Control-Allow-Credentials']).toBeUndefined();
+        expect(warn).toHaveBeenCalledWith(expect.stringContaining('must be a non-empty string'));
+      }
+    );
+
+    it('never throws on a bad value', () => {
+      for (const corsOrigin of ['*', [], 42, '', [null], ['https://a.example', '*']]) {
+        expect(() => createRouter({}, { corsOrigin })).not.toThrow();
+      }
     });
   });
 

@@ -718,8 +718,11 @@ With an allowlist, the request's `Origin` is matched against it: a match is
 echoed back alongside `Vary: Origin`, and any other origin receives no CORS
 headers at all.
 
-`corsOrigin: '*'` throws. A wildcard origin cannot carry credentials — the
-browser rejects that combination — so list the origins you trust instead.
+`corsOrigin: '*'` is served as-is, but never with credentials: browsers
+reject a wildcard origin combined with them. List the origins you trust to
+enable credentialed requests. A malformed value warns and falls back to the
+development default rather than throwing, so a bad config cannot take a
+running server down.
 
 ## Security Best Practices
 
