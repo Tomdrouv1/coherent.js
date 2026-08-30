@@ -27,12 +27,31 @@ export function escapeHtml(str) {
  * @param {number} [startLine=1] - Starting line number for the frame
  * @returns {string} Formatted HTML string
  */
+/**
+ * Coerce a line or column to a positive integer, or null when it is not one.
+ *
+ * These values reach the overlay markup without escaping — `line` even lands
+ * inside a quoted attribute — so they are narrowed to integers here rather
+ * than trusting the shape of whatever built the error object.
+ *
+ * @param {*} value - Candidate line or column
+ * @returns {number|null} A positive integer, or null
+ */
+function toPositiveInt(value) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
 export function formatCodeFrame(frame, highlightLine, startLine = 1) {
   if (!frame) return '';
 
+  // Interpolated into markup below without escaping, so a non-numeric
+  // startLine would be concatenated rather than added.
+  const firstLine = toPositiveInt(startLine) ?? 1;
+
   const lines = frame.split('\n');
   return lines.map((content, i) => {
-    const lineNum = startLine + i;
+    const lineNum = firstLine + i;
     const isHighlight = lineNum === highlightLine;
     return `<div class="line${isHighlight ? ' highlight' : ''}">
       <span class="line-number">${lineNum}</span>
@@ -253,9 +272,12 @@ export class ErrorOverlay {
     const existingWrapper = shadow.querySelector('.wrapper');
     if (existingWrapper) existingWrapper.remove();
 
+    const line = toPositiveInt(error.line);
+    const column = toPositiveInt(error.column);
+
     // Calculate start line for code frame (center on error line)
     const frameLines = error.frame ? error.frame.split('\n').length : 0;
-    const startLine = error.line ? Math.max(1, error.line - Math.floor(frameLines / 2)) : 1;
+    const startLine = line ? Math.max(1, line - Math.floor(frameLines / 2)) : 1;
 
     const wrapper = document.createElement('div');
     wrapper.className = 'wrapper';
@@ -269,19 +291,19 @@ export class ErrorOverlay {
         <div class="content">
           <div class="message">${escapeHtml(error.message || 'Unknown error')}</div>
           ${error.file ? `
-            <div class="file" data-file="${escapeHtml(error.file)}" data-line="${error.line || 1}">
-              ${escapeHtml(error.file)}${error.line ? `:${error.line}` : ''}${error.column ? `:${error.column}` : ''}
+            <div class="file" data-file="${escapeHtml(error.file)}" data-line="${line || 1}">
+              ${escapeHtml(error.file)}${line ? `:${line}` : ''}${column ? `:${column}` : ''}
             </div>
           ` : ''}
           ${error.frame ? `
-            <div class="code-frame">${formatCodeFrame(error.frame, error.line, startLine)}</div>
+            <div class="code-frame">${formatCodeFrame(error.frame, line, startLine)}</div>
           ` : ''}
           ${error.stack ? `
             <div class="stack">${escapeHtml(error.stack)}</div>
           ` : ''}
           <div class="tip">
             Press <strong>Escape</strong> or click the X to dismiss.
-            ${error.file ? ` Click the file path to open in ${this.editor}.` : ''}
+            ${error.file ? ` Click the file path to open in ${escapeHtml(this.editor)}.` : ''}
           </div>
         </div>
       </div>

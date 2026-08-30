@@ -570,10 +570,21 @@ export class PerformanceProfiler {
   }
 
   /**
-   * Generate unique ID
+   * Generate unique ID.
+   *
+   * Uses crypto.getRandomValues rather than Math.random: the ids key the
+   * session and measurement maps, so a predictable suffix lets one caller
+   * guess or collide with another's entry. getRandomValues is available in
+   * Node 19+ and in browsers without requiring a secure context, unlike
+   * randomUUID.
+   *
+   * @returns {string} A unique profiling id
    */
   generateId() {
-    return `prof-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    const bytes = new Uint8Array(8);
+    globalThis.crypto.getRandomValues(bytes);
+    const suffix = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+    return `prof-${Date.now()}-${suffix}`;
   }
 }
 

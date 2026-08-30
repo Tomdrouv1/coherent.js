@@ -42,6 +42,42 @@ describe('escapeHtml', () => {
   });
 });
 
+describe('formatCodeFrame line numbers', () => {
+  it('numbers lines from startLine', () => {
+    const html = formatCodeFrame('a\nb', 2, 5);
+
+    expect(html).toContain('>5<');
+    expect(html).toContain('>6<');
+  });
+
+  it('escapes the frame content', () => {
+    const html = formatCodeFrame('<img src=x onerror=alert(1)>', 1, 1);
+
+    expect(html).not.toContain('<img');
+    expect(html).toContain('&lt;img');
+  });
+
+  it('does not concatenate a non-numeric startLine into the markup', () => {
+    // startLine reaches the markup unescaped; a string would be concatenated
+    // rather than added, putting caller-controlled text into the document.
+    const html = formatCodeFrame('a', 1, '1"><img src=x onerror=alert(1)>');
+
+    expect(html).not.toContain('<img');
+    expect(html).toContain('>1<');
+  });
+
+  it.each([null, undefined, NaN, Infinity, -3, 0, 1.5, '2'])(
+    'falls back to 1 for a startLine of %p that is not a positive integer',
+    (startLine) => {
+      const html = formatCodeFrame('a', 1, startLine);
+
+      expect(html).toMatch(/>(1|2)</);
+      expect(html).not.toContain('NaN');
+      expect(html).not.toContain('Infinity');
+    }
+  );
+});
+
 describe('formatCodeFrame', () => {
   it('formats code with line numbers', () => {
     const frame = 'const x = 1;\nconst y = 2;';
