@@ -18,6 +18,8 @@ on:
 permissions:
   contents: read
   id-token: write
+  # Needed to look up the CI run for the commit being published.
+  actions: read
 
 env:
   PNPM_CONFIG_MINIMUM_RELEASE_AGE: "0"
@@ -31,6 +33,34 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+
+      # Nothing else gates this workflow: a published release triggers it
+      # directly, and a release can be created seconds after a push, long
+      # before CI has finished. Publishing to npm cannot be undone — a version
+      # number is burned even if the release is unpublished — so refuse any
+      # commit that does not already have a successful CI run.
+      - name: Require a successful CI run for this commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          sha="$(git rev-parse HEAD)"
+          echo "Publishing commit $sha"
+
+          conclusions="$(gh api \
+            "repos/$REPO/actions/workflows/ci.yml/runs?head_sha=$sha&status=completed" \
+            --jq '[.workflow_runs[].conclusion] | join(" ")')"
+
+          if [ -z "$conclusions" ]; then
+            echo "::error::No completed CI run for $sha. Wait for CI to finish before publishing."
+            exit 1
+          fi
+          if ! printf '%s' "$conclusions" | grep -qw success; then
+            echo "::error::CI for $sha concluded: $conclusions. Refusing to publish."
+            exit 1
+          fi
+          echo "CI is green for $sha ($conclusions)."
 
       - name: Install pnpm
         uses: pnpm/action-setup@v6

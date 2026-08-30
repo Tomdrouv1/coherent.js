@@ -16,8 +16,14 @@ jobs:
   draft_release:
     runs-on: ubuntu-latest
     steps:
+      # publish: false is explicit on purpose. A published release fires
+      # publish.yml, which ships to npm — and a release can appear within a
+      # minute of a push, long before CI has reported. Pinning this means a
+      # future default change cannot turn a draft into a release. Releasing
+      # stays a deliberate act.
       - uses: release-drafter/release-drafter@v7
         with:
           commitish: main
+          publish: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
