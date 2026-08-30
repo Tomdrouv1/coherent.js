@@ -13,12 +13,97 @@ export function Changelog() {
         // Timeline
         { section: { className: 'changelog-timeline', children: [
 
+          // v1.1.2
+          { article: { className: 'changelog-entry', children: [
+            { div: { className: 'changelog-entry-header', children: [
+              { span: { className: 'changelog-version', text: 'v1.1.2' } },
+              { span: { className: 'changelog-date', text: '2026-08-30' } },
+              { span: { className: 'changelog-badge changelog-badge-current', text: 'Current' } }
+            ] } },
+            { div: { className: 'changelog-changes', children: [
+              { h3: { text: 'Highlights' } },
+              { p: { text: 'Security release closing the static-analysis backlog, and the defects found underneath it — request bodies were being corrupted, and a dozen regexes were quadratic.' } },
+              { h3: { text: 'Fixed' } },
+              { ul: { children: [
+                { li: { text: 'Request bodies are no longer rewritten during parsing. The API router rebuilt every container as a plain object, so arrays reached handlers as objects — {"tags":["a","b"]} arrived as {"tags":{"0":"a","1":"b"}} and req.body.tags.map() threw — and a blocklist of regexes mangled ordinary prose, turning "I love javascript: the language" into "I love  the language". Only __proto__, constructor and prototype are stripped now.' } },
+                { li: { text: 'CORS credentials are sent only to an origin you named. corsOrigin takes a string or an array, is matched against the request Origin and echoed back with Vary: Origin; an unlisted origin gets no CORS headers. A wildcard is served without credentials rather than with them, and a malformed value warns instead of throwing.' } },
+                { li: { text: 'Email validation is linear. The shared pattern let a dotted domain split at every dot, so rejecting a 50,000-dot address took 2.9 seconds; it now takes under a millisecond. Consecutive dots are rejected, and the API validator no longer accepts addresses containing whitespace.' } },
+                { li: { text: 'Eight more regexes made linear, each measured: route compilation 4.7s to 2ms, HTML comment stripping 307ms to 1ms, HMR stack parsing 4.7s to 0ms, plus the devtools complexity heuristic and the three tag counters behind toBeValidHTML.' } },
+                { li: { text: 'Void elements are built as self-closing tags rather than by rewriting the first > in the string, so an attribute value carrying one cannot corrupt the tag.' } },
+                { li: { text: 'The HMR error overlay narrows error line and column to integers before they reach markup — one of them lands inside a quoted attribute.' } },
+                { li: { text: 'Profiler session ids come from crypto.getRandomValues rather than Math.random.' } }
+              ] } },
+              { h3: { text: 'Note' } },
+              { p: { text: 'v1.1.1 reached npm as @coherent.js/cli and @coherent.js/client only: @coherent.js/core@1.1.1 had been published and unpublished long before, and npm never allows a version number to be reused, so the release stopped there. v1.1.2 carries the same content and realigns all twelve packages.' } }
+            ] } }
+          ] } },
+
+          // v1.1.0
+          { article: { className: 'changelog-entry', children: [
+            { div: { className: 'changelog-entry-header', children: [
+              { span: { className: 'changelog-version', text: 'v1.1.0' } },
+              { span: { className: 'changelog-date', text: '2026-08-04' } }
+            ] } },
+            { div: { className: 'changelog-changes', children: [
+              { h3: { text: 'Highlights' } },
+              { p: { text: 'Makes @coherent.js/forms able to express a production form, and unpins the peer ranges that forced all-or-nothing upgrades.' } },
+              { h3: { text: 'Fixed' } },
+              { ul: { children: [
+                { li: { text: 'Forms work without JavaScript. Every form carried onsubmit="handleSubmit(event)" — naming a global the package never defines — plus novalidate, which disabled the browser validation a no-JS submission depends on. Both are off by default now: the form posts to its action and validates natively. Opt back in with enhance: true and novalidate: true.' } },
+                { li: { text: 'FormField.attributes is honoured. It was declared and read by nothing, so autocomplete, maxlength, tabindex and data-* were silently dropped. Attribute names are validated and on* names refused, since their string values would render as inline handlers.' } },
+                { li: { text: 'Class names are configurable through a classNames option covering wrapper, label, control, invalid state, error message and submit button, exported as DEFAULT_CLASS_NAMES. hydrateForm keys off the data-field attribute rather than .form-field, so server and client agree.' } }
+              ] } },
+              { h3: { text: 'Changed' } },
+              { ul: { children: [
+                { li: { text: 'Peer ranges use workspace:^ rather than an exact pin, so a core minor no longer forces every dependent package to a major.' } }
+              ] } }
+            ] } }
+          ] } },
+
+          // v1.0.1
+          { article: { className: 'changelog-entry', children: [
+            { div: { className: 'changelog-entry-header', children: [
+              { span: { className: 'changelog-version', text: 'v1.0.1' } },
+              { span: { className: 'changelog-date', text: '2026-07-30' } }
+            ] } },
+            { div: { className: 'changelog-changes', children: [
+              { h3: { text: 'Highlights' } },
+              { p: { text: 'Makes published type declarations match the runtime, and clears every open dependency advisory.' } },
+              { h3: { text: 'Fixed' } },
+              { ul: { children: [
+                { li: { text: '@coherent.js/forms is usable again. buildForm() returned the builder where its declaration promised a CoherentNode, so render(buildForm(config)) threw; the form element dropped action, method and name; and setAction, setMethod, build and render were declared but absent.' } },
+                { li: { text: 'Fields typed textarea and select rendered as <input type="textarea"> and <input type="select">, which are not valid controls. They are real textarea and select elements now.' } },
+                { li: { text: 'registerValidator() was a silent no-op: two modules export a const named validators, and the star export shadowed one, so registrations never reached the object consumers get.' } },
+                { li: { text: 'The same drift ran through eight more packages — seo.MetaBuilder, state.Observable, i18n.Translator, devtools.DevTools and forms.FormValidator all declared a different vocabulary than they implemented. CI now gates declarations against runtime exports.' } }
+              ] } }
+            ] } }
+          ] } },
+
+          // v1.0.0
+          { article: { className: 'changelog-entry', children: [
+            { div: { className: 'changelog-entry-header', children: [
+              { span: { className: 'changelog-version', text: 'v1.0.0' } },
+              { span: { className: 'changelog-date', text: '2026-07-29' } },
+              { span: { className: 'changelog-badge changelog-badge-initial', text: 'First Stable' } }
+            ] } },
+            { div: { className: 'changelog-changes', children: [
+              { h3: { text: 'Highlights' } },
+              { p: { text: 'First stable release, cut after building a production SSR site on rc.6 and repairing what that surfaced.' } },
+              { h3: { text: 'Fixed' } },
+              { ul: { children: [
+                { li: { text: 'Eleven defects found building a production SSR site on rc.6.' } },
+                { li: { text: 'clearAllContexts no longer leaks contexts across renders.' } },
+                { li: { text: 'Component access is forwarded through a Proxy, and trusted markers are reused rather than recreated.' } },
+                { li: { text: 'TypeScript project configs are referenced by file path.' } }
+              ] } }
+            ] } }
+          ] } },
+
           // v1.0.0-rc.6
           { article: { className: 'changelog-entry', children: [
             { div: { className: 'changelog-entry-header', children: [
               { span: { className: 'changelog-version', text: 'v1.0.0-rc.6' } },
-              { span: { className: 'changelog-date', text: '2026-07-20' } },
-              { span: { className: 'changelog-badge changelog-badge-current', text: 'Current' } }
+              { span: { className: 'changelog-date', text: '2026-07-20' } }
             ] } },
             { div: { className: 'changelog-changes', children: [
               { h3: { text: 'Highlights' } },
