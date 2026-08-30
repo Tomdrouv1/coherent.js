@@ -149,8 +149,10 @@ export class HybridVisualizer {
     const objectMatches = funcString.match(/\{/g);
     if (objectMatches) complexity += objectMatches.length;
 
-    // Count function calls
-    const functionMatches = funcString.match(/\w+\(/g);
+    // Count function calls. /\w\(/ counts the same occurrences as /\w+\(/ —
+    // one per '(' preceded by a word character — without the quadratic
+    // rescan on a long run of word characters. CodeQL js/polynomial-redos.
+    const functionMatches = funcString.match(/\w\(/g);
     if (functionMatches) complexity += functionMatches.length * 0.5;
 
     // Count conditional logic

@@ -249,10 +249,13 @@ export const customMatchers = {
   toBeValidHTML(received) {
     const html = received?.html || received;
     
-    // Basic HTML validation
-    const openTags = (html.match(/<[^/][^>]*>/g) || []).length;
-    const closeTags = (html.match(/<\/[^>]+>/g) || []).length;
-    const selfClosing = (html.match(/<[^>]+\/>/g) || []).length;
+    // Basic HTML validation. Excluding '<' from the inner classes stops a
+    // run of unclosed '<' from being rescanned at every position — 16,000
+    // of them took ~200ms per pattern. Counts are unchanged for markup,
+    // where a tag never contains '<'. CodeQL js/polynomial-redos.
+    const openTags = (html.match(/<[^/<>][^<>]*>/g) || []).length;
+    const closeTags = (html.match(/<\/[^<>]+>/g) || []).length;
+    const selfClosing = (html.match(/<[^<>]+\/>/g) || []).length;
     
     const pass = openTags === closeTags + selfClosing;
     

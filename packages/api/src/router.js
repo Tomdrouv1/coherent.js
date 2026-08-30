@@ -1364,7 +1364,11 @@ class SimpleRouter {
     }
 
     // Handle parameters with constraints and optional parameters
-    regexPattern = regexPattern.replace(/:([^(/]+)(\([^)]+\))?(\?)?/g, (match, paramName, constraint, optional, offset, fullString) => {
+    // The name class excludes ':' and the constraint class excludes '(' so
+    // neither can span the next parameter. With [^(/]+ and [^)]+ a pattern
+    // of many ":'(" re-split at every position: 16,000 took 301ms, 64,000
+    // took 4.7s. CodeQL js/polynomial-redos.
+    regexPattern = regexPattern.replace(/:([^(/:]+)(\([^()]*\))?(\?)?/g, (match, paramName, constraint, optional, offset, fullString) => {
       paramNames.push(paramName);
 
       // Check if there's already a slash before this parameter in the full string

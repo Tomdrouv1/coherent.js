@@ -14,6 +14,12 @@ import { errorOverlay } from './overlay.js';
 import { connectionIndicator } from './indicator.js';
 import { moduleTracker } from './module-tracker.js';
 
+/** Longest stack line worth parsing; real frames are far shorter. */
+const MAX_STACK_LINE_LENGTH = 1024;
+
+/** Most frames worth parsing; V8's default Error.stackTraceLimit is 10. */
+const MAX_STACK_LINES = 50;
+
 /**
  * Parse error stack to extract file/line info
  *
@@ -32,14 +38,20 @@ function parseErrorLocation(error) {
   // Firefox: "Function@file.js:10:5"
   // Safari: "file.js:10:5"
   const patterns = [
-    /at\s+.*?\((.+?):(\d+):(\d+)\)/,  // Chrome/Node with parens
-    /at\s+(.+?):(\d+):(\d+)/,          // Chrome/Node without parens
-    /@(.+?):(\d+):(\d+)/,              // Firefox
-    /^(.+?):(\d+):(\d+)/,              // Safari
+    /at\s[^(]*\(([^()]+):(\d+):(\d+)\)/,  // Chrome/Node with parens
+    /at\s+([^\s].*):(\d+):(\d+)/,          // Chrome/Node without parens
+    /@([^@]+):(\d+):(\d+)/,                // Firefox
+    /^(.+?):(\d+):(\d+)/,                  // Safari
   ];
 
-  const lines = error.stack.split('\n');
+  // These patterns scan from every "at" or "@" in a line, so an oversized
+  // line costs O(n^2): one 100,000-character line took 4.7s. Real frames are
+  // short, and V8 caps a stack at 10 frames by default, so bounding both
+  // makes the worst case constant without affecting any genuine stack.
+  // CodeQL js/polynomial-redos.
+  const lines = error.stack.split('\n', MAX_STACK_LINES);
   for (const line of lines) {
+    if (line.length > MAX_STACK_LINE_LENGTH) continue;
     for (const pattern of patterns) {
       const match = line.match(pattern);
       if (match) {
