@@ -273,6 +273,10 @@ const server = router.createServer({
 });
 ```
 
+The request's `Origin` is matched against the allowlist and echoed back on a
+match, together with `Vary: Origin` so caches do not serve one origin's
+response to another. An unlisted origin receives no CORS headers.
+
 ### Dynamic CORS
 
 ```javascript

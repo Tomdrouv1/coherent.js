@@ -706,16 +706,26 @@ Flexible CORS setup for cross-origin requests:
 const server = router.createServer({
   corsOrigin: 'https://yourdomain.com', // Single origin
   // or
-  corsOrigin: ['https://app.com', 'https://admin.com'], // Multiple origins
-  // or
-  corsOrigin: '*' // Allow all (not recommended for production)
+  corsOrigin: ['https://app.com', 'https://admin.com'], // Allowlist
 });
 ```
+
+`Access-Control-Allow-Credentials: true` is sent only when `corsOrigin` is
+set. Omit it and the router serves the development default
+(`http://localhost:3000`) without credentials.
+
+With an allowlist, the request's `Origin` is matched against it: a match is
+echoed back alongside `Vary: Origin`, and any other origin receives no CORS
+headers at all.
+
+`corsOrigin: '*'` throws. A wildcard origin cannot carry credentials — the
+browser rejects that combination — so list the origins you trust instead.
 
 ## Security Best Practices
 
 1. **Always validate input** - Use JSON Schema validation
-2. **Sanitize data** - Built-in sanitization prevents XSS
+2. **Escape on output** - Escape at render time (`@coherent.js/core` does this
+   for you); the router deliberately does not rewrite request bodies
 3. **Use HTTPS** - Deploy with SSL/TLS certificates
 4. **Configure CORS** - Set specific allowed origins
 5. **Implement authentication** - Use JWT tokens with expiration

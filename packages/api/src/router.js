@@ -133,19 +133,118 @@ function checkRateLimit(ip, windowMs = 60000, maxRequests = 100) {
 }
 
 /**
+ * Origin used when the caller has not configured `corsOrigin`.
+ * @private
+ */
+const DEFAULT_CORS_ORIGIN = 'http://localhost:3000';
+
+/**
+ * Normalise a `corsOrigin` option into a CORS policy.
+ *
+ * Credentials are only ever offered to an origin the caller named
+ * explicitly. Without that, `Access-Control-Allow-Credentials: true`
+ * alongside an origin we picked ourselves would invite any site that can
+ * influence the configured value to read authenticated responses.
+ *
+ * @private
+ * @param {string|string[]|null|undefined} corsOrigin - Configured origin(s)
+ * @returns {{origins: string[], allowCredentials: boolean, explicit: boolean}}
+ * @throws {TypeError} If an origin is not a non-empty string, or is '*'
+ */
+function resolveCorsPolicy(corsOrigin) {
+  if (corsOrigin === undefined || corsOrigin === null) {
+    return { origins: [DEFAULT_CORS_ORIGIN], allowCredentials: false, explicit: false };
+  }
+
+  const origins = Array.isArray(corsOrigin) ? corsOrigin : [corsOrigin];
+  if (origins.length === 0) {
+    throw new TypeError('corsOrigin must not be an empty array');
+  }
+
+  for (const origin of origins) {
+    if (typeof origin !== 'string' || origin === '') {
+      throw new TypeError(
+        `corsOrigin entries must be non-empty strings, received ${typeof origin}`
+      );
+    }
+    if (origin === '*') {
+      throw new TypeError(
+        "corsOrigin '*' cannot be combined with credentialed CORS. " +
+          'List the origins you trust, or omit corsOrigin to serve the ' +
+          'development default without credentials.'
+      );
+    }
+  }
+
+  return { origins, allowCredentials: true, explicit: true };
+}
+
+/**
+ * Append a field to the Vary header without clobbering existing entries.
+ * @private
+ */
+function addVary(res, field) {
+  const current = res.getHeader?.('Vary');
+  if (!current) {
+    res.setHeader('Vary', field);
+    return;
+  }
+  const fields = String(current)
+    .split(',')
+    .map(part => part.trim())
+    .filter(Boolean);
+  if (!fields.some(existing => existing.toLowerCase() === field.toLowerCase())) {
+    res.setHeader('Vary', [...fields, field].join(', '));
+  }
+}
+
+/**
+ * Apply CORS headers for a single request according to `policy`.
+ *
+ * With an explicit policy the request Origin is matched against the
+ * allowlist: a match is echoed back, anything else gets no CORS headers at
+ * all, so the browser refuses the response.
+ *
+ * @private
+ * @param {Object} req - HTTP request object
+ * @param {Object} res - HTTP response object
+ * @param {{origins: string[], allowCredentials: boolean, explicit: boolean}} policy
+ */
+function applyCorsHeaders(req, res, policy) {
+  const { origins, allowCredentials, explicit } = policy;
+
+  let allowedOrigin;
+  if (!explicit) {
+    // No configured origin: keep the historical development default, but
+    // never attach credentials to it.
+    allowedOrigin = origins[0];
+  } else {
+    addVary(res, 'Origin');
+    const requestOrigin = req.headers?.origin;
+    if (!requestOrigin) {
+      // Not a CORS request; advertise the primary configured origin.
+      allowedOrigin = origins[0];
+    } else if (origins.includes(requestOrigin)) {
+      allowedOrigin = requestOrigin;
+    } else {
+      return; // Untrusted origin: send nothing.
+    }
+  }
+
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (allowCredentials) {
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
+}
+
+/**
  * Add comprehensive security headers to HTTP response
  * @private
  * @param {Object} res - HTTP response object
- * @param {string|null} [corsOrigin=null] - CORS origin, defaults to localhost:3000
  */
-function addSecurityHeaders(res, corsOrigin = null) {
-  // CORS headers - configurable origin
-  const origin = corsOrigin || 'http://localhost:3000';
-  res.setHeader('Access-Control-Allow-Origin', origin);
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-
+function addSecurityHeaders(res) {
   // Security headers
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
@@ -425,6 +524,11 @@ class SimpleRouter {
     // Security header optimization options
     this.enableSecurityHeaders = options.enableSecurityHeaders !== false; // Default true for backward compatibility
     this.enableCORS = options.enableCORS !== false; // Default true for backward compatibility
+
+    // CORS policy. Resolved here so an invalid corsOrigin throws at
+    // construction rather than on the first request.
+    this.corsOriginRaw = options.corsOrigin;
+    this.corsPolicy = resolveCorsPolicy(options.corsOrigin);
 
     // Smart route matching optimization
     this.enableSmartRouting = options.enableSmartRouting !== false; // Default true
@@ -1509,6 +1613,19 @@ class SimpleRouter {
     };
   }
 
+  /**
+   * Resolve the CORS policy for a request, honouring a per-call override.
+   *
+   * @private
+   * @param {string|string[]|undefined} corsOrigin - Override from handle() options
+   * @returns {{origins: string[], allowCredentials: boolean, explicit: boolean}}
+   */
+  corsPolicyFor(corsOrigin) {
+    if (corsOrigin === undefined || corsOrigin === null) return this.corsPolicy;
+    if (corsOrigin === this.corsOriginRaw) return this.corsPolicy;
+    return resolveCorsPolicy(corsOrigin);
+  }
+
   async handle(req, res, options = {}) {
     const startTime = Date.now();
 
@@ -1521,14 +1638,11 @@ class SimpleRouter {
 
     // Add security headers conditionally for performance optimization
     if (this.enableSecurityHeaders) {
-      addSecurityHeaders(res, corsOrigin);
+      addSecurityHeaders(res);
+      applyCorsHeaders(req, res, this.corsPolicyFor(corsOrigin));
     } else if (this.enableCORS) {
       // Only add CORS headers if security headers are disabled but CORS is enabled
-      const origin = corsOrigin || 'http://localhost:3000';
-      res.setHeader('Access-Control-Allow-Origin', origin);
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      applyCorsHeaders(req, res, this.corsPolicyFor(corsOrigin));
     }
 
     // Handle preflight requests

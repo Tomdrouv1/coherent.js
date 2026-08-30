@@ -173,6 +173,16 @@ export interface RouterConfig {
   caseSensitive?: boolean;
   mergeParams?: boolean;
   strict?: boolean;
+  /**
+   * Origin, or allowlist of origins, permitted to make cross-origin requests.
+   *
+   * `Access-Control-Allow-Credentials: true` is sent only when this is set;
+   * omit it and the router serves the development default
+   * (`http://localhost:3000`) without credentials. A request whose `Origin`
+   * is not on the list receives no CORS headers. `'*'` throws, since it
+   * cannot be combined with credentials.
+   */
+  corsOrigin?: string | string[];
 }
 
 /** Options accepted when registering a route */
@@ -211,7 +221,8 @@ export interface ObjectRouter {
     req: IncomingMessage,
     res: ServerResponse,
     options?: {
-      corsOrigin?: string;
+      /** Overrides the router's configured CORS origin allowlist. */
+      corsOrigin?: string | string[];
       rateLimit?: { windowMs?: number; maxRequests?: number };
       maxBodySize?: number;
     }
