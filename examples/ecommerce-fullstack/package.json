@@ -20,7 +20,7 @@
   "devDependencies": {
     "@coherent.js/devtools": "workspace:*",
     "@coherent.js/cli": "workspace:*",
-    "vite": "^8.1.5",
+    "vite": "^7.3.6",
     "vitest": "^4.1.11"
   },
   "coherent": {
