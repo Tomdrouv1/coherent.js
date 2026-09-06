@@ -82,7 +82,7 @@
     "vscode-languageserver-textdocument": "1.0.14"
   },
   "devDependencies": {
-    "tsx": "4.23.12",
+    "tsx": "4.23.13",
     "vitest": "4.1.11"
   },
   "publishConfig": {
