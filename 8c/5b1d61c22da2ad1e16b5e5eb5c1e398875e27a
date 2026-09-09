@@ -1,0 +1,31 @@
+tsconfig.typecheck.json
+  s_11f4e93e71007b::t_33d4b16c05f6f5 10-11
+  s_11f4e93e71007b::t_b71617c36ed393 1-9,13-25
+  s_11f4e93e71007b::t_9ff0ab51b42d6e 12
+packages/tooling/tsconfig.json
+  s_11f4e93e71007b::t_92341acd98af9d 7
+packages/tooling/package.json
+  s_11f4e93e71007b::t_ebf1f312c180bd 85
+package.json
+  s_11f4e93e71007b::t_9ff0ab51b42d6e 51-52
+packages/integrations/tsconfig.json
+  s_11f4e93e71007b::t_664b2942ff18a8 9-20,31-38
+pnpm-lock.yaml
+  s_11f4e93e71007b::t_10dc9ae255ce71 444-446,5629,5631,5633,5635,5637,5639,5648,5650,5812,5814,5816,5818,5820,5822,5830,5832,6261,6459,6461,6463,6465,6467,6469,6471,6473,6578,6580,6582,6584,6586,6588,6590,6592,6594,6596,6598,6600,6608,6610,6879,7252,7345,7673,7681,7707,7726,7964,8372,8485,8631,8635,8677,9144,9191,9417,9569,9707,9898,9988,10018
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "8c5b1d61c22da2ad1e16b5e5eb5c1e398875e27a",
+  "prompts": {},
+  "sessions": {
+    "s_11f4e93e71007b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "65e50fed-d412-46ba-80c5-2c77e218f551",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Thomas Drouvin <thomas.drouvin@gmail.com>"
+    }
+  }
+}
