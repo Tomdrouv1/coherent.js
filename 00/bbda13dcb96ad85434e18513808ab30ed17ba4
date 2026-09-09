@@ -1,0 +1,19 @@
+.husky/pre-commit
+  s_11f4e93e71007b::t_833832c460b4ee 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "00bbda13dcb96ad85434e18513808ab30ed17ba4",
+  "prompts": {},
+  "sessions": {
+    "s_11f4e93e71007b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "65e50fed-d412-46ba-80c5-2c77e218f551",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Thomas Drouvin <thomas.drouvin@gmail.com>"
+    }
+  }
+}
