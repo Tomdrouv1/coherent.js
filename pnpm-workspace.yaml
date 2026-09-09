@@ -33,12 +33,13 @@ overrides:
   # vite server.fs.deny bypass — scope to the affected 7.0–7.3.1 line so the
   # already-safe 7.3.3 / 8.x resolutions are left untouched.
   'vite@>=7.0.0 <8.0.0': '^7.3.2'
-  # fastify request-handling DoS — fixed in 5.8.5 (stays on major 5).
-  fastify: '^5.8.5'
+  # fastify request-handling DoS, then unbounded header buffering — 5.12.1.
+  fastify: '^5.12.1'
   # find-my-way HTTP/2 DDoS — 9.6.1 was never published, 9.7.0 is the first fix.
   'find-my-way@<9.6.1': '^9.7.0'
-  # fast-uri ReDoS and host confusion via IDN/backslash — fixed in 3.1.5.
-  'fast-uri@>=3.0.0 <3.1.5': '^3.1.5'
+  # fast-uri ReDoS and host confusion via IDN/backslash — fixed in 3.1.6.
+  # Held on the 3.x line: ajv's peer range does not admit fast-uri 4.
+  'fast-uri@>=3.0.0 <3.1.6': '^3.1.6'
   # tmp arbitrary write via symlink — fixed in 0.2.6.
   tmp: '^0.2.6'
   # @remix-run/server-runtime advisory — fixed in 2.17.5 (stays on major 2).
@@ -52,15 +53,16 @@ overrides:
   # line already carries all three below 7.29.0.
   'undici@<6.28.0': '^6.28.0'
   'undici@>=7.0.0 <7.29.0': '^7.29.0'
-  # astro SSRF and three XSS advisories — only fixed on 7.x, within the
-  # `>=4.0.0` optional-peer range. Needs Node >=22.12.
-  'astro@>=4.0.0 <7.0.10': '^7.1.6'
+  # astro SSRF and XSS advisories — only fixed on 7.x, within the `>=4.0.0`
+  # optional-peer range. Needs Node >=22.12. 7.2.8 adds the latest critical.
+  'astro@>=4.0.0 <7.2.8': '^7.2.8'
   # form-data CRLF injection — fixed in 4.0.6 (via @vscode/vsce).
   'form-data@>=4.0.0 <4.0.6': '^4.0.6'
   # ws memory-exhaustion DoS from tiny fragments — fixed in 8.21.0.
   'ws@>=8.0.0 <8.21.0': '^8.21.0'
-  # qs stringify DoS on null entries in comma-format arrays — fixed in 6.15.2.
-  'qs@>=6.11.1 <6.15.2': '^6.15.2'
+  # qs stringify DoS on null entries in comma-format arrays, then prototype
+  # pollution in parse — the second only fixed in 6.16.0.
+  'qs@>=6.11.1 <6.16.0': '^6.16.0'
   # postcss XSS via unescaped </style> and source-map path traversal — 8.5.18.
   'postcss@>=8.0.0 <8.5.18': '^8.5.18'
   # nanoid custom generators loop indefinitely when size is zero — fixed in
@@ -69,13 +71,22 @@ overrides:
   # ip-address XSS in Address6, and Address4 decoding leading-zero octets as
   # decimal — fixed in 10.3.1.
   'ip-address@<=10.3.0': '^10.3.1'
-  # js-yaml quadratic-complexity DoS in merge-key handling — fixed in 3.15.0,
-  # then quadratic CPU consumption in !!omap resolution (CVE-2026-59870), whose
-  # fix landed separately on each line: 3.15.1 and 4.3.1.
-  'js-yaml@<3.15.1': '^3.15.1'
-  'js-yaml@>=4.0.0 <4.3.1': '^4.3.1'
+  # js-yaml quadratic-complexity DoS in merge-key handling, then quadratic CPU
+  # consumption in !!omap resolution (CVE-2026-59870), then a further DoS whose
+  # fix landed separately on each line: 3.15.2 and 4.3.2. Each pin stays inside
+  # the major its dependents ask for, so neither jumps to 5.x.
+  'js-yaml@<3.15.2': '^3.15.2'
+  'js-yaml@>=4.0.0 <4.3.2': '^4.3.2'
   # esbuild arbitrary file read from the dev server on Windows — fixed in 0.28.1.
   'esbuild@>=0.27.3 <0.28.1': '^0.28.1'
+  # browserslist ReDoS in query parsing and region-data path traversal — 4.28.7.
+  'browserslist@<4.28.7': '^4.28.7'
+  # baseline-browser-mapping prototype pollution when merging version data —
+  # fixed in 2.11.0. Reached only through browserslist.
+  'baseline-browser-mapping@<2.11.0': '^2.11.0'
+  # mysql2 RCE via crafted server packets, then SQL injection through unescaped
+  # identifiers — fixed in 3.22.0 and 3.23.1 respectively.
+  'mysql2@<3.23.1': '^3.23.1'
   # webpack buildHttp allowedUris bypasses (SSRF) — fixed in 5.104.1.
   'webpack@>=5.49.0 <5.104.1': '^5.104.1'
   # cookie accepts out-of-bounds characters in name/path/domain — fixed in 0.7.0.
@@ -86,17 +97,18 @@ overrides:
   # brace-expansion unbounded expansion DoS — no 1.x backport, and 5.0.8 still
   # ships a CommonJS entry, so minimatch@3 keeps working.
   'brace-expansion@<5.0.9': '^5.0.9'
-  # svgo removeScripts left executable script content in place — fixed in 4.0.2.
-  'svgo@>=4.0.0 <4.0.2': '^4.0.2'
+  # svgo removeScripts left executable script content in place, and a ReDoS in
+  # path-data parsing — the latter only fixed in 4.1.0.
+  'svgo@>=4.0.0 <4.1.0': '^4.1.0'
   # linkify-it quadratic-complexity DoS on `mailto:` links — fixed in 5.0.2.
   'linkify-it@<5.0.2': '^5.0.2'
   # body-parser DoS on invalid input — fixed in 2.3.0 (stays on major 2).
   'body-parser@>=2.0.0 <2.3.0': '^2.3.0'
-  # sharp inherited libvips CVEs — fixed in 0.35.0, reached via astro and next.
-  'sharp@<0.35.0': '^0.35.3'
-  # next App Router proxy bypass, three SSRFs, two DoS and cache confusion —
-  # all fixed in 16.2.11.
-  'next@>=16.0.0 <16.2.11': '^16.2.11'
+  # sharp inherited libvips/libheif CVEs — 0.35.4, reached via astro and next.
+  'sharp@<0.35.4': '^0.35.4'
+  # next App Router proxy bypass, SSRFs, DoS and cache confusion, then two
+  # further critical advisories — all fixed in 16.3.3.
+  'next@>=16.0.0 <16.3.3': '^16.3.3'
   # SvelteKit prototype pollution and remote form payload DoS — fixed in 2.69.1,
   # then O(n^2) ReDoS in Accept-header content negotiation — fixed in 2.70.2.
   # Capped below 2.70.3, which is newer than the minimumReleaseAge cutoff.
