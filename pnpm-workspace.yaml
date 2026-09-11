@@ -56,6 +56,10 @@ overrides:
   # astro SSRF and XSS advisories — only fixed on 7.x, within the `>=4.0.0`
   # optional-peer range. Needs Node >=22.12. 7.2.8 adds the latest critical.
   'astro@>=4.0.0 <7.2.8': '^7.2.8'
+  # smol-toml DoS on malformed TOML documents — fixed in 1.7.1. Reached only
+  # through astro, whose own `^1.6.0` range already admits the fix; pnpm was
+  # simply holding the 1.6.1 it first resolved.
+  'smol-toml@<1.7.1': '^1.7.1'
   # form-data CRLF injection — fixed in 4.0.6 (via @vscode/vsce).
   'form-data@>=4.0.0 <4.0.6': '^4.0.6'
   # ws memory-exhaustion DoS from tiny fragments — fixed in 8.21.0.
