@@ -261,8 +261,8 @@ importers:
         specifier: workspace:*
         version: link:../packages/state
       express:
-        specifier: ^5.0.0
-        version: 5.2.1(supports-color@8.1.1)
+        specifier: ^4.22.3
+        version: 4.22.3(supports-color@8.1.1)
 
   examples/ecommerce-fullstack:
     dependencies:
@@ -298,8 +298,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/seo
       express:
-        specifier: ^4.18.0
-        version: 4.22.2(supports-color@8.1.1)
+        specifier: ^4.22.3
+        version: 4.22.3(supports-color@8.1.1)
 
   packages/api:
     dependencies:
@@ -486,11 +486,11 @@ importers:
         specifier: workspace:*
         version: link:../packages/core
       express:
-        specifier: 5.2.1
-        version: 5.2.1(supports-color@8.1.1)
+        specifier: 4.22.3
+        version: 4.22.3(supports-color@8.1.1)
       express-rate-limit:
         specifier: 8.7.0
-        version: 8.7.0(express@5.2.1(supports-color@8.1.1))(supports-color@8.1.1)
+        version: 8.7.0(express@4.22.3(supports-color@8.1.1))(supports-color@8.1.1)
 
 packages:
 
@@ -3059,8 +3059,8 @@ packages:
     peerDependencies:
       express: '>= 4.11'
 
-  express@4.22.2:
-    resolution: {integrity: sha512-IuL+Elrou2ZvCFHs18/CIzy2Nzvo25nZ1/D2eIZlz7c+QUayAcYoiM2BthCjs+EBHVpjYjcuLDAiCWgeIX3X1Q==}
+  express@4.22.3:
+    resolution: {integrity: sha512-Bdcs4+3qlpVlx2NRn6fgX2Ue2/gGRaPeawebgclM0ERSCqDpA+owF1fdPwjJUTAJWMTuAaxjDf+hzb0/4eKvvw==}
     engines: {node: '>= 0.10.0'}
 
   express@5.2.1:
@@ -8109,15 +8109,15 @@ snapshots:
 
   expect-type@1.4.0: {}
 
-  express-rate-limit@8.7.0(express@5.2.1(supports-color@8.1.1))(supports-color@8.1.1):
+  express-rate-limit@8.7.0(express@4.22.3(supports-color@8.1.1))(supports-color@8.1.1):
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
-      express: 5.2.1(supports-color@8.1.1)
+      express: 4.22.3(supports-color@8.1.1)
       ip-address: 10.4.0
     transitivePeerDependencies:
       - supports-color
 
-  express@4.22.2(supports-color@8.1.1):
+  express@4.22.3(supports-color@8.1.1):
     dependencies:
       accepts: 1.3.8
       array-flatten: 1.1.1
@@ -9299,6 +9299,7 @@ snapshots:
   once@1.4.0:
     dependencies:
       wrappy: 1.0.2
+    optional: true
 
   onetime@7.0.0:
     dependencies:
@@ -10675,7 +10676,8 @@ snapshots:
       string-width: 7.2.0
       strip-ansi: 7.2.0
 
-  wrappy@1.0.2: {}
+  wrappy@1.0.2:
+    optional: true
 
   ws@8.21.3: {}
 
