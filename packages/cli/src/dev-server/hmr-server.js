@@ -88,8 +88,11 @@ export function createHmrServer(httpServer, options = {}) {
       }
     },
     close() {
+      // terminate(), not close(): close() waits up to 30s for the browser to
+      // answer the closing handshake, and a tab that doesn't (busy, or
+      // already reconnecting) held the dev server's shutdown that long.
       for (const client of wss.clients) {
-        try { client.close(); } catch { /* ignore */ }
+        try { client.terminate(); } catch { /* ignore */ }
       }
       wss.close();
     },

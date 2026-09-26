@@ -8,6 +8,7 @@
 
 import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
+import net from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { WebSocket } from 'ws';
@@ -103,5 +104,56 @@ describe('startDevServer (integration)', () => {
     });
     expect(['errored', 'closed', 'timeout']).toContain(result);
     try { ws.close(); } catch { /* ignore */ }
+  });
+
+  // Regression: close() closed WebSocket clients with a closing handshake
+  // that waits up to 30s for the browser, and left the HTTP server waiting
+  // for every open connection, so a tab that didn't answer (or a request
+  // still in flight) held shutdown, Ctrl-C in `coherent dev` included.
+  describe('close()', () => {
+    const connect = async (port) => {
+      const socket = net.connect(port, '127.0.0.1');
+      await new Promise((resolve) => socket.once('connect', resolve));
+      return socket;
+    };
+    const closesWithin = (ms) =>
+      Promise.race([
+        server.close().then(() => 'closed'),
+        new Promise((resolve) => setTimeout(() => resolve('still open'), ms))
+      ]);
+
+    test('does not wait for a WebSocket client that never answers the close frame', async () => {
+      server = await startDevServer({ root, port: 0, host: '127.0.0.1', open: false, log: false });
+      const socket = await connect(server.port);
+      socket.write(
+        'GET / HTTP/1.1\r\n' +
+          `Host: localhost:${server.port}\r\n` +
+          'Upgrade: websocket\r\nConnection: Upgrade\r\n' +
+          'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n' +
+          `Origin: http://localhost:${server.port}\r\n\r\n`
+      );
+      const response = await new Promise((resolve) => socket.once('data', (data) => resolve(String(data))));
+      expect(response).toMatch(/^HTTP\/1\.1 101/);
+
+      try {
+        expect(await closesWithin(2000)).toBe('closed');
+      } finally {
+        socket.destroy();
+        server = null;
+      }
+    });
+
+    test('does not wait for a request that is still in flight', async () => {
+      server = await startDevServer({ root, port: 0, host: '127.0.0.1', open: false, log: false });
+      const socket = await connect(server.port);
+      socket.write('GET /index.html HTTP/1.1\r\nHost: localhost\r\n');
+
+      try {
+        expect(await closesWithin(2000)).toBe('closed');
+      } finally {
+        socket.destroy();
+        server = null;
+      }
+    });
   });
 });

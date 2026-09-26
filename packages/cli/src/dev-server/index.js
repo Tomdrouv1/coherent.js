@@ -144,7 +144,13 @@ export async function startDevServer(options) {
     async close() {
       if (watcher) await watcher.close();
       if (hmrServer) hmrServer.close();
-      await new Promise((resolve) => httpServer.close(() => resolve()));
+      await new Promise((resolve) => {
+        httpServer.close(() => resolve());
+        // close() alone waits for every open connection: a request still
+        // in flight or a keep-alive socket a page kept using held shutdown
+        // (and the terminal after Ctrl-C) indefinitely.
+        httpServer.closeAllConnections();
+      });
     },
   };
 }
