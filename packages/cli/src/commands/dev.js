@@ -42,6 +42,16 @@ function shouldUseCoherentDevServer(cwd, options) {
   return existsSync(join(cwd, 'coherent.config.js')) || existsSync(join(cwd, 'coherent.config.mjs'));
 }
 
+/** Split a comma-separated option value into its trimmed, non-empty entries. */
+function splitList(value) {
+  return String(value).split(',').map((entry) => entry.trim()).filter(Boolean);
+}
+
+/** Commander parser for a comma-separated option that may also be repeated. */
+function collectList(value, previous = []) {
+  return [...previous, ...splitList(value)];
+}
+
 export const devCommand = new Command('dev')
   .description('Start development server with hot reload')
   .option('-p, --port <port>', 'port number', '3000')
@@ -50,6 +60,7 @@ export const devCommand = new Command('dev')
   .option('--no-hmr', 'disable hot module replacement')
   .option('--coherent', 'use the built-in Coherent HMR dev server (HTTP + WebSocket + chokidar)')
   .option('--allowed-hosts <hosts>', 'built-in server: comma-separated extra Host names to answer (besides localhost, IPs and --host)')
+  .option('--fs-allow <dirs>', 'built-in server: comma-separated extra directories files may be served from, relative to the project root (repeatable)', collectList)
   .action(async (options) => {
     console.log(picocolors.cyan('🚀 Starting Coherent.js development server...'));
     console.log();
@@ -79,9 +90,8 @@ export const devCommand = new Command('dev')
           open: false,
           log: true,
           hmr: options.hmr !== false,
-          allowedHosts: options.allowedHosts
-            ? options.allowedHosts.split(',').map((h) => h.trim()).filter(Boolean)
-            : [],
+          allowedHosts: options.allowedHosts ? splitList(options.allowedHosts) : [],
+          fsAllow: options.fsAllow ?? [],
         });
 
         const cleanup = async () => {

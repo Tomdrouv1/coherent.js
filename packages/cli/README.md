@@ -193,6 +193,7 @@ coherent dev --host 0.0.0.0 --open
 - `--no-hmr` - Disable hot module replacement
 - `--coherent` - Use the built-in dev server (HTTP + WebSocket HMR) instead of your `dev` script, Vite or webpack (a `coherent.config.js` / `coherent.config.mjs` also selects it)
 - `--allowed-hosts <hosts>` - Built-in server only: comma-separated extra `Host` names to answer. It answers `localhost`, IP addresses and `--host` by default, serves only files inside the project (or its workspace), and refuses dotfiles with `403`
+- `--fs-allow <dirs>` - Built-in server only: comma-separated extra directories it may serve files from, absolute or relative to the project root; repeat the flag to add more. By default it serves only files whose real path (after symlinks) is inside the project, the workspace that contains it, or a linked `node_modules` package, and answers `403` otherwise — use this when the project links in a directory from elsewhere, e.g. `coherent dev --coherent --fs-allow ../shared-assets`. Dotfiles stay refused
 
 ## 📁 Generated Project Structure
 
