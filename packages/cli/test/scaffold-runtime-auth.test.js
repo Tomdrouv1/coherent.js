@@ -5,7 +5,8 @@
  *    the generated authPlugin was encapsulated and its `authenticate`
  *    decorator was invisible to the auth routes;
  *  - fastify/koa auth replies such as `{ error }` or `{ user }` are single-key
- *    objects, which setupCoherent() renders as HTML components;
+ *    objects, which an auto-rendering setupCoherent() turned into HTML (the
+ *    generated apps now render explicitly and leave autoRender off);
  *  - the scaffold pinned a vitest major the repo does not use, `dev` did not
  *    reload, and the client hydration loader passed hydrate()'s arguments in
  *    the wrong order.
