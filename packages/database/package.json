@@ -1,6 +1,6 @@
 {
   "name": "@coherent.js/database",
-  "version": "2.0.0-rc.0",
+  "version": "2.0.0",
   "description": "Database utilities and adapters for Coherent.js",
   "type": "module",
   "main": "dist/index.js",

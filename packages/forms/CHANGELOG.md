@@ -1,5 +1,143 @@
 # @coherent.js/forms
 
+## 2.0.0
+
+### Major Changes
+
+- 490a4e2: Coherent.js 2.0: the fixes from a full audit of the framework, several of which change behavior callers rely on.
+  
+  The most likely to need changes in an application:
+  
+  - Component errors propagate out of `render()` (pass `onError` to replace a failing component).
+  - On Node, `provideContext()` throws outside `runWithContext()`: a value provided outside it leaked into the next request on the same connection.
+  - Framework adapters no longer render every response as HTML: use `res.coherent()` / `reply.coherent()` / `ctx.coherent()`, or `autoRender: true`.
+  - The api requires a JWT secret, and rate limiting keys on the socket address unless `trustProxy` is set.
+  - `Model.create()` applies `fillable` / `guarded`.
+  - The render cache is opt-in (`enableCache: true`).
+  
+  `docs/migration/upgrading-from-1.1.md` lists every behavior change with what to do about it; each package's CHANGELOG has the full list of fixes.
+
+### Minor Changes
+
+- 235034d: Add CSRF support.
+  
+  - New server-only subpath `@coherent.js/forms/csrf`: `createCsrfToken(secret,
+    sessionId)` issues a stateless token signed with HMAC-SHA256 over its issue
+    time, a random nonce and the session id; `verifyCsrfToken(token, secret,
+    sessionId, { maxAge })` returns `false` (never throws) for a missing,
+    malformed, forged, expired or other-session token, comparing in constant
+    time. It uses `node:crypto`, so it is not re-exported from the package root,
+    which stays browser-safe.
+  - `buildForm({ csrfToken })` renders the token as a hidden `_csrf` input, first
+    in the form (`csrfFieldName` renames it). `hydrateForm` submits it with the
+    other values.
+- 93bcd91: One `validators` registry and one calling convention across every entry point.
+  
+  `@coherent.js/forms` and `@coherent.js/forms/validators` exported two different
+  `validators` objects and two different `createValidator` functions: the root's
+  explicit export of the factory-style set (`validators.minLength(8)(value)`)
+  silently shadowed the direct-style set (`validators.minLength(value, { min: 8
+  })`) that the subpath exported. `validateForm` runs validators as `(value,
+  formData)`, so a root built-in listed uncalled came back as the error —
+  `validateForm({ name: 'Ada' }, { name: [validators.required] })` returned `{
+  name: [Function] }` — and `hydrateForm` mixed both conventions.
+  
+  Now the root, `/validation` and `/validators` export the same `validators` and
+  `createValidator`:
+  
+  - A **validator** is `(value, formData) => string | null`. Schemas,
+    `validateField`, `validateForm`, `FormBuilder` fields and `hydrateForm` all
+    run validators that way.
+  - Each built-in is a **factory** returning a validator:
+    `validators.required('Name please')`, `validators.minLength(8)`. A built-in
+    listed uncalled (`[validators.required]`) runs with its defaults, and a
+    string names a built-in or registered validator.
+  - The direct form still works when an options object is passed:
+    `validators.minLength('abc', { min: 5 })` returns the error.
+  - `createValidator(schema)` returns a `FormValidator`; `createValidator(fn,
+    message)` wraps a check function.
+  - The root now also has the built-ins that only the subpath had: `number`,
+    `integer`, `phone`, `date`, `alpha`, `alphanumeric`, `uppercase`, `match`,
+    `fileType`, `fileSize`, `fileExtension`, plus `get`, `compose`, `debounce`,
+    `cancellable`, `when` and `chain`.
+  
+  **Behavior change:**
+  
+  - On `@coherent.js/forms/validators`, a built-in called with one argument that
+    could be a message (a non-empty string, `undefined` or `null`) now returns a
+    validator instead of checking that value: `validators.email('a@b.c')` is a
+    validator. Pass an options object to check directly —
+    `validators.email('a@b.c', {})` — or call the validator:
+    `validators.email()('a@b.c')`.
+  - Default messages follow the root set (`'Invalid email address'`,
+    `'Minimum length is 8'`, …) on every entry point; the subpath used different
+    wording (`'Please enter a valid email address'`, `'Must be at least 8
+    characters'`).
+  - `validators.min()` / `max()` now pass an empty value (combine with
+    `required`) and fail a non-numeric one: `min(5)('')` was an error and
+    `min(5)('abc')` passed.
+- 4bbaeb3: Let a shared `FormBuilder` render per-request state without leaking it.
+  
+  A builder keeps `values`, `errors` and `touched` on the instance, so one created
+  once at module scope and filled per request rendered the previous user's
+  submitted values and errors into the next user's form (a plain GET after
+  someone else's failed POST showed their email address).
+  
+  - `form.fork()` returns a copy of the definition — fields, groups, options and
+    handlers — with fresh state. Fork the shared definition per request.
+  - `form.buildForm({ values, errors, touched })` renders that state for one
+    render only; the builder's own state is neither read nor changed. Values are
+    merged over the fields' default values, and fields with an error are shown
+    as touched unless `touched` is given.
+  
+  Existing single-use builders behave as before. The type docs describe the
+  per-request pattern.
+
+### Patch Changes
+
+- 5a150b5: Declare the peer dependencies packages actually use.
+  
+  - `@coherent.js/client`'s type declarations import `@coherent.js/core`; it is now a peer dependency.
+  - Drop peers nothing imports: `@coherent.js/core` from database, i18n and state, `@coherent.js/state` from forms, and `@remix-run/server-runtime` from integrations (the Remix adapter only needs React).
+- 868ef03: Support string validators with arguments, such as `'minLength:8'`.
+  
+  A string entry in a validator list was looked up as a whole registry name, so
+  `validators: ['required', 'minLength:8']` in a `FormBuilder` field silently
+  dropped `'minLength:8'`: the server accepted a 3-character password, and the
+  rule never reached `data-validators`, so `hydrateForm` did not enforce it
+  either. The same entry was ignored by `FormValidator` schemas, `validateField`
+  and `validateForm`.
+  
+  A built-in's name can now carry its arguments after a colon, mapped onto its
+  factory: `'minLength:8'` is `validators.minLength(8)`, `'min:18'`,
+  `'matches:password'`, `'oneOf:s,m,l'` (every value goes into the list),
+  `'pattern:^[a-z]{2,8}$'` (the whole remainder is the regular expression), and
+  an optional message after the parameter (`'minLength:8,Too short'`) or alone
+  for rules without one (`'required:Name please'`). These entries are enforced on
+  the server and rendered into `data-validators` exactly like the factory call,
+  so `hydrateForm` gives the same verdict and message. Unknown names and
+  arguments that do not fit the rule (`'minLength:abc'`) are still skipped;
+  registered validators are named without arguments.
+- db5428c: Make `hydrateForm` enforce the validators the server rendered.
+  
+  The builder wrote `data-validators` as each function's name, and
+  factory-built validators such as `validators.minLength(8)` are anonymous, so
+  they were all emitted as `custom` — which the client treated as always valid.
+  The client accepted a 3-character password that the server then rejected.
+  
+  `data-validators` is now a JSON array of `{ name, args }`
+  (`[{"name":"minLength","args":[8]}]`, regular expressions included), and
+  `hydrateForm` rebuilds each rule through the same factory, so both sides give
+  the same verdict and message. Built-ins listed uncalled and validators added
+  with `registerValidator` are described by name (register the same name in the
+  browser to enforce one there). Anonymous functions are no longer emitted as
+  `custom`; they are enforced on the server only. `hydrateForm` still reads the
+  older comma-separated attribute (`required,minLength:8`), which also works
+  again: a parametrised entry used to call the direct-style validator as a
+  factory and was dropped.
+  
+  **Behavior change:** the `data-validators` attribute value changed format.
+
 ## 2.0.0-rc.0
 
 ### Major Changes

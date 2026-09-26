@@ -6,9 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
-## [2.0.0-rc.0] - 2026-09-26
+## [2.0.0] - 2026-09-26
 
-Release candidate for 2.0.0, published under the `rc` tag: `npm install @coherent.js/core@rc`. The [upgrade guide](/docs/migration/upgrading-from-1.1.md) lists every breaking change and what to do about it.
+The [upgrade guide](/docs/migration/upgrading-from-1.1.md) lists every breaking change and what to do about it.
 
 ### Breaking changes
 
@@ -101,6 +101,10 @@ Release candidate for 2.0.0, published under the `rc` tag: `npm install @coheren
 - **seo:** JSON-LD and sitemap output is escaped.
 - **cli:** Scaffolded auth uses a random secret; the dev server refuses dotfiles, symlinks out of the project and foreign `Host` headers.
 - Parsing of select columns, routes, trailing slashes and tags is linear on crafted input.
+
+## [2.0.0-rc.0] - 2026-09-26
+
+Release candidate for 2.0.0, published under the `rc` tag. It contains the changes listed under 2.0.0.
 
 ## [1.1.2] - 2026-08-30
 

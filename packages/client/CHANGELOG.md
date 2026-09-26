@@ -1,5 +1,217 @@
 # @coherent.js/client
 
+## 2.0.0
+
+### Major Changes
+
+- 490a4e2: Coherent.js 2.0: the fixes from a full audit of the framework, several of which change behavior callers rely on.
+  
+  The most likely to need changes in an application:
+  
+  - Component errors propagate out of `render()` (pass `onError` to replace a failing component).
+  - On Node, `provideContext()` throws outside `runWithContext()`: a value provided outside it leaked into the next request on the same connection.
+  - Framework adapters no longer render every response as HTML: use `res.coherent()` / `reply.coherent()` / `ctx.coherent()`, or `autoRender: true`.
+  - The api requires a JWT secret, and rate limiting keys on the socket address unless `trustProxy` is set.
+  - `Model.create()` applies `fillable` / `guarded`.
+  - The render cache is opt-in (`enableCache: true`).
+  
+  `docs/migration/upgrading-from-1.1.md` lists every behavior change with what to do about it; each package's CHANGELOG has the full list of fixes.
+
+### Minor Changes
+
+- d867352: Make delegated events behave like DOM events.
+  
+  - **`preventDefault()` works.** Every delegated listener except `submit` was
+    registered `passive: true`, so `preventDefault()` in an `onClick`,
+    `onKeyDown` or `onChange` handler was silently ignored — an SPA link still
+    navigated. Listeners are now non-passive, except for the scroll-blocking
+    `touchstart`, `touchmove`, `wheel` and `scroll`.
+  - **Every event type works.** Only nine types were listened for, so
+    `onDoubleClick`, `onMouseEnter`, `onPointerDown` and the like received a
+    `data-coherent-*` attribute but never fired. `hydrate()` now registers a
+    document listener for each type a component uses (new
+    `EventDelegation#listen(type)`); `onDoubleClick` maps to `dblclick`.
+    Non-bubbling events such as `mouseenter` only run the handler on their own
+    target.
+  - **Handlers bubble.** Only the nearest element with a handler ran. Handlers
+    now run from the target outwards through every ancestor that has one, until
+    a handler calls `stopPropagation()`. The wrapped event also exposes `type`,
+    `currentTarget`, `defaultPrevented` and `stopImmediatePropagation()`.
+  
+  **Behavior change:** a click inside nested elements that both have `onClick`
+  now runs both handlers, innermost first; call `event.stopPropagation()` to keep
+  the old nearest-only behaviour.
+- 0b81f55: Make `setState()` / `rerender()` actually patch the DOM, without leaking handlers.
+  
+  The re-render patcher only walked the children that already existed and wrote
+  every prop with `setAttribute(String(value))`. It now diffs the previous
+  virtual tree against the next one:
+  
+  - children are added, removed and replaced, so a list that grows from one item
+    to three, or empties, is rendered; when every sibling has a `key`, children
+    are matched by key and their DOM nodes (and focus) are kept
+  - attribute values follow core's renderer: `style` objects become
+    `color: red; font-size: 12px`, function values are called, `true` is a bare
+    attribute and `false`/`null`/`undefined` remove it; `key` and `html` are
+    never attributes, and `html` updates the element's content
+  - `value`, `checked` and `selected` are also written to the element's
+    properties, so a field the user edited follows the state
+  - `event.state`, `event.props` and `event.component` are populated for
+    handlers bound by `hydrate()` (they were always `null`)
+  
+  Handlers no longer leak: each re-render releases the previous render's handler
+  ids (1000 `setState()` calls left 1001 registry entries) and removes
+  `data-coherent-*` attributes whose handler went away.
+  
+  **Behavior change:** `unmount()` is terminal — `setState()` and `rerender()`
+  on an unmounted component do nothing. Hydrating a container that is already
+  hydrated unmounts the previous hydration first, instead of binding a second
+  set of handlers. `value`/`checked`/`selected` props are controlled: a
+  re-render resets a field to the value its props give.
+- f741e60: Connect the router to the browser.
+  
+  `createRouter()` accepted `mode` and `base` but never touched the URL: it made
+  no `pushState` calls, listened to neither `popstate` nor link clicks, and only
+  matched paths registered verbatim, so `/users/:id` never matched `/users/42`.
+  
+  - Routes may contain `:param` segments and end in `/*`; the current route
+    carries `params`, `query`, `hash` and `fullPath`.
+  - `push()` / `replace()` write browser history (`pushState` / `replaceState`),
+    honouring `base` in history mode and using the hash in `mode: 'hash'`.
+  - New `start()` navigates to the current location, follows back/forward
+    (`popstate`, or `hashchange` in hash mode) and intercepts clicks on
+    same-origin links to registered routes (`interceptLinks: false` opts out);
+    `stop()` detaches. Nothing is attached before `start()`, so importing the
+    router has no side effects.
+  - `beforeEnter` / `beforeLeave` guards, declared in the types but never called,
+    now run; returning `false` cancels the navigation.
+  
+  **Behavior change:** the last navigation wins — a slow `push('/slow')` that
+  resolves after a later `push('/fast')` now resolves `false` instead of
+  replacing it. `back()` goes back through history: calling it twice after
+  `/a → /b → /c` ends on `/a` instead of bouncing between `/b` and `/c`;
+  `forward()` works without a browser too. A saved scroll position is restored
+  on back/forward only, not on every visit to a path.
+
+### Patch Changes
+
+- 7fcba08: Fix the HMR client.
+  
+  - A changed module without an `accept` handler got neither an update nor a
+    reload: the fallback imported `../hydration.js`, which no longer exists, and
+    swallowed the failure. Such modules now trigger `location.reload()`.
+  - `disconnect()` scheduled a reconnect from the closed socket's own `close`
+    event. Events from a socket that was disconnected or replaced are ignored.
+  - Every overlay `show()` added a keydown listener while `hide()` removed one,
+    so Escape handlers piled up; there is now one per visible overlay.
+  - The form-state capturer keyed radios by name and type only, so a whole group
+    collapsed onto one entry and restoring it wiped the selection. Radios and
+    checkboxes sharing a name are now told apart by value.
+  - The tracked `fetch()` of a hot context replaced the caller's `AbortSignal`;
+    the caller's signal and module disposal now both abort the request.
+  - **Behavior change:** the `@coherent.js/client/hmr` entry point threw a 1.0
+    migration error on import although `package.json` exports it with types. It
+    now exports the HMR API (`hmrClient`, `createHotContext`, ...); importing it
+    still does not connect — call `hmrClient.initialize()`.
+  
+  The stale `src/hydration.d.ts`, which described the removed legacy hydration
+  API and was referenced by nothing, is deleted.
+- 06e869b: Bind hydrated handlers to the element that rendered them.
+  
+  `hydrate()` paired a component's children with DOM nodes by raw array index,
+  so anything the server does not render as an element — a `null` from a
+  conditional, a string, a nested array, a `text` prop, raw HTML — shifted every
+  following element. With `children: [null, deleteButton, saveButton]`, clicking
+  Save ran the delete handler. Children are now reduced to what the server
+  emitted (null, undefined and booleans dropped, arrays flattened, zero-argument
+  function components called, adjacent strings merged, whitespace-only text
+  ignored) and elements are paired with element nodes only; elements after raw
+  HTML are paired from the end.
+  
+  The mismatch detector uses the same normalisation, so identical server and
+  client output no longer reports `children_count` and `text` mismatches, and a
+  `null` or `false` attribute value is expected to be absent rather than the
+  string `"null"`.
+- aa47255: Stop production hydration from walking the DOM for mismatches.
+  
+  The client build replaced `process.env.NODE_ENV` with the build machine's
+  value — unset, so `'development'` — which baked `detectMismatch = true` into
+  the published bundle: every production `hydrate()` compared the whole server
+  DOM and logged warnings. `process.env.NODE_ENV` is now left in the bundle for
+  the application's bundler to replace, and read at runtime (a page without
+  `process` counts as production).
+  
+  **Behavior change:** mismatch detection defaults to off unless
+  `process.env.NODE_ENV === 'development'`, `detectMismatch: true` is passed, or
+  `strict` / `onMismatch` is given (both imply it). It used to default to on for
+  anything but `'production'`, including test runs.
+- 8c3e073: Don't fail hash navigations for want of a DOM.
+  
+  - **Fixed:** navigating to a path with a `#hash` scrolled with `document.querySelector(hash)` after the route was committed; without a DOM that threw, and `push()` returned `false` although the route had changed. Scrolling is skipped without a DOM, and hash targets are found with `getElementById`, which also works for ids that aren't valid selectors (`#123`).
+- b28a3cb: Read component trees the way the server renders them.
+  
+  - **Fixed:** an object with several tag keys, such as `{ span: { text: 'label' }, button: { text: 'Go', onclick } }`, renders on the server as sibling elements, but `hydrate()` and the patcher read only its first key. Every following element shifted by one: clicking the button ran the next element's handler, and a re-render dropped the button. Each key is now its own element, in key order. Objects with a key that is not a tag name (`{ my_tag: ... }`) render nothing on the client either, and `lazy()` values render what they evaluate to, as on the server.
+  - **Fixed:** re-renders wrote `className: ['btn', active && 'active']` as `class="btn,false"` and `className: { active: true }` as `class="[object Object]"`, ignored `class` when `className` was also given, and removed `aria-*` attributes and `spellcheck`, `draggable` and `contenteditable` set to `false`. They now produce what the server renders: `class="btn"`, `class="active"`, one merged class attribute, and `aria-hidden="false"` / `spellcheck="false"`.
+  - **Fixed:** `text: null` rendered the string "null" on the client, both when creating elements and when patching (`text: 'Save'` → `text: null` wrote "null" into the button). It now renders no text, as on the server.
+  - **Fixed:** mismatch detection (in development, with `strict` or with `onMismatch`) reported mismatches for these trees although the server and client output were identical, and `strict: true` threw for them.
+- edbb55b: Make the client's TypeScript declarations and README describe the real API.
+  
+  - `wrapEvent` was declared as `(eventType, handler) => { handlerId }`; it takes
+    a native event, the handler's element and a component reference, and returns
+    the wrapped event, now typed as `CoherentEvent`.
+  - Delegated handlers (`EventHandler`, `ClickHandler`, ..., `StateAwareHandler`)
+    were typed as `(event, element, data)` / `(event, state, setState)`; they
+    receive one `CoherentEvent` carrying `originalEvent`, `state`, `setState` and
+    `props`.
+  - `serializeState` / `serializeStateWithWarning` / `deserializeState` return
+    `null` when there is nothing to (de)serialize; `HydrationMismatch.type` lists
+    the values the detector reports (`tagName`, `children_count`,
+    `missing_dom_child`, `extra_dom_child`, ...) and `domPath`.
+  - `HydrationOptions` only lists options `hydrate()` reads; `timeout`,
+    `onError`, `validators` and the rest type-checked but did nothing.
+  - The HMR classes are declared as the classes they are, and some 400 lines of
+    declarations for APIs that never existed at runtime (`autoHydrate`,
+    `registerComponent`, `createStateManager`, `EventManager`, performance
+    monitor, `hmrClient.onUpdate`, `cleanupTracker.trackTimer`, ...) are removed.
+    **Behavior change:** code that referenced those phantom types no longer
+    compiles.
+  - The router types are re-exported from `@coherent.js/client/router` instead
+    of a diverging copy.
+  
+  The README no longer documents `hydrateComponent`, `autoHydrate`,
+  `registerEventHandler` or `createClientRouter`, none of which exist.
+- 7da1e24: Fix attribute and content values core rendered wrongly (and keep the client in step).
+  
+  - **Fixed:** `htmlFor` was written as `htmlFor="x"`, which browsers read as an unknown `htmlfor` attribute: labels, including those in forms generated by `coherent generate page`, were not associated with their controls. It is now written as `for`.
+  - **Fixed:** style values that are `null`, `undefined` or `false` (`{ color: active && 'red' }`) rendered as `color: false`; they are now left out, and an empty style object no longer writes `style=""`.
+  - **Fixed:** custom properties lost their case (`--mainColor` became `--main-color`, a different property).
+  - **Fixed:** a `text` function returning `null`/`undefined`, and `html: null`, rendered the string `null`. They now render nothing (`html: null` falls back to `text`/`children`), and a `text` function returning `dangerouslySetInnerContent()` is emitted verbatim.
+  - **Fixed:** with both `class` and `className`, a function value was joined into the class as its source code; it is now called first.
+- 1b4a351: Call function components without arguments, whatever their arity.
+  
+  - **Behavior change:** a function child that declares a parameter used to receive a render callback returning an HTML string, which was then escaped (double-escaped context providers), and `({ name }) => …` children destructured their props from that callback. Every function component is now called with no arguments, on the server, inside error boundaries, and when `@coherent.js/client` pairs virtual nodes with the DOM.
+  - The client recognizes trusted content by the same symbol brand as core.
+  - Types: `className` / `class` accept arrays and `{ name: condition }` objects, and `onClick` / `onSubmit` handlers may take the event.
+- 5a150b5: Declare the peer dependencies packages actually use.
+  
+  - `@coherent.js/client`'s type declarations import `@coherent.js/core`; it is now a peer dependency.
+  - Drop peers nothing imports: `@coherent.js/core` from database, i18n and state, `@coherent.js/state` from forms, and `@remix-run/server-runtime` from integrations (the Remix adapter only needs React).
+- 6bf0d21: Fix inputs that made parsing take seconds, a log format string built from the request, and a case-sensitive `<script>` match (found by CodeQL).
+  
+  - **Fixed (database):** a select column such as `'a'` followed by 50,000 spaces took about two seconds to validate (the `AS alias` pattern backtracked quadratically), so one request that passes column names through could hold the event loop. Parsing is now linear.
+  - **Fixed (api):** the 5xx log line put the request URL inside `console.error`'s format string, so a `%s` or `%o` in the URL consumed the error argument. The URL is now an argument. The router's `prefix` is trimmed of trailing slashes in linear time.
+  - **Fixed (client):** the router's `base` is trimmed of trailing slashes in linear time.
+  - **Fixed (tooling):** `toHaveText` / `toContainText` strip tags in linear time (`'<'` repeated 50,000 times took about two seconds).
+  - **Fixed (integrations):** the SvelteKit preprocessor now finds an instance script written `<SCRIPT>`; it used to add a second one.
+- 16a6e7b: Revert an `error` → `_error` identifier rename that leaked into strings and object keys.
+  
+  - Error events are listened for again: `pool.on('error')` (pg), the API router's `req`/`socket` `'error'` handlers, the CLI dev server's child-process `'error'`, and devtools' `window` `'error'`. Before, an idle PostgreSQL client error or a WebSocket client reset was an uncaught exception.
+  - `DatabaseManager` emits `'error'` only when a listener is attached; the failure still surfaces through the rejected `connect()` promise.
+  - JSON error responses from `@coherent.js/api`, the framework adapters, and the scaffolded API/JSON-RPC code use `error` instead of `_error` (JSON-RPC requires `error`). **Behavior change:** clients that read `body._error` must read `body.error`.
+  - Messages, CSS classes (`component-error`, `error-message`), log levels, event types and the generated `.gitignore` (`yarn-error.log*`) are spelled correctly again; the CLI's load-failure fallback no longer crashes on `console._error`.
+  
+  `withLoading`'s documented `_loading` / `_error` state keys are unchanged. An ESLint rule now rejects `_error` inside strings, template text and object keys in `packages/*/src` and `packages/*/bin`.
+
 ## 2.0.0-rc.0
 
 ### Major Changes

@@ -1,5 +1,90 @@
 # @coherent.js/devtools
 
+## 2.0.0
+
+### Major Changes
+
+- 490a4e2: Coherent.js 2.0: the fixes from a full audit of the framework, several of which change behavior callers rely on.
+  
+  The most likely to need changes in an application:
+  
+  - Component errors propagate out of `render()` (pass `onError` to replace a failing component).
+  - On Node, `provideContext()` throws outside `runWithContext()`: a value provided outside it leaked into the next request on the same connection.
+  - Framework adapters no longer render every response as HTML: use `res.coherent()` / `reply.coherent()` / `ctx.coherent()`, or `autoRender: true`.
+  - The api requires a JWT secret, and rate limiting keys on the socket address unless `trustProxy` is set.
+  - `Model.create()` applies `fillable` / `guarded`.
+  - The render cache is opt-in (`enableCache: true`).
+  
+  `docs/migration/upgrading-from-1.1.md` lists every behavior change with what to do about it; each package's CHANGELOG has the full list of fixes.
+
+### Minor Changes
+
+- 2a96153: Make `DevTools` safe to construct and stop it hijacking the process.
+  
+  **Behavior change:**
+  
+  - `createDevTools()` with no arguments no longer throws, and
+    `createDevTools(coherent)` with the core module namespace
+    (`import * as coherent from '@coherent.js/core'`) no longer throws
+    "Cannot assign to read only property 'render'". DevTools no longer
+    monkey-patches `render`/`createComponent` on the instance: render through
+    `devtools.render(component, context?, options?)` and
+    `devtools.createComponent(config)`, which record timings, warnings and
+    registrations. The constructor takes a second `options` argument
+    (`enabled`, `maxEntries`, `captureConsoleErrors`,
+    `trackUnhandledRejections`, `hotReloadUrl`, `globalHelpers`).
+  - No `unhandledRejection` listener is installed by default. With
+    `trackUnhandledRejections: true` the rejection is recorded and then rethrown
+    (unless another listener handles it), so the process still crashes as it
+    would without DevTools. `reject(undefined)` no longer crashes inside the
+    handler.
+  - The `SIGINT` handler that printed a summary and called `process.exit()` is
+    gone; call `devtools.printDevSummary()` yourself.
+  - `warnings` and `errors` keep at most `maxEntries` (default 100) entries.
+  - In the browser, `?dev=true` no longer enables DevTools on a non-localhost
+    host; pass `{ enabled: true }` explicitly.
+  - The hot-reload WebSocket is only opened to an explicit `hotReloadUrl` (it
+    always tried `ws://localhost:3001/coherent-dev`). The Node "hot reload"
+    (`require`-based, never functional under ESM) is removed.
+  - New `devtools.destroy()` removes the global helpers, the `console.error`
+    hook, listeners, the socket and the browser panel.
+- 2ac52cb: Make the profiler measure accurately and stay bounded.
+  
+  **Behavior change:**
+  
+  - Profilers are disabled by default: `createProfiler()` / `new PerformanceProfiler()`
+    record nothing until constructed with `{ enabled: true }` or `enable()` is
+    called. `measure()` without a profiler and `profile()` without one use an
+    enabled profiler of their own. (The `@coherent.js/cli` devtools scaffold now
+    creates its profiler with `enabled: process.env.NODE_ENV !== 'production'`.)
+  - Timings use `performance.now()` instead of `Date.now()`: sub-millisecond
+    renders no longer all measure 0 or 1 ms. `startTime`/`endTime`/mark
+    timestamps are therefore relative to the time origin, not epoch
+    milliseconds. `memoryDelta` is the change in used heap bytes (it was `NaN`),
+    or `null` where heap usage is unavailable.
+  - `endRender()` honours `maxSamples` (it only applied to sessions), and a
+    session's own measurement and mark lists are capped the same way.
+  - The profiler clears the marks and measures it adds to the global
+    `performance` timeline once measured, and `profiler.mark()` no longer adds
+    global marks, so long-running processes stop accumulating timeline entries.
+  - `profile(fn, profilerOrOptions?)` now records every call (sync or async,
+    including throws) on `wrapped.profiler`; it used to return a wrapper that
+    recorded nothing.
+  - `measure()` rejects with the `Error` the function threw (non-`Error` values
+    are wrapped, with the original as `cause`), carrying a `duration` property,
+    instead of a plain `{ error, duration }` object.
+
+### Patch Changes
+
+- 16a6e7b: Revert an `error` → `_error` identifier rename that leaked into strings and object keys.
+  
+  - Error events are listened for again: `pool.on('error')` (pg), the API router's `req`/`socket` `'error'` handlers, the CLI dev server's child-process `'error'`, and devtools' `window` `'error'`. Before, an idle PostgreSQL client error or a WebSocket client reset was an uncaught exception.
+  - `DatabaseManager` emits `'error'` only when a listener is attached; the failure still surfaces through the rejected `connect()` promise.
+  - JSON error responses from `@coherent.js/api`, the framework adapters, and the scaffolded API/JSON-RPC code use `error` instead of `_error` (JSON-RPC requires `error`). **Behavior change:** clients that read `body._error` must read `body.error`.
+  - Messages, CSS classes (`component-error`, `error-message`), log levels, event types and the generated `.gitignore` (`yarn-error.log*`) are spelled correctly again; the CLI's load-failure fallback no longer crashes on `console._error`.
+  
+  `withLoading`'s documented `_loading` / `_error` state keys are unchanged. An ESLint rule now rejects `_error` inside strings, template text and object keys in `packages/*/src` and `packages/*/bin`.
+
 ## 2.0.0-rc.0
 
 ### Major Changes
