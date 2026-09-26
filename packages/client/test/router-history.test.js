@@ -103,6 +103,17 @@ describe('history API', () => {
     expect(browser.entries.map((u) => u.pathname + u.search)).toEqual(['/app/', '/app/a', '/app/b']);
   });
 
+  // /\/+$/ trimmed the base in quadratic time on input like '////…x'.
+  it('trims trailing slashes from the base in linear time', async () => {
+    const started = performance.now();
+    makeRouter({ base: `${'/'.repeat(50_000)}x` });
+    expect(performance.now() - started).toBeLessThan(250);
+
+    const router = makeRouter({ base: '/app///' });
+    await router.push('/a');
+    expect(browser.entries.map((u) => u.pathname).at(-1)).toBe('/app/a');
+  });
+
   it('uses the hash in hash mode', async () => {
     const router = makeRouter({ mode: 'hash' });
 

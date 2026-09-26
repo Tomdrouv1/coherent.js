@@ -65,6 +65,17 @@ describe('runtime matches the declared API', () => {
     expect(ran).toEqual([]);
   });
 
+  // /\/+$/ trimmed the prefix in quadratic time on input like '////…x'.
+  it('trims trailing slashes from `prefix`, in linear time', async () => {
+    const started = performance.now();
+    createRouter({}, { prefix: `${'/'.repeat(50_000)}x` });
+    expect(performance.now() - started).toBeLessThan(250);
+
+    const router = createRouter({ ping: { GET: () => ({ pong: true }) } }, { prefix: '/v2///' });
+    server = await startServer(router);
+    expect((await request(`${server.base}/v2/ping`)).json).toEqual({ pong: true });
+  });
+
   it('exports generateJWT and verifyToken from the package root', () => {
     const token = generateJWT({ sub: 3 }, '1h', 'root-secret');
 

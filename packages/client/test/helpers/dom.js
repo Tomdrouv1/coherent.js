@@ -744,7 +744,8 @@ export function parseHTML(html, doc) {
   const root = new ShimFragment(doc);
   const stack = [root];
   const current = () => stack[stack.length - 1];
-  const tagRe = /<!--([\s\S]*?)-->|<!doctype[^>]*>|<\/([a-zA-Z][\w-]*)\s*>|<([a-zA-Z][\w-]*)((?:\s+[^\s"'>/=]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?)*)\s*(\/?)>/gi;
+  // `--!>` also ends a comment in HTML.
+  const tagRe = /<!--([\s\S]*?)--!?>|<!doctype[^>]*>|<\/([a-zA-Z][\w-]*)\s*>|<([a-zA-Z][\w-]*)((?:\s+[^\s"'>/=]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?)*)\s*(\/?)>/gi;
   const attrRe = /([^\s"'>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
   let last = 0;
   let match;

@@ -76,7 +76,9 @@ function isModuleScript(attributes) {
  * without newlines so the component's line numbers do not move.
  */
 function injectRenderImport(code) {
-  for (const match of code.matchAll(/<script\b([^>]*)>/g)) {
+  // Case-insensitive like HTML: an instance script written <SCRIPT> was
+  // missed, and a second instance script was added next to it.
+  for (const match of code.matchAll(/<script\b([^>]*)>/gi)) {
     if (!isModuleScript(match[1])) {
       const at = match.index + match[0].length;
       return `${code.slice(0, at)}${RENDER_IMPORT}${code.slice(at)}`;

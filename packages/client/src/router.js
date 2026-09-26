@@ -86,8 +86,11 @@ export function createRouter(options = {}) {
     ...options
   };
 
-  // '/app/' and '/app' mean the same base; '/' means none
-  const base = opts.base.replace(/\/+$/, '');
+  // '/app/' and '/app' mean the same base; '/' means none. Trimmed with a
+  // loop: /\/+$/ is quadratic on input like '////…x'.
+  let baseEnd = opts.base.length;
+  while (baseEnd > 0 && opts.base[baseEnd - 1] === '/') baseEnd--;
+  const base = opts.base.slice(0, baseEnd);
 
   // Ensure nested defaults are preserved
   opts.prefetch = {

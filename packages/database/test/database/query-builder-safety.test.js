@@ -76,6 +76,20 @@ describe('query builder: SQL injection through identifiers and clauses', () => {
     await expect(sqlFor({ table: 'users', select: { a: 'name AS b' } })).rejects.toThrow('Invalid select column for alias');
   });
 
+  // Regression: the alias pattern /^(.+?)\s+AS\s+…$/ let `.+?` and `\s+`
+  // both claim a run of spaces, so one column from a request ('a' plus
+  // 50,000 spaces) held the event loop for about two seconds.
+  it('parses select columns in linear time', async () => {
+    const started = performance.now();
+    await expect(sqlFor({ table: 'users', select: [`a${' '.repeat(50_000)}!`] })).rejects.toThrow('Invalid select column');
+    await expect(sqlFor({ table: 'users', select: [`a${' AS'.repeat(20_000)} x!`] })).rejects.toThrow('Invalid select column');
+    expect(performance.now() - started).toBeLessThan(250);
+
+    expect((await sqlFor({ table: 'users', select: ['name  AS  full_name', 'a.b as c'] })).sql)
+      .toBe('SELECT name AS full_name, a.b AS c FROM users');
+    await expect(sqlFor({ table: 'users', select: ['a AS b AS c'] })).rejects.toThrow('Invalid select column');
+  });
+
   it('rejects join types and conditions that are not column comparisons', async () => {
     await expect(sqlFor({
       table: 'users',

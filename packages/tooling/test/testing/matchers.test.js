@@ -75,6 +75,15 @@ describe('matchers on renderComponent() output', () => {
     expect(renderComponent({ span: { text: 'Hello' } })).not.toHaveText('Hell');
   });
 
+  // /<[^>]*>/g rescanned the rest of the input from every '<' without a
+  // '>': about two seconds on 50 KB.
+  it('toHaveText reads hostile markup in linear time', () => {
+    const started = performance.now();
+    expect('<'.repeat(200_000)).toHaveText('<'.repeat(200_000));
+    expect('<a <b>x</b>').toHaveText('x');
+    expect(performance.now() - started).toBeLessThan(250);
+  });
+
   it('toHaveClass matches whole class tokens of the element', () => {
     const result = card();
     expect(result).toHaveClass('card');

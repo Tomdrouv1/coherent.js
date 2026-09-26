@@ -39,7 +39,10 @@ const IDENTIFIER = new RegExp(`^${IDENTIFIER_SOURCE}$`);
 const ALIAS = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const TABLE_STAR = /^[A-Za-z_][A-Za-z0-9_]*\.\*$/;
 const AGGREGATE = new RegExp(`^(?:COUNT|SUM|AVG|MIN|MAX)\\(\\s*(?:DISTINCT\\s+)?(?:\\*|${IDENTIFIER_SOURCE})\\s*\\)$`, 'i');
-const SELECT_ALIAS = /^(.+?)\s+AS\s+([A-Za-z_][A-Za-z0-9_]*)$/i;
+// `<expression> AS <alias>` at the end of a column. Unanchored at the start
+// on purpose: /^(.+?)\s+AS\s+…$/ let `.+?` and `\s+` both claim a run of
+// spaces, which took seconds on a column like 'a' followed by 50,000 spaces.
+const SELECT_ALIAS = /\sAS\s+([A-Za-z_][A-Za-z0-9_]*)$/i;
 const COMPARISON = `${IDENTIFIER_SOURCE}\\s*(?:=|<>|!=|<=|>=|<|>)\\s*${IDENTIFIER_SOURCE}`;
 const JOIN_CONDITION = new RegExp(`^${COMPARISON}(?:\\s+AND\\s+${COMPARISON})*$`, 'i');
 const JOIN_TYPES = new Set(['INNER', 'LEFT', 'RIGHT', 'FULL', 'CROSS', 'LEFT OUTER', 'RIGHT OUTER', 'FULL OUTER']);
@@ -221,7 +224,7 @@ function formatSelectColumn(column) {
 
   const trimmed = column.trim();
   const aliased = SELECT_ALIAS.exec(trimmed);
-  const expression = aliased ? aliased[1].trim() : trimmed;
+  const expression = aliased ? trimmed.slice(0, aliased.index).trim() : trimmed;
 
   const valid = expression === '*' ||
     TABLE_STAR.test(expression) ||
@@ -236,7 +239,7 @@ function formatSelectColumn(column) {
     );
   }
 
-  return aliased ? `${expression} AS ${aliased[2]}` : expression;
+  return aliased ? `${expression} AS ${aliased[1]}` : expression;
 }
 
 function buildColumnList(select) {

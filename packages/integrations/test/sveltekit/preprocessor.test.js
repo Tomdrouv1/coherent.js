@@ -37,6 +37,13 @@ describe('SvelteKit preprocessor output', () => {
     ].join('\n'));
   });
 
+  // Tag names are case-insensitive: an instance script written <SCRIPT> was
+  // missed, and a second instance script was added in front of it.
+  it('finds an instance script whatever the case of its tag', () => {
+    expect(preprocessMarkup("<SCRIPT>let a = 1;</SCRIPT><coherent>{ p: {} }</coherent>"))
+      .toBe(`<SCRIPT>${IMPORT}let a = 1;</SCRIPT>{@html __coherentRender({ p: {} })}`);
+  });
+
   it('adds an instance script when the component has none (or only a module script)', () => {
     expect(preprocessMarkup('<coherent>{ p: {} }</coherent>'))
       .toBe(`<script>${IMPORT}</script>{@html __coherentRender({ p: {} })}`);
@@ -113,8 +120,14 @@ describe('SvelteKit preprocessor with the Svelte compiler', () => {
       throw new Error(`rendering the compiled component failed:\n${error.stderr}`);
     }
 
-    // Drop Svelte's hydration markers (<!--[-->, <!--hash-->, ...).
-    const html = stdout.replace(/<!--.*?-->/g, '');
+    // Drop Svelte's hydration markers (<!--[-->, <!--hash-->, ...), until
+    // none are left.
+    let html = stdout;
+    let previous;
+    do {
+      previous = html;
+      html = html.replace(/<!--[\s\S]*?-->/g, '');
+    } while (html !== previous);
     expect(html).toBe('<main><div class="greeting">Hi &lt;b&gt;</div></main>');
   }, 60_000);
 });

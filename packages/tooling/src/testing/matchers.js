@@ -59,7 +59,26 @@ function textOf(received) {
   }
   const html = htmlOf(received);
   if (html === null) return null;
-  return decodeEntities(html.replace(/<[^>]*>/g, ''));
+  return decodeEntities(stripTags(html));
+}
+
+/**
+ * Remove tags (`<...>`) in one linear pass; a `<` with no `>` after it stays.
+ * /<[^>]*>/g rescans the rest of the input from every `<` when no `>`
+ * follows: seconds on '<<<<…' of 50 KB.
+ */
+function stripTags(html) {
+  let out = '';
+  let cursor = 0;
+  while (cursor < html.length) {
+    const open = html.indexOf('<', cursor);
+    if (open === -1) break;
+    const close = html.indexOf('>', open + 1);
+    if (close === -1) break;
+    out += html.slice(cursor, open);
+    cursor = close + 1;
+  }
+  return out + html.slice(cursor);
 }
 
 const isSpace = (ch) => ch === ' ' || ch === '\n' || ch === '\t' || ch === '\r' || ch === '\f';

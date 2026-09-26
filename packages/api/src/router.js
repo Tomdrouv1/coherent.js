@@ -200,6 +200,18 @@ function shouldExposeErrors(exposeErrors) {
 }
 
 /**
+ * Remove trailing slashes in linear time (/\/+$/ is quadratic on input
+ * like '////…x').
+ * @param {string} path
+ * @returns {string}
+ */
+function trimTrailingSlashes(path) {
+  let end = path.length;
+  while (end > 0 && path[end - 1] === '/') end--;
+  return path.slice(0, end);
+}
+
+/**
  * Answer a request whose middleware or handler threw.
  *
  * Client errors (an `ApiError` with a 4xx `statusCode`, such as the
@@ -221,8 +233,13 @@ function sendError(req, res, error, exposeErrors) {
   const status = errorStatus(error);
 
   if (status >= 500) {
+    // Request data goes in as arguments, never into the format string: a URL
+    // containing %s or %o consumed the error argument and garbled the log.
     console.error(
-      `[coherent.js/api] ${req?.method ?? ''} ${req?.url ?? ''} failed with ${status}:`,
+      '[coherent.js/api] %s %s failed with %d:',
+      req?.method ?? '',
+      req?.url ?? '',
+      status,
       error?.cause ?? error
     );
   }
@@ -1044,7 +1061,7 @@ class SimpleRouter {
     // protected nothing.
     if (typeof options.prefix === 'string' && options.prefix !== '' && options.prefix !== '/') {
       const prefix = options.prefix.startsWith('/') ? options.prefix : `/${options.prefix}`;
-      this.routeGroups.push({ prefix: prefix.replace(/\/+$/, ''), middleware: [] });
+      this.routeGroups.push({ prefix: trimTrailingSlashes(prefix), middleware: [] });
     }
     if (options.middleware) {
       const configured = Array.isArray(options.middleware) ? options.middleware : [options.middleware];

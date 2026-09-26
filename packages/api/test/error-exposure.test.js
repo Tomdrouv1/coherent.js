@@ -63,7 +63,15 @@ describe('5xx responses do not leak internal error messages', () => {
     expect(res.status).toBe(500);
     expect(res.json).toEqual({ error: 'Internal Server Error' });
     expect(res.text).not.toContain('ECONNREFUSED');
-    expect(logged).toHaveBeenCalledWith(expect.stringContaining('GET /boom'), expect.objectContaining({ message: INTERNAL }));
+    // Request data is passed as arguments, never inside the format string,
+    // where a '%s' in the URL consumed the error argument.
+    expect(logged).toHaveBeenCalledWith(
+      '[coherent.js/api] %s %s failed with %d:',
+      'GET',
+      '/boom',
+      500,
+      expect.objectContaining({ message: INTERNAL })
+    );
   });
 
   it('answers a generic message and logs the real error (object routes)', async () => {
@@ -75,7 +83,13 @@ describe('5xx responses do not leak internal error messages', () => {
 
     expect(res.status).toBe(500);
     expect(res.json).toEqual({ error: 'Internal Server Error' });
-    expect(logged).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ message: INTERNAL }));
+    expect(logged).toHaveBeenCalledWith(
+      '[coherent.js/api] %s %s failed with %d:',
+      'GET',
+      '/api/users',
+      500,
+      expect.objectContaining({ message: INTERNAL })
+    );
   });
 
   it('uses the status text for other 5xx ApiErrors', async () => {
