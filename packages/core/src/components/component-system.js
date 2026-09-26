@@ -2171,7 +2171,9 @@ function createStateContainer(initialState, options) {
         storageKey,
         storage,
         reducer,
-        middleware,
+        // Defaulted here: withStateUtils.shared() passes {}, and spreading
+        // an undefined middleware list threw "middleware is not iterable".
+        middleware = [],
         validator,
         onStateChange,
         debug
