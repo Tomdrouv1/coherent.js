@@ -49,7 +49,10 @@ export function renderWithTemplate(component, options = {}) {
   } = options;
 
   const html = renderWithMonitoring(component, options);
-  return template.replace('{{content}}', html);
+  // Replacer function, not string: a string replacement expands `$&`, `$'`,
+  // `` $` `` and `$$`, so page text like "Pay $$10" would be corrupted and
+  // "$'" would splice the rest of the template into the page.
+  return template.replace('{{content}}', () => html);
 }
 
 /**
