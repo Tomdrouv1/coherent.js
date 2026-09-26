@@ -39,13 +39,6 @@ export default [
                 URLSearchParams: 'readonly',
                 WebSocket: 'readonly',
                 Response: 'readonly',
-                globalCache: 'readonly',
-                isStaticElement: 'readonly',
-                // Universal/shared globals
-                renderToStream: 'readonly',
-                DatabaseManager: 'readonly',
-                context: 'readonly',
-                path: 'readonly',
                 // Browser globals (for universal code)
                 window: 'readonly',
                 document: 'readonly',
@@ -138,10 +131,6 @@ export default [
                 cancelAnimationFrame: 'readonly',
                 location: 'readonly',
                 Node: 'readonly',
-                path: 'readonly',
-                context: 'readonly',
-                renderToStream: 'readonly',
-                DatabaseManager: 'readonly',
                 // HMR-related browser APIs
                 fetch: 'readonly',
                 AbortController: 'readonly',
