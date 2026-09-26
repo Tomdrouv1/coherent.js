@@ -94,6 +94,21 @@ function stripUnsafeKeys(value) {
 }
 
 /**
+ * Whether a response has already been started or finished.
+ *
+ * Middleware such as `withAuth` or `withRole` rejects a request by writing a
+ * 401/403 itself and returning nothing, so "did it return something" cannot
+ * tell the chain to stop. The response state can.
+ *
+ * @private
+ * @param {Object} res - HTTP response object
+ * @returns {boolean} True once headers are sent or the response has ended
+ */
+function responseStarted(res) {
+  return Boolean(res && (res.headersSent || res.writableEnded));
+}
+
+/**
  * Rate limiting store
  * @private
  */
@@ -431,10 +446,15 @@ function registerRoute(method, config, router, path) {
       let result = null;
       for (const fn of chain) {
         result = await fn(req, res);
+        // A middleware that wrote its own response (401, 403, 400...) has
+        // rejected the request: nothing after it may run.
+        if (responseStarted(res)) return;
         if (result && typeof result === 'object') {
           break;
         }
       }
+
+      if (responseStarted(res)) return;
 
       if (result && typeof result === 'object') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -444,6 +464,7 @@ function registerRoute(method, config, router, path) {
         res.end();
       }
     } catch (_error) {
+      if (responseStarted(res)) return;
       const statusCode = _error.statusCode || 500;
       res.writeHead(statusCode, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: _error.message }));
@@ -1798,17 +1819,33 @@ class SimpleRouter {
       }
 
       try {
-        // Execute middleware chain
-        if (matchedRoute.route.middleware && matchedRoute.route.middleware.length > 0) {
-          for (const middleware of matchedRoute.route.middleware) {
-            const result = await middleware(req, res);
-            if (result) break; // Middleware handled response
+        // Execute middleware chain. A middleware that has written a response
+        // (withAuth's 401, withRole's 403, withInputValidation's 400) has
+        // rejected the request, so the handler must not run after it.
+        const { route } = matchedRoute;
+        let result;
+        let handled = false;
+        if (route.middleware && route.middleware.length > 0) {
+          for (const middleware of route.middleware) {
+            const outcome = await middleware(req, res);
+            if (responseStarted(res)) {
+              handled = true;
+              break;
+            }
+            if (outcome && (typeof outcome === 'object' || typeof outcome === 'string')) {
+              // Middleware returned the response body itself.
+              result = outcome;
+              handled = true;
+              break;
+            }
+            if (outcome) break; // Skip the remaining middleware
           }
         }
 
         // Execute handler
-        const { route } = matchedRoute;
-        const result = await route.handler(req, res);
+        if (!handled) {
+          result = await route.handler(req, res);
+        }
 
         // Only write response if handler returned data and response hasn't been sent
         if (result && !res.headersSent) {
