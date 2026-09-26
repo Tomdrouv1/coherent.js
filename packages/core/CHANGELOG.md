@@ -1,5 +1,131 @@
 # @coherent.js/core
 
+## 2.0.0
+
+### Major Changes
+
+- 490a4e2: Coherent.js 2.0: the fixes from a full audit of the framework, several of which change behavior callers rely on.
+  
+  The most likely to need changes in an application:
+  
+  - Component errors propagate out of `render()` (pass `onError` to replace a failing component).
+  - On Node, `provideContext()` throws outside `runWithContext()`: a value provided outside it leaked into the next request on the same connection.
+  - Framework adapters no longer render every response as HTML: use `res.coherent()` / `reply.coherent()` / `ctx.coherent()`, or `autoRender: true`.
+  - The api requires a JWT secret, and rate limiting keys on the socket address unless `trustProxy` is set.
+  - `Model.create()` applies `fillable` / `guarded`.
+  - The render cache is opt-in (`enableCache: true`).
+  
+  `docs/migration/upgrading-from-1.1.md` lists every behavior change with what to do about it; each package's CHANGELOG has the full list of fixes.
+
+### Minor Changes
+
+- 0b8c6e2: Stop swallowing component errors; make error boundaries per-request on the server.
+  
+  - **Behavior change:** a function component that throws no longer renders as nothing. The error now propagates out of `render()` (as a `RenderingError` with `renderPath` and the original error as `cause`), so frameworks answer 500 instead of serving a partial page with a 200. To keep rendering, pass `onError: (error, { path }) => replacement` — return `null` to omit the component as before, or a fallback element.
+  - **Fixed:** error boundaries only caught errors thrown while calling the wrapped component itself; nested function components ran later in the renderer and escaped. Zero-argument function components inside a boundary are now evaluated within it.
+  - **Fixed:** on the server, a boundary kept its error state across calls, so one failed request made every later request render the fallback, and it retained that request's props. Server-side calls now start from a clean state; the stateful behavior (`resetKeys`, `maxErrors`, `resetTimeout`) still applies in the browser.
+  - **Fixed:** `createAsyncErrorBoundary` left its timeout timer running after the component resolved, keeping the process alive for `timeout` ms per call.
+- e69a230: Stop leaking server-side event handlers into a global registry.
+  
+  - **Fixed (memory leak):** every function-valued `on*` prop was stored in `global.__coherentActionRegistry` under a `Date.now()` + `Math.random()` id and never removed — 50,000 renders kept 50,000 closures (and whatever request data they captured). Nothing read the registry: the id pointed at server memory the browser never sees, and `@coherent.js/client`'s `hydrate()` attaches handlers from the component tree.
+  - **Fixed:** the random ids made two renders of the same component produce different HTML, which defeated ETags, HTML caching and hydration comparisons.
+  - **Behavior change:** function-valued `on*` props now render no attribute (previously `data-action="__coherent_action_…" data-event="…"`). Inline string handlers (`onclick: 'history.back()'`) and hand-written `data-action` attributes for the event bus are unchanged.
+- e250e32: Make the render cache opt-in and correct.
+  
+  - **Fixed:** rendering a string-shorthand element (`{ span: 'hello' }`, `{ title: 'My page' }`) poisoned the shared cache — `get`/`set` were called with swapped arguments — so every later `render()` in the process returned `undefined` (or a page lost its `<body>`).
+  - **Fixed (security):** the cache key left out any prop whose name didn't look like a tag name (`data_id`, `x-on:click`, `@click`, `xlink:href`), so different elements shared an entry and one request could be served another request's HTML.
+  - **Fixed:** the cache never evicted (it re-sorted the whole map on every insert past 1,000 entries) and counted statistics under an unbounded set of keys, so render time and memory grew with every distinct render — a 240-node page went from 13 ms to 530 ms after 150 renders.
+  - **Behavior change:** `enableCache` now defaults to `false`. When enabled, one entry is stored per whole render, keyed on the complete component tree; trees containing functions, class instances or Dates are never cached. Pass `cache: createCacheManager({ maxCacheSize, ttlMs })` for a dedicated cache; `cacheSize` is deprecated and ignored (it always was).
+  - `createCacheManager` evicts least-recently-used entries in O(1), accepts `maxSize` as an alias for `maxCacheSize`, supports a per-entry `ttlMs`, counts keys toward the memory budget, and `clear(type)` only releases that type's memory. Its type declarations now describe the real API.
+  - `precompileComponent` no longer throws `ReferenceError: isStaticElement is not defined`.
+- 5a3a6c2: Fix value rendering, CSS scoping, monitoring and a few leaks.
+  
+  - **Behavior change:** booleans in `children` render nothing, so `cond && { li: ... }` works (it printed `false`). `text: false` still prints `false`; `text: null` now renders empty instead of `null`.
+  - `className` accepts arrays and objects (`['btn', cond && 'active']`, `{ active: cond }`) instead of printing `a,b` / `[object Object]`; `class` and `className` together are merged into one attribute; `aria-*`, `spellcheck`, `draggable` and `contenteditable` write `"false"` instead of dropping the attribute.
+  - **Behavior change:** scoped CSS (`scoped` / `encapsulate`) derives its `coh-…` id from the component's CSS, so a component renders the same HTML every time (it was `coh-0`, `coh-1`… from a global counter). Rules inside `@media`, `@supports`, `@container` and `@layer` are scoped; `@keyframes`, `@font-face` and other at-rules are left intact (they were corrupted into `@media (max-width[coh-3]: 600px)`); `render(Fn, { scoped: true })` is now scoped.
+  - **Fixed:** `render(c, { enableMonitoring: true })` and `renderWithTiming()` always threw `performanceMonitor.recordError is not a function`; the monitor now implements `recordRender` / `recordError`, and `endRender()` records into `renderTime`.
+  - **Fixed (security):** `CSSManager.escapeHtml` was a no-op, so `generateCSSLinks` wrote hrefs unescaped (`"><script>` broke out); inline styles can no longer close their `<style>` element.
+  - **Fixed:** `memoize()` / `ComponentCache` started an un-`unref`'d cleanup interval, so scripts, CLIs and static builds that used it never exited.
+- 6829455: Rebuild and export `renderToStream`.
+  
+  - **New export:** `renderToStream(component, options)` (and `streamingUtils`) from `@coherent.js/core`. It was documented but not exported, and the implementation behind it disagreed with `render()` in every case tested.
+  - The stream now shares its element serialization with `render()`, so the output is identical by construction. The old streamer HTML-escaped `<script>` bodies, dropped children next to `text`, emitted `key="…"`, rendered `{ td: 42 }` as empty, wrote `<br />`, and skipped tag-name validation (`{ 'img src=x onerror=alert(1)': {} }` became a live `<img>`).
+  - It really streams: large elements are emitted child by child and the event loop gets a turn after every chunk (the old yield check never fired, so a 1.4 MB page blocked the loop for its whole render and time-to-first-byte equaled a buffered render). On a 10,000-row page over HTTP: first byte after ~20 ms instead of ~80–100 ms; total time is higher (~175 ms vs ~80 ms) because other work runs between chunks.
+  - **Behavior change:** errors propagate out of the iteration instead of being written into an HTML comment (unescaped, with `-->` injectable) and ending as a truncated 200; `onError` works as in `render()`. `streamingUtils.streamToResponse` respects backpressure, aborts the response on error, and no longer sets `Transfer-Encoding` by hand.
+  - **Behavior change:** `render()` renders every key of a multi-key object as siblings (`{ h1: …, p: … }`), as the streamer did; it used to drop every key after the first silently.
+- 7abfb53: Close two XSS vectors in the renderer.
+  
+  - **Fixed (security):** attribute names were emitted unescaped, so `{ div: { 'onmouseover="alert(1)" x': 'y' } }` rendered a live event handler and a key containing `>` broke out of the tag — easy to hit when spreading request data into props. **Behavior change:** rendering an element whose attribute name contains whitespace, quotes, `<`, `>`, `/`, `=` or control characters now throws. Names like `data-*`, `aria-*`, `x-on:click`, `@click`, `:class` and `xlink:href` are unaffected. New export: `isValidAttributeName(name)`.
+  - **Fixed (security):** `isTrustedContent()` recognized any object with `__trusted: true` and a string `__html`, so a JSON request body could smuggle raw HTML into `text` or `children`. Markers from `dangerouslySetInnerContent()` now carry a non-enumerable `Symbol.for('coherent.js.trustedContent')` brand and are frozen; plain objects, including JSON and spread copies, are never trusted. Code that builds `{ __html, __trusted: true }` objects by hand must call `dangerouslySetInnerContent()` instead.
+
+### Patch Changes
+
+- 85898bd: Render `lazy()` values and reject Promises explicitly.
+  
+  - **Fixed:** a `lazy()` value in a tree rendered as nothing unless `evaluateLazy()` ran first; the renderer now evaluates it.
+  - **Behavior change:** an async component or a Promise in a tree rendered as an empty string without any signal; `render()` now throws `Cannot render a Promise at <path>: render() is synchronous`. Await async components and their data before rendering.
+- 7da1e24: Fix attribute and content values core rendered wrongly (and keep the client in step).
+  
+  - **Fixed:** `htmlFor` was written as `htmlFor="x"`, which browsers read as an unknown `htmlfor` attribute: labels, including those in forms generated by `coherent generate page`, were not associated with their controls. It is now written as `for`.
+  - **Fixed:** style values that are `null`, `undefined` or `false` (`{ color: active && 'red' }`) rendered as `color: false`; they are now left out, and an empty style object no longer writes `style=""`.
+  - **Fixed:** custom properties lost their case (`--mainColor` became `--main-color`, a different property).
+  - **Fixed:** a `text` function returning `null`/`undefined`, and `html: null`, rendered the string `null`. They now render nothing (`html: null` falls back to `text`/`children`), and a `text` function returning `dangerouslySetInnerContent()` is emitted verbatim.
+  - **Fixed:** with both `class` and `className`, a function value was joined into the class as its source code; it is now called first.
+- ccff8e7: Render the children of elements whose prop names don't look like tag names.
+  
+  - **Fixed:** the renderer decided whether an element had children with `hasChildren()`, which first validates every prop name against the tag-name pattern. An element with a prop such as `@click`, `x-on:click`, `:class`, `xlink:href` or `data_id` therefore rendered with no children at all — `<button @click="save()"></button>` instead of `<button @click="save()"><span>Save</span></button>`.
+- b21610a: Make scoped event buses and `withEventBus` work.
+  
+  - **Fixed:** `EventBus#createScope()` was declared in the types and called by `withEventBus({ scope })` and `emitEvent(name, { scope })`, but didn't exist, so any scoped usage threw `createScope is not a function`. It now returns a view whose event and action names are prefixed with `scope:`; `eventSystem.createScope` is available too.
+  - **Fixed:** `withEventBus` attached `__eventBusCleanup` as an enumerable key, so the element failed component validation and never rendered. It is now non-enumerable.
+  - **Fixed (memory leak):** on the server, every render of a `withEventBus` component added its listeners and actions to the global bus permanently (the bus then warned on every render once past 100). Listeners and actions are only registered in a browser now.
+- 1b4a351: Call function components without arguments, whatever their arity.
+  
+  - **Behavior change:** a function child that declares a parameter used to receive a render callback returning an HTML string, which was then escaped (double-escaped context providers), and `({ name }) => …` children destructured their props from that callback. Every function component is now called with no arguments, on the server, inside error boundaries, and when `@coherent.js/client` pairs virtual nodes with the DOM.
+  - The client recognizes trusted content by the same symbol brand as core.
+  - Types: `className` / `class` accept arrays and `{ name: condition }` objects, and `onClick` / `onSubmit` handlers may take the event.
+- cd2cb30: Give every `memo()` its own cache.
+  
+  - **Fixed (security):** `memo` from `@coherent.js/core` kept one module-level Map keyed only by props, so `UserCard({ id: 1 })` could return `AdminPanel({ id: 1 })`'s output. Each memoized function now owns a bounded LRU cache.
+  - **Fixed:** props differing only in a callback (`onSelect`) no longer share a key; falsy results are cached; the `ttl` strategy checks expiry on read instead of starting a timer per entry (which kept the process alive); the `weak` strategy keys on the first argument's identity instead of throwing; arguments that can't be serialized (circular, BigInt) are passed through uncached.
+  - `memo(fn, keyFn)` keeps working; `memo(fn, { keyFn, maxSize, strategy, ttl, stats, onHit, onMiss, onEvict })` — the signature the type declarations always described — now works too. The never-implemented `compareFn` / `shallow` options were removed from the types.
+- 606bb86: Render `onError`'s replacement in place of an element whose content function throws.
+  
+  - **Fixed:** for `{ div: () => { throw ... } }`, the component returned by `render()`'s `onError` option was used as the `<div>`'s props, so the fallback came out as `<div p="[object Object]"></div>`. It now replaces the whole element, in `render()` and `renderToStream()` alike, as it already did for function components in `children`.
+- e011f27: Make rendering 2–5× faster without changing its output.
+  
+  Render paths are linked lists formatted only when an error or warning needs them (copying an array per node and formatting a string per child made rendering quadratic in depth); HTML nesting is checked against the forbidden-children table before any path is formatted; `escapeHtml` does one pass and returns untouched strings without allocating; `isVoidElement` no longer allocates a Set per call; `performance.now()` is only called when monitoring is on; element props are no longer copied to strip `children`/`text`/`key`/`html`; already-flat children arrays aren't re-allocated.
+  
+  Measured with the new `pnpm perf:render` benchmark (Node 22, median of 3 rounds): a ~300-node page 0.52 → 0.22 ms, a 1,000×5 table 12.4 → 4.9 ms, a 90-level tree 0.34 → 0.06 ms. `formatAttributes(props, skip)` accepts an optional set of prop names to leave out.
+- 14af368: Allow the same object to appear more than once in a component tree.
+  
+  - **Fixed:** cycle detection added every rendered object to a set and never removed it, so reusing an element, a props object or a children array — or rendering the same `memo()` result twice on a page — threw "Circular reference detected". Only the current ancestor path is tracked now; real cycles, including an array that contains itself, are still reported.
+- 11c154f: Make `withStateUtils.shared()` usable.
+  
+  - **Fixed:** it threw `middleware is not iterable` as soon as it was called, because the state container it created received no middleware list.
+  - Note that a shared container is process-wide by design: on a server it is shared by every request, so keep per-request data in props.
+- b89b3c6: Stop `streamingUtils.streamToResponse()` hanging when the client disconnects.
+  
+  - **Fixed:** when the socket was full, it waited for `'drain'` only. A client that disconnected (closed tab, timeout, network drop) never drains, so the returned promise never settled and the suspended render kept the whole page tree in memory for good. It now also listens for `'close'` / `'error'`, closes the chunk generator and resolves with the bytes written so far.
+- b3666cd: Make `renderToStream()` honour `minify` and `maxDepth` like `render()`.
+  
+  - **Fixed:** `renderToStream(tree, { minify: true })` ignored `minify`, so the stream differed from `render()`. Streamed output is now minified incrementally and matches `render(tree, { minify: true })` exactly, whatever the `chunkSize`.
+  - **Fixed:** very deeply nested arrays overflowed the call stack (`RangeError`) instead of reporting `Maximum render depth exceeded`: the input check recursed through nested arrays without a bound (in `render()` too), and streaming did not check the depth of arrays and function results.
+- 35376a7: `renderWithTemplate` no longer corrupts pages containing `$` sequences. It
+  inserted the rendered HTML with `String.prototype.replace(placeholder, html)`,
+  which expands replacement patterns, so user text such as `Pay $$10` lost a
+  dollar sign and `` $` `` / `$'` spliced the template's own markup into the
+  page. This affected every Express, Fastify, Koa and Next.js response rendered
+  through a template.
+- 16a6e7b: Revert an `error` → `_error` identifier rename that leaked into strings and object keys.
+  
+  - Error events are listened for again: `pool.on('error')` (pg), the API router's `req`/`socket` `'error'` handlers, the CLI dev server's child-process `'error'`, and devtools' `window` `'error'`. Before, an idle PostgreSQL client error or a WebSocket client reset was an uncaught exception.
+  - `DatabaseManager` emits `'error'` only when a listener is attached; the failure still surfaces through the rejected `connect()` promise.
+  - JSON error responses from `@coherent.js/api`, the framework adapters, and the scaffolded API/JSON-RPC code use `error` instead of `_error` (JSON-RPC requires `error`). **Behavior change:** clients that read `body._error` must read `body.error`.
+  - Messages, CSS classes (`component-error`, `error-message`), log levels, event types and the generated `.gitignore` (`yarn-error.log*`) are spelled correctly again; the CLI's load-failure fallback no longer crashes on `console._error`.
+  
+  `withLoading`'s documented `_loading` / `_error` state keys are unchanged. An ESLint rule now rejects `_error` inside strings, template text and object keys in `packages/*/src` and `packages/*/bin`.
+
 ## 2.0.0-rc.0
 
 ### Major Changes
