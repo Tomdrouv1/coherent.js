@@ -2,15 +2,15 @@
  * HTML-specific utility functions
  */
 
+const HTML_ESCAPE_TEST = /[&<>"']/;
+const HTML_ESCAPE = /[&<>"']/g;
+const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+
 export function escapeHtml(text) {
   if (typeof text !== 'string') return text;
-
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+  // Most text needs no escaping: return it without allocating.
+  if (!HTML_ESCAPE_TEST.test(text)) return text;
+  return text.replace(HTML_ESCAPE, (ch) => HTML_ESCAPES[ch]);
 }
 
 /**
@@ -84,23 +84,8 @@ export function isVoidElement(tagName) {
     return false;
   }
 
-  const voidElements = new Set([
-    'area',
-    'base',
-    'br',
-    'col',
-    'embed',
-    'hr',
-    'img',
-    'input',
-    'link',
-    'meta',
-    'param',
-    'source',
-    'track',
-    'wbr',
-  ]);
-  return voidElements.has(tagName.toLowerCase());
+  // The module-level set below (this allocated a new Set on every call).
+  return voidElements.has(tagName) || voidElements.has(tagName.toLowerCase());
 }
 
 /**
@@ -124,7 +109,14 @@ function normalizeClassValue(value) {
   return String(value);
 }
 
-export function formatAttributes(props) {
+/**
+ * Serialize props into an HTML attribute string.
+ *
+ * @param {Object} props - Element props
+ * @param {Set<string>} [skip] - Prop names not rendered as attributes
+ * @returns {string} Attributes separated by spaces
+ */
+export function formatAttributes(props, skip) {
   // `class` and `className` together used to produce two class attributes.
   if (props && props.class !== undefined && props.className !== undefined) {
     const { className, ...rest } = props;
@@ -133,7 +125,7 @@ export function formatAttributes(props) {
 
   let formatted = '';
   for (const key in props) {
-    if (props.hasOwnProperty(key)) {
+    if (Object.prototype.hasOwnProperty.call(props, key) && !(skip && skip.has(key))) {
       let value = props[key];
 
       // Convert className to class for HTML output

@@ -452,6 +452,16 @@ export function normalizeChildren(children) {
     }
 
     if (Array.isArray(children)) {
+        // Fast path: most children arrays are already flat and dense.
+        let clean = true;
+        for (let i = 0; i < children.length; i++) {
+            const child = children[i];
+            if (child === null || child === undefined || Array.isArray(child)) {
+                clean = false;
+                break;
+            }
+        }
+        if (clean) return children;
         return children.flat().filter(child => child !== null && child !== undefined);
     }
 

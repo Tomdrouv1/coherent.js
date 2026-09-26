@@ -6,7 +6,7 @@
 import { BaseRenderer, RendererUtils, serializeForCache } from './base-renderer.js';
 import { normalizeChildren } from '../core/object-utils.js';
 
-import { validateNesting } from '../core/html-nesting-rules.js';
+import { validateNesting, FORBIDDEN_CHILDREN } from '../core/html-nesting-rules.js';
 
 import {
     escapeHtml,
@@ -21,17 +21,36 @@ import { createCacheManager } from '../performance/cache-manager.js';
 import { cssUtils, defaultCSSManager } from './css-manager.js';
 import { CoherentError, RenderingError, globalErrorHandler } from '../utils/error-handler.js';
 
+// Element props rendered as content or identity, never as attributes.
+const RESERVED_PROPS = new Set(['children', 'text', 'key', 'html']);
+
 // Shared by every render() call that opts in with `enableCache: true`.
 const rendererCache = createCacheManager({
     maxCacheSize: 1000,
     ttlMs: 300000 // 5 minutes
 });
 
+/**
+ * Render paths are linked lists ({ parent, segment }, null for the root),
+ * extended in O(1) per node and formatted only when an error or warning
+ * needs them. Copying an array per node ([...path, segment]) and formatting
+ * a string per child made rendering quadratic in tree depth.
+ */
+function childPath(parent, segment) {
+    return { parent, segment };
+}
+
 function formatRenderPath(path) {
-    if (!path || path.length === 0) return 'root';
+    const segments = [];
+    if (Array.isArray(path)) {
+        segments.push(...path);
+    } else {
+        for (let node = path; node; node = node.parent) segments.push(node.segment);
+        segments.reverse();
+    }
 
     let rendered = 'root';
-    for (const segment of path) {
+    for (const segment of segments) {
         if (typeof segment !== 'string' || segment.length === 0) continue;
         if (segment.startsWith('[')) {
             rendered += segment;
@@ -142,7 +161,7 @@ class HTMLRenderer extends BaseRenderer {
             };
 
             // Main rendering logic
-            const html = this.renderComponent(component, renderOptions, 0, []);
+            const html = this.renderComponent(component, renderOptions, 0, null);
             const finalHtml = config.minify ? minifyHtml(html, config) : html;
 
             if (fullKey !== null) {
@@ -176,7 +195,7 @@ class HTMLRenderer extends BaseRenderer {
     /**
      * Render a single component with full optimization pipeline
      */
-    renderComponent(component, options, depth = 0, path = []) {
+    renderComponent(component, options, depth = 0, path = null) {
         // Handle nullish and empty inputs immediately
         if (component === null || component === undefined) {
             return '';
@@ -225,7 +244,7 @@ class HTMLRenderer extends BaseRenderer {
                 case 'function':
                     {
                         const result = this.runFunctionComponent(value, options, depth, path);
-                        return this.renderComponent(result, options, depth + 1, [...path, '()']);
+                        return this.renderComponent(result, options, depth + 1, childPath(path, '()'));
                     }
                 case 'array':
                     // Development mode warning for missing keys
@@ -252,13 +271,19 @@ class HTMLRenderer extends BaseRenderer {
                             );
                         }
                     }
-                    return value.map((child, index) => this.renderComponent(child, options, depth + 1, [...path, `[${index}]`])).join('');
+                    {
+                        let html = '';
+                        for (let index = 0; index < value.length; index++) {
+                            html += this.renderComponent(value[index], options, depth + 1, childPath(path, `[${index}]`));
+                        }
+                        return html;
+                    }
                 case 'element':
                     {
                         // Process object-based component
                         const tagName = Object.keys(value)[0];
                         const elementContent = value[tagName];
-                        return this.renderElement(tagName, elementContent, options, depth, [...path, tagName]);
+                        return this.renderElement(tagName, elementContent, options, depth, childPath(path, tagName));
                     }
                 default:
                     this.recordError('renderComponent', new Error(`Unknown component type: ${type}`));
@@ -302,7 +327,7 @@ class HTMLRenderer extends BaseRenderer {
     /**
      * Render an HTML element with advanced caching and optimization
      */
-    renderElement(tagName, element, options, depth = 0, path = []) {
+    renderElement(tagName, element, options, depth = 0, path = null) {
         // Check for circular references in element props (ancestor path only,
         // see renderComponent).
         const tracked = options.seenObjects && element && typeof element === 'object' && !Array.isArray(element)
@@ -326,8 +351,8 @@ class HTMLRenderer extends BaseRenderer {
         }
     }
 
-    renderElementContent(tagName, element, options, depth = 0, path = []) {
-        const startTime = performance.now();
+    renderElementContent(tagName, element, options, depth = 0, path = null) {
+        const startTime = options.enableMonitoring ? performance.now() : 0;
 
         // Handle text-only elements including booleans
         if (typeof element === 'string' || typeof element === 'number' || typeof element === 'boolean') {
@@ -342,7 +367,7 @@ class HTMLRenderer extends BaseRenderer {
         // Handle function elements
         if (typeof element === 'function') {
             const result = this.runFunctionComponent(element, options, depth, path);
-            return this.renderElement(tagName, result, options, depth, [...path, '()']);
+            return this.renderElement(tagName, result, options, depth, childPath(path, '()'));
         }
 
         // Handle object elements (complex elements with props and children)
@@ -368,17 +393,16 @@ class HTMLRenderer extends BaseRenderer {
     /**
      * Render complex object elements with attributes and children
      */
-    renderObjectElement(tagName, element, options, depth = 0, path = []) {
-        const startTime = performance.now();
+    renderObjectElement(tagName, element, options, depth = 0, path = null) {
+        const startTime = options.enableMonitoring ? performance.now() : 0;
 
-        // Extract props and children directly from element content
-        // Note: key is extracted but NOT rendered as an HTML attribute
-        // It's used for reconciliation identity, not DOM output
-        // html prop is extracted to prevent it from being rendered as an attribute
-        const { children, text, key: _key, html: _rawHtml, ...attributes } = element || {};
+        // children/text/html are content, and key is reconciliation identity:
+        // none of them is rendered as an attribute. formatAttributes skips
+        // them instead of this copying the props with rest destructuring.
+        const { children, text, html: _rawHtml } = element || {};
 
         // Build opening tag with attributes
-        const attributeString = formatAttributes(attributes);
+        const attributeString = formatAttributes(element, RESERVED_PROPS);
         const openingTag = attributeString
             ? `<${tagName} ${attributeString}>`
             : `<${tagName}>`;
@@ -431,18 +455,19 @@ class HTMLRenderer extends BaseRenderer {
         let childrenHtml = '';
         if (children !== undefined && children !== null) {
             const normalizedChildren = normalizeChildren(children);
-            childrenHtml = normalizedChildren
-                .map((child, index) => {
-                    // Validate HTML nesting before rendering child
-                    if (child && typeof child === 'object' && !Array.isArray(child)) {
-                        const childTagName = Object.keys(child)[0];
-                        if (childTagName) {
-                            validateNesting(tagName, childTagName, formatRenderPath([...path, `children[${index}]`]));
-                        }
+            const forbidden = FORBIDDEN_CHILDREN[tagName.toLowerCase()];
+            for (let index = 0; index < normalizedChildren.length; index++) {
+                const child = normalizedChildren[index];
+                const segment = childPath(path, `children[${index}]`);
+                // Validate HTML nesting (formatting the path only on a violation)
+                if (forbidden && child && typeof child === 'object' && !Array.isArray(child)) {
+                    const childTagName = Object.keys(child)[0];
+                    if (childTagName && forbidden.has(childTagName.toLowerCase())) {
+                        validateNesting(tagName, childTagName, formatRenderPath(segment));
                     }
-                    return this.renderComponent(child, options, depth + 1, [...path, `children[${index}]`]);
-                })
-                .join('');
+                }
+                childrenHtml += this.renderComponent(child, options, depth + 1, segment);
+            }
         }
 
         // Build complete HTML
