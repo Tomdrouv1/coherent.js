@@ -13,6 +13,7 @@
  */
 
 import { createServer } from 'node:http';
+import { resolve } from 'node:path';
 import picocolors from 'picocolors';
 import { createHmrServer } from './hmr-server.js';
 import { createFileWatcher } from './file-watcher.js';
@@ -25,6 +26,11 @@ import { createStaticHandler } from './static-handler.js';
  * @property {string} [host='localhost'] - Host interface to bind.
  * @property {boolean} [open=false] - Open the default browser to the served URL after start.
  * @property {boolean} [log=true] - Emit startup / change log lines to stdout.
+ * @property {boolean} [hmr=true] - Attach the HMR WebSocket server and file watcher.
+ * @property {string[]} [fsAllow] - Extra directories files may be served from, beyond the
+ *   project root, its workspace root and the real directories of node_modules entries.
+ * @property {string[]|true} [allowedHosts] - Host names accepted besides localhost, IP
+ *   addresses and `host` (a leading `.` accepts subdomains); `true` accepts any host.
  */
 
 /**
@@ -33,6 +39,12 @@ import { createStaticHandler } from './static-handler.js';
  * @property {string} host - The host the HTTP server is bound to.
  * @property {() => Promise<void>} close - Shut down HTTP server, WS server, and file watcher.
  */
+
+/** Replace the absolute project root in `text` so messages stay root-relative. */
+function redactRoot(text, root) {
+  if (typeof text !== 'string') return text;
+  return text.split(resolve(root)).join('');
+}
 
 /**
  * Start the Coherent dev server and return a handle for graceful shutdown.
@@ -52,9 +64,11 @@ export async function startDevServer(options) {
     open = false,
     log = true,
     hmr = true,
+    fsAllow = [],
+    allowedHosts = [],
   } = options;
 
-  const handler = createStaticHandler({ root, hmr });
+  const handler = createStaticHandler({ root, hmr, fsAllow, host, allowedHosts });
   const httpServer = createServer(handler);
 
   await new Promise((resolve, reject) => {
@@ -70,13 +84,15 @@ export async function startDevServer(options) {
   let hmrServer = null;
   let watcher = null;
   if (hmr) {
-    hmrServer = createHmrServer(httpServer);
+    hmrServer = createHmrServer(httpServer, { host, allowedHosts });
     watcher = await createFileWatcher({
       root,
       onChange: (change) => {
+        // Root-relative paths only: absolute paths reveal the developer's
+        // file system layout (user name, home directory) to every client.
         hmrServer.broadcast({
           type: 'hmr-update',
-          filePath: change.filePath,
+          filePath: change.webPath,
           webPath: change.webPath,
           updateType: change.updateType,
         });
@@ -88,11 +104,11 @@ export async function startDevServer(options) {
         hmrServer.broadcast({
           type: 'hmr-error',
           error: {
-            message: err.message,
+            message: redactRoot(err.message, root),
             file: null,
             line: null,
             column: null,
-            stack: err.stack,
+            stack: redactRoot(err.stack, root),
           },
         });
         if (log) {

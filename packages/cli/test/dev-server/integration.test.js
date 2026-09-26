@@ -55,7 +55,8 @@ describe('startDevServer (integration)', () => {
     writeFileSync(join(root, 'src', 'app.js'), 'export const v = 2;');
 
     const update = await updatePromise;
-    expect(update.filePath).toBe(join(root, 'src', 'app.js'));
+    // Root-relative: absolute paths would leak the developer's file system layout
+    expect(update.filePath).toBe('/src/app.js');
     expect(update.webPath).toBe('/src/app.js');
     expect(update.updateType).toBe('component');
 

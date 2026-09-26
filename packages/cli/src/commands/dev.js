@@ -29,6 +29,7 @@ export const devCommand = new Command('dev')
   .option('--open', 'open browser automatically')
   .option('--no-hmr', 'disable hot module replacement')
   .option('--coherent', 'use the built-in Coherent HMR dev server (HTTP + WebSocket + chokidar)')
+  .option('--allowed-hosts <hosts>', 'built-in server: comma-separated extra Host names to answer (besides localhost, IPs and --host)')
   .action(async (options) => {
     console.log(picocolors.cyan('🚀 Starting Coherent.js development server...'));
     console.log();
@@ -58,6 +59,9 @@ export const devCommand = new Command('dev')
           open: Boolean(options.open),
           log: true,
           hmr: options.hmr !== false,
+          allowedHosts: options.allowedHosts
+            ? options.allowedHosts.split(',').map((h) => h.trim()).filter(Boolean)
+            : [],
         });
 
         const cleanup = async () => {
