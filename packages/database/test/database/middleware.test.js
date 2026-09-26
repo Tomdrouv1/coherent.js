@@ -665,4 +665,56 @@ describe('Database Middleware', () => {
       await expect(middleware(mockReq, mockRes, mockNext)).rejects.toThrow('Pool exhausted');
     });
   });
+
+  describe('next() handling', () => {
+    let MockUser;
+
+    beforeEach(() => {
+      MockUser = { name: 'User', find: vi.fn() };
+    });
+
+    const handlerError = () => vi.fn(async () => { throw new Error('handler failed'); });
+
+    it('does not call next() a second time when a later handler fails', async () => {
+      mockDb.query.mockResolvedValue({ rows: [] });
+      MockUser.find.mockResolvedValue({ id: 1 });
+      mockReq.params.id = '1';
+      const cases = [
+        withDatabase(mockDb),
+        withModel(MockUser),
+        withQueryValidation({}),
+        withHealthCheck(mockDb, { includeStats: false })
+      ];
+
+      for (const middleware of cases) {
+        const next = handlerError();
+        await expect(middleware(mockReq, mockRes, next)).rejects.toThrow('handler failed');
+        expect(next).toHaveBeenCalledTimes(1);
+        expect(next).toHaveBeenCalledWith();
+      }
+    });
+
+    it('works with routers that call middleware without next', async () => {
+      mockDb.query.mockResolvedValue({ rows: [] });
+      MockUser.find.mockResolvedValue({ id: 1 });
+      mockReq.params.id = '1';
+      mockReq.query = { page: '2' };
+
+      await expect(withDatabase(mockDb)(mockReq, mockRes)).resolves.toBeUndefined();
+      await expect(withModel(MockUser)(mockReq, mockRes)).resolves.toBeUndefined();
+      await expect(withPagination()(mockReq, mockRes)).resolves.toBeUndefined();
+
+      expect(mockReq.db).toBe(mockDb);
+      expect(mockReq.user).toEqual({ id: 1 });
+      expect(mockReq.pagination.page).toBe(2);
+    });
+
+    it('keeps coerced values when stripUnknown is false', async () => {
+      mockReq.query = { age: '42', extra: 'x' };
+
+      await withQueryValidation({ age: { type: 'number', max: 100 } }, { stripUnknown: false })(mockReq, mockRes, mockNext);
+
+      expect(mockReq.query).toEqual({ age: 42, extra: 'x' });
+    });
+  });
 });

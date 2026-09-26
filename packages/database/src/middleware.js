@@ -6,6 +6,31 @@
  */
 
 /**
+ * Continue the chain: call `next` when the framework passed one (Express, Koa, ...).
+ * Routers that run middleware without `next` continue on their own.
+ *
+ * @private
+ */
+async function proceed(next) {
+  if (typeof next === 'function') {
+    await next();
+  }
+}
+
+/**
+ * Report an error raised by the middleware itself (not by later handlers) to `next`
+ * when there is one, else throw it.
+ *
+ * @private
+ */
+function fail(next, _error) {
+  if (typeof next === 'function') {
+    return next(_error);
+  }
+  throw _error;
+}
+
+/**
  * Database middleware for router integration
  * 
  * @param {DatabaseManager} db - Database manager instance
@@ -64,20 +89,14 @@ export function withDatabase(db, options = {}) {
       if (config.attachModels && db.models) {
         req.models = db.models;
       }
-
-      await next();
-
     } catch (_error) {
       // Log database errors
       console.error('Database middleware error:', _error);
-      
-      // Pass _error to _error handler
-      if (typeof next === 'function') {
-        next(_error);
-      } else {
-        throw _error;
-      }
+      return fail(next, _error);
     }
+
+    // Outside the try: an error from a later handler must not call next() a second time
+    await proceed(next);
   };
 }
 
@@ -234,15 +253,11 @@ export function withModel(ModelClass, paramName = 'id', requestKey = null) {
       }
 
       req[key] = model;
-      await next();
-      
     } catch (_error) {
-      if (typeof next === 'function') {
-        next(_error);
-      } else {
-        throw _error;
-      }
+      return fail(next, _error);
     }
+
+    await proceed(next);
   };
 }
 
@@ -292,7 +307,7 @@ export function withPagination(options = {}) {
       totalCount: null // To be set by the handler
     };
 
-    await next();
+    await proceed(next);
   };
 }
 
@@ -378,21 +393,14 @@ export function withQueryValidation(schema, options = {}) {
         validatedQuery[key] = coercedValue;
       }
 
-      // Replace query with validated version
-      if (!config.stripUnknown) {
-        Object.assign(validatedQuery, req.query);
-      }
-      
-      req.query = validatedQuery;
-      await next();
-      
+      // Replace query with the validated (and coerced) version; keep unknown keys
+      // alongside it when asked, without overwriting the coerced values
+      req.query = config.stripUnknown ? validatedQuery : { ...req.query, ...validatedQuery };
     } catch (_error) {
-      if (typeof next === 'function') {
-        next(_error);
-      } else {
-        throw _error;
-      }
+      return fail(next, _error);
     }
+
+    await proceed(next);
   };
 }
 
@@ -416,15 +424,16 @@ export function withHealthCheck(db, options = {}) {
   };
 
   return async (req, res, next) => {
+    let timer;
     try {
       const startTime = Date.now();
-      
+
       // Test database connection
       await Promise.race([
         db.query('SELECT 1'),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Health check timeout')), config.timeout)
-        )
+        new Promise((_, reject) => {
+          timer = setTimeout(() => reject(new Error('Health check timeout')), config.timeout);
+        })
       ]);
       
       const responseTime = Date.now() - startTime;
@@ -438,18 +447,17 @@ export function withHealthCheck(db, options = {}) {
       if (config.includeStats) {
         req.dbHealth.stats = db.getStats();
       }
-
-      await next();
-      
     } catch (_error) {
       req.dbHealth = {
         status: 'unhealthy',
         error: _error.message,
         connected: db.isConnected
       };
-      
-      await next();
+    } finally {
+      clearTimeout(timer);
     }
+
+    await proceed(next);
   };
 }
 
@@ -472,7 +480,14 @@ export function withConnectionPool(db, options = {}) {
 
   return async (req, res, next) => {
     let connection = null;
-    
+    let released = false;
+    const release = () => {
+      if (connection && !released) {
+        released = true;
+        db.pool.release(connection);
+      }
+    };
+
     try {
       // Acquire connection from pool
       connection = await db.pool.acquire(config.acquireTimeout);
@@ -487,21 +502,13 @@ export function withConnectionPool(db, options = {}) {
 
       // Release connection when response finishes
       if (config.releaseOnResponse) {
-        res.on('finish', () => {
-          if (connection) {
-            db.pool.release(connection);
-          }
-        });
+        res.on('finish', release);
       }
 
-      await next();
-      
+      await proceed(next);
     } catch (_error) {
       // Release connection on _error
-      if (connection) {
-        db.pool.release(connection);
-      }
-      
+      release();
       throw _error;
     }
   };
