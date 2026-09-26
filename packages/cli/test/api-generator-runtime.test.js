@@ -214,7 +214,14 @@ describe('generated API test files', () => {
     );
 
     const vitestBin = join(REPO_ROOT, 'node_modules', 'vitest', 'vitest.mjs');
-    const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('VITEST')));
+    // Uncoloured output: CI forces colours, and the escape codes between
+    // "Test Files" and "2 passed" made the assertions below fail.
+    const env = {
+      ...Object.fromEntries(
+        Object.entries(process.env).filter(([key]) => !key.startsWith('VITEST') && key !== 'FORCE_COLOR')
+      ),
+      NO_COLOR: '1'
+    };
     const result = spawnSync(process.execPath, [vitestBin, 'run', '--root', suiteDir], {
       cwd: suiteDir,
       env,
