@@ -186,6 +186,26 @@ export interface RouterConfig {
    * development default rather than throwing.
    */
   corsOrigin?: string | string[];
+  /**
+   * Number of reverse proxies in front of the server that append to
+   * `X-Forwarded-For` (`true` means one). Rate limiting keys on the TCP peer
+   * address unless this is set; the header is client-controlled otherwise.
+   */
+  trustProxy?: boolean | number;
+  /** Default per-request options for `createServer()` / `handle()`. */
+  rateLimit?: RouterRateLimitOptions | false;
+  maxBodySize?: number;
+}
+
+/**
+ * Router rate limiting: a fixed window per client, 100 requests per minute
+ * by default. Pass `false` instead to turn it off.
+ */
+export interface RouterRateLimitOptions {
+  windowMs?: number;
+  maxRequests?: number;
+  /** Derive the client key yourself instead of from the connection. */
+  keyGenerator?: (req: IncomingMessage) => string;
 }
 
 /** Options accepted when registering a route */
@@ -226,7 +246,9 @@ export interface ObjectRouter {
     options?: {
       /** Overrides the router's configured CORS origin allowlist. */
       corsOrigin?: string | string[];
-      rateLimit?: { windowMs?: number; maxRequests?: number };
+      rateLimit?: RouterRateLimitOptions | false;
+      /** Overrides the router's `trustProxy`. */
+      trustProxy?: boolean | number;
       maxBodySize?: number;
     }
   ): Promise<void>;

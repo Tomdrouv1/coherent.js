@@ -217,42 +217,112 @@ async function runMiddleware(fn, req, res, expectsNext = fn.length >= 3) {
 }
 
 /**
- * Rate limiting store
+ * Most clients a rate limiter tracks at once. Expired windows are swept
+ * first; past this, the oldest window is dropped to bound memory.
  * @private
  */
-const rateLimitStore = new Map();
+const RATE_LIMIT_MAX_KEYS = 100_000;
 
 /**
- * Rate limiting middleware for API endpoints
+ * Fixed-window request counter. Each router owns one, so two routers in one
+ * process no longer share (or exhaust) each other's counts.
+ *
+ * Expired windows are swept at most once per window, and the store is capped
+ * at RATE_LIMIT_MAX_KEYS. It used to be a module-global Map that was never
+ * pruned: 200k spoofed client keys held ~89 MB for the life of the process.
+ *
  * @private
- * @param {string} ip - Client IP address
- * @param {number} [windowMs=60000] - Time window in milliseconds
- * @param {number} [maxRequests=100] - Maximum requests per window
- * @returns {boolean} True if request is allowed, false if rate limited
  */
-function checkRateLimit(ip, windowMs = 60000, maxRequests = 100) {
-  const now = Date.now();
-  const key = ip;
-
-  if (!rateLimitStore.has(key)) {
-    rateLimitStore.set(key, { count: 1, resetTime: now + windowMs });
-    return true;
+class RateLimiter {
+  constructor(maxKeys = RATE_LIMIT_MAX_KEYS) {
+    this.records = new Map();
+    this.maxKeys = maxKeys;
+    this.nextSweep = 0;
   }
 
-  const record = rateLimitStore.get(key);
+  /**
+   * Count one request for `key`.
+   * @param {string} key - Client key
+   * @param {number} [windowMs=60000] - Time window in milliseconds
+   * @param {number} [maxRequests=100] - Maximum requests per window
+   * @param {number} [now=Date.now()] - Current time
+   * @returns {{ allowed: boolean, resetTime: number }}
+   */
+  hit(key, windowMs = 60000, maxRequests = 100, now = Date.now()) {
+    this.sweep(now, windowMs);
 
-  if (now > record.resetTime) {
-    record.count = 1;
-    record.resetTime = now + windowMs;
-    return true;
+    const record = this.records.get(key);
+    if (!record || now >= record.resetTime) {
+      if (record) {
+        this.records.delete(key); // Re-insert: Map order tracks window start
+      } else if (this.records.size >= this.maxKeys) {
+        this.records.delete(this.records.keys().next().value);
+      }
+      const fresh = { count: 1, resetTime: now + windowMs };
+      this.records.set(key, fresh);
+      return { allowed: true, resetTime: fresh.resetTime };
+    }
+
+    if (record.count >= maxRequests) {
+      return { allowed: false, resetTime: record.resetTime };
+    }
+
+    record.count++;
+    return { allowed: true, resetTime: record.resetTime };
   }
 
-  if (record.count >= maxRequests) {
-    return false;
+  /** Drop every expired window, at most once per `windowMs`. */
+  sweep(now, windowMs) {
+    if (now < this.nextSweep) return;
+    for (const [key, record] of this.records) {
+      if (now >= record.resetTime) this.records.delete(key);
+    }
+    this.nextSweep = now + Math.max(1000, Math.min(windowMs, 60_000));
   }
 
-  record.count++;
-  return true;
+  /** Number of clients currently tracked. */
+  get size() {
+    return this.records.size;
+  }
+}
+
+/**
+ * The address a request is rate limited under.
+ *
+ * By default this is the TCP peer address. `X-Forwarded-For` is only read
+ * when `trustProxy` says how many reverse proxies in front of the server
+ * append to it: the client is then the entry that many hops from the right.
+ * Reading the raw header let any client pick a fresh key per request and
+ * bypass the limit.
+ *
+ * @private
+ * @param {Object} req - Request
+ * @param {boolean|number} [trustProxy] - `true` = one proxy, or a hop count
+ * @returns {string} Client key
+ */
+function clientAddress(req, trustProxy) {
+  const socketAddress = req.socket?.remoteAddress ?? req.connection?.remoteAddress ?? 'unknown';
+  const hops = trustProxy === true ? 1 : Number.isInteger(trustProxy) && trustProxy > 0 ? trustProxy : 0;
+  const header = req.headers?.['x-forwarded-for'];
+
+  if (hops === 0) {
+    if (header) {
+      warnOnce(
+        'X-Forwarded-For is set but trustProxy is not, so rate limiting keys on the connecting address. ' +
+          'Behind a reverse proxy that means every client shares one limit: set trustProxy to the number of proxies.'
+      );
+    }
+    return socketAddress;
+  }
+
+  const forwarded = (Array.isArray(header) ? header.join(',') : header || '')
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const chain = [...forwarded, socketAddress];
+  // Skip the trusted proxies from the right; if the chain is shorter than
+  // that, the leftmost entry is the best information there is.
+  return chain[Math.max(0, chain.length - 1 - hops)];
 }
 
 /**
@@ -262,16 +332,16 @@ function checkRateLimit(ip, windowMs = 60000, maxRequests = 100) {
 const DEFAULT_CORS_ORIGIN = 'http://localhost:3000';
 
 /** Warnings already emitted, so a per-request policy cannot spam the log. */
-const warnedCorsMessages = new Set();
+const warnedMessages = new Set();
 
 /**
- * Warn about a CORS misconfiguration once per distinct message.
+ * Warn about a misconfiguration once per distinct message.
  * @private
  * @param {string} message - Warning text
  */
-function warnCorsOnce(message) {
-  if (warnedCorsMessages.has(message)) return;
-  warnedCorsMessages.add(message);
+function warnOnce(message) {
+  if (warnedMessages.has(message)) return;
+  warnedMessages.add(message);
   console.warn(`[coherent.js/api] ${message}`);
 }
 
@@ -299,7 +369,7 @@ function resolveCorsPolicy(corsOrigin) {
   const origins = Array.isArray(corsOrigin) ? corsOrigin : [corsOrigin];
 
   if (origins.length === 0 || origins.some(origin => typeof origin !== 'string' || origin === '')) {
-    warnCorsOnce(
+    warnOnce(
       'corsOrigin must be a non-empty string or an array of them. ' +
         `Ignoring ${JSON.stringify(corsOrigin)} and serving ${DEFAULT_CORS_ORIGIN} without credentials.`
     );
@@ -308,9 +378,9 @@ function resolveCorsPolicy(corsOrigin) {
 
   if (origins.includes('*')) {
     if (origins.length > 1) {
-      warnCorsOnce("corsOrigin '*' allows every origin; the others listed alongside it have no effect.");
+      warnOnce("corsOrigin '*' allows every origin; the others listed alongside it have no effect.");
     }
-    warnCorsOnce(
+    warnOnce(
       "corsOrigin '*' cannot carry credentials, so Access-Control-Allow-Credentials is not sent. " +
         'List the origins you trust to enable credentialed requests.'
     );
@@ -682,6 +752,11 @@ class SimpleRouter {
     this.enableSmartRouting = options.enableSmartRouting !== false; // Default true
     this.staticRoutes = new Map(); // O(1) lookup for exact routes
     this.enableRouteMetrics = options.enableRouteMetrics || false; // Track route type performance
+
+    // Rate limiting: one store per router. X-Forwarded-For is only trusted
+    // when trustProxy says how many proxies append to it.
+    this.rateLimiter = new RateLimiter();
+    this.trustProxy = options.trustProxy ?? false;
   }
 
   /**
@@ -1791,7 +1866,11 @@ class SimpleRouter {
       this.metrics.requests++;
     }
 
-    const { corsOrigin, rateLimit = { windowMs: 60000, maxRequests: 100 } } = options;
+    const {
+      corsOrigin,
+      rateLimit = { windowMs: 60000, maxRequests: 100 },
+      trustProxy = this.trustProxy
+    } = options;
 
     // Add security headers conditionally for performance optimization
     if (this.enableSecurityHeaders) {
@@ -1809,12 +1888,20 @@ class SimpleRouter {
       return;
     }
 
-    // Rate limiting
-    const clientIP = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
-    if (!checkRateLimit(clientIP, rateLimit.windowMs, rateLimit.maxRequests)) {
-      res.writeHead(429, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Too Many Requests' }));
-      return;
+    // Rate limiting (`rateLimit: false` turns it off)
+    if (rateLimit) {
+      const key = typeof rateLimit.keyGenerator === 'function'
+        ? String(rateLimit.keyGenerator(req))
+        : clientAddress(req, trustProxy);
+      const { allowed, resetTime } = this.rateLimiter.hit(key, rateLimit.windowMs, rateLimit.maxRequests);
+      if (!allowed) {
+        res.writeHead(429, {
+          'Content-Type': 'application/json',
+          'Retry-After': String(Math.max(1, Math.ceil((resetTime - Date.now()) / 1000)))
+        });
+        res.end(JSON.stringify({ error: 'Too Many Requests' }));
+        return;
+      }
     }
 
     // Parse URL and query parameters
