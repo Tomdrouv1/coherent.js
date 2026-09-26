@@ -70,6 +70,10 @@ describe('query builder: SQL injection through identifiers and clauses', () => {
       .rejects.toThrow('Invalid select column');
     expect((await sqlFor({ table: 'users', select: ['u.*', 'COUNT(*) AS total', 'MAX(age) as oldest'] })).sql)
       .toBe('SELECT u.*, COUNT(*) AS total, MAX(age) AS oldest FROM users');
+    expect((await sqlFor({ table: 'users', select: { total: 'COUNT(*)', person: 'name' } })).sql)
+      .toBe('SELECT COUNT(*) AS total, name AS person FROM users');
+    await expect(sqlFor({ table: 'users', select: { everything: '*' } })).rejects.toThrow('Invalid select column for alias');
+    await expect(sqlFor({ table: 'users', select: { a: 'name AS b' } })).rejects.toThrow('Invalid select column for alias');
   });
 
   it('rejects join types and conditions that are not column comparisons', async () => {

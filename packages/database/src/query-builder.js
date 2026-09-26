@@ -250,7 +250,13 @@ function buildColumnList(select) {
   } else if (isPlainObject(select)) {
     columns = Object.entries(select).map(([alias, column]) => {
       assertAlias(alias, 'select');
-      return `${formatSelectColumn(column)} AS ${alias}`;
+      const expression = formatSelectColumn(column);
+      // `{ alias: '*' }` or `{ alias: 'col AS other' }` would render two aliases
+      const aliasable = !/ AS /.test(expression) && (!expression.includes('*') || AGGREGATE.test(expression));
+      if (!aliasable) {
+        throw new Error(`Invalid select column for alias ${alias}: ${formatValue(column)}`);
+      }
+      return `${expression} AS ${alias}`;
     });
   } else {
     throw new Error(`Invalid select: ${formatValue(select)}`);
