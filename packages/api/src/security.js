@@ -315,10 +315,19 @@ export function verifyPassword(password, hashedPassword) {
 
 /**
  * Generate secure random token (for non-JWT use cases)
- * @param {number} length - Token length
+ * @param {number} length - Number of random bytes; the hex string is twice as long
  * @returns {string} Random token
+ * @throws {TypeError} If length is not a positive integer (e.g. a JWT payload)
  */
 export function generateToken(length = 32) {
+  if (!Number.isInteger(length) || length <= 0) {
+    // The type definitions used to describe generateToken(payload, { secret })
+    // as a JWT generator; point callers who followed them to the real one.
+    throw new TypeError(
+      '[coherent.js/api] generateToken(length) returns random hex and takes a byte count. ' +
+        'To sign a JWT use generateJWT(payload, expiresIn, secret).'
+    );
+  }
   return randomBytes(length).toString('hex');
 }
 

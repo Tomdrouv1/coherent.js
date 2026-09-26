@@ -80,6 +80,12 @@ describe('runtime matches the declared API', () => {
     expect(generateToken(8)).not.toBe(generateToken(8));
   });
 
+  it('generateToken called as the old JWT signature points to generateJWT', () => {
+    expect(() => generateToken({ userId: 1 }, { secret: 's' })).toThrow(TypeError);
+    expect(() => generateToken({ userId: 1 }, { secret: 's' })).toThrow(/generateJWT/);
+    expect(() => generateToken(0)).toThrow(/byte count/);
+  });
+
   it('hashPassword and verifyPassword are synchronous, as now documented', () => {
     const hash = hashPassword('correct horse');
 
