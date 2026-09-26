@@ -1,5 +1,86 @@
 # @coherent.js/seo
 
+## 2.0.0-rc.0
+
+### Major Changes
+
+- Coherent.js 2.0: the fixes from a full audit of the framework, several of which change behavior callers rely on.
+  
+  The most likely to need changes in an application:
+  
+  - Component errors propagate out of `render()` (pass `onError` to replace a failing component).
+  - On Node, `provideContext()` throws outside `runWithContext()`: a value provided outside it leaked into the next request on the same connection.
+  - Framework adapters no longer render every response as HTML: use `res.coherent()` / `reply.coherent()` / `ctx.coherent()`, or `autoRender: true`.
+  - The api requires a JWT secret, and rate limiting keys on the socket address unless `trustProxy` is set.
+  - `Model.create()` applies `fillable` / `guarded`.
+  - The render cache is opt-in (`enableCache: true`).
+  
+  `docs/migration/upgrading-from-1.1.md` lists every behavior change with what to do about it; each package's CHANGELOG has the full list of fixes.
+
+### Patch Changes
+
+- d68b5cf: Make JSON-LD safe to embed in a `<script>` element.
+  
+  Core only rewrites `</script` inside script text, so a structured-data value
+  containing `<!--<script>` put the HTML parser into the script-data-double-escaped
+  state and the rest of the page was swallowed into the JSON-LD block.
+  `StructuredDataBuilder#build()`, `generateStructuredData()` and `toJSON()` now
+  write `<`, `>`, `&`, U+2028 and U+2029 as `<`, `>`, `&`,
+  ` ` and ` `.
+  
+  **Behavior change:** the serialized JSON text differs wherever a value contains
+  one of those characters (for example `"a & b"` becomes `"a & b"`). It
+  still parses to exactly the same data, so JSON-LD consumers are unaffected;
+  only code that compares the raw string needs updating.
+- 144259a: Escape and validate every sitemap field.
+  
+  `lastmod`, `changefreq` and `priority` were written into the XML verbatim, so a
+  value such as `</lastmod></url><url><loc>https://evil.example/</loc>` added a
+  URL of the attacker's choosing to the sitemap. Every text node (and the `xmlns`
+  attribute) is now XML-escaped, and `loc` is serialized with `new URL(...).href`,
+  so spaces and non-ASCII characters are percent-encoded.
+  
+  **Behavior change:** `add()` / `addMultiple()` / `generateSitemap()` now throw a
+  `RangeError` for a `changefreq` outside `always | hourly | daily | weekly |
+  monthly | yearly | never` or a `priority` that is not a number from 0.0 to 1.0,
+  and a `TypeError` for an absolute URL that is not `http:` or `https:` (for
+  example `javascript:` or `ftp:`). A path that merely starts with `http` (such
+  as `http-status`) is now treated as relative instead of absolute, and an
+  `options.loc` no longer overrides the normalized URL. Pass `null` for
+  `lastmod`, `changefreq` or `priority` to omit that element (a `null` priority
+  used to print `<priority>null</priority>`).
+- c1a7cb9: Insert titles into a title template literally.
+  
+  `title(title, { template })` and `generateMeta({ titleTemplate })` used
+  `String#replace` with the title as the replacement string, so `$&`, `$'`,
+  `` $` `` and `$$` in a title were expanded as replacement patterns
+  (`"Win $&"` in `"Save %s now | Shop"` became `"Save Win %s now | Shop"`).
+  
+  **Behavior change:** those sequences now appear in the title exactly as
+  written.
+- Updated dependencies [85898bd]
+- Updated dependencies [7da1e24]
+- Updated dependencies [ccff8e7]
+- Updated dependencies [0b8c6e2]
+- Updated dependencies [b21610a]
+- Updated dependencies [1b4a351]
+- Updated dependencies [cd2cb30]
+- Updated dependencies [e69a230]
+- Updated dependencies [606bb86]
+- Updated dependencies [e250e32]
+- Updated dependencies [e011f27]
+- Updated dependencies [5a3a6c2]
+- Updated dependencies [14af368]
+- Updated dependencies [11c154f]
+- Updated dependencies [b89b3c6]
+- Updated dependencies [b3666cd]
+- Updated dependencies [6829455]
+- Updated dependencies [7abfb53]
+- Updated dependencies
+- Updated dependencies [35376a7]
+- Updated dependencies [16a6e7b]
+  - @coherent.js/core@2.0.0-rc.0
+
 ## 1.1.2
 
 ### Patch Changes

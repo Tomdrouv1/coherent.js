@@ -1,6 +1,6 @@
 {
   "name": "@coherent.js/forms",
-  "version": "1.1.2",
+  "version": "2.0.0-rc.0",
   "description": "SSR + Hydration form system for Coherent.js applications",
   "type": "module",
   "main": "./dist/index.js",
