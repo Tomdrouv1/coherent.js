@@ -116,9 +116,11 @@ describe('Database Integration E2E Tests', () => {
       // Run migrations
       const results = await migration.run();
       
-      expect(results).toHaveLength(2);
-      expect(results[0].name).toBe('001_create_users.js');
-      expect(results[1].name).toBe('002_create_posts.js');
+      expect(results).toEqual(['001_create_users.js', '002_create_posts.js']);
+      expect(testHelper.getQueries().map(q => q.sql)).toContain('SELECT migration FROM coherent_migrations ORDER BY id');
+
+      // A second run applies nothing: the migrations are recorded as applied
+      expect(await migration.run()).toEqual([]);
 
       // Check migration status
       const status = await migration.status();
