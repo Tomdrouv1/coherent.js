@@ -28,7 +28,7 @@ const HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
  */
 function parseBody(req, maxSize = 1024 * 1024) { // 1MB limit
   return new Promise((resolve, reject) => {
-    if (req.method === 'GET' || req.method === 'DELETE') {
+    if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'DELETE') {
       resolve({});
       return;
     }
@@ -1953,8 +1953,20 @@ class SimpleRouter {
       applyCorsHeaders(req, res, this.corsPolicyFor(corsOrigin));
     }
 
-    // Handle preflight requests
-    if (req.method === 'OPTIONS') {
+    // Parse URL and query parameters
+    const parsedUrl = parseUrl(req.url, true);
+    const pathname = parsedUrl.pathname;
+    if (!req.query) {
+      req.query = parsedUrl.query || {};
+    }
+
+    // Get request version if versioning is enabled
+    const requestVersion = this.enableVersioning ? this.getRequestVersion(req) : null;
+
+    // Answer CORS preflights with 204, unless the application registered an
+    // OPTIONS route for this path: router.options() handlers used to be
+    // unreachable.
+    if (req.method === 'OPTIONS' && !this.findRoute('OPTIONS', pathname, requestVersion)) {
       res.writeHead(204);
       res.end();
       return;
@@ -1976,13 +1988,6 @@ class SimpleRouter {
       }
     }
 
-    // Parse URL and query parameters
-    const parsedUrl = parseUrl(req.url, true);
-    const pathname = parsedUrl.pathname;
-    if (!req.query) {
-      req.query = parsedUrl.query || {};
-    }
-
     // Parse request body with size limits
     try {
       req.body = await parseBody(req, options.maxBodySize);
@@ -1994,15 +1999,15 @@ class SimpleRouter {
       return;
     }
 
-    // Get request version if versioning is enabled
-    const requestVersion = this.enableVersioning ? this.getRequestVersion(req) : null;
-
     // Track version requests in metrics
     if (this.enableMetrics && requestVersion) {
       this.metrics.versionRequests.set(requestVersion, (this.metrics.versionRequests.get(requestVersion) || 0) + 1);
     }
 
-    const matchedRoute = this.findRoute(req.method, pathname, requestVersion);
+    // HEAD falls back to the GET route; node:http drops the body of a HEAD
+    // response, so the headers (status, Content-Type) are the GET ones.
+    const matchedRoute = this.findRoute(req.method, pathname, requestVersion)
+      ?? (req.method === 'HEAD' ? this.findRoute('GET', pathname, requestVersion) : null);
 
     if (matchedRoute) {
       req.params = matchedRoute.params;
