@@ -826,10 +826,18 @@ function registerRoute(method, config, router, path) {
         res.end();
       }
     } catch (_error) {
-      sendError(req, res, _error, router.exposeErrors);
+      const expose = requestErrorExposure.has(req) ? requestErrorExposure.get(req) : router.exposeErrors;
+      sendError(req, res, _error, expose);
     }
   }, { name });
 }
+
+/**
+ * The `exposeErrors` setting in force for each request handle() is serving,
+ * so object routes honour a per-call override as addRoute routes do.
+ * @private
+ */
+const requestErrorExposure = new WeakMap();
 
 /**
  * Largest WebSocket frame or reassembled message accepted by default.
@@ -1026,6 +1034,9 @@ class SimpleRouter {
     // 5xx responses carry a generic message unless this is true (or, when
     // it is unset, NODE_ENV is 'development'). The real error is logged.
     this.exposeErrors = options.exposeErrors;
+
+    // Default per-request options for handle() and createServer().
+    this.defaultOptions = options;
 
     // `prefix` and `middleware` apply to every route registered afterwards,
     // like an outermost group() and router.use(). Both were declared in the
@@ -2225,6 +2236,10 @@ class SimpleRouter {
   async handle(req, res, options = {}) {
     const startTime = Date.now();
 
+    // Router-level options (rateLimit, maxBodySize...) apply to direct
+    // handle() calls too, not only to createServer(); per-call options win.
+    options = { ...this.defaultOptions, ...options };
+
     // Metrics collection
     if (this.enableMetrics) {
       this.metrics.requests++;
@@ -2308,6 +2323,7 @@ class SimpleRouter {
 
     if (matchedRoute) {
       req.params = matchedRoute.params;
+      requestErrorExposure.set(req, options.exposeErrors ?? this.exposeErrors);
 
       // Record route match metrics
       if (this.enableMetrics) {
