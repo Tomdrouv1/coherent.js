@@ -1,303 +1,178 @@
 # @coherent.js/forms
 
-Comprehensive forms handling and validation utilities for Coherent.js applications.
+Server-rendered forms for Coherent.js: build a form on the server, validate
+submissions with the same rules on both sides, and progressively enhance it in
+the browser with `hydrateForm`.
+
+- ESM-only, Node 22.12+
+- The package root is isomorphic; `@coherent.js/forms/csrf` is server-only.
 
 ## Installation
 
 ```bash
-npm install @coherent.js/forms
-# or
 pnpm add @coherent.js/forms
-# or
-yarn add @coherent.js/forms
 ```
 
-## Overview
+## Exports
 
-The `@coherent.js/forms` package provides powerful form handling capabilities including:
+| Import path | Exports |
+| --- | --- |
+| `@coherent.js/forms` | `FormBuilder`, `createFormBuilder`, `buildForm`, `DEFAULT_CLASS_NAMES`, `hydrateForm`, `validators`, `FormValidator`, `createValidator`, `validate`, `validateField`, `validateForm`, `registerValidator`, `composeValidators` |
+| `@coherent.js/forms/form-builder` | `FormBuilder`, `createFormBuilder`, `buildForm`, `DEFAULT_CLASS_NAMES` |
+| `@coherent.js/forms/hydration` | `hydrateForm` |
+| `@coherent.js/forms/validation` | `validators`, `FormValidator`, `createValidator`, `validate` |
+| `@coherent.js/forms/validators` | `validators`, `validateField`, `validateForm`, `createValidator`, `registerValidator`, `composeValidators` |
+| `@coherent.js/forms/csrf` (server only) | `createCsrfToken`, `verifyCsrfToken`, `CSRF_FIELD_NAME` |
 
-- Form state management
-- Validation with built-in validators
-- Error handling and display
-- Form serialization and submission
-- Integration with Coherent.js components
-
-## Quick Start
+## Quick start
 
 ```javascript
-import { createForm } from '@coherent.js/forms';
-import { validators } from '@coherent.js/state';
+import { render } from '@coherent.js/core';
+import { createFormBuilder, validators } from '@coherent.js/forms';
 
-const contactForm = createForm({
-  fields: {
-    email: {
-      value: '',
-      validators: [validators.email('Please enter a valid email')]
-    },
-    message: {
-      value: '',
-      validators: [validators.minLength(10, 'Message must be at least 10 characters')]
-    }
-  }
+// The form definition, shared by every request.
+const signup = createFormBuilder({
+  action: '/signup',
+  method: 'post',
+  fields: [
+    { name: 'email', type: 'email', label: 'Email', required: true },
+    { name: 'password', type: 'password', label: 'Password', required: true,
+      validators: [validators.minLength(8)] }
+  ]
 });
 
-function ContactForm() {
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    
-    if (contactForm.validate()) {
-      // Form is valid, submit data
-      await submitFormData(contactForm.values);
-      contactForm.reset();
-    }
-  };
+// GET /signup
+const html = render(signup.buildForm());
 
-  return {
-    form: {
-      onsubmit: handleSubmit,
-      children: [
-        {
-          input: {
-            type: 'email',
-            value: contactForm.fields.email.value,
-            oninput: (e) => contactForm.setField('email', e.target.value),
-            className: contactForm.fields.email.error ? 'error' : ''
-          }
-        },
-        {
-          span: {
-            text: contactForm.fields.email.error || '',
-            className: 'error-message'
-          }
-        },
-        {
-          textarea: {
-            value: contactForm.fields.message.value,
-            oninput: (e) => contactForm.setField('message', e.target.value),
-            className: contactForm.fields.message.error ? 'error' : ''
-          }
-        },
-        {
-          span: {
-            text: contactForm.fields.message.error || '',
-            className: 'error-message'
-          }
-        },
-        {
-          button: {
-            type: 'submit',
-            text: 'Send Message',
-            disabled: contactForm.isSubmitting
-          }
-        }
-      ]
-    }
-  };
+// POST /signup — fork() gives this request its own state
+const form = signup.fork().setValues(request.body);
+const errors = form.validate();
+if (Object.keys(errors).length > 0) {
+  for (const name of Object.keys(errors)) form.touch(name);
+  return render(form.buildForm()); // re-render with values and errors
 }
 ```
 
-## Features
+In the browser, `hydrateForm('form[name="form"]')` reads the validation rules
+the server rendered and validates on blur and submit.
 
-### Form State Management
+## Validators
 
-Automatically manage form state including values, errors, and submission status:
+A **validator** is a function `(value, formData) => string | null`: an error
+message, or `null` when the value passes. Every runner — `FormValidator`
+schemas, `validateField`, `validateForm`, `FormBuilder` fields and
+`hydrateForm` — calls validators that way.
+
+Each built-in is a **factory** that returns a validator. The last argument is
+always an optional custom message:
 
 ```javascript
-const form = createForm({
-  fields: {
-    username: { value: '' },
-    password: { value: '' }
+import { validators, validateForm } from '@coherent.js/forms';
+
+validateForm(
+  { name: '', email: 'nope', age: '15' },
+  {
+    name: [validators.required('Please enter your name')],
+    email: [validators.required, validators.email()],
+    age: [validators.min(18, 'You must be 18 or older')]
   }
-});
-
-// Access form values
-console.log(form.values); // { username: '', password: '' }
-
-// Update field values
-form.setField('username', 'john_doe');
-
-// Check form validity
-console.log(form.isValid); // true/false
-
-// Check submission status
-console.log(form.isSubmitting); // true/false
+);
+// → { name: 'Please enter your name', email: 'Invalid email address', age: 'You must be 18 or older' }
 ```
 
-### Validation
+- A built-in may be listed without calling it (`validators.required`); it runs
+  with its defaults. A string names a built-in or registered validator.
+- Apart from `required` and `matches`, built-ins pass empty values, so combine
+  them with `required`.
+- For direct checks, pass the value and an options object:
+  `validators.minLength('abc', { min: 5 })` returns `'Minimum length is 5'`.
+  A lone string argument is always a message, so `validators.email('a@b.c')`
+  returns a validator rather than checking `'a@b.c'`.
 
-Built-in validators with custom validation support:
+Built-ins: `required`, `email`, `url`, `minLength(min)`, `maxLength(max)`,
+`min(min)`, `max(max)`, `pattern(regex)`, `matches(field)`, `match(field)`,
+`oneOf(values)`, `custom(fn)`, `number`, `integer`, `phone`, `date`, `alpha`,
+`alphanumeric`, `uppercase`, `fileType(accept)`, `fileSize(maxSize)`,
+`fileExtension(extensions)`. Helpers: `compose`, `when`, `chain`, `debounce`,
+`cancellable`, `get`.
+
+Your own validators follow the same shape:
 
 ```javascript
-import { validators } from '@coherent.js/state';
+import { registerValidator, validators, createValidator } from '@coherent.js/forms';
 
-const form = createForm({
-  fields: {
-    email: {
-      value: '',
-      validators: [
-        validators.required('Email is required'),
-        validators.email('Please enter a valid email')
-      ]
-    },
-    age: {
-      value: '',
-      validators: [
-        validators.required('Age is required'),
-        validators.min(18, 'Must be at least 18 years old')
-      ]
-    }
-  }
-});
+const noShouting = value =>
+  value && value === value.toUpperCase() ? 'Please stop shouting' : null;
 
-// Custom validator
-const customValidator = (value) => {
-  if (value && value.length < 5) {
-    return 'Value must be at least 5 characters';
-  }
-  return null; // null means valid
-};
-
-const formWithCustomValidation = createForm({
-  fields: {
-    customField: {
-      value: '',
-      validators: [customValidator]
-    }
-  }
-});
+registerValidator('noShouting', noShouting);   // now validators.noShouting
+const noSpaces = createValidator(value => /\s/.test(value), 'No spaces allowed');
 ```
 
-### Async Validation
+`createValidator(schema)` returns a `FormValidator`; `createValidator(fn,
+message)` wraps a check function as above.
 
-Support for asynchronous validation (e.g., checking if username is available):
+### Client-side validation
+
+For each field, the builder renders its validators into `data-validators` as
+JSON (`[{"name":"minLength","args":[8]}]`), and `hydrateForm` rebuilds the
+same rules, so the browser and the server give the same verdict and message.
+Built-ins and registered validators (register the same name in the browser)
+are described; anonymous functions run on the server only.
+
+## Forms on a server: one state per request
+
+A `FormBuilder` holds the values, errors and touched state of one submission.
+Keep the definition at module scope, and never fill that shared instance with
+request data — the next user would see it. Either fork it per request:
 
 ```javascript
-const asyncValidator = async (value) => {
-  if (!value) return null;
-  
-  const response = await fetch(`/api/check-username/${value}`);
-  const exists = await response.json();
-  
-  return exists ? 'Username is already taken' : null;
-};
-
-const signupForm = createForm({
-  fields: {
-    username: {
-      value: '',
-      validators: [asyncValidator]
-    }
-  }
-});
+const form = signup.fork();
+form.setValues(request.body);
 ```
 
-## API Reference
-
-### createForm(options)
-
-Create a new form instance.
-
-**Parameters:**
-- `options.fields` - Object defining form fields and their initial state
-- `options.onSubmit` - Optional function to handle form submission
-
-**Returns:** Form instance with methods and properties
-
-### Form Instance Properties
-
-- `values` - Current form values
-- `fields` - Field state objects with value, error, touched, etc.
-- `isValid` - Boolean indicating if form is valid
-- `isSubmitting` - Boolean indicating if form is being submitted
-- `errors` - Object containing field errors
-
-### Form Instance Methods
-
-- `setField(name, value)` - Update a field's value
-- `validate()` - Validate all fields, returns boolean
-- `reset()` - Reset form to initial state
-- `submit()` - Trigger form submission
-
-## Integration with @coherent.js/state
-
-The forms package integrates seamlessly with the reactive state system:
+or render per-request state without touching the builder:
 
 ```javascript
-import { createForm } from '@coherent.js/forms';
-import { observable } from '@coherent.js/state';
+render(signup.buildForm({ values: request.body, errors }));
+```
 
-// Create reactive form
-const form = createForm({
-  fields: {
-    search: { value: '' }
-  }
-});
+## CSRF protection
 
-// Create observable for search results
-const searchResults = observable([]);
+`@coherent.js/forms/csrf` (server only) issues stateless tokens bound to a
+session and signed with HMAC-SHA256:
 
-// Update search results when form changes
-form.fields.search.watch((newValue) => {
-  if (newValue.length > 2) {
-    performSearch(newValue).then(results => {
-      searchResults.value = results;
-    });
+```javascript
+import { createCsrfToken, verifyCsrfToken } from '@coherent.js/forms/csrf';
+
+// GET: render the token as a hidden _csrf input
+const csrfToken = createCsrfToken(process.env.CSRF_SECRET, session.id);
+render(signup.buildForm({ csrfToken }));
+
+// POST: reject the request unless the token matches this session
+if (!verifyCsrfToken(request.body._csrf, process.env.CSRF_SECRET, session.id, { maxAge: 60 * 60 * 1000 })) {
+  return response.status(403).end();
+}
+```
+
+## Hydration
+
+```javascript
+import { hydrateForm } from '@coherent.js/forms/hydration';
+
+const controller = hydrateForm('#signup', {
+  onSubmit: async (values) => {
+    await fetch('/api/signup', { method: 'POST', body: JSON.stringify(values) });
   }
 });
 ```
 
-## Examples
+Pass the same `classNames` you gave `buildForm` if you customised them. The
+controller exposes `validateField`, `validateForm`, `getValues`, `getErrors`,
+`setFieldValue`, `reset` and `destroy`.
 
-### Login Form
+## TypeScript
 
-```javascript
-import { createForm } from '@coherent.js/forms';
-import { validators } from '@coherent.js/state';
-
-const loginForm = createForm({
-  fields: {
-    email: {
-      value: '',
-      validators: [
-        validators.required('Email is required'),
-        validators.email('Please enter a valid email')
-      ]
-    },
-    password: {
-      value: '',
-      validators: [
-        validators.required('Password is required'),
-        validators.minLength(8, 'Password must be at least 8 characters')
-      ]
-    }
-  },
-  async onSubmit(values) {
-    try {
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values)
-      });
-      
-      if (response.ok) {
-        // Handle successful login
-        window.location.href = '/dashboard';
-      } else {
-        // Handle login error
-        throw new Error('Invalid credentials');
-      }
-    } catch (error) {
-      loginForm.setError('login', error.message);
-    }
-  }
-});
-```
-
-## Related Packages
-
-- [@coherent.js/state](../state/README.md) - Reactive state management
-- [@coherent.js/core](../core/README.md) - Core framework
-- [@coherent.js/client](../client/README.md) - Client-side utilities
+Type definitions ship with the package (`types/index.d.ts`, `types/csrf.d.ts`).
 
 ## License
 
