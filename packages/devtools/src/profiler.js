@@ -1,10 +1,51 @@
 /**
  * Coherent.js Performance Profiler
- * 
+ *
  * Tracks and analyzes rendering performance
- * 
+ *
+ * Timings come from performance.now() (sub-millisecond, monotonic), so
+ * `startTime` / `endTime` are relative to the time origin, not epoch
+ * milliseconds. A profiler records nothing until enabled.
+ *
  * @module devtools/profiler
  */
+
+const hasPerformanceTimeline = () =>
+  typeof performance !== 'undefined' && typeof performance.mark === 'function';
+
+/** Monotonic high-resolution clock in milliseconds. */
+function now() {
+  return typeof performance !== 'undefined' && typeof performance.now === 'function'
+    ? performance.now()
+    : Date.now();
+}
+
+/** Remove entries this profiler added to the global performance timeline. */
+function clearTimelineEntries(marks, measureName) {
+  if (!hasPerformanceTimeline()) return;
+  for (const mark of marks) {
+    performance.clearMarks?.(mark);
+  }
+  if (measureName) {
+    performance.clearMeasures?.(measureName);
+  }
+}
+
+/**
+ * Add a performance.measure() for DevTools timelines, then clear it and its
+ * marks so a long-running process does not accumulate timeline entries.
+ */
+function recordTimelineMeasure(name, startMark, endMark) {
+  if (!hasPerformanceTimeline()) return;
+  try {
+    performance.mark(endMark);
+    performance.measure?.(name, startMark, endMark);
+  } catch {
+    // Ignore measure errors (e.g. the start mark was already cleared)
+  } finally {
+    clearTimelineEntries([startMark, endMark], name);
+  }
+}
 
 /**
  * Performance Profiler
@@ -13,7 +54,8 @@
 export class PerformanceProfiler {
   constructor(options = {}) {
     this.options = {
-      enabled: true,
+      // Opt-in: a profiler that is merely constructed must cost nothing.
+      enabled: false,
       sampleRate: 1.0, // 1.0 = 100% sampling
       slowThreshold: 16, // 16ms = 60fps
       trackMemory: typeof performance !== 'undefined' && performance.memory,
@@ -43,7 +85,7 @@ export class PerformanceProfiler {
     const session = {
       id: this.generateId(),
       name,
-      startTime: Date.now(),
+      startTime: now(),
       measurements: [],
       marks: [],
       active: true
@@ -52,7 +94,7 @@ export class PerformanceProfiler {
     this.sessions.set(session.id, session);
     this.currentSession = session;
 
-    if (typeof performance !== 'undefined' && performance.mark) {
+    if (hasPerformanceTimeline()) {
       performance.mark(`coherent-session-start-${session.id}`);
     }
 
@@ -73,25 +115,22 @@ export class PerformanceProfiler {
       return null; // Gracefully handle non-existent sessions
     }
 
-    session.endTime = Date.now();
+    session.endTime = now();
     session.duration = session.endTime - session.startTime;
     session.active = false;
 
-    if (typeof performance !== 'undefined' && performance.mark) {
-      performance.mark(`coherent-session-end-${session.id}`);
-    }
+    recordTimelineMeasure(
+      `coherent-session-${session.id}`,
+      `coherent-session-start-${session.id}`,
+      `coherent-session-end-${session.id}`
+    );
 
     if (this.currentSession === session) {
       this.currentSession = null;
     }
 
     // Store measurement
-    this.measurements.push(session);
-    
-    // Limit measurements (maxSamples)
-    if (this.measurements.length > this.options.maxSamples) {
-      this.measurements.shift();
-    }
+    this.addMeasurement(session);
 
     return this.analyzeSession(session);
   }
@@ -110,14 +149,14 @@ export class PerformanceProfiler {
       id: measurementId,
       componentName,
       props,
-      startTime: Date.now(),
+      startTime: now(),
       startMemory: this.getMemoryUsage(),
       phase: 'render'
     };
 
     this.marks.set(measurementId, measurement);
 
-    if (typeof performance !== 'undefined' && performance.mark) {
+    if (hasPerformanceTimeline()) {
       performance.mark(`coherent-render-start-${measurementId}`);
     }
 
@@ -131,35 +170,28 @@ export class PerformanceProfiler {
     if (!measurementId || !this.marks.has(measurementId)) return null;
 
     const measurement = this.marks.get(measurementId);
-    measurement.endTime = Date.now();
+    measurement.endTime = now();
     measurement.duration = measurement.endTime - measurement.startTime;
     measurement.endMemory = this.getMemoryUsage();
-    measurement.memoryDelta = measurement.endMemory - measurement.startMemory;
+    measurement.memoryDelta = measurement.startMemory && measurement.endMemory
+      ? measurement.endMemory.used - measurement.startMemory.used
+      : null;
     measurement.result = result;
     measurement.slow = measurement.duration > this.options.slowThreshold;
 
-    if (typeof performance !== 'undefined' && performance.mark) {
-      performance.mark(`coherent-render-end-${measurementId}`);
-      
-      if (performance.measure) {
-        try {
-          performance.measure(
-            `coherent-render-${measurementId}`,
-            `coherent-render-start-${measurementId}`,
-            `coherent-render-end-${measurementId}`
-          );
-        } catch {
-          // Ignore measure errors
-        }
-      }
-    }
+    recordTimelineMeasure(
+      `coherent-render-${measurementId}`,
+      `coherent-render-start-${measurementId}`,
+      `coherent-render-end-${measurementId}`
+    );
 
-    // Add to measurements
-    this.measurements.push(measurement);
-    
+    // Add to measurements (bounded by maxSamples)
+    this.addMeasurement(measurement);
+
     // Add to current session
     if (this.currentSession) {
       this.currentSession.measurements.push(measurement);
+      this.trim(this.currentSession.measurements);
     }
 
     // Clean up
@@ -174,17 +206,14 @@ export class PerformanceProfiler {
   mark(name, data = {}) {
     const mark = {
       name,
-      timestamp: Date.now(),
+      timestamp: now(),
       data,
       memory: this.getMemoryUsage()
     };
 
     if (this.currentSession) {
       this.currentSession.marks.push(mark);
-    }
-
-    if (typeof performance !== 'undefined' && performance.mark) {
-      performance.mark(`coherent-mark-${name}`);
+      this.trim(this.currentSession.marks);
     }
 
     return mark;
@@ -206,6 +235,24 @@ export class PerformanceProfiler {
       startMark: start.name,
       endMark: end.name
     };
+  }
+
+  /**
+   * Append a measurement, dropping the oldest beyond `maxSamples`.
+   */
+  addMeasurement(measurement) {
+    this.measurements.push(measurement);
+    this.trim(this.measurements);
+  }
+
+  /**
+   * Drop the oldest entries of `list` beyond `maxSamples`.
+   */
+  trim(list) {
+    const max = Math.max(1, Number(this.options.maxSamples) || 1000);
+    if (list.length > max) {
+      list.splice(0, list.length - max);
+    }
   }
 
   /**
@@ -549,6 +596,12 @@ export class PerformanceProfiler {
    * Clear all data
    */
   clear() {
+    clearTimelineEntries([
+      ...[...this.marks.keys()].map((id) => `coherent-render-start-${id}`),
+      ...[...this.sessions.values()]
+        .filter((session) => session.active)
+        .map((session) => `coherent-session-start-${session.id}`)
+    ]);
     this.measurements = [];
     this.sessions.clear();
     this.currentSession = null;
@@ -596,30 +649,80 @@ export function createProfiler(options = {}) {
 }
 
 /**
- * Measure a function execution
+ * Measure a function execution.
+ *
+ * Resolves with `{ value, duration }`. When `fn` throws, rejects with that
+ * error (an Error — non-Error values are wrapped, with the original as
+ * `cause`) carrying a `duration` property.
  */
 export async function measure(name, fn, profiler = null) {
-  const prof = profiler || new PerformanceProfiler();
+  // Measuring is the whole point of the call, so an ad-hoc profiler is enabled.
+  const prof = profiler || new PerformanceProfiler({ enabled: true });
   const sessionId = prof.start(name);
-  
+
   try {
     const value = await fn();
     const result = prof.stop(sessionId);
     return { value, duration: result?.duration || 0 };
   } catch (error) {
     const result = prof.stop(sessionId);
-    throw { error, duration: result?.duration || 0 };
+    const failure = error instanceof Error
+      ? error
+      : new Error(`${name} failed: ${String(error)}`, { cause: error });
+    try {
+      failure.duration = result?.duration || 0;
+    } catch {
+      // frozen error object: rethrow it as is
+    }
+    throw failure;
   }
 }
 
 /**
- * Create a profiling decorator
+ * Wrap a function so every call is recorded as a render measurement.
+ *
+ * @param {Function} fn - Function to profile (sync or async).
+ * @param {PerformanceProfiler|Object} [options] - A profiler, or
+ *   `{ profiler, name }`. Without a profiler an enabled one is created;
+ *   either way it is exposed as `wrapped.profiler`.
+ * @returns {Function} The wrapper; it returns what `fn` returns.
  */
-export function profile(fn) {
-  return function(...args) {
-    const result = fn(...args);
+export function profile(fn, options = {}) {
+  if (typeof fn !== 'function') {
+    throw new TypeError('profile() expects a function');
+  }
+  const opts = options instanceof PerformanceProfiler ? { profiler: options } : options;
+  const profiler = opts.profiler || new PerformanceProfiler({ enabled: true });
+  const name = opts.name || fn.name || 'anonymous';
+
+  function profiled(...args) {
+    const id = profiler.startRender(name);
+    let result;
+    try {
+      result = fn.apply(this, args);
+    } catch (error) {
+      profiler.endRender(id, { error: true });
+      throw error;
+    }
+    if (result && typeof result.then === 'function') {
+      return Promise.resolve(result).then(
+        (value) => {
+          profiler.endRender(id);
+          return value;
+        },
+        (error) => {
+          profiler.endRender(id, { error: true });
+          throw error;
+        }
+      );
+    }
+    profiler.endRender(id);
     return result;
-  };
+  }
+
+  Object.defineProperty(profiled, 'name', { value: name });
+  profiled.profiler = profiler;
+  return profiled;
 }
 
 export default {

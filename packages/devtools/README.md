@@ -55,10 +55,11 @@ import { createProfiler } from '@coherent.js/devtools/profiler';
 
 logger.info('Starting app');
 
-const profiler = createProfiler('render');
-profiler.start();
+// Profilers record nothing until enabled
+const profiler = createProfiler({ enabled: true });
+const session = profiler.start('render');
 // ... render work ...
-profiler.stop();
+console.log(profiler.stop(session).duration); // ms, from performance.now()
 ```
 
 TypeScript:
@@ -68,10 +69,10 @@ import { createProfiler } from '@coherent.js/devtools/profiler';
 
 logger.debug('Bootstrapping');
 
-const profiler = createProfiler('render');
-profiler.start();
+const profiler = createProfiler({ enabled: process.env.NODE_ENV !== 'production' });
+const session = profiler.start('render');
 // ... work ...
-profiler.stop();
+profiler.stop(session);
 ```
 
 ## Exports

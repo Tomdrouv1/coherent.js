@@ -264,7 +264,6 @@ describe('PerformanceProfiler', () => {
       expect(result).toBe('test');
     });
 
-    // The profiler times with Date.now(), which has 1 ms resolution, and
     // setTimeout may fire a fraction early — so a 5 ms sleep asserted as >= 5
     // failed under load. Sleep long enough that the floor still proves the
     // duration tracks the work without asserting timer precision the platform
@@ -291,7 +290,7 @@ describe('PerformanceProfiler', () => {
     });
 
     it('should respect sample rate', () => {
-      const sampledProfiler = new PerformanceProfiler({ sampleRate: 0.5 });
+      const sampledProfiler = new PerformanceProfiler({ enabled: true, sampleRate: 0.5 });
 
       let profiledCount = 0;
       for (let i = 0; i < 100; i++) {
@@ -306,7 +305,7 @@ describe('PerformanceProfiler', () => {
     });
 
     it('should limit max samples', () => {
-      const limitedProfiler = new PerformanceProfiler({ maxSamples: 10 });
+      const limitedProfiler = new PerformanceProfiler({ enabled: true, maxSamples: 10 });
 
       for (let i = 0; i < 20; i++) {
         const sessionId = limitedProfiler.start(`operation-${i}`);

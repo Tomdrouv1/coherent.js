@@ -314,7 +314,8 @@ export function generateDevtoolsScaffolding() {
 import { inspect, createProfiler, createLogger } from '@coherent.js/devtools';
 
 // Dev-time helpers — import these where useful during development.
-export const profiler = createProfiler();
+// Profilers record nothing unless enabled.
+export const profiler = createProfiler({ enabled: process.env.NODE_ENV !== 'production' });
 export const logger = createLogger();
 
 /**
