@@ -2,11 +2,11 @@
 
 [![npm version](https://img.shields.io/npm/v/@coherent.js/database.svg)](https://www.npmjs.com/package/@coherent.js/database)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](../../LICENSE)
-[![Node >= 20](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
+[![Node >= 22.12](https://img.shields.io/badge/node-%3E%3D22.12-brightgreen)](https://nodejs.org)
 
 Database utilities and adapters for Coherent.js.
 
-- ESM-only, Node 20+
+- ESM-only, Node 22.12+
 - Optional adapters for popular databases
 - Designed to pair with `@coherent.js/core` and server frameworks
 
@@ -60,6 +60,19 @@ await db.transaction(async (tx: Transaction) => {
 ```
 
 The package has no default export; import the functions you need by name.
+
+## Stability
+
+- The `Model` class (`@coherent.js/database/model`, `createModel()`) and the migration runner
+  (`createMigration()`, `@coherent.js/database/migration`) are young: they were rewritten to run
+  real queries in this release and have little production use. Test them against your own schema.
+- The SQLite adapter uses a single connection, so concurrent transactions are not supported: a
+  transaction started while another is open fails with "cannot start a transaction within a
+  transaction", and plain queries issued meanwhile run inside the open transaction (and roll back
+  with it). Serialize transactions yourself, or use PostgreSQL or MySQL for concurrent writes.
+
+See the [database guide](../../docs/database/index.md) for the query builder, models, migrations
+and middleware.
 
 ## Development
 

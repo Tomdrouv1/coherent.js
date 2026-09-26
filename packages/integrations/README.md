@@ -12,6 +12,12 @@ Framework integration adapters for Coherent.js — bridges between your chosen H
 - `@coherent.js/integrations/remix` — Remix adapter (added in 1.0.0)
 - `@coherent.js/integrations/sveltekit` — SvelteKit adapter (added in 1.0.0)
 
+**Stability:** the Astro, Remix and SvelteKit adapters are young. Their tests run a real
+`astro build`, compile and server-render a component with the Svelte compiler, and server-render
+the Remix wrapper with React, but the adapters have seen little production use. The Express,
+Fastify and Koa adapters are tested over real HTTP requests, and the Next.js adapter with Web
+`Request`/`Response` objects and `react-dom/server`.
+
 ## Migration from pre-1.0
 
 Each framework previously shipped as its own package (`@coherent.js/express`, etc.). Migrate by changing import paths:

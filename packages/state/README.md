@@ -5,11 +5,11 @@ Reactive state management for Coherent.js applications with SSR support, persist
 ## Installation
 
 ```bash
-npm install @coherent.js/state@beta
+npm install @coherent.js/state
 # or
-pnpm add @coherent.js/state@beta
+pnpm add @coherent.js/state
 # or
-yarn add @coherent.js/state@beta
+yarn add @coherent.js/state
 ```
 
 ## Features
@@ -138,17 +138,23 @@ storage.
 import { createValidatedState, validators } from '@coherent.js/state';
 
 const userForm = createValidatedState(
-  { email: '', age: 0 },
+  { email: 'ada@example.com', age: 36 },
   {
     validators: {
-      email: validators.email(),
+      email: validators.email,
       age: validators.range(18, 120)
     }
   }
 );
 
-userForm.set('email', 'invalid-email'); // Throws validation error
+userForm.setState({ email: 'invalid-email' }); // invalid: not applied
+userForm.getErrors(); // [{ path: 'email', message: 'Invalid email format', ... }]
 ```
+
+A validator is `(value) => true | message`; `validators.email`, `url` and `required` are used
+as is, `range(min, max)`, `length(min, max)` and `pattern(regex)` are factories. Every update
+validates the whole resulting state, so start from a valid one. With `strict: true` an invalid
+`setState()` throws instead.
 
 ## API Reference
 

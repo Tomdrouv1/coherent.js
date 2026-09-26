@@ -2,11 +2,11 @@
 
 [![npm version](https://img.shields.io/npm/v/@coherent.js/api.svg)](https://www.npmjs.com/package/@coherent.js/api)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](../../LICENSE)
-[![Node >= 20](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
+[![Node >= 22.12](https://img.shields.io/badge/node-%3E%3D22.12-brightgreen)](https://nodejs.org)
 
 API framework utilities for Coherent.js (routing, validation, serialization, security).
 
-- ESM-only, Node 20+
+- ESM-only, Node 22.12+
 - Build APIs with an object-first approach
 - Batteries-included: validation, error handling, auth helpers, and serialization
 
@@ -19,7 +19,7 @@ pnpm add @coherent.js/api
 ```
 
 Requirements:
-- Node.js >= 20
+- Node.js >= 22.12
 - ESM module system
 
 ## Quick start
@@ -88,6 +88,10 @@ added imperatively: `router.get('/users/:id', handler, { middleware: [...] })`.
   `createServer()` / `handle()` and limit at the proxy.
 - WebSocket routes (`enableWebSockets: true`) accept same-origin browser handshakes only, unless
   `wsAllowedOrigins` (router) or `allowedOrigins` (route) lists the origins to allow.
+  **Stability:** WebSocket support is experimental. It is a small built-in implementation: only
+  text messages are delivered (binary frames are ignored, `send()` writes text, objects as JSON),
+  there are no extensions such as compression, and messages above `wsMaxPayload` (1 MiB) close the
+  connection. Use a dedicated WebSocket library for anything demanding.
 - `withAuth({ secret })` verifies `Authorization: Bearer <jwt>` (HS256); `withAuth({ verify })`
   accepts any other scheme. `generateToken()` returns a random hex string, not a JWT.
 

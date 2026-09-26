@@ -128,9 +128,9 @@ import { createRouter } from '@coherent.js/client/router';
 
 const router = createRouter({ base: '/app' });   // or { mode: 'hash' }
 
-router.addRoute('/', { component: Home });
+router.addRoute('/', { component: () => Home });  // a function is a loader
 router.addRoute('/users/:id', {
-  component: () => import('./UserPage.js'),      // lazy
+  component: () => import('./UserPage.js'),      // lazy: resolves to the module
   beforeEnter: (to) => to.params.id !== 'blocked' // false cancels
 });
 
@@ -143,7 +143,9 @@ router.stop();
 ```
 
 The router resolves routes and tracks the current one; rendering the matched
-component is up to the application. The last navigation wins: a slow lazy
+component is up to the application. A function `component` is called once,
+without arguments, and its awaited result becomes the route's component, so
+wrap component functions: `component: () => Home`. The last navigation wins: a slow lazy
 route that resolves after a later `push()` is dropped.
 
 ## HMR

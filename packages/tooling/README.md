@@ -16,6 +16,12 @@ import { renderComponent } from '@coherent.js/tooling/testing';
 //   '@coherent.js/tooling/testing/matchers'
 ```
 
+`extendExpect(expect)` registers matchers that read a `renderComponent()` result (`toHaveText`,
+`toHaveClass`, `toHaveAttribute`, `toBeValidHTML`...). It leaves Vitest's built-in
+`toMatchSnapshot` and `toHaveBeenCalled*` alone: snapshot with
+`expect(result.toSnapshot()).toMatchSnapshot()`. See the
+[testing guide](../../docs/testing/guide.md#custom-matchers).
+
 These were previously published as `@coherent.js/testing`.
 
 ### Language Server
@@ -27,7 +33,9 @@ npm install -g @coherent.js/tooling
 coherent-language-server --stdio
 ```
 
-Configure your editor's LSP client to invoke `coherent-language-server` for JavaScript and TypeScript files.
+Configure your editor's LSP client to invoke `coherent-language-server` for JavaScript and TypeScript files. The binary also accepts `--node-ipc` and `--socket=<port>`.
+
+To embed the server, import `startServer` from `@coherent.js/tooling/lsp`; importing the module does nothing else. `startServer(connection?)` serves the given `vscode-languageserver` connection (by default one over the transport named on the command line) and returns `{ connection, documents }`.
 
 These were previously published as `@coherent.js/language-server`.
 

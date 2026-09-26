@@ -2,11 +2,11 @@
 
 [![npm version](https://img.shields.io/npm/v/@coherent.js/i18n.svg)](https://www.npmjs.com/package/@coherent.js/i18n)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](../../LICENSE)
-[![Node >= 20](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
+[![Node >= 22.12](https://img.shields.io/badge/node-%3E%3D22.12-brightgreen)](https://nodejs.org)
 
 Internationalization utilities for Coherent.js applications.
 
-- ESM-only, Node 20+
+- ESM-only, Node 22.12+
 - Translator + locale management
 - Date/number/currency/list formatters
 
