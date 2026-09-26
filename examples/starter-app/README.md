@@ -8,20 +8,20 @@ A **simple, working full-stack example** that demonstrates:
 
 ## 🎯 What This Is
 
-This is a **minimal, complete example** of a Coherent.js application that actually works end-to-end. No complexity, no confusion - just a working counter app that demonstrates the full stack.
+This is a **minimal, complete example** of a Coherent.js application that works end-to-end: a counter rendered on the server and made interactive in the browser.
 
 ## 🚀 Quick Start
 
 ### Run the App
 
 ```bash
-# From the starter-app directory
-node server.js
+# From the repository root, after `pnpm install` and `pnpm build`
+node examples/starter-app/server.js
 ```
 
-Then open your browser to `http://localhost:3000`
+Then open your browser to `http://localhost:3000` (set `PORT` to use another port; `PORT=0` picks a free one).
 
-**That's it!** The counter works, buttons click, state updates. Everything just works.
+The server bundles the hydration script with esbuild when it starts, so there is no separate build step for the app itself.
 
 ## 📁 Project Structure
 
@@ -29,8 +29,8 @@ Then open your browser to `http://localhost:3000`
 starter-app/
 ├── components/
 │   └── Counter.js      # Interactive counter component
-├── server.js           # HTTP server with SSR
-└── README.md          # This file
+├── server.js           # HTTP server with SSR and the hydration bundle
+└── README.md           # This file
 ```
 
 ## 🎓 How It Works
@@ -39,14 +39,16 @@ starter-app/
 
 When you visit `http://localhost:3000`, the server:
 
-1. Renders the `Counter` component to HTML
-2. Sends complete HTML to browser
-3. Page displays **instantly** (no loading spinner!)
+1. Renders the `Counter` component (with its initial state) to HTML
+2. Sends complete HTML to the browser
+3. The page displays **instantly** (no loading spinner!)
 
 ```javascript
 // server.js
-const page = createPage();
-const html = render(page);  // ← SSR happens here
+const INITIAL_STATE = { count: 0 };
+
+const page = createPage();   // contains Counter(INITIAL_STATE)
+const html = render(page);   // ← SSR happens here
 res.end(html);
 ```
 
@@ -54,38 +56,46 @@ res.end(html);
 
 After the HTML loads, the browser:
 
-1. Loads `/hydration.js` bundle
-2. Finds components with `data-coherent-component`
-3. Attaches event handlers
-4. Makes buttons interactive
+1. Loads the `/hydration.js` bundle
+2. Finds the counter's element
+3. Calls `hydrate()`, which binds the `onClick` handlers to the server-rendered buttons
 
 ```javascript
-// In the page
-autoHydrate(window.componentRegistry);  // ← Hydration happens here
+// The hydration entry bundled by server.js
+import { hydrate } from '@coherent.js/client';
+import { Counter } from './components/Counter.js';
+
+const element = document.querySelector('[data-coherent-component="counter"]');
+hydrate(Counter, element, { initialState: { count: 0 } });  // ← Hydration happens here
 ```
+
+`hydrate(component, container, options)` takes the component function, the element the server rendered for it, and the state to start from (it must match the state the server rendered with).
 
 ### 3. Component Definition
 
-The counter is a simple `withState` component:
+The counter is a plain function of its state:
 
 ```javascript
 // components/Counter.js
-export const Counter = withState({ count: 0 })(({ state, setState }) => ({
-  div: {
-    'data-coherent-component': 'counter',  // ← Required for hydration
-    children: [
-      { p: { text: `Count: ${state.count}` } },
-      {
-        button: {
-          text: '+',
-          onclick: (event, state, setState) => {
-            setState({ count: state.count + 1 });  // ← Event handler
+export function Counter({ count = 0 } = {}) {
+  return {
+    div: {
+      'data-coherent-component': 'counter',  // ← Lets the entry find the element
+      className: 'counter',
+      children: [
+        { p: { text: `Count: ${count}` } },
+        {
+          button: {
+            text: '+',
+            onClick: (event) => {
+              event.setState({ count: event.state.count + 1 });  // ← Event handler
+            }
           }
         }
-      }
-    ]
-  }
-}));
+      ]
+    }
+  };
+}
 ```
 
 ## ✨ Key Features Demonstrated
@@ -98,47 +108,33 @@ export const Counter = withState({ count: 0 })(({ state, setState }) => ({
 ### Client-Side Hydration
 - Makes SSR'd HTML interactive
 - Preserves server-rendered content
-- Attaches event handlers
+- Attaches event handlers through document-level delegation
 
 ### State Management
-- `withState` for reactive components
-- `setState` for updates
-- Automatic re-rendering
+- The component receives its state as props
+- `event.setState()` updates it
+- The component re-renders and only the changed DOM is patched
 
 ### Event Handlers
-- Inline event handlers in components
-- Signature: `(event, state, setState) => {}`
-- Work after hydration
-
-## 🎯 What Makes This Different
-
-### Other Examples
-- ❌ Complex setup
-- ❌ Build steps required
-- ❌ Doesn't actually work
-- ❌ Missing pieces
-
-### This Example
-- ✅ **One command to run**
-- ✅ **No build step**
-- ✅ **Actually works**
-- ✅ **Complete and simple**
+- `onClick` (or any `on*` prop) in the component
+- Receive one wrapped event: `event.state`, `event.setState()`, `event.props`, `event.originalEvent`
+- Run in the browser after hydration; on the server they render no attribute
 
 ## 📚 Learn More
 
 ### Understanding the Code
 
 **server.js**
-- Creates HTTP server
-- Serves `/hydration.js` bundle
-- Renders page with `render`
-- Includes hydration script
+- Creates the HTTP server
+- Bundles and serves `/hydration.js`
+- Renders the page with `render`
+- Includes the hydration script
 
 **components/Counter.js**
-- Uses `withState` for state management
-- Returns object-based component
-- Has `data-coherent-component` attribute
-- Event handlers use `(event, state, setState)` signature
+- A plain function of its state (`{ count }`)
+- Returns an object-based component
+- Has a `data-coherent-component` attribute the hydration entry looks for
+- Event handlers update state with `event.setState()`
 
 ### Key Concepts
 
@@ -155,12 +151,14 @@ export const Counter = withState({ count: 0 })(({ state, setState }) => ({
 }
 ```
 
-**2. State Management**
+**2. State**
 ```javascript
-withState({ count: 0 })(({ state, setState }) => {
-  // state.count is available
-  // setState({ count: 1 }) to update
-})
+// Server
+render(Counter({ count: 0 }));
+
+// Browser
+const app = hydrate(Counter, element, { initialState: { count: 0 } });
+app.setState({ count: 5 });  // also possible from outside the component
 ```
 
 **3. Event Handlers**
@@ -168,19 +166,9 @@ withState({ count: 0 })(({ state, setState }) => {
 {
   button: {
     text: 'Click',
-    onclick: (event, state, setState) => {
-      setState({ clicked: true });
+    onClick: (event) => {
+      event.setState({ clicked: true });
     }
-  }
-}
-```
-
-**4. Hydration Marker**
-```javascript
-{
-  div: {
-    'data-coherent-component': 'my-component',  // ← Required!
-    children: [...]
   }
 }
 ```
@@ -191,7 +179,7 @@ withState({ count: 0 })(({ state, setState }) => {
 
 1. Create `components/MyComponent.js`
 2. Export a component function
-3. Import and use in `server.js`
+3. Render it in `server.js` and hydrate it in the hydration entry
 
 ### Add Styling
 
@@ -220,35 +208,10 @@ if (req.url === '/about') {
 
 ## ⚠️ Important Notes
 
-### Event Handler Signature
+### Same State on Both Sides
 
-Event handlers **must** use this signature:
-
-```javascript
-onclick: (event, state, setState) => {
-  // Your code here
-}
-```
-
-**Not** this:
-```javascript
-onclick: () => {  // ❌ Won't work with hydration
-  // Your code here
-}
-```
-
-### Hydration Marker
-
-Components **must** have `data-coherent-component`:
-
-```javascript
-{
-  div: {
-    'data-coherent-component': 'counter',  // ✅ Required
-    children: [...]
-  }
-}
-```
+Render on the server and hydrate in the browser with the same state. With
+different values the first client re-render would replace what the server sent.
 
 ### dangerouslySetInnerContent
 
@@ -276,39 +239,25 @@ If you can click the buttons and see the count change, **you've successfully run
 
 ## 📖 Documentation
 
-- [Getting Started Guide](../../docs/getting-started.md)
-- [Hydration Guide](../../docs/hydration-guide.md)
-- [API Reference](../../docs/api-reference.md)
-
-## 💡 Tips
-
-- **Keep it simple** - Start with basic components
-- **Test in browser** - Open DevTools console
-- **Check hydration** - Look for "✅ Hydration complete!"
-- **Read errors** - They're usually helpful
+- [Quick Start](../../docs/getting-started/quick-start.md)
+- [Client Hydration](../../docs/client/hydration.md)
+- [@coherent.js/client README](../../packages/client/README.md)
 
 ## ❓ Troubleshooting
 
 ### Buttons don't work
-- Check browser console for errors
-- Verify `data-coherent-component` attribute
-- Ensure hydration script loaded
+- Check the browser console for errors
+- Verify the `data-coherent-component` attribute is on the counter's root element
+- Ensure `/hydration.js` loaded
 
 ### Server won't start
-- Check port 3000 is available
-- Verify Node.js version (18+)
-- Check file paths are correct
+- Check port 3000 is available (or set `PORT`)
+- Verify the Node.js version (22.12+)
+- Run `pnpm install` and `pnpm build` at the repository root first
 
 ### Changes not showing
 - Hard refresh browser (Cmd+Shift+R)
-- Clear browser cache
-- Restart server
-
-## 🎯 This Is The Template
-
-**This is how Coherent.js should be used for full-stack apps.**
-
-Simple, clear, and it works. Use this as your starting point for real projects!
+- Restart the server (the hydration bundle is built at startup)
 
 ---
 

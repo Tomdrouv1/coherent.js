@@ -74,13 +74,20 @@ export default defineConfig({
     __DEV__: JSON.stringify(false)
   },
 
-  // Resolve workspace aliases
+  // Resolve workspace packages to their sources. Exact matches: a plain
+  // '@coherent.js/devtools' key also rewrote '@coherent.js/devtools/visualizer'
+  // to '.../src/index.js/visualizer'.
   resolve: {
-    alias: {
-      '@coherent.js/core': resolve(__dirname, '../../packages/core/src/index.js'),
-      '@coherent.js/state': resolve(__dirname, '../../packages/state/src/index.js'),
-      '@coherent.js/api': resolve(__dirname, '../../packages/api/src/index.js'),
-      '@coherent.js/devtools': resolve(__dirname, '../../packages/devtools/src/index.js')
-    }
+    alias: [
+      ['core', 'core/src/index.js'],
+      ['state', 'state/src/index.js'],
+      ['api', 'api/src/index.js'],
+      ['devtools', 'devtools/src/index.js'],
+      ['devtools/visualizer', 'devtools/src/component-visualizer.js'],
+      ['devtools/performance', 'devtools/src/performance/index.js']
+    ].map(([name, file]) => ({
+      find: new RegExp(`^@coherent\\.js/${name}$`),
+      replacement: resolve(__dirname, '../../packages', file)
+    }))
   }
 });
