@@ -166,14 +166,20 @@ export function generateMeta(options?: GenerateMetaOptions): CoherentNode[];
 // Sitemap Generator
 // ============================================================================
 
-/** Per-URL sitemap options. */
+/** The `<changefreq>` values the sitemap protocol allows. */
+export type SitemapChangefreq = 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never';
+
+/**
+ * Per-URL sitemap options. Pass `null` for `lastmod`, `changefreq` or
+ * `priority` to leave that element out.
+ */
 export interface SitemapEntryOptions {
-  /** Last modification date; defaults to today (`YYYY-MM-DD`) */
-  lastmod?: string;
-  /** Change frequency; defaults to `'weekly'` */
-  changefreq?: 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never';
-  /** Priority from 0.0 to 1.0; defaults to `0.5` */
-  priority?: number;
+  /** Last modification date (W3C datetime); defaults to today (`YYYY-MM-DD`). XML-escaped on output. */
+  lastmod?: string | null;
+  /** Change frequency; defaults to `'weekly'`. Any other value throws a `RangeError`. */
+  changefreq?: SitemapChangefreq | null;
+  /** Priority from 0.0 to 1.0; defaults to `0.5`. Out-of-range values throw a `RangeError`. */
+  priority?: number | null;
   [key: string]: unknown;
 }
 
@@ -199,13 +205,19 @@ export class SitemapGenerator {
   /** Entries added so far */
   urls: SitemapEntry[];
 
-  /** Add one URL, relative or absolute */
+  /**
+   * Add one URL, relative or absolute. Throws a `TypeError` for a non-http(s)
+   * absolute URL and a `RangeError` for an invalid `changefreq` or `priority`.
+   */
   add(url: string, options?: SitemapEntryOptions): this;
 
   /** Add several URLs, as strings or as `{ url, ...options }` objects */
   addMultiple(urls: Array<string | ({ url: string } & SitemapEntryOptions)>): this;
 
-  /** Resolve a relative URL against the configured hostname */
+  /**
+   * Resolve a relative URL against the configured hostname and percent-encode
+   * it (`new URL(...).href`). Throws a `TypeError` for a non-http(s) URL.
+   */
   normalizeUrl(url: string): string;
 
   /** Render the sitemap XML */
