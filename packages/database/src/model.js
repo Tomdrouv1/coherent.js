@@ -161,18 +161,33 @@ export class Model {
     return row ? this._fromRow(row) : null;
   }
 
-  static async create(attributes, options = {}) {
-    // Apply default values for static attributes
-    const withDefaults = { ...attributes };
+  /**
+   * Insert a new record from `attributes`, applying `fillable` / `guarded`
+   * like fill(): `User.create(req.body)` used to write every key the client
+   * sent (`role: 'admin'` included). Defaults from `static attributes` fill
+   * whatever is left unset.
+   *
+   * @param {Object} attributes - Column values; keys outside `fillable` (or in
+   *   `guarded`) are ignored
+   * @param {Object} [options] - save() options, e.g. `{ transaction: tx }`
+   * @returns {Promise<Model>} The saved instance
+   */
+  static async create(attributes = {}, options = {}) {
+    const instance = new this();
+    instance.fill(attributes ?? {});
+
     if (this.attributes) {
       for (const [key, config] of Object.entries(this.attributes)) {
-        if (config.default !== undefined && withDefaults[key] === undefined) {
-          withDefaults[key] = config.default;
+        if (config.default !== undefined && instance.attributes[key] === undefined) {
+          instance.setAttribute(key, config.default);
         }
       }
     }
 
-    const instance = new this(withDefaults);
+    // Always an insert: built with the constructor, a model given its
+    // primary key counted as already saved, so create({ id: 5, ... }) ran no
+    // query at all and returned a record that did not exist.
+    instance._isNew = true;
     await instance.save(options);
     return instance;
   }

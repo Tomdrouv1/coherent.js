@@ -508,6 +508,52 @@ describe('Model', () => {
         expect(model.isNew).toBe(false);
       });
 
+      // Regression: create() passed its attributes to the constructor, which
+      // ignores fillable/guarded, so User.create(req.body) wrote whatever
+      // columns the client sent.
+      it('should apply fillable to the attributes it inserts', async () => {
+        mockDb.query.mockResolvedValue({ rows: [], insertId: 3 });
+
+        const model = await TestModel.create({ name: 'Eve', email: 'eve@example.com', role: 'admin', is_admin: true });
+
+        const [sql, params] = mockDb.query.mock.calls.at(-1);
+        expect(sql).toMatch(/^INSERT INTO users \(name, email, created_at, updated_at\)/);
+        expect(params).not.toContain('admin');
+        expect(model.getAttribute('role')).toBeUndefined();
+      });
+
+      it('should apply guarded to the attributes it inserts', async () => {
+        class Guarded extends Model {
+          static tableName = 'accounts';
+          static guarded = ['balance'];
+          static timestamps = false;
+        }
+        Guarded.setDatabase(mockDb);
+        mockDb.query.mockResolvedValue({ rows: [], insertId: 1 });
+
+        await Guarded.create({ owner: 'ann', balance: 1_000_000 });
+
+        expect(mockDb.query.mock.calls.at(-1)[0]).toBe('INSERT INTO accounts (owner) VALUES (?)');
+      });
+
+      // Regression: a model built with its primary key counted as already
+      // saved, so create({ id, ... }) ran no query and returned a record that
+      // was never written.
+      it('should insert when given a primary key', async () => {
+        class WithId extends Model {
+          static tableName = 'items';
+          static timestamps = false;
+        }
+        WithId.setDatabase(mockDb);
+        mockDb.query.mockResolvedValue({ rows: [], affectedRows: 1 });
+
+        const item = await WithId.create({ id: 5, name: 'kept' });
+
+        expect(mockDb.query).toHaveBeenCalledTimes(1);
+        expect(mockDb.query.mock.calls[0][0]).toBe('INSERT INTO items (id, name) VALUES (?, ?)');
+        expect(item.isNew).toBe(false);
+      });
+
       // Regression: fill() stores a non-fillable key it drops (a form body's
       // `id`) as undefined, and save() only took the driver's insertId when
       // the key was exactly null. The saved model had no id, and its next

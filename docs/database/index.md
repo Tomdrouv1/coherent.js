@@ -197,6 +197,7 @@ await found.delete();
 
 - Every query method throws when no database is set (`setDatabase(db)`); `find()` returns `null` and `findOrFail()` throws when nothing matches.
 - `where()`, `updateWhere()` and `deleteWhere()` accept `{ column: value }` equality only and reject operator objects and arrays, so a request body cannot inject an operator; use `executeQuery()` for anything else. `updateWhere()` / `deleteWhere()` require a condition.
+- `create(attributes)` and `fill(attributes)` apply `fillable` (when non-empty) and `guarded`: other keys are ignored, so `User.create(req.body)` cannot set `role` or `id` unless you list them. `create()` always inserts. The constructor takes attributes as they are, as loaded from the database.
 - `save()` validates first (it throws with `error.errors` on failure), adds `created_at` / `updated_at` unless `static timestamps = false`, and reads the new primary key from the driver. `create()`, `save()` and `delete()` accept `{ transaction: tx }`.
 - Relationships (`hasMany`, `hasOne`, `belongsTo`) run real queries; `model` is the related class.
 
