@@ -144,6 +144,11 @@ jobs:
       - name: Build website (sanity check)
         run: pnpm run website:build
 
+      # Examples are the first thing people run; half of them used to crash
+      # on APIs that no longer existed.
+      - name: Run examples
+        run: pnpm run examples:check
+
   e2e:
     name: Playwright E2E
     runs-on: ubuntu-latest

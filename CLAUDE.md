@@ -36,11 +36,13 @@ integrations and utilities.
 
 ### Examples
 - `pnpm example:basic` - Run basic usage example
-- `pnpm example:components` - Run component system examples
-- `pnpm example:performance` - Run performance testing examples
-- `pnpm example:advanced` - Run advanced features demo
+- `pnpm example:components` - Run component composition example
 - `pnpm example:streaming` - Run streaming renderer demo
 - `pnpm example:hydration` - Run client-side hydration demo
+- `pnpm example:state` - Run state management demo
+- `pnpm example:express` - Start the Express integration example
+- `pnpm examples:check` - Run every example (CI does; needs `pnpm build` first)
+- `pnpm perf:render` - Rendering benchmark against a template-string baseline
 
 ## Architecture
 

@@ -62,9 +62,9 @@ Examples (a subset):
 ```bash
 pnpm example:basic
 pnpm example:components
-pnpm example:performance
 pnpm example:streaming
 pnpm example:hydration
+pnpm examples:check   # run them all (after pnpm build)
 ```
 
 ## Testing Workflow (Vitest 5)
