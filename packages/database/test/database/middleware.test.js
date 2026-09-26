@@ -561,7 +561,8 @@ describe('Database Middleware', () => {
     });
 
     it('should timeout health check', async () => {
-      mockDb.query.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)));
+      // A query that never settles: only the timeout can end the check, so this cannot race
+      mockDb.query.mockImplementation(() => new Promise(() => {}));
       
       const middleware = withHealthCheck(mockDb, { timeout: 50 });
       
