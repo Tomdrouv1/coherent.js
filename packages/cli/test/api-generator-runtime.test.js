@@ -228,3 +228,33 @@ describe('generated API test files', () => {
     expect(output).toMatch(/Tests\s+6 passed/);
   }, 90_000);
 });
+
+describe('coherent generate api <name>', () => {
+  it('accepts the lowercase names the README shows and writes a working module', async () => {
+    const cliDir = join(projectDir, 'cli');
+    await mkdir(cliDir);
+    const entry = join(cliDir, 'entry.mjs');
+    const cliSrc = fileURLToPath(new URL('../src/index.js', import.meta.url));
+    await writeFile(entry, `import { createCLI } from ${JSON.stringify(cliSrc)};\nawait createCLI();\n`);
+
+    const run = (...args) =>
+      spawnSync(process.execPath, [entry, ...args], { cwd: cliDir, encoding: 'utf8', timeout: 30_000 });
+
+    // Used to exit 1 with "Name should start with a capital letter (PascalCase)"
+    const api = run('generate', 'api', 'users');
+    expect(api.status, `${api.stdout}\n${api.stderr}`).toBe(0);
+
+    const { default: usersAPI } = await import(pathToFileURL(join(cliDir, 'src/api/users.js')).href);
+    const { request, close } = await serve(usersAPI);
+    try {
+      const list = await request('GET', '/users');
+      expect(list.status).toBe(200);
+      expect(list.body.data).toHaveLength(2);
+    } finally {
+      await close();
+    }
+
+    // Components keep their PascalCase rule
+    expect(run('generate', 'component', 'button').status).toBe(1);
+  });
+});

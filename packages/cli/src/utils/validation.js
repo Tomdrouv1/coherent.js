@@ -69,9 +69,11 @@ export function validateProjectName(name) {
 }
 
 /**
- * Validate component/page/API name
+ * Validate an API name. Any case is accepted (`users`, `user-profile`,
+ * `UserProfile`): the api generator derives the kebab-case route and file
+ * name and the camelCase identifiers from it.
  */
-export function validateComponentName(name) {
+export function validateApiName(name) {
   if (!name || typeof name !== 'string' || name.trim().length === 0) {
     return 'Name is required';
   }
@@ -87,6 +89,20 @@ export function validateComponentName(name) {
   if (trimmed.length > 100) {
     return 'Name must be less than 100 characters';
   }
+
+  return true;
+}
+
+/**
+ * Validate component/page name
+ */
+export function validateComponentName(name) {
+  const base = validateApiName(name);
+  if (base !== true) {
+    return base;
+  }
+
+  const trimmed = name.trim();
 
   // Should be PascalCase for components
   if (!/^[A-Z]/.test(trimmed)) {
