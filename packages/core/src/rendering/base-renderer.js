@@ -7,10 +7,10 @@
 import {
     validateComponent,
     isCoherentObject,
-    extractProps,
     hasChildren,
     normalizeChildren,
 } from '../core/object-utils.js';
+import { isTrustedContent } from '../core/html-utils.js';
 
 import { performanceMonitor } from '../performance/monitor.js';
 
@@ -26,7 +26,9 @@ export const DEFAULT_RENDERER_CONFIG = {
     validateInput: true,
 
     // HTML Renderer specific options
-    enableCache: true,
+    // Off by default: keying a render on its content costs a full walk of
+    // the tree, which only pays off when identical trees are re-rendered.
+    enableCache: false,
     minify: false,
     cacheSize: 1000,
     cacheTTL: 300000, // 5 minutes
@@ -121,7 +123,7 @@ export class BaseRenderer {
                 return {
                     ...baseConfig,
                     // HTML-specific defaults
-                    enableCache: baseConfig.enableCache !== false,
+                    enableCache: baseConfig.enableCache === true,
                     enableMonitoring: baseConfig.enableMonitoring !== false
                 };
                 
@@ -367,6 +369,66 @@ export class BaseRenderer {
     }
 }
 
+const UNCACHEABLE = Symbol('uncacheable');
+
+/**
+ * Serialize a component tree into a string that identifies its rendered
+ * output: two trees with the same key always render the same HTML.
+ *
+ * JSON.stringify can't be used for this. It drops functions and undefined,
+ * turns NaN into null and Dates into ISO strings, and ignores the brand on
+ * trusted content, so different trees (rendering different HTML) collided.
+ * Values whose output isn't a pure function of their content — functions,
+ * class instances, Dates — make the tree uncacheable instead.
+ *
+ * @param {*} value - Component tree
+ * @returns {string|null} Cache key, or null when the tree can't be cached
+ */
+export function serializeForCache(value) {
+    try {
+        return serialize(value, new Set());
+    } catch (error) {
+        if (error === UNCACHEABLE) return null;
+        throw error;
+    }
+}
+
+function serialize(value, ancestors) {
+    switch (typeof value) {
+        case 'string':
+            return JSON.stringify(value);
+        case 'number':
+            return `n${value}`;
+        case 'boolean':
+            return value ? 't' : 'f';
+        case 'undefined':
+            return 'u';
+        case 'object': {
+            if (value === null) return 'z';
+            if (isTrustedContent(value)) return `T${JSON.stringify(value.__html)}`;
+            if (ancestors.has(value)) throw UNCACHEABLE;
+
+            const isArray = Array.isArray(value);
+            if (!isArray) {
+                const proto = Object.getPrototypeOf(value);
+                if (proto !== Object.prototype && proto !== null) throw UNCACHEABLE;
+            }
+
+            ancestors.add(value);
+            const body = isArray
+                ? value.map((item) => serialize(item, ancestors)).join(',')
+                : Object.keys(value)
+                    .map((key) => `${JSON.stringify(key)}:${serialize(value[key], ancestors)}`)
+                    .join(',');
+            ancestors.delete(value);
+            return isArray ? `[${body}]` : `{${body}}`;
+        }
+        default:
+            // functions, symbols, bigints
+            throw UNCACHEABLE;
+    }
+}
+
 /**
  * Utility functions for renderer implementations
  */
@@ -441,24 +503,10 @@ export const RendererUtils = {
      * Generate cache key for element
      */
     generateCacheKey(tagName, element) {
-        try {
-            // Create a stable cache key for the element
-            const keyData = {
-                tag: tagName,
-                props: extractProps(element),
-                hasChildren: hasChildren(element),
-                childrenType: Array.isArray(element.children) ? 'array' : typeof element.children
-            };
-
-            return `element:${JSON.stringify(keyData)}`;
-        } catch (_error) {
-            // Log _error in development mode
-            if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
-                console.warn('Failed to generate cache key:', _error);
-            }
-            // Return null to indicate uncacheable element
-            return null;
-        }
+        // The whole element, not a summary of it: a key that leaves out any
+        // part of the content lets two different elements share an entry.
+        const serialized = serializeForCache(element);
+        return serialized === null ? null : `element:${JSON.stringify(tagName)}:${serialized}`;
     },
 
     /**

@@ -3,7 +3,7 @@
  * Converts object-based components to HTML strings with advanced optimizations
  */
 
-import { BaseRenderer, RendererUtils } from './base-renderer.js';
+import { BaseRenderer, RendererUtils, serializeForCache } from './base-renderer.js';
 import {
     hasChildren,
     normalizeChildren,
@@ -24,9 +24,9 @@ import { createCacheManager } from '../performance/cache-manager.js';
 import { cssUtils, defaultCSSManager } from './css-manager.js';
 import { CoherentError, RenderingError, globalErrorHandler } from '../utils/error-handler.js';
 
-// Create a global cache instance for the renderer
+// Shared by every render() call that opts in with `enableCache: true`.
 const rendererCache = createCacheManager({
-    maxSize: 1000,
+    maxCacheSize: 1000,
     ttlMs: 300000 // 5 minutes
 });
 
@@ -54,13 +54,15 @@ function formatRenderPath(path) {
  * Converts object-based components to HTML strings with advanced optimizations.
  *
  * @param {Object} [options={}] - Renderer configuration options
- * @param {boolean} [options.enableCache=true] - Enable component caching
+ * @param {boolean} [options.enableCache=false] - Cache the HTML of whole renders, keyed on
+ *   the full component tree (trees containing functions are never cached)
+ * @param {Object} [options.cache] - Cache instance from createCacheManager() to use
+ *   instead of the shared one (e.g. with its own `maxCacheSize` / `ttlMs`)
  * @param {boolean} [options.enableMonitoring=true] - Enable performance monitoring
  * @param {boolean} [options.minify=false] - Enable HTML minification
  * @param {boolean} [options.streaming=false] - Enable streaming mode
  * @param {number} [options.maxDepth=100] - Maximum rendering depth
- * @param {number} [options.cacheSize=1000] - Cache size limit
- * @param {number} [options.cacheTTL=300000] - Cache TTL in milliseconds
+ * @param {number} [options.cacheTTL=300000] - Cache TTL in milliseconds for entries this render adds
  *
  * @example
  * const renderer = new HTMLRenderer({
@@ -74,17 +76,16 @@ function formatRenderPath(path) {
 class HTMLRenderer extends BaseRenderer {
     constructor(options = {}) {
         super({
-            enableCache: options.enableCache !== false,
             enableMonitoring: options.enableMonitoring !== false,
             minify: options.minify || false,
             streaming: options.streaming || false,
             maxDepth: options.maxDepth || 100,
-            ...options
+            ...options,
+            enableCache: options.enableCache === true
         });
 
-        // Initialize cache if enabled
-        if (this.config.enableCache && !this.cache) {
-            this.cache = rendererCache;
+        if (this.config.enableCache) {
+            this.cache = options.cache || rendererCache;
         }
     }
 
@@ -119,6 +120,21 @@ class HTMLRenderer extends BaseRenderer {
                 throw new Error('Invalid component structure');
             }
 
+            // One cache entry per whole render. Caching every element
+            // separately meant serializing each subtree again at every level
+            // (quadratic in depth) and made rendering slower than not caching.
+            const cacheKey = this.cache && config.enableCache
+                ? serializeForCache(component)
+                : null;
+            const fullKey = cacheKey === null ? null : `render:${config.minify ? 'min' : 'raw'}:${cacheKey}`;
+            if (fullKey !== null) {
+                const cached = this.cache.get(fullKey);
+                if (cached !== null) {
+                    this.endTiming();
+                    return cached;
+                }
+            }
+
             // Initialize seenObjects for circular reference detection
             const renderOptions = {
                 ...config,
@@ -128,6 +144,12 @@ class HTMLRenderer extends BaseRenderer {
             // Main rendering logic
             const html = this.renderComponent(component, renderOptions, 0, []);
             const finalHtml = config.minify ? minifyHtml(html, config) : html;
+
+            if (fullKey !== null) {
+                this.cache.set(fullKey, finalHtml, 'component', {
+                    ttlMs: typeof config.cacheTTL === 'number' ? config.cacheTTL : undefined
+                });
+            }
 
             // Performance monitoring
             this.endTiming();
@@ -275,33 +297,12 @@ class HTMLRenderer extends BaseRenderer {
             }
         }
 
-        // Track element usage for performance analysis (via stats in the new cache manager)
-        if (options.enableMonitoring && this.cache) {
-            // The new cache manager tracks usage automatically via get/set operations
-        }
-
-        // Check cache first for static elements
-        if (options.enableCache && this.cache && RendererUtils.isStaticElement(element)) {
-            try {
-                const cacheKey = `static:${tagName}:${JSON.stringify(element)}`;
-                const cached = this.cache.get('static', cacheKey);
-                if (cached) {
-                    this.recordPerformance(tagName, startTime, true);
-                    return cached.value; // Return the cached HTML
-                }
-            } catch {
-                // Circular reference in element - skip caching and continue with rendering
-                // The circular reference will be detected and properly reported during render
-            }
-        }
-
         // Handle text-only elements including booleans
         if (typeof element === 'string' || typeof element === 'number' || typeof element === 'boolean') {
             const html = isVoidElement(tagName)
                 ? `<${tagName}>`
                 : `<${tagName}>${escapeHtml(String(element))}</${tagName}>`;
 
-            this.cacheIfStatic(tagName, element, html, options);
             this.recordPerformance(tagName, startTime, false);
             return html;
         }
@@ -333,39 +334,10 @@ class HTMLRenderer extends BaseRenderer {
     }
 
     /**
-     * Cache element if it's static
-     */
-    cacheIfStatic(tagName, element, html) {
-        if (this.config.enableCache && this.cache && RendererUtils.isStaticElement(element)) {
-            try {
-                const cacheKey = `static:${tagName}:${JSON.stringify(element)}`;
-                this.cache.set('static', cacheKey, html, {
-                    ttlMs: this.config.cacheTTL || 5 * 60 * 1000, // 5 minutes default
-                    size: html.length // Approximate size
-                });
-            } catch {
-                // Circular reference - skip caching
-            }
-        }
-    }
-
-    /**
      * Render complex object elements with attributes and children
      */
     renderObjectElement(tagName, element, options, depth = 0, path = []) {
         const startTime = performance.now();
-
-        // Check component-level cache
-        if (options.enableCache && this.cache) {
-            const cacheKey = RendererUtils.generateCacheKey(tagName, element);
-            if (cacheKey) {
-                const cached = this.cache.get(cacheKey);
-                if (cached) {
-                    this.recordPerformance(tagName, startTime, true);
-                    return cached;
-                }
-            }
-        }
 
         // Extract props and children directly from element content
         // Note: key is extracted but NOT rendered as an HTML attribute
@@ -381,12 +353,6 @@ class HTMLRenderer extends BaseRenderer {
 
         // Void elements: no closing tag; any text/children are dropped.
         if (isVoidElement(tagName)) {
-            if (options.enableCache && this.cache && RendererUtils.isCacheable(element, options)) {
-                const cacheKey = RendererUtils.generateCacheKey(tagName, element);
-                if (cacheKey) {
-                    this.cache.set(cacheKey, openingTag);
-                }
-            }
             this.recordPerformance(tagName, startTime, false);
             return openingTag;
         }
@@ -448,14 +414,6 @@ class HTMLRenderer extends BaseRenderer {
         // Build complete HTML
         const html = `${openingTag}${textContent}${childrenHtml}</${tagName}>`;
 
-        // Cache the result if appropriate
-        if (options.enableCache && this.cache && RendererUtils.isCacheable(element, options)) {
-            const cacheKey = RendererUtils.generateCacheKey(tagName, element);
-            if (cacheKey) {
-                this.cache.set(cacheKey, html);
-            }
-        }
-
         this.recordPerformance(tagName, startTime, false);
         return html;
     }
@@ -469,7 +427,6 @@ class HTMLRenderer extends BaseRenderer {
 export function render(component, options = {}) {
     // Merge default options with provided options
     const mergedOptions = {
-        enableCache: true,
         enableMonitoring: false,
         ...options
     };
@@ -586,7 +543,6 @@ export function renderBatch(components, options = {}) {
 
     // Merge default options with provided options
     const mergedOptions = {
-        enableCache: true,
         enableMonitoring: false,
         ...options
     };
@@ -791,7 +747,6 @@ export const streamingUtils = {
  */
 export function* renderToChunks(component, options = {}) {
     const mergedOptions = {
-        enableCache: true,
         enableMonitoring: false,
         ...options,
         chunkSize: options.chunkSize || 1024 // Default 1KB chunks
@@ -834,7 +789,7 @@ export function getRenderingStats() {
  * Precompile static components for maximum performance
  */
 export function precompileComponent(component, options = {}) {
-    if (!isStaticElement(component)) {
+    if (!RendererUtils.isStaticElement(component)) {
         throw new Error('Can only precompile static components');
     }
 

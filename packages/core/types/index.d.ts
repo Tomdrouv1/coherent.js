@@ -516,11 +516,19 @@ export interface PerformanceMetrics {
 
 /** Render options for `render(component, options)` */
 export interface RenderOptions {
+  /**
+   * Cache the HTML of whole renders, keyed on the full component tree.
+   * Off by default; trees containing functions are never cached.
+   */
   enableCache?: boolean;
+  /** Cache instance (from createCacheManager) to use instead of the shared one. */
+  cache?: CacheManager;
   enableMonitoring?: boolean;
   minify?: boolean;
   maxDepth?: number;
+  /** @deprecated Ignored. Pass `cache: createCacheManager({ maxCacheSize })` instead. */
   cacheSize?: number;
+  /** Time-to-live in milliseconds for cache entries this render adds. */
   cacheTTL?: number;
   scoped?: boolean;
   encapsulate?: boolean;
@@ -734,20 +742,43 @@ export const performanceMonitor: PerformanceMonitor;
 
 /** Cache manager options */
 export interface CacheManagerOptions {
+  /** Maximum entries per cache type (default 1000). */
+  maxCacheSize?: number;
+  /** Alias for `maxCacheSize`. */
   maxSize?: number;
-  ttl?: number;
-  strategy?: 'lru' | 'fifo' | 'lfu';
+  /** Memory budget across all cache types, keys included (default 100). */
+  maxMemoryMB?: number;
+  /** Default time-to-live in milliseconds (default 5 minutes). */
+  ttlMs?: number;
+  enableStatistics?: boolean;
 }
 
-/** Cache manager interface */
+export type CacheType = 'static' | 'component' | 'template' | 'data';
+
+export interface CacheStats {
+  hits: number;
+  misses: number;
+  /** Approximate memory use in bytes. */
+  size: number;
+  entries: number;
+  hitRate: Record<CacheType, number>;
+  accessCount: Record<CacheType, number>;
+}
+
+/** Cache manager: one least-recently-used map per cache type. */
 export interface CacheManager {
-  get(key: string): any;
-  set(key: string, value: any, ttl?: number): void;
-  has(key: string): boolean;
-  delete(key: string): boolean;
-  clear(): void;
-  size(): number;
-  prune(): void;
+  /** Returns the cached value, or null when missing or expired. */
+  get(key: string, type?: CacheType): any;
+  set(key: string, value: any, type?: CacheType, metadata?: { ttlMs?: number; [key: string]: any }): void;
+  remove(key: string, type?: CacheType): boolean;
+  clear(type?: CacheType): void;
+  getStats(): CacheStats;
+  cleanup(): { freed: number };
+  destroy(): void;
+  generateCacheKey(component: any, props?: Record<string, any>, context?: Record<string, any>): string;
+  hashObject(obj: any): string;
+  readonly memoryUsage: number;
+  readonly maxMemory: number;
 }
 
 /** Shared cache manager instance */

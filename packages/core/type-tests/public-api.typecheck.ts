@@ -308,22 +308,23 @@ expectTypeOf(componentInstance.name).toBeString();
 expectTypeOf(cacheManager).toMatchTypeOf<CacheManager>();
 expectTypeOf(cacheManager.get).toBeFunction();
 expectTypeOf(cacheManager.set).toBeFunction();
-expectTypeOf(cacheManager.has).toBeFunction();
-expectTypeOf(cacheManager.delete).toBeFunction();
+expectTypeOf(cacheManager.remove).toBeFunction();
 expectTypeOf(cacheManager.clear).toBeFunction();
-expectTypeOf(cacheManager.size).returns.toBeNumber();
-expectTypeOf(cacheManager.prune).toBeFunction();
+expectTypeOf(cacheManager.memoryUsage).toBeNumber();
 
 // cacheManager method returns
 expectTypeOf(cacheManager.get('key')).toMatchTypeOf<unknown>();
-expectTypeOf(cacheManager.has('key')).toBeBoolean();
-expectTypeOf(cacheManager.delete('key')).toBeBoolean();
+expectTypeOf(cacheManager.get('key', 'static')).toMatchTypeOf<unknown>();
+expectTypeOf(cacheManager.remove('key')).toBeBoolean();
+expectTypeOf(cacheManager.getStats().entries).toBeNumber();
+expectTypeOf(cacheManager.cleanup().freed).toBeNumber();
+cacheManager.set('key', '<p>x</p>', 'component', { ttlMs: 1000 });
 
 // createCacheManager with options
 const cacheOptions: CacheManagerOptions = {
-  maxSize: 100,
-  ttl: 60000,
-  strategy: 'lru',
+  maxCacheSize: 100,
+  maxMemoryMB: 10,
+  ttlMs: 60000,
 };
 expectTypeOf(createCacheManager).toBeCallableWith(cacheOptions);
 expectTypeOf(createCacheManager).returns.toMatchTypeOf<CacheManager>();
@@ -331,11 +332,11 @@ expectTypeOf(createCacheManager).returns.toMatchTypeOf<CacheManager>();
 const customCache = createCacheManager({ maxSize: 50 });
 expectTypeOf(customCache).toMatchTypeOf<CacheManager>();
 
-// CacheManagerOptions strategy types
-const fifoCache: CacheManagerOptions = { strategy: 'fifo' };
-const lfuCache: CacheManagerOptions = { strategy: 'lfu' };
-expectTypeOf(fifoCache.strategy).toMatchTypeOf<'lru' | 'fifo' | 'lfu' | undefined>();
-expectTypeOf(lfuCache.strategy).toMatchTypeOf<'lru' | 'fifo' | 'lfu' | undefined>();
+// A dedicated cache can be handed to render()
+render({ div: { text: 'x' } }, { enableCache: true, cache: customCache });
+
+// @ts-expect-error - there is no eviction strategy option; the cache is always LRU
+createCacheManager({ strategy: 'lru' });
 
 // ============================================================================
 // Performance Monitoring
@@ -419,8 +420,6 @@ void DefinedTestComponent;
 void componentInstance;
 void cacheOptions;
 void customCache;
-void fifoCache;
-void lfuCache;
 void renderId;
 void duration;
 void stats;
