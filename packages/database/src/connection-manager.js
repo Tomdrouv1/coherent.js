@@ -57,9 +57,9 @@ export class DatabaseManager extends EventEmitter {
     this.maxRetries = 3;
     this.retryDelay = 2000;
 
-    // Health check interval
+    // Health check interval (config.healthCheckInterval, in milliseconds)
     this.healthCheckInterval = null;
-    this.healthCheckFrequency = 30000; // 30 seconds
+    this.healthCheckFrequency = this.config.healthCheckInterval ?? 30000;
 
     // Connection statistics
     this.stats = {
@@ -179,9 +179,10 @@ export class DatabaseManager extends EventEmitter {
       this.isConnected = true;
       this.connectionAttempts = 0;
 
-      // Start health checks if supported by the adapter
-      if (this.adapter.startHealthChecks) {
-        this.startHealthChecks();
+      // Start health checks if the adapter can test its connection
+      if (this.config.healthCheck !== false &&
+          (typeof this.adapter.testConnection === 'function' || typeof this.adapter.ping === 'function')) {
+        this.startHealthCheck();
       }
 
       return this;
@@ -441,11 +442,20 @@ export class DatabaseManager extends EventEmitter {
   /**
    * Start health check monitoring
    *
+   * Runs the connection test every `config.healthCheckInterval` ms (default 30s) and
+   * emits `healthCheck` with `{ status: 'healthy' | 'unhealthy', ... }`. Started by
+   * connect() unless `config.healthCheck` is false; stopped by close(). The timer does
+   * not keep the process alive.
+   *
    * @private
    */
   startHealthCheck() {
     if (this.healthCheckInterval) {
       return;
+    }
+
+    if (!Number.isFinite(this.healthCheckFrequency) || this.healthCheckFrequency <= 0) {
+      throw new Error(`healthCheckInterval must be a positive number of milliseconds, got ${this.healthCheckFrequency}`);
     }
 
     this.healthCheckInterval = setInterval(async () => {
@@ -460,6 +470,7 @@ export class DatabaseManager extends EventEmitter {
         }
       }
     }, this.healthCheckFrequency);
+    this.healthCheckInterval.unref?.();
   }
 
   /**

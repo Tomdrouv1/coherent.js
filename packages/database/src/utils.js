@@ -222,50 +222,23 @@ export function validateConfig(config) {
 }
 
 /**
- * Create database backup
- * 
- * @param {DatabaseManager} db - Database manager instance
- * @param {Object} [options={}] - Backup options
- * @returns {Promise<string>} Backup file path or data
- * 
- * @example
- * const backupPath = await createBackup(db, {
- *   format: 'sql',
- *   outputPath: './backups'
- * });
+ * Create database backup -- not implemented.
+ *
+ * @throws {Error} Always: use the database's own backup tool
  */
-export async function createBackup(db, options = {}) {
-  const backupConfig = {
-    format: 'sql',
-    outputPath: './backups',
-    timestamp: true,
-    ...options
-  };
-
-  const timestamp = backupConfig.timestamp ? new Date().toISOString().replace(/[:.]/g, '-') : '';
-  const fileName = `backup${timestamp ? `_${  timestamp}` : ''}.${backupConfig.format}`;
-  const filePath = `${backupConfig.outputPath}/${fileName}`;
-
-  // This would be adapter-specific implementation
-  // For now, return a placeholder
-  console.log(`Backup would be created at: ${filePath}`);
-  return filePath;
+export async function createBackup() {
+  // Not implemented: it used to log and return a path without writing any backup
+  throw new Error('createBackup() is not implemented. Use your database\'s own backup tool (pg_dump, mysqldump, sqlite3 .backup, mongodump).');
 }
 
 /**
- * Restore database from backup
- * 
- * @param {DatabaseManager} db - Database manager instance
- * @param {string} backupPath - Path to backup file
- * @param {Object} [options={}] - Restore options
- * @returns {Promise<void>}
- * 
- * @example
- * await restoreBackup(db, './backups/backup_2023-12-01.sql');
+ * Restore database from backup -- not implemented.
+ *
+ * @throws {Error} Always: use the database's own restore tool
  */
-export async function restoreBackup(db, backupPath) {
-  // This would be adapter-specific implementation
-  console.log(`Restore would be performed from: ${backupPath}`);
+export async function restoreBackup() {
+  // Not implemented: it used to log and return without restoring anything
+  throw new Error('restoreBackup() is not implemented. Use your database\'s own restore tool (psql, mysql, sqlite3 .restore, mongorestore).');
 }
 
 /**

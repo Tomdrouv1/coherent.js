@@ -130,6 +130,10 @@ export interface DatabaseConfig {
   timezone?: string;
   charset?: string;
   pool?: PoolConfig;
+  /** Run a periodic connection test after connect() (default true); emits `healthCheck` events. */
+  healthCheck?: boolean;
+  /** Milliseconds between health checks (default 30000). */
+  healthCheckInterval?: number;
 }
 
 /** Database connection pool configuration */
