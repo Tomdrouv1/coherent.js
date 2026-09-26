@@ -2,41 +2,28 @@
  * Page generator
  */
 
-import { writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import { writeGeneratedFiles } from '../utils/files.js';
 
 /**
  * Generate a new page
  */
 export async function generatePage(name, options = {}) {
-  const { path = 'src/pages', template = 'basic', skipTest = false } = options;
+  const { path = 'src/pages', template = 'basic', skipTest = false, force = false } = options;
 
   // Ensure page name is PascalCase
   const pageName = toPascalCase(name);
   const fileName = pageName;
 
-  // Create output directory
   const outputDir = join(process.cwd(), path);
-  if (!existsSync(outputDir)) {
-    mkdirSync(outputDir, { recursive: true });
-  }
-
-  const files = [];
   const nextSteps = [];
 
-  // Generate page file
-  const pagePath = join(outputDir, `${fileName}.js`);
-  const pageContent = generatePageContent(pageName, template);
-  writeFileSync(pagePath, pageContent);
-  files.push(pagePath);
-
-  // Generate test file
+  // Page and test files
+  const toWrite = [{ path: join(outputDir, `${fileName}.js`), content: generatePageContent(pageName, template) }];
   if (!skipTest) {
-    const testPath = join(outputDir, `${fileName}.test.js`);
-    const testContent = generateTestContent(pageName);
-    writeFileSync(testPath, testContent);
-    files.push(testPath);
+    toWrite.push({ path: join(outputDir, `${fileName}.test.js`), content: generateTestContent(pageName) });
   }
+  const files = writeGeneratedFiles(toWrite, { force });
 
   // Add next steps
   nextSteps.push(`Import the page: import { ${pageName} } from '${path}/${fileName}.js'`);

@@ -2,7 +2,7 @@
 
 /**
  * Coherent.js CLI - Command-line interface for Coherent.js projects
- * 
+ *
  * Usage:
  *   coherent create <project-name>  - Create a new Coherent.js project
  *   coherent generate <type> <name> - Generate components, pages, APIs
@@ -11,26 +11,33 @@
  *   coherent --help                 - Show help
  */
 
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import { readFileSync } from 'fs';
+import { existsSync } from 'fs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const DIST_ENTRY = new URL('../dist/index.js', import.meta.url);
+// src/ is not published; it is only present in a repository checkout.
+const SRC_ENTRY = new URL('../src/index.js', import.meta.url);
 
-// Import the main CLI module
-try {
-  const { createCLI } = await import('../dist/index.js');
-  await createCLI();
-} catch (_error) {
-  // Fallback to source if dist doesn't exist (development)
-  try {
-    const { createCLI } = await import('../src/index.js');
-    await createCLI();
-  } catch (fallbackError) {
-    console.error('❌ Failed to load Coherent.js CLI:');
-    console.error('   ', fallbackError.message);
-    console.error('\n💡 Try running: npm install');
-    process.exit(1);
+async function loadCLI() {
+  if (!existsSync(DIST_ENTRY) && existsSync(SRC_ENTRY)) {
+    return import(SRC_ENTRY.href);
   }
+  return import(DIST_ENTRY.href);
+}
+
+let createCLI;
+try {
+  ({ createCLI } = await loadCLI());
+} catch (error) {
+  console.error('❌ Failed to load the Coherent.js CLI:');
+  console.error(error?.stack || error);
+  process.exit(1);
+}
+
+// Errors thrown while a command runs are reported as they are; the CLI is
+// never loaded (and the command never run) a second time.
+try {
+  await createCLI();
+} catch (error) {
+  console.error(error?.stack || error);
+  process.exit(1);
 }

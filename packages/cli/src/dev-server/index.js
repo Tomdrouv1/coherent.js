@@ -131,7 +131,10 @@ export async function startDevServer(options) {
       const { default: openModule } = await import('open');
       await openModule(`http://${host}:${actualPort}`);
     } catch {
-      // 'open' is optional — silently no-op if missing
+      // 'open' is optional (not a dependency of the CLI)
+      if (log) {
+        console.log(picocolors.yellow('⚠️  Could not open a browser (install the optional "open" package).'));
+      }
     }
   }
 

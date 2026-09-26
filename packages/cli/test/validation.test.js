@@ -30,11 +30,10 @@ describe('Validation and Error Handling', () => {
     const validNames = [
       'my-app',
       'my_app',
-      'MyApp',
+      'my.app',
       'coherent-js-app',
-      '@scope/package-name',
       'react-component',
-      'my@app'
+      'app2'
     ];
     
     for (const name of validNames) {
@@ -52,13 +51,24 @@ describe('Validation and Error Handling', () => {
       { name: 'my app', expectedError: 'Project name can only contain letters, numbers, hyphens, underscores, dots, and slashes' },
       { name: 'node_modules', expectedError: 'Project name "node_modules" is reserved' },
       { name: 'package.json', expectedError: 'Project name "package.json" is reserved' },
-      { name: 'con', expectedError: 'Project name "con" is reserved' }
+      { name: 'con', expectedError: 'Project name "con" is reserved' },
+      // The name is a directory under cwd and the package.json name
+      { name: 'foo/../../x', expectedError: 'Project name cannot contain path separators' },
+      { name: '../escape', expectedError: 'Project name cannot contain path separators' },
+      { name: 'a\\b', expectedError: 'Project name cannot contain path separators' },
+      { name: '@scope/package-name', expectedError: 'Project name cannot contain path separators' },
+      { name: 'MyApp', expectedError: 'Project name must be lowercase' },
+      { name: 'my@app', expectedError: 'Project name must start with a letter or number' },
+      { name: '-flag', expectedError: 'Project name must start with a letter or number' }
     ];
     
-    for (const { name } of invalidCases) {
+    for (const { name, expectedError } of invalidCases) {
       const result = validateProjectName(name);
-      expect(result).not.toBe(true);
+      expect(result, name).not.toBe(true);
       expect(typeof result).toBe('string');
+      if (/path separators|lowercase|start with a letter/.test(expectedError)) {
+        expect(result, name).toContain(expectedError);
+      }
     }
   });
 

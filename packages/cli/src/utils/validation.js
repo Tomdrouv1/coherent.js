@@ -6,7 +6,13 @@ import { existsSync } from 'fs';
 import { resolve } from 'path';
 
 /**
- * Validate project name according to npm and filesystem rules
+ * Validate project name according to npm and filesystem rules.
+ *
+ * The name is used both as the directory created under the current
+ * directory and as the package.json name, so it must be a valid,
+ * unscoped npm package name and a single path segment: no separators
+ * (`foo/../../x` would write outside the working directory), lowercase,
+ * starting with a letter or digit.
  */
 export function validateProjectName(name) {
   if (!name || typeof name !== 'string' || name.trim().length === 0) {
@@ -20,9 +26,9 @@ export function validateProjectName(name) {
     return 'Project name must be less than 214 characters';
   }
 
-  // Check for invalid characters (allowing @ for scoped packages)
-  if (!/^[a-z0-9-_@./]+$/i.test(trimmed)) {
-    return 'Project name can only contain letters, numbers, hyphens, underscores, dots, and slashes';
+  // A single directory name: no path separators
+  if (/[\\/]/.test(trimmed)) {
+    return 'Project name cannot contain path separators (/ or \\); run the command from the parent directory instead';
   }
 
   // Cannot start with . or _
@@ -41,6 +47,16 @@ export function validateProjectName(name) {
 
   if (reserved.includes(trimmed.toLowerCase())) {
     return `Project name "${trimmed}" is reserved`;
+  }
+
+  // npm package names cannot contain capital letters
+  if (trimmed !== trimmed.toLowerCase()) {
+    return 'Project name must be lowercase (npm package names cannot contain capital letters)';
+  }
+
+  // URL-safe npm name characters
+  if (!/^[a-z0-9][a-z0-9._-]*$/.test(trimmed)) {
+    return 'Project name must start with a letter or number and contain only lowercase letters, numbers, hyphens, underscores, and dots';
   }
 
   // Check if directory already exists

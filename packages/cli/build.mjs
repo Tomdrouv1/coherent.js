@@ -32,7 +32,10 @@ const buildConfig = {
     // Dependencies that should remain external
     'commander', 'inquirer', 'chalk', 'ora', 'fs-extra', 'picocolors', 'prompts',
     // Wave 4a HMR dev-server deps — kept external so they don't inflate dist/index.js
-    'ws', 'chokidar'
+    'ws', 'chokidar',
+    // Optional, not a dependency: `coherent dev --open` imports it at runtime
+    // and explains how to install it when it is missing
+    'open'
   ],
   define: {
     'process.env.NODE_ENV': '"production"'

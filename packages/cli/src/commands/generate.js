@@ -21,6 +21,7 @@ export const generateCommand = new Command('generate')
   .option('-t, --template <template>', 'template to use')
   .option('--skip-test', 'skip generating test file')
   .option('--skip-story', 'skip generating story file')
+  .option('-f, --force', 'overwrite files that already exist')
   .action(async (type, name, options) => {
     let generationType = type;
     let itemName = name;

@@ -6,10 +6,10 @@ import { Command } from 'commander';
 import prompts from 'prompts';
 import ora from 'ora';
 import picocolors from 'picocolors';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, rmSync } from 'fs';
 import { resolve } from 'path';
 import { spawn } from 'child_process';
-import { scaffoldProject } from '../generators/project-scaffold.js';
+import { scaffoldProject, validateScaffoldOptions } from '../generators/project-scaffold.js';
 import { validateProjectName } from '../utils/validation.js';
 import { isInteractive, requireInteractive } from '../utils/interactive.js';
 
@@ -21,6 +21,23 @@ function getDefaultDockerPort(database) {
     mongodb: 27017
   };
   return ports[database] || 5432;
+}
+
+/**
+ * Run `command` in `cwd` attached to this process (same process group,
+ * inherited stdio), so Ctrl+C stops it together with the CLI, and resolve
+ * with its exit code once it exits.
+ *
+ * @param {string} command - Shell command, e.g. `npm run dev`.
+ * @param {string} cwd
+ * @returns {Promise<number>}
+ */
+export function runAttached(command, cwd) {
+  return new Promise((resolveExit, rejectExit) => {
+    const child = spawn(command, [], { cwd, stdio: 'inherit', shell: true });
+    child.once('error', rejectExit);
+    child.once('exit', (exitCode, signal) => resolveExit(signal ? 0 : exitCode ?? 0));
+  });
 }
 
 export const createCommand = new Command('create')
@@ -253,18 +270,12 @@ export const createCommand = new Command('create')
       packages = pkgResponse.packages || [];
     }
 
-    if (auth && !database) {
-      console.error(picocolors.red('✖ Auth scaffolding requires a database (it generates login against the User model). Add --database sqlite|postgres|mysql.'));
-      process.exit(1);
-    }
-
-    if (auth && database === 'mongodb') {
-      console.error(picocolors.red('✖ Auth scaffolding requires a SQL database (sqlite, postgres, mysql) — MongoDB auth is not supported yet.'));
-      process.exit(1);
-    }
-
-    if (auth === 'session' && runtime !== 'express') {
-      console.error(picocolors.red('✖ Session auth scaffolding is only available for the express runtime. Use --auth jwt, or --runtime express.'));
+    // Validate every option before anything is created on disk
+    const problems = validateScaffoldOptions({ runtime, database, auth, packages, language });
+    if (problems.length > 0) {
+      for (const problem of problems) {
+        console.error(picocolors.red(`✖ ${problem}`));
+      }
       process.exit(1);
     }
 
@@ -348,10 +359,12 @@ export const createCommand = new Command('create')
     }
 
     const spinner = ora('Scaffolding project...').start();
+    let createdProjectDir = false;
 
     try {
       // Create project directory
       mkdirSync(projectPath, { recursive: true });
+      createdProjectDir = true;
 
       // Scaffold project
       await scaffoldProject(projectPath, {
@@ -369,6 +382,7 @@ export const createCommand = new Command('create')
         onProgress: (msg) => { spinner.text = msg; }
       });
 
+      createdProjectDir = false; // scaffolded: keep it from here on
       spinner.succeed('Project created successfully!');
 
       // Success message
@@ -480,16 +494,7 @@ export const createCommand = new Command('create')
           console.log();
 
           try {
-            const devProcess = spawn(commands.dev, [], {
-              cwd: projectPath,
-              stdio: 'inherit',
-              shell: true,
-              detached: true
-            });
-
-            devProcess.unref();
-            // Exit cleanly - dev server continues in background
-            return;
+            process.exit(await runAttached(commands.dev, projectPath));
           } catch {
             console.log(picocolors.yellow('Could not start development server automatically.'));
             console.log(picocolors.gray(`  Run manually: cd ${projectName} && ${commands.dev}`));
@@ -503,6 +508,11 @@ export const createCommand = new Command('create')
     } catch (_error) {
       spinner.fail('Failed to create project');
       console.error(picocolors.red('❌ Error:'), _error.message);
+      // Don't leave a half-created project behind (the directory did not
+      // exist before this command ran).
+      if (createdProjectDir) {
+        rmSync(projectPath, { recursive: true, force: true });
+      }
       process.exit(1);
     }
   });

@@ -132,6 +132,7 @@ coherent g component UserProfile --template interactive
 - `-t, --template <template>` - Template to use
 - `--skip-test` - Skip generating test file
 - `--skip-story` - Skip generating story file
+- `-f, --force` - Overwrite files that already exist (otherwise the command refuses and writes nothing)
 
 **Component Templates:**
 - `basic` - Simple component with props
@@ -180,8 +181,8 @@ coherent dev --host 0.0.0.0 --open
 
 **Options:**
 - `-p, --port <port>` - Port number (default: 3000)
-- `-h, --host <host>` - Host address (default: localhost)
-- `--open` - Open browser automatically
+- `-H, --host <host>` - Host address (default: localhost)
+- `--open` - Open browser automatically (needs the optional `open` package installed)
 - `--no-hmr` - Disable hot module replacement
 
 ## 📁 Generated Project Structure

@@ -2,41 +2,28 @@
  * API generator
  */
 
-import { writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import { writeGeneratedFiles } from '../utils/files.js';
 
 /**
  * Generate a new API route
  */
 export async function generateAPI(name, options = {}) {
-  const { path = 'src/api', template = 'rest', skipTest = false } = options;
+  const { path = 'src/api', template = 'rest', skipTest = false, force = false } = options;
 
   // Ensure API name is in lowercase with hyphens
   const apiName = toKebabCase(name);
   const fileName = apiName;
 
-  // Create output directory
   const outputDir = join(process.cwd(), path);
-  if (!existsSync(outputDir)) {
-    mkdirSync(outputDir, { recursive: true });
-  }
-
-  const files = [];
   const nextSteps = [];
 
-  // Generate API file
-  const apiPath = join(outputDir, `${fileName}.js`);
-  const apiContent = generateAPIContent(apiName, name, template);
-  writeFileSync(apiPath, apiContent);
-  files.push(apiPath);
-
-  // Generate test file
+  // API and test files
+  const toWrite = [{ path: join(outputDir, `${fileName}.js`), content: generateAPIContent(apiName, name, template) }];
   if (!skipTest) {
-    const testPath = join(outputDir, `${fileName}.test.js`);
-    const testContent = generateTestContent(apiName, name);
-    writeFileSync(testPath, testContent);
-    files.push(testPath);
+    toWrite.push({ path: join(outputDir, `${fileName}.test.js`), content: generateTestContent(apiName, name) });
   }
+  const files = writeGeneratedFiles(toWrite, { force });
 
   // Add next steps
   nextSteps.push(`Import the API: import ${toPascalCase(name)}API from '${path}/${fileName}.js'`);

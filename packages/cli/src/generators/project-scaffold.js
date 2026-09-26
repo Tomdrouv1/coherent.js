@@ -18,6 +18,61 @@ const cliVersion = getCLIVersion();
 const cliRange = getDependencyRange(cliVersion);
 
 /**
+ * Values scaffoldProject() accepts; everything else is rejected up front.
+ * (Unknown templates are not listed: they fall back to the basic layout.)
+ */
+export const SCAFFOLD_CHOICES = {
+  runtime: ['built-in', 'express', 'fastify', 'koa'],
+  database: ['postgres', 'mysql', 'sqlite', 'mongodb'],
+  auth: ['jwt', 'session'],
+  language: ['javascript', 'typescript'],
+  packageManager: ['npm', 'yarn', 'pnpm'],
+  packages: ['api', 'client', 'i18n', 'forms', 'devtools', 'seo', 'testing']
+};
+
+/**
+ * Check scaffold options before anything is written, so a bad option
+ * cannot leave a half-created project behind.
+ *
+ * @param {Object} options - runtime, database, auth, packages, language, packageManager.
+ * @param {Object} [config]
+ * @param {boolean} [config.combinations=true] - Also reject option combinations
+ *   the generated code does not support (auth without a SQL database, session
+ *   auth outside express). `coherent create` checks them; scaffoldProject()
+ *   itself only rejects unknown values.
+ * @returns {string[]} Human-readable problems; empty when the options are valid.
+ */
+export function validateScaffoldOptions(options = {}, { combinations = true } = {}) {
+  const problems = [];
+  const check = (key, value) => {
+    if (value !== undefined && value !== null && !SCAFFOLD_CHOICES[key].includes(value)) {
+      problems.push(`Unknown ${key} "${value}". Choose one of: ${SCAFFOLD_CHOICES[key].join(', ')}`);
+    }
+  };
+  check('runtime', options.runtime);
+  check('database', options.database);
+  check('auth', options.auth);
+  check('language', options.language);
+  check('packageManager', options.packageManager);
+  for (const pkg of options.packages ?? []) {
+    check('packages', pkg);
+  }
+  if (!combinations) {
+    return problems;
+  }
+  if (options.auth && !options.database) {
+    problems.push('Auth scaffolding requires a database (it generates login against the User model). Add --database sqlite|postgres|mysql.');
+  }
+  if (options.auth && options.database === 'mongodb') {
+    problems.push('Auth scaffolding requires a SQL database (sqlite, postgres, mysql); MongoDB auth is not supported yet.');
+  }
+  if (options.auth === 'session' && options.runtime && options.runtime !== 'express') {
+    problems.push('Session auth scaffolding is only available for the express runtime. Use --auth jwt, or --runtime express.');
+  }
+  return problems;
+}
+
+/**
  * Scaffold a new Coherent.js project
  */
 export async function scaffoldProject(projectPath, options) {
@@ -34,6 +89,14 @@ export async function scaffoldProject(projectPath, options) {
     packageManager = 'npm',
     onProgress = () => {}
   } = options;
+
+  const problems = validateScaffoldOptions(
+    { runtime, database, auth, packages, language, packageManager },
+    { combinations: false }
+  );
+  if (problems.length > 0) {
+    throw new Error(problems.join('\n'));
+  }
 
   const isTypeScript = language === 'typescript';
   const fileExtension = isTypeScript ? '.ts' : '.js';
