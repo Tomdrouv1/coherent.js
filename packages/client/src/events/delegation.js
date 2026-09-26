@@ -9,6 +9,58 @@
 import { handlerRegistry as defaultRegistry } from './registry.js';
 import { wrapEvent } from './wrapper.js';
 
+/** Event types listened for from initialize(); others are added on demand. */
+const DEFAULT_EVENT_TYPES = [
+  'click',
+  'change',
+  'input',
+  'submit',
+  'focus',
+  'blur',
+  'keydown',
+  'keyup',
+  'keypress',
+];
+
+/**
+ * Events that do not bubble. They are caught in the capture phase and only
+ * reach a handler on the event's own target.
+ */
+const NON_BUBBLING_EVENTS = new Set([
+  'mouseenter', 'mouseleave', 'pointerenter', 'pointerleave',
+  'load', 'error', 'abort', 'scroll', 'toggle', 'invalid', 'cancel', 'close',
+  'play', 'pause', 'ended', 'playing', 'waiting', 'seeked', 'seeking',
+  'canplay', 'canplaythrough', 'durationchange', 'emptied', 'loadeddata',
+  'loadedmetadata', 'loadstart', 'progress', 'ratechange', 'stalled',
+  'suspend', 'timeupdate', 'volumechange',
+]);
+
+/**
+ * Focus events do not bubble either, but a handler on a container is expected
+ * to hear its fields' focus (like focusin), so they are captured and then
+ * walked up the tree like bubbling events.
+ */
+const CAPTURED_BUBBLING_EVENTS = new Set(['focus', 'blur']);
+
+/**
+ * Scroll-blocking events are registered passive, as browsers do by default at
+ * document level, so delegation never delays scrolling. preventDefault() is
+ * ignored for them; every other type is registered non-passive.
+ */
+const PASSIVE_EVENTS = new Set(['touchstart', 'touchmove', 'wheel', 'mousewheel', 'scroll']);
+
+/**
+ * Listener options for a delegated event type.
+ * @param {string} eventType
+ * @returns {{capture: boolean, passive: boolean}}
+ */
+export function getListenerOptions(eventType) {
+  return {
+    capture: CAPTURED_BUBBLING_EVENTS.has(eventType) || NON_BUBBLING_EVENTS.has(eventType),
+    passive: PASSIVE_EVENTS.has(eventType),
+  };
+}
+
 /**
  * EventDelegation class
  * Manages document-level event listeners and routes to registered handlers
@@ -24,20 +76,10 @@ export class EventDelegation {
     this.boundHandlers = new Map();
 
     /**
-     * Event types to delegate
-     * Focus/blur use capture phase because they don't bubble
+     * Event types listened for by initialize(). Any other type is added the
+     * first time listen() is called for it.
      */
-    this.eventTypes = [
-      'click',
-      'change',
-      'input',
-      'submit',
-      'focus',
-      'blur',
-      'keydown',
-      'keyup',
-      'keypress',
-    ];
+    this.eventTypes = [...DEFAULT_EVENT_TYPES];
   }
 
   /**
@@ -55,28 +97,49 @@ export class EventDelegation {
     }
 
     this.root = root;
+    this.initialized = true;
 
     for (const eventType of this.eventTypes) {
-      const handler = (event) => this.handleEvent(event, eventType);
+      this.attach(eventType);
+    }
+  }
 
-      // Focus and blur don't bubble - must use capture phase
-      const useCapture = eventType === 'focus' || eventType === 'blur';
+  /**
+   * Make sure events of `eventType` are delegated. Called by hydrate() for
+   * every event type a component handles, so types beyond the defaults
+   * (dblclick, mouseenter, pointerdown, ...) work too.
+   * @param {string} eventType - DOM event type, e.g. 'dblclick'
+   */
+  listen(eventType) {
+    if (!this.eventTypes.includes(eventType)) {
+      this.eventTypes.push(eventType);
+    }
+    if (this.initialized) {
+      this.attach(eventType);
+    }
+  }
 
-      // Submit needs preventDefault capability, others can be passive
-      const options = {
-        capture: useCapture,
-        passive: eventType !== 'submit',
-      };
-
-      root.addEventListener(eventType, handler, options);
-      this.boundHandlers.set(eventType, { handler, options });
+  /** @private */
+  attach(eventType) {
+    if (this.boundHandlers.has(eventType)) {
+      return;
     }
 
-    this.initialized = true;
+    const handler = (event) => this.handleEvent(event, eventType);
+    const options = getListenerOptions(eventType);
+
+    this.root.addEventListener(eventType, handler, options);
+    this.boundHandlers.set(eventType, { handler, options });
   }
 
   /**
    * Handle a delegated event
+   *
+   * Runs the handler of the nearest element carrying
+   * `data-coherent-{eventType}`, then those of its ancestors, like native
+   * bubbling, until a handler stops propagation. Non-bubbling events only run
+   * a handler on the target itself.
+   *
    * @param {Event} event - The DOM event
    * @param {string} eventType - The type of event (click, change, etc.)
    */
@@ -86,29 +149,48 @@ export class EventDelegation {
       return;
     }
 
-    // Find the nearest element with the appropriate data attribute
     const attrName = `data-coherent-${eventType}`;
-    const delegateTarget = target.closest(`[${attrName}]`);
+    const selector = `[${attrName}]`;
+    const bubbles = !NON_BUBBLING_EVENTS.has(eventType);
 
-    if (!delegateTarget) {
+    let current = target.closest(selector);
+    if (!bubbles && current !== target) {
       return;
     }
 
-    // Get the handler ID from the attribute
-    const handlerId = delegateTarget.getAttribute(attrName);
-    if (!handlerId) {
-      return;
-    }
+    while (current) {
+      const handlerId = current.getAttribute(attrName);
+      const entry = handlerId ? this.registry.get(handlerId) : undefined;
 
-    // Look up the handler in the registry
-    const entry = this.registry.get(handlerId);
-    if (!entry) {
-      return;
-    }
+      if (entry) {
+        // Wrap the event with component context and call the handler
+        const wrappedEvent = wrapEvent(event, current, entry.componentRef);
+        entry.handler(wrappedEvent);
 
-    // Wrap the event with component context and call the handler
-    const wrappedEvent = wrapEvent(event, delegateTarget, entry.componentRef);
-    entry.handler(wrappedEvent);
+        if (wrappedEvent.propagationStopped || event.cancelBubble === true) {
+          return;
+        }
+      }
+
+      if (!bubbles) {
+        return;
+      }
+
+      const parent = current.parentElement;
+      if (!parent || typeof parent.closest !== 'function' || !this.isWithinRoot(parent)) {
+        return;
+      }
+      current = parent.closest(selector);
+    }
+  }
+
+  /** @private */
+  isWithinRoot(element) {
+    const root = this.root;
+    if (!root || root.nodeType === 9 || typeof root.contains !== 'function') {
+      return true;
+    }
+    return root.contains(element);
   }
 
   /**
@@ -127,6 +209,7 @@ export class EventDelegation {
 
     this.boundHandlers.clear();
     this.registry.clear();
+    this.eventTypes = [...DEFAULT_EVENT_TYPES];
     this.initialized = false;
     this.root = null;
   }

@@ -271,16 +271,18 @@ describe('EventDelegation', () => {
     expect(clickCall[2].capture).toBe(false);
   });
 
-  it('initialize() uses passive: false only for submit', () => {
+  // Every default type was registered passive except submit, so
+  // preventDefault() did nothing for clicks, keys and changes.
+  it('initialize() registers the default event types non-passive', () => {
     delegation.initialize(mockRoot);
 
     const calls = mockRoot.addEventListener.mock.calls;
 
-    const submitCall = calls.find((call) => call[0] === 'submit');
-    const clickCall = calls.find((call) => call[0] === 'click');
-
-    expect(submitCall[2].passive).toBe(false);
-    expect(clickCall[2].passive).toBe(true);
+    expect(calls.map((call) => [call[0], call[2].passive])).toEqual(
+      ['click', 'change', 'input', 'submit', 'focus', 'blur', 'keydown', 'keyup', 'keypress'].map(
+        (type) => [type, false]
+      )
+    );
   });
 
   it('initialize() can only be called once (idempotent)', () => {

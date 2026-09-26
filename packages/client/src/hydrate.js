@@ -174,6 +174,20 @@ export function hydrate(component, container, options = {}) {
   };
 }
 
+/** Prop names whose lower-cased suffix is not the DOM event type. */
+const EVENT_TYPE_ALIASES = {
+  doubleclick: 'dblclick',
+};
+
+/**
+ * DOM event type for an `on*` prop: onClick -> click, onDoubleClick -> dblclick
+ * @private
+ */
+function toEventType(propName) {
+  const type = propName.slice(2).toLowerCase();
+  return EVENT_TYPE_ALIASES[type] ?? type;
+}
+
 /**
  * Walk virtual DOM tree and register event handlers
  * @private
@@ -191,8 +205,11 @@ function registerEventHandlers(domElement, vNode, componentRef, handlerIds) {
   );
 
   for (const eventProp of eventProps) {
-    const eventType = eventProp.slice(2).toLowerCase(); // onClick -> click
+    const eventType = toEventType(eventProp); // onClick -> click
     const handler = props[eventProp];
+
+    // Delegate this event type even if it is not one of the defaults
+    eventDelegation.listen(eventType);
 
     // Generate unique handler ID
     const handlerId = `${tagName}-${eventType}-${Math.random().toString(36).slice(2, 9)}`;

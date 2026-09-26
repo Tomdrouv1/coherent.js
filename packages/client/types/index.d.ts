@@ -329,7 +329,12 @@ export interface RegisteredHandler {
 /**
  * Routes document-level events to handlers registered by id.
  *
- * Focus and blur are delegated in the capture phase, since they do not bubble.
+ * Listeners are non-passive, so handlers can call `preventDefault()`, except
+ * for scroll-blocking types (touchstart, touchmove, wheel, scroll). Handlers
+ * run from the target's nearest `data-coherent-{type}` element outwards, like
+ * bubbling, until one stops propagation. Focus and blur are captured, since
+ * they do not bubble natively; other non-bubbling events (mouseenter, load,
+ * ...) only reach a handler on the target itself.
  */
 export class EventDelegation {
   constructor(registry?: HandlerRegistry);
@@ -343,10 +348,16 @@ export class EventDelegation {
   /** Attach listeners to `root`; idempotent, and a no-op without a document */
   initialize(root?: Document | Element | null): void;
 
-  /** Dispatch one delegated event to its registered handler */
+  /**
+   * Delegate `eventType` too. hydrate() calls this for every event type a
+   * component handles, so any DOM event works, not only the defaults.
+   */
+  listen(eventType: string): void;
+
+  /** Dispatch one delegated event to its registered handlers */
   handleEvent(event: Event, eventType: string): void;
 
-  /** Remove every listener attached by `initialize()` */
+  /** Remove every listener attached by `initialize()` and `listen()` */
   destroy(): void;
 
   isInitialized(): boolean;

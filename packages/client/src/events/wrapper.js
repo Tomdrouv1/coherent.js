@@ -8,9 +8,14 @@
 /**
  * @typedef {object} CoherentEvent
  * @property {Event} originalEvent - The native DOM event
+ * @property {string} type - The event type
  * @property {Element} target - The element with the data-coherent-* attribute
+ * @property {Element} currentTarget - Same as `target`: the element whose handler runs
+ * @property {boolean} defaultPrevented - Whether the default action was prevented
+ * @property {boolean} propagationStopped - Whether a handler stopped delegated propagation
  * @property {function(): void} preventDefault - Delegates to originalEvent.preventDefault()
- * @property {function(): void} stopPropagation - Delegates to originalEvent.stopPropagation()
+ * @property {function(): void} stopPropagation - Stops delegation to ancestor handlers and the native event
+ * @property {function(): void} stopImmediatePropagation - Like stopPropagation, also for other native listeners
  * @property {function|null} component - The component function (if available)
  * @property {object|null} state - Current component state (if available)
  * @property {function|null} setState - State setter function (if available)
@@ -30,10 +35,17 @@
  * @returns {CoherentEvent} Wrapped event with component context
  */
 export function wrapEvent(originalEvent, target, componentRef = null) {
-  return {
+  const wrapped = {
     // Native event access
     originalEvent,
+    type: originalEvent?.type,
     target,
+    currentTarget: target,
+    propagationStopped: false,
+
+    get defaultPrevented() {
+      return Boolean(originalEvent?.defaultPrevented);
+    },
 
     // Delegate common methods
     preventDefault() {
@@ -41,7 +53,17 @@ export function wrapEvent(originalEvent, target, componentRef = null) {
     },
 
     stopPropagation() {
+      wrapped.propagationStopped = true;
       originalEvent.stopPropagation();
+    },
+
+    stopImmediatePropagation() {
+      wrapped.propagationStopped = true;
+      if (typeof originalEvent.stopImmediatePropagation === 'function') {
+        originalEvent.stopImmediatePropagation();
+      } else {
+        originalEvent.stopPropagation();
+      }
     },
 
     // Component context (null if no componentRef provided)
@@ -50,4 +72,5 @@ export function wrapEvent(originalEvent, target, componentRef = null) {
     setState: componentRef?.setState ?? null,
     props: componentRef?.props ?? null,
   };
+  return wrapped;
 }
