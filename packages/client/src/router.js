@@ -402,7 +402,10 @@ export function createRouter(options = {}) {
    * Handle scroll behavior
    */
   function handleScroll(to, from, savedPosition) {
-    if (!opts.scrollBehavior.enabled) return;
+    // Without a DOM there is nothing to scroll. This runs after the route is
+    // committed, so throwing here (document is not defined) reported a
+    // navigation that had happened as failed.
+    if (!opts.scrollBehavior.enabled || typeof document === 'undefined') return;
 
     // Custom scroll behavior
     if (opts.scrollBehavior.custom) {
@@ -419,8 +422,15 @@ export function createRouter(options = {}) {
       position = savedPosition;
       stats.scrollRestores++;
     } else if (to.hash) {
-      // Scroll to hash
-      const element = document.querySelector(to.hash);
+      // Scroll to hash. By id rather than querySelector(to.hash), which
+      // throws on ids that aren't valid selectors (#123, #a.b).
+      let id = to.hash.slice(1);
+      try {
+        id = decodeURIComponent(id);
+      } catch {
+        // keep the raw id
+      }
+      const element = document.getElementById(id);
       if (element) {
         position = {
           el: element,
