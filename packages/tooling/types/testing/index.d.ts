@@ -111,67 +111,74 @@ export class TestRenderer {
  * Render a component for testing
  */
 export function renderComponent(
-  component: CoherentComponent | CoherentNode,
-  props?: Record<string, unknown>
-): RenderResult;
+  component: CoherentNode,
+  options?: Record<string, unknown>
+): TestRendererResult;
 
 /**
- * Render a component asynchronously
+ * Render a component (or a possibly-async component function called with
+ * `props`) for testing
  */
 export function renderComponentAsync(
-  component: CoherentNode,
-  options?: RenderOptions
-): Promise<RenderResult>;
+  component: CoherentComponent | CoherentNode,
+  props?: Record<string, unknown>,
+  options?: Record<string, unknown>
+): Promise<TestRendererResult>;
 
 /**
  * Create a new test renderer instance
  */
-export function createTestRenderer(): TestRenderer;
+export function createTestRenderer(component: CoherentNode, options?: RenderOptions): TestRenderer;
 
 /**
- * Shallow render a component
+ * Shallow render a component: children are replaced by `{ _shallow: true }` placeholders
  */
-export function shallowRender(component: CoherentNode): RenderResult;
+export function shallowRender(component: CoherentNode): CoherentNode;
 
 // ============================================================================
 // Custom Matchers for Coherent.js
 // ============================================================================
 
 /**
- * Coherent.js-specific test matchers
+ * Matchers registered by `extendExpect(expect)`. Each accepts a
+ * `renderComponent()` result, a query match (`getByTestId()` …) or an HTML
+ * string. Element matchers look at the first element in that HTML.
+ *
+ * None of them shadows a Vitest/Jest built-in: snapshot with
+ * `expect(result.toSnapshot()).toMatchSnapshot()`, and use the built-in
+ * `toHaveBeenCalled*` matchers for `vi.fn()` or `createMock()` mocks.
  */
 export interface CoherentMatchers<R = unknown> {
-  // Element structure matchers
-  /** Assert element has specific tag name */
-  toHaveTag(tagName: string): R;
-  /** Assert element contains text */
+  /** Text content (entities decoded) equals `text` */
   toHaveText(text: string): R;
-  /** Assert element has attribute (optionally with value) */
+  /** Text content (entities decoded) contains `text` */
+  toContainText(text: string): R;
+  /** The element has every given class, as whole tokens ('btn' ≠ 'btn-primary') */
+  toHaveClass(className: string): R;
+  /** A query match that found its element */
+  toBeInTheDocument(): R;
+  /** Has non-whitespace text content */
+  toBeVisible(): R;
+  /** Has no text content */
+  toBeEmpty(): R;
+  /** The HTML contains `html` verbatim */
+  toContainHTML(html: string): R;
+  /** The element has attribute `name` (with exactly `value`, when given) */
   toHaveAttribute(name: string, value?: string): R;
-  /** Assert element has CSS class */
-  toHaveClassName(className: string): R;
-  /** Assert element has children (optionally specific count) */
-  toHaveChildren(count?: number): R;
+  /** The element's tag name is `tagName` */
+  toHaveTagName(tagName: string): R;
+  /** The HTML contains the given element's HTML */
+  toContainElement(element: string | { html?: string }): R;
+  /** Rendering produced non-empty HTML */
+  toRenderSuccessfully(): R;
+  /** Every non-void tag is closed, in order */
+  toBeValidHTML(): R;
+}
 
-  // Component matchers
-  /** Assert component renders an element with tag */
-  toRenderElement(tagName: string): R;
-  /** Assert component renders text content */
-  toRenderText(text: string): R;
-  /** Assert component matches snapshot */
-  toMatchComponentSnapshot(): R;
-
-  // Hydration matchers
-  /** Assert hydration completes without mismatch */
-  toHydrateWithoutMismatch(): R;
-  /** Assert hydrated component has specific state */
-  toHaveState(state: Record<string, unknown>): R;
-
-  // Accessibility matchers
-  /** Assert element has accessible name */
-  toHaveAccessibleName(name: string): R;
-  /** Assert element has ARIA role */
-  toHaveRole(role: string): R;
+/** Result a matcher implementation returns to `expect.extend()` */
+export interface MatcherResult {
+  pass: boolean;
+  message: () => string;
 }
 
 // ============================================================================
@@ -346,40 +353,17 @@ export const assertions: {
   assertRendered(result: { html?: string } | null): void;
 };
 
-// ============================================================================
-// DOM Matchers (for Vitest/Jest)
-// ============================================================================
+/**
+ * The matcher implementations, keyed by name, for `expect.extend()`
+ */
+export const customMatchers: {
+  [K in keyof CoherentMatchers]: (received: unknown, ...args: any[]) => MatcherResult;
+};
 
 /**
- * Custom DOM matchers
+ * Register {@link customMatchers} on a framework's `expect` (Vitest, Jest)
  */
-export interface CustomMatchers<R = void> {
-  toHaveHTML(html: string): R;
-  toContainHTML(html: string): R;
-  toHaveTextContent(text: string | RegExp): R;
-  toHaveAttribute(attr: string, value?: string): R;
-  toHaveClass(className: string): R;
-  toBeInTheDocument(): R;
-  toBeVisible(): R;
-  toBeDisabled(): R;
-  toBeEnabled(): R;
-  toHaveValue(value: unknown): R;
-  toHaveStyle(style: Record<string, unknown>): R;
-  toHaveFocus(): R;
-  toBeChecked(): R;
-  toBeValid(): R;
-  toBeInvalid(): R;
-}
-
-/**
- * Custom matchers object
- */
-export const customMatchers: CustomMatchers;
-
-/**
- * Extend test framework expect
- */
-export function extendExpect(matchers: Record<string, (...args: unknown[]) => unknown>): void;
+export function extendExpect(expect: { extend(matchers: Record<string, unknown>): void }): void;
 
 // ============================================================================
 // Vitest/Jest Module Extensions
@@ -387,18 +371,18 @@ export function extendExpect(matchers: Record<string, (...args: unknown[]) => un
 
 // Extend Vitest matchers
 declare module 'vitest' {
-  interface Assertion<T = unknown> extends CoherentMatchers<T>, CustomMatchers<T> {}
-  interface AsymmetricMatchersContaining extends CoherentMatchers, CustomMatchers {}
+  interface Assertion<T = unknown> extends CoherentMatchers<T> {}
+  interface AsymmetricMatchersContaining extends CoherentMatchers {}
 }
 
 // Extend Jest matchers (for users using Jest)
 declare global {
   namespace Vi {
-    interface Matchers<R = void> extends CustomMatchers<R>, CoherentMatchers<R> {}
-    interface AsymmetricMatchers extends CustomMatchers, CoherentMatchers {}
+    interface Matchers<R = void> extends CoherentMatchers<R> {}
+    interface AsymmetricMatchers extends CoherentMatchers {}
   }
   namespace jest {
-    interface Matchers<R = void> extends CustomMatchers<R>, CoherentMatchers<R> {}
-    interface Expect extends CustomMatchers, CoherentMatchers {}
+    interface Matchers<R = void> extends CoherentMatchers<R> {}
+    interface Expect extends CoherentMatchers {}
   }
 }
