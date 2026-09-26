@@ -100,7 +100,23 @@ const userPrefs = withLocalStorage({ theme: 'dark', lang: 'en' }, 'user-prefs');
 
 // Auto-persist to sessionStorage
 const sessionData = withSessionStorage({ cart: [] }, 'session-data');
+
+// Stored state is restored asynchronously on creation
+await userPrefs.ready;
 ```
+
+Updates made before `ready` settles win over the stored values. Write failures
+(for example `QuotaExceededError`) are reported through `onError`, never
+`onSave`. `crossTab: true` syncs stores that share a key across tabs;
+call `destroy()` when a store is no longer needed.
+
+On the server (no `window`), browser storage backends read and write nothing —
+Web Storage there would be shared by every request. Pass an `adapter` to
+persist server-side.
+
+`encrypt: true` requires an `encryptionKey` and is XOR **obfuscation**, not
+encryption: the key ships to the browser. Never keep secrets in browser
+storage.
 
 ### State Validation
 

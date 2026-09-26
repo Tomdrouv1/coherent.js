@@ -325,8 +325,13 @@ export function useContext<T = unknown>(key: string): T | undefined;
 /** Where persistent state is written. */
 export type StorageKind = 'localStorage' | 'sessionStorage' | 'indexedDB' | 'memory';
 
-/** Storage backend contract. */
+/**
+ * Storage backend contract. `set` resolves `true` once stored; rejecting or
+ * resolving `false` is reported through `onError`. An adapter whose
+ * `available` is `false` is never written to.
+ */
 export interface PersistenceAdapter {
+  available?: boolean;
   get(key: string): Promise<string | null> | string | null;
   set(key: string, value: string): Promise<boolean> | boolean;
   remove(key: string): Promise<boolean> | boolean;
@@ -334,8 +339,14 @@ export interface PersistenceAdapter {
 }
 
 export interface PersistentStateOptions {
-  /** Backend; defaults to `'localStorage'` */
+  /**
+   * Backend; defaults to `'localStorage'`. On the server (no `window`) the
+   * browser backends read and write nothing, since Web Storage there would be
+   * shared by every request.
+   */
   storage?: StorageKind;
+  /** Custom backend, used as is (also on the server); overrides `storage` */
+  adapter?: PersistenceAdapter | null;
   /** Storage key; defaults to `'coherent-state'` */
   key?: string;
   /** Coalesce writes; defaults to `true` */
@@ -348,8 +359,12 @@ export interface PersistentStateOptions {
   include?: string[] | null;
   /** Persist everything except these keys */
   exclude?: string[] | null;
-  /** Obfuscate the payload with `encryptionKey` */
+  /**
+   * XOR-obfuscate the payload with `encryptionKey`. This is obfuscation, not
+   * encryption: the key ships to the browser. Never store secrets.
+   */
   encrypt?: boolean;
+  /** Required when `encrypt` is `true`; there is no default key */
   encryptionKey?: string | null;
   onSave?: ((state: Record<string, unknown>) => void) | null;
   onLoad?: ((state: Record<string, unknown>) => void) | null;
@@ -357,10 +372,17 @@ export interface PersistentStateOptions {
   /** Tag stored payloads with `version` and run `migrate` on mismatch */
   versioning?: boolean;
   version?: string;
-  migrate?: ((state: Record<string, unknown>, from: string) => Record<string, unknown>) | null;
+  /**
+   * Receives the stored payload as serialized by `serialize`, returns it
+   * migrated (still serialized) for `deserialize`
+   */
+  migrate?: ((serializedState: string, fromVersion: string, toVersion: string) => string) | null;
   /** Discard stored state older than this many ms */
   ttl?: number | null;
-  /** Mirror updates to other tabs over BroadcastChannel */
+  /**
+   * Mirror updates to other tabs holding the same `key`, over a
+   * BroadcastChannel named after it. Off on the server.
+   */
   crossTab?: boolean;
 }
 
@@ -382,20 +404,31 @@ export interface PersistentState {
   subscribe(
     listener: (state: Record<string, unknown>, oldState: Record<string, unknown>) => void
   ): () => void;
-  /** Force an immediate write */
-  persist(): Promise<void>;
+  /** Force an immediate write; `false` when nothing was stored */
+  persist(): Promise<boolean>;
   /** Reload from storage; `false` when nothing was stored */
   restore(): Promise<boolean>;
   /** Remove the stored payload */
   clearStorage(): Promise<void>;
   load(): Promise<Record<string, unknown> | null>;
-  save(): Promise<void>;
+  /** Write now; `false` when nothing was stored (failures go to `onError`) */
+  save(): Promise<boolean>;
+  /**
+   * Flush a pending debounced save, close the cross-tab channel and drop
+   * listeners.
+   */
+  destroy(): Promise<void>;
+  /**
+   * Settles once the automatic restore on creation is done: `true` when
+   * stored state was restored. Keys set before then keep their new value.
+   */
+  readonly ready: Promise<boolean>;
   readonly adapter: PersistenceAdapter;
 }
 
 /**
  * Create a state container that persists to storage. Unless the backend is
- * `'memory'`, stored state is restored on creation.
+ * `'memory'`, stored state is restored on creation; await `ready` for it.
  */
 export function createPersistentState(
   initialState?: Record<string, unknown>,
