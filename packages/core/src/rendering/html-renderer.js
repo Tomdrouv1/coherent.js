@@ -4,10 +4,7 @@
  */
 
 import { BaseRenderer, RendererUtils, serializeForCache } from './base-renderer.js';
-import {
-    hasChildren,
-    normalizeChildren,
-} from '../core/object-utils.js';
+import { normalizeChildren } from '../core/object-utils.js';
 
 import { validateNesting } from '../core/html-nesting-rules.js';
 
@@ -428,9 +425,11 @@ class HTMLRenderer extends BaseRenderer {
             }
         }
 
-        // Handle children
+        // Handle children. Checked directly: hasChildren() validates every
+        // prop name against the tag-name pattern, so an element with a prop
+        // like `@click` or `data_id` silently lost all of its children.
         let childrenHtml = '';
-        if (hasChildren(element)) {
+        if (children !== undefined && children !== null) {
             const normalizedChildren = normalizeChildren(children);
             childrenHtml = normalizedChildren
                 .map((child, index) => {
