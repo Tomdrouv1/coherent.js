@@ -9,6 +9,7 @@
 
 import { eventDelegation, handlerRegistry } from './events/index.js';
 import { extractState, detectMismatch, reportMismatches } from './hydration/index.js';
+import { isElementVNode, readElement, pairElementChildren } from './hydration/vnode.js';
 
 /**
  * Hydrate a server-rendered component
@@ -178,16 +179,11 @@ export function hydrate(component, container, options = {}) {
  * @private
  */
 function registerEventHandlers(domElement, vNode, componentRef, handlerIds) {
-  if (!vNode || typeof vNode !== 'object' || Array.isArray(vNode)) {
+  if (!domElement || !isElementVNode(vNode)) {
     return;
   }
 
-  const tagName = Object.keys(vNode)[0];
-  const props = vNode[tagName];
-
-  if (!props || typeof props !== 'object') {
-    return;
-  }
+  const { tagName, props } = readElement(vNode);
 
   // Look for event handler props (on* functions)
   const eventProps = Object.keys(props).filter(
@@ -212,15 +208,11 @@ function registerEventHandlers(domElement, vNode, componentRef, handlerIds) {
     }
   }
 
-  // Recursively process children
-  const children = getVNodeChildren(props);
-  const domChildren = getSignificantDOMChildren(domElement);
-
-  children.forEach((child, index) => {
-    if (child && typeof child === 'object' && !Array.isArray(child) && domChildren[index]) {
-      registerEventHandlers(domChildren[index], child, componentRef, handlerIds);
-    }
-  });
+  // Pair element children the way the server rendered them: null, booleans,
+  // nested arrays and text never shift which element a child binds to.
+  for (const [childVNode, childElement] of pairElementChildren(tagName, props, domElement)) {
+    registerEventHandlers(childElement, childVNode, componentRef, handlerIds);
+  }
 }
 
 /**
