@@ -57,10 +57,16 @@ function isPrerelease(version) {
  * stays a plain data-in/markup-out function. `marked` is already configured
  * with the site's syntax highlighter by the time this runs.
  *
+ * Links to docs are written as repository paths (`/docs/migration/guide.md`),
+ * which work when the file is read on GitHub; `rewriteLinks` turns them into
+ * the site's URLs, the same way the docs pages' own links are rewritten.
+ *
  * @param {string} changelogPath - Absolute path to CHANGELOG.md
+ * @param {Object} [options]
+ * @param {(html: string) => string} [options.rewriteLinks] - Maps links in the rendered HTML to site URLs
  * @returns {Array<{version: string, date: string|null, html: string, isCurrent: boolean, isPrerelease: boolean}>}
  */
-export function loadChangelog(changelogPath) {
+export function loadChangelog(changelogPath, { rewriteLinks = (html) => html } = {}) {
   const entries = parseChangelog(readFileSync(changelogPath, 'utf-8'));
 
   // "Current" is the newest stable release, which is what `npm install`
@@ -71,7 +77,7 @@ export function loadChangelog(changelogPath) {
   return entries.map((entry, index) => ({
     version: entry.version,
     date: entry.date,
-    html: marked.parse(entry.body),
+    html: rewriteLinks(marked.parse(entry.body)),
     isCurrent: index === currentIndex,
     isPrerelease: entry.date !== null && isPrerelease(entry.version),
   }));

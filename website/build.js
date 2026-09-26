@@ -12,7 +12,7 @@ import { marked } from 'marked';
 import { createHighlighter } from 'shiki';
 
 // Reuse the same rendering pipeline as the dev server
-import { renderFullPage, pageRoutes, getExamplesList, Layout, rewriteDocLinks } from './src/index.js';
+import { renderFullPage, pageRoutes, getExamplesList, highlightCode, Layout, rewriteDocLinks } from './src/index.js';
 import { render } from '@coherent.js/core';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -107,11 +107,13 @@ async function buildPages() {
     console.log(`  ${route.path}`);
   }
 
-  // Examples page (dynamic data)
+  // Examples page (dynamic data). Without highlightCode the page falls back
+  // to plain <pre><code>: the dev server passed it, this build did not, so
+  // the deployed examples were never highlighted.
   const examplesHtml = renderFullPage({
     currentPath: '/examples',
     componentName: 'Examples',
-    props: { items: getExamplesList() },
+    props: { items: getExamplesList(), highlightCode },
     title: 'Examples - Coherent.js',
   });
   await writePage('examples', examplesHtml);
