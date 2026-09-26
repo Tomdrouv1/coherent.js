@@ -1,23 +1,17 @@
 import { defineConfig } from 'vitest/config';
-import { codecovVitePlugin } from '@codecov/vite-plugin';
-import { env } from 'node:process';
+import { coherentSources, sharedTestOptions } from '../../vitest.shared.js';
 
+// Same resolution as the root config: @coherent.js/* imports run against
+// package sources, not whatever dist/ was last built.
 export default defineConfig({
+  plugins: [coherentSources()],
   test: {
-    globals: true,
-    environment: 'node',
+    ...sharedTestOptions,
     include: ['test/**/*.{test,spec}.{js,ts}'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
       reportsDirectory: './coverage'
-    },
-    plugins: [
-      codecovVitePlugin({
-        enableBundleAnalysis: env.CODECOV_TOKEN !== undefined,
-        bundleName: "@coherent.js/seo",
-        uploadToken: env.CODECOV_TOKEN,
-      }),
-    ],
+    }
   }
 });

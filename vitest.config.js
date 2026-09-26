@@ -1,24 +1,13 @@
 import { defineConfig } from 'vitest/config';
 import { env } from 'node:process';
-import { fileURLToPath } from 'node:url';
-
-const pkgSrc = (pkg, file = 'index.js') =>
-  fileURLToPath(new URL(`./packages/${pkg}/src/${file}`, import.meta.url));
+import { coherentSources } from './vitest.shared.js';
 
 export default defineConfig({
-  resolve: {
-    // Tests exercise package source directly, without requiring a build first.
-    // (This replaces the `development` exports condition the published
-    // packages used to carry — that condition broke consumers because src/ is
-    // not shipped in the npm tarballs.)
-    alias: [
-      { find: /^@coherent\.js\/core$/, replacement: pkgSrc('core') },
-      { find: /^@coherent\.js\/client$/, replacement: pkgSrc('client') },
-      { find: /^@coherent\.js\/state$/, replacement: pkgSrc('state') },
-      { find: /^@coherent\.js\/devtools$/, replacement: pkgSrc('devtools') },
-      { find: /^@coherent\.js\/tooling\/testing$/, replacement: pkgSrc('tooling', 'testing/index.js') },
-    ],
-  },
+  // Tests exercise package source directly, without requiring a build first.
+  // (This replaces the `development` exports condition the published
+  // packages used to carry — that condition broke consumers because src/ is
+  // not shipped in the npm tarballs.)
+  plugins: [coherentSources()],
 
   test: {
     // Global test configuration
