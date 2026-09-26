@@ -10,7 +10,7 @@
 // Performance monitoring
 import { readFileSync } from 'node:fs';
 import { performanceMonitor } from './performance/monitor.js';
-import { escapeHtml } from './core/html-utils.js';
+import { escapeHtml, createTrustedContent } from './core/html-utils.js';
 
 // Unified HTML renderer
 import { render as renderWithHtmlRenderer } from './rendering/html-renderer.js';
@@ -143,13 +143,10 @@ function applyScopeToElement(element, scopeId) {
  * @returns {Object} Marked safe content
  */
 export function dangerouslySetInnerContent(content) {
-  return {
-    __html: content,
-    __trusted: true
-  };
+  return createTrustedContent(content);
 }
 
-export { isTrustedContent } from './core/html-utils.js';
+export { isTrustedContent, isValidAttributeName } from './core/html-utils.js';
 
 // Hydration attribute injection
 function injectHydrationAttributes(component, options) {

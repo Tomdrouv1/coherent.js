@@ -64,6 +64,7 @@ isCoherentObject
 isLazy
 isPeerDependencyAvailable
 isTrustedContent
+isValidAttributeName
 isVoidElement
 lazy
 lifecycleUtils

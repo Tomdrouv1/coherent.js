@@ -29,6 +29,25 @@ describe('dangerouslySetInnerContent', () => {
     expect(isTrustedContent(null)).toBe(false);
   });
 
+  it('cannot be forged from JSON', () => {
+    // Request bodies are JSON: a plain-keyed marker would let a client
+    // supply its own raw HTML wherever that data reaches text or children.
+    const forged = JSON.parse('{"__trusted":true,"__html":"<img src=x onerror=alert(1)>"}');
+
+    expect(isTrustedContent(forged)).toBe(false);
+    expect(render({ p: { text: forged } })).not.toContain('<img');
+    expect(render({ p: { children: [forged] } })).not.toContain('<img');
+    expect(render({ p: { text: { ...dangerouslySetInnerContent('<img>') } } })).not.toContain('<img');
+  });
+
+  it('is immutable once created', () => {
+    const marker = dangerouslySetInnerContent(RAW);
+
+    expect(Object.isFrozen(marker)).toBe(true);
+    expect(marker.__html).toBe(RAW);
+    expect(marker.__trusted).toBe(true);
+  });
+
   it('renders verbatim through the text key', () => {
     expect(render({ div: { text: dangerouslySetInnerContent(RAW) } }))
       .toBe(`<div>${RAW}</div>`);

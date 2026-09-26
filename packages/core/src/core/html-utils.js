@@ -14,6 +14,29 @@ export function escapeHtml(text) {
 }
 
 /**
+ * Brand for trusted-content markers. A symbol can't come out of JSON.parse,
+ * so request data can't forge a marker the way `{ "__trusted": true,
+ * "__html": "<img onerror=...>" }` could when the check read plain keys.
+ * Symbol.for (not a module-private symbol) keeps markers valid across two
+ * loaded copies of core, e.g. the ESM and CJS builds.
+ */
+const TRUSTED_CONTENT = Symbol.for('coherent.js.trustedContent');
+
+/**
+ * Create a trusted-content marker. Use `dangerouslySetInnerContent()`.
+ *
+ * @param {string} content - Markup to emit verbatim
+ * @returns {{__html: string, __trusted: true}} Frozen marker
+ */
+export function createTrustedContent(content) {
+  const marker = { __html: String(content), __trusted: true };
+  // Non-enumerable, so spreading or merging a marker into another object
+  // doesn't carry the brand along.
+  Object.defineProperty(marker, TRUSTED_CONTENT, { value: true });
+  return Object.freeze(marker);
+}
+
+/**
  * Detect content marked trusted by `dangerouslySetInnerContent()`.
  * Such values are emitted verbatim instead of being escaped.
  *
@@ -23,8 +46,25 @@ export function escapeHtml(text) {
 export function isTrustedContent(value) {
   return Boolean(value) &&
     typeof value === 'object' &&
-    value.__trusted === true &&
+    value[TRUSTED_CONTENT] === true &&
     typeof value.__html === 'string';
+}
+
+/**
+ * Characters the HTML spec forbids in attribute names, plus whitespace and
+ * controls. Everything else is allowed: data-*, aria-*, x-on:click, @click,
+ * :class, xlink:href.
+ */
+const INVALID_ATTRIBUTE_NAME = /[\s"'<>/=\u0000-\u001F\u007F-\u009F]/;
+
+/**
+ * Check that a string can be emitted as an attribute name as-is.
+ *
+ * @param {string} name - Attribute name
+ * @returns {boolean} True when the name can't break out of the tag
+ */
+export function isValidAttributeName(name) {
+  return typeof name === 'string' && name.length > 0 && !INVALID_ATTRIBUTE_NAME.test(name);
 }
 
 export function unescapeHtml(text) {
@@ -71,6 +111,12 @@ export function formatAttributes(props) {
 
       // Convert className to class for HTML output
       const attributeName = key === 'className' ? 'class' : key;
+
+      // Names are emitted unescaped: `{ 'onmouseover="alert(1)" x': 'y' }`
+      // used to render a live handler, and a key containing `>` ended the tag.
+      if (!isValidAttributeName(attributeName)) {
+        throw new Error(`Invalid attribute name ${JSON.stringify(key)}: attribute names cannot contain whitespace, quotes, '<', '>', '/', '=' or control characters`);
+      }
 
       // Handle function values - for event handlers, use data-action attributes
       if (typeof value === 'function') {

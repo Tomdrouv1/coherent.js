@@ -925,14 +925,23 @@ export function formatAttributes(props: Record<string, any>): string;
 /** Mark content as trusted so it is emitted without escaping */
 export function dangerouslySetInnerContent(content: string): TrustedContent;
 
-/** Content marked trusted by dangerouslySetInnerContent() */
+/** Content marked trusted by dangerouslySetInnerContent() (frozen, symbol-branded) */
 export interface TrustedContent {
-  __html: string;
-  __trusted: true;
+  readonly __html: string;
+  readonly __trusted: true;
 }
 
-/** Detect content marked by dangerouslySetInnerContent() */
+/**
+ * Detect content marked by dangerouslySetInnerContent(). Markers carry a
+ * symbol brand, so objects parsed from JSON are never trusted.
+ */
 export function isTrustedContent(value: unknown): value is TrustedContent;
+
+/**
+ * Whether a string can be emitted as an attribute name. Rendering an element
+ * with an invalid name (whitespace, quotes, `<`, `>`, `/`, `=`, controls) throws.
+ */
+export function isValidAttributeName(name: string): boolean;
 
 // ============================================================================
 // Utility Types and Constants
