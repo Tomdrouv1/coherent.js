@@ -1187,7 +1187,9 @@ export function withTransaction(
 
 /**
  * Load `ModelClass.find(req.params[paramName])` into `req[requestKey]` (default: the lower-cased
- * model name); passes a 404 error to `next` when it resolves to null.
+ * model name). When it resolves to null (or the parameter is missing) it passes an error
+ * whose `status` and `statusCode` are 404 (400) to `next` — or throws it when called
+ * without `next` — so Express and the `@coherent.js/api` router both answer 404 (400).
  */
 export function withModel(model: FindableModel, paramName?: string, requestKey?: string | null): DatabaseMiddleware;
 

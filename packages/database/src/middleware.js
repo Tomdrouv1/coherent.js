@@ -31,6 +31,26 @@ function fail(next, _error) {
 }
 
 /**
+ * An error carrying its HTTP status under both names routers read: Express's
+ * default handler uses `status` (or `statusCode`); the `@coherent.js/api`
+ * router uses `statusCode`, as its `ApiError` classes do, and answered 500
+ * for an error that only had `status`.
+ *
+ * @private
+ * @param {string} message - Error message sent to the client
+ * @param {number} status - 4xx HTTP status
+ * @returns {Error}
+ */
+function httpError(message, status) {
+  const _error = new Error(message);
+  _error.status = status;
+  _error.statusCode = status;
+  // Like `http-errors`: a client error's message is safe to show
+  _error.expose = true;
+  return _error;
+}
+
+/**
  * Database middleware for router integration
  * 
  * @param {DatabaseManager} db - Database manager instance
@@ -239,17 +259,13 @@ export function withModel(ModelClass, paramName = 'id', requestKey = null) {
       const paramValue = req.params[paramName];
       
       if (!paramValue) {
-        const _error = new Error(`Parameter '${paramName}' is required`);
-        _error.status = 400;
-        throw _error;
+        throw httpError(`Parameter '${paramName}' is required`, 400);
       }
 
       const model = await ModelClass.find(paramValue);
       
       if (!model) {
-        const _error = new Error(`${ModelClass.name} not found`);
-        _error.status = 404;
-        throw _error;
+        throw httpError(`${ModelClass.name} not found`, 404);
       }
 
       req[key] = model;
@@ -343,9 +359,7 @@ export function withQueryValidation(schema, options = {}) {
         // Skip if not provided and not required
         if (value === undefined || value === null || value === '') {
           if (rules.required) {
-            const _error = new Error(`Query parameter '${key}' is required`);
-            _error.status = 400;
-            throw _error;
+            throw httpError(`Query parameter '${key}' is required`, 400);
           }
           continue;
         }
@@ -357,9 +371,7 @@ export function withQueryValidation(schema, options = {}) {
             case 'number':
               coercedValue = Number(value);
               if (isNaN(coercedValue)) {
-                const _error = new Error(`Query parameter '${key}' must be a number`);
-                _error.status = 400;
-                throw _error;
+                throw httpError(`Query parameter '${key}' must be a number`, 400);
               }
               break;
             case 'boolean':
@@ -373,21 +385,15 @@ export function withQueryValidation(schema, options = {}) {
 
         // Validation
         if (rules.enum && !rules.enum.includes(coercedValue)) {
-          const _error = new Error(`Query parameter '${key}' must be one of: ${rules.enum.join(', ')}`);
-          _error.status = 400;
-          throw _error;
+          throw httpError(`Query parameter '${key}' must be one of: ${rules.enum.join(', ')}`, 400);
         }
 
         if (rules.min !== undefined && coercedValue < rules.min) {
-          const _error = new Error(`Query parameter '${key}' must be at least ${rules.min}`);
-          _error.status = 400;
-          throw _error;
+          throw httpError(`Query parameter '${key}' must be at least ${rules.min}`, 400);
         }
 
         if (rules.max !== undefined && coercedValue > rules.max) {
-          const _error = new Error(`Query parameter '${key}' must be at most ${rules.max}`);
-          _error.status = 400;
-          throw _error;
+          throw httpError(`Query parameter '${key}' must be at most ${rules.max}`, 400);
         }
 
         validatedQuery[key] = coercedValue;
