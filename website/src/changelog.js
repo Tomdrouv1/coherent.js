@@ -45,6 +45,11 @@ export function parseChangelog(markdown) {
     .filter((entry) => entry.body !== '');
 }
 
+/** `2.0.0-rc.0`, `1.0.0-beta.8`: a SemVer version with a pre-release part. */
+function isPrerelease(version) {
+  return /^\d+\.\d+\.\d+-/.test(version);
+}
+
 /**
  * Read and render the changelog for the page.
  *
@@ -53,19 +58,21 @@ export function parseChangelog(markdown) {
  * with the site's syntax highlighter by the time this runs.
  *
  * @param {string} changelogPath - Absolute path to CHANGELOG.md
- * @returns {Array<{version: string, date: string|null, html: string, isCurrent: boolean}>}
+ * @returns {Array<{version: string, date: string|null, html: string, isCurrent: boolean, isPrerelease: boolean}>}
  */
 export function loadChangelog(changelogPath) {
   const entries = parseChangelog(readFileSync(changelogPath, 'utf-8'));
 
-  // The newest released version leads the file; `[Unreleased]` is not a
-  // release and must not take the badge.
-  const currentIndex = entries.findIndex((entry) => entry.date !== null);
+  // "Current" is the newest stable release, which is what `npm install`
+  // gives: `[Unreleased]` is not a release, and a pre-release (2.0.0-rc.0)
+  // is only installed on request.
+  const currentIndex = entries.findIndex((entry) => entry.date !== null && !isPrerelease(entry.version));
 
   return entries.map((entry, index) => ({
     version: entry.version,
     date: entry.date,
     html: marked.parse(entry.body),
     isCurrent: index === currentIndex,
+    isPrerelease: entry.date !== null && isPrerelease(entry.version),
   }));
 }

@@ -13,15 +13,20 @@ import { dangerouslySetInnerContent } from '@coherent.js/core';
  * The body is already HTML, rendered from the changelog markdown. Its heading
  * and list markup lines up with the existing .changelog-changes styles.
  *
- * @param {{version: string, date: string|null, html: string, isCurrent: boolean}} entry
+ * @param {{version: string, date: string|null, html: string, isCurrent: boolean, isPrerelease: boolean}} entry
  * @returns {object} Coherent node
  */
-function ChangelogEntry({ version, date, html, isCurrent }) {
+function ChangelogEntry({ version, date, html, isCurrent, isPrerelease }) {
   const header = [{ span: { className: 'changelog-version', text: `v${version}` } }];
   if (date) header.push({ span: { className: 'changelog-date', text: date } });
   if (isCurrent) {
     header.push({
       span: { className: 'changelog-badge changelog-badge-current', text: 'Current' },
+    });
+  }
+  if (isPrerelease) {
+    header.push({
+      span: { className: 'changelog-badge changelog-badge-prerelease', text: 'Pre-release' },
     });
   }
 

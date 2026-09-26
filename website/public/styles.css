@@ -4479,7 +4479,8 @@ pre.code-block {
   border: 1px solid rgba(0, 229, 160, 0.3);
 }
 
-.changelog-badge-initial {
+.changelog-badge-initial,
+.changelog-badge-prerelease {
   background: rgba(255, 255, 255, 0.05);
   color: var(--muted);
   border: 1px solid var(--glass-border);
