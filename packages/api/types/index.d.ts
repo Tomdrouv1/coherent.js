@@ -255,6 +255,14 @@ export interface RouterConfig {
   versionHeader?: string;
   /** Allow `addWebSocketRoute()` / `ws` routes. */
   enableWebSockets?: boolean;
+  /**
+   * Browser origins allowed to open WebSockets (`'*'` for any). Unset, only
+   * same-origin handshakes are accepted; a route's `allowedOrigins` overrides
+   * it. Handshakes without an Origin header (non-browser clients) are allowed.
+   */
+  wsAllowedOrigins?: string | string[];
+  /** Largest WebSocket frame or message accepted, in bytes (default 1 MiB). */
+  wsMaxPayload?: number;
   /** Collect `getMetrics()` data. */
   enableMetrics?: boolean;
   /** Also count static vs dynamic route matches in the metrics. */
@@ -373,7 +381,7 @@ export interface ObjectRouter {
   /** Forget cached route matches. */
   clearCache(): void;
   /** Register a WebSocket route; requires `enableWebSockets`. */
-  addWebSocketRoute(path: string, handler: WebSocketHandler, options?: { name?: string; version?: string }): void;
+  addWebSocketRoute(path: string, handler: WebSocketHandler, options?: { name?: string; version?: string; allowedOrigins?: string | string[] }): void;
   /** Pass a node:http `'upgrade'` event to the router. */
   handleWebSocketUpgrade(request: IncomingMessage, socket: import('stream').Duplex, head: Buffer): void;
   /** Send `message` to every open WebSocket on `path` (`'*'` for all). */

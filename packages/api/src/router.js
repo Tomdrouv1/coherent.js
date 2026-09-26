@@ -832,6 +832,85 @@ function registerRoute(method, config, router, path) {
 }
 
 /**
+ * Largest WebSocket frame or reassembled message accepted by default.
+ * @private
+ */
+const WS_DEFAULT_MAX_PAYLOAD = 1024 * 1024;
+
+/**
+ * Encode one unmasked (server-to-client) WebSocket frame with FIN set.
+ * @private
+ * @param {number} opcode - Frame opcode
+ * @param {Buffer} payload - Frame payload
+ * @returns {Buffer} Frame bytes
+ */
+function encodeFrame(opcode, payload) {
+  const length = payload.length;
+  let header;
+  if (length < 126) {
+    header = Buffer.from([0x80 | opcode, length]);
+  } else if (length < 65536) {
+    header = Buffer.allocUnsafe(4);
+    header[0] = 0x80 | opcode;
+    header[1] = 126;
+    header.writeUInt16BE(length, 2);
+  } else {
+    header = Buffer.allocUnsafe(10);
+    header[0] = 0x80 | opcode;
+    header[1] = 127;
+    header.writeUInt32BE(Math.floor(length / 2 ** 32), 2);
+    header.writeUInt32BE(length >>> 0, 6);
+  }
+  return Buffer.concat([header, payload]);
+}
+
+/**
+ * Decode the first WebSocket frame in `buffer`.
+ *
+ * @private
+ * @param {Buffer} buffer - Bytes received so far
+ * @param {number} maxPayload - Largest payload accepted
+ * @returns {{ fin: boolean, opcode: number, payload: Buffer, size: number }|{ error: number }|null}
+ *   The frame and how many bytes it used; `{ error: 1009 }` when it is too
+ *   large; null when the frame is not complete yet
+ */
+function readFrame(buffer, maxPayload) {
+  if (buffer.length < 2) return null;
+
+  const fin = (buffer[0] & 0x80) !== 0;
+  const opcode = buffer[0] & 0x0f;
+  const masked = (buffer[1] & 0x80) !== 0;
+  let length = buffer[1] & 0x7f;
+  let offset = 2;
+
+  if (length === 126) {
+    if (buffer.length < 4) return null;
+    length = buffer.readUInt16BE(2);
+    offset = 4;
+  } else if (length === 127) {
+    if (buffer.length < 10) return null;
+    if (buffer.readUInt32BE(2) !== 0) return { error: 1009 };
+    length = buffer.readUInt32BE(6);
+    offset = 10;
+  }
+
+  if (length > maxPayload) return { error: 1009 };
+
+  const maskOffset = offset;
+  if (masked) offset += 4;
+  if (buffer.length < offset + length) return null;
+
+  const payload = Buffer.from(buffer.subarray(offset, offset + length));
+  if (masked) {
+    for (let i = 0; i < payload.length; i++) {
+      payload[i] ^= buffer[maskOffset + (i & 3)];
+    }
+  }
+
+  return { fin, opcode, payload, size: offset + length };
+}
+
+/**
  * Detect if a route pattern is static (exact match) or dynamic (contains parameters)
  * @private
  * @param {string} pattern - Route pattern to check
@@ -903,6 +982,10 @@ class SimpleRouter {
     this.enableWebSockets = options.enableWebSockets || false;
     this.wsRoutes = [];
     this.wsConnections = new Map(); // Track active WebSocket connections
+    // Browser origins allowed to open WebSockets (per-route allowedOrigins
+    // overrides it). Unset: same-origin handshakes only.
+    this.wsAllowedOrigins = options.wsAllowedOrigins;
+    this.wsMaxPayload = options.wsMaxPayload || WS_DEFAULT_MAX_PAYLOAD;
 
     // Performance metrics
     this.enableMetrics = options.enableMetrics || false;
@@ -1167,6 +1250,8 @@ class SimpleRouter {
    * @param {string} path - WebSocket path
    * @param {Function} handler - WebSocket handler function
    * @param {Object} options - Route options
+   * @param {string|string[]} [options.allowedOrigins] - Browser origins allowed to connect
+   *   (`'*'` for any); overrides the router's `wsAllowedOrigins`
    */
   addWebSocketRoute(path, handler, options = {}) {
     if (!this.enableWebSockets) {
@@ -1181,6 +1266,7 @@ class SimpleRouter {
       handler,
       name: options.name,
       version: options.version || this.defaultVersion,
+      allowedOrigins: options.allowedOrigins,
       compiled: this.enableCompilation ? this.compileRoute(fullPath) : null
     };
 
@@ -1188,6 +1274,37 @@ class SimpleRouter {
 
     if (options.name) {
       this.namedRoutes.set(options.name, { method: 'WS', path: fullPath, version: wsRoute.version });
+    }
+  }
+
+  /**
+   * Whether a WebSocket handshake's Origin may connect to `route`.
+   *
+   * Browsers attach cookies to cross-site WebSocket handshakes and send an
+   * Origin header; without a check, any page could open an authenticated
+   * socket (cross-site WebSocket hijacking). With no allowlist configured,
+   * only same-origin browser handshakes are accepted. Clients that send no
+   * Origin (non-browser clients) are not affected.
+   *
+   * @private
+   * @param {Object} request - Upgrade request
+   * @param {Object} route - Matched WebSocket route
+   * @returns {boolean}
+   */
+  isWebSocketOriginAllowed(request, route) {
+    const origin = request.headers?.origin;
+    if (!origin) return true;
+
+    const configured = route.allowedOrigins ?? this.wsAllowedOrigins;
+    if (configured !== undefined && configured !== null) {
+      const allowed = Array.isArray(configured) ? configured : [configured];
+      return allowed.includes('*') || allowed.includes(origin);
+    }
+
+    try {
+      return new URL(origin).host === request.headers.host;
+    } catch {
+      return false;
     }
   }
 
@@ -1203,8 +1320,15 @@ class SimpleRouter {
       return;
     }
 
-    const url = new URL(request.url, `http://${request.headers.host}`);
-    const pathname = url.pathname;
+    // A fixed base: building it from the Host header threw on a malformed
+    // value, inside an 'upgrade' listener, which crashed the process.
+    let pathname;
+    try {
+      pathname = new URL(request.url, 'http://localhost').pathname;
+    } catch {
+      socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
+      return;
+    }
 
     // Find matching WebSocket route
     let matchedRoute = null;
@@ -1225,6 +1349,11 @@ class SimpleRouter {
 
     if (!matchedRoute) {
       socket.end('HTTP/1.1 404 Not Found\r\n\r\n');
+      return;
+    }
+
+    if (!this.isWebSocketOriginAllowed(request, matchedRoute.route)) {
+      socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
       return;
     }
 
@@ -1281,13 +1410,12 @@ class SimpleRouter {
 
     // Handle connection cleanup
     socket.on('close', () => {
+      ws.readyState = 3; // CLOSED
+
       // Call the route handler's close callback before cleanup
       if (matchedRoute.route.handler.onClose) {
         matchedRoute.route.handler.onClose(ws);
       }
-
-      // Store connection info before deletion for potential use in handlers
-      // const connectionInfo = { id: connectionId, path: ws.path };
 
       // Fire any custom close handlers set by the route handler
       if (ws.onclose) {
@@ -1310,17 +1438,35 @@ class SimpleRouter {
     } catch (err) {
       console.error('WebSocket upgrade error:', err);
       socket.end('HTTP/1.1 500 Internal Server Error\r\n\r\n');
+      return;
     }
+
+    // Frames the client sent along with the handshake arrive in `head`;
+    // they used to be dropped.
+    if (head && head.length > 0) ws.receive(head);
   }
 
   /**
    * Create WebSocket wrapper with message handling
+   *
+   * Incoming bytes are buffered and split into frames, so a frame spread
+   * over several TCP chunks, or several frames in one chunk, are all
+   * delivered; each chunk used to be parsed as exactly one frame. Fragmented
+   * text messages are reassembled, pings are answered, a close frame is
+   * answered and closes the socket, and frames or messages larger than
+   * `wsMaxPayload` (1 MiB by default) close the connection with 1009.
+   *
    * @param {Object} socket - Raw socket
    * @param {Object} matchedRoute - Matched route info
    * @returns {Object} WebSocket wrapper
    * @private
    */
   createWebSocketWrapper(socket) {
+    const router = this;
+    const maxPayload = this.wsMaxPayload;
+    let pending = Buffer.alloc(0);
+    const state = { fragments: null }; // A fragmented message being assembled
+
     const ws = {
       socket,
       readyState: 1, // OPEN
@@ -1355,48 +1501,39 @@ class SimpleRouter {
 
       createFrame(data) {
         const payload = Buffer.from(data, 'utf8');
-        const payloadLength = payload.length;
-
-        let frame;
-        if (payloadLength < 126) {
-          frame = Buffer.allocUnsafe(2 + payloadLength);
-          frame[0] = 0x81; // FIN + text frame
-          frame[1] = payloadLength;
-          payload.copy(frame, 2);
-        } else if (payloadLength < 65536) {
-          frame = Buffer.allocUnsafe(4 + payloadLength);
-          frame[0] = 0x81;
-          frame[1] = 126;
-          frame.writeUInt16BE(payloadLength, 2);
-          payload.copy(frame, 4);
-        } else {
-          frame = Buffer.allocUnsafe(10 + payloadLength);
-          frame[0] = 0x81;
-          frame[1] = 127;
-          frame.writeUInt32BE(0, 2);
-          frame.writeUInt32BE(payloadLength, 6);
-          payload.copy(frame, 10);
-        }
-
-        return frame;
+        return encodeFrame(0x1, payload);
       },
 
       createCloseFrame(code, reason) {
         const reasonBuffer = Buffer.from(reason, 'utf8');
-        const frame = Buffer.allocUnsafe(4 + reasonBuffer.length);
-        frame[0] = 0x88; // FIN + close frame
-        frame[1] = 2 + reasonBuffer.length;
-        frame.writeUInt16BE(code, 2);
-        reasonBuffer.copy(frame, 4);
-        return frame;
+        const payload = Buffer.allocUnsafe(2 + reasonBuffer.length);
+        payload.writeUInt16BE(code, 0);
+        reasonBuffer.copy(payload, 2);
+        return encodeFrame(0x8, payload);
       },
 
       createPingFrame(data) {
-        const frame = Buffer.allocUnsafe(2 + data.length);
-        frame[0] = 0x89; // FIN + ping frame
-        frame[1] = data.length;
-        data.copy(frame, 2);
-        return frame;
+        return encodeFrame(0x9, data);
+      },
+
+      /**
+       * Feed raw bytes from the socket.
+       * @param {Buffer} chunk - Bytes as received
+       */
+      receive(chunk) {
+        pending = pending.length > 0 ? Buffer.concat([pending, chunk]) : chunk;
+
+        while (this.readyState === 1) {
+          const frame = readFrame(pending, maxPayload);
+          if (!frame) break;
+          if (frame.error) {
+            pending = Buffer.alloc(0);
+            this.close(frame.error, 'Message too big');
+            return;
+          }
+          pending = pending.subarray(frame.size);
+          router.handleWebSocketFrame(ws, frame, state);
+        }
       }
     };
 
@@ -1405,76 +1542,103 @@ class SimpleRouter {
     // Handle incoming messages
     socket.on('data', (buffer) => {
       try {
-        const message = this.parseWebSocketFrame(buffer);
-        if (message && ws.onmessage) {
-          ws.onmessage({ data: message });
-        }
-      } catch {
+        ws.receive(buffer);
+      } catch (_error) {
+        console.error('WebSocket message handling error:', _error);
       }
+    });
+
+    // The upgraded socket is half-open capable (node:http servers allow
+    // half-open connections), so a client that goes away without a close
+    // frame left it open forever; finish our side too.
+    socket.on('end', () => {
+      ws.readyState = 3; // CLOSED
+      socket.end();
     });
 
     // Handle socket errors
     socket.on('error', (err) => {
       console.error('WebSocket socket error (connection likely closed):', err.code);
-      // Don't re-throw the _error, just log it
+      // Don't re-throw the error, just log it
     });
 
     return ws;
   }
 
   /**
+   * Act on one complete incoming frame.
+   * @private
+   * @param {Object} ws - Connection wrapper
+   * @param {{ fin: boolean, opcode: number, payload: Buffer }} frame - Decoded frame
+   * @param {{ fragments: Object|null }} state - Fragmented message being assembled
+   */
+  handleWebSocketFrame(ws, frame, state) {
+    const { fin, opcode, payload } = frame;
+
+    switch (opcode) {
+      case 0x8: {
+        // Close: answer with the same status code, then close the socket.
+        const code = payload.length >= 2 ? payload.readUInt16BE(0) : 1000;
+        ws.close(code >= 1000 && code < 5000 ? code : 1000);
+        return;
+      }
+      case 0x9:
+        // Ping: answer with a pong carrying the same payload.
+        if (ws.readyState === 1) ws.socket.write(encodeFrame(0xa, payload));
+        return;
+      case 0xa:
+        return; // Pong
+      case 0x0: {
+        // Continuation of a fragmented message
+        const pendingMessage = state.fragments;
+        if (!pendingMessage) return;
+        pendingMessage.size += payload.length;
+        if (pendingMessage.size > this.wsMaxPayload) {
+          state.fragments = null;
+          ws.close(1009, 'Message too big');
+          return;
+        }
+        pendingMessage.parts.push(payload);
+        if (fin) {
+          state.fragments = null;
+          if (pendingMessage.opcode === 0x1) this.deliverWebSocketMessage(ws, Buffer.concat(pendingMessage.parts));
+        }
+        return;
+      }
+      case 0x1:
+      case 0x2:
+        if (!fin) {
+          state.fragments = { opcode, parts: [payload], size: payload.length };
+          return;
+        }
+        // Only text messages are delivered; binary frames are ignored.
+        if (opcode === 0x1) this.deliverWebSocketMessage(ws, payload);
+        return;
+      default:
+        return;
+    }
+  }
+
+  /** @private */
+  deliverWebSocketMessage(ws, payload) {
+    if (typeof ws.onmessage !== 'function') return;
+    try {
+      ws.onmessage({ data: payload.toString('utf8') });
+    } catch (_error) {
+      console.error('WebSocket onmessage handler error:', _error);
+    }
+  }
+
+  /**
    * Parse WebSocket frame
    * @param {Buffer} buffer - Raw frame data
-   * @returns {string|null} Parsed message
+   * @returns {string|null} The text of a single complete text frame, else null
    * @private
    */
   parseWebSocketFrame(buffer) {
-    if (buffer.length < 2) return null;
-
-    const firstByte = buffer[0];
-    const secondByte = buffer[1];
-
-    const opcode = firstByte & 0x0f;
-    const masked = (secondByte & 0x80) === 0x80;
-    let payloadLength = secondByte & 0x7f;
-
-    // Handle close frame (opcode 8)
-    if (opcode === 8) {
-      return null; // Close frame, don't process as message
-    }
-
-    // Only process text frames (opcode 1)
-    if (opcode !== 1) {
-      return null;
-    }
-
-    let offset = 2;
-
-    if (payloadLength === 126) {
-      if (buffer.length < offset + 2) return null;
-      payloadLength = buffer.readUInt16BE(offset);
-      offset += 2;
-    } else if (payloadLength === 127) {
-      if (buffer.length < offset + 8) return null;
-      payloadLength = buffer.readUInt32BE(offset + 4); // Ignore high 32 bits
-      offset += 8;
-    }
-
-    if (masked) {
-      if (buffer.length < offset + 4 + payloadLength) return null;
-      const maskKey = buffer.slice(offset, offset + 4);
-      offset += 4;
-
-      const payload = buffer.slice(offset, offset + payloadLength);
-      for (let i = 0; i < payload.length; i++) {
-        payload[i] ^= maskKey[i % 4];
-      }
-
-      return payload.toString('utf8');
-    }
-
-    if (buffer.length < offset + payloadLength) return null;
-    return buffer.slice(offset, offset + payloadLength).toString('utf8');
+    const frame = readFrame(buffer, this.wsMaxPayload);
+    if (!frame || frame.error || frame.opcode !== 0x1) return null;
+    return frame.payload.toString('utf8');
   }
 
   /**
