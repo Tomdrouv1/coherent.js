@@ -4,7 +4,7 @@
 // Wave 2c (integrations consolidation). Declarations are aligned with the
 // runtime exports of ../../src/fastify/coherent-fastify.js.
 
-import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyPluginCallback, FastifyReply, FastifyRequest } from 'fastify';
 import type { CoherentNode } from '@coherent.js/core';
 
 export interface CoherentFastifyOptions {
@@ -65,17 +65,17 @@ export interface CoherentFastifyHandlerOptions {
 }
 
 /**
- * Fastify plugin for Coherent.js
- * Adds Coherent.js rendering capabilities to Fastify
- * @param fastify Fastify instance
- * @param options Configuration options
- * @param done Callback to signal plugin registration completion
+ * Fastify plugin for Coherent.js (wrapped with fastify-plugin, so its
+ * decorators apply to the registering scope). Adds `reply.coherent()` and,
+ * with `autoRender`, rendering of returned components.
+ *
+ * Register it; do not call it:
+ *
+ * ```ts
+ * await fastify.register(coherentFastify, { template });
+ * ```
  */
-export function coherentFastify(
-  fastify: FastifyInstance,
-  options: CoherentFastifyOptions,
-  done: () => void
-): void;
+export const coherentFastify: FastifyPluginCallback<CoherentFastifyOptions>;
 
 /**
  * Create a Fastify route handler for Coherent.js components
@@ -92,15 +92,10 @@ export function createHandler(
 ): (request: FastifyRequest, reply: FastifyReply) => Promise<any>;
 
 /**
- * Setup Coherent.js with Fastify instance
- * Configures plugin, static files, and reply extensions
- * @param fastify Fastify instance
- * @param options Configuration options
+ * Alias of {@link coherentFastify}. It is a Fastify plugin: register it with
+ * `await fastify.register(setupCoherent, options)` rather than calling it.
  */
-export function setupCoherent(
-  fastify: FastifyInstance,
-  options?: CoherentFastifyOptions
-): void;
+export const setupCoherent: FastifyPluginCallback<CoherentFastifyOptions>;
 
 /**
  * Fastify reply extensions
@@ -115,14 +110,17 @@ declare module 'fastify' {
     isCoherentObject(obj: any): boolean;
 
     /**
-     * Render and send a Coherent component as HTML response
+     * Render and send a Coherent component as HTML response. A rendering
+     * error is sent through Fastify's error handling (`setErrorHandler`).
+     * Returns the reply, so `return reply.coherent(page)` works in async
+     * handlers.
      * @param component Coherent component to render
      * @param options Rendering options
      */
     coherent(
       component: CoherentNode,
       options?: CoherentFastifyHandlerOptions
-    ): void;
+    ): FastifyReply;
   }
 }
 

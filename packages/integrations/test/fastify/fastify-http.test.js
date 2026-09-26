@@ -66,6 +66,56 @@ describe('Fastify: JSON responses are not auto-rendered by default', () => {
   });
 });
 
+describe('Fastify: reply.coherent errors use Fastify error handling', () => {
+  const broken = { p: { children: [{ get b() { throw new Error('render-fail'); } }] } };
+
+  it('runs the app setErrorHandler and onError hooks', async () => {
+    const seen = [];
+    app = Fastify();
+    await app.register(coherentFastify);
+    app.addHook('onError', async (_request, _reply, error) => {
+      seen.push(error.message);
+    });
+    app.setErrorHandler((error, _request, reply) => {
+      reply.status(599).type('text/plain').send(`HANDLED:${error.message}`);
+    });
+    app.get('/returned', async (_request, reply) => reply.coherent(broken));
+    app.get('/not-returned', async (_request, reply) => {
+      reply.coherent(broken);
+    });
+    const url = await start(app);
+
+    for (const path of ['/returned', '/not-returned']) {
+      const result = await hit(url, path);
+      expect(result.status).toBe(599);
+      expect(result.type).toMatch(/^text\/plain/);
+      expect(result.body).toMatch(/^HANDLED:.*render-fail/);
+    }
+    expect(seen).toHaveLength(2);
+  });
+
+  it('returns the reply', async () => {
+    app = Fastify();
+    await app.register(coherentFastify);
+    let returned;
+    app.get('/', async (_request, reply) => {
+      returned = reply.coherent({ p: { text: 'ok' } });
+      return returned;
+    });
+    const url = await start(app);
+
+    expect((await hit(url, '/')).body).toBe('<!DOCTYPE html>\n<p>ok</p>');
+    expect(returned?.constructor?.name).toMatch(/Reply/);
+  });
+});
+
+describe('Fastify: setupCoherent is a plugin', () => {
+  it('explains how to register it when called directly', () => {
+    const instance = Fastify();
+    expect(() => setupCoherent(instance, {})).toThrow(/fastify\.register\(setupCoherent/);
+  });
+});
+
 describe('Fastify: autoRender: true keeps the legacy behavior', () => {
   it('renders component objects returned from handlers', async () => {
     app = Fastify();

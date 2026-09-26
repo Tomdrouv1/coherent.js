@@ -29,6 +29,13 @@ import {
  * @param {Function} done - Callback to signal plugin registration completion
  */
 function coherentFastifyImpl(fastify, options = {}, done) {
+  if (typeof done !== 'function') {
+    throw new TypeError(
+      'coherentFastify/setupCoherent is a Fastify plugin and cannot be called directly: ' +
+      'use `await fastify.register(setupCoherent, options)`.'
+    );
+  }
+
   const {
     enablePerformanceMonitoring = false,
     template = '<!DOCTYPE html>\n{{content}}',
@@ -51,20 +58,21 @@ function coherentFastifyImpl(fastify, options = {}, done) {
       template: renderTemplate = template
     } = renderOptions;
 
+    let finalHtml;
     try {
-      const finalHtml = renderWithTemplate(component, {
+      finalHtml = renderWithTemplate(component, {
         enablePerformanceMonitoring: renderPerformanceMonitoring,
         template: renderTemplate
       });
-      this.header('Content-Type', 'text/html; charset=utf-8');
-      this.send(finalHtml);
     } catch (_error) {
-      console.error('Coherent.js rendering error:', _error);
-      this.status(500).send({
-        error: 'Internal Server Error',
-        message: _error.message
-      });
+      // Sending an Error runs Fastify's error pipeline (onError hooks, the
+      // app's setErrorHandler, its logger) instead of answering with the raw
+      // message.
+      return this.send(_error);
     }
+
+    this.header('Content-Type', 'text/html; charset=utf-8');
+    return this.send(finalHtml);
   });
 
   // Auto-render (opt-in): if a handler returns a Coherent.js component
