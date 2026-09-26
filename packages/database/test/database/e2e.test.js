@@ -187,7 +187,7 @@ describe('Database Integration E2E Tests', () => {
     it('should handle transaction middleware', async () => {
       const req = createMockRequest();
       const res = createMockResponse();
-      const next = createMockNext();
+      const next = vi.fn().mockResolvedValue();
 
       const txMiddleware = withTransaction(dbManager);
       await txMiddleware(req, res, next);

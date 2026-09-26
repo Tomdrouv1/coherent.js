@@ -186,6 +186,9 @@ export class DatabaseManager extends EventEmitter {
 
       return this;
     } catch (_error) {
+      // Close whatever this attempt opened before retrying, or every retry leaks a pool
+      await this.discardFailedConnection();
+
       this.connectionAttempts++;
       this.stats.failedConnections++;
       // The failure also surfaces through the rejected promise, so only emit
@@ -199,6 +202,34 @@ export class DatabaseManager extends EventEmitter {
       }
 
       throw new Error(`Failed to connect to database after ${this.connectionAttempts} attempts: ${_error.message}`);
+    }
+  }
+
+  /**
+   * Close the pool of a connection attempt that failed.
+   *
+   * @private
+   * @returns {Promise<void>}
+   */
+  async discardFailedConnection() {
+    const { adapter, pool } = this;
+    this.pool = null;
+    this.adapter = null;
+
+    if (!adapter || !pool) {
+      return;
+    }
+
+    try {
+      if (typeof adapter.closePool === 'function') {
+        await adapter.closePool(pool);
+      } else if (typeof adapter.disconnect === 'function') {
+        await adapter.disconnect();
+      }
+    } catch (closeError) {
+      if (this.config.debug) {
+        console.error('Failed to close pool after a failed connection attempt:', closeError.message);
+      }
     }
   }
 
@@ -348,12 +379,20 @@ export class DatabaseManager extends EventEmitter {
   }
 
   /**
-   * Start a database transaction
+   * Start a database transaction, or run a callback in one
    *
-   * @returns {Promise<Object>} Transaction object
+   * With options (or nothing), resolves to a transaction object with `query`, `commit`
+   * and `rollback`. With a callback, runs it with the transaction, commits when it
+   * resolves, rolls back when it throws, and resolves to the callback's result.
+   *
+   * @param {Function|Object} [callbackOrOptions] - Callback, or transaction options
+   * @param {Object} [options={}] - Transaction options when a callback is given
+   * @param {string} [options.isolationLevel] - READ UNCOMMITTED, READ COMMITTED, REPEATABLE READ or SERIALIZABLE
+   * @param {boolean} [options.readOnly] - Start a read-only transaction
+   * @returns {Promise<Object|*>} Transaction object, or the callback's result
    *
    * @example
-   * const tx = await db.transaction();
+   * const tx = await db.transaction({ isolationLevel: 'SERIALIZABLE' });
    * try {
    *   await tx.query('INSERT INTO users (name) VALUES (?)', ['John']);
    *   await tx.query('INSERT INTO profiles (user_id) VALUES (?)', [userId]);
@@ -362,13 +401,41 @@ export class DatabaseManager extends EventEmitter {
    *   await tx.rollback();
    *   throw _error;
    * }
+   *
+   * @example
+   * const user = await db.transaction(async (tx) => {
+   *   await tx.query('INSERT INTO users (name) VALUES (?)', ['John']);
+   *   return (await tx.query('SELECT * FROM users WHERE name = ?', ['John'])).rows[0];
+   * });
    */
-  async transaction() {
+  async transaction(callbackOrOptions, options) {
     if (!this.isConnected) {
       throw new Error('Database not connected. Call connect() first.');
     }
 
-    return await this.adapter.transaction(this.pool);
+    if (typeof this.adapter.transaction !== 'function') {
+      throw new Error(`The ${this.config.type || 'configured'} adapter does not support transactions`);
+    }
+
+    if (typeof callbackOrOptions !== 'function') {
+      return await this.adapter.transaction(this.pool, callbackOrOptions || {});
+    }
+
+    const tx = await this.adapter.transaction(this.pool, options || {});
+    let result;
+    try {
+      result = await callbackOrOptions(tx);
+    } catch (_error) {
+      if (!tx.isCommitted && !tx.isRolledBack) {
+        await tx.rollback();
+      }
+      throw _error;
+    }
+
+    if (!tx.isCommitted && !tx.isRolledBack) {
+      await tx.commit();
+    }
+    return result;
   }
 
   /**

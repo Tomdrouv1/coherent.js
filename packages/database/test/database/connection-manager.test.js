@@ -108,6 +108,7 @@ describe('DatabaseManager', () => {
         adapter: mockAdapter,
         store: { name: 'test.db' }
       });
+      db.retryDelay = 0;
     });
 
     it('should connect successfully', async () => {
@@ -256,7 +257,7 @@ describe('DatabaseManager', () => {
 
       const transaction = await db.transaction();
 
-      expect(mockAdapter.transaction).toHaveBeenCalledWith(mockPool);
+      expect(mockAdapter.transaction).toHaveBeenCalledWith(mockPool, {});
       expect(transaction).toEqual(mockTransaction);
     });
 

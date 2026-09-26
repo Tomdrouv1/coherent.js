@@ -82,12 +82,45 @@ export function withDatabase(db, options = {}) {
 }
 
 /**
+ * Finish a transaction when the response ends: commit after a successful response,
+ * roll back after an error status or when the connection closes first.
+ *
+ * @private
+ */
+function settleWhenResponseEnds(res, settle) {
+  const listen = res && (typeof res.once === 'function' ? res.once : res.on);
+  if (typeof listen !== 'function') {
+    return false;
+  }
+
+  const report = (_error) => console.error('withTransaction: failed to finish the transaction:', _error);
+  listen.call(res, 'finish', () => {
+    settle(res.statusCode >= 400).catch(report);
+  });
+  listen.call(res, 'close', () => {
+    settle(true).catch(report);
+  });
+  return true;
+}
+
+/**
  * Transaction middleware for automatic transaction management
- * 
+ *
+ * The transaction is exposed as `req.tx` and finished:
+ * - when `next()` returns a promise (async frameworks): after it settles, committing on
+ *   success and rolling back if it rejects;
+ * - otherwise (Express, whose `next()` returns before an async handler is done, or a
+ *   router that calls middleware without `next`): when the response ends, committing
+ *   on a status below 400 and rolling back on an error status or a closed connection.
+ *
+ * A transaction the handler already committed or rolled back is left alone.
+ *
  * @param {DatabaseManager} db - Database manager instance
  * @param {Object} [options={}] - Transaction options
+ * @param {string} [options.isolationLevel] - READ UNCOMMITTED, READ COMMITTED, REPEATABLE READ or SERIALIZABLE
+ * @param {boolean} [options.readOnly=false] - Start a read-only transaction
  * @returns {Function} Middleware function
- * 
+ *
  * @example
  * router.post('/transfer', withTransaction(db), async (req, res) => {
  *   // All database operations in this handler will be wrapped in a transaction
@@ -107,21 +140,44 @@ export function withTransaction(db, options = {}) {
     const tx = await db.transaction(config);
     req.tx = tx;
 
-    try {
-      await next();
-      
-      // Commit transaction if not already committed
-      if (!tx.isCommitted && !tx.isRolledBack) {
+    let settled = false;
+    const settle = async (failed) => {
+      if (settled) return;
+      settled = true;
+      if (tx.isCommitted || tx.isRolledBack) return;
+      if (failed) {
+        await tx.rollback();
+      } else {
         await tx.commit();
       }
-      
+    };
+
+    let result;
+    try {
+      result = typeof next === 'function' ? next() : undefined;
     } catch (_error) {
-      // Rollback transaction if not already rolled back
-      if (!tx.isRolledBack && !tx.isCommitted) {
-        await tx.rollback();
-      }
-      
+      await settle(true);
       throw _error;
+    }
+
+    if (result && typeof result.then === 'function') {
+      try {
+        await result;
+      } catch (_error) {
+        await settle(true);
+        throw _error;
+      }
+      await settle(false);
+      return;
+    }
+
+    // The handler may still be running: finish the transaction with the response
+    if (!settleWhenResponseEnds(res, settle)) {
+      await settle(true);
+      throw new Error(
+        'withTransaction cannot tell when the request ends: next() did not return a promise ' +
+        'and the response does not emit "finish"/"close". The transaction was rolled back.'
+      );
     }
   };
 }

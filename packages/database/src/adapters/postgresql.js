@@ -4,6 +4,8 @@
  * @fileoverview PostgreSQL adapter implementation with connection pooling and advanced features.
  */
 
+import { normalizeIsolationLevel } from './isolation-level.js';
+
 /**
  * Create PostgreSQL adapter instance
  * 
@@ -110,19 +112,47 @@ export function createPostgreSQLAdapter() {
 
     /**
      * Start database transaction
+     *
+     * @param {Object} pool - pg Pool
+     * @param {Object} [options={}]
+     * @param {string} [options.isolationLevel] - READ UNCOMMITTED, READ COMMITTED, REPEATABLE READ or SERIALIZABLE
+     * @param {boolean} [options.readOnly] - Start a READ ONLY transaction
      */
     async transaction(pool, options = {}) {
-      const client = await pool.connect();
-      
+      // Validate before taking a client, so a bad option cannot leak one
+      const isolationLevel = normalizeIsolationLevel(options.isolationLevel);
+
       let beginSql = 'BEGIN';
-      if (options.isolationLevel) {
-        beginSql += ` ISOLATION LEVEL ${options.isolationLevel}`;
+      if (isolationLevel) {
+        beginSql += ` ISOLATION LEVEL ${isolationLevel}`;
       }
       if (options.readOnly) {
         beginSql += ' READ ONLY';
       }
-      
-      await client.query(beginSql);
+
+      const client = await pool.connect();
+
+      let released = false;
+      const release = (error) => {
+        if (!released) {
+          released = true;
+          // A truthy argument makes pg discard the client instead of reusing it
+          client.release(error);
+        }
+      };
+
+      try {
+        await client.query(beginSql);
+      } catch (_error) {
+        release(_error);
+        throw _error;
+      }
+
+      const assertActive = () => {
+        if (transaction.isCommitted || transaction.isRolledBack) {
+          throw new Error('Transaction already completed');
+        }
+      };
 
       const transaction = {
         client,
@@ -134,14 +164,14 @@ export function createPostgreSQLAdapter() {
           if (transaction.isCommitted || transaction.isRolledBack) {
             throw new Error('Cannot execute query on completed transaction');
           }
-          
+
           const pgSql = convertPlaceholders(sql);
           const result = await client.query(pgSql, params);
-          
+
           if (queryOptions && queryOptions.single) {
             return result.rows[0] || null;
           }
-          
+
           return {
             rows: result.rows,
             rowCount: result.rowCount,
@@ -151,28 +181,30 @@ export function createPostgreSQLAdapter() {
         },
 
         commit: async () => {
-          if (transaction.isCommitted || transaction.isRolledBack) {
-            throw new Error('Transaction already completed');
-          }
+          assertActive();
 
           try {
             await client.query('COMMIT');
             transaction.isCommitted = true;
-          } finally {
-            client.release();
+            release();
+          } catch (_error) {
+            // PostgreSQL ends the transaction when COMMIT fails
+            transaction.isRolledBack = true;
+            release(_error);
+            throw _error;
           }
         },
 
         rollback: async () => {
-          if (transaction.isCommitted || transaction.isRolledBack) {
-            throw new Error('Transaction already completed');
-          }
+          assertActive();
+          transaction.isRolledBack = true;
 
           try {
             await client.query('ROLLBACK');
-            transaction.isRolledBack = true;
-          } finally {
-            client.release();
+            release();
+          } catch (_error) {
+            release(_error);
+            throw _error;
           }
         }
       };

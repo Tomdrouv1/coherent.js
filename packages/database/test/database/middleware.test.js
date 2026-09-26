@@ -168,6 +168,8 @@ describe('Database Middleware', () => {
         isRolledBack: false
       };
       mockDb.transaction.mockResolvedValue(mockTx);
+      // An async next(): the transaction is committed once it resolves
+      mockNext.mockResolvedValue();
       
       const middleware = withTransaction(mockDb);
       
