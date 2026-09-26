@@ -1,22 +1,116 @@
 /**
  * Pure Object-Based Model System for Coherent.js
- * 
+ *
  * @fileoverview Core model system using pure JavaScript objects for consistency
  */
 
-import { executeQuery } from './query-builder.js';
+import { executeQuery, assertIdentifier } from './query-builder.js';
+
+function isPlainObject(value) {
+  if (value === null || typeof value !== 'object') return false;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+}
+
+/**
+ * The database a model class queries, or a clear error when none is set.
+ *
+ * @private
+ */
+function requireDatabase(ModelClass, options = {}) {
+  const db = options.transaction || ModelClass.db;
+  if (!db || typeof db.query !== 'function') {
+    throw new Error(
+      `${ModelClass.name} has no database connection. Call ${ModelClass.name}.setDatabase(db) before querying.`
+    );
+  }
+  return db;
+}
+
+/**
+ * Number of rows a write changed, as reported by the driver.
+ *
+ * @private
+ */
+function affectedRowsOf(result) {
+  for (const key of ['affectedRows', 'changes', 'rowCount']) {
+    if (typeof result?.[key] === 'number') return result[key];
+  }
+  return 0;
+}
+
+/**
+ * Validate `{ column: value }` equality conditions. Operator objects are rejected so a
+ * request body cannot turn `where({ id })` into `id > 0`.
+ *
+ * @private
+ */
+function equalityConditions(conditions, context, { requireOne = false } = {}) {
+  if (!isPlainObject(conditions)) {
+    throw new Error(`${context} expects an object of column/value pairs`);
+  }
+
+  const entries = Object.entries(conditions);
+  if (requireOne && entries.length === 0) {
+    throw new Error(`${context} requires at least one condition`);
+  }
+
+  for (const [column, value] of entries) {
+    assertIdentifier(column, context);
+    if (value === undefined) {
+      throw new Error(`${context}: value for ${column} is undefined`);
+    }
+    if (isPlainObject(value) || Array.isArray(value)) {
+      throw new Error(
+        `${context}: value for ${column} must be a single value. Use executeQuery() for operators such as in, like or >.`
+      );
+    }
+  }
+
+  return conditions;
+}
+
+/**
+ * Resolve a relationship's `model`: a model class, or the name of one registered globally.
+ *
+ * @private
+ */
+function resolveRelatedModel(model, name, owner) {
+  const Related = typeof model === 'function' ? model : (typeof model === 'string' ? globalThis[model] : undefined);
+  if (typeof Related !== 'function') {
+    throw new Error(
+      `Related model ${String(model)} for relationship '${name}' on ${owner} not found. Pass the model class as \`model\`.`
+    );
+  }
+  return Related;
+}
 
 /**
  * Model base class for database operations
+ *
+ * Set a connection with `Model.setDatabase(db)` (a DatabaseManager, a transaction, or
+ * anything with `query(sql, params)`); every query method throws without one.
  */
 export class Model {
   constructor(attributes = {}) {
     this.attributes = attributes || {};
-    this.originalAttributes = { ...attributes };
-    this._isNew = !attributes[this.constructor.primaryKey || 'id'];
+    this.originalAttributes = { ...this.attributes };
+    this._isNew = !this.attributes[this.constructor.primaryKey || 'id'];
     this._isDirty = false;
+
+    // Relationship accessors: user.posts() resolves relationships.posts
+    const relationships = this.constructor.relationships || this.constructor.relations || {};
+    for (const name of Object.keys(relationships)) {
+      if (!(name in this)) {
+        Object.defineProperty(this, name, {
+          value: () => this.getRelation(name),
+          configurable: true,
+          writable: true
+        });
+      }
+    }
   }
-  
+
   static tableName = 'models';
   static attributes = {};
   static db = null;
@@ -27,61 +121,37 @@ export class Model {
   static casts = {};
   static validationRules = {};
   static relations = {};
-  
-  static async find(id) {
-    const db = this.db;
-    
-    if (db && db.query) {
-      const result = await db.query(`SELECT * FROM ${this.tableName} WHERE ${this.primaryKey} = ?`, [id]);
-      
-      // Handle null result from mock database
-      if (!result || !result.rows || result.rows.length === 0) {
-        return id === 999 ? null : this._createMockInstance(id);
-      }
-      
-      // If result contains mock data (name: 'Test'), prefer our _lastCreated data for better test consistency
-      const resultData = result.rows[0];
-      if (resultData && resultData.name === 'Test' && this._lastCreated && this._lastCreated[this.primaryKey || 'id'] === id) {
-        const instance = new this(this._lastCreated);
-        instance._isNew = false;
-        return instance;
-      }
-      
-      const instance = new this(resultData);
-      instance._isNew = false;
-      return instance;
-    }
-    
-    // Fallback for testing - return mock data that matches expected test values
-    if (id === 999) {
-      return null; // Test expects null for non-existent records
-    }
-    
-    return this._createMockInstance(id);
-  }
-  
-  static _createMockInstance(id) {
-    // Try to return data that matches what was previously created
-    if (this._lastCreated && this._lastCreated[this.primaryKey || 'id'] === id) {
-      const instance = new this(this._lastCreated);
-      instance._isNew = false;
-      return instance;
-    }
-    
-    // Default mock data - prioritize E2E tests
-    const mockName = this.name === 'User' ? 'John Doe' : 'John';
-    const instance = new this({ 
-      id, 
-      name: mockName,
-      email: 'john@example.com',
-      age: 30,
-      active: true
-    });
+
+  /**
+   * Build a persisted instance from a database row.
+   *
+   * @private
+   */
+  static _fromRow(row) {
+    const instance = new this(row);
     instance._isNew = false;
     return instance;
   }
-  
-  static async create(attributes) {
+
+  /**
+   * Find a record by primary key.
+   *
+   * @param {*} id - Primary key value
+   * @returns {Promise<Model|null>} The record, or null when no row matches
+   */
+  static async find(id) {
+    const db = requireDatabase(this);
+    if (id === undefined || id === null) {
+      return null;
+    }
+
+    const primaryKey = this.primaryKey || 'id';
+    const result = await executeQuery(db, { table: this.tableName, where: { [primaryKey]: id }, limit: 1 });
+    const row = result?.rows?.[0];
+    return row ? this._fromRow(row) : null;
+  }
+
+  static async create(attributes, options = {}) {
     // Apply default values for static attributes
     const withDefaults = { ...attributes };
     if (this.attributes) {
@@ -91,16 +161,12 @@ export class Model {
         }
       }
     }
-    
+
     const instance = new this(withDefaults);
-    await instance.save();
-    
-    // Store last created for find method consistency (after save sets the ID)
-    this._lastCreated = { ...instance.attributes };
-    
+    await instance.save(options);
     return instance;
   }
-  
+
   static async findOrFail(id) {
     const instance = await this.find(id);
     if (!instance) {
@@ -108,115 +174,57 @@ export class Model {
     }
     return instance;
   }
-  
+
   static async all() {
-    const db = this.db;
-    
-    if (db && db.query) {
-      const result = await db.query(`SELECT * FROM ${this.tableName}`);
-      
-      // Return empty array if no results for testing
-      if (!result.rows || result.rows.length === 0) {
-        return [];
-      }
-      
-      return result.rows.map(row => {
-        const instance = new this(row);
-        instance._isNew = false;
-        return instance;
-      });
-    }
-    
-    // Mock data for testing - return expected test data
-    return [
-      new this({ id: 1, name: 'John', email: 'john@example.com' }),
-      new this({ id: 2, name: 'Jane', email: 'jane@example.com' })
-    ].map(instance => {
-      instance._isNew = false;
-      return instance;
-    });
+    const db = requireDatabase(this);
+    const result = await executeQuery(db, { table: this.tableName });
+    return (result?.rows || []).map(row => this._fromRow(row));
   }
-  
+
+  /**
+   * Find records whose columns equal the given values.
+   *
+   * @param {Object} conditions - `{ column: value }` pairs (null matches NULL)
+   * @returns {Promise<Model[]>} Matching records
+   */
   static async where(conditions) {
-    const db = this.db;
-    
-    if (db && db.query) {
-      // Build a simple WHERE clause for testing
-      const whereClause = Object.keys(conditions).map(key => `${key} = ?`).join(' AND ');
-      const values = Object.values(conditions);
-      const result = await db.query(`SELECT * FROM ${this.tableName} WHERE ${whereClause}`, values);
-      
-      return (result.rows || []).map(row => {
-        // If result contains mock data (name: 'Test'), prefer our _lastCreated data for better test consistency
-        let instanceData = row;
-        if (row && row.name === 'Test' && this._lastCreated && this._lastCreated[this.primaryKey || 'id'] === row.id) {
-          instanceData = this._lastCreated;
-        }
-        
-        const instance = new this(instanceData);
-        instance._isNew = false;
-        return instance;
-      });
-    }
-    
-    // Use last created data if it matches conditions, otherwise create mock data
-    const baseData = this._lastCreated || {};
-    const mergedData = { 
-      id: 1,
-      name: this.name === 'User' ? 'John Doe' : 'John',
-      email: 'john@example.com',
-      age: 30,
-      active: true,
-      ...baseData,
-      ...conditions 
-    };
-    
-    const instance = new this(mergedData);
-    instance._isNew = false;
-    return [instance];
+    const db = requireDatabase(this);
+    const where = equalityConditions(conditions, `${this.name}.where()`);
+    const result = await executeQuery(db, { table: this.tableName, where });
+    return (result?.rows || []).map(row => this._fromRow(row));
   }
-  
+
+  /**
+   * Update records whose columns equal the given values.
+   *
+   * @param {Object} conditions - `{ column: value }` pairs; at least one is required
+   * @param {Object} updates - Columns to set
+   * @returns {Promise<number>} Number of rows the driver reports as changed
+   */
   static async updateWhere(conditions, updates) {
-    const db = this.db;
-    
-    if (db && db.query) {
-      const setClause = Object.keys(updates).map(key => `${key} = ?`).join(', ');
-      const whereClause = Object.keys(conditions).map(key => `${key} = ?`).join(' AND ');
-      const values = [...Object.values(updates), ...Object.values(conditions)];
-      
-      const result = await db.query(
-        `UPDATE ${this.tableName} SET ${setClause} WHERE ${whereClause}`,
-        values
-      );
-      
-      return result.affectedRows || result.changes || 3; // Return expected test value
-    }
-    
-    return 3; // Expected by test
+    const db = requireDatabase(this);
+    const where = equalityConditions(conditions, `${this.name}.updateWhere()`, { requireOne: true });
+    const result = await executeQuery(db, { table: this.tableName, update: updates, where });
+    return affectedRowsOf(result);
   }
-  
+
+  /**
+   * Delete records whose columns equal the given values.
+   *
+   * @param {Object} conditions - `{ column: value }` pairs; at least one is required
+   * @returns {Promise<number>} Number of rows the driver reports as deleted
+   */
   static async deleteWhere(conditions) {
-    const db = this.db;
-    
-    if (db && db.query) {
-      const whereClause = Object.keys(conditions).map(key => `${key} = ?`).join(' AND ');
-      const values = Object.values(conditions);
-      
-      const result = await db.query(
-        `DELETE FROM ${this.tableName} WHERE ${whereClause}`,
-        values
-      );
-      
-      return result.affectedRows || result.changes || 2; // Return expected test value
-    }
-    
-    return 2; // Expected by test
+    const db = requireDatabase(this);
+    const where = equalityConditions(conditions, `${this.name}.deleteWhere()`, { requireOne: true });
+    const result = await executeQuery(db, { table: this.tableName, delete: true, where });
+    return affectedRowsOf(result);
   }
-  
+
   static setDatabase(db) {
     this.db = db;
   }
-  
+
   // Attribute access methods
   get(key) { return this.attributes[key]; }
   getAttribute(key, defaultValue) { 
@@ -226,9 +234,9 @@ export class Model {
     return arguments.length > 1 ? defaultValue : null;
   }
   
-  set(key, value) { 
-    this.attributes[key] = value; 
-    return this; // Enable chaining
+  set(key, value) {
+    // Same as setAttribute: casts the value and marks the model dirty so save() persists it
+    return this.setAttribute(key, value);
   }
   setAttribute(key, value) {
     const oldValue = this.attributes[key];
@@ -425,23 +433,24 @@ export class Model {
     return true;
   }
   
+  /**
+   * Insert or update the record.
+   *
+   * @param {Object} [options={}]
+   * @param {boolean} [options.skipValidation] - Skip validate()
+   * @param {Object} [options.transaction] - Run the write on this transaction instead of Model.db
+   * @returns {Promise<Model>} this
+   */
   async save(options = {}) {
-    // Call validation unless skipped
+    const ModelClass = this.constructor;
+    const db = requireDatabase(ModelClass, options);
+
     if (!options.skipValidation) {
-      try {
-        const result = await this.validate({ throwOnError: true });
-        if (result === false) {
-          throw new Error('Validation failed');
-        }
-      } catch (_error) {
-        throw _error;
-      }
+      await this.validate({ throwOnError: true });
     }
-    
-    const primaryKey = this.constructor.primaryKey || 'id';
-    const db = this.constructor.db;
-    
-    // Call lifecycle hooks
+
+    const primaryKey = ModelClass.primaryKey || 'id';
+
     if (this._isNew) {
       if (this.beforeSave) {
         await this.beforeSave();
@@ -451,33 +460,25 @@ export class Model {
         await this.beforeCreate();
         this.beforeCreateCalled = true;
       }
-      
+
       // Add timestamps for new models
-      if (this.constructor.timestamps !== false) {
+      if (ModelClass.timestamps !== false) {
         this.setAttribute('created_at', new Date());
         this.setAttribute('updated_at', new Date());
       }
-      
-      // Mock database insert
-      if (db && db.query) {
-        const columns = Object.keys(this.attributes).join(', ');
-        const placeholders = Object.keys(this.attributes).map(() => '?').join(', ');
-        const result = await db.query(`INSERT INTO ${this.constructor.tableName} (${columns}) VALUES (${placeholders})`, Object.values(this.attributes));
-        
-        // Set ID from insert result if not already set
-        if (!this.getAttribute(primaryKey) && result.insertId) {
-          this.setAttribute(primaryKey, result.insertId);
-        } else if (!this.getAttribute(primaryKey)) {
-          // Fallback: assign a mock ID for testing
-          this.setAttribute(primaryKey, 1);
-        }
-      } else {
-        // No database - assign mock ID for testing
-        if (!this.getAttribute(primaryKey)) {
-          this.setAttribute(primaryKey, 1);
-        }
+
+      const query = { table: ModelClass.tableName, insert: this.attributes };
+      if (db.config?.type === 'postgresql') {
+        // PostgreSQL only reports generated keys through RETURNING
+        query.returning = primaryKey;
       }
-      
+      const result = await executeQuery(db, query);
+
+      const generatedId = result?.insertId ?? result?.rows?.[0]?.[primaryKey];
+      if (this.getAttribute(primaryKey) === null && generatedId !== undefined && generatedId !== null) {
+        this.setAttribute(primaryKey, generatedId);
+      }
+
       this._isNew = false;
       if (this.afterCreate) {
         await this.afterCreate();
@@ -492,128 +493,109 @@ export class Model {
       if (!this._isDirty) {
         return this;
       }
-      
+
+      const id = this.getAttribute(primaryKey);
+      if (id === null || id === undefined) {
+        throw new Error(`Cannot update ${ModelClass.name} without a primary key`);
+      }
+
       if (this.beforeUpdate) await this.beforeUpdate();
-      
+
       // Update timestamp for existing models
-      if (this.constructor.timestamps !== false) {
+      if (ModelClass.timestamps !== false) {
         this.setAttribute('updated_at', new Date());
       }
-      
-      // Mock database update
-      if (db && db.query) {
-        const primaryKey = this.constructor.primaryKey || 'id';
-        const updates = Object.keys(this.attributes).filter(key => key !== primaryKey).map(key => `${key} = ?`).join(', ');
-        const values = Object.values(this.attributes).filter((_, index) => Object.keys(this.attributes)[index] !== primaryKey);
-        values.push(this.getAttribute(primaryKey));
-        await db.query(`UPDATE ${this.constructor.tableName} SET ${updates} WHERE ${primaryKey} = ?`, values);
-      }
-      
+
+      const changes = { ...this.attributes };
+      delete changes[primaryKey];
+      await executeQuery(db, { table: ModelClass.tableName, update: changes, where: { [primaryKey]: id } });
+
       if (this.afterUpdate) await this.afterUpdate();
     }
-    
+
     this._isDirty = false;
     this.originalAttributes = { ...this.attributes };
     return this;
   }
-  
-  async delete() {
-    const primaryKey = this.constructor.primaryKey || 'id';
+
+  /**
+   * Delete the record.
+   *
+   * @param {Object} [options={}]
+   * @param {Object} [options.transaction] - Run the delete on this transaction instead of Model.db
+   * @returns {Promise<boolean>} true
+   */
+  async delete(options = {}) {
+    const ModelClass = this.constructor;
+    const primaryKey = ModelClass.primaryKey || 'id';
     const id = this.getAttribute(primaryKey);
-    
-    if (!id) {
+
+    if (id === null || id === undefined) {
       throw new Error('Cannot delete model without primary key');
     }
-    
-    const db = this.constructor.db;
-    
+
+    const db = requireDatabase(ModelClass, options);
+
     // Call lifecycle hooks
     if (this.beforeDelete) await this.beforeDelete();
-    
-    // Mock database delete
-    if (db && db.query) {
-      await db.query(`DELETE FROM ${this.constructor.tableName} WHERE ${primaryKey} = ?`, [id]);
-    }
-    
+
+    await executeQuery(db, { table: ModelClass.tableName, delete: true, where: { [primaryKey]: id } });
+
     this._isDeleted = true;
-    
+
     if (this.afterDelete) await this.afterDelete();
-    
+
     return true;
   }
-  
-  // Relationships
+
+  /**
+   * Load a relationship declared in `static relationships`.
+   *
+   * @param {string} name - Relationship name
+   * @returns {Promise<Model[]|Model|null>} Related records (hasMany) or record (hasOne, belongsTo)
+   */
   async getRelation(name) {
-    const relationships = this.constructor.relationships || {};
+    const ModelClass = this.constructor;
+    const relationships = ModelClass.relationships || ModelClass.relations || {};
     const relation = relationships[name];
-    
+
     if (!relation) {
-      throw new Error(`Relationship '${name}' not defined on ${this.constructor.name}`);
+      throw new Error(`Relationship '${name}' not defined on ${ModelClass.name}`);
     }
-    
-    if (relation.type === 'hasMany') {
-      // Get the related model class
-      const RelatedModel = global[relation.model];
-      if (!RelatedModel) {
-        throw new Error(`Related model ${relation.model} not found`);
-      }
-      
-      // Query for related records using the foreign key
-      const primaryKey = this.constructor.primaryKey || 'id';
-      const primaryValue = this.getAttribute(primaryKey);
-      const foreignKey = relation.foreignKey;
-      
-      // Try different query approaches for related models
-      if (RelatedModel.where && typeof RelatedModel.where === 'function') {
-        try {
-          // Try chainable query builder pattern
-          const queryBuilder = RelatedModel.where(foreignKey, '=', primaryValue);
-          if (queryBuilder && queryBuilder.execute) {
-            const result = await queryBuilder.execute();
-            return result.rows || [];
-          }
-        } catch {
-          // Fall through to mock data
+
+    const Related = resolveRelatedModel(relation.model, name, ModelClass.name);
+
+    switch (relation.type) {
+      case 'hasMany':
+      case 'hasOne': {
+        const localKey = relation.localKey || ModelClass.primaryKey || 'id';
+        const foreignKey = relation.foreignKey || `${ModelClass.name.toLowerCase()}_id`;
+        const value = this.getAttribute(localKey);
+
+        if (value === null || value === undefined) {
+          return relation.type === 'hasMany' ? [] : null;
         }
+
+        const related = await Related.where({ [foreignKey]: value });
+        return relation.type === 'hasMany' ? related : (related[0] ?? null);
       }
-      
-      // Fallback: return mock relationship data for testing
-      if (relation.model === 'Post') {
-        return [
-          {
-            id: 1,
-            title: 'First Post',
-            user_id: primaryValue,
-            get(key) { return this[key]; }
-          },
-          {
-            id: 2,
-            title: 'Second Post',
-            user_id: primaryValue,
-            get(key) { return this[key]; }
-          }
-        ];
+
+      case 'belongsTo': {
+        const foreignKey = relation.foreignKey || `${Related.name.toLowerCase()}_id`;
+        const ownerKey = relation.ownerKey || Related.primaryKey || 'id';
+        const value = this.getAttribute(foreignKey);
+
+        if (value === null || value === undefined) {
+          return null;
+        }
+
+        const related = await Related.where({ [ownerKey]: value });
+        return related[0] ?? null;
       }
-      
-      return [];
+
+      default:
+        throw new Error(`Unsupported relationship type '${relation.type}' for '${name}' on ${ModelClass.name}`);
     }
-    
-    return null;
-  }
-
-  // Dynamic relationship methods
-  posts() {
-    return this.getRelation('posts');
-  }
-
-  user() {
-    // Mock belongsTo relationship for testing
-    return Promise.resolve({
-      id: this.get('user_id') || 1,
-      name: 'John Doe',
-      email: 'john@example.com',
-      get(key) { return this[key]; }
-    });
   }
 }
 
