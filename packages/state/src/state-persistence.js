@@ -32,6 +32,8 @@
  * @property {Function} [migrate] - Migration function for version changes
  * @property {number} [ttl] - Time to live in milliseconds
  * @property {boolean} [crossTab=false] - Enable cross-tab synchronization
+ * @property {string} [dbName='coherent-db'] - IndexedDB database name (`storage: 'indexedDB'`)
+ * @property {string} [storeName='state'] - IndexedDB object store name (`storage: 'indexedDB'`)
  */
 
 /**
@@ -98,7 +100,8 @@ class SessionStorageAdapter extends WebStorageAdapter {
 }
 
 /**
- * IndexedDB adapter
+ * IndexedDB adapter: values are kept in the object store `storeName` of the
+ * database `dbName`.
  */
 class IndexedDBAdapter {
   constructor(dbName = 'coherent-db', storeName = 'state') {
@@ -106,14 +109,18 @@ class IndexedDBAdapter {
     this.storeName = storeName;
     this.available = typeof indexedDB !== 'undefined';
     this.db = null;
+    this.opening = null;
   }
 
-  async init() {
-    if (!this.available) return false;
-    if (this.db) return true;
-
+  /**
+   * Open the database, creating the store in an upgrade. Without `version`,
+   * opens the current version (creating version 1 for a new database).
+   */
+  open(version) {
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open(this.dbName, 1);
+      const request = version === undefined
+        ? indexedDB.open(this.dbName)
+        : indexedDB.open(this.dbName, version);
 
       request.onerror = () => {
         console.error('IndexedDB open error:', request.error);
@@ -121,8 +128,7 @@ class IndexedDBAdapter {
       };
 
       request.onsuccess = () => {
-        this.db = request.result;
-        resolve(true);
+        resolve(request.result);
       };
 
       request.onupgradeneeded = (event) => {
@@ -132,6 +138,33 @@ class IndexedDBAdapter {
         }
       };
     });
+  }
+
+  async init() {
+    if (!this.available) return false;
+    if (this.db) return true;
+
+    this.opening ??= (async () => {
+      let db = await this.open();
+      // The database already exists without this store (another store with
+      // the same dbName created it): add the store in a version upgrade.
+      if (!db.objectStoreNames.contains(this.storeName)) {
+        const version = db.version + 1;
+        db.close();
+        db = await this.open(version);
+      }
+      // Let another store's upgrade proceed; reopen on the next access.
+      db.onversionchange = () => {
+        db.close();
+        if (this.db === db) this.db = null;
+      };
+      this.db = db;
+      return true;
+    })().finally(() => {
+      this.opening = null;
+    });
+
+    return this.opening;
   }
 
   async get(key) {
@@ -328,16 +361,18 @@ class XorObfuscation {
 /**
  * Create storage adapter
  * @param {StorageType} type - Storage type
+ * @param {Pick<PersistenceOptions, 'dbName'|'storeName'>} [options] - IndexedDB
+ *   database and object store names
  * @returns {StorageAdapter} Storage adapter instance
  */
-function createStorageAdapter(type) {
+function createStorageAdapter(type, options = {}) {
   switch (type) {
     case 'localStorage':
       return new LocalStorageAdapter();
     case 'sessionStorage':
       return new SessionStorageAdapter();
     case 'indexedDB':
-      return new IndexedDBAdapter();
+      return new IndexedDBAdapter(options.dbName ?? undefined, options.storeName ?? undefined);
     case 'memory':
       return new MemoryAdapter();
     default:
@@ -401,7 +436,7 @@ export function createPersistentState(initialState = {}, options = {}) {
   } else if (onServer && opts.storage !== 'memory') {
     adapter = new ServerAdapter();
   } else {
-    adapter = createStorageAdapter(opts.storage);
+    adapter = createStorageAdapter(opts.storage, opts);
   }
 
   const instanceId = createInstanceId();

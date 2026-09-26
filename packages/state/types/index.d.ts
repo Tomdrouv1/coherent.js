@@ -416,6 +416,13 @@ export interface PersistentStateOptions {
    * BroadcastChannel named after it. Off on the server.
    */
   crossTab?: boolean;
+  /** IndexedDB database name (`storage: 'indexedDB'`); defaults to `'coherent-db'` */
+  dbName?: string;
+  /**
+   * IndexedDB object store name (`storage: 'indexedDB'`); defaults to
+   * `'state'`. Added to an existing database in a version upgrade.
+   */
+  storeName?: string;
 }
 
 /** A state container backed by storage. */

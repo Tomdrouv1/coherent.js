@@ -109,13 +109,17 @@ when no context was provided for `key`.
 ### State Persistence
 
 ```javascript
-import { withLocalStorage, withSessionStorage } from '@coherent.js/state';
+import { withLocalStorage, withSessionStorage, withIndexedDB } from '@coherent.js/state';
 
 // Auto-persist to localStorage
 const userPrefs = withLocalStorage({ theme: 'dark', lang: 'en' }, 'user-prefs');
 
 // Auto-persist to sessionStorage
 const sessionData = withSessionStorage({ cart: [] }, 'session-data');
+
+// Auto-persist to IndexedDB: the `drafts` key of the `editor` store in the
+// `my-app` database (defaults: 'coherent-db' and 'state')
+const drafts = withIndexedDB({ items: [] }, 'drafts', { dbName: 'my-app', storeName: 'editor' });
 
 // Stored state is restored asynchronously on creation
 await userPrefs.ready;
