@@ -1,3 +1,7 @@
 # Built extension bundles — produced by `pnpm run package`,
 # never committed. Distribute via marketplace, not git.
 *.vsix
+
+# Build output — the language server is bundled from packages/tooling by
+# `pnpm run build` (esbuild.config.mjs), which vsce runs before packaging.
+server/

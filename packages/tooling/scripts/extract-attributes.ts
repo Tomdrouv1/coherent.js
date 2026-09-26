@@ -16,7 +16,12 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ELEMENTS_PATH = path.resolve(__dirname, '../../core/types/elements.d.ts');
-const OUTPUT_PATH = path.resolve(__dirname, '../src/lsp/data/element-attributes.generated.json');
+// `--out <file>` writes elsewhere (the VS Code extension build uses its own
+// copy, so it never reads a file another package's build is still writing).
+const outFlag = process.argv.indexOf('--out');
+const OUTPUT_PATH = outFlag !== -1 && process.argv[outFlag + 1]
+  ? path.resolve(process.argv[outFlag + 1])
+  : path.resolve(__dirname, '../src/lsp/data/element-attributes.generated.json');
 
 interface AttributeInfo {
   name: string;
