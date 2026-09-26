@@ -297,7 +297,14 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const app = express();
   app.set('strict routing', true);
 
-  app.use(express.json({ limit: '100kb' }));
+  // Number of reverse proxies in front of this server (TRUST_PROXY=1 behind
+  // one). The rate limiters below and the API router key on the client
+  // address; behind a proxy that is not trusted, every client shares one
+  // budget, and trusting X-Forwarded-For without a proxy lets clients pick
+  // their own address.
+  const trustedProxies = Number.parseInt(process.env.TRUST_PROXY ?? '', 10);
+  const proxyHops = Number.isInteger(trustedProxies) && trustedProxies > 0 ? trustedProxies : 0;
+  if (proxyHops > 0) app.set('trust proxy', proxyHops);
 
   // Page routes — before static files
   for (const route of pageRoutes) {
@@ -453,69 +460,8 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
           }
         }
       }
-    },
-    '/__playground': {
-      run: {
-        POST: {
-          handler: async (req, res) => {
-            return new Promise((resolve) => {
-              try {
-                const { code } = req.body;
-                if (!code) { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ code: 1, stderr: 'No code provided' })); resolve(); return; }
-                if (code.length > 102400) { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ code: 1, stderr: 'Code exceeds maximum size (100KB)' })); resolve(); return; }
-
-                const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-                const now = Date.now();
-                if (!global._playgroundRateLimit) global._playgroundRateLimit = new Map();
-                const rateMap = global._playgroundRateLimit;
-                const entry = rateMap.get(clientIp) || { count: 0, resetAt: now + 60000 };
-                if (now > entry.resetAt) { entry.count = 0; entry.resetAt = now + 60000; }
-                entry.count++;
-                rateMap.set(clientIp, entry);
-                if (entry.count > 10) { res.writeHead(429, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ code: 1, stderr: 'Rate limit exceeded. Try again in a minute.' })); resolve(); return; }
-
-                const blockedModules = ['fs', 'child_process', 'net', 'http', 'https', 'os', 'path', 'cluster', 'worker_threads', 'dgram', 'tls', 'dns', 'readline', 'vm', 'crypto'];
-                const blockedGlobals = ['process.exit', 'process.kill', 'process.env', 'process.chdir'];
-                const importPattern = /import\s*\(?[^)]*['"](?!@coherent\.js\/)([^'"]+)['"]/g;
-                const dynamicImportPattern = /import\s*\(\s*['"](?!@coherent\.js\/)([^'"]+)['"]\s*\)/g;
-                const requirePattern = /require\s*\(\s*['"](?!@coherent\.js\/)([^'"]+)['"]\s*\)/g;
-
-                for (const match of [...code.matchAll(importPattern), ...code.matchAll(dynamicImportPattern), ...code.matchAll(requirePattern)]) {
-                  const mod = match[1].split('/')[0];
-                  if (blockedModules.includes(mod)) { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ code: 1, stderr: `Import of '${mod}' is not allowed in the playground.` })); resolve(); return; }
-                }
-                for (const blocked of blockedGlobals) {
-                  if (code.includes(blocked)) { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ code: 1, stderr: `Use of '${blocked}' is not allowed in the playground.` })); resolve(); return; }
-                }
-
-                const wrappedCode = `(async () => {\n${code}\n})().catch(console.error);`;
-                import('child_process').then(({ spawn }) => {
-                  const child = spawn('node', ['--input-type=module'], { timeout: 5000, env: { NODE_ENV: 'sandbox', PATH: process.env.PATH } });
-                  let stdout = '', stderr = '';
-                  const MAX_OUTPUT = 102400;
-                  child.stdout.on('data', (d) => { stdout += d.toString(); if (stdout.length > MAX_OUTPUT) child.kill(); });
-                  child.stderr.on('data', (d) => { stderr += d.toString(); if (stderr.length > MAX_OUTPUT) child.kill(); });
-                  child.on('close', (exitCode) => {
-                    if (stdout.length > MAX_OUTPUT) stdout = stdout.slice(0, MAX_OUTPUT) + '\n... output truncated';
-                    if (stderr.length > MAX_OUTPUT) stderr = stderr.slice(0, MAX_OUTPUT) + '\n... output truncated';
-                    res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ code: exitCode || 0, stdout, stderr }));
-                    resolve();
-                  });
-                  child.on('error', (error) => { if (!res.headersSent) { res.writeHead(500, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ code: 1, stdout: '', stderr: error.message })); resolve(); } });
-                  child.stdin.write(wrappedCode);
-                  child.stdin.end();
-                });
-              } catch (error) {
-                if (!res.headersSent) { res.writeHead(500, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ code: 1, stdout: '', stderr: error.message })); }
-                resolve();
-              }
-            });
-          }
-        }
-      }
     }
-  });
+  }, { trustProxy: proxyHops });
 
   app.get('/api/perf', (req, res) => { res.json(performanceMonitor.getStats()); });
 
@@ -552,16 +498,16 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     res.json(index);
   });
 
-  // Playground execution — direct Express route (API router hangs with Express).
-  // Each request spawns a node process, so this limit is much tighter.
+  // Playground execution. Each request spawns a node process, so this limit is
+  // much tighter.
   const playgroundLimiter = rateLimit({
     windowMs: 60_000,
     limit: 20,
     standardHeaders: 'draft-7',
     legacyHeaders: false,
   });
-  app.post('/__playground/run', playgroundLimiter, (req, res) => {
-    const { code } = req.body;
+  app.post('/__playground/run', playgroundLimiter, express.json({ limit: '100kb' }), (req, res) => {
+    const { code } = req.body ?? {};
     if (!code) return res.status(400).json({ code: 1, stderr: 'No code provided' });
     if (code.length > 102400) return res.status(400).json({ code: 1, stderr: 'Code exceeds maximum size (100KB)' });
 
@@ -589,7 +535,13 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     });
   });
 
-  app.use(async (req, res, next) => { const handled = await apiRouter.handle(req, res); if (!handled) next(); });
+  // The API router answers every request it is given (a JSON 404 when no route
+  // matches) and resolves to undefined, so only /api/ requests go to it. It
+  // reads request bodies itself: no body parser runs in front of it.
+  app.use((req, res, next) => {
+    if (!req.path.startsWith('/api/')) return next();
+    apiRouter.handle(req, res).catch(next);
+  });
 
   app.listen(port, () => {
     console.log(`Coherent.js website running at http://localhost:${port}`);
