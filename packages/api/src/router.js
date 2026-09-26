@@ -24,8 +24,30 @@ import { env } from 'node:process';
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
 
 /**
- * Parse JSON request body with security limits
+ * Error for a request body that could not be read.
  * @private
+ */
+function bodyError(message, statusCode, code) {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  if (code) error.code = code;
+  return error;
+}
+
+/**
+ * Parse JSON request body with security limits
+ *
+ * Chunks are collected as Buffers and decoded once: decoding each chunk on
+ * its own corrupted any multibyte UTF-8 character split across two TCP
+ * chunks. The promise also settles when the client goes away mid-body
+ * ('aborted', or 'close' before 'end'); it used to wait for an 'end' that
+ * never came.
+ *
+ * @private
+ * @param {Object} req - Request stream
+ * @param {number} [maxSize=1048576] - Largest body accepted, in bytes
+ * @returns {Promise<Object>} Parsed body; rejects with `statusCode` 413/400,
+ *   or with `code: 'ECONNABORTED'` when the client aborted
  */
 function parseBody(req, maxSize = 1024 * 1024) { // 1MB limit
   return new Promise((resolve, reject) => {
@@ -34,36 +56,80 @@ function parseBody(req, maxSize = 1024 * 1024) { // 1MB limit
       return;
     }
 
-    let body = '';
-    let size = 0;
+    const declared = Number(req.headers?.['content-length']);
+    if (Number.isFinite(declared) && declared > maxSize) {
+      reject(bodyError('Request body too large', 413));
+      return;
+    }
 
-    req.on('data', chunk => {
-      size += chunk.length;
+    const chunks = [];
+    let size = 0;
+    let settled = false;
+
+    const cleanup = () => {
+      req.off?.('data', onData);
+      req.off?.('end', onEnd);
+      req.off?.('aborted', onAborted);
+      req.off?.('close', onClose);
+      req.off?.('error', onError);
+    };
+    const settle = (fn, value) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      fn(value);
+    };
+
+    function onData(chunk) {
+      const buffer = typeof chunk === 'string' ? Buffer.from(chunk) : chunk;
+      size += buffer.length;
       if (size > maxSize) {
-        reject(new Error('Request body too large'));
+        chunks.length = 0;
+        settle(reject, bodyError('Request body too large', 413));
         return;
       }
-      body += chunk.toString();
-    });
+      chunks.push(buffer);
+    }
 
-    req.on('end', () => {
+    function onEnd() {
       try {
         const contentType = req.headers['content-type'] || '';
         if (contentType.includes('application/json')) {
+          const body = Buffer.concat(chunks, size).toString('utf8');
           const parsed = body ? JSON.parse(body) : {};
-          resolve(stripUnsafeKeys(parsed));
+          settle(resolve, stripUnsafeKeys(parsed));
         } else {
-          resolve({});
+          settle(resolve, {});
         }
       } catch {
-        reject(new Error('Invalid JSON body'));
+        settle(reject, bodyError('Invalid JSON body', 400));
       }
-    });
+    }
 
-    req.on('error', reject);
+    function onAborted() {
+      settle(reject, bodyError('Request aborted', 400, 'ECONNABORTED'));
+    }
+
+    // 'close' after 'end' is normal; before it, the body will never arrive.
+    function onClose() {
+      onAborted();
+    }
+
+    function onError(error) {
+      if (error?.code === 'ECONNRESET' || error?.code === 'ECONNABORTED') {
+        onAborted();
+      } else {
+        settle(reject, error);
+      }
+    }
+
+    req.on('data', onData);
+    req.on('end', onEnd);
+    req.on('aborted', onAborted);
+    req.on('close', onClose);
+    req.on('error', onError);
   });
 }
-
 /**
  * Strip prototype-polluting keys from a parsed JSON body.
  *
@@ -2035,8 +2101,13 @@ class SimpleRouter {
       req.body = await parseBody(req, options.maxBodySize);
     } catch (_error) {
       if (this.enableMetrics) this.metrics.errors++;
-      const statusCode = _error.message.includes('too large') ? 413 : 400;
-      res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+      // The client went away mid-body: there is nobody to answer.
+      if (_error.code === 'ECONNABORTED' || responseStarted(res) || responseClosed(res)) return;
+      const statusCode = _error.statusCode === 413 ? 413 : 400;
+      const headers = { 'Content-Type': 'application/json' };
+      // Do not keep reading an oversized upload on this connection.
+      if (statusCode === 413) headers.Connection = 'close';
+      res.writeHead(statusCode, headers);
       res.end(JSON.stringify({ error: _error.message }));
       return;
     }

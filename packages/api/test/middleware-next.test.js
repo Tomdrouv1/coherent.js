@@ -6,7 +6,7 @@
  * middleware that continued asynchronously was raced by the handler.
  */
 
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { SimpleRouter, createRouter } from '../src/router.js';
 import { withValidation } from '../src/validation.js';
 import { startServer, request, jsonInit } from './helpers/http.js';
@@ -107,6 +107,7 @@ describe('middleware next() contract', () => {
   });
 
   it('turns next(err) into an error response without running the handler', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     const ran = [];
     const failing = (req, res, next) => next(new Error('lookup failed'));
     const router = new SimpleRouter();
