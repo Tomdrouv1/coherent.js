@@ -53,10 +53,22 @@
     "url": "https://github.com/Tomdrouv1/coherent.js/issues"
   },
   "peerDependencies": {
-    "sqlite3": ">=5.0.0",
-    "@coherent.js/core": "workspace:^"
+    "@coherent.js/core": "workspace:^",
+    "mongodb": ">=5.0.0 <7.0.0",
+    "mysql2": ">=3.23.1 <4.0.0",
+    "pg": ">=8.8.0 <9.0.0",
+    "sqlite3": ">=5.1.0 <6.0.0"
   },
   "peerDependenciesMeta": {
+    "mongodb": {
+      "optional": true
+    },
+    "mysql2": {
+      "optional": true
+    },
+    "pg": {
+      "optional": true
+    },
     "sqlite3": {
       "optional": true
     }

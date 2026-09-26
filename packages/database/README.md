@@ -18,8 +18,11 @@ For a high-level overview and repository-wide instructions, see the root README:
 pnpm add @coherent.js/database
 ```
 
-Optional peer dependencies (install as needed):
-- `sqlite3` (optional)
+Optional peer dependencies -- install the driver for the database you use:
+- `sqlite3` (`type: 'sqlite'`, the default configuration)
+- `pg` (`type: 'postgresql'`)
+- `mysql2` (`type: 'mysql'`)
+- `mongodb` (`type: 'mongodb'`)
 
 ## Quick start
 
