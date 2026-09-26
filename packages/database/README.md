@@ -25,27 +25,38 @@ Optional peer dependencies (install as needed):
 
 JavaScript (ESM):
 ```js
-// Import utilities from the package's public entry once you enable a specific adapter
-import db from '@coherent.js/database';
+import { createDatabaseManager, executeQuery } from '@coherent.js/database';
 
-// Example sketch: connect and query (adapter-specific APIs vary)
-async function example() {
-  // const conn = await db.connect({ url: process.env.DATABASE_URL });
-  // const rows = await conn.query('select 1');
-}
+const db = createDatabaseManager({ type: 'sqlite', database: ':memory:' });
+await db.connect();
+
+await db.query('CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)');
+const { insertId } = await db.query('INSERT INTO users (name) VALUES (?)', ['Ada']);
+
+// Object queries: values are bound, identifiers and operators are validated
+const { rows } = await executeQuery(db, {
+  table: 'users',
+  where: { id: insertId },
+  limit: 1
+});
+
+await db.close();
 ```
 
 TypeScript:
 ```ts
-import db from '@coherent.js/database';
+import { createDatabaseManager, type Transaction } from '@coherent.js/database';
 
-async function example(): Promise<void> {
-  // const conn = await db.connect({ url: process.env.DATABASE_URL! });
-  // const rows = await conn.query('select 1');
-}
+const db = createDatabaseManager({ type: 'postgresql', database: 'app', username: 'app', password: process.env.PGPASSWORD });
+await db.connect();
+
+await db.transaction(async (tx: Transaction) => {
+  await tx.query('UPDATE accounts SET balance = balance - ? WHERE id = ?', [10, 1]);
+  await tx.query('UPDATE accounts SET balance = balance + ? WHERE id = ?', [10, 2]);
+});
 ```
 
-Note: This package exposes a set of adapters and helpers. Refer to the repository docs and examples for concrete adapter APIs.
+The package has no default export; import the functions you need by name.
 
 ## Development
 
