@@ -191,9 +191,15 @@ class HTMLRenderer extends BaseRenderer {
             return component.__html;
         }
 
-        // Detect circular references (objects only)
-        if (typeof component === 'object' && component !== null && !Array.isArray(component)) {
-            if (options.seenObjects && options.seenObjects.has(component)) {
+        // Detect circular references. Only the current ancestor path is
+        // tracked (added here, removed in `finally`): the same object may
+        // legitimately appear twice in a tree — a shared node, or a memo()
+        // result rendered twice — and that used to be reported as a cycle.
+        const tracked = options.seenObjects && typeof component === 'object' && component !== null
+            ? component
+            : null;
+        if (tracked) {
+            if (options.seenObjects.has(tracked)) {
                 throw new RenderingError(
                     'Circular reference detected in component tree',
                     component,
@@ -201,9 +207,7 @@ class HTMLRenderer extends BaseRenderer {
                     ['Remove the circular reference', 'Use lazy loading to break the cycle']
                 );
             }
-            if (options.seenObjects) {
-                options.seenObjects.add(component);
-            }
+            options.seenObjects.add(tracked);
         }
 
         // Use base class depth validation
@@ -273,6 +277,8 @@ class HTMLRenderer extends BaseRenderer {
             }
 
             throw new RenderingError(_error.message, undefined, { path: renderPath, renderer: 'html' });
+        } finally {
+            if (tracked) options.seenObjects.delete(tracked);
         }
     }
 
@@ -280,11 +286,13 @@ class HTMLRenderer extends BaseRenderer {
      * Render an HTML element with advanced caching and optimization
      */
     renderElement(tagName, element, options, depth = 0, path = []) {
-        const startTime = performance.now();
-
-        // Check for circular references in element props
-        if (element && typeof element === 'object' && !Array.isArray(element)) {
-            if (options.seenObjects && options.seenObjects.has(element)) {
+        // Check for circular references in element props (ancestor path only,
+        // see renderComponent).
+        const tracked = options.seenObjects && element && typeof element === 'object' && !Array.isArray(element)
+            ? element
+            : null;
+        if (tracked) {
+            if (options.seenObjects.has(tracked)) {
                 throw new RenderingError(
                     'Circular reference detected in component tree',
                     element,
@@ -292,10 +300,17 @@ class HTMLRenderer extends BaseRenderer {
                     ['Remove the circular reference', 'Use lazy loading to break the cycle']
                 );
             }
-            if (options.seenObjects) {
-                options.seenObjects.add(element);
-            }
+            options.seenObjects.add(tracked);
         }
+        try {
+            return this.renderElementContent(tagName, element, options, depth, path);
+        } finally {
+            if (tracked) options.seenObjects.delete(tracked);
+        }
+    }
+
+    renderElementContent(tagName, element, options, depth = 0, path = []) {
+        const startTime = performance.now();
 
         // Handle text-only elements including booleans
         if (typeof element === 'string' || typeof element === 'number' || typeof element === 'boolean') {
