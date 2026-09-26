@@ -42,6 +42,20 @@ count.value = 5; // Triggers watcher and updates computed
 console.log(doubled.value); // 10
 ```
 
+Computed values recompute lazily and only when something they read changed;
+reading a computed from its own getter throws. Watchers run after each write,
+or once after `batch(() => { ... })`, each in isolation: an error is passed to
+the `onError` option (or `globalErrorHandler`) and the others still run.
+Writing an identical primitive notifies nobody.
+
+`createReactiveState()` keys accept dot paths:
+
+```javascript
+const app = createReactiveState({ user: { name: 'Ada', age: 36 } });
+app.watch('user.name', (name, previous) => console.log(previous, '→', name));
+app.set('user.name', 'John'); // writes a copy of `user`; notifies 'user' and 'user.name'
+```
+
 ### SSR-Compatible State
 
 ```javascript

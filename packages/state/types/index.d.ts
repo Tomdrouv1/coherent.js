@@ -15,10 +15,18 @@ export type Watcher<T = unknown> = (
 ) => void;
 
 export interface ObservableOptions {
-  /** Notify even when the new value is `===` the old one; defaults to `true` */
+  /**
+   * Re-assigning the same object still notifies, since it may have been
+   * mutated in place; defaults to `true`. Identical primitives never notify.
+   */
   deep?: boolean;
   /** Invoke watchers on subscribe; defaults to `true` */
   immediate?: boolean;
+  /**
+   * Receives errors thrown by watchers (and middleware); defaults to
+   * {@link globalErrorHandler}. The other watchers still run.
+   */
+  onError?: (error: unknown, context: { type: string; [key: string]: unknown }) => void;
   [option: string]: unknown;
 }
 
@@ -26,7 +34,8 @@ export interface ObservableOptions {
  * A single reactive value.
  *
  * Read and write through the `value` accessor — assigning notifies watchers
- * and invalidates any computed that read it.
+ * and invalidates any computed that read it. Watchers run after the write
+ * (after the outermost {@link batch}), each in isolation.
  *
  * ```ts
  * const count = observable(0);
@@ -41,15 +50,24 @@ export class Observable<T = unknown> {
   get value(): T;
   set value(newValue: T);
 
+  /** Read the value without recording a computed dependency */
+  peek(): T;
+
   /** Subscribe to changes; returns an unwatch function */
   watch(callback: Watcher<T>, options?: { immediate?: boolean }): () => void;
 
-  /** Remove one observer */
-  unwatch(observer: (newValue: T, oldValue: T | undefined) => void): void;
+  /** Remove a watcher, by the callback passed to {@link watch} */
+  unwatch(callback: Watcher<T>): void;
 
-  /** Remove every observer and computed dependent */
+  /** Remove every watcher */
   unwatchAll(): void;
 }
+
+/**
+ * Defer watcher notifications until `fn` returns; each watcher then runs
+ * once, with the final value. Batches nest. `fn` must be synchronous.
+ */
+export function batch<T>(fn: () => T): T;
 
 /** Raised by the reactive primitives. */
 export class StateError extends Error {
@@ -107,30 +125,37 @@ export interface HistoryEntry {
 export class ReactiveState {
   constructor(initialState?: Record<string, unknown>, options?: ReactiveStateOptions);
 
-  /** Current value of a key, or `undefined` */
+  /** Current value of a key or dot path (`'user.name'`), or `undefined` */
   get<T = unknown>(key: string): T | undefined;
 
-  /** Write a key; `false` when middleware cancelled the write */
+  /**
+   * Write a key; `false` when middleware cancelled the write. A dot path
+   * writes a copy of the parent object, notifying watchers of both.
+   */
   set(key: string, value: unknown, options?: ReactiveStateOptions): boolean;
 
-  /** Whether the key exists */
+  /** Whether the key (or dot path) exists */
   has(key: string): boolean;
 
-  /** Drop a key and its watchers; `false` when it was absent */
+  /**
+   * Drop a key (or dot path) and the key's watchers; computed properties that
+   * read it update. `false` when it was absent.
+   */
   delete(key: string): boolean;
 
   /** Drop every key */
   clear(): void;
 
   /** Define a computed property derived from other keys */
-  computed(key: string, getter: () => unknown, options?: ObservableOptions): void;
+  computed<T = unknown>(key: string, getter: () => T, options?: ObservableOptions): Observable<T>;
 
   /** Current value of a computed property, or `undefined` */
   getComputed<T = unknown>(key: string): T | undefined;
 
   /**
-   * Watch one key, or a getter expression. Returns an unwatch function, and
-   * throws {@link StateError} for a key that does not exist.
+   * Watch one key, a dot path, or a getter expression (re-evaluated when what
+   * it reads changes). Returns an unwatch function, and throws
+   * {@link StateError} for a key that does not exist.
    */
   watch<T = unknown>(
     key: string | (() => T),
@@ -138,7 +163,10 @@ export class ReactiveState {
     options?: { immediate?: boolean }
   ): () => void;
 
-  /** Apply several writes with history suppressed until the batch ends */
+  /**
+   * Apply several writes as one: watchers run once afterwards, with the final
+   * values, and history records a single entry
+   */
   batch<T>(updates: ((state: this) => T) | Record<string, unknown>): T | undefined;
 
   /** Subscribe to one or more keys; returns an unsubscribe function */
@@ -187,7 +215,9 @@ export function observable<T = unknown>(value: T, options?: ObservableOptions): 
 
 /**
  * Create a read-only observable derived from other observables. Dependencies
- * are tracked automatically; assigning to `value` throws {@link StateError}.
+ * are tracked automatically and it recomputes lazily; assigning to `value`,
+ * or reading it from its own getter (directly or through others), throws
+ * {@link StateError}.
  */
 export function computed<T = unknown>(
   getter: () => T,

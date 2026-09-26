@@ -14,6 +14,7 @@ export {
     createReactiveState,
     observable,
     computed,
+    batch,
     stateUtils
 } from './reactive-state.js';
 
@@ -22,6 +23,7 @@ import {
     createReactiveState,
     observable,
     computed,
+    batch,
     stateUtils
 } from './reactive-state.js';
 
@@ -100,6 +102,7 @@ export default {
     createReactiveState,
     observable,
     computed,
+    batch,
 
     // SSR-compatible state management
     createState,
