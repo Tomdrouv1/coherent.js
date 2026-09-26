@@ -468,7 +468,124 @@ function addSecurityHeaders(res) {
 }
 
 /**
+ * Route pattern tokens: a parameter (`:name`, `:name(constraint)`,
+ * `:name?`), a multi-segment wildcard (`**`) or a single-segment one (`*`).
+ *
+ * Parameter names are identifiers, so `/:from-:to` and `/:file.:ext` hold
+ * two parameters each. The constraint may not contain parentheses; the
+ * `(?:[^()\\]|\\.)*` form is linear, so a pattern of many `:a(` cannot
+ * backtrack (CodeQL js/polynomial-redos).
+ *
+ * @private
+ */
+const ROUTE_TOKEN = /:([A-Za-z_$][\w$]*)(?:\(((?:[^()\\]|\\.)*)\))?(\?)?|\*\*|\*/g;
+
+/** @private */
+function escapeRegex(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Decode one captured parameter. A malformed escape is kept as sent rather
+ * than failing the request.
+ * @private
+ */
+function decodeParam(value) {
+  if (!value.includes('%')) return value;
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+/**
+ * Compile a route pattern into an anchored regex and its parameter names.
+ *
+ * Literal text is escaped piece by piece as it is read, so `.` in
+ * `/files/report.pdf` only matches a dot. The previous implementation
+ * substituted the parameter groups first and then tried to escape the whole
+ * string with a character class that was missing its `]`, so nothing was
+ * escaped: `/files/reportXpdf` matched `/files/report.pdf`. It also pushed
+ * the wildcard's name before any parameter's, so `/users/:id/*` answered
+ * `{ splat: '42', id: 'avatar' }`, and it read `:id?` as a parameter named
+ * `id?`, so optional parameters never matched their absence.
+ *
+ * @private
+ * @param {string} pattern - Route pattern
+ * @returns {{ regex: RegExp, paramNames: string[], pattern: string }}
+ */
+function compilePattern(pattern) {
+  const paramNames = [];
+  let source = '';
+  let last = 0;
+
+  for (const match of pattern.matchAll(ROUTE_TOKEN)) {
+    const [token, name, constraint, optional] = match;
+    let literal = pattern.slice(last, match.index);
+    let group;
+
+    if (token === '**') {
+      paramNames.push('splat');
+      group = '(.*)';
+    } else if (token === '*') {
+      paramNames.push('splat');
+      group = '([^/]+)';
+    } else {
+      paramNames.push(name);
+      const body = constraint === undefined || constraint === '' ? '[^/]+' : constraint;
+      if (optional && literal.endsWith('/')) {
+        // `/opt/:id?` matches `/opt` as well as `/opt/5`.
+        literal = literal.slice(0, -1);
+        group = `(?:/(${body}))?`;
+      } else if (optional) {
+        group = `(${body})?`;
+      } else {
+        group = `(${body})`;
+      }
+    }
+
+    source += escapeRegex(literal) + group;
+    last = match.index + token.length;
+  }
+  source += escapeRegex(pattern.slice(last));
+
+  return { regex: new RegExp(`^${source}$`), paramNames, pattern };
+}
+
+/**
+ * Match `path` against a compiled pattern.
+ *
+ * Parameters are URL-decoded (`/users/John%20Doe` gives `'John Doe'`), and
+ * every call returns a new object, so a handler changing `req.params` cannot
+ * leak into another request.
+ *
+ * @private
+ * @returns {Object|null} Parameters, or null when the path does not match
+ */
+function matchCompiled(compiled, path) {
+  const match = compiled.regex.exec(path);
+  if (!match) return null;
+
+  const params = {};
+  for (let i = 0; i < compiled.paramNames.length; i++) {
+    const value = match[i + 1];
+    if (value !== undefined) {
+      params[compiled.paramNames[i]] = decodeParam(value);
+    }
+  }
+  return params;
+}
+
+/** Patterns compiled for extractParams() when router compilation is off. @private */
+const extractCache = new Map();
+
+/**
  * Extract parameters from URL path with constraint support
+ *
+ * Used when `enableCompilation: false`; it shares compilePattern() so both
+ * modes match exactly the same paths.
+ *
  * @private
  * @param {string} pattern - URL pattern with parameters (e.g., '/users/:id(\\d+)')
  * @param {string} path - Actual URL path to match
@@ -478,59 +595,13 @@ function addSecurityHeaders(res) {
  * extractParams('/users/:id?', '/users') // {}
  */
 function extractParams(pattern, path) {
-  const patternParts = pattern.split('/');
-  const pathParts = path.split('/');
-  const params = {};
-
-  // Handle wildcard patterns that can match different lengths
-  const hasMultiWildcard = patternParts.includes('**');
-  const hasSingleWildcard = patternParts.includes('*');
-
-  if (!hasMultiWildcard && !hasSingleWildcard && patternParts.length !== pathParts.length) {
-    return null;
+  let compiled = extractCache.get(pattern);
+  if (!compiled) {
+    compiled = compilePattern(pattern);
+    if (extractCache.size >= 1000) extractCache.delete(extractCache.keys().next().value);
+    extractCache.set(pattern, compiled);
   }
-
-  for (let i = 0; i < patternParts.length; i++) {
-    const patternPart = patternParts[i];
-    const pathPart = pathParts[i];
-
-    if (patternPart.startsWith(':')) {
-      // Parse parameter with optional constraint: :name(regex) or :name?
-      const match = patternPart.match(/^:([^(]+)(\(([^)]+)\))?(\?)?$/);
-      if (match) {
-        const [, paramName, , constraint, optional] = match;
-
-        // Check if parameter is optional and path part is missing
-        if (optional && !pathPart) {
-          continue;
-        }
-
-        // Apply constraint if present
-        if (constraint) {
-          const regex = new RegExp(`^${constraint}$`);
-          if (!regex.test(pathPart)) {
-            return null; // Constraint failed
-          }
-        }
-
-        params[paramName] = pathPart;
-      } else {
-        // Fallback to simple parameter
-        params[patternPart.slice(1)] = pathPart;
-      }
-    } else if (patternPart === '*') {
-      // Single wildcard - matches one segment
-      params.splat = pathPart;
-    } else if (patternPart === '**') {
-      // Multi-segment wildcard - matches remaining path
-      params.splat = pathParts.slice(i).join('/');
-      return params; // ** consumes rest of path
-    } else if (patternPart !== pathPart) {
-      return null;
-    }
-  }
-
-  return params;
+  return matchCompiled(compiled, path);
 }
 
 
@@ -1579,66 +1650,7 @@ class SimpleRouter {
       return compiled;
     }
 
-    const paramNames = [];
-    let regexPattern = pattern;
-
-    // Handle wildcards first
-    if (pattern.includes('**')) {
-      regexPattern = regexPattern.replace(/\/\*\*/g, '/(.*)');
-      paramNames.push('splat');
-    } else if (pattern.includes('*')) {
-      regexPattern = regexPattern.replace(/\/\*/g, '/([^/]+)');
-      paramNames.push('splat');
-    }
-
-    // Handle parameters with constraints and optional parameters
-    // The name class excludes ':' and the constraint class excludes '(' so
-    // neither can span the next parameter. With [^(/]+ and [^)]+ a pattern
-    // of many ":'(" re-split at every position: 16,000 took 301ms, 64,000
-    // took 4.7s. CodeQL js/polynomial-redos.
-    regexPattern = regexPattern.replace(/:([^(/:]+)(\([^()]*\))?(\?)?/g, (match, paramName, constraint, optional, offset, fullString) => {
-      paramNames.push(paramName);
-
-      // Check if there's already a slash before this parameter in the full string
-      const hasPrecedingSlash = offset > 0 && fullString[offset - 1] === '/';
-
-      // NEW_FIX_DEBUG: This is our fix for double slashes
-      if (hasPrecedingSlash) {
-        // When there's already a slash, don't add another one
-        if (constraint) {
-          const constraintPattern = constraint.slice(1, -1);
-          return optional ? `(?:/(?:${constraintPattern}))?` : `(${constraintPattern})`;
-        } else {
-          return optional ? `(?:([^/]+))?` : `([^/]+)`;
-        }
-      } else {
-        // When there's no preceding slash, add one
-        if (constraint) {
-          const constraintPattern = constraint.slice(1, -1);
-          return optional ? `(?:/(?:${constraintPattern}))?` : `/${constraintPattern}`;
-        } else {
-          return optional ? `(?:/([^/]+))?` : `/([^/]+)`;
-        }
-      }
-    });
-
-    // Escape special regex characters except those we want to keep
-    // Be careful not to break character classes like [^/]
-    // Strategy: Escape everything first, then fix character classes
-    regexPattern = regexPattern.replace(/([.+?^${}|\\[\]()]])/g, '\\$1');
-    // Now fix character classes - look for escaped character classes and unescape them
-    regexPattern = regexPattern.replace(/\\\[/g, '[')      // [ becomes [
-                           .replace(/\\\]/g, ']')       // ] becomes ]
-                           .replace(/\\\^/g, '^');      // ^ becomes ^ (only when inside [])
-
-    // Ensure exact match
-    regexPattern = `^${regexPattern}$`;
-
-    const compiled = {
-      regex: new RegExp(regexPattern),
-      paramNames,
-      pattern
-    };
+    const compiled = compilePattern(pattern);
 
     // Cache the compiled route with LRU eviction
     if (this.routeCompilationCache.size >= this.maxCompilationCacheSize) {
@@ -1655,23 +1667,11 @@ class SimpleRouter {
    * Match path using compiled route
    * @param {Object} compiledRoute - Compiled route object
    * @param {string} path - Path to match
-   * @returns {Object|null} Parameters object or null if no match
+   * @returns {Object|null} Parameters object (URL-decoded, new on every call) or null if no match
    * @private
    */
   matchCompiledRoute(compiledRoute, path) {
-    const match = compiledRoute.regex.exec(path);
-    if (!match) return null;
-
-    const params = {};
-    for (let i = 0; i < compiledRoute.paramNames.length; i++) {
-      const paramName = compiledRoute.paramNames[i];
-      const value = match[i + 1];
-      if (value !== undefined) {
-        params[paramName] = value;
-      }
-    }
-
-    return params;
+    return matchCompiled(compiledRoute, path);
   }
 
   /**
