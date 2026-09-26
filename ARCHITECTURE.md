@@ -59,8 +59,7 @@ coherent.js/
 │   │   │   ├── components/                 # Component system
 │   │   │   │   ├── component-system.js     # Advanced component features
 │   │   │   │   ├── lifecycle.js            # Component lifecycle hooks
-│   │   │   │   ├── error-boundary.js       # Error handling
-│   │   │   │   └── lazy-loading.js         # Code splitting support
+│   │   │   │   └── error-boundary.js       # Error handling
 │   │   │   ├── rendering/                  # Rendering engines
 │   │   │   │   ├── html-renderer.js        # Main HTML + streaming renderer
 │   │   │   │   ├── base-renderer.js        # Shared renderer base class
