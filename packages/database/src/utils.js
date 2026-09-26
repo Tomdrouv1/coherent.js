@@ -193,17 +193,17 @@ export function validateConfig(config) {
   if (!config.type) {
     errors.push('Database type is required');
   } else {
-    const supportedTypes = ['postgresql', 'mysql', 'sqlite', 'mongodb'];
+    const supportedTypes = ['postgresql', 'mysql', 'sqlite', 'mongodb', 'memory'];
     if (!supportedTypes.includes(config.type)) {
       errors.push(`Unsupported database type: ${config.type}`);
     }
   }
 
-  if (!config.database) {
+  if (!config.database && config.type !== 'memory') {
     errors.push('Database name is required');
   }
 
-  if (config.type !== 'sqlite') {
+  if (config.type !== 'sqlite' && config.type !== 'memory') {
     if (!config.host) {
       errors.push('Host is required for non-SQLite databases');
     }

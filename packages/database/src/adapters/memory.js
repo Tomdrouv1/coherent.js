@@ -191,20 +191,49 @@ export class MemoryAdapter {
       },
       
       /**
-       * Execute a transaction
-       * @param {Function} callback - Transaction callback
-       * @returns {Promise<*>} Result of the transaction
+       * Copy of every collection and schema, for rolling back a transaction
+       * @private
+       */
+      _snapshot() {
+        const copy = new Map();
+        for (const [name, records] of collections) {
+          copy.set(name, new Map([...records].map(([id, record]) => [id, globalThis.structuredClone(record)])));
+        }
+        return { collections: copy, schemas: new Map(schemas) };
+      },
+
+      /**
+       * Restore a snapshot taken with _snapshot()
+       * @private
+       */
+      _restore(snapshot) {
+        collections.clear();
+        for (const [name, records] of snapshot.collections) {
+          collections.set(name, records);
+        }
+        schemas.clear();
+        for (const [name, schema] of snapshot.schemas) {
+          schemas.set(name, schema);
+        }
+      },
+
+      /**
+       * Run a callback in a transaction: changes are undone if it throws.
+       *
+       * The store is shared, so changes made outside the callback while it runs are
+       * undone as well.
+       *
+       * @param {Function} callback - Transaction callback, receives `{ query }`
+       * @returns {Promise<*>} Result of the callback
        */
       async transaction(callback) {
-        // In a real implementation, this would track changes and rollback on _error
-        // For this simple implementation, we'll just execute the callback
+        const snapshot = this._snapshot();
         try {
-          const result = await callback({
+          return await callback({
             query: (operation, params) => this.query(operation, params)
           });
-          return result;
         } catch (_error) {
-          // In a real implementation, we would rollback changes here
+          this._restore(snapshot);
           throw _error;
         }
       }
@@ -254,21 +283,57 @@ export class MemoryAdapter {
   }
   
   /**
-   * Execute a transaction
-   * @param {Function} callback - Transaction callback
-   * @returns {Promise<*>} Result of the transaction
+   * Start a transaction (the DatabaseManager contract), or run a callback in one.
+   *
+   * `transaction(store)` returns `{ query, commit, rollback, isCommitted, isRolledBack }`;
+   * rollback() restores the store as it was when the transaction started.
+   * `transaction(callback)` runs the callback on the default store and rolls back if it throws.
+   *
+   * @param {Object|Function} [storeOrCallback] - Store from createPool(), or a callback
+   * @returns {Promise<Object|*>} Transaction, or the callback's result
    */
-  async transaction(callback) {
-    // In a real implementation, this would track changes and rollback on _error
-    // For this simple implementation, we'll just execute the callback
-    try {
-      const result = await callback({
-        query: (operation, params) => this.query(operation, params)
-      });
-      return result;
-    } catch (_error) {
-      // In a real implementation, we would rollback changes here
-      throw _error;
+  async transaction(storeOrCallback) {
+    if (typeof storeOrCallback === 'function') {
+      const store = this.getStore();
+      if (!store) {
+        throw new Error('MemoryAdapter has no store: call createPool() first');
+      }
+      return store.transaction(storeOrCallback);
     }
+
+    const store = storeOrCallback || this.getStore();
+    if (!store || typeof store._snapshot !== 'function') {
+      throw new Error('MemoryAdapter.transaction() needs a store created by createPool()');
+    }
+
+    const snapshot = store._snapshot();
+    const assertActive = () => {
+      if (tx.isCommitted || tx.isRolledBack) {
+        throw new Error('Transaction already completed');
+      }
+    };
+
+    const tx = {
+      isCommitted: false,
+      isRolledBack: false,
+
+      async query(operation, params) {
+        assertActive();
+        return store.query(operation, params);
+      },
+
+      async commit() {
+        assertActive();
+        tx.isCommitted = true;
+      },
+
+      async rollback() {
+        assertActive();
+        store._restore(snapshot);
+        tx.isRolledBack = true;
+      }
+    };
+
+    return tx;
   }
 }

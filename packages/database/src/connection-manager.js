@@ -109,12 +109,12 @@ export class DatabaseManager extends EventEmitter {
       throw new Error('Either database type or adapter is required');
     }
 
-    const supportedTypes = ['postgresql', 'mysql', 'sqlite', 'mongodb'];
+    const supportedTypes = ['postgresql', 'mysql', 'sqlite', 'mongodb', 'memory'];
     if (!supportedTypes.includes(type)) {
       throw new Error(`Unsupported database type: ${type}. Supported types: ${supportedTypes.join(', ')}`);
     }
 
-    if (!database) {
+    if (!database && type !== 'memory') {
       throw new Error('Database name is required for type-based configuration');
     }
 
@@ -123,7 +123,8 @@ export class DatabaseManager extends EventEmitter {
       postgresql: 5432,
       mysql: 3306,
       mongodb: 27017,
-      sqlite: null
+      sqlite: null,
+      memory: null
     };
 
     return {
