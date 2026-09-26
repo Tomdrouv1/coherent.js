@@ -118,54 +118,15 @@ export function formatAttributes(props) {
         throw new Error(`Invalid attribute name ${JSON.stringify(key)}: attribute names cannot contain whitespace, quotes, '<', '>', '/', '=' or control characters`);
       }
 
-      // Handle function values - for event handlers, use data-action attributes
+      // Function values: event handlers render nothing. The client's
+      // hydrate() re-attaches them from the component tree; the server has
+      // no way to ship a closure. They used to be stored in a process-wide
+      // __coherentActionRegistry under a Date.now()+Math.random() id that
+      // nothing ever read: every render leaked its handlers (and whatever
+      // request data they closed over) and produced different HTML.
       if (typeof value === 'function') {
-        // Check if this is an event handler (starts with 'on')
         if (attributeName.startsWith('on')) {
-          // For event handlers, create a unique action identifier
-          const actionId = `__coherent_action_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          const DEBUG = (typeof process !== 'undefined' && process && process.env && (process.env.COHERENT_DEBUG === '1' || process.env.NODE_ENV === 'development'))
-            || (typeof window !== 'undefined' && window && window.COHERENT_DEBUG === true);
-          
-          // Store the function in a global registry that will be available during hydration
-          // Check if we're in Node.js or browser environment
-          if (typeof global !== 'undefined') {
-            // Server-side, store in global for hydration
-            if (!global.__coherentActionRegistry) {
-              global.__coherentActionRegistry = {};
-              if (DEBUG) console.log('Initialized global action registry');
-            }
-            global.__coherentActionRegistry[actionId] = value;
-            if (DEBUG) console.log(`Added action ${actionId} to global registry, total: ${Object.keys(global.__coherentActionRegistry).length}`);
-            if (DEBUG) console.log(`Global registry keys: ${Object.keys(global.__coherentActionRegistry).join(', ')}`);
-            
-            // Log the global object to see if it's being reset
-            if (DEBUG) {
-              if (typeof global.__coherentActionRegistryLog === 'undefined') {
-                global.__coherentActionRegistryLog = [];
-              }
-              global.__coherentActionRegistryLog.push({
-                action: 'add',
-                actionId: actionId,
-                timestamp: Date.now(),
-                registrySize: Object.keys(global.__coherentActionRegistry).length
-              });
-            }
-          } else if (typeof window !== 'undefined') {
-            // Browser-side, store in window
-            if (!window.__coherentActionRegistry) {
-              window.__coherentActionRegistry = {};
-              if (DEBUG) console.log('Initialized window action registry');
-            }
-            window.__coherentActionRegistry[actionId] = value;
-            if (DEBUG) console.log(`Added action ${actionId} to window registry, total: ${Object.keys(window.__coherentActionRegistry).length}`);
-            if (DEBUG) console.log(`Window registry keys: ${Object.keys(window.__coherentActionRegistry).join(', ')}`);
-          }
-          
-          // Use data-action and data-event attributes instead of inline JS
-          const eventType = attributeName.substring(2); // Remove 'on' prefix
-          formatted += ` data-action="${actionId}" data-event="${eventType}"`;
-          continue; // Skip normal processing
+          continue;
         } else {
           // For other function attributes, call them to get the value
           try {
