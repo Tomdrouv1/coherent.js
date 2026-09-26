@@ -249,6 +249,88 @@ describe('Translator', () => {
     });
   });
 
+  describe('Request-scoped translators (forLocale)', () => {
+    it('translates in the bound locale without changing the shared locale', () => {
+      const fr = translator.forLocale('fr');
+      expect(fr.t('hello')).toBe('Bonjour');
+      expect(fr.t('welcome', { name: 'Ada' })).toBe('Bienvenue, Ada!');
+      expect(fr.t('items', { count: 5 })).toBe('5 éléments');
+      expect(fr.has('hello')).toBe(true);
+      expect(fr.getLocale()).toBe('fr');
+      expect(fr.locale).toBe('fr');
+      expect(translator.getLocale()).toBe('en');
+    });
+
+    it('is unaffected by a later setLocale() on the shared instance', () => {
+      const es = translator.forLocale('es');
+      translator.setLocale('fr');
+      expect(es.t('hello')).toBe('Hola');
+      expect(translator.t('hello')).toBe('Bonjour');
+    });
+
+    it('resolves regional locales and falls back silently for unknown ones', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      expect(translator.forLocale('fr-BE').getLocale()).toBe('fr');
+      const unknown = translator.forLocale('de-DE');
+      expect(unknown.getLocale()).toBe('en');
+      expect(unknown.t('hello')).toBe('Hello');
+      expect(warn).not.toHaveBeenCalled();
+      warn.mockRestore();
+    });
+
+    it('falls back per key to the fallback locale', () => {
+      expect(translator.forLocale('es').t('nested.deep.key')).toBe('Deep value');
+    });
+
+    it('accepts per-call options and a translator-wide escape default', () => {
+      const fr = translator.forLocale('fr', { escape: true });
+      expect(fr.t('welcome', { name: '<b>' })).toBe('Bienvenue, &lt;b&gt;!');
+      expect(fr.t('welcome', { name: '<b>' }, { escape: false })).toBe('Bienvenue, <b>!');
+      expect(fr.t('welcome', { name: 'Ada' }, 'es')).toBe('Bienvenido, Ada!');
+    });
+
+    it('sees translations added after it was created', () => {
+      const fr = translator.forLocale('fr');
+      translator.addTranslations('fr', { later: 'Plus tard' });
+      expect(fr.t('later')).toBe('Plus tard');
+    });
+
+    it('keeps concurrent requests on one shared translator in their own locales', async () => {
+      const tick = () => new Promise(resolve => setTimeout(resolve, 0));
+
+      // Each simulated request renders in several steps, yielding in between,
+      // while another request (and some client-style setLocale() call) runs.
+      const renderRequest = async (acceptLanguage, name) => {
+        const { t } = translator.forLocale(acceptLanguage);
+        const parts = [];
+        parts.push(t('hello'));
+        await tick();
+        parts.push(t('welcome', { name }));
+        await tick();
+        parts.push(t('items', { count: 1 }));
+        return parts.join(' | ');
+      };
+
+      const results = await Promise.all([
+        renderRequest('fr-FR', 'Ada'),
+        renderRequest('en', 'Bob'),
+        (async () => {
+          await tick();
+          translator.setLocale('es');
+          return renderRequest('es', 'Cy');
+        })(),
+        renderRequest('fr', 'Dee')
+      ]);
+
+      expect(results).toEqual([
+        'Bonjour | Bienvenue, Ada! | Un élément',
+        'Hello | Welcome, Bob! | One item',
+        'Hola | Bienvenido, Cy! | One item',
+        'Bonjour | Bienvenue, Dee! | Un élément'
+      ]);
+    });
+  });
+
   describe('HTML escaping of params', () => {
     const XSS = '<img src=x onerror="alert(\'x\')">&';
     const ESCAPED = '&lt;img src=x onerror=&quot;alert(&#39;x&#39;)&quot;&gt;&amp;';

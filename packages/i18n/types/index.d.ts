@@ -74,6 +74,26 @@ export interface TranslateOptions {
 }
 
 /**
+ * A translator bound to one locale, returned by {@link Translator.forLocale}.
+ * Safe to use concurrently: it never reads or writes the shared
+ * `currentLocale`.
+ */
+export interface LocaleTranslator {
+  /** The resolved locale this translator is bound to */
+  readonly locale: string;
+  /** Like {@link Translator.t}, defaulting to the bound locale */
+  t(
+    key: TranslationKey,
+    params?: TranslationParams | null,
+    localeOrOptions?: string | null | TranslateOptions
+  ): string;
+  /** Like {@link Translator.has}, defaulting to the bound locale */
+  has(key: TranslationKey, locale?: string | null): boolean;
+  /** The bound locale */
+  getLocale(): string;
+}
+
+/**
  * Holds translations per locale and resolves keys with interpolation,
  * pluralization and fallback.
  *
@@ -115,6 +135,15 @@ export class Translator {
 
   /** The active locale */
   getLocale(): string;
+
+  /**
+   * A translator bound to `locale` (resolved like `setLocale()`, falling back
+   * silently to the fallback locale) that leaves `currentLocale` untouched.
+   * Use one per request on the server; `setLocale()` mutates state that every
+   * concurrent request shares. `options.escape` sets the escape default for
+   * its calls.
+   */
+  forLocale(locale: string, options?: { escape?: boolean }): LocaleTranslator;
 
   /**
    * Resolve a key in the target locale, then its parent locales (`fr-CA` →

@@ -49,6 +49,35 @@ translator.setLocale('fr');
 console.log(translator.t('hello', { name: 'Coherent' })); // Bonjour, Coherent !
 ```
 
+`setLocale('fr-FR')` resolves to the closest loaded locale (`fr` here); a key
+missing from a regional locale is looked up in its language, then in the
+fallback locale.
+
+### Server-side rendering: one translator per request
+
+`setLocale()` changes the shared instance's current locale, so on a server
+where concurrent requests render with the same translator, one request's
+locale leaks into another's output. Keep `setLocale()` for the browser and
+bind a translator to each request instead:
+
+```js
+// Created once at startup
+const i18n = createTranslator({ defaultLocale: 'en' });
+i18n.addTranslations('en', { hello: 'Hello, {{name}}!' });
+i18n.addTranslations('fr', { hello: 'Bonjour, {{name}} !' });
+
+// Per request — never mutates `i18n`
+app.get('/', (req, res) => {
+  const { t } = i18n.forLocale(req.acceptsLanguages('en', 'fr') || 'en');
+  res.send(render({ p: { text: t('hello', { name: req.query.name }) } }));
+});
+```
+
+`forLocale(locale)` resolves the locale like `setLocale()` (falling back to
+the fallback locale without a warning, since request locales are untrusted)
+and returns `{ locale, t, has, getLocale }`. Pass `{ escape: true }` as a
+second argument to escape params in every call.
+
 TypeScript:
 ```ts
 import { createTranslator } from '@coherent.js/i18n';

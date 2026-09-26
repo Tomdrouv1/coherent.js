@@ -181,6 +181,41 @@ export class Translator {
   }
 
   /**
+   * Get a translator bound to one locale, without touching the shared
+   * instance's current locale.
+   *
+   * Use this on the server: `setLocale()` mutates `currentLocale`, which every
+   * concurrent request rendering with the same instance shares, so one
+   * request's locale leaks into another's output. A bound translator always
+   * passes its own locale. It reads the shared translations live, so
+   * translations added later are visible.
+   *
+   * The locale resolves like `setLocale()` (`fr-FR` → `fr`), falling back to
+   * the fallback locale — silently, since request locales are untrusted input.
+   *
+   * @param {string} locale - Requested locale (e.g. from Accept-Language)
+   * @param {{escape?: boolean}} [options] - `escape` default for this
+   *   translator's calls (defaults to the shared instance's `escape`)
+   * @returns {{ locale: string, t: Function, has: Function, getLocale: () => string }}
+   */
+  forLocale(locale, options = {}) {
+    const boundLocale = this.resolveLocale(locale) ?? this.options.fallbackLocale;
+
+    return {
+      locale: boundLocale,
+      t: (key, params = {}, localeOrOptions = null) => {
+        const callOptions = normalizeCallOptions(localeOrOptions);
+        return this.t(key, params, {
+          locale: callOptions.locale || boundLocale,
+          escape: callOptions.escape ?? options.escape ?? this.options.escape
+        });
+      },
+      has: (key, override = null) => this.has(key, override || boundLocale),
+      getLocale: () => boundLocale
+    };
+  }
+
+  /**
    * Translate a key
    *
    * @param {string} key - Translation key (supports dot notation)
