@@ -10,7 +10,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, symlinkSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, sep } from 'node:path';
-import { containedPath, escapeHtml, resolveDocFile } from '../website/src/docs-path.js';
+import { containedPath, escapeHtml, findDoc, resolveDocFile, stripTags } from '../website/src/docs-path.js';
 
 let root;
 let docsDir;
@@ -170,5 +170,62 @@ describe('symlink containment', () => {
   it('still returns a path for something that does not exist yet', () => {
     // 404 handling depends on this: a missing file is not an escape.
     expect(containedPath(docsDir, 'nope.md')).toBe(join(docsDir, 'nope.md'));
+  });
+});
+
+/**
+ * The route only uses the slug to look a page up in a listing of docs/, so
+ * neither the file it reads nor the slug it puts back into the page comes
+ * from the URL. A slug could carry markup through a '/..' segment that the
+ * path resolution removed ('x"><img …/../guide' named guide.md) and reach
+ * the page's links.
+ */
+describe('findDoc', () => {
+  it('returns the canonical slug, file and directory of a page', () => {
+    expect(findDoc(docsDir, 'guide')).toEqual({ slug: 'guide', file: join(docsDir, 'guide.md'), dir: '' });
+    expect(findDoc(docsDir, 'section/README')).toEqual({
+      slug: 'section/README',
+      file: join(docsDir, 'section', 'README.md'),
+      dir: 'section'
+    });
+  });
+
+  it('serves a directory through its index, resolving links from the directory', () => {
+    expect(findDoc(docsDir, 'nested')).toEqual({ slug: 'nested', file: join(docsDir, 'nested', 'index.md'), dir: 'nested' });
+    expect(findDoc(docsDir, 'nested/')).toEqual(findDoc(docsDir, 'nested'));
+  });
+
+  it.each([
+    'x"><img src=x onerror=alert(1)>/../guide',
+    'nested/../guide',
+    './guide',
+    'guide.md',
+    '../SECRET',
+    '',
+  ])('names no page for %j', (slug) => {
+    expect(findDoc(docsDir, slug)).toBeNull();
+  });
+
+  it('leaves out symbolic links and dotfiles', () => {
+    writeFileSync(join(docsDir, '.hidden.md'), '# Hidden');
+    expect(findDoc(docsDir, '.hidden')).toBeNull();
+    expect(findDoc(docsDir, 'escape')).toBeNull();
+    expect(findDoc(docsDir, 'linkdir')).toBeNull();
+    expect(findDoc(docsDir, 'linkdir/index')).toBeNull();
+  });
+});
+
+describe('stripTags', () => {
+  it('removes tags and keeps text', () => {
+    expect(stripTags('<code>a</code> &amp; <b>b</b>')).toBe('a &amp; b');
+    expect(stripTags('a < b')).toBe('a < b');
+    expect(stripTags('<a <script>x')).toBe('x');
+  });
+
+  // /<[^>]*>/g took about two seconds on 50 KB of '<'.
+  it('runs in linear time', () => {
+    const started = performance.now();
+    expect(stripTags('<'.repeat(200_000))).toBe('<'.repeat(200_000));
+    expect(performance.now() - started).toBeLessThan(250);
   });
 });

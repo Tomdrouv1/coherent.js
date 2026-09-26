@@ -7,7 +7,7 @@
  * @module website/docs-path
  */
 
-import { existsSync, realpathSync } from 'node:fs';
+import { readdirSync, realpathSync } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
 
 /**
@@ -61,24 +61,101 @@ export function containedPath(rootDir, relativePath) {
 }
 
 /**
- * Resolve a `/docs/<slug>` request to a markdown file inside `docsDir`.
+ * @typedef {Object} DocEntry
+ * @property {string} slug - Canonical slug ('guide', 'section/README', 'section')
+ * @property {string} file - Absolute path to the markdown file
+ * @property {string} dir - Directory of the file relative to docsDir ('' at the top)
+ */
+
+/**
+ * Every page under `docsDir`, by slug: each `<path>.md` as `<path>`, and each
+ * directory as its index.md (or else README.md) unless a `<dir>.md` exists.
  *
- * Tries the slug as a file, then as a directory holding index.md or
- * README.md, and only returns a candidate that stays inside `docsDir`.
+ * Built from a directory listing, so a request can only ever reach a file
+ * that is really there: symbolic links (to files or directories) and
+ * dotfiles are left out, and no part of the URL becomes part of a path.
+ *
+ * @param {string} docsDir - Absolute path to the docs directory
+ * @returns {Map<string, DocEntry>}
+ */
+function listDocs(docsDir) {
+  const docs = new Map();
+  const directories = [];
+
+  const walk = (absDir, relDir) => {
+    for (const entry of readdirSync(absDir, { withFileTypes: true })) {
+      if (entry.name.startsWith('.')) continue;
+      const rel = relDir ? `${relDir}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) {
+        directories.push(rel);
+        walk(join(absDir, entry.name), rel);
+      } else if (entry.isFile() && entry.name.endsWith('.md')) {
+        const slug = rel.slice(0, -'.md'.length);
+        docs.set(slug, { slug, file: join(absDir, entry.name), dir: relDir });
+      }
+    }
+  };
+  walk(resolve(docsDir), '');
+
+  for (const dir of directories) {
+    const index = docs.get(`${dir}/index`) ?? docs.get(`${dir}/README`);
+    if (index && !docs.has(dir)) docs.set(dir, { ...index, slug: dir });
+  }
+  return docs;
+}
+
+/**
+ * The doc page a `/docs/<slug>` request names, or null.
+ *
+ * The slug is only ever a lookup key: the returned entry's path and slug
+ * come from the listing, so they are safe to read and to put in markup.
+ * Traversals ('../SECRET', 'a/../b') name no page and return null.
+ *
+ * @param {string} docsDir - Absolute path to the docs directory
+ * @param {string} slug - Slug taken from the request URL (one trailing
+ *   slash is ignored)
+ * @returns {DocEntry|null}
+ */
+export function findDoc(docsDir, slug) {
+  if (typeof slug !== 'string') return null;
+  const key = slug.endsWith('/') ? slug.slice(0, -1) : slug;
+  return listDocs(docsDir).get(key) ?? null;
+}
+
+/**
+ * Resolve a `/docs/<slug>` request to a markdown file inside `docsDir`:
+ * the slug as a file, then as a directory holding index.md or README.md.
  *
  * @param {string} docsDir - Absolute path to the docs directory
  * @param {string} slug - Slug taken from the request URL
- * @returns {string|null} Absolute path to the markdown file, or null if no
- *   candidate exists or the slug escaped `docsDir`
+ * @returns {string|null} Absolute path to the markdown file, or null
  */
 export function resolveDocFile(docsDir, slug) {
-  const candidates = [`${slug}.md`, join(slug, 'index.md'), join(slug, 'README.md')];
+  return findDoc(docsDir, slug)?.file ?? null;
+}
 
-  for (const candidate of candidates) {
-    const abs = containedPath(docsDir, candidate);
-    if (abs && existsSync(abs)) return abs;
+/**
+ * Remove markup tags (`<...>`) from `html`, in one linear pass. A `<` with
+ * no `>` after it is kept as text.
+ *
+ * /<[^>]*>/g rescans the rest of the input from every `<` when no `>`
+ * follows, which is quadratic on input like '<<<<…'.
+ *
+ * @param {string} html
+ * @returns {string}
+ */
+export function stripTags(html) {
+  let out = '';
+  let cursor = 0;
+  while (cursor < html.length) {
+    const open = html.indexOf('<', cursor);
+    if (open === -1) break;
+    const close = html.indexOf('>', open + 1);
+    if (close === -1) break;
+    out += html.slice(cursor, open);
+    cursor = close + 1;
   }
-  return null;
+  return out + html.slice(cursor);
 }
 
 /**

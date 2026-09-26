@@ -12,7 +12,7 @@ import {
   createErrorBoundary,
 } from '@coherent.js/core';
 import { marked } from 'marked';
-import { containedPath, escapeHtml, resolveDocFile } from './docs-path.js';
+import { containedPath, escapeHtml, findDoc, stripTags } from './docs-path.js';
 import { loadChangelog } from './changelog.js';
 import { rateLimit } from 'express-rate-limit';
 import { createHighlighter } from 'shiki';
@@ -354,11 +354,12 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     if (!slug) { res.redirect('/docs'); return; }
     const docsDir = join(repoRoot, 'docs');
 
-    // Tries the slug as a file, then as a directory index. Returns null for
-    // anything that resolves outside docsDir, so a slug like '../../secrets'
-    // cannot read arbitrary markdown off the filesystem.
-    const mdFile = resolveDocFile(docsDir, slug);
-    if (!mdFile) {
+    // The slug only selects a page from the listing of docs/: the file read
+    // and the slug put back into the page come from that listing, never
+    // from the URL, so '../../secrets' or a slug carrying markup through a
+    // '/..' segment ('x"><img …/../guide') reaches nothing.
+    const doc = findDoc(docsDir, slug);
+    if (!doc) {
       res.status(404).type('html').send(renderFullPage({
         currentPath: '/docs',
         componentName: 'DocsPage',
@@ -368,9 +369,10 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
       return;
     }
 
-    const md = readFileSync(mdFile, 'utf-8');
-    const docDir = slug.includes('/') ? slug.split('/').slice(0, -1).join('/') : '';
-    const htmlBody = rewriteDocLinks(marked.parse(md), docDir);
+    const md = readFileSync(doc.file, 'utf-8');
+    // Relative links resolve from the file's own directory (for a directory
+    // index that is the directory itself, not its parent).
+    const htmlBody = rewriteDocLinks(marked.parse(md), doc.dir);
     const title = (md.match(/^#\s+(.+)$/m) || [null, 'Documentation'])[1];
 
     // Extract headings from the rendered HTML (not raw markdown) for accurate matching
@@ -380,19 +382,19 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     while ((hMatch = htmlHeadingRegex.exec(htmlBody)) !== null) {
       const level = hMatch[1].toLowerCase();
       const innerHtml = hMatch[2];
-      // Strip tags, then drop any leftover angle brackets: /<[^>]+>/ alone
-      // leaves '<script' behind on malformed input like '<a <script'. This
-      // is a plain-text label, so stray brackets are not worth preserving.
-      const plainText = innerHtml.replace(/<[^<>]*>/g, '').replace(/[<>]/g, '').trim();
+      // Strip tags, then drop any leftover angle brackets: tag stripping
+      // alone leaves '<script' behind on malformed input like '<a <script'.
+      // This is a plain-text label, so stray brackets are not worth keeping.
+      const plainText = stripTags(innerHtml).replace(/[<>]/g, '').trim();
       const id = slugify(plainText);
       headings.push({ level, text: plainText, id, original: hMatch[0] });
     }
 
-    // `slug` comes from the URL and `h.text` from the document, and both land
-    // in markup here — h.text in element content, the slug inside a quoted
-    // href. h.id is safe unescaped in either position, and in the inline
+    // `doc.slug` (from the listing) and `h.text` (from the document) both
+    // land in markup here — h.text in element content, the slug inside a
+    // quoted href. h.id is safe unescaped in either position, and in the inline
     // handler, because slugify() reduces it to [a-z0-9-].
-    const currentDocPath = escapeHtml(`docs/${slug}`);
+    const currentDocPath = escapeHtml(`docs/${doc.slug}`);
     const tocHtml = headings.length > 0
       ? `<div class="toc-box"><div class="toc-title">On this page</div><ul class="toc-list">${headings.map(h =>
           `<li class="${h.level}"><a href="${currentDocPath}#${h.id}" data-toc-target="${h.id}" onclick="event.preventDefault(); document.getElementById('${h.id}')?.scrollIntoView({behavior: 'smooth', block: 'start'});">${escapeHtml(h.text)}</a></li>`
@@ -410,7 +412,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
 
     // Render with Layout
     const sidebar = getDocsSidebar();
-    const page = Layout({ title: `${title} | Coherent.js Docs`, sidebar, currentPath: `docs/${slug}`, baseHref: '/' });
+    const page = Layout({ title: `${title} | Coherent.js Docs`, sidebar, currentPath: `docs/${doc.slug}`, baseHref: '/' });
     let html = '<!DOCTYPE html>\n' + render(page);
     html = html.replace('[[[COHERENT_CONTENT_PLACEHOLDER]]]', `<div class="markdown-body">${contentHtml}</div>`);
     html = html.replace('[[[COHERENT_BREADCRUMBS_PLACEHOLDER]]]', '');
