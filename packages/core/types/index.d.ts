@@ -546,6 +546,42 @@ export interface RenderOptions {
 /** Render a Coherent node to an HTML string */
 export function render(component: CoherentNode, options?: RenderOptions): string;
 
+export interface StreamOptions extends Omit<RenderOptions, 'enableCache' | 'cache' | 'cacheSize' | 'cacheTTL' | 'minify'> {
+  /** Approximate size of each yielded chunk in characters (default 8192). */
+  chunkSize?: number;
+}
+
+/**
+ * Stream a Coherent node as HTML chunks with the same output as render().
+ * The event loop gets a turn after every chunk. Errors reject the iteration.
+ *
+ * @example
+ * Readable.from(renderToStream(Page())).pipe(res);
+ */
+export function renderToStream(component: CoherentNode, options?: StreamOptions): AsyncGenerator<string, void, undefined>;
+
+export interface StreamingResponse {
+  headersSent?: boolean;
+  getHeader?(name: string): unknown;
+  setHeader(name: string, value: string): void;
+  write(chunk: string): boolean;
+  once(event: 'drain', listener: () => void): unknown;
+  end(): void;
+  destroy(error?: Error): void;
+}
+
+export const streamingUtils: {
+  /** Concatenate every chunk. */
+  collectChunks(chunks: AsyncIterable<string>): Promise<string>;
+  /** Write chunks to a Node response with backpressure; aborts it on error. Resolves to the byte count. */
+  streamToResponse(chunks: AsyncIterable<string>, response: StreamingResponse): Promise<number>;
+  /** Re-yield chunks, reporting progress after each one. */
+  streamWithProgress(
+    chunks: AsyncIterable<string>,
+    onProgress?: (progress: { chunkCount: number; totalBytes: number; chunk: string }) => void
+  ): AsyncGenerator<string, void, undefined>;
+};
+
 export interface RenderUtilityOptions {
   enablePerformanceMonitoring?: boolean;
   template?: string;
@@ -966,6 +1002,7 @@ export const compose: ComposeUtils;
 /** Default export with all core functionality */
 declare const coherent: {
   render: typeof render;
+  renderToStream: typeof renderToStream;
   withState: typeof withState;
   memo: typeof memo;
   validateComponent: typeof validateComponent;

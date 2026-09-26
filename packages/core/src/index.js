@@ -13,7 +13,10 @@ import { performanceMonitor } from './performance/monitor.js';
 import { escapeHtml, createTrustedContent } from './core/html-utils.js';
 
 // Unified HTML renderer
-import { render as renderWithHtmlRenderer } from './rendering/html-renderer.js';
+import {
+  render as renderWithHtmlRenderer,
+  renderToStream as streamWithHtmlRenderer
+} from './rendering/html-renderer.js';
 
 // Component system imports
 import {
@@ -263,8 +266,9 @@ export function Island(componentFn) {
   };
 }
 
-// Main rendering function
-export function render(obj, options = {}) {
+// Shared by render() and renderToStream(): top-level function, scoping and
+// hydration attributes, then the options the renderer itself takes.
+function prepareRender(obj, options) {
   const scoped = options.scoped ?? options.encapsulate ?? false;
 
   const { scoped: _scoped, encapsulate: _encapsulate, hydratable: _hydratable, island: _island, ...rendererOptions } = options;
@@ -283,8 +287,33 @@ export function render(obj, options = {}) {
     component = injectHydrationAttributes(component, { hydratable: _hydratable, island: _island });
   }
 
+  return { component, rendererOptions };
+}
+
+// Main rendering function
+export function render(obj, options = {}) {
+  const { component, rendererOptions } = prepareRender(obj, options);
   return renderWithHtmlRenderer(component, rendererOptions);
 }
+
+/**
+ * Stream a component as HTML chunks (an async generator of strings) with
+ * the same output as render(). The event loop gets a turn after each chunk.
+ *
+ * @example
+ * import { Readable } from 'node:stream';
+ * Readable.from(renderToStream(Page(), { chunkSize: 16384 })).pipe(res);
+ *
+ * @param {*} obj - Component to render
+ * @param {Object} [options] - render() options plus `chunkSize` (default 8192)
+ * @returns {AsyncGenerator<string>}
+ */
+export function renderToStream(obj, options = {}) {
+  const { component, rendererOptions } = prepareRender(obj, options);
+  return streamWithHtmlRenderer(component, rendererOptions);
+}
+
+export { streamingUtils } from './rendering/html-renderer.js';
 
 function collectStyleText(element, out = []) {
   if (Array.isArray(element)) {
@@ -565,6 +594,7 @@ export const fp = {
 const coherent = {
   // Core rendering
   render,
+  renderToStream,
 
   // Shadow DOM (client-side only)
   shadowDOM,
