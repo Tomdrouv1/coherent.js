@@ -306,27 +306,32 @@ test('REST API template should generate correct content', async () => {
     const apiPath = join(tempDir, 'src/api/products.js');
     const content = readFileSync(apiPath, 'utf-8');
 
-    // Check imports and setup
-    assert(content.includes("import { createApiRouter, withValidation } from '@coherent.js/api'"));
-    assert(content.includes('const productsAPI = createApiRouter'));
+    // Check imports and setup: the router @coherent.js/api actually exports
+    assert(content.includes("from '@coherent.js/api'"));
+    assert(content.includes('createRouter,'));
+    assert(!content.includes('createApiRouter'));
+    assert(content.includes('const productsAPI = createRouter(productsRoutes)'));
 
     // Check validation schema
-    assert(content.includes('const productsSchema = {'));
+    assert(content.includes('export const productsSchema = {'));
     assert(content.includes('type: \'object\''));
     assert(content.includes('properties: {'));
     assert(content.includes('required: [\'name\']'));
+    assert(content.includes('validation: productsSchema'));
 
-    // Check CRUD operations
-    assert(content.includes("productsAPI.get('/"));
-    assert(content.includes("productsAPI.get('/:id"));
-    assert(content.includes("productsAPI.post('/"));
-    assert(content.includes("productsAPI.put('/:id"));
-    assert(content.includes("productsAPI.delete('/:id"));
+    // Check CRUD operations (object routes: path segment, then method)
+    assert(content.includes("export const productsRoutes = {\n  'products': {"));
+    assert(content.includes("':id': {"));
+    for (const method of ['GET:', 'POST:', 'PUT:', 'DELETE:']) {
+      assert(content.includes(method), `missing ${method} route`);
+    }
 
-    // Check response handling
-    assert(content.includes('return { data: '));
-    assert(content.includes('return res.status(404).json'));
-    assert(content.includes('return res.status(201).json'));
+    // Check response handling: plain node:http response, errors as ApiError
+    assert(content.includes('return {\n        data: '));
+    assert(content.includes('throw new NotFoundError('));
+    assert(content.includes('sendJson(res, 201,'));
+    assert(!content.includes('res.status('));
+    assert(!content.includes('res.json('));
 
 
 
@@ -351,23 +356,24 @@ test('RPC API template should generate correct content', async () => {
     const apiPath = join(tempDir, 'src/api/notifications.js');
     const content = readFileSync(apiPath, 'utf-8');
 
-    // Check RPC setup
-    assert(content.includes('notificationsRPC = createApiRouter'));
-    assert(content.includes('prefix: \'/rpc/notifications\''));
+    // Check RPC setup: one JSON-RPC endpoint on the real router
+    assert(content.includes("import { createRouter, validateAgainstSchema } from '@coherent.js/api'"));
+    assert(!content.includes('createApiRouter'));
+    assert(content.includes('const notificationsRPC = createRouter(notificationsRoutes)'));
+    assert(content.includes("rpc: {\n    'notifications': {"));
 
     // Check RPC methods
-    assert(content.includes("notificationsRPC.post('/list'"));
-    assert(content.includes("notificationsRPC.post('/get'"));
-    assert(content.includes("notificationsRPC.post('/create'"));
-    assert(content.includes("notificationsRPC.post('/update'"));
-    assert(content.includes("notificationsRPC.post('/delete'"));
+    for (const method of ['list', 'get', 'create', 'update', 'delete']) {
+      assert(content.includes(`'notifications.${method}': {`), `missing notifications.${method}`);
+    }
 
     // Check JSON-RPC format
     assert(content.includes('jsonrpc: \'2.0\''));
-    assert(content.includes('result:'));
-    assert(content.includes('id: req.body.id'));
-    assert(content.includes('error: {'));
-    assert(content.includes('code: -32602'));
+    assert(content.includes('result: result ?? null'));
+    assert(content.includes('INVALID_REQUEST: -32600'));
+    assert(content.includes('METHOD_NOT_FOUND: -32601'));
+    assert(content.includes('INVALID_PARAMS: -32602'));
+    assert(content.includes('INTERNAL_ERROR: -32603'));
 
 
 

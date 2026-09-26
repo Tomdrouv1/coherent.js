@@ -236,12 +236,11 @@ test('generateAPI should create REST API files', async () => {
     assert(existsSync(apiPath));
     
     const apiContent = readFileSync(apiPath, 'utf-8');
-    assert(apiContent.includes('createApiRouter'));
-    assert(apiContent.includes('withValidation'));
-    assert(apiContent.includes("usersAPI.get('/'"));
-    assert(apiContent.includes("usersAPI.post('/'"));
-    assert(apiContent.includes("usersAPI.put('/:id'"));
-    assert(apiContent.includes("usersAPI.delete('/:id'"));
+    assert(apiContent.includes('createRouter'));
+    assert(!apiContent.includes('createApiRouter'));
+    assert(apiContent.includes('validation: usersSchema'));
+    assert(apiContent.includes('const usersAPI = createRouter(usersRoutes)'));
+    assert(apiContent.includes("':id': {"));
     
     // Check test file
     const testPath = join(tempDir, 'src/api/users.test.js');
@@ -273,11 +272,12 @@ test('generateAPI should create RPC API files', async () => {
     const apiContent = readFileSync(apiPath, 'utf-8');
     assert(apiContent.includes('RPC'));
     assert(apiContent.includes('jsonrpc'));
-    assert(apiContent.includes('/list'));
-    assert(apiContent.includes('/get'));
-    assert(apiContent.includes('/create'));
-    assert(apiContent.includes('/update'));
-    assert(apiContent.includes('/delete'));
+    assert(apiContent.includes('POST /rpc/tasks'));
+    assert(apiContent.includes("'tasks.list'"));
+    assert(apiContent.includes("'tasks.get'"));
+    assert(apiContent.includes("'tasks.create'"));
+    assert(apiContent.includes("'tasks.update'"));
+    assert(apiContent.includes("'tasks.delete'"));
     
     
     
