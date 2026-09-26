@@ -1,516 +1,210 @@
 # Client-Side Router
 
 **Package:** `@coherent.js/client`
-**Module:** `/router`
-**Since:** v1.0.0-beta.2
+**Module:** `@coherent.js/client/router`
 
 ## Overview
 
-The `@coherent.js/client` package includes a powerful client-side router with advanced features like route prefetching, page transitions, code splitting, and customizable scroll behavior. Perfect for building single-page applications (SPAs) with Coherent.js.
-
-## Installation
-
-The router is included in the `@coherent.js/client` package:
+The router maps URL paths to routes, keeps the browser's address bar and history in sync, runs navigation guards and lazy-loads route modules. It **resolves** routes and tracks the current one; rendering the matched component into the page is up to your application.
 
 ```bash
-npm install @coherent.js/client@beta
-# or
-pnpm add @coherent.js/client@beta
-# or
-yarn add @coherent.js/client@beta
+pnpm add @coherent.js/client
 ```
 
 ## Basic Usage
 
 ```javascript
 import { createRouter } from '@coherent.js/client/router';
+import { HomePage } from './pages/HomePage.js';
 
-// Create router
-const router = createRouter({
-  mode: 'history', // or 'hash'
-  base: '/',
-  routes: {
-    '/': HomeView,
-    '/about': AboutView,
-    '/users/:id': UserView
-  }
-});
+const router = createRouter({ mode: 'history', base: '/app' }); // or { mode: 'hash' }
 
-// Navigate
-router.push('/about');
-router.push('/users/123');
+router.addRoute('/', { component: () => HomePage });
+router.addRoute('/users/:id', { component: () => import('./pages/UserPage.js') });
 
-// Go back/forward
-router.back();
-router.forward();
+await router.start();              // resolve the current URL, follow back/forward,
+                                   // intercept clicks on links to registered routes
+await router.push('/users/42?tab=posts');
 
-// Listen to route changes
-router.on('navigate', (to, from) => {
-  console.log(`Navigated from ${from.path} to ${to.path}`);
-});
+const route = router.getCurrentRoute();
+// { path: '/users/42', fullPath: '/users/42?tab=posts', params: { id: '42' },
+//   query: { tab: 'posts' }, hash: '', meta: {}, component: <module namespace> }
 ```
+
+Nothing touches the browser until `start()` is called, so importing the router has no side effects.
 
 ## Route Definitions
 
-### Simple Routes
+`router.addRoute(path, config)` registers a route:
 
-```javascript
-const router = createRouter({
-  routes: {
-    '/': HomePage,
-    '/about': AboutPage,
-    '/contact': ContactPage
-  }
-});
-```
+| Config | |
+| --- | --- |
+| `component` | A value stored as the route's component, or a **loader function** called once, without arguments, the first time the route is visited or prefetched. Its (awaited) result becomes `route.component`. |
+| `beforeEnter(to, from)` | Guard; returning (or resolving to) `false` cancels the navigation |
+| `beforeLeave(to, from)` | Guard run when leaving this route; `false` cancels |
+| `meta` | Arbitrary data, copied to `route.meta` |
+| `priority` | Prefetch priority |
+| `transition` | `{ enter, leave, duration }` for this route |
+
+Because a function `component` is treated as a loader, wrap a component function you want to receive as-is: `component: () => UserPage`. For code splitting, return a dynamic import: `component: () => import('./pages/UserPage.js')` resolves to the module namespace (`route.component.default`).
 
 ### Dynamic Routes
 
 ```javascript
-const router = createRouter({
-  routes: {
-    '/users/:id': UserProfile,
-    '/posts/:slug': BlogPost,
-    '/category/:category/item/:id': CategoryItem
-  }
-});
+router.addRoute('/users/:id', { component: () => UserPage });
+router.addRoute('/docs/*', { component: () => DocsPage });
 
-// Access params in component
-function UserProfile({ params }) {
-  const userId = params.id;
-  return { div: { text: `User: ${userId}` } };
+await router.push('/users/42');
+router.getCurrentRoute().params; // { id: '42' }
+
+await router.push('/docs/guide/intro');
+router.getCurrentRoute().params; // { pathMatch: 'guide/intro' }
+```
+
+Exact paths win over patterns; patterns match in registration order. Parameter values are URL-decoded.
+
+## Rendering the Current Route
+
+```javascript
+import { render } from '@coherent.js/core';
+
+async function show(path) {
+  if (!(await router.push(path))) return; // not found, cancelled or superseded
+  const { component, params } = router.getCurrentRoute();
+  const Page = component.default ?? component; // a lazily imported module, or the component
+  document.getElementById('app').innerHTML = render(Page(params));
 }
 ```
 
-### Nested Routes
+To make the rendered page interactive, use `hydrate()` from `@coherent.js/client` instead of assigning `innerHTML` (see [Integration with Hydration](#integration-with-hydration)).
+
+## Navigation
 
 ```javascript
-const router = createRouter({
-  routes: {
-    '/dashboard': {
-      component: DashboardLayout,
-      children: {
-        '/': DashboardHome,
-        '/stats': DashboardStats,
-        '/settings': DashboardSettings
-      }
-    }
-  }
-});
+await router.push('/about');              // adds a history entry
+await router.push('/search?q=test#results');
+await router.replace('/about');           // replaces the current entry
+router.back();
+router.forward();
 ```
 
-## Route Prefetching
+- `push()` and `replace()` resolve to `true` when the navigation committed and to `false` when no route matched, a guard cancelled it, loading failed, or a later navigation superseded it — the last navigation wins.
+- After `start()`, `back()` / `forward()` drive the browser's history; before it, the router keeps its own history.
+- In history mode, URLs are written under `base`; in hash mode, as `#/path`.
 
-Improve performance by prefetching routes before navigation:
+## Browser Integration
 
 ```javascript
-const router = createRouter({
-  prefetch: {
-    enabled: true,
-    strategy: 'hover', // 'hover', 'visible', 'eager', or 'manual'
-    delay: 100,        // ms to wait before prefetching
-    maxConcurrent: 3,  // max simultaneous prefetches
-    priority: {
-      critical: 100,
-      high: 50,
-      normal: 0,
-      low: -50
-    }
-  },
-  routes: {
-    '/': HomePage,
-    '/products': {
-      component: ProductsPage,
-      prefetch: 'high' // Set priority
-    }
-  }
-});
+await router.start();                          // returns the result of the initial navigation
+await router.start({ interceptLinks: false }); // leave link clicks alone
+router.stop();                                 // detach every listener
 ```
 
-### Prefetch Strategies
-
-- **`hover`**: Prefetch when user hovers over a link
-- **`visible`**: Prefetch when link enters viewport
-- **`eager`**: Prefetch immediately on page load
-- **`manual`**: Require manual prefetch calls
-
-```javascript
-// Manual prefetching
-router.prefetch('/products');
-router.prefetch(['/about', '/contact']);
-```
-
-## Page Transitions
-
-Add smooth transitions between pages:
-
-```javascript
-const router = createRouter({
-  transitions: {
-    enabled: true,
-    default: {
-      enter: 'fade-in',
-      leave: 'fade-out',
-      duration: 300
-    },
-    routes: {
-      '/products': {
-        enter: 'slide-left',
-        leave: 'slide-right',
-        duration: 400
-      }
-    }
-  }
-});
-```
-
-### Built-in Transitions
-
-- `fade-in` / `fade-out`
-- `slide-left` / `slide-right`
-- `slide-up` / `slide-down`
-- `zoom-in` / `zoom-out`
-
-### Custom Transitions
-
-```javascript
-const router = createRouter({
-  transitions: {
-    enabled: true,
-    custom: {
-      'my-transition': {
-        enter: (element) => {
-          element.style.opacity = '0';
-          element.style.transform = 'translateY(20px)';
-
-          requestAnimationFrame(() => {
-            element.style.transition = 'all 300ms ease';
-            element.style.opacity = '1';
-            element.style.transform = 'translateY(0)';
-          });
-        },
-        leave: (element) => {
-          element.style.transition = 'all 300ms ease';
-          element.style.opacity = '0';
-          element.style.transform = 'translateY(-20px)';
-        }
-      }
-    }
-  }
-});
-```
-
-## Code Splitting
-
-Lazy-load routes for better initial load performance:
-
-```javascript
-const router = createRouter({
-  codeSplitting: {
-    enabled: true,
-    chunkStrategy: 'route', // or 'component'
-    preload: ['/', '/about'], // Routes to load immediately
-    maxChunkSize: 200 * 1024   // 200KB
-  },
-  routes: {
-    '/': HomePage,
-    '/products': () => import('./pages/Products.js'),
-    '/admin': () => import('./pages/Admin.js')
-  }
-});
-```
-
-### Loading States
-
-```javascript
-const router = createRouter({
-  codeSplitting: {
-    enabled: true,
-    loadingComponent: LoadingSpinner,
-    errorComponent: ErrorPage
-  }
-});
-
-function LoadingSpinner() {
-  return {
-    div: {
-      className: 'loading',
-      text: 'Loading...'
-    }
-  };
-}
-```
-
-## Scroll Behavior
-
-Control scroll position when navigating:
-
-```javascript
-const router = createRouter({
-  scrollBehavior: {
-    behavior: 'smooth',
-    top: 0,
-    preserveScroll: false,
-    scrollToHash: true
-  }
-});
-```
-
-### Custom Scroll Behavior
-
-```javascript
-const router = createRouter({
-  scrollBehavior: (to, from, savedPosition) => {
-    // Return to saved position (browser back/forward)
-    if (savedPosition) {
-      return savedPosition;
-    }
-
-    // Scroll to hash if present
-    if (to.hash) {
-      return {
-        selector: to.hash,
-        behavior: 'smooth'
-      };
-    }
-
-    // Scroll to top for new pages
-    return { x: 0, y: 0 };
-  }
-});
-```
+`start()` navigates to the current location, listens to `popstate` (`hashchange` in hash mode) and intercepts left-clicks on same-origin `<a href>` links whose path is a registered route. Links with a `target` other than `_self`, links with a `download` or `data-router-ignore` attribute, and clicks with a modifier key are left to the browser.
 
 ## Navigation Guards
 
-Add authentication, logging, or other checks:
+```javascript
+router.addRoute('/admin', {
+  component: () => import('./pages/Admin.js'),
+  beforeEnter: (to, from) => isAdmin(),   // false cancels
+  beforeLeave: (to, from) => !hasUnsavedChanges()
+});
+```
+
+Guards may be async. To redirect, cancel and navigate yourself:
+
+```javascript
+beforeEnter: (to) => {
+  if (!isAuthenticated()) {
+    router.replace(`/login?next=${encodeURIComponent(to.fullPath)}`);
+    return false;
+  }
+}
+```
+
+## Prefetching and Code Splitting
 
 ```javascript
 const router = createRouter({
-  routes: {
-    '/': HomePage,
-    '/dashboard': DashboardPage,
-    '/admin': AdminPage
-  }
+  prefetch: { enabled: true, strategy: 'hover', delay: 100, maxConcurrent: 3 },
+  codeSplitting: { enabled: true, preload: ['/about'], onLoad: (path, module, ms) => {} }
 });
 
-// Global before guard
-router.beforeEach((to, from, next) => {
-  if (to.path.startsWith('/admin') && !isAdmin()) {
-    next('/'); // Redirect to home
-  } else {
-    next(); // Continue navigation
-  }
-});
+router.addRoute('/about', { component: () => import('./pages/About.js') });
+router.addRoute('/products', { component: () => import('./pages/Products.js') });
 
-// Global after guard
-router.afterEach((to, from) => {
-  // Analytics
-  trackPageView(to.path);
-});
-
-// Per-route guard
-const routes = {
-  '/dashboard': {
-    component: DashboardPage,
-    beforeEnter: (to, from, next) => {
-      if (!isAuthenticated()) {
-        next('/login');
-      } else {
-        next();
-      }
-    }
-  }
-};
+router.setupPrefetchStrategy(document.querySelector('a[href="/products"]'), '/products');
+router.prefetchRoute('/products');           // manual
+router.prefetchRoutes(['/about', '/products']);
 ```
 
-## Router API
+- Prefetching is off unless `prefetch.enabled` is `true`. Strategies for `setupPrefetchStrategy(element, path)`: `hover` (after `delay` ms), `visible` (IntersectionObserver) and `idle` (`requestIdleCallback`; with this strategy every lazy route is also prefetched when the browser is idle).
+- `codeSplitting.preload` loads the listed routes as soon as they are registered (when `codeSplitting.enabled` is `true`).
 
-### Navigation
-
-```javascript
-// Push new route
-router.push('/about');
-router.push({ path: '/users/123' });
-router.push({ path: '/search', query: { q: 'test' } });
-
-// Replace current route
-router.replace('/about');
-
-// Go back/forward
-router.back();
-router.forward();
-router.go(-2); // Go back 2 pages
-router.go(1);  // Go forward 1 page
-```
-
-### Router State
+## Scroll Behavior
 
 ```javascript
-// Current route
-const current = router.currentRoute;
-console.log(current.path);     // '/users/123'
-console.log(current.params);   // { id: '123' }
-console.log(current.query);    // { tab: 'profile' }
-console.log(current.hash);     // '#section'
-
-// Check if route matches
-router.isActive('/about'); // true/false
-```
-
-### Events
-
-```javascript
-// Navigate event
-router.on('navigate', (to, from) => {
-  console.log(`Navigated to ${to.path}`);
-});
-
-// Error event
-router.on('error', (error) => {
-  console.error('Router error:', error);
-});
-
-// Prefetch events
-router.on('prefetch:start', (path) => {
-  console.log(`Prefetching ${path}`);
-});
-
-router.on('prefetch:complete', (path) => {
-  console.log(`Prefetched ${path}`);
-});
-```
-
-## Complete Example
-
-```javascript
-import { createRouter } from '@coherent.js/client/router';
-import { render } from '@coherent.js/core';
-
-// Create router with all features
 const router = createRouter({
-  mode: 'history',
-  base: '/app',
-
-  // Route prefetching
-  prefetch: {
-    enabled: true,
-    strategy: 'hover',
-    delay: 100
-  },
-
-  // Page transitions
-  transitions: {
-    enabled: true,
-    default: {
-      enter: 'fade-in',
-      leave: 'fade-out',
-      duration: 300
-    }
-  },
-
-  // Code splitting
-  codeSplitting: {
-    enabled: true,
-    loadingComponent: LoadingSpinner
-  },
-
-  // Scroll behavior
   scrollBehavior: {
+    enabled: true,        // default
     behavior: 'smooth',
-    top: 0
-  },
-
-  // Routes
-  routes: {
-    '/': HomePage,
-    '/about': AboutPage,
-    '/products': () => import('./pages/Products.js'),
-    '/products/:id': ProductDetail,
-    '/dashboard': {
-      component: DashboardLayout,
-      beforeEnter: requireAuth,
-      children: {
-        '/': DashboardHome,
-        '/stats': DashboardStats
-      }
-    }
+    position: 'top',      // scroll to top on new pages
+    savePosition: true,   // restore the saved position on back/forward
+    delay: 0,
+    custom: (to, from, savedPosition) => savedPosition ?? { x: 0, y: 0 }
   }
 });
+```
 
-// Global guards
-router.beforeEach((to, from, next) => {
-  // Analytics
-  trackPageView(to.path);
-  next();
-});
+A `#hash` in the URL scrolls to the element with that id. Saved positions are restored on back/forward only.
 
-// Start router
-router.start('#app');
+## Page Transitions
 
-// Components
-function HomePage() {
-  return {
-    div: {
-      children: [
-        { h1: { text: 'Welcome' } },
-        { a: { href: '/about', text: 'About', onclick: (e) => {
-          e.preventDefault();
-          router.push('/about');
-        }}}
-      ]
-    }
-  };
-}
+With `transitions: { enabled: true, default: { enter, leave, duration } }` (or a per-route `transition`), the router sets `style.animation` on the element marked `data-router-view` to the `leave` then the `enter` animation name, each for half of `duration`. Define the keyframes (`fade-in`, `fade-out`...) in your own CSS. `onStart(from, to)` and `onComplete(from, to)` are called around it.
 
-function requireAuth(to, from, next) {
-  if (isAuthenticated()) {
-    next();
-  } else {
-    next('/login');
-  }
-}
+## Router State
+
+```javascript
+router.getCurrentRoute();  // current route, or null before the first navigation
+router.getRoute('/users/7');  // the registered route matching a path
+router.getRoutes();        // every registered route
+router.getStats();         // { navigations, prefetches, chunksLoaded, historyLength, ... }
+router.clearCaches();      // forget prefetches, saved positions and loaded chunks
 ```
 
 ## TypeScript Support
 
 ```typescript
-import { createRouter, Router, Route, RouteConfig } from '@coherent.js/client/router';
+import { createRouter } from '@coherent.js/client/router';
+import type { Router, Route, RouteConfig } from '@coherent.js/client/router';
 
-interface RouteParams {
-  id: string;
-}
+const router: Router = createRouter({ mode: 'history' });
 
-const router: Router = createRouter({
-  routes: {
-    '/users/:id': (({ params }: { params: RouteParams }) => {
-      return {
-        div: { text: `User ${params.id}` }
-      };
-    })
-  }
-});
+const userRoute: RouteConfig = {
+  component: () => import('./pages/UserPage.js'),
+  beforeEnter: (to: Route) => to.params?.id !== 'blocked'
+};
+router.addRoute('/users/:id', userRoute);
 ```
 
 ## Integration with Hydration
 
-Use with client-side hydration for optimal performance:
-
 ```javascript
 import { hydrate } from '@coherent.js/client';
 import { createRouter } from '@coherent.js/client/router';
-
 import { App } from './App.js';
 
-// Hydrate server-rendered content
+// Hydrate the server-rendered page first
 hydrate(App, document.getElementById('app'));
 
-// Start router after hydration
-const router = createRouter({ /* ... */ });
-router.start('#app');
+// Then let the router follow the URL
+const router = createRouter();
+router.addRoute('/', { component: () => App });
+await router.start();
 ```
 
 ## See Also
 
 - [Client-Side Hydration](hydration.md)
-- [Code Splitting](../deployment/performance.md)
 - [Performance Optimizations](../deployment/performance.md)
