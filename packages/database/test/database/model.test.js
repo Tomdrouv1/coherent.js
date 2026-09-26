@@ -508,6 +508,25 @@ describe('Model', () => {
         expect(model.isNew).toBe(false);
       });
 
+      // Regression: fill() stores a non-fillable key it drops (a form body's
+      // `id`) as undefined, and save() only took the driver's insertId when
+      // the key was exactly null. The saved model had no id, and its next
+      // save() threw "Cannot update ... without a primary key".
+      it('should take the generated id when the key was dropped by fill()', async () => {
+        mockDb.query.mockResolvedValue({ rows: [], insertId: 42 });
+
+        const model = new TestModel();
+        model.fill({ id: '7', name: 'John', email: 'john@example.com' });
+        await model.save();
+
+        expect(model.getAttribute('id')).toBe(42);
+
+        mockDb.query.mockResolvedValue({ affectedRows: 1 });
+        model.setAttribute('name', 'Jane');
+        await expect(model.save()).resolves.toBeDefined();
+        expect(mockDb.query).toHaveBeenLastCalledWith(expect.stringContaining('UPDATE users'), expect.arrayContaining([42]));
+      });
+
       it('should not invent a primary key when the driver reports none', async () => {
         mockDb.query.mockResolvedValue({ rows: [] });
 

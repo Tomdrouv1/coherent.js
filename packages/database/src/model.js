@@ -485,7 +485,10 @@ export class Model {
       const result = await executeQuery(db, query);
 
       const generatedId = result?.insertId ?? result?.rows?.[0]?.[primaryKey];
-      if (this.getAttribute(primaryKey) === null && generatedId !== undefined && generatedId !== null) {
+      // fill() stores filtered-out attributes as undefined, so a body that
+      // carried a non-fillable `id` left the key undefined rather than null.
+      const currentId = this.getAttribute(primaryKey);
+      if ((currentId === null || currentId === undefined) && generatedId !== undefined && generatedId !== null) {
         this.setAttribute(primaryKey, generatedId);
       }
 
