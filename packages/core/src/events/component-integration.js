@@ -28,10 +28,14 @@ export function withEventBus(options = {}) {
             // Create scoped event bus if scope is provided
             const bus = scope ? eventBus.createScope(scope) : eventBus;
 
-            // Register event listeners
+            // Register event listeners — in a browser only. A server render is
+            // one-shot and never unmounts, so every render used to add
+            // listeners and actions to the shared bus for good (after 100 the
+            // bus warned on every render).
             const listenerIds = new Map();
+            const interactive = typeof window !== 'undefined' && typeof document !== 'undefined';
 
-            Object.entries(events).forEach(([event, handler]) => {
+            if (interactive) Object.entries(events).forEach(([event, handler]) => {
                 const listenerId = bus.on(event, (data, eventName) => {
                     if (typeof handler === 'function') {
                         handler.call(this, data, eventName, {props, state, context});
@@ -41,7 +45,7 @@ export function withEventBus(options = {}) {
             });
 
             // Register action handlers
-            Object.entries(actions).forEach(([action, handler]) => {
+            if (interactive) Object.entries(actions).forEach(([action, handler]) => {
                 bus.registerAction(action, (actionContext) => {
                     if (typeof handler === 'function') {
                         handler.call(this, actionContext, {props, state, context});
@@ -98,7 +102,12 @@ export function withEventBus(options = {}) {
                         originalUnmount.call(this);
                     };
                 } else {
-                    result.__eventBusCleanup = eventUtils.cleanup;
+                    // Non-enumerable: an extra key made the element fail
+                    // component validation, so it never rendered.
+                    Object.defineProperty(result, '__eventBusCleanup', {
+                        value: eventUtils.cleanup,
+                        configurable: true
+                    });
                 }
             }
 
