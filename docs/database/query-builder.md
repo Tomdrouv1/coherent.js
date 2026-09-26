@@ -1,225 +1,117 @@
 # Database Query Builder
 
-Learn how to build database queries using pure JavaScript objects in Coherent.js.
+Build database queries with plain JavaScript objects. For the full list of options and operators, see the [Query Builder API](query-builder-api.md).
 
 ## Philosophy: Pure Object Queries
 
-Coherent.js database layer uses **pure JavaScript objects** instead of chained methods or SQL strings. This provides type safety, composability, and a natural JavaScript experience.
-
-## Factory Functions (Recommended)
-
-### Creating a Database Manager
+A query is a plain object describing the table, the columns and the conditions. `executeQuery(db, query)` validates it, turns it into SQL with bound parameters and runs it:
 
 ```javascript
-import { createDatabaseManager } from '@coherent.js/core';
+import { createDatabaseManager, executeQuery } from '@coherent.js/database';
 
-// ✅ Recommended: Factory function approach
-const db = createDatabaseManager({
-  type: 'sqlite',
-  database: ':memory:' // or path to file
-});
+const db = createDatabaseManager({ type: 'sqlite', database: ':memory:' });
+await db.connect();
 
-// Alternative database types
-const pgDb = createDatabaseManager({
-  type: 'postgresql',
-  host: 'localhost',
-  port: 5432,
-  database: 'myapp',
-  username: 'user',
-  password: 'pass'
-});
-```
-
-### Creating Queries
-
-```javascript
-import { createQuery, executeQuery } from '@coherent.js/core';
-
-// ✅ Pure object query
-const query = createQuery({
+const { rows } = await executeQuery(db, {
   table: 'users',
   select: ['id', 'name', 'email'],
-  where: {
-    active: true,
-    role: 'admin'
-  },
-  orderBy: [
-    { column: 'created_at', direction: 'DESC' }
-  ],
+  where: { active: true, role: 'admin' },
+  orderBy: { created_at: 'DESC' },
   limit: 10
 });
-
-// Execute the query
-const results = await executeQuery(query, db);
+// SELECT id, name, email FROM users WHERE active = ? AND role = ? ORDER BY created_at DESC LIMIT 10
 ```
 
-## Query Types
+Values are always sent as parameters. Everything else that ends up in the SQL text — table and column names, aliases, join conditions, sort directions, `limit` / `offset`, operators — is validated, and anything that does not match throws before the query reaches the database. `createQuery(config)` simply returns a copy of the object, so queries can be built ahead of time and executed later.
 
-### SELECT Queries
+## SELECT Queries
 
 ```javascript
-// Basic select
-const basicQuery = createQuery({
-  table: 'users',
-  select: ['*']
-});
+// All columns
+await executeQuery(db, { table: 'users' });
 
-// Select specific columns
-const specificQuery = createQuery({
-  table: 'users',
-  select: ['id', 'name', 'email']
-});
+// Specific columns, aliases and aggregates
+await executeQuery(db, { table: 'users', select: ['id', 'full_name AS name', 'email'] });
+await executeQuery(db, { table: 'users', select: ['COUNT(*) AS total'], where: { active: true } });
 
-// Select with aliases
-const aliasQuery = createQuery({
-  table: 'users',
-  select: [
-    'id',
-    { column: 'full_name', as: 'name' },
-    { column: 'email_address', as: 'email' }
-  ]
-});
-
-// Select with calculations
-const calcQuery = createQuery({
-  table: 'orders',
-  select: [
-    'id',
-    { expression: 'COUNT(*)', as: 'order_count' },
-    { expression: 'SUM(total)', as: 'total_amount' }
-  ]
-});
+// An object maps aliases to columns
+await executeQuery(db, { table: 'orders', select: { orderCount: 'COUNT(*)', revenue: 'SUM(total)' } });
 ```
 
-### WHERE Conditions
+Select entries may be a column (`name` or `table.name`), `*`, `table.*`, or `COUNT` / `SUM` / `AVG` / `MIN` / `MAX` of a column, each optionally followed by `AS alias`. Other SQL expressions (`DATE(created_at)`, `GROUP BY`, `HAVING`, subqueries) are not part of the builder: use `db.query(sql, params)` for them.
+
+## WHERE Conditions
 
 ```javascript
-// Simple conditions
-const simpleWhere = createQuery({
-  table: 'users',
-  select: ['*'],
-  where: {
-    active: true,
-    role: 'admin',
-    age: 25
-  }
-});
-// SQL: WHERE active = ? AND role = ? AND age = ?
+// Equality (null matches NULL)
+where: { active: true, role: 'admin', deleted_at: null }
 
 // Comparison operators
-const comparisonWhere = createQuery({
-  table: 'products',
-  select: ['*'],
-  where: {
-    price: { $gt: 100 },           // price > 100
-    stock: { $gte: 10 },           // stock >= 10
-    category: { $ne: 'deprecated' }, // category != 'deprecated'
-    rating: { $lt: 3 }             // rating < 3
-  }
-});
+where: {
+  price: { '>': 100 },
+  stock: { '>=': 10 },
+  category: { '!=': 'deprecated' },
+  rating: { '<': 3 }
+}
 
-// IN and NOT IN
-const inWhere = createQuery({
-  table: 'users',
-  select: ['*'],
-  where: {
-    role: { $in: ['admin', 'moderator'] },
-    status: { $nin: ['banned', 'suspended'] }
-  }
-});
-
-// LIKE patterns
-const likeWhere = createQuery({
-  table: 'users',
-  select: ['*'],
-  where: {
-    name: { $like: 'John%' },
-    email: { $ilike: '%@example.com' }
-  }
-});
+// Lists, ranges and patterns
+where: {
+  role: { in: ['admin', 'moderator'] },
+  status: { 'not in': ['banned', 'suspended'] },
+  age: { between: [18, 65] },
+  name: { like: 'John%' },
+  email: { ilike: '%@example.com' }   // PostgreSQL
+}
 
 // NULL checks
-const nullWhere = createQuery({
-  table: 'users',
-  select: ['*'],
-  where: {
-    deleted_at: { $null: true },    // IS NULL
-    verified_at: { $null: false }   // IS NOT NULL
-  }
-});
+where: {
+  deleted_at: null,                 // IS NULL
+  verified_at: { '!=': null }       // IS NOT NULL
+}
 ```
 
-### Complex Logical Conditions
+Supported operators: `=`, `!=`, `<>`, `>`, `>=`, `<`, `<=`, `like`, `not like`, `ilike`, `not ilike`, `in`, `not in`, `between`, `not between` (any case). An empty `in` list matches nothing.
+
+### Logical Conditions
 
 ```javascript
-// OR conditions
-const orQuery = createQuery({
-  table: 'users',
-  select: ['*'],
-  where: {
-    $or: [
-      { role: 'admin' },
-      { role: 'moderator' }
-    ]
-  }
-});
+where: {
+  active: true,                       // AND active = ?
+  $or: [
+    { role: 'admin' },
+    { role: 'user', premium: true }
+  ]
+}
 
-// AND + OR combined
-const complexQuery = createQuery({
-  table: 'users',
-  select: ['*'],
-  where: {
-    active: true, // AND active = true
-    $or: [
-      { role: 'admin' },
-      { 
-        role: 'user',
-        premium: true
-      }
-    ]
-  }
-});
-
-// Nested logical conditions
-const nestedQuery = createQuery({
-  table: 'products',
-  select: ['*'],
-  where: {
-    category: 'electronics',
-    $or: [
-      {
-        $and: [
-          { brand: 'Apple' },
-          { price: { $gt: 500 } }
-        ]
-      },
-      {
-        $and: [
-          { brand: 'Samsung' },
-          { rating: { $gte: 4.5 } }
-        ]
-      }
-    ]
-  }
-});
+where: {
+  category: 'electronics',
+  $or: [
+    { $and: [{ brand: 'Apple' }, { price: { '>': 500 } }] },
+    { $and: [{ brand: 'Samsung' }, { rating: { '>=': 4.5 } }] }
+  ],
+  $not: { discontinued: true }
+}
 ```
 
-### INSERT Operations
+### What throws
+
+- an unknown operator (`$gt`, `$in`, `$ne`...) or logical key;
+- an `undefined` value (remove the key, or pass `null` to match NULL);
+- an array used as a value (use `{ in: [...] }`).
+
+A plain object used as a value is read as an operator object, so **never pass unvalidated request data as a WHERE value**: `where: { id: req.body.id }` lets a client send `{ "id": { ">": 0 } }`.
+
+## INSERT
 
 ```javascript
-// Single insert
-const insertQuery = createQuery({
+// Single row
+const { insertId } = await executeQuery(db, {
   table: 'users',
-  insert: {
-    name: 'John Doe',
-    email: 'john@example.com',
-    role: 'user',
-    created_at: new Date()
-  }
+  insert: { name: 'John Doe', email: 'john@example.com', created_at: new Date() }
 });
 
-// Multiple insert
-const multiInsertQuery = createQuery({
+// Several rows (every row must have the same columns)
+await executeQuery(db, {
   table: 'users',
   insert: [
     { name: 'John Doe', email: 'john@example.com' },
@@ -227,518 +119,133 @@ const multiInsertQuery = createQuery({
   ]
 });
 
-// Insert with return
-const insertReturnQuery = createQuery({
+// RETURNING (PostgreSQL, and SQLite 3.35+)
+const { rows } = await executeQuery(db, {
   table: 'users',
   insert: { name: 'John', email: 'john@example.com' },
   returning: ['id', 'created_at']
 });
 ```
 
-### UPDATE Operations
+Columns whose value is `undefined` are left out.
+
+## UPDATE and DELETE
 
 ```javascript
-// Basic update
-const updateQuery = createQuery({
+await executeQuery(db, {
   table: 'users',
-  update: {
-    name: 'John Updated',
-    updated_at: new Date()
-  },
-  where: {
-    id: 123
-  }
+  update: { name: 'John Updated', updated_at: new Date() },
+  where: { id: 123 }
 });
 
-// Update with conditions
-const conditionalUpdate = createQuery({
-  table: 'users',
-  update: {
-    last_login: new Date(),
-    login_count: { $increment: 1 } // Special increment operator
-  },
-  where: {
-    email: 'user@example.com'
-  }
-});
-```
-
-### DELETE Operations
-
-```javascript
-// Basic delete
-const deleteQuery = createQuery({
+await executeQuery(db, {
   table: 'users',
   delete: true,
-  where: {
-    id: 123
-  }
-});
-
-// Conditional delete
-const conditionalDelete = createQuery({
-  table: 'users',
-  delete: true,
-  where: {
-    active: false,
-    last_login: { $lt: '2023-01-01' }
-  }
+  where: { active: false, last_login: { '<': '2023-01-01' } }
 });
 ```
 
-### JOINs
+An UPDATE or DELETE without a `where` throws; pass `allowFullTable: true` to affect every row on purpose. The result carries `affectedRows` (and `rowCount`).
+
+## JOINs
 
 ```javascript
-// INNER JOIN
-const joinQuery = createQuery({
+await executeQuery(db, {
   table: 'users',
-  select: [
-    'users.id',
-    'users.name',
-    'profiles.bio',
-    'profiles.avatar'
-  ],
+  select: ['users.id', 'users.name', 'profiles.bio'],
   joins: [
-    {
-      type: 'inner',
-      table: 'profiles',
-      on: {
-        'users.id': 'profiles.user_id'
-      }
-    }
-  ]
-});
-
-// LEFT JOIN with multiple conditions
-const leftJoinQuery = createQuery({
-  table: 'users',
-  select: ['users.*', 'orders.total'],
-  joins: [
-    {
-      type: 'left',
-      table: 'orders',
-      on: {
-        'users.id': 'orders.user_id',
-        'orders.status': 'completed'
-      }
-    }
-  ]
-});
-
-// Multiple JOINs
-const multiJoinQuery = createQuery({
-  table: 'users',
-  select: [
-    'users.name',
-    'profiles.bio',
-    'orders.total',
-    'products.title'
-  ],
-  joins: [
-    {
-      type: 'inner',
-      table: 'profiles',
-      on: { 'users.id': 'profiles.user_id' }
-    },
-    {
-      type: 'left',
-      table: 'orders',
-      on: { 'users.id': 'orders.user_id' }
-    },
-    {
-      type: 'inner',
-      table: 'products',
-      on: { 'orders.product_id': 'products.id' }
-    }
+    { type: 'inner', table: 'profiles', condition: 'users.id = profiles.user_id' },
+    { type: 'left', table: 'orders', alias: 'o', condition: 'users.id = o.user_id' }
   ]
 });
 ```
 
-### Aggregation and Grouping
+Join types: `inner`, `left`, `right`, `full`, `cross` (and `left outer`...). A condition is one or more column comparisons joined with `AND`; values are not allowed in it — put them in `where`.
+
+## Sorting and Pagination
 
 ```javascript
-// GROUP BY with aggregations
-const groupQuery = createQuery({
-  table: 'orders',
-  select: [
-    'user_id',
-    { expression: 'COUNT(*)', as: 'order_count' },
-    { expression: 'SUM(total)', as: 'total_spent' },
-    { expression: 'AVG(total)', as: 'avg_order_value' }
-  ],
-  groupBy: ['user_id'],
-  having: {
-    order_count: { $gt: 5 },
-    total_spent: { $gt: 1000 }
-  }
-});
+orderBy: { created_at: 'DESC' }
+orderBy: [{ created_at: 'DESC' }, { title: 'ASC' }]
+orderBy: ['title', 'created_at DESC']
 
-// Complex aggregation
-const complexAggQuery = createQuery({
-  table: 'sales',
-  select: [
-    { expression: 'DATE(created_at)', as: 'sale_date' },
-    'product_category',
-    { expression: 'SUM(amount)', as: 'daily_total' }
-  ],
-  where: {
-    created_at: { $gte: '2024-01-01' }
-  },
-  groupBy: [
-    { expression: 'DATE(created_at)' },
-    'product_category'
-  ],
-  orderBy: [
-    { column: 'sale_date', direction: 'DESC' },
-    { column: 'daily_total', direction: 'DESC' }
-  ]
-});
+// Page 6 of 20 rows
+await executeQuery(db, { table: 'users', orderBy: { id: 'ASC' }, limit: 20, offset: 100 });
 ```
 
-### Sorting and Limiting
+Directions must be `ASC` or `DESC`. `limit` and `offset` must be non-negative integers — convert query-string values first (`Number.parseInt(req.query.limit, 10)`).
+
+## Building Queries Dynamically
 
 ```javascript
-// Basic ordering
-const orderedQuery = createQuery({
-  table: 'posts',
-  select: ['*'],
-  orderBy: [
-    { column: 'created_at', direction: 'DESC' },
-    { column: 'title', direction: 'ASC' }
-  ]
-});
+const SORTABLE = new Set(['name', 'created_at']);
 
-// Pagination
-const paginatedQuery = createQuery({
-  table: 'users',
-  select: ['*'],
-  orderBy: [{ column: 'id', direction: 'ASC' }],
-  limit: 20,
-  offset: 100 // Skip first 100 records
-});
-
-// Top N records
-const topQuery = createQuery({
-  table: 'products',
-  select: ['*'],
-  orderBy: [{ column: 'rating', direction: 'DESC' }],
-  limit: 10
-});
-```
-
-## Advanced Query Building
-
-### Dynamic Query Building
-
-```javascript
 function buildUserQuery(filters = {}) {
-  const query = {
-    table: 'users',
-    select: ['id', 'name', 'email']
-  };
-
-  // Build WHERE clause dynamically
   const where = {};
-  
-  if (filters.role) {
-    where.role = filters.role;
-  }
-  
-  if (filters.active !== undefined) {
-    where.active = filters.active;
-  }
-  
-  if (filters.search) {
+  if (typeof filters.role === 'string') where.role = filters.role;
+  if (typeof filters.active === 'boolean') where.active = filters.active;
+  if (typeof filters.search === 'string' && filters.search) {
     where.$or = [
-      { name: { $like: `%${filters.search}%` } },
-      { email: { $like: `%${filters.search}%` } }
+      { name: { like: `%${filters.search}%` } },
+      { email: { like: `%${filters.search}%` } }
     ];
   }
-  
-  if (Object.keys(where).length > 0) {
-    query.where = where;
-  }
 
-  // Add sorting
-  if (filters.sortBy) {
-    query.orderBy = [{ 
-      column: filters.sortBy, 
-      direction: filters.sortDirection || 'ASC' 
-    }];
-  }
-
-  return createQuery(query);
+  return {
+    table: 'users',
+    select: ['id', 'name', 'email'],
+    ...(Object.keys(where).length > 0 && { where }),
+    ...(SORTABLE.has(filters.sortBy) && {
+      orderBy: { [filters.sortBy]: filters.sortDirection === 'DESC' ? 'DESC' : 'ASC' }
+    })
+  };
 }
 
-// Usage
-const userQuery = buildUserQuery({
-  role: 'admin',
-  active: true,
-  search: 'john',
-  sortBy: 'created_at',
-  sortDirection: 'DESC'
-});
+const { rows } = await executeQuery(db, buildUserQuery({ role: 'admin', search: 'john', sortBy: 'created_at' }));
 ```
 
-### Query Composition
+Check the type of every value that comes from a request, and choose identifiers (sort columns...) from an allowlist.
+
+## Transactions
+
+`executeQuery()` accepts anything with a `query(sql, params)` method, including a transaction:
 
 ```javascript
-// Base query builder
-const createUserBaseQuery = () => ({
-  table: 'users',
-  select: ['id', 'name', 'email', 'role']
-});
-
-// Add active filter
-const withActiveFilter = (queryObj) => ({
-  ...queryObj,
-  where: {
-    ...queryObj.where,
-    active: true
-  }
-});
-
-// Add role filter
-const withRoleFilter = (queryObj, role) => ({
-  ...queryObj,
-  where: {
-    ...queryObj.where,
-    role: role
-  }
-});
-
-// Compose queries
-const activeAdminQuery = createQuery(
-  withRoleFilter(
-    withActiveFilter(
-      createUserBaseQuery()
-    ),
-    'admin'
-  )
-);
-```
-
-### Transaction Support
-
-```javascript
-import { createDatabaseManager, createQuery, executeQuery } from '@coherent.js/core';
-
-const db = createDatabaseManager({ type: 'sqlite', database: 'app.db' });
-
-// Execute queries in transaction
-await db.transaction(async (trx) => {
-  // Create user
-  const userQuery = createQuery({
+const userId = await db.transaction(async (tx) => {
+  const { insertId } = await executeQuery(tx, {
     table: 'users',
-    insert: { name: 'John', email: 'john@example.com' },
-    returning: ['id']
+    insert: { name: 'John', email: 'john@example.com' }
   });
-  const [user] = await executeQuery(userQuery, trx);
-
-  // Create profile
-  const profileQuery = createQuery({
-    table: 'profiles',
-    insert: { 
-      user_id: user.id,
-      bio: 'Hello world'
-    }
-  });
-  await executeQuery(profileQuery, trx);
-
-  // Update user count
-  const updateQuery = createQuery({
-    table: 'stats',
-    update: { user_count: { $increment: 1 } },
-    where: { id: 1 }
-  });
-  await executeQuery(updateQuery, trx);
-});
-```
-
-## Database Adapters
-
-### SQLite
-
-```javascript
-const sqliteDb = createDatabaseManager({
-  type: 'sqlite',
-  database: './data/app.db', // File path
-  // database: ':memory:' // In-memory database
-});
-```
-
-### PostgreSQL
-
-```javascript
-const pgDb = createDatabaseManager({
-  type: 'postgresql',
-  host: 'localhost',
-  port: 5432,
-  database: 'myapp',
-  username: 'postgres',
-  password: 'password',
-  ssl: false
-});
-```
-
-### MySQL
-
-```javascript
-const mysqlDb = createDatabaseManager({
-  type: 'mysql',
-  host: 'localhost',
-  port: 3306,
-  database: 'myapp',
-  username: 'root',
-  password: 'password'
-});
-```
-
-### MongoDB
-
-```javascript
-const mongoDb = createDatabaseManager({
-  type: 'mongodb',
-  host: 'localhost',
-  port: 27017,
-  database: 'myapp',
-  // Optional authentication
-  username: 'user',
-  password: 'pass'
-});
-
-// MongoDB queries use similar object syntax
-const mongoQuery = createQuery({
-  table: 'users', // Collection name
-  select: ['name', 'email'],
-  where: {
-    active: true,
-    role: { $in: ['admin', 'user'] }
-  }
+  await executeQuery(tx, { table: 'profiles', insert: { user_id: insertId, bio: 'Hello world' } });
+  return insertId;
 });
 ```
 
 ## Error Handling
 
+Validation errors are thrown before anything is sent to the database; driver errors are rethrown as `Query failed: <driver message>`:
+
 ```javascript
-import { createQuery, executeQuery, createDatabaseManager } from '@coherent.js/core';
-
-const db = createDatabaseManager({ type: 'sqlite', database: 'app.db' });
-
 try {
-  const query = createQuery({
-    table: 'users',
-    select: ['*'],
-    where: { id: 123 }
-  });
-  
-  const results = await executeQuery(query, db);
-  console.log('Query results:', results);
-  
+  const { rows } = await executeQuery(db, { table: 'users', where: { id: 123 } });
 } catch (error) {
-  if (error.code === 'SQLITE_ERROR') {
-    console.error('SQL Error:', error.message);
-  } else if (error.code === 'TABLE_NOT_FOUND') {
-    console.error('Table does not exist:', error.table);
-  } else {
-    console.error('Database error:', error);
-  }
+  console.error(error.message);
 }
 ```
 
 ## Query Debugging
 
-```javascript
-// Enable query logging
-const db = createDatabaseManager({
-  type: 'sqlite',
-  database: 'app.db',
-  debug: true // Log all queries
-});
-
-// Get generated SQL (without executing)
-const query = createQuery({
-  table: 'users',
-  select: ['*'],
-  where: { active: true }
-});
-
-const { sql, params } = db.toSQL(query);
-console.log('Generated SQL:', sql);
-console.log('Parameters:', params);
-// Output: Generated SQL: SELECT * FROM users WHERE active = ?
-// Output: Parameters: [true]
-```
-
-## Best Practices
-
-### 1. Use Factory Functions
+`debug: true` logs every statement with its parameters:
 
 ```javascript
-// ✅ Recommended
-import { createDatabaseManager, createQuery, executeQuery } from '@coherent.js/core';
-
-const db = createDatabaseManager(config);
-const query = createQuery(queryConfig);
-const results = await executeQuery(query, db);
+const db = createDatabaseManager({ type: 'sqlite', database: 'app.db', debug: true });
 ```
 
-### 2. Validate Input
+## MongoDB
 
-```javascript
-function createSafeUserQuery(filters) {
-  const query = { table: 'users', select: ['id', 'name', 'email'] };
-  
-  if (filters.id && typeof filters.id === 'number') {
-    query.where = { id: filters.id };
-  }
-  
-  if (filters.role && ['admin', 'user', 'moderator'].includes(filters.role)) {
-    query.where = { ...query.where, role: filters.role };
-  }
-  
-  return createQuery(query);
-}
-```
-
-### 3. Use Transactions for Related Operations
-
-```javascript
-async function createUserWithProfile(userData, profileData) {
-  const db = createDatabaseManager(config);
-  
-  return await db.transaction(async (trx) => {
-    const userQuery = createQuery({
-      table: 'users',
-      insert: userData,
-      returning: ['id']
-    });
-    const [user] = await executeQuery(userQuery, trx);
-    
-    const profileQuery = createQuery({
-      table: 'profiles',
-      insert: { ...profileData, user_id: user.id }
-    });
-    await executeQuery(profileQuery, trx);
-    
-    return user;
-  });
-}
-```
-
-### 4. Handle Connections Properly
-
-```javascript
-const db = createDatabaseManager(config);
-
-// Proper cleanup
-process.on('exit', async () => {
-  await db.destroy();
-});
-```
+The object query builder generates SQL. With `type: 'mongodb'`, use the driver's collection API through `db.collection(name)` (see the [database guide](index.md#mongodb)).
 
 ## Next Steps
 
-- [Database Models](index.md) - Structure your data with models
-- [Migrations](index.md) - Manage schema changes
-- [Advanced Queries](query-builder-api.md) - Complex query patterns
+- [Database guide](index.md) - Connections, transactions, migrations and models
+- [Query Builder API](query-builder-api.md) - Every option and operator

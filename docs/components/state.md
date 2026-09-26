@@ -1,6 +1,6 @@
 # State Management in Coherent.js
 
-Coherent.js provides powerful state management through the `withState` higher-order component, enabling reactive components that update when state changes. This guide covers everything from basic state usage to advanced patterns and reactive state.
+Coherent.js offers two layers of state management: the `withState` higher-order component from `@coherent.js/core`, which injects a state container into a component, and the reactive primitives of `@coherent.js/state` (observables, computed values, persistence, validation and the SSR context API). This guide covers both.
 
 **Package:** `@coherent.js/core`
 **Module:** `/src/components/component-system.js`
@@ -34,6 +34,8 @@ const CounterComponent = withState({ count: 0 })(({ state, stateUtils }) => {
 
 export const Counter = CounterComponent;
 ```
+
+> **Server and browser.** On the server, function-valued handlers such as `onclick: () => setState(...)` render nothing, and the state container created by `withState(...)(Component)` is shared by every request that renders the component, so keep per-request data in props. In the browser, `hydrate()` from `@coherent.js/client` attaches the handlers; `stateUtils.setState()` updates the container but does not patch the DOM by itself (call the hydrated instance's `rerender()`). For interactive client state, `hydrate()`'s own state (`event.setState()` / `instance.setState()`, see [Hydration](../client/hydration.md)) is the simplest option.
 
 ## Core Concepts
 
@@ -565,34 +567,27 @@ const DebugComponent = withState(initialState, {
 });
 ```
 
-### Custom State Utilities
+### Actions
 
-Add custom methods to stateUtils:
+`actions` are bound to the component's state and injected as the `actions` prop. Each receives `(state, setState, { props, context, args })`:
 
 ```javascript
-const customStateUtils = {
-  incrementCounter: (setState, state) => () => {
-    setState({ count: state.count + 1 });
-  },
-  resetForm: (setState) => () => {
-    setState({ name: '', email: '', message: '' });
+const Counter = withState({ count: 0 }, {
+  actions: {
+    increment: (state, setState) => setState({ count: state.count + 1 }),
+    add: (state, setState, { args: [amount] }) => setState({ count: state.count + amount }),
+    reset: (state, setState) => setState({ count: 0 })
   }
-};
-
-const ComponentWithCustomUtils = withState(initialState, {
-  customUtils: customStateUtils
-})(({ state, stateUtils }) => {
-  const { incrementCounter, resetForm } = stateUtils;
-  
-  return {
-    div: {
-      children: [
-        { button: { text: '+', onclick: incrementCounter() } },
-        { button: { text: 'Reset', onclick: resetForm() } }
-      ]
-    }
-  };
-});
+})(({ state, actions }) => ({
+  div: {
+    children: [
+      { p: { text: `Count: ${state.count}` } },
+      { button: { text: '+', onclick: actions.increment } },
+      { button: { text: '+10', onclick: () => actions.add(10) } },
+      { button: { text: 'Reset', onclick: actions.reset } }
+    ]
+  }
+}));
 ```
 
 ## State Persistence
@@ -600,40 +595,24 @@ const ComponentWithCustomUtils = withState(initialState, {
 ### Local Storage Integration
 
 ```javascript
-const PersistentState = withState({
+const Preferences = withState({
   preferences: { theme: 'light', language: 'en' }
 }, {
-  serialize: (state) => JSON.stringify(state),
-  deserialize: (data) => JSON.parse(data),
-  storageKey: 'app-preferences'
-})(({ state, stateUtils }) => {
-  const { setState } = stateUtils;
-
-  const updatePreference = (key, value) => {
-    const newPreferences = { ...state.preferences, [key]: value };
-    setState({ preferences: newPreferences });
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('app-preferences', JSON.stringify(newPreferences));
-    }
-  };
-
-  if (typeof window !== 'undefined' && !state._loaded) {
-    const saved = localStorage.getItem('app-preferences');
-    if (saved) {
-      try {
-        setState({ preferences: JSON.parse(saved), _loaded: true });
-      } catch (e) {
-        console.warn('Failed to load preferences:', e);
-        setState({ _loaded: true });
-      }
-    } else {
-      setState({ _loaded: true });
-    }
+  persistent: true,
+  storageKey: 'app-preferences'   // saved to localStorage in the browser
+})(({ state, setState }) => ({
+  select: {
+    value: state.preferences.theme,
+    onchange: (event) => setState({ preferences: { ...state.preferences, theme: event.target.value } }),
+    children: [
+      { option: { value: 'light', text: 'Light' } },
+      { option: { value: 'dark', text: 'Dark' } }
+    ]
   }
-
-  return { /* component */ };
-});
+}));
 ```
+
+Without `window.localStorage` (on the server) an in-memory store is used instead. For stores that restore asynchronously, report write failures and sync across tabs, use the persistence helpers of `@coherent.js/state` ([Reactive Persistence](#reactive-persistence)).
 
 ## Advanced State Patterns
 
@@ -762,36 +741,20 @@ const UserForm = withStateUtils.validated({
 
 #### Shared State
 
-Share state across multiple components:
+To share state between components, keep it in one store from `@coherent.js/state` and read it where you need it:
 
 ```javascript
-// Component A
-const ComponentA = withStateUtils.shared({
-  theme: 'light'
-}, 'app-theme')(({ state, setState }) => ({
-  div: {
-    children: [
-      { p: { text: `Theme: ${state.theme}` } },
-      {
-        button: {
-          text: 'Toggle',
-          onclick: () => setState({ theme: state.theme === 'light' ? 'dark' : 'light' })
-        }
-      }
-    ]
-  }
-}));
+import { createReactiveState } from '@coherent.js/state';
 
-// Component B (shares same state)
-const ComponentB = withStateUtils.shared({
-  theme: 'light'
-}, 'app-theme')(({ state }) => ({
-  div: {
-    className: `theme-${state.theme}`,
-    text: 'This component shares the theme state'
-  }
-}));
+export const appTheme = createReactiveState({ theme: 'light' });
+
+const ThemeLabel = () => ({ p: { text: `Theme: ${appTheme.get('theme')}` } });
+const ThemedPanel = () => ({ div: { className: `theme-${appTheme.get('theme')}`, text: 'Shares the theme' } });
+
+appTheme.set('theme', 'dark'); // both read the new value on their next render
 ```
+
+In the browser, `appTheme.watch('theme', ...)` can trigger the re-render (for example the `rerender()` of a hydrated instance). On the server a module-level store is shared by every request; use the [Context API](#context-api) for per-request values.
 
 #### Form State
 
@@ -830,10 +793,12 @@ Form actions: `updateField(field, value)`, `updateMultiple(updates)`, `resetForm
 
 Built-in loading and error state management:
 
+`withStateUtils.withLoading()` is `async`: await it to get the higher-order component.
+
 ```javascript
-const DataLoader = withStateUtils.withLoading({
-  users: []
-})(({ state, actions }) => ({
+const withUsersLoading = await withStateUtils.withLoading({ users: [] });
+
+const DataLoader = withUsersLoading(({ state, actions }) => ({
   div: {
     children: [
       {
@@ -914,7 +879,7 @@ The `@coherent.js/state` package provides a comprehensive reactive state managem
 ### Installation
 
 ```bash
-pnpm add @coherent.js/state@beta
+pnpm add @coherent.js/state
 ```
 
 ### Observables
@@ -935,6 +900,8 @@ count.value = 5; // Triggers watcher and updates computed
 console.log(doubled.value); // 10
 ```
 
+`watch()` calls the callback once immediately with the current value, then after every change. Watchers run after the write completes, each in isolation: an error goes to the `onError` option (or `globalErrorHandler`) and the others still run. Assigning an identical primitive notifies nobody, and `batch(() => { ... })` runs watchers once, after the outermost batch, with the final values.
+
 ### Reactive State Class
 
 For more complex state management:
@@ -951,9 +918,11 @@ appState.watch('user.name', (newName, oldName) => {
   console.log(`User name changed to ${newName}`);
 });
 
-appState.set('user.name', 'Jane');
+appState.set('user.name', 'Jane');   // writes a copy of `user`; notifies 'user' and 'user.name'
 console.log(appState.get('user.name')); // 'Jane'
 ```
+
+Keys containing a dot are paths: `get`, `set`, `has`, `watch` and `delete` all accept them.
 
 ### Computed Properties (Reactive)
 
@@ -1003,18 +972,25 @@ const version = globalStateManager.get('appVersion');
 #### Context API
 
 ```javascript
-import { provideContext, useContext } from '@coherent.js/state';
-
-function renderApp() {
-  provideContext('request', { userId: 123, theme: 'dark' });
-  return renderComponents();
-}
+import { render } from '@coherent.js/core';
+import { runWithContext, provideContext, useContext, createContextProvider } from '@coherent.js/state';
 
 function UserProfile() {
-  const requestState = useContext('request');
-  return { div: { text: `User ID: ${requestState.userId}` } };
+  const request = useContext('request');
+  return { div: { text: `User ID: ${request.userId}` } };
 }
+
+app.get('/profile', (req, res) => runWithContext(async () => {
+  provideContext('request', { userId: req.user.id, theme: 'dark' });
+  const data = await loadProfile(req.user.id);  // the context survives the await
+  res.send(render(ProfilePage(data)));           // UserProfile() inside reads it
+}));
+
+// Scope a value to part of the tree
+render({ div: { children: [createContextProvider('theme', 'dark', ThemedButton)] } });
 ```
+
+On Node, context lives in `AsyncLocalStorage`: a value provided in one request is never visible to a concurrent one. `runWithContext(fn, values?)` gives `fn` a fresh scope that ends when it returns — use it per request, and always around a streaming render. Browsers have no `AsyncLocalStorage`, so there the context is only reliable for synchronous rendering. `useContext(key)` falls back to `globalStateManager` when nothing was provided for `key`.
 
 ### Reactive Persistence
 
@@ -1024,46 +1000,45 @@ function UserProfile() {
 import { withLocalStorage } from '@coherent.js/state';
 
 const userPrefs = withLocalStorage({ theme: 'dark', lang: 'en' }, 'user-prefs');
-console.log(userPrefs.get('theme')); // Loaded from storage
-userPrefs.set('theme', 'light');     // Saved automatically
+await userPrefs.ready;                   // stored state is restored asynchronously
+console.log(userPrefs.getState().theme);
+userPrefs.setState({ theme: 'light' });   // saved automatically (debounced)
 ```
 
-#### SessionStorage
+Updates made before `ready` settles win over the stored values. A failed write (for example `QuotaExceededError`) goes to `onError`, and `save()` / `persist()` resolve to `false`. `crossTab: true` syncs stores sharing a key across tabs; call `destroy()` when a store is no longer needed.
+
+#### SessionStorage and IndexedDB
 
 ```javascript
-import { withSessionStorage } from '@coherent.js/state';
+import { withSessionStorage, withIndexedDB } from '@coherent.js/state';
 
 const sessionData = withSessionStorage({ cart: [], checkoutStep: 1 }, 'session-data');
+const largeDataset = withIndexedDB({ data: [] }, 'app-data');
+await largeDataset.ready;
+largeDataset.setState({ data: hugeArray });
 ```
 
-#### IndexedDB
-
-```javascript
-import { withIndexedDB } from '@coherent.js/state';
-
-const largeDataset = await withIndexedDB(
-  { data: [] },
-  'app-data',
-  { dbName: 'myApp', storeName: 'state' }
-);
-await largeDataset.set('data', hugeArray);
-```
+On the server (no `window`), these browser backends read and write nothing — Web Storage there would be shared by every request.
 
 #### Custom Persistence
+
+Pass an `adapter` with async `get`, `set`, `remove` and `clear` (this also works on the server):
 
 ```javascript
 import { createPersistentState } from '@coherent.js/state';
 
-const customState = createPersistentState({ count: 0 }, {
-  save: async (state) => {
-    await fetch('/api/state', { method: 'POST', body: JSON.stringify(state) });
-  },
-  load: async () => {
-    const response = await fetch('/api/state');
-    return response.json();
+const remoteState = createPersistentState({ count: 0 }, {
+  key: 'counter',
+  adapter: {
+    async get(key) { return (await fetch(`/api/state/${key}`)).text(); },
+    async set(key, value) { return (await fetch(`/api/state/${key}`, { method: 'PUT', body: value })).ok; },
+    async remove(key) { await fetch(`/api/state/${key}`, { method: 'DELETE' }); },
+    async clear() {}
   }
 });
 ```
+
+`encrypt: true` requires an `encryptionKey` and is XOR **obfuscation**, not encryption: the key ships to the browser. Never keep secrets in browser storage.
 
 ### Reactive State Validation
 
@@ -1071,47 +1046,44 @@ const customState = createPersistentState({ count: 0 }, {
 import { createValidatedState, validators } from '@coherent.js/state';
 
 const userForm = createValidatedState(
-  { email: '', age: 0, username: '' },
+  { email: 'ada@example.com', age: 36, username: 'ada' },
   {
     validators: {
-      email: validators.email('Invalid email format'),
-      age: validators.range(18, 120, 'Age must be between 18 and 120'),
-      username: validators.minLength(3, 'Username must be at least 3 characters')
+      email: validators.email,
+      age: validators.range(18, 120),
+      username: validators.length(3, 20)
     }
   }
 );
 
-userForm.set('email', 'user@example.com'); // Valid
-try {
-  userForm.set('email', 'invalid-email');  // Throws validation error
-} catch (error) {
-  console.error(error.message);
-}
+userForm.setState({ email: 'user@example.com' }); // valid: applied
+userForm.setState({ email: 'invalid-email' });    // invalid: ignored
+userForm.getErrors();  // [{ path: 'email', message: 'Invalid email format', type: 'custom', value: 'invalid-email' }]
 ```
 
-Available validators: `required`, `email`, `minLength`, `maxLength`, `pattern`, `range`, `min`, `max`, `custom`, `async`.
+A validator is `(value) => true | message`. Built-ins: `validators.email`, `validators.url`, `validators.required`, `validators.range(min, max)`, `validators.length(min, max)` and `validators.pattern(regex)`. Every update validates the whole resulting state, so start from a valid initial state. With `strict: true`, an invalid `setState()` throws an `Error('Validation failed')` carrying `validationErrors`; `onError` receives the errors either way. A JSON-Schema-style `schema` option is supported too (`type`, `required`, `properties`, `additionalProperties`...).
 
 ### Reactive State API Reference
 
 ```typescript
 class Observable<T> {
   value: T;
-  watch(callback: (newValue: T, oldValue: T) => void): () => void;
+  watch(callback: (newValue: T, oldValue: T) => void): () => void; // returns an unwatch function
   unwatch(callback: Function): void;
   unwatchAll(): void;
+  peek(): T;                                                        // read without tracking
 }
 
-class Computed<T> {
-  readonly value: T;
-  watch(callback: (newValue: T, oldValue: T) => void): () => void;
-}
-
-interface StateManager {
-  get(key: string): any;
-  set(key: string, value: any): this;
-  has(key: string): boolean;
-  delete(key: string): boolean;
-  clear(): this;
+// createReactiveState() / ReactiveState
+interface ReactiveState {
+  get(path: string): any;
+  set(path: string, value: any): void;
+  has(path: string): boolean;
+  delete(path: string): boolean;
+  watch(path: string, callback: (newValue: any, oldValue: any) => void): () => void;
+  computed(name: string, getter: () => any): Observable<any>;
+  batch(updates: ((state: ReactiveState) => void) | Record<string, any>): void;
+  clear(): void;
   toObject(): Record<string, any>;
 }
 ```
@@ -1132,40 +1104,26 @@ Use `@coherent.js/state` when you need:
 
 ## Testing State Components
 
-### Unit Testing
+Render the component and assert on the HTML:
 
 ```javascript
+import { describe, it, expect } from 'vitest';
 import { render } from '@coherent.js/core';
+import { renderComponent } from '@coherent.js/tooling/testing';
 
-test('renders with initial state', () => {
-  const html = render(Counter());
-  expect(html).toContain('Count: 0');
-});
+describe('Counter', () => {
+  it('renders with initial state', () => {
+    expect(render(Counter())).toContain('Count: 0');
+  });
 
-test('increments count on button click', async () => {
-  const { container, getByText } = renderComponent(Counter());
-  const button = getByText('+');
-  fireEvent.click(button);
-  expect(getByText('Count: 1')).toBeInTheDocument();
-});
-```
-
-### Integration Testing
-
-```javascript
-test('todo app workflow', async () => {
-  const { container, getByPlaceholderText, getByText } = renderComponent(TodoApp());
-  
-  const input = getByPlaceholderText('Add a new task...');
-  fireEvent.change(input, { target: { value: 'Test task' } });
-  fireEvent.click(getByText('Add'));
-  expect(getByText('Test task')).toBeInTheDocument();
-  
-  const checkbox = container.querySelector('input[type="checkbox"]');
-  fireEvent.click(checkbox);
-  expect(checkbox.checked).toBe(true);
+  it('renders the increment button', () => {
+    const result = renderComponent(Counter());
+    expect(result.getByText('+')).toBeTruthy();
+  });
 });
 ```
+
+Test state logic (reducers, actions, validators) as plain functions; test click behaviour where it runs, in the browser, with `hydrate()` (see [Hydration](../client/hydration.md)).
 
 ## Best Practices
 
@@ -1261,15 +1219,15 @@ const StateInspector = ({ children, state }) => ({
   div: {
     children: [
       children,
-      process.env.NODE_ENV === 'development' ? {
+      process.env.NODE_ENV === 'development' && {
         details: {
           children: [
             { summary: { text: 'State Inspector' } },
             { pre: { text: JSON.stringify(state, null, 2) } }
           ]
         }
-      } : null
-    ].filter(Boolean)
+      }
+    ]
   }
 });
 ```

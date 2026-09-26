@@ -1,295 +1,136 @@
 # Database Integration Layer
 
-The Coherent.js database integration layer provides a comprehensive ORM and query builder system with support for multiple database engines, migrations, and seamless router integration.
+`@coherent.js/database` connects Coherent.js applications to SQLite, PostgreSQL, MySQL and MongoDB: a connection manager with pooling and health checks, an object query builder, transactions, migrations, a small `Model` class and router middleware.
 
 ## Features
 
-- **Multi-Database Support**: PostgreSQL, MySQL, SQLite, MongoDB
-- **Connection Pooling**: Automatic connection management with configurable pools
-- **ORM Models**: ActiveRecord-style models with relationships and validation
-- **Query Builder**: Fluent interface for building complex SQL queries
-- **Migration System**: Version-controlled schema management
-- **Transaction Support**: ACID transactions with automatic rollback
-- **Router Middleware**: Seamless integration with Coherent.js router
-- **Type Safety**: Built-in type casting and validation
+- **Multi-Database Support**: SQLite, PostgreSQL, MySQL, MongoDB (and an in-memory adapter for tests)
+- **Object Query Builder**: queries are plain objects; values are bound as parameters and identifiers, operators and limits are validated
+- **Transactions**: manual or callback-style, with isolation levels
+- **Migrations**: schema builder with per-dialect DDL, batches and rollbacks
+- **Models**: a `Model` base class with casting, validation and relationships
+- **Middleware**: attach the database, a transaction, a model or pagination to requests
+
+> **Stability:** `Model` and the migration runner are young APIs and may still change. SQLite uses a single connection, so concurrent transactions are not supported there: a second transaction started before the first finishes fails.
 
 ## Quick Start
 
 ### Installation
 
 ```bash
-# Core database layer (no dependencies)
-npm install @coherent/database
+pnpm add @coherent.js/database
 
-# Add database drivers as needed
-npm install sqlite3        # For SQLite
-npm install pg            # For PostgreSQL  
-npm install mysql2        # For MySQL
-npm install mongodb       # For MongoDB
+# Install the driver for your database (optional peer dependencies)
+pnpm add sqlite3   # type: 'sqlite'
+pnpm add pg        # type: 'postgresql'
+pnpm add mysql2    # type: 'mysql'
+pnpm add mongodb   # type: 'mongodb'
 ```
 
 ### Basic Setup
 
 ```javascript
-import { DatabaseManager, createModel } from '@coherent/database';
+import { createDatabaseManager } from '@coherent.js/database';
 
-// Configure database
-const db = new DatabaseManager({
+const db = createDatabaseManager({
   type: 'postgresql',
   host: 'localhost',
   database: 'myapp',
-  username: 'user',
-  password: 'pass',
+  username: 'app',
+  password: process.env.PGPASSWORD,
   pool: { min: 2, max: 10 }
 });
 
-// Connect
 await db.connect();
+const { rows } = await db.query('SELECT id, name FROM users WHERE active = ?', [true]);
+await db.close();
 ```
+
+Use `?` placeholders on every database; the PostgreSQL adapter converts them to `$1, $2...` (a `?` inside a string literal, identifier or comment is left alone; write the JSONB key-exists operator as `??`).
+
+The package has no default export; import what you need by name.
 
 ## Database Configuration
 
-### SQLite Configuration
-
 ```javascript
-const config = {
-  type: 'sqlite',
-  database: './app.db',
-  pool: { min: 2, max: 10 }
-};
+// SQLite (the file is created if needed; ':memory:' for a throwaway database)
+{ type: 'sqlite', database: './app.db' }
+
+// PostgreSQL
+{ type: 'postgresql', host: 'localhost', port: 5432, database: 'myapp', username: 'postgres', password: '...', ssl: false }
+
+// MySQL
+{ type: 'mysql', host: 'localhost', port: 3306, database: 'myapp', username: 'root', password: '...' }
+
+// MongoDB
+{ type: 'mongodb', host: 'localhost', port: 27017, database: 'myapp' }
+
+// In memory (tests)
+{ type: 'memory' }
 ```
 
-### PostgreSQL Configuration
+Common options: `pool` (`min`, `max`, `acquireTimeoutMillis`, `idleTimeoutMillis`...), `debug` (log every query), `healthCheck: false` and `healthCheckInterval` (ms, default 30000). After `connect()`, health checks run periodically and emit `healthCheck` events with `status: 'healthy' | 'unhealthy'`; they do not keep the process alive.
 
-```javascript
-const config = {
-  type: 'postgresql',
-  host: 'localhost',
-  port: 5432,
-  database: 'myapp',
-  username: 'postgres',
-  password: 'password',
-  ssl: false,
-  pool: {
-    min: 2,
-    max: 10,
-    acquireTimeoutMillis: 30000,
-    idleTimeoutMillis: 30000
-  }
-};
-```
-
-### MySQL Configuration
-
-```javascript
-const config = {
-  type: 'mysql',
-  host: 'localhost',
-  port: 3306,
-  database: 'myapp',
-  username: 'root',
-  password: 'password',
-  pool: {
-    min: 2,
-    max: 10,
-    acquireTimeoutMillis: 30000
-  }
-};
-```
-
-### MongoDB Configuration
-
-```javascript
-const config = {
-  type: 'mongodb',
-  host: 'localhost',
-  port: 27017,
-  database: 'myapp',
-  username: 'user',
-  password: 'pass',
-  pool: {
-    min: 2,
-    max: 10
-  }
-};
-```
-
-## ORM Models
-
-### Defining Models
-
-```javascript
-import { createModel } from '@coherent/database';
-
-const User = createModel('User', {
-  tableName: 'users',
-  fillable: ['name', 'email', 'password', 'age'],
-  hidden: ['password'],
-  casts: {
-    age: 'number',
-    active: 'boolean'
-  },
-  validationRules: {
-    name: { required: true, minLength: 2 },
-    email: { required: true, email: true, unique: true },
-    password: { required: true, minLength: 6 }
-  },
-  relationships: {
-    posts: { type: 'hasMany', model: 'Post', foreignKey: 'user_id' },
-    profile: { type: 'hasOne', model: 'Profile', foreignKey: 'user_id' }
-  }
-}, db);
-```
-
-### Model Operations
-
-```javascript
-// Create
-const user = await User.create({
-  name: 'John Doe',
-  email: 'john@example.com',
-  password: 'secret123'
-});
-
-// Find
-const user = await User.find(1);
-const user = await User.findByEmail('john@example.com');
-
-// Update
-user.fill({ name: 'John Smith' });
-await user.save();
-
-// Delete
-await user.delete();
-
-// Query
-const activeUsers = await User.where('active', true)
-  .where('age', '>', 18)
-  .orderBy('created_at', 'DESC')
-  .limit(10)
-  .execute();
-```
-
-### Relationships
-
-```javascript
-// Get related models
-const posts = await user.getRelation('posts');
-const profile = await user.getRelation('profile');
-
-// Eager loading (would be implemented in advanced version)
-const usersWithPosts = await User.with(['posts', 'profile']).execute();
-```
+`db.query()` resolves to `{ rows, rowCount, affectedRows, insertId }` (the fields a driver can report).
 
 ## Query Builder
 
-### Basic Queries
+Queries are plain objects run with `executeQuery(db, query)`:
 
 ```javascript
-import { QueryBuilder } from '@coherent/database';
+import { executeQuery } from '@coherent.js/database';
 
-const query = new QueryBuilder(db, 'users');
+const { rows } = await executeQuery(db, {
+  table: 'users',
+  select: ['id', 'name', 'email'],
+  where: { active: true, age: { '>': 18 } },
+  orderBy: { created_at: 'DESC' },
+  limit: 10
+});
 
-// SELECT queries
-const users = await query
-  .select(['id', 'name', 'email'])
-  .where('active', true)
-  .where('age', '>', 18)
-  .orderBy('created_at', 'DESC')
-  .limit(10)
-  .execute();
-
-// Single result
-const user = await query
-  .where('email', 'john@example.com')
-  .first();
+await executeQuery(db, { table: 'users', insert: { name: 'Jane', email: 'jane@example.com' } });
+await executeQuery(db, { table: 'users', update: { active: false }, where: { id: 42 } });
+await executeQuery(db, { table: 'users', delete: true, where: { id: 42 } });
 ```
 
-### Complex Queries
+Everything that is not a value is validated before anything reaches the database: identifiers, operators, `orderBy` directions, `limit` / `offset` (non-negative integers), and UPDATE / DELETE without a `where` (pass `allowFullTable: true` to affect every row on purpose). See the [Query Builder guide](query-builder.md) and the [Query Builder API](query-builder-api.md).
+
+## Transactions
 
 ```javascript
-// Joins
-const postsWithAuthors = await new QueryBuilder(db, 'posts')
-  .select(['posts.*', 'users.name as author_name'])
-  .join('users', 'posts.user_id', '=', 'users.id')
-  .where('posts.published', true)
-  .execute();
+// Callback form: commits when the callback resolves, rolls back when it throws
+const user = await db.transaction(async (tx) => {
+  const { insertId } = await tx.query('INSERT INTO users (name) VALUES (?)', ['John']);
+  await tx.query('INSERT INTO profiles (user_id) VALUES (?)', [insertId]);
+  return insertId;
+});
 
-// Subqueries and conditions
-const activeUsersWithPosts = await new QueryBuilder(db, 'users')
-  .where('active', true)
-  .where(q => q
-    .where('age', '>', 18)
-    .orWhere('verified', true)
-  )
-  .whereIn('id', [1, 2, 3, 4, 5])
-  .execute();
-
-// Aggregation
-const stats = await new QueryBuilder(db, 'users')
-  .select(['COUNT(*) as total', 'AVG(age) as avg_age'])
-  .where('active', true)
-  .first();
+// Manual form
+const tx = await db.transaction({ isolationLevel: 'SERIALIZABLE' });
+try {
+  await tx.query('UPDATE accounts SET balance = balance - ? WHERE id = ?', [10, 1]);
+  await tx.query('UPDATE accounts SET balance = balance + ? WHERE id = ?', [10, 2]);
+  await tx.commit();
+} catch (error) {
+  await tx.rollback();
+  throw error;
+}
 ```
 
-### INSERT, UPDATE, DELETE
-
-```javascript
-// Insert
-await new QueryBuilder(db, 'users')
-  .insert({
-    name: 'Jane Doe',
-    email: 'jane@example.com'
-  })
-  .execute();
-
-// Bulk insert
-await new QueryBuilder(db, 'users')
-  .insert([
-    { name: 'User 1', email: 'user1@example.com' },
-    { name: 'User 2', email: 'user2@example.com' }
-  ])
-  .execute();
-
-// Update
-await new QueryBuilder(db, 'users')
-  .update({ active: false })
-  .where('last_login', '<', '2023-01-01')
-  .execute();
-
-// Delete
-await new QueryBuilder(db, 'users')
-  .delete()
-  .where('active', false)
-  .execute();
-```
+`isolationLevel` must be one of `READ UNCOMMITTED`, `READ COMMITTED`, `REPEATABLE READ` or `SERIALIZABLE`; `readOnly: true` starts a read-only transaction. SQLite accepts `mode: 'DEFERRED' | 'IMMEDIATE' | 'EXCLUSIVE'`. The MongoDB transaction exposes `tx.session`; pass `{ session: tx.session }` to driver calls on `tx.collection(name)`.
 
 ## Migrations
 
-### Creating Migrations
+Migration files export `up(schema)` and `down(schema)`:
 
 ```javascript
-import { Migration } from '@coherent/database';
-
-const migration = new Migration(db, {
-  directory: './migrations'
-});
-
-// Create migration file
-await migration.create('create_users_table');
-```
-
-### Migration File Example
-
-```javascript
-// migrations/20231201000001_create_users_table.js
+// migrations/20240101000000_create_users_table.js
 export async function up(schema) {
   await schema.createTable('users', (table) => {
     table.id();
     table.string('name').notNull();
     table.string('email').unique().notNull();
-    table.string('password').notNull();
-    table.integer('age');
+    table.integer('team_id').references('teams.id');
     table.boolean('active').default(true);
     table.timestamps();
   });
@@ -300,307 +141,135 @@ export async function down(schema) {
 }
 ```
 
-### Running Migrations
+```javascript
+import { createMigration, runMigrations } from '@coherent.js/database';
+
+const applied = await runMigrations(db, { directory: './migrations' }); // names of the applied migrations
+
+const migrations = createMigration(db, { directory: './migrations' });
+await migrations.create('create_posts_table');  // writes a timestamped file
+await migrations.status();                      // applied and pending migrations
+await migrations.rollback(1);                   // undo the most recent batch
+```
+
+- The directory resolves against the working directory; a file that fails to import makes `run()`, `rollback()` and `status()` throw.
+- DDL follows the database type (`SERIAL` on PostgreSQL, `AUTO_INCREMENT` on MySQL); pass `{ dialect }` to override it. MongoDB is not supported.
+- Each migration runs in a transaction when the database supports them; `{ transactional: false }` turns that off.
+- Column builders: `id()`, `string(name, length?)`, `text()`, `integer()`, `boolean()`, `datetime()`, `timestamps()`, with `.notNull()`, `.unique()`, `.default(value)`, `.defaultRaw(sql)` and `.references('table.column')`. `schema.raw(sql, params)` runs anything else.
+
+## Models
+
+### The `Model` class
 
 ```javascript
-import { runMigrations, rollbackMigrations } from '@coherent/database';
+import { Model } from '@coherent.js/database/model';
 
-// Run pending migrations
-const applied = await runMigrations(db);
+class Post extends Model {
+  static tableName = 'posts';
+}
 
-// Rollback last batch
-const rolledBack = await rollbackMigrations(db, 1);
+class User extends Model {
+  static tableName = 'users';
+  static fillable = ['name', 'email', 'age'];
+  static hidden = ['password_hash'];
+  static casts = { age: 'number', active: 'boolean' };
+  static validationRules = {
+    name: { required: true, minLength: 2 },
+    email: { required: true, email: true }
+  };
+  static relationships = {
+    posts: { type: 'hasMany', model: Post, foreignKey: 'user_id' }
+  };
+}
 
-// Check migration status
-const migration = new Migration(db);
-const status = await migration.status();
+User.setDatabase(db);
+Post.setDatabase(db);
+
+const user = await User.create({ name: 'Ada', email: 'ada@example.com', age: 36 });
+const found = await User.find(user.get('id'));      // null when no row matches
+const admins = await User.where({ role: 'admin' });  // equality conditions only
+found.set('name', 'Ada Lovelace');
+await found.save();
+const posts = await found.posts();                   // relationship accessor
+await User.updateWhere({ active: false }, { archived: true }); // affected-row count
+await found.delete();
+```
+
+- Every query method throws when no database is set (`setDatabase(db)`); `find()` returns `null` and `findOrFail()` throws when nothing matches.
+- `where()`, `updateWhere()` and `deleteWhere()` accept `{ column: value }` equality only and reject operator objects and arrays, so a request body cannot inject an operator; use `executeQuery()` for anything else. `updateWhere()` / `deleteWhere()` require a condition.
+- `save()` validates first (it throws with `error.errors` on failure), adds `created_at` / `updated_at` unless `static timestamps = false`, and reads the new primary key from the driver. `create()`, `save()` and `delete()` accept `{ transaction: tx }`.
+- Relationships (`hasMany`, `hasOne`, `belongsTo`) run real queries; `model` is the related class.
+
+### The model registry
+
+`createModel(db)` returns a registry of plain-object models:
+
+```javascript
+import { createModel } from '@coherent.js/database';
+
+const models = createModel(db);
+const Users = models.registerModel('User', {
+  tableName: 'users',
+  attributes: { id: { type: 'integer' }, name: { type: 'string' } },
+  methods: { greet() { return `Hello ${this.name}`; } }
+});
+
+const ada = await Users.create({ name: 'Ada' });
+ada.greet();                          // 'Hello Ada'
+await Users.where({ select: '*', where: { name: 'Ada' } });
 ```
 
 ## Router Integration
 
-### Database Middleware
-
 ```javascript
-import { SimpleRouter } from '@coherent/api';
-import { withDatabase, withTransaction, withModel } from '@coherent/database';
-
-const router = new SimpleRouter();
-
-// Add database to all routes
-router.use(withDatabase(db));
-
-// Routes now have access to req.db, req.query, req.transaction
-router.get('/users', async (req, res) => {
-  const users = await req.db.query('SELECT * FROM users');
-  res.json(users.rows);
-});
+import { withDatabase, withTransaction, withModel, withPagination } from '@coherent.js/database';
 ```
 
-### Model Binding Middleware
+| Middleware | Adds |
+| --- | --- |
+| `withDatabase(db)` | `req.db`, `req.dbQuery(sql, params)`, `req.transaction(callback)`; connects if needed |
+| `withTransaction(db, { isolationLevel, readOnly })` | `req.tx`, committed when the handler finishes successfully and rolled back on an error or an error status |
+| `withModel(ModelClass, paramName = 'id', requestKey?)` | Loads `ModelClass.find(req.params[paramName])` into `req[requestKey ?? modelname]`; a missing record is passed to `next()` as an error with `status: 404` |
+| `withPagination({ defaultLimit, maxLimit })` | `req.pagination = { page, limit, offset, hasPrev, ... }` from `?page=&limit=` |
 
 ```javascript
-// Automatically load model by route parameter
-router.get('/users/:id', withModel(User), async (req, res) => {
-  // req.user contains the loaded User model
-  res.json(req.user.toJSON());
-});
+import express from 'express';
 
-// Custom parameter and request key
-router.get('/posts/:postId', withModel(Post, 'postId', 'post'), async (req, res) => {
-  res.json(req.post.toJSON());
-});
-```
+const app = express();
 
-### Transaction Middleware
+app.get('/users/:id', withModel(User), (req, res) => res.json(req.user));
 
-```javascript
-// Wrap entire route in transaction
-router.post('/transfer', withTransaction(db), async (req, res) => {
-  const { fromId, toId, amount } = req.body;
-  
-  // All operations use req.tx and are automatically committed/rolled back
-  await req.tx.query('UPDATE accounts SET balance = balance - ? WHERE id = ?', [amount, fromId]);
-  await req.tx.query('UPDATE accounts SET balance = balance + ? WHERE id = ?', [amount, toId]);
-  
-  res.json({ success: true });
-});
-```
-
-### Pagination Middleware
-
-```javascript
-router.get('/users', withPagination({ defaultLimit: 20 }), async (req, res) => {
-  const users = await User.query()
-    .limit(req.pagination.limit)
-    .offset(req.pagination.offset)
-    .execute();
-  
-  res.json({
-    data: users.rows,
-    pagination: req.pagination
+app.get('/users', withPagination({ defaultLimit: 20 }), async (req, res) => {
+  const { rows } = await executeQuery(db, {
+    table: 'users',
+    limit: req.pagination.limit,
+    offset: req.pagination.offset
   });
+  res.json({ data: rows, pagination: req.pagination });
+});
+
+app.post('/teams', express.json(), withTransaction(db), async (req, res) => {
+  await req.tx.query('INSERT INTO teams (name) VALUES (?)', [req.body.name]);
+  res.status(201).json({ ok: true }); // committed once the response finishes
 });
 ```
 
-## Transactions
+`withDatabase`, `withTransaction` and `withPagination` also work as middleware in the `@coherent.js/api` router, which calls them without relying on Express. `@coherent.js/database/middleware` also exports `withQueryValidation`, `withHealthCheck` and `withConnectionPool`.
 
-### Manual Transactions
+## MongoDB
 
-```javascript
-const tx = await db.transaction();
-
-try {
-  await tx.query('INSERT INTO users (name) VALUES (?)', ['John']);
-  await tx.query('INSERT INTO profiles (user_id) VALUES (?)', [userId]);
-  await tx.commit();
-} catch (error) {
-  await tx.rollback();
-  throw error;
-}
-```
-
-### Transaction Options
+With `type: 'mongodb'`, use the driver's collection API:
 
 ```javascript
-// With isolation level
-const tx = await db.transaction({
-  isolationLevel: 'READ COMMITTED',
-  readOnly: false
-});
-```
-
-## Connection Pooling
-
-Connection pooling is automatically handled by the database adapters:
-
-```javascript
-const config = {
-  type: 'postgresql',
-  // ... other config
-  pool: {
-    min: 2,                    // Minimum connections
-    max: 10,                   // Maximum connections
-    acquireTimeoutMillis: 30000,  // Timeout to acquire connection
-    createTimeoutMillis: 30000,   // Timeout to create connection
-    destroyTimeoutMillis: 5000,   // Timeout to destroy connection
-    idleTimeoutMillis: 30000,     // Idle timeout
-    reapIntervalMillis: 1000,     // Cleanup interval
-    createRetryIntervalMillis: 200 // Retry interval
-  }
-};
-```
-
-## Validation
-
-### Built-in Validators
-
-```javascript
-const validationRules = {
-  name: { 
-    required: true, 
-    minLength: 2, 
-    maxLength: 100 
-  },
-  email: { 
-    required: true, 
-    email: true, 
-    unique: true 
-  },
-  age: { 
-    min: 0, 
-    max: 120 
-  },
-  password: { 
-    required: true, 
-    minLength: 6,
-    validator: async (value, model) => {
-      // Custom validation
-      if (!/[A-Z]/.test(value)) {
-        return 'Password must contain uppercase letter';
-      }
-      return true;
-    }
-  }
-};
-```
-
-### Custom Validation
-
-```javascript
-const User = createModel('User', {
-  // ... other config
-  validationRules: {
-    email: {
-      required: true,
-      validator: async (email, model) => {
-        if (!email.includes('@')) {
-          return 'Invalid email format';
-        }
-        
-        // Check uniqueness
-        const existing = await User.where('email', email)
-          .where('id', '!=', model.getAttribute('id'))
-          .exists();
-          
-        if (existing) {
-          return 'Email already exists';
-        }
-        
-        return true;
-      }
-    }
-  }
-}, db);
-```
-
-## Type Casting
-
-```javascript
-const User = createModel('User', {
-  casts: {
-    age: 'number',
-    active: 'boolean',
-    metadata: 'json',
-    tags: 'array',
-    created_at: 'date'
-  }
-}, db);
-
-// Values are automatically cast
-const user = new User({
-  age: '25',        // Becomes number 25
-  active: 'true',   // Becomes boolean true
-  metadata: '{"key": "value"}', // Becomes object
-  created_at: '2023-12-01'      // Becomes Date object
-});
-```
-
-## Utilities
-
-### Health Checks
-
-```javascript
-import { checkDatabaseHealth } from '@coherent/database';
-
-const health = await checkDatabaseHealth(db);
-console.log(`Database is ${health.status}`);
-```
-
-### Batch Operations
-
-```javascript
-import { batchOperations } from '@coherent/database';
-
-const operations = [
-  { sql: 'INSERT INTO users (name) VALUES (?)', params: ['John'] },
-  { sql: 'INSERT INTO users (name) VALUES (?)', params: ['Jane'] }
-];
-
-const results = await batchOperations(db, operations, {
-  useTransaction: true,
-  continueOnError: false
-});
-```
-
-### Schema Documentation
-
-```javascript
-import { generateSchemaDocs } from '@coherent/database';
-
-const docs = await generateSchemaDocs(db, {
-  includeIndexes: true,
-  includeRelationships: true
-});
-```
-
-## Error Handling
-
-```javascript
-try {
-  await user.save();
-} catch (error) {
-  if (error.message.includes('Validation failed')) {
-    // Handle validation errors
-    console.log('Validation errors:', user.errors);
-  } else {
-    // Handle other database errors
-    console.error('Database error:', error.message);
-  }
-}
-```
-
-## Performance Tips
-
-1. **Use Connection Pooling**: Configure appropriate pool sizes for your workload
-2. **Index Your Queries**: Add database indexes for frequently queried columns
-3. **Batch Operations**: Use batch operations for multiple inserts/updates
-4. **Limit Results**: Always use `limit()` for large datasets
-5. **Use Transactions**: Group related operations in transactions
-6. **Monitor Queries**: Enable debug mode to monitor query performance
-
-## MongoDB Specifics
-
-For MongoDB, the query interface is adapted to use MongoDB operations:
-
-```javascript
-// MongoDB operations
-await db.query('find', ['users', { active: true }]);
-await db.query('insertOne', ['users', { name: 'John' }]);
-await db.query('updateOne', ['users', { _id: userId }, { $set: { name: 'Jane' } }]);
-await db.query('deleteOne', ['users', { _id: userId }]);
-await db.query('aggregate', ['users', [{ $match: { active: true } }]]);
+const users = db.collection('users');
+await users.insertOne({ name: 'John', active: true });
+const active = await users.find({ active: true }).toArray();
 ```
 
 ## Best Practices
 
-1. **Always Use Migrations**: Never modify database schema directly
-2. **Validate Input**: Use model validation rules consistently
-3. **Handle Errors**: Implement proper error handling for database operations
-4. **Use Transactions**: For operations that must succeed or fail together
-5. **Monitor Performance**: Track query performance and connection pool usage
-6. **Secure Credentials**: Never hardcode database credentials
-7. **Test Thoroughly**: Write tests for all database operations
-
-## Example Application
-
-See `examples/database-usage.js` for a complete example application demonstrating all database features including models, relationships, migrations, and router integration.
+1. **Use migrations** for every schema change
+2. **Never pass request bodies as `where` values**: a plain object is read as an operator object
+3. **Use transactions** for operations that must succeed or fail together
+4. **Keep credentials in the environment**
+5. **Back up with your database's own tools** (the package has no backup helpers)

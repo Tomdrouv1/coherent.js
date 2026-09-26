@@ -59,24 +59,36 @@ server.listen(3000, () => {
 });
 ```
 
-### Using Coherent Factory
+### Handling Render Errors
+
+`render()` is synchronous. If a component throws, `render()` throws a `RenderingError` naming the component's path (the original error is its `cause`), so you can answer with a 500 instead of a half-rendered page:
 
 ```javascript
-import { render, performanceMonitor } from '@coherent.js/core';
-import http from 'http';
+import { render } from '@coherent.js/core';
+import http from 'node:http';
 
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
   try {
-    const component = HomePage({ title: 'My App', user: { name: 'User' } });
-    const html = render(component);
-    
-    res.writeHead(200, { 'Content-Type': 'text/html' });
+    const user = await loadUser(req);                 // await data first
+    const html = render(HomePage({ title: 'My App', user }));
+
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     res.end(`<!DOCTYPE html>${html}`);
-    
   } catch (error) {
     console.error('SSR Error:', error);
     res.writeHead(500, { 'Content-Type': 'text/plain' });
     res.end('Internal Server Error');
+  }
+});
+```
+
+To keep rendering when one component fails, pass `onError`; its return value is rendered in place of the component (`null` leaves it out):
+
+```javascript
+const html = render(Page(data), {
+  onError: (error, { path }) => {
+    console.error(`Component at ${path} failed`, error);
+    return { p: { className: 'unavailable', text: 'This section is unavailable.' } };
   }
 });
 ```
@@ -86,7 +98,7 @@ const server = http.createServer((req, res) => {
 ### Full Page Component
 
 ```javascript
-const DocumentLayout = ({ title, description, children, scripts = [], styles = [] }) => ({
+const DocumentLayout = ({ title, description, head = [], children, scripts = [], styles = [] }) => ({
   html: {
     lang: 'en',
     children: [
@@ -108,7 +120,10 @@ const DocumentLayout = ({ title, description, children, scripts = [], styles = [
               body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
               .container { max-width: 1200px; margin: 0 auto; }
             `
-          }}
+          }},
+
+          // Page-specific head elements
+          ...head
         ]
       }},
       { body: {
@@ -134,30 +149,29 @@ const DocumentLayout = ({ title, description, children, scripts = [], styles = [
 ```javascript
 const BlogPost = ({ post, baseUrl }) => {
   const fullUrl = `${baseUrl}/posts/${post.slug}`;
-  
+
   return DocumentLayout({
     title: `${post.title} | My Blog`,
     description: post.excerpt,
-    children: [
-      // OpenGraph meta tags
+    head: [
+      // OpenGraph
       { meta: { property: 'og:title', content: post.title } },
       { meta: { property: 'og:description', content: post.excerpt } },
       { meta: { property: 'og:image', content: post.featuredImage } },
       { meta: { property: 'og:url', content: fullUrl } },
       { meta: { property: 'og:type', content: 'article' } },
-      
+
       // Twitter Card
       { meta: { name: 'twitter:card', content: 'summary_large_image' } },
-      { meta: { name: 'twitter:title', content: post.title } },
-      { meta: { name: 'twitter:description', content: post.excerpt } },
-      { meta: { name: 'twitter:image', content: post.featuredImage } },
-      
-      // Article content
+      { meta: { name: 'twitter:title', content: post.title } }
+    ],
+    children: [
       { article: {
         children: [
           { h1: { text: post.title } },
           { time: { datetime: post.publishedAt, text: new Date(post.publishedAt).toLocaleDateString() } },
-          { div: { className: 'content', html: post.content } }
+          // `html` is inserted as-is: only use it for content you have sanitized
+          { div: { className: 'content', html: post.contentHtml } }
         ]
       }}
     ],
@@ -167,66 +181,58 @@ const BlogPost = ({ post, baseUrl }) => {
 };
 ```
 
+`generateMeta()` from `@coherent.js/seo` builds the title, description, Open Graph and Twitter tags in one call (see [SEO](../packages/seo.md)).
+
 ## Data Fetching for SSR
 
 ### Async Data Loading
 
-```javascript
-import { createDatabaseManager, createQuery, executeQuery } from '@coherent.js/core';
+Load everything a page needs, then render synchronously:
 
-const db = createDatabaseManager({
-  type: 'postgresql',
-  host: 'localhost',
-  database: 'blog'
-});
+```javascript
+import { render } from '@coherent.js/core';
+import { createDatabaseManager, executeQuery } from '@coherent.js/database';
+
+const db = createDatabaseManager({ type: 'postgresql', host: 'localhost', database: 'blog' });
+await db.connect();
 
 async function renderBlogPost(slug) {
-  // Fetch post data
-  const postQuery = createQuery({
+  const { rows: [post] } = await executeQuery(db, {
     table: 'posts',
-    select: ['*'],
-    where: { slug, published: true }
+    where: { slug, published: true },
+    limit: 1
   });
-  
-  const [post] = await executeQuery(postQuery, db);
-  
-  if (!post) {
-    throw new Error('Post not found');
-  }
-  
-  // Fetch related comments
-  const commentsQuery = createQuery({
+  if (!post) return null;
+
+  const { rows: comments } = await executeQuery(db, {
     table: 'comments',
     select: ['id', 'author', 'content', 'created_at'],
     where: { post_id: post.id, approved: true },
-    orderBy: [{ column: 'created_at', direction: 'ASC' }]
+    orderBy: { created_at: 'ASC' }
   });
-  
-  const comments = await executeQuery(commentsQuery, db);
-  
-  // Render component with data
-  const component = BlogPostWithComments({ post, comments });
-  return render(component);
+
+  return render(BlogPostWithComments({ post, comments }));
 }
 
-// Usage in server
 const server = http.createServer(async (req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host}`);
-  
-  if (url.pathname.startsWith('/posts/')) {
-    try {
-      const slug = url.pathname.split('/posts/')[1];
-      const html = await renderBlogPost(slug);
-      
-      res.writeHead(200, { 'Content-Type': 'text/html' });
-      res.end(`<!DOCTYPE html>${html}`);
-    } catch (error) {
-      res.writeHead(404, { 'Content-Type': 'text/html' });
-      res.end('<!DOCTYPE html><html><body><h1>Post not found</h1></body></html>');
-    }
+  const url = new URL(req.url, 'http://localhost');
+  if (!url.pathname.startsWith('/posts/')) {
+    res.writeHead(404).end();
+    return;
+  }
+
+  try {
+    const html = await renderBlogPost(url.pathname.slice('/posts/'.length));
+    res.writeHead(html ? 200 : 404, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(html ? `<!DOCTYPE html>${html}` : '<!DOCTYPE html><h1>Post not found</h1>');
+  } catch (error) {
+    console.error(error);
+    res.writeHead(500).end('Internal Server Error');
   }
 });
 ```
+
+An `async` component, or any Promise left in the tree, makes `render()` throw (`Cannot render a Promise at <path>`).
 
 ### Caching SSR Results
 
@@ -261,7 +267,7 @@ async function handleBlogPost(slug) {
   return renderWithCache(`post:${slug}`, async () => {
     const postData = await fetchPostData(slug);
     const component = BlogPost(postData);
-    return coherent.render(component);
+    return render(component);
   });
 }
 ```
@@ -270,23 +276,18 @@ async function handleBlogPost(slug) {
 
 ### Streaming Large Pages
 
-```javascript
-import { createStreamingRenderer } from '@coherent.js/core';
+`renderToStream()` is an async generator of HTML chunks with exactly `render()`'s output. The event loop gets a turn after every chunk, so the first bytes of a large page leave early and other requests keep being served:
 
-const streamRenderer = createStreamingRenderer({
-  enableChunking: true,
-  chunkSize: 1024
-});
+```javascript
+import http from 'node:http';
+import { Readable } from 'node:stream';
+import { renderToStream, streamingUtils } from '@coherent.js/core';
 
 // Component with large content
 const LargePage = ({ products = [] }) => ({
   html: {
     children: [
-      { head: {
-        children: [
-          { title: { text: 'Product Catalog' } }
-        ]
-      }},
+      { head: { children: [{ title: { text: 'Product Catalog' } }] } },
       { body: {
         children: [
           { h1: { text: 'Our Products' } },
@@ -309,32 +310,31 @@ const LargePage = ({ products = [] }) => ({
   }
 });
 
-// Stream response
 const server = http.createServer(async (req, res) => {
-  if (req.url === '/products') {
-    try {
-      const products = await fetchAllProducts(); // Large dataset
-      const component = LargePage({ products });
-      
-      res.writeHead(200, { 
-        'Content-Type': 'text/html',
-        'Transfer-Encoding': 'chunked'
-      });
-      
-      res.write('<!DOCTYPE html>');
-      
-      for await (const chunk of streamRenderer.stream(component)) {
-        res.write(chunk);
-      }
-      
-      res.end();
-    } catch (error) {
-      console.error('Streaming error:', error);
-      res.writeHead(500).end('Error');
-    }
+  if (req.url !== '/products') {
+    res.writeHead(404).end();
+    return;
+  }
+
+  const products = await fetchAllProducts(); // load data before streaming
+  res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+  res.write('<!DOCTYPE html>');
+
+  try {
+    // Writes with backpressure
+    await streamingUtils.streamToResponse(renderToStream(LargePage({ products }), { chunkSize: 16384 }), res);
+  } catch (error) {
+    // The status line is already sent, so the response is aborted instead of
+    // ending as a truncated 200
+    console.error('Streaming failed:', error);
   }
 });
+
+// Or pipe it:
+// Readable.from(renderToStream(LargePage({ products }))).pipe(res);
 ```
+
+Errors propagate out of the iteration (and `onError` works as in `render()`). Streaming trades total render time for time-to-first-byte; for small pages `render()` is faster. When you use the SSR context API of `@coherent.js/state`, wrap a streaming render in `runWithContext()`.
 
 ### Progressive Content Loading
 
@@ -409,57 +409,35 @@ const ProgressivePage = ({ initialData, loadingPlaceholders }) => ({
 
 ### Error Boundaries
 
-```javascript
-const ErrorBoundary = ({ error, children }) => {
-  if (error) {
-    return {
-      div: {
-        className: 'error-boundary',
-        children: [
-          { h2: { text: 'Something went wrong' } },
-          { p: { text: 'Please try refreshing the page.' } },
-          process.env.NODE_ENV === 'development' ? {
-            details: {
-              children: [
-                { summary: { text: 'Error Details' } },
-                { pre: { text: error.stack } }
-              ]
-            }
-          } : null
-        ].filter(Boolean)
-      }
-    };
-  }
-  
-  return children;
-};
+A function component that throws makes `render()` throw. Handle failures where you can do something useful:
 
-// Usage in server
-const server = http.createServer(async (req, res) => {
-  try {
-    const data = await fetchPageData(req.url);
-    const component = ErrorBoundary({
-      children: PageComponent(data)
-    });
-    
-    const html = coherent.render(component);
-    res.writeHead(200, { 'Content-Type': 'text/html' });
-    res.end(`<!DOCTYPE html>${html}`);
-    
-  } catch (error) {
-    console.error('SSR Error:', error);
-    
-    const errorComponent = ErrorBoundary({
-      error,
-      children: null
-    });
-    
-    const html = coherent.render(errorComponent);
-    res.writeHead(500, { 'Content-Type': 'text/html' });
-    res.end(`<!DOCTYPE html>${html}`);
+```javascript
+import { render, createErrorBoundary } from '@coherent.js/core';
+
+// 1. Wrap a component that may fail
+const SafeRecommendations = createErrorBoundary({
+  fallback: { p: { text: 'Recommendations are unavailable right now.' } },
+  onError: (error) => console.error('Recommendations failed:', error)
+})(Recommendations);
+
+const Page = (data) => ({
+  main: {
+    children: [
+      Article(data.article),
+      SafeRecommendations(data)
+    ]
   }
 });
+
+// 2. Or decide for every component at render time
+const html = render(Page(data), {
+  onError: (error, { path }) => (process.env.NODE_ENV === 'development'
+    ? { pre: { text: `${path}: ${error.stack}` } }
+    : null)
+});
 ```
+
+On the server, a boundary starts from a clean state on every call, so one failed request does not make later requests render the fallback.
 
 ### Graceful Degradation
 
@@ -503,27 +481,26 @@ const RobustComponent = ({ data, fallback }) => {
 
 ## Performance Optimization
 
-### Recommended `render()` options for production
-
-If you're rendering on the server for production workloads, start with:
+### Rendering options for production
 
 ```javascript
 import { render } from '@coherent.js/core';
 
-const html = render(component, {
-  enableCache: true,
-  cacheSize: 1000,
-  cacheTTL: 300000,
-  minify: true,
-  maxDepth: 100
-});
+const html = render(component, { minify: true, maxDepth: 100 });
 ```
 
-Notes:
+- **`minify`**: reduces HTML size; check the output if you rely on whitespace.
+- **`maxDepth`** (default 100): a guard against accidentally deep trees.
+- **Caching is off by default.** `enableCache: true` stores whole renders keyed on the complete component tree; it only pays off when identical trees are rendered again, and trees containing functions are never cached. Give it its own bounded cache:
 
-- **`enableCache`**: Enables the built-in renderer cache for repeated renders.
-- **`minify`**: Reduces HTML size; validate output if you rely on whitespace.
-- **`maxDepth`**: Safety guard against accidental deep/cyclic trees.
+```javascript
+import { render, createCacheManager } from '@coherent.js/core';
+
+const pageCache = createCacheManager({ maxCacheSize: 500, ttlMs: 5 * 60 * 1000 });
+const html = render(StaticPage(), { enableCache: true, cache: pageCache });
+```
+
+`cacheSize` is deprecated and ignored. For expensive components rendered with the same props, `memo()` is usually the better tool.
 
 ### Memoizing Static Components
 
@@ -562,35 +539,33 @@ const HomePage = ({ content }) => ({
 });
 ```
 
-### Memory Usage Optimization
+### Monitoring
 
 ```javascript
 import { render, performanceMonitor } from '@coherent.js/core';
 
-// Monitor memory usage
+const html = render(component, { enableMonitoring: true });
+
 setInterval(() => {
-  const stats = performanceMonitor.getStats();
-  const memUsage = process.memoryUsage();
-  
-  console.log('SSR Performance Stats:', {
-    renderTime: stats.monitor.avgRenderTime,
-    cacheHitRate: stats.cache.hitRate,
-    memoryUsage: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`
+  const { metrics } = performanceMonitor.generateReport();
+  console.log('SSR stats:', {
+    avgRenderMs: metrics.renderTime.avg,
+    heapMB: Math.round(process.memoryUsage().heapUsed / 1024 / 1024)
   });
-  
-  // Clear cache if memory usage is high
-  if (memUsage.heapUsed > 500 * 1024 * 1024) { // 500MB
-    coherent.clearCache();
-    console.log('Cache cleared due to high memory usage');
-  }
-}, 60000); // Every minute
+}, 60_000).unref();
 ```
+
+A cache from `createCacheManager()` is bounded by `maxCacheSize` and `maxMemoryMB`; call `pageCache.clear()` to drop it.
 
 ## SEO Optimization
 
 ### Structured Data
 
+Use `@coherent.js/seo` rather than `JSON.stringify` into a script: it escapes `<`, `>` and `&` so no value can close the `<script>` element.
+
 ```javascript
+import { generateStructuredData } from '@coherent.js/seo';
+
 const ProductPage = ({ product }) => ({
   html: {
     children: [
@@ -598,32 +573,23 @@ const ProductPage = ({ product }) => ({
         children: [
           { title: { text: `${product.name} | My Store` } },
           { meta: { name: 'description', content: product.description } },
-          
-          // Structured data for SEO
-          { script: {
-            type: 'application/ld+json',
-            text: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'Product',
-              name: product.name,
-              description: product.description,
-              image: product.images,
-              offers: {
-                '@type': 'Offer',
-                price: product.price,
-                priceCurrency: 'USD',
-                availability: product.inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock'
-              }
-            })
-          }}
+          generateStructuredData('product', {
+            name: product.name,
+            description: product.description,
+            image: product.images,
+            offers: {
+              price: product.price,
+              currency: 'USD',
+              availability: product.inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock'
+            }
+          })
         ]
       }},
       { body: {
         children: [
           { h1: { text: product.name } },
           { img: { src: product.images[0], alt: product.name } },
-          { p: { text: product.description } },
-          { span: { text: `$${product.price}` } }
+          { p: { text: product.description } }
         ]
       }}
     ]
@@ -634,39 +600,30 @@ const ProductPage = ({ product }) => ({
 ### Sitemap Generation
 
 ```javascript
-import { createQuery, executeQuery, createDatabaseManager } from '@coherent.js/core';
+import { generateSitemap } from '@coherent.js/seo';
+import { executeQuery } from '@coherent.js/database';
 
-const db = createDatabaseManager({ type: 'postgresql', database: 'mysite' });
-
-async function generateSitemap() {
-  // Get all pages
-  const pagesQuery = createQuery({
+async function sitemapXml(db) {
+  const { rows: pages } = await executeQuery(db, {
     table: 'pages',
     select: ['slug', 'updated_at'],
     where: { published: true }
   });
-  
-  const pages = await executeQuery(pagesQuery, db);
-  
-  // Generate sitemap XML
-  const sitemap = {
-    urlset: {
-      xmlns: 'http://www.sitemaps.org/schemas/sitemap/0.9',
-      children: pages.map(page => ({
-        url: {
-          children: [
-            { loc: { text: `https://mysite.com/${page.slug}` } },
-            { lastmod: { text: page.updated_at.toISOString().split('T')[0] } },
-            { changefreq: { text: 'weekly' } },
-            { priority: { text: '0.8' } }
-          ]
-        }
-      }))
-    }
-  };
-  
-  return render(sitemap);
+
+  return generateSitemap(
+    pages.map((page) => ({
+      url: `/${page.slug}`,
+      lastmod: new Date(page.updated_at).toISOString().slice(0, 10),
+      changefreq: 'weekly',
+      priority: 0.8
+    })),
+    { hostname: 'https://mysite.com' }
+  );
 }
+
+app.get('/sitemap.xml', async (req, res) => {
+  res.type('application/xml').send(await sitemapXml(db));
+});
 ```
 
 ## Next Steps

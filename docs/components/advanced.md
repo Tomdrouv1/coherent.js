@@ -2,6 +2,8 @@
 
 This guide covers advanced component patterns, optimization techniques, and complex use cases in Coherent.js. Learn how to build sophisticated, reusable, and performant components.
 
+> Several examples below use `withState` from `@coherent.js/core`. Its state container is shared by every render of the wrapped component — on the server, by every request — and function-valued handlers (`onclick: () => ...`) only work in the browser after `hydrate()`. See [State Management](state.md) and [Hydration](../client/hydration.md).
+
 ## 🚀 Higher-Order Components (HOCs)
 
 ### Basic HOC Pattern
@@ -77,7 +79,9 @@ const withAuth = (WrappedComponent) => {
   });
 };
 
-const withErrorBoundary = (WrappedComponent) => {
+// A hand-written boundary: it only catches errors thrown by the direct call.
+// For errors anywhere in the subtree, use createErrorBoundary() (see Best Practices).
+const withErrorState = (WrappedComponent) => {
   return withState({ hasError: false, error: null })(({ state, stateUtils, ...props }) => {
     const { setState } = stateUtils;
     
@@ -112,7 +116,7 @@ const withErrorBoundary = (WrappedComponent) => {
 };
 
 // Compose multiple HOCs
-const EnhancedComponent = withAuth(withErrorBoundary(withLoading(DataComponent)));
+const EnhancedComponent = withAuth(withErrorState(withLoading(DataComponent)));
 ```
 
 ### Context Provider HOC
@@ -210,14 +214,14 @@ const App = () => ({
               children: [
                 { h2: { text: 'Users' } },
                 { button: { text: 'Refresh', onclick: refetch } },
-                data ? {
+                data && {
                   ul: {
                     children: data.map(user => ({
                       li: { key: user.id, text: user.name }
                     }))
                   }
-                } : null
-              ].filter(Boolean)
+                }
+              ]
             }
           };
         }
@@ -448,113 +452,53 @@ const UserDisplay = ({ user, isAdmin }) => ConditionalRenderer({
 
 ## 🔄 Async Components
 
-### Lazy Loading Components
+`render()` is synchronous: an `async` component, or any Promise left in the tree, makes it throw (`Cannot render a Promise at <path>`). Load data first, then render:
 
 ```javascript
-const LazyComponent = ({ loader, fallback, ...props }) => {
-  return withState({ 
-    Component: null, 
-    loading: false, 
-    error: null 
-  })(({ state, stateUtils }) => {
-    const { setState } = stateUtils;
-    
-    if (!state.Component && !state.loading) {
-      setState({ loading: true });
-      
-      loader()
-        .then(module => {
-          setState({ 
-            Component: module.default || module, 
-            loading: false 
-          });
-        })
-        .catch(error => {
-          setState({ 
-            error: error.message, 
-            loading: false 
-          });
-        });
-    }
-    
-    if (state.error) {
-      return {
-        div: {
-          className: 'lazy-error',
-          text: `Failed to load component: ${state.error}`
-        }
-      };
-    }
-    
-    if (state.loading || !state.Component) {
-      return fallback || { div: { text: 'Loading component...' } };
-    }
-    
-    return state.Component(props);
-  });
-};
+import { render } from '@coherent.js/core';
 
-// Usage
-const App = () => ({
-  div: {
-    children: [
-      LazyComponent({
-        loader: () => import('./HeavyComponent.js'),
-        fallback: { div: { text: 'Loading heavy component...' } },
-        someProp: 'value'
-      })
-    ]
-  }
+// Data-dependent component: the data is a prop
+const UserList = ({ users }) => ({
+  ul: { children: users.map((user) => ({ li: { text: user.name } })) }
+});
+
+app.get('/users', async (req, res) => {
+  const users = await db.users.findAll();          // await before rendering
+  res.send(render(UserList({ users })));
 });
 ```
 
-### Data-Dependent Components
+When several parts of a page need data, load them in parallel and pass the results down:
 
 ```javascript
-const DataDependentComponent = ({ dataSource, dependencies = [] }) => {
-  return withState({ 
-    data: null, 
-    loading: false, 
-    error: null,
-    lastDependencies: null
-  })(({ state, stateUtils }) => {
-    const { setState } = stateUtils;
-    
-    const depsChanged = !state.lastDependencies || 
-      JSON.stringify(dependencies) !== JSON.stringify(state.lastDependencies);
-    
-    if (depsChanged && !state.loading) {
-      setState({ 
-        loading: true, 
-        error: null,
-        lastDependencies: dependencies
-      });
-      
-      dataSource(dependencies)
-        .then(data => setState({ data, loading: false }))
-        .catch(error => setState({ error: error.message, loading: false }));
-    }
-    
-    if (state.loading) {
-      return { div: { text: 'Loading data...' } };
-    }
-    
-    if (state.error) {
-      return { div: { text: `Error: ${state.error}` } };
-    }
-    
-    return {
-      div: {
-        children: [
-          { h3: { text: 'Data-Dependent Component' } },
-          state.data ? {
-            pre: { text: JSON.stringify(state.data, null, 2) }
-          } : { div: { text: 'No data' } }
-        ]
-      }
-    };
-  });
-};
+const [user, notifications] = await Promise.all([loadUser(id), loadNotifications(id)]);
+const html = render(Dashboard({ user, notifications }));
+```
+
+### Deferred Evaluation with `lazy()`
+
+`lazy(factory)` wraps a **synchronous** computation that runs when the renderer reaches it (once; the result is cached):
+
+```javascript
+import { render, lazy } from '@coherent.js/core';
+
+const Sidebar = lazy(() => buildSidebarTree(navigation)); // evaluated during render
+
+render({ div: { children: [Sidebar, MainContent()] } });
+```
+
+### Loading Code in the Browser
+
+Split client code with dynamic `import()` and hydrate once it has loaded:
+
+```javascript
+import { hydrate } from '@coherent.js/client';
+
+const el = document.querySelector('[data-widget="chart"]');
+if (el) {
+  const { Chart } = await import('./components/Chart.js');
+  hydrate(Chart, el);
+}
 ```
 
 ## 🎨 Style and Theme Management
@@ -687,38 +631,18 @@ const ResponsiveGrid = ({ items }) => {
 
 ### Memoization
 
-```javascript
-const memoizeComponent = (Component, keyExtractor = JSON.stringify) => {
-  const cache = new Map();
-  
-  return (props) => {
-    const key = keyExtractor(props);
-    
-    if (cache.has(key)) {
-      return cache.get(key);
-    }
-    
-    const result = Component(props);
-    cache.set(key, result);
-    
-    // Cleanup old entries to prevent memory leaks
-    if (cache.size > 100) {
-      const firstKey = cache.keys().next().value;
-      cache.delete(firstKey);
-    }
-    
-    return result;
-  };
-};
+Use the built-in `memo()`: every memoized component has its own bounded LRU cache, keyed on its props by default:
 
-// Usage
-const ExpensiveComponent = memoizeComponent(({ data }) => {
+```javascript
+import { memo } from '@coherent.js/core';
+
+const ExpensiveComponent = memo(({ data }) => {
   // Expensive computation
   const processedData = data.map(item => ({
     ...item,
     processed: heavyComputation(item)
   }));
-  
+
   return {
     div: {
       children: processedData.map(item => ({
@@ -726,8 +650,13 @@ const ExpensiveComponent = memoizeComponent(({ data }) => {
       }))
     }
   };
+}, {
+  keyFn: ({ data }) => data.map((item) => `${item.id}:${item.version}`).join(','),
+  maxSize: 100
 });
 ```
+
+Options: `keyFn`, `maxSize`, `strategy` (`'lru'`, `'ttl'`, `'weak'`, `'simple'`), `ttl`, `onHit`, `onMiss`, `onEvict`. `memo(fn, keyFn)` also works.
 
 ### Virtual Scrolling
 
@@ -805,71 +734,32 @@ const VirtualList = ({ items, itemHeight = 50, visibleCount = 10 }) => {
 
 ### Component Testing Utilities
 
-```javascript
-const createTestRenderer = () => {
-  const renders = [];
-  
-  const mockRenderer = (component) => {
-    renders.push(component);
-    return JSON.stringify(component);
-  };
-  
-  return {
-    render: mockRenderer,
-    getRenders: () => renders,
-    getLastRender: () => renders[renders.length - 1],
-    clearRenders: () => renders.length = 0
-  };
-};
+Components are functions returning objects, so HOCs can be tested by calling them and rendering the result:
 
-// Test HOCs
-test('withLoading HOC shows loading state', () => {
-  const TestComponent = ({ data }) => ({
-    div: { text: `Data: ${data}` }
-  });
-  
-  const LoadingTestComponent = withLoading(TestComponent);
-  const renderer = createTestRenderer();
-  
-  // Should show loading initially
-  const result = LoadingTestComponent({ data: 'test' });
-  expect(result).toMatchObject({
-    div: {
-      className: 'loading-container'
-    }
+```javascript
+import { describe, it, expect } from 'vitest';
+import { render } from '@coherent.js/core';
+import { renderComponent } from '@coherent.js/tooling/testing';
+
+describe('withLoading', () => {
+  it('renders the wrapped component when not loading', () => {
+    const TestComponent = ({ data }) => ({ div: { text: `Data: ${data}` } });
+    const LoadingTestComponent = withLoading(TestComponent);
+
+    expect(render(LoadingTestComponent({ data: 'test' }))).toBe('<div>Data: test</div>');
   });
 });
 
-// Test state changes
-test('component state updates correctly', () => {
-  const stateLogs = [];
-  
-  const TestComponent = withState({ count: 0 }, { 
-    debug: true,
-    onStateChange: (oldState, newState) => {
-      stateLogs.push({ old: oldState, new: newState });
-    }
-  })(({ state, stateUtils }) => {
-    const { setState } = stateUtils;
-    
-    return {
-      div: {
-        children: [
-          { span: { text: `Count: ${state.count}` } },
-          {
-            button: {
-              onclick: () => setState({ count: state.count + 1 })
-            }
-          }
-        ]
-      }
-    };
+describe('Button', () => {
+  it('renders its label', () => {
+    const result = renderComponent(Button({ text: 'Save' }));
+    expect(result.getByText('Save')).toBeTruthy();
+    expect(result.getHTML()).toContain('btn--primary');
   });
-  
-  // Test state change logic
-  expect(stateLogs).toHaveLength(1); // Initial state
 });
 ```
+
+See the [Testing Guide](../testing/guide.md) for the matchers.
 
 ## 📚 Best Practices for Advanced Components
 
@@ -910,9 +800,9 @@ const Button = ({
   
   return {
     button: {
-      className: `btn btn--${variant} btn--${size}`,
+      className: ['btn', `btn--${variant}`, `btn--${size}`],
       disabled,
-      onclick: disabled ? undefined : onClick,
+      onClick: disabled ? undefined : onClick,
       ...props,
       children: text ? [{ span: { text } }] : props.children
     }
@@ -922,40 +812,39 @@ const Button = ({
 
 ### 3. Error Boundaries
 
+A `try/catch` around `Component(props)` only catches errors thrown by that call, not by function components nested inside it, which the renderer evaluates later. Use the built-in boundary, which evaluates the nested components within it:
+
 ```javascript
-const withErrorBoundary = (Component, fallback) => {
-  return (props) => {
-    try {
-      return Component(props);
-    } catch (error) {
-      console.error('Component error:', error);
-      return fallback ? fallback(error, props) : {
-        div: {
-          className: 'error',
-          text: 'Something went wrong'
-        }
-      };
-    }
-  };
-};
+import { createErrorBoundary } from '@coherent.js/core';
+
+const withFallback = (Component, fallback) => createErrorBoundary({
+  fallback: fallback ?? { div: { className: 'error', text: 'Something went wrong' } },
+  onError: (error) => console.error('Component error:', error)
+})(Component);
+
+const SafeWidget = withFallback(Widget);
 ```
+
+Or handle every component error at render time with `render(tree, { onError: (error, { path }) => replacement })`. Without either, an error propagates out of `render()`, so the framework can answer 500 instead of serving a partial page.
 
 ### 4. Performance Monitoring
 
 ```javascript
 const withPerformanceTracking = (Component, componentName) => {
   return (props) => {
-    const start = Date.now();
+    const start = performance.now();
     const result = Component(props);
-    const end = Date.now();
-    
-    if (end - start > 10) {
-      console.warn(`Component ${componentName} took ${end - start}ms to render`);
+    const duration = performance.now() - start;
+
+    if (duration > 10) {
+      console.warn(`Component ${componentName} took ${duration.toFixed(1)}ms to build`);
     }
-    
+
     return result;
   };
 };
+
+// For whole renders: render(tree, { enableMonitoring: true }) and performanceMonitor.generateReport()
 ```
 
 ---

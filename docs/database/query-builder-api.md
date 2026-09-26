@@ -1,235 +1,89 @@
-# Query Builder
+# Query Builder API
 
-Coherent.js provides a pure object-based query builder for building and executing database queries in a declarative way.
+Reference for the object query builder of `@coherent.js/database`. The [Query Builder guide](query-builder.md) explains it with examples.
 
-## Table of Contents
-- [Basic Usage](#basic-usage)
-- [Query Types](#query-types)
-  - [SELECT Queries](#select-queries)
-  - [INSERT Queries](#insert-queries)
-  - [UPDATE Queries](#update-queries)
-  - [DELETE Queries](#delete-queries)
-- [Where Conditions](#where-conditions)
-- [Ordering and Pagination](#ordering-and-pagination)
-- [Backwards Compatibility](#backwards-compatibility)
-
-## Basic Usage
+## Functions
 
 ```javascript
 import { createQuery, executeQuery } from '@coherent.js/database';
-
-// Create a query
-const query = createQuery({
-  table: 'users',
-  select: ['id', 'name', 'email'],
-  where: { active: true },
-  orderBy: { created_at: 'DESC' },
-  limit: 10
-});
-
-// Execute the query
-const result = await executeQuery(db, query);
 ```
 
-## Query Types
+| Function | |
+| --- | --- |
+| `executeQuery(db, query)` | Validates `query`, builds SQL with `?` parameters and runs it with `db.query(sql, params)`. `db` may be a `DatabaseManager` or a transaction. Resolves to the driver result: `{ rows, rowCount, affectedRows, insertId }`. |
+| `createQuery(query)` | Returns a shallow copy of `query`. Validation happens when it is executed. |
 
-### SELECT Queries
+## Query Options
+
+| Option | Type | |
+| --- | --- | --- |
+| `table` (or `from`) | `string` \| `{ table, alias? }` | Required. An identifier (`name` or `schema.name`) |
+| `alias` | `string` | Table alias (SELECT only) |
+| `select` | `string` \| `string[]` \| `{ [alias]: column }` | Default `*`. See [Select entries](#select-entries) |
+| `joins` | `Array<{ type?, table, alias?, condition }>` | SELECT only. See [Joins](#joins) |
+| `where` | `object` | See [Conditions](#conditions) |
+| `orderBy` | `{ column: 'ASC' \| 'DESC' }` \| `Array<string \| object>` \| `string` | SELECT only. `'name'`, `'created_at DESC'`, `[{ created_at: 'DESC' }, 'name']` |
+| `limit`, `offset` | non-negative integer | SELECT only. Numeric strings are rejected |
+| `insert` | `object` \| `object[]` | Rows to insert; every row must have the same columns; `undefined` values are left out |
+| `update` | `object` | Columns to set; `undefined` values are left out |
+| `delete` | `true` | Delete matching rows |
+| `returning` | `string` \| `string[]` | Adds `RETURNING` to INSERT/UPDATE/DELETE |
+| `allowFullTable` | `boolean` | Allow UPDATE/DELETE without `where` |
+
+Any other key (for example `groupBy` or `having`) throws `Unknown query option`. Only one of `insert`, `update` and `delete` may be set, and select-only options (`select`, `joins`, `orderBy`, `limit`, `offset`, `alias`) throw on a write.
+
+## Select entries
+
+- a column: `id`, `users.id`
+- `*` or `table.*`
+- `COUNT(*)`, `COUNT(DISTINCT col)`, `SUM(col)`, `AVG(col)`, `MIN(col)`, `MAX(col)`
+- any of the above except `*` / `table.*` followed by `AS alias`
 
 ```javascript
-// Basic select
-const query = createQuery({
-  table: 'users',
-  select: ['id', 'name', 'email'],
-  where: { active: true },
-  orderBy: { created_at: 'DESC' },
-  limit: 10,
-  offset: 0
-});
-
-// Count rows
-const countQuery = createQuery({
-  table: 'users',
-  select: [['COUNT(*)', 'count']],
-  where: { active: true }
-});
+select: ['id', 'full_name AS name', 'COUNT(*) AS total']
+select: { name: 'full_name', total: 'COUNT(*)' }   // alias: expression
 ```
 
-### INSERT Queries
+Use `db.query(sql, params)` for other expressions.
+
+## Conditions
+
+| Form | SQL |
+| --- | --- |
+| `{ col: value }` | `col = ?` |
+| `{ col: null }` | `col IS NULL` |
+| `{ col: { '>': 1, '<=': 9 } }` | `col > ? AND col <= ?` |
+| `{ col: { '=': null } }` / `{ col: { '!=': null } }` | `IS NULL` / `IS NOT NULL` |
+| `{ col: { in: [1, 2] } }` / `{ col: { 'not in': [...] } }` | `col IN (?, ?)`; an empty `in` list matches nothing |
+| `{ col: { between: [lo, hi] } }` / `'not between'` | `col BETWEEN ? AND ?` |
+| `{ col: { like: 'a%' } }` / `'not like'` / `ilike` / `'not ilike'` | `col LIKE ?` |
+| `{ $or: [cond, ...] }` / `{ $and: [cond, ...] }` | `((...) OR (...))` |
+| `{ $not: cond }` | `NOT (...)` |
+
+Operators are case-insensitive. Keys at the same level are joined with `AND`.
+
+The builder throws on an unknown operator (`$gt`, `$ne`...) or logical key, an `undefined` value or operand, an empty operator object, an empty `$or` / `$and`, and an array used as a plain value. A plain object value is read as an operator object: do not pass unvalidated request data as a value.
+
+## Joins
 
 ```javascript
-// Single insert
-const insertQuery = createQuery({
-  table: 'users',
-  insert: { 
-    name: 'John Doe',
-    email: 'john@example.com',
-    created_at: new Date()
-  }
-});
-
-// Multiple inserts (if supported by adapter)
-const bulkInsertQuery = createQuery({
-  table: 'users',
-  insert: [
-    { name: 'John', email: 'john@example.com' },
-    { name: 'Jane', email: 'jane@example.com' }
-  ]
-});
-```
-
-### UPDATE Queries
-
-```javascript
-const updateQuery = createQuery({
-  table: 'users',
-  update: { 
-    name: 'John Updated',
-    updated_at: new Date()
-  },
-  where: { id: 1 }
-});
-```
-
-### DELETE Queries
-
-```javascript
-const deleteQuery = createQuery({
-  table: 'users',
-  where: { id: 1 },
-  delete: true
-});
-```
-
-## Where Conditions
-
-### Basic Conditions
-
-```javascript
-// Simple equality
-where: { active: true }
-
-// Comparison operators
-where: {
-  age: { '>': 18 },
-  created_at: { '<=': new Date('2023-01-01') }
-}
-
-// IN clause
-where: {
-  id: { in: [1, 2, 3] }
-}
-
-// BETWEEN
-where: {
-  age: { between: [18, 65] }
-}
-
-// LIKE
-where: {
-  name: { like: 'John%' }
-}
-```
-
-### Logical Operators
-
-```javascript
-// AND/OR conditions
-where: {
-  active: true,
-  $or: [
-    { role: 'admin' },
-    { role: 'moderator' }
-  ],
-  created_at: { '>': '2023-01-01' }
-}
-
-// Nested conditions
-where: {
-  $and: [
-    { active: true },
-    {
-      $or: [
-        { role: 'admin' },
-        { role: 'moderator' }
-      ]
-    },
-    {
-      $not: {
-        banned: true
-      }
-    }
-  ]
-}
-```
-
-## Ordering and Pagination
-
-```javascript
-// Basic ordering
-orderBy: { created_at: 'DESC' }
-
-// Multiple columns
-orderBy: [
-  { created_at: 'DESC' },
-  { name: 'ASC' }
+joins: [
+  { type: 'inner', table: 'profiles', condition: 'users.id = profiles.user_id' },
+  { type: 'left', table: 'orders', alias: 'o', condition: 'users.id = o.user_id AND o.shop_id = users.shop_id' },
+  { type: 'cross', table: 'settings' }
 ]
-
-// Pagination
-const query = createQuery({
-  table: 'users',
-  select: ['id', 'name'],
-  orderBy: { id: 'ASC' },
-  limit: 10,
-  offset: 20 // Skip first 20 records
-});
 ```
 
-## Backwards Compatibility
+`type` is one of `inner` (default), `left`, `right`, `full`, `cross`, `left outer`, `right outer`, `full outer`. A `condition` (or `on`) is a string of column comparisons (`=`, `<>`, `!=`, `<`, `<=`, `>`, `>=`) joined with `AND`.
 
-For backwards compatibility, the old `QueryBuilder` interface is still available:
+## Identifiers
 
-```javascript
-import { QueryBuilder } from '@coherent.js/database';
+Table names, columns, aliases, WHERE keys, ORDER BY and RETURNING columns must match `[A-Za-z_][A-Za-z0-9_]*`, optionally qualified once (`table.column`). Anything else throws before the query runs.
 
-// Create query
-const query = QueryBuilder.create({
-  table: 'users',
-  select: ['id', 'name']
-});
+## PostgreSQL placeholders
 
-// Execute query
-const result = await QueryBuilder.execute(db, query);
-```
+The PostgreSQL adapter converts `?` to `$1, $2...`. A `?` inside a string literal, a quoted identifier, a dollar-quoted string or a comment is left alone, and `?|` / `?&` stay operators. Write the JSONB key-exists operator `?` as `??`, or use `jsonb_exists(column, key)`.
 
-## Error Handling
+## Supported Databases
 
-```javascript
-try {
-  const result = await executeQuery(db, query);
-  // Handle success
-} catch (error) {
-  console.error('Query failed:', error);
-  // Handle error
-}
-```
-
-## Best Practices
-
-1. **Use parameterized queries**: Always use the query builder's parameter binding to prevent SQL injection.
-2. **Reuse queries**: Create reusable query factories for common queries.
-3. **Use transactions**: Wrap multiple queries in a transaction when needed.
-4. **Handle errors**: Always handle potential database errors.
-5. **Use indexes**: Ensure your database has proper indexes for frequently queried columns.
-
-## Database Adapters
-
-The query builder works with different database adapters. The SQL generation is adapter-agnostic, but some features might be adapter-specific.
-
-### Supported Adapters
-
-- PostgreSQL
-- MySQL
-- SQLite
-- MongoDB (with some limitations)
-
-Check the specific adapter documentation for any adapter-specific features or limitations.
+The builder produces SQL for PostgreSQL, MySQL and SQLite. MongoDB is queried through `db.collection(name)` instead.
