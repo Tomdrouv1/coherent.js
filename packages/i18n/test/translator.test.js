@@ -9,6 +9,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { render } from '@coherent.js/core';
 import { createTranslator } from '../src/translator.js';
 
 describe('Translator', () => {
@@ -151,6 +152,51 @@ describe('Translator', () => {
       custom.addTranslations('en', { hi: 'Hello [[name}}' });
       expect(custom.options.interpolation).toEqual({ prefix: '[[', suffix: '}}' });
       expect(custom.t('hi', { name: 'Ada' })).toBe('Hello Ada');
+    });
+  });
+
+  describe('HTML escaping of params', () => {
+    const XSS = '<img src=x onerror="alert(\'x\')">&';
+    const ESCAPED = '&lt;img src=x onerror=&quot;alert(&#39;x&#39;)&quot;&gt;&amp;';
+
+    beforeEach(() => {
+      translator.addTranslations('en', { rich: '<strong>{{name}}</strong> joined' });
+    });
+
+    it('does not escape by default (backward compatible)', () => {
+      expect(translator.t('rich', { name: XSS })).toBe(`<strong>${XSS}</strong> joined`);
+    });
+
+    it('escapes params, not the template, when escape is passed per call', () => {
+      expect(translator.t('rich', { name: XSS }, { escape: true }))
+        .toBe(`<strong>${ESCAPED}</strong> joined`);
+    });
+
+    it('accepts a locale alongside escape in the options object', () => {
+      translator.addTranslations('fr', { rich: '<em>{{name}}</em> a rejoint' });
+      expect(translator.t('rich', { name: '<b>' }, { locale: 'fr', escape: true }))
+        .toBe('<em>&lt;b&gt;</em> a rejoint');
+      expect(translator.getLocale()).toBe('en');
+    });
+
+    it('escapes params for every call when the translator is created with escape: true', () => {
+      const safe = createTranslator({ escape: true });
+      safe.addTranslations('en', { rich: '<strong>{{name}}</strong> has {{count}} items' });
+      expect(safe.t('rich', { name: XSS, count: 2 })).toBe(`<strong>${ESCAPED}</strong> has 2 items`);
+      expect(safe.interpolate('{{v}}', { v: '<i>' })).toBe('&lt;i&gt;');
+      // A per-call escape: false opts back out.
+      expect(safe.t('rich', { name: '<i>', count: 1 }, { escape: false }))
+        .toBe('<strong><i></strong> has 1 items');
+    });
+
+    it('keeps the escaped output safe when rendered through core html:', () => {
+      const html = render({ p: { html: translator.t('rich', { name: XSS }, { escape: true }) } });
+      expect(html).toBe(`<p><strong>${ESCAPED}</strong> joined</p>`);
+    });
+
+    it('is not needed for text:, which core escapes already', () => {
+      const html = render({ p: { text: translator.t('welcome', { name: '<b>' }) } });
+      expect(html).toBe('<p>Welcome, &lt;b&gt;!</p>');
     });
   });
 

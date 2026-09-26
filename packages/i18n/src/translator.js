@@ -15,6 +15,36 @@ function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+const HTML_ESCAPES = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;'
+};
+
+/**
+ * Escape a value for HTML text or a quoted attribute.
+ * @param {unknown} value
+ * @returns {string}
+ */
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (char) => HTML_ESCAPES[char]);
+}
+
+/**
+ * `t()`'s third argument is either a locale string (the original signature)
+ * or an options object `{ locale, escape }`.
+ * @param {unknown} localeOrOptions
+ * @returns {{ locale?: string | null, escape?: boolean }}
+ */
+function normalizeCallOptions(localeOrOptions) {
+  if (localeOrOptions !== null && typeof localeOrOptions === 'object') {
+    return localeOrOptions;
+  }
+  return { locale: localeOrOptions };
+}
+
 /**
  * Translator
  * Manages translations and locale switching
@@ -26,6 +56,8 @@ export class Translator {
       defaultLocale: 'en',
       fallbackLocale: 'en',
       missingKeyHandler: null,
+      // HTML-escape interpolated params (never the translation itself).
+      escape: false,
       ...rest,
       // Merged, so overriding only `prefix` keeps the default `suffix`.
       interpolation: {
@@ -98,14 +130,19 @@ export class Translator {
 
   /**
    * Translate a key
-   * 
+   *
    * @param {string} key - Translation key (supports dot notation)
    * @param {Object} [params] - Interpolation parameters
-   * @param {string} [locale] - Override locale
+   * @param {string|{locale?: string|null, escape?: boolean}|null} [localeOrOptions]
+   *   Override locale, or `{ locale, escape }`. `escape: true` HTML-escapes the
+   *   interpolated params (defaults to the translator's `escape` option).
    * @returns {string} Translated string
    */
-  t(key, params = {}, locale = null) {
-    const targetLocale = locale || this.currentLocale;
+  t(key, params = {}, localeOrOptions = null) {
+    const callOptions = normalizeCallOptions(localeOrOptions);
+    const targetLocale = callOptions.locale || this.currentLocale;
+    const escape = callOptions.escape ?? this.options.escape;
+    params = params || {};
     
     // Get translation
     let translation = this.getTranslation(key, targetLocale);
@@ -130,7 +167,7 @@ export class Translator {
     
     // Interpolate parameters
     if (typeof translation === 'string') {
-      return this.interpolate(translation, params);
+      return this.interpolate(translation, params, { escape });
     }
     
     return String(translation);
@@ -190,9 +227,17 @@ export class Translator {
 
   /**
    * Interpolate parameters into string
+   *
+   * @param {string} str - Translation template (trusted; never escaped)
+   * @param {Object} params - Values for the placeholders
+   * @param {{escape?: boolean}} [options] - `escape: true` HTML-escapes each
+   *   value; defaults to the translator's `escape` option
    */
-  interpolate(str, params) {
+  interpolate(str, params, options = {}) {
     if (!params || typeof params !== 'object') return str;
+
+    const escape = options.escape ?? this.options.escape;
+    const format = escape ? escapeHtml : String;
 
     const names = Object.keys(params);
     if (names.length === 0) return str;
@@ -208,7 +253,7 @@ export class Translator {
     // One pass with a replacer function: `$&`, `$'` or `$$` in a value are
     // inserted literally, and a value that itself contains a placeholder is
     // not interpolated a second time.
-    return str.replace(pattern, (_match, name) => String(params[name]));
+    return str.replace(pattern, (_match, name) => format(params[name]));
   }
 
   /**

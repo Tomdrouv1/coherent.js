@@ -59,6 +59,31 @@ translator.addTranslations('en', { hello: 'Hello, {{name}}!' });
 console.log(translator.t('hello', { name: 'TS' }));
 ```
 
+### Rendering translations safely
+
+Interpolated params are inserted verbatim by default. Render translations
+through core's `text:` property, which HTML-escapes the whole string — that is
+the safe sink:
+
+```js
+{ p: { text: translator.t('hello', { name: userInput }) } }
+```
+
+If a translation contains markup and has to go through `html:`, escape the
+params (the translation template itself is trusted and never escaped), either
+per call or for every call:
+
+```js
+translator.addTranslations('en', { joined: '<strong>{{name}}</strong> joined' });
+
+{ p: { html: translator.t('joined', { name: userInput }, { escape: true }) } }
+
+const safe = createTranslator({ escape: true }); // escape params on every call
+```
+
+The third argument of `t()` is either a locale string or
+`{ locale, escape }`.
+
 ### Formatters and locale
 
 ```js

@@ -46,6 +46,13 @@ export interface TranslatorOptions {
   /** Called instead of returning the key when a translation is missing */
   missingKeyHandler?: ((key: string, locale: string) => string) | null;
   /**
+   * HTML-escape interpolated params (`&`, `<`, `>`, `"`, `'`) on every call;
+   * the translation template itself is never escaped. Defaults to `false`.
+   * Turn it on when translations are rendered through core's `html:`;
+   * `text:` is escaped by core and is the safe default sink.
+   */
+  escape?: boolean;
+  /**
    * Placeholder delimiters, matched literally (not as regex). Merged with the
    * defaults, so overriding one keeps the other.
    */
@@ -56,6 +63,14 @@ export interface TranslatorOptions {
     suffix?: string;
   };
   [option: string]: unknown;
+}
+
+/** Per-call options for {@link Translator.t}. */
+export interface TranslateOptions {
+  /** Locale for this call only; defaults to the current locale */
+  locale?: string | null;
+  /** HTML-escape the interpolated params; defaults to the translator's `escape` option */
+  escape?: boolean;
 }
 
 /**
@@ -91,8 +106,14 @@ export class Translator {
   /**
    * Resolve a key. Falls back to the fallback locale, then to
    * `missingKeyHandler`, then to the key itself.
+   *
+   * The third argument is a locale override, or `{ locale, escape }`.
    */
-  t(key: TranslationKey, params?: TranslationParams, locale?: string | null): string;
+  t(
+    key: TranslationKey,
+    params?: TranslationParams | null,
+    localeOrOptions?: string | null | TranslateOptions
+  ): string;
 
   /**
    * Look a key up in one locale without fallback; `null` if absent. Only own
@@ -110,8 +131,10 @@ export class Translator {
    * Substitute `{{param}}` placeholders in one pass. Values are inserted
    * literally (`$&` stays `$&`) and are not themselves interpolated;
    * placeholders without a matching param are left as they are.
+   * `escape` HTML-escapes the values (never `str`); it defaults to the
+   * translator's `escape` option.
    */
-  interpolate(str: string, params: TranslationParams): string;
+  interpolate(str: string, params: TranslationParams, options?: { escape?: boolean }): string;
 
   /** Whether a key resolves in the given (or current) locale */
   has(key: TranslationKey, locale?: string | null): boolean;
@@ -139,7 +162,11 @@ export function createScopedTranslator(
   translator: Translator,
   namespace: string
 ): {
-  t(key: TranslationKey, params?: TranslationParams, locale?: string | null): string;
+  t(
+    key: TranslationKey,
+    params?: TranslationParams | null,
+    localeOrOptions?: string | null | TranslateOptions
+  ): string;
   has(key: TranslationKey, locale?: string | null): boolean;
   getLocale(): string;
   setLocale(locale: string): void;
