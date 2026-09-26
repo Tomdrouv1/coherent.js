@@ -538,7 +538,11 @@ export interface ValidatedStateOptions {
   validators?: Record<string, Validator | Validator[]>;
   /** Reject writes that fail validation */
   strict?: boolean;
-  /** Convert values to the declared type where possible */
+  /**
+   * Convert values to the declared type where that is unambiguous: numeric
+   * strings to numbers, `'true'`/`'false'`/`'1'`/`'0'` to booleans, numbers
+   * and booleans to strings. Anything else stays a type error.
+   */
   coerce?: boolean;
   onError?: ((errors: ValidationError[]) => void) | null;
   /** Validate on write; defaults to `true` */
@@ -546,7 +550,10 @@ export interface ValidatedStateOptions {
   /** Validate on read; defaults to `false` */
   validateOnGet?: boolean;
   required?: string[];
-  /** Permit keys the schema does not mention; defaults to `true` */
+  /**
+   * Permit keys an object schema's `properties` do not mention; defaults to
+   * `true`. A schema's own `additionalProperties: false` always rejects them.
+   */
   allowUnknown?: boolean;
 }
 
@@ -666,7 +673,10 @@ export class ListState<T = unknown> {
 export class ModalState<D = unknown, R = unknown> {
   constructor(initialState?: Record<string, unknown>);
 
-  /** Open with data; resolves once closed */
+  /**
+   * Open with data; resolves once closed. Opening again while open replaces
+   * the modal, resolving the earlier promise with `null`.
+   */
   open(data?: D): Promise<R | null>;
   /** Close, resolving the pending `open()` */
   close(result?: R | null): void;

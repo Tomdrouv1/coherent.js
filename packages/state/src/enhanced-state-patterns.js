@@ -278,7 +278,18 @@ export class ModalState {
   }
 
   // OOP methods for modal control
+
+  /**
+   * Open the modal with `data`. Resolves with the value passed to close().
+   * Opening again while open replaces the modal: the earlier promise
+   * resolves with `null`, as if it had been closed without a result.
+   */
   async open(data) {
+    for (const [id, resolver] of this._resolvers) {
+      resolver(null);
+      this._resolvers.delete(id);
+    }
+
     return new Promise((resolve) => {
       const id = ++this._currentId;
       this._resolvers.set(id, resolve);
@@ -404,77 +415,6 @@ export function createRouterState(initialRoute, options) {
   return new RouterState(initialRoute, options);
 }
 
-/**
- * Demo showing hybrid FP/OOP usage
- */
-export function demoEnhancedPatterns() {
-  // OOP state management
-  const userForm = createFormState({
-    name: '',
-    email: '',
-    age: ''
-  });
-
-  const userList = createListState([]);
-  const userModal = createModalState();
-
-  // Add validators (OOP methods)
-  userForm.addValidator('name', (value) => {
-    if (!value || value.length < 2) {
-      return 'Name must be at least 2 characters';
-    }
-  });
-
-  userForm.addValidator('email', (value) => {
-    if (!value.includes('@')) {
-      return 'Invalid email address';
-    }
-  });
-
-  // FP component that uses OOP state
-  const UserForm = () => ({
-    form: {
-      onsubmit: async (e) => {
-        e.preventDefault();
-        const success = await userForm.submit(async (values) => {
-          userList.addItem(values);
-          userModal.close();
-        });
-
-        if (!success) {
-          console.log('Form validation failed');
-        }
-      },
-      children: [
-        { input: {
-          type: 'text',
-          placeholder: 'Name',
-          value: userForm.getValue('name'),
-          oninput: (e) => userForm.setValue('name', e.target.value)
-        }},
-        { input: {
-          type: 'email',
-          placeholder: 'Email',
-          value: userForm.getValue('email'),
-          oninput: (e) => userForm.setValue('email', e.target.value)
-        }},
-        { button: {
-          type: 'submit',
-          text: userForm._state.get('isSubmitting') ? 'Saving...' : 'Save User',
-          disabled: !userForm._state.get('isValid') || userForm._state.get('isSubmitting')
-        }}
-      ]
-    }
-  });
-
-  return {
-    UserForm,
-    userForm,
-    userList,
-    userModal
-  };
-}
-
 export default {
   FormState,
   ListState,
@@ -483,6 +423,5 @@ export default {
   createFormState,
   createListState,
   createModalState,
-  createRouterState,
-  demoEnhancedPatterns
+  createRouterState
 };

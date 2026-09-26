@@ -68,6 +68,77 @@ function isEmailShaped(value) {
  */
 
 /**
+ * Whether a value has a JSON Schema type. `object` excludes null and arrays;
+ * `number` excludes NaN, which JSON cannot represent.
+ * @private
+ */
+function matchesType(value, type) {
+  switch (type) {
+    case 'array':
+      return Array.isArray(value);
+    case 'null':
+      return value === null;
+    case 'object':
+      return value !== null && typeof value === 'object' && !Array.isArray(value);
+    case 'integer':
+      return typeof value === 'number' && Number.isInteger(value);
+    case 'number':
+      return typeof value === 'number' && !Number.isNaN(value);
+    default:
+      return typeof value === type;
+  }
+}
+
+/** @private */
+function describeValue(value) {
+  if (value === null) return 'null';
+  if (Array.isArray(value)) return 'array';
+  if (typeof value === 'string') return JSON.stringify(value);
+  return typeof value === 'object' ? 'object' : String(value);
+}
+
+/**
+ * Coerce a value to a JSON Schema type, refusing conversions that would
+ * invent data: `Boolean('false')` is true, `Number('')` is 0 and
+ * `String({})` is "[object Object]", so none of those are accepted.
+ * @private
+ * @returns {{ ok: boolean, value?: * }}
+ */
+function coerceTo(value, type) {
+  switch (type) {
+    case 'string':
+      if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+        return { ok: !Number.isNaN(value), value: String(value) };
+      }
+      return { ok: false };
+    case 'number':
+    case 'integer': {
+      let number;
+      if (typeof value === 'string' && value.trim() !== '') {
+        number = Number(value);
+      } else if (typeof value === 'boolean') {
+        number = value ? 1 : 0;
+      } else {
+        return { ok: false };
+      }
+      const valid = type === 'integer' ? Number.isInteger(number) : !Number.isNaN(number);
+      return valid ? { ok: true, value: number } : { ok: false };
+    }
+    case 'boolean':
+      if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        if (normalized === 'true' || normalized === '1') return { ok: true, value: true };
+        if (normalized === 'false' || normalized === '0' || normalized === '') return { ok: true, value: false };
+        return { ok: false };
+      }
+      if (value === 1 || value === 0) return { ok: true, value: value === 1 };
+      return { ok: false };
+    default:
+      return { ok: false };
+  }
+}
+
+/**
  * Simple JSON Schema validator
  */
 class SchemaValidator {
@@ -91,14 +162,12 @@ class SchemaValidator {
     const errors = [];
     let coercedValue = value;
 
-    // Type validation
+    // Type validation. A value of the wrong type that could not be coerced
+    // gets no further checks: they assume the declared type.
     if (schema.type) {
       const typeResult = this.validateType(value, schema.type, path);
       if (!typeResult.valid) {
-        errors.push(...typeResult.errors);
-        if (!this.options.coerce) {
-          return { valid: false, errors, value };
-        }
+        return { valid: false, errors: typeResult.errors, value };
       }
       coercedValue = typeResult.value;
     }
@@ -173,49 +242,19 @@ class SchemaValidator {
     // Support array of types
     const types = Array.isArray(type) ? type : [type];
 
-    const isValid = types.some(t => {
-      if (t === 'array') return Array.isArray(value);
-      if (t === 'null') return value === null;
-      if (t === 'integer') return typeof value === 'number' && Number.isInteger(value);
-      return typeof value === t;
-    });
+    const isValid = types.some(t => matchesType(value, t));
 
     if (!isValid) {
       if (this.options.coerce) {
-        // Try to coerce
+        // Try to coerce to the first declared type
         const primaryType = types[0];
-        try {
-          if (primaryType === 'string') {
-            coercedValue = String(value);
-          } else if (primaryType === 'number') {
-            coercedValue = Number(value);
-            if (isNaN(coercedValue)) {
-              errors.push({
-                path,
-                message: `Cannot coerce "${value}" to number`,
-                type: 'type',
-                value,
-                expected: primaryType
-              });
-            }
-          } else if (primaryType === 'boolean') {
-            coercedValue = Boolean(value);
-          } else if (primaryType === 'integer') {
-            coercedValue = parseInt(value, 10);
-            if (isNaN(coercedValue)) {
-              errors.push({
-                path,
-                message: `Cannot coerce "${value}" to integer`,
-                type: 'type',
-                value,
-                expected: primaryType
-              });
-            }
-          }
-        } catch {
+        const coerced = coerceTo(value, primaryType);
+        if (coerced.ok) {
+          coercedValue = coerced.value;
+        } else {
           errors.push({
             path,
-            message: `Cannot coerce value to ${primaryType}`,
+            message: `Cannot coerce ${describeValue(value)} to ${primaryType}`,
             type: 'type',
             value,
             expected: primaryType
@@ -467,8 +506,10 @@ class SchemaValidator {
       });
     }
 
-    // Additional properties
-    if (schema.additionalProperties === false && !this.options.allowUnknown) {
+    // Additional properties: rejected by the schema's own
+    // `additionalProperties: false`, or for any object schema that lists its
+    // properties when the validator runs with `allowUnknown: false`
+    if (schema.additionalProperties === false || (!this.options.allowUnknown && schema.properties)) {
       const allowedProps = new Set(Object.keys(schema.properties || {}));
       Object.keys(value).forEach(prop => {
         if (!allowedProps.has(prop)) {
