@@ -40,6 +40,16 @@ function affectedRowsOf(result) {
 }
 
 /**
+ * Whether inserts must ask for generated keys with RETURNING (PostgreSQL reports no
+ * insert id otherwise). A transaction has no config, so check the owning database too.
+ *
+ * @private
+ */
+function usesReturning(...databases) {
+  return databases.some(db => db?.config?.type === 'postgresql');
+}
+
+/**
  * Validate `{ column: value }` equality conditions. Operator objects are rejected so a
  * request body cannot turn `where({ id })` into `id > 0`.
  *
@@ -468,7 +478,7 @@ export class Model {
       }
 
       const query = { table: ModelClass.tableName, insert: this.attributes };
-      if (db.config?.type === 'postgresql') {
+      if (usesReturning(db, ModelClass.db)) {
         // PostgreSQL only reports generated keys through RETURNING
         query.returning = primaryKey;
       }
@@ -604,6 +614,11 @@ export function createModel(db) {
 
   // Helper functions
 
+  /** INSERT config for a model's row, with RETURNING of the primary key on PostgreSQL. */
+  function insertQuery(data, primaryKey) {
+    return usesReturning(db) ? { insert: data, returning: primaryKey } : { insert: data };
+  }
+
   /** An instance's column values: its own properties minus the attached methods. */
   function instanceData(instance) {
     return Object.fromEntries(
@@ -648,11 +663,10 @@ export function createModel(db) {
         await model.updateWhere({ [primaryKey]: id }, data);
       } else {
         // Create new
-        const result = await model.query({
-          insert: data
-        });
-        if (result.insertId) {
-          instance[primaryKey] = result.insertId;
+        const result = await model.query(insertQuery(data, primaryKey));
+        const generatedId = result.insertId ?? result.rows?.[0]?.[primaryKey];
+        if (generatedId !== undefined && generatedId !== null) {
+          instance[primaryKey] = generatedId;
         }
       }
 
@@ -714,15 +728,14 @@ export function createModel(db) {
       },
 
       create: async (attributes) => {
-        const result = await model.query({
-          insert: attributes
-        });
-        
+        const result = await model.query(insertQuery(attributes, definition.primaryKey || 'id'));
+
         // Return created instance with ID
-        if (result.insertId) {
-          return await model.find(result.insertId);
+        const generatedId = result.insertId ?? result.rows?.[0]?.[definition.primaryKey || 'id'];
+        if (generatedId !== undefined && generatedId !== null) {
+          return await model.find(generatedId);
         }
-        
+
         return createInstance(name, attributes);
       },
 
