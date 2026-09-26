@@ -260,6 +260,13 @@ export function withRateLimit(options = {}) {
 
 /**
  * Input sanitization middleware
+ *
+ * HTML-escapes every string in `req.body`, `req.query` and `req.params`.
+ * Escaping is idempotent: an existing entity such as `&amp;` or `&lt;` is
+ * left alone, so data that passes through twice (or was stored escaped and
+ * submitted again) is not double-encoded into `&amp;amp;`. Keys that could
+ * rewrite a prototype (`__proto__`, `constructor`, `prototype`) are dropped.
+ *
  * @param {Object} options - Sanitization options
  * @returns {Function} Middleware function
  */
@@ -296,30 +303,53 @@ function sanitizeObject(obj) {
   if (typeof obj === 'string') {
     return sanitizeString(obj);
   }
-  
+
   if (Array.isArray(obj)) {
     return obj.map(sanitizeObject);
   }
-  
-  if (typeof obj === 'object' && obj !== null) {
+
+  if (isPlainObject(obj)) {
     const sanitized = {};
     for (const [key, value] of Object.entries(obj)) {
+      // `sanitized['__proto__'] = value` would make `value` the prototype:
+      // a body of {"__proto__":{"isAdmin":true}} then read isAdmin === true.
+      if (UNSAFE_KEYS.has(key)) continue;
       sanitized[key] = sanitizeObject(value);
     }
     return sanitized;
   }
-  
+
+  // Dates, Buffers and other instances are passed through untouched.
   return obj;
 }
 
+/** Keys that reach a prototype when assigned or deep-merged. @private */
+const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+/** @private */
+function isPlainObject(value) {
+  if (value === null || typeof value !== 'object') return false;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+}
+
+/**
+ * An `&` that does not already start a character reference.
+ * @private
+ */
+const BARE_AMPERSAND = /&(?!(?:[a-zA-Z][a-zA-Z0-9]{1,31}|#[0-9]{1,7}|#[xX][0-9a-fA-F]{1,6});)/g;
+
 /**
  * Sanitize a string by escaping HTML entities
+ *
+ * Idempotent: `sanitizeString(sanitizeString(s)) === sanitizeString(s)`.
+ *
  * @param {string} str - String to sanitize
  * @returns {string} Sanitized string
  */
 function sanitizeString(str) {
   return str
-    .replace(/&/g, '&amp;')
+    .replace(BARE_AMPERSAND, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
