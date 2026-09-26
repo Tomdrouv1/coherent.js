@@ -42,14 +42,21 @@ Component validation error category.
 Rendering error category.
 
 - **Common causes**
-  - Circular references in component trees
-  - Exceeding maximum render depth
   - Exceptions thrown inside function components
+  - A Promise (or `async` component) in the tree: `render()` is synchronous
+  - An attribute name containing whitespace, quotes, `<`, `>`, `/`, `=` or control characters
+  - Circular references in component trees (the same object may appear several times, but not inside itself)
+  - Exceeding maximum render depth
 
-If available, rendering errors may include:
+`render()` and `renderToStream()` throw a `RenderingError` (`name: 'RenderingError'`) that includes:
 
-- `context.path`: The render tree path where the error occurred.
-- `context.renderer`: The renderer that produced the error.
+- `renderPath` / `context.path`: the render tree path where the error occurred, e.g. `root.div.children[0]`.
+- `context.renderer`: the renderer that produced the error.
+- `cause`: the original error thrown by your component.
+
+To render a replacement instead of failing, pass `onError: (error, { path }) => replacement` to `render()` (`null` omits the component), or wrap the component with `createErrorBoundary()`.
+
+Errors are also logged by core's error handler in development. `COHERENT_SILENT=1` turns that logging off and `COHERENT_DEBUG=1` turns it on in any environment.
 
 <h2 id="COHERENT_PERFORMANCE">COHERENT_PERFORMANCE</h2>
 

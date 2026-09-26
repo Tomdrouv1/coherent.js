@@ -57,6 +57,7 @@ Welcome to the official documentation for Coherent.js, a high-performance server
 - [Tutorial](examples/tutorial.md) - Step-by-step guide
 
 ### 🔄 Migration
+- [Upgrading from 1.1](migration/upgrading-from-1.1.md) - Behavior changes in the current release and how to adapt
 - [From Other Frameworks](migration/guide.md) - React/Vue migration
 - [Package Reorganization](migration/package-reorg.md) - v1.0.0-beta.2 upgrade
 

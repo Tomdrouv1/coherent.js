@@ -128,6 +128,7 @@ Numbers vary with hardware; compare runs on the same machine.
 - **[Getting Started](docs/getting-started/quick-start.md)** - 5-minute setup
 - **[Deployment Guide](docs/deployment/index.md)** - Production deployment
 - **[Migration Guide](docs/migration/guide.md)** - From React/Vue/Express
+- **[Upgrading from 1.1](docs/migration/upgrading-from-1.1.md)** - Behavior changes and how to adapt
 - **[API Reference](docs/api/reference.md)** - Complete documentation
 - **[Examples](examples/)** - Full-stack applications
 

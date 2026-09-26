@@ -85,7 +85,7 @@ Configure the extension in VS Code settings:
 
 ## Requirements
 
-- VS Code 1.85.0 or higher
+- VS Code 1.125.0 or higher
 - Working with JavaScript or TypeScript files
 
 ## Extension Settings

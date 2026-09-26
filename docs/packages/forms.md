@@ -1,6 +1,6 @@
 # Forms
 
-`@coherent.js/forms` provides a complete form system for building, validating, and hydrating forms in Coherent.js applications. It supports both SSR-first workflows and SPA patterns.
+`@coherent.js/forms` builds forms as Coherent.js components on the server, validates them with one validator convention on the server and in the browser, and hydrates them for client-side validation. See the [package README](../../packages/forms/README.md) for the complete reference.
 
 ## Installation
 
@@ -12,12 +12,13 @@ pnpm add @coherent.js/forms
 
 ### Server-Side Form Building
 
-Use `FormBuilder` to define forms on the server with validation metadata that can be hydrated on the client.
+Define the form once, at module scope, and render it per request:
 
 ```javascript
+import { render } from '@coherent.js/core';
 import { createFormBuilder, validators } from '@coherent.js/forms';
 
-const form = createFormBuilder({ name: 'signup' })
+const signup = createFormBuilder({ name: 'signup', action: '/signup', method: 'post' })
   .field('email', {
     type: 'email',
     label: 'Email Address',
@@ -31,39 +32,120 @@ const form = createFormBuilder({ name: 'signup' })
     validators: [validators.minLength(8)]
   });
 
-// Render the entire form as a Coherent.js object
-const formComponent = form.buildForm({ submitText: 'Sign Up' });
+// GET /signup
+const html = render(signup.buildForm({ submitText: 'Sign Up' }));
+```
+
+### Handling a Submission
+
+A `FormBuilder` keeps values, errors and touched state on the instance, so never fill the shared definition with request data. Fork it per request, or pass the state to `buildForm()`:
+
+```javascript
+// POST /signup
+const form = signup.fork().setValues(req.body);
+const errors = form.validate();
+
+if (Object.keys(errors).length > 0) {
+  // re-render with the submitted values and errors (touched fields show their errors)
+  return res.status(422).send(render(signup.buildForm({ values: req.body, errors })));
+}
 ```
 
 ### Client-Side Hydration
 
-Hydrate server-rendered forms with client-side validation and event handling.
-
 ```javascript
-import { hydrateForm } from '@coherent.js/forms';
+import { hydrateForm } from '@coherent.js/forms/hydration';
 
 const controller = hydrateForm('form[name="signup"]', {
   validateOnBlur: true,
   validateOnChange: false,
-  onSubmit: async (data) => {
-    await fetch('/api/signup', { method: 'POST', body: JSON.stringify(data) });
-  },
-  onError: (errors) => console.log('Validation errors:', errors)
+  onSubmit: async (values) => {
+    await fetch('/api/signup', { method: 'POST', body: JSON.stringify(values) });
+  }
 });
 ```
 
+The builder renders each field's validators into a `data-validators` attribute as JSON (`[{"name":"minLength","args":[8]}]`), and `hydrateForm` rebuilds the same rules, so the browser and the server give the same verdict and message. Built-in and registered validators (register the same name in the browser) are described this way; anonymous functions run on the server only.
+
 ### Quick Form Helper
 
-Build a form with a single function call.
+`buildForm(config)` builds a form component in one call; `fields` is an array of field objects or an object keyed by field name:
 
 ```javascript
 import { buildForm } from '@coherent.js/forms';
 
 const form = buildForm({
-  name: { type: 'text', label: 'Full Name', required: true },
-  email: { type: 'email', label: 'Email', required: true }
+  action: '/contact',
+  fields: {
+    name: { type: 'text', label: 'Full Name', required: true },
+    email: { type: 'email', label: 'Email', required: true }
+  }
+});
+
+render(form);
+```
+
+## Validators
+
+A **validator** is `(value, formData) => string | null` — an error message, or `null` when the value passes. Schemas, `validateField`, `validateForm`, `FormBuilder` fields and `hydrateForm` all run validators that way, and `@coherent.js/forms`, `/validation` and `/validators` export the same set of `validators` with the same behavior.
+
+Each built-in is a **factory** returning a validator; the last argument is an optional message:
+
+```javascript
+import { validators, validateForm } from '@coherent.js/forms';
+
+validateForm(
+  { name: '', email: 'nope', age: '15' },
+  {
+    name: [validators.required('Please enter your name')],
+    email: [validators.required, validators.email()],   // listed uncalled: default message
+    age: [validators.min(18, 'You must be 18 or older')]
+  }
+);
+// → { name: 'Please enter your name', email: 'Invalid email address', age: 'You must be 18 or older' }
+```
+
+- Built-ins other than `required` and `matches` pass empty values; combine them with `required`.
+- To check a value directly, pass an options object: `validators.minLength('abc', { min: 5 })` returns `'Minimum length is 5'`. A lone string argument is always a message: `validators.email('a@b.c')` returns a validator.
+- `min()` / `max()` fail a non-numeric value.
+
+Built-ins: `required`, `email`, `url`, `minLength(min)`, `maxLength(max)`, `min(min)`, `max(max)`, `pattern(regex)`, `matches(field)`, `match(field)`, `oneOf(values)`, `custom(fn)`, `number`, `integer`, `phone`, `date`, `alpha`, `alphanumeric`, `uppercase`, `fileType(accept)`, `fileSize(maxSize)`, `fileExtension(extensions)`. Helpers: `compose`, `when`, `chain`, `debounce`, `cancellable`, `get`.
+
+### Custom Validators and Schemas
+
+```javascript
+import { registerValidator, createValidator, validators } from '@coherent.js/forms';
+
+registerValidator('noShouting', (value) =>
+  value && value === value.toUpperCase() ? 'Please stop shouting' : null);
+
+const noSpaces = createValidator((value) => /\s/.test(value), 'No spaces allowed');
+
+// createValidator(schema) returns a FormValidator
+const schema = createValidator({
+  email: [validators.required(), validators.email()],
+  age: [validators.required(), validators.min(18)]
 });
 ```
+
+## CSRF Protection
+
+The server-only subpath `@coherent.js/forms/csrf` issues stateless tokens bound to a session:
+
+```javascript
+import { createCsrfToken, verifyCsrfToken } from '@coherent.js/forms/csrf';
+
+// GET: rendered as a hidden _csrf input, first in the form
+const csrfToken = createCsrfToken(process.env.CSRF_SECRET, req.session.id);
+res.send(render(signup.buildForm({ csrfToken })));
+
+// POST
+if (!verifyCsrfToken(req.body._csrf, process.env.CSRF_SECRET, req.session.id, { maxAge: 3_600_000 })) {
+  return res.status(403).end();
+}
+```
+
+`hydrateForm` submits the token with the other values. It uses `node:crypto`, which is why it is not re-exported from the browser-safe package root.
 
 ## API Reference
 
@@ -71,77 +153,25 @@ const form = buildForm({
 
 | Method | Description |
 |---|---|
-| `field(name, config)` | Add a field. Config: `type`, `label`, `required`, `validators`, `defaultValue`, `showWhen` |
-| `addGroup(name, config)` | Add a field group with nested fields |
-| `setValue(name, value)` | Set a field value (triggers validation if configured) |
-| `validate()` | Validate all fields, returns error map |
-| `isValid()` | Returns `true` if all fields pass validation |
-| `isDirty()` | Returns `true` if any value differs from initial |
-| `submit()` | Validate and call the submit handler |
-| `onSubmit(handler)` | Register async submit handler |
-| `buildForm(options)` | Generate a Coherent.js form component |
-| `buildField(name)` | Generate a single field component (label + input + error) |
-| `buildInput(name)` | Generate an input component with `data-validators` metadata |
-| `reset()` | Reset form to initial values |
-| `toHTML()` | Render form as an HTML string |
-
-### validators (from `validation.js`)
-
-Factory functions that return validator functions. Each accepts an optional custom error message.
-
-| Validator | Usage |
-|---|---|
-| `validators.required(msg?)` | Non-empty value |
-| `validators.minLength(n, msg?)` | Minimum string length |
-| `validators.maxLength(n, msg?)` | Maximum string length |
-| `validators.min(n, msg?)` | Minimum numeric value |
-| `validators.max(n, msg?)` | Maximum numeric value |
-| `validators.email(msg?)` | Valid email format |
-| `validators.url(msg?)` | Valid URL |
-| `validators.pattern(regex, msg?)` | Matches regex |
-| `validators.matches(fieldName, msg?)` | Matches another field's value |
-| `validators.oneOf(options, msg?)` | Value in allowed list |
-| `validators.custom(fn, msg?)` | Custom validation function |
-
-### validators (from `validators.js`)
-
-Direct validator functions with the signature `(value, options?, translator?, allValues?) => errorMessage | null`.
-
-Includes: `required`, `email`, `minLength`, `maxLength`, `min`, `max`, `pattern`, `url`, `number`, `integer`, `phone`, `date`, `match`, `alpha`, `alphanumeric`, `uppercase`, `fileType`, `fileSize`, `fileExtension`.
-
-Utility functions:
-
-| Function | Description |
-|---|---|
-| `validators.compose(list)` | Compose multiple validators into one |
-| `validators.debounce(validator, delay)` | Debounce an async validator |
-| `validators.cancellable(validator)` | Wrap async validator with AbortController |
-| `validators.when(condition, validator)` | Conditional validation |
-| `validators.chain(options)` | Fluent builder: `.required().email().minLength({min: 3}).validate(value)` |
-
-### FormValidator
-
-Schema-based validation manager.
-
-```javascript
-import { createValidator, validate } from '@coherent.js/forms';
-
-const validator = createValidator({
-  email: [validators.required(), validators.email()],
-  age: [validators.required(), validators.min(18)]
-});
-
-const { isValid, errors } = validator.validate({ email: '', age: 15 });
-```
+| `field(name, config)` / `addField` | Add a field. Config: `type`, `label`, `required`, `validators`, `defaultValue`, `showWhen`... |
+| `addGroup(name, config)` | Add a field group |
+| `fork()` | A copy of the definition with fresh state — use one per request |
+| `setValue(name, value)` / `setValues(values)` | Set values |
+| `touch(name)` | Mark a field as touched (its error is shown) |
+| `validate()` | Validate all fields; returns an error map |
+| `validateField(name)` | Validate one field |
+| `isValid()` / `hasErrors()` / `isDirty()` | State checks |
+| `onSubmit(handler)` / `onError(handler)` | Register handlers |
+| `buildForm(options)` | Generate the form component. Options include `submitText`, `classNames`, `csrfToken`, and per-render `values`, `errors`, `touched` |
+| `buildField(name)` / `buildInput(name)` | Generate a single field (label + input + error) or input |
+| `reset()` | Reset to initial values |
+| `toHTML(options)` | Render the form to an HTML string |
 
 ### hydrateForm(selector, options)
 
-Client-side only. Discovers fields from the DOM, parses `data-validators` attributes, and attaches event listeners.
+Browser only (returns `null` without a DOM). Reads the fields and their `data-validators` from the DOM and validates on blur and submit. Options include `validateOnBlur`, `validateOnChange`, `validateOnSubmit`, `onSubmit` and `classNames` (pass the same `classNames` you gave `buildForm`). The controller exposes `validateField`, `validateForm`, `getValues`, `getErrors`, `setFieldValue`, `reset` and `destroy`.
 
-Returns a controller with: `validateField`, `validateForm`, `setFieldValue`, `getValues`, `getErrors`, `reset`, `destroy`, `isValid`, `getState`.
+## Notes
 
-## Known Limitations
-
-- `hydrateForm` only runs in the browser (returns `null` on the server).
-- The `validators.js` and `validation.js` modules export overlapping names; use the module-level import to disambiguate.
-- The `createForm` / `formValidators` / `enhancedForm` exports from `forms.js` were **removed in 1.0**. Use `createFormBuilder` + `hydrateForm` instead — see [`MIGRATION-1.0.md`](../../MIGRATION-1.0.md) for migration.
+- The `createForm` / `formValidators` / `enhancedForm` exports were **removed in 1.0**. Use `createFormBuilder` + `hydrateForm` instead — see [`MIGRATION-1.0.md`](../../MIGRATION-1.0.md).
+- Upgrading from 1.1: the validator convention and the `data-validators` format changed; see [Upgrading from 1.1](../migration/upgrading-from-1.1.md#coherentjsforms).
