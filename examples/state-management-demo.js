@@ -78,13 +78,15 @@ const userPrefs = withLocalStorage(
   'user-preferences'
 );
 
-console.log('Loaded preferences:', userPrefs.toObject());
+// Restoring from storage is asynchronous: wait for it before reading.
+await userPrefs.ready;
+console.log('Loaded preferences:', userPrefs.getState());
 
-// Updates are automatically persisted
-userPrefs.set('theme', 'light');
-userPrefs.set('fontSize', 16);
+// Updates are automatically persisted (without browser storage, as here in
+// Node, the store keeps working in memory)
+userPrefs.setState({ theme: 'light', fontSize: 16 });
 
-console.log('Updated preferences:', userPrefs.toObject());
+console.log('Updated preferences:', userPrefs.getState());
 // These changes are now saved to localStorage!
 
 // =============================================================================
@@ -93,33 +95,35 @@ console.log('Updated preferences:', userPrefs.toObject());
 
 console.log('\n📦 Example 4: State Validation');
 
+// A validator returns true, or an error message. `strict` makes invalid
+// updates throw instead of being ignored.
 const userForm = createValidatedState(
   { email: '', age: 0, username: '' },
   {
+    strict: true,
     validators: {
-      email: validators.email('Invalid email format'),
-      age: validators.range(18, 120, 'Age must be between 18 and 120'),
-      username: validators.minLength(3, 'Username must be at least 3 characters')
+      email: validators.email,
+      age: validators.range(18, 120),
+      username: validators.length(3, 30)
     }
   }
 );
 
 // Valid updates
 try {
-  userForm.set('email', 'user@example.com');
-  userForm.set('age', 25);
-  userForm.set('username', 'johndoe');
+  userForm.setState({ email: 'user@example.com', age: 25, username: 'johndoe' });
   console.log('✓ All validations passed!');
-  console.log('Form data:', userForm.toObject());
+  console.log('Form data:', userForm.getState());
 } catch (error) {
   console.error('✗ Validation error:', error.message);
 }
 
-// Invalid update
+// Invalid update: rejected, state unchanged
 try {
-  userForm.set('email', 'invalid-email');
+  userForm.setState({ email: 'invalid-email' });
 } catch (error) {
-  console.error('✗ Validation error:', error.message);
+  console.log('✗ Rejected:', error.validationErrors.map((e) => `${e.path}: ${e.message}`).join(', '));
+  console.log('  email is still:', userForm.getState('email'));
 }
 
 // =============================================================================
@@ -178,54 +182,42 @@ handleRequest(456);
 
 console.log('\n📦 Example 6: Complete Application State');
 
-// Combining features: reactive + persistent + validated
-const appConfig = createValidatedState(
-  {
-    user: { id: null, name: '', email: '' },
-    settings: { theme: 'dark', notifications: true },
-    cart: []
-  },
-  {
-    validators: {
-      'user.email': validators.email(),
-      'settings.theme': validators.custom((value) => {
-        return ['dark', 'light', 'auto'].includes(value)
-          ? null
-          : 'Invalid theme';
-      })
-    }
-  }
-);
+// Combining features: reactive state for the app, validation at the edge,
+// and persistence of the parts worth keeping.
+const shopState = createReactiveState({
+  user: { id: null, name: '', email: '' },
+  settings: { theme: 'dark', notifications: true },
+  cart: []
+});
+const savedSettings = withLocalStorage(shopState.get('settings'), 'app-settings');
 
-// Make it persistent
-const persistentConfig = withLocalStorage(appConfig, 'app-config');
-
-// Watch for changes
-persistentConfig.watch('user', (newUser) => {
+// Watch whole keys or nested paths
+shopState.watch('user', (newUser) => {
   console.log('User updated:', newUser);
 });
 
-persistentConfig.watch('settings.theme', (newTheme) => {
+shopState.watch('settings.theme', (newTheme) => {
   console.log('Theme changed to:', newTheme);
+  savedSettings.setState({ theme: newTheme });
 });
 
-// Update state (validated and persisted)
+function updateUser(user) {
+  const emailCheck = validators.email(user.email);
+  if (emailCheck !== true) throw new Error(emailCheck);
+  shopState.set('user', user);
+}
+
 try {
-  persistentConfig.set('user', {
-    id: 123,
-    name: 'John Doe',
-    email: 'john@example.com'
-  });
-
-  persistentConfig.set('settings.theme', 'light');
-
-  persistentConfig.set('cart', [
+  updateUser({ id: 123, name: 'John Doe', email: 'john@example.com' });
+  shopState.set('settings.theme', 'light');
+  shopState.set('cart', [
     { id: 1, name: 'Product A', price: 29.99 },
     { id: 2, name: 'Product B', price: 39.99 }
   ]);
 
   console.log('\n✓ All state updated successfully!');
-  console.log('Final state:', JSON.stringify(persistentConfig.toObject(), null, 2));
+  console.log('Final state:', JSON.stringify(shopState.toObject(), null, 2));
+  console.log('Persisted settings:', savedSettings.getState());
 } catch (error) {
   console.error('✗ Error:', error.message);
 }

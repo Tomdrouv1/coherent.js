@@ -5,7 +5,7 @@
  */
 
 import { withState } from '@coherent.js/core';
-import { makeHydratable, autoHydrate } from '@coherent.js/client';
+import { hydrate } from '@coherent.js/client';
 
 // Example 1: Basic component composition
 export const Header = ({ title, subtitle }) => ({
@@ -233,10 +233,9 @@ const ContactFormComponent = withState({
 
 export const ContactForm = ContactFormComponent;
 
-// Make the contact form hydratable
-export const HydratableContactForm = makeHydratable(ContactForm, {
-  componentName: 'contact-form'
-});
+// Any pure-object component is hydratable: no wrapper needed
+// (makeHydratable was removed in 1.0).
+export const HydratableContactForm = ContactForm;
 
 // Complete page demonstrating all composition patterns
 export const demoPage = {
@@ -356,7 +355,7 @@ export const demoPage = {
                 
                 { h2: { text: 'Interactive Form with State' } },
                 { p: { text: 'This form demonstrates state management, event handling, and client-side hydration:' } },
-                HydratableContactForm.renderWithHydration()
+                HydratableContactForm()
               ]
             })
           ]
@@ -368,17 +367,13 @@ export const demoPage = {
 
 // Set up client-side hydration (browser only)
 if (typeof window !== 'undefined') {
-  // Component registry for hydration
-  window.componentRegistry = {
-    'contact-form': HydratableContactForm
-  };
-  
-  // Auto-hydrate when DOM is ready
+  // Hydrate the server-rendered form explicitly (autoHydrate was removed in 1.0)
   document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-      autoHydrate(window.componentRegistry);
+    const element = document.querySelector('[data-coherent-component="contact-form"]');
+    if (element) {
+      hydrate(HydratableContactForm, element);
       console.log('✅ Component composition hydration complete!');
-    }, 100);
+    }
   });
 }
 
