@@ -18,8 +18,8 @@ if (existsSync(generatedJson)) {
   cpSync(generatedJson, 'dist/lsp/data/element-attributes.generated.json');
 }
 
-// Ensure the LSP server entry is executable (it has a shebang and is the bin target)
-const serverEntry = 'dist/lsp/server.js';
+// Ensure the LSP binary is executable (it has a shebang and is the bin target)
+const serverEntry = 'dist/lsp/bin.js';
 if (existsSync(serverEntry)) {
   chmodSync(serverEntry, 0o755);
 }

@@ -32,7 +32,7 @@
     }
   },
   "bin": {
-    "coherent-language-server": "./dist/lsp/server.js"
+    "coherent-language-server": "./dist/lsp/bin.js"
   },
   "files": [
     "dist/",
@@ -44,7 +44,7 @@
     "build": "node build.mjs",
     "clean": "rm -rf dist",
     "dev": "tsc -w",
-    "start": "node dist/lsp/server.js --stdio",
+    "start": "node dist/lsp/bin.js --stdio",
     "extract-attributes": "tsx scripts/extract-attributes.ts",
     "test": "vitest run",
     "test:watch": "vitest",

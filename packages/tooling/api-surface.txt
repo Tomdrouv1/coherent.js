@@ -29,7 +29,7 @@ waitForElementToBeRemoved
 within
 
 == ./lsp ==
-# import failed (Error)
+startServer
 
 == ./testing ==
 TestRenderer
