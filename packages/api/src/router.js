@@ -720,6 +720,13 @@ function processRoutes(routeObj, router, basePath = '') {
   if (!routeObj || typeof routeObj !== 'object') return;
 
   Object.entries(routeObj).forEach(([key, config]) => {
+    // `GET: (req) => ({...})` is shorthand for `GET: { handler }`. It used to
+    // be skipped silently, so the route was never registered.
+    if (typeof config === 'function' && HTTP_METHODS.includes(key.toUpperCase())) {
+      registerRoute(key.toUpperCase(), { handler: config }, router, basePath);
+      return;
+    }
+
     if (!config || typeof config !== 'object') return;
 
     // Check if this is a WebSocket route configuration
@@ -936,6 +943,19 @@ class SimpleRouter {
     // 5xx responses carry a generic message unless this is true (or, when
     // it is unset, NODE_ENV is 'development'). The real error is logged.
     this.exposeErrors = options.exposeErrors;
+
+    // `prefix` and `middleware` apply to every route registered afterwards,
+    // like an outermost group() and router.use(). Both were declared in the
+    // router's types but ignored, so a config-level auth middleware silently
+    // protected nothing.
+    if (typeof options.prefix === 'string' && options.prefix !== '' && options.prefix !== '/') {
+      const prefix = options.prefix.startsWith('/') ? options.prefix : `/${options.prefix}`;
+      this.routeGroups.push({ prefix: prefix.replace(/\/+$/, ''), middleware: [] });
+    }
+    if (options.middleware) {
+      const configured = Array.isArray(options.middleware) ? options.middleware : [options.middleware];
+      configured.forEach((middleware) => this.use(middleware));
+    }
   }
 
   /**

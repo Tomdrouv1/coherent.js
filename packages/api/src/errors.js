@@ -55,6 +55,7 @@ class ValidationError extends ApiError {
    */
   constructor(errors, message = 'Validation failed') {
     super(message, 400, { errors });
+    this.errors = errors;
     this.name = 'ValidationError';
   }
 }

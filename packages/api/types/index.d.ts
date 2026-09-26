@@ -30,7 +30,7 @@ export interface RequestHeaders {
 
 /** Response headers */
 export interface ResponseHeaders {
-  [key: string]: string | number | string[];
+  [key: string]: string | number | string[] | undefined;
   'content-type'?: string;
   'cache-control'?: string;
   'access-control-allow-origin'?: string;
@@ -142,37 +142,78 @@ export type ErrorMiddleware = (
 // Object-Based Routing
 // ============================================================================
 
-/** Route definition for object-based routing */
-export interface RouteDefinition {
-  GET?: RouteHandler;
-  POST?: RouteHandler;
-  PUT?: RouteHandler;
-  DELETE?: RouteHandler;
-  PATCH?: RouteHandler;
-  OPTIONS?: RouteHandler;
-  HEAD?: RouteHandler;
+/**
+ * Configuration for one method of an object route. A bare handler function
+ * is shorthand for `{ handler }`.
+ */
+export interface RouteMethodConfig {
+  /** The handler; its returned object is sent as JSON (204 when it returns nothing). */
+  handler?: RouteHandler;
+  /** Several handlers run in order, like middleware; the first returned object is the response. */
+  handlers?: RouteHandler[];
+  /** Middleware run before validation and the handler. */
   middleware?: Middleware | Middleware[];
+  /** Request body schema; an invalid body is answered with 400 and the field errors. */
   validation?: SchemaDefinition;
-  serialization?: SerializationConfig;
-  auth?: AuthConfig;
-  rateLimit?: RateLimitConfig;
-  cache?: CacheConfig;
+  /** Wrap each step with `withErrorHandling` (default `true`). */
+  errorHandling?: boolean;
+  /** Overrides the path derived from the object's nesting. */
+  path?: string;
+  /** Route name for `generateUrl()`. */
+  name?: string;
 }
 
-/** Nested route object */
+/** A method entry of an object route: a handler, or a full configuration. */
+export type RouteMethodDefinition = RouteHandler | RouteMethodConfig;
+
+/** WebSocket route handler (`{ chat: { ws: handler } }`); requires `enableWebSockets`. */
+export type WebSocketHandler = ((ws: any, request: IncomingMessage) => void) & { onClose?: (ws: any) => void };
+
+/**
+ * Route definition for object-based routing: the methods served at one path.
+ * Method keys are case-insensitive (`GET` or `get`); HEAD is answered by the
+ * GET route.
+ */
+export interface RouteDefinition {
+  GET?: RouteMethodDefinition;
+  POST?: RouteMethodDefinition;
+  PUT?: RouteMethodDefinition;
+  DELETE?: RouteMethodDefinition;
+  PATCH?: RouteMethodDefinition;
+  get?: RouteMethodDefinition;
+  post?: RouteMethodDefinition;
+  put?: RouteMethodDefinition;
+  delete?: RouteMethodDefinition;
+  patch?: RouteMethodDefinition;
+  ws?: WebSocketHandler;
+}
+
+/**
+ * Nested route object: keys that are not HTTP methods are path segments.
+ *
+ * @example
+ * ```typescript
+ * const routes: RouteObject = {
+ *   api: {
+ *     users: {
+ *       GET: () => ({ users: [] }),
+ *       POST: { validation: userSchema, handler: (req) => ({ created: req.body }) },
+ *       ':id': { DELETE: { middleware: [withAuth({ secret })], handler: removeUser } }
+ *     }
+ *   }
+ * };
+ * ```
+ */
 export interface RouteObject {
-  [path: string]: RouteDefinition | RouteObject;
+  [path: string]: RouteDefinition | RouteObject | RouteMethodDefinition | undefined;
 }
 
-/** Router configuration */
+/** Router configuration (`createRouter(routes, config)` / `new SimpleRouter(config)`) */
 export interface RouterConfig {
+  /** Path prefix added to every route registered on this router. */
   prefix?: string;
-  middleware?: Middleware[];
-  errorHandler?: ErrorMiddleware;
-  notFoundHandler?: RouteHandler;
-  caseSensitive?: boolean;
-  mergeParams?: boolean;
-  strict?: boolean;
+  /** Middleware run before every route, as if passed to `router.use()`. */
+  middleware?: Middleware | Middleware[];
   /**
    * Origin, or allowlist of origins, permitted to make cross-origin requests.
    *
@@ -200,7 +241,34 @@ export interface RouterConfig {
   exposeErrors?: boolean;
   /** Default per-request options for `createServer()` / `handle()`. */
   rateLimit?: RouterRateLimitOptions | false;
+  /** Largest accepted request body in bytes (default 1 MiB). */
   maxBodySize?: number;
+  /** Security headers (X-Frame-Options, CSP...) on every response (default `true`). */
+  enableSecurityHeaders?: boolean;
+  /** CORS headers when security headers are off (default `true`). */
+  enableCORS?: boolean;
+  /** Route API versions (`addVersionedRoute`) by header, `/vN` prefix or `?version=`. */
+  enableVersioning?: boolean;
+  /** Version of routes registered without one (default `'v1'`). */
+  defaultVersion?: string;
+  /** Request header carrying the API version (default `'api-version'`). */
+  versionHeader?: string;
+  /** Allow `addWebSocketRoute()` / `ws` routes. */
+  enableWebSockets?: boolean;
+  /** Collect `getMetrics()` data. */
+  enableMetrics?: boolean;
+  /** Also count static vs dynamic route matches in the metrics. */
+  enableRouteMetrics?: boolean;
+  /** Pre-compile route patterns (default `true`); matching is identical either way. */
+  enableCompilation?: boolean;
+  /** Look static paths up in a Map before trying patterns (default `true`). */
+  enableSmartRouting?: boolean;
+  /** Content type used when the Accept header is absent (default `'application/json'`). */
+  defaultContentType?: string;
+  /** Largest number of cached route matches (default 1000). */
+  maxCacheSize?: number;
+  /** Largest number of cached compiled patterns (default 1000). */
+  maxCompilationCacheSize?: number;
 }
 
 /**
@@ -221,19 +289,56 @@ export interface RouteRegistrationOptions {
   version?: string;
 }
 
-/** Object router interface */
+/** Per-request options for `handle()` and `createServer()`. */
+export interface HandleOptions {
+  /** Overrides the router's configured CORS origin allowlist. */
+  corsOrigin?: string | string[];
+  rateLimit?: RouterRateLimitOptions | false;
+  /** Overrides the router's `trustProxy`. */
+  trustProxy?: boolean | number;
+  /** Overrides the router's `exposeErrors`. */
+  exposeErrors?: boolean;
+  maxBodySize?: number;
+}
+
+/** Middleware applied only when `condition` holds (`router.use({ condition, middleware })`). */
+export interface ConditionalMiddleware {
+  /** A predicate, or an object matched against method/path/header/query/body/user. */
+  condition: ((req: ApiRequest, res: ApiResponse) => boolean | Promise<boolean>) | Record<string, any> | boolean;
+  middleware: Middleware;
+  name?: string;
+}
+
+/** A route as returned by `getRoutes()`. */
+export interface RouteInfo {
+  method: string;
+  path: string;
+  name: string | null;
+  hasMiddleware: boolean;
+  middlewareCount: number;
+  compiled: boolean;
+  compiledPattern: string | null;
+  paramNames: string[] | null;
+}
+
+/** Object router interface (the value `createRouter()` returns) */
 export interface ObjectRouter {
-  routes: RouteObject;
-  config: RouterConfig;
   addRoute(method: string, path: string, handler: RouteHandler, options?: RouteRegistrationOptions): void;
+  addVersionedRoute(version: string, method: string, path: string, handler: RouteHandler, options?: RouteRegistrationOptions): void;
   addRoutes(routes: RouteObject): void;
   get(path: string, handler: RouteHandler, options?: RouteRegistrationOptions): void;
   post(path: string, handler: RouteHandler, options?: RouteRegistrationOptions): void;
   put(path: string, handler: RouteHandler, options?: RouteRegistrationOptions): void;
   patch(path: string, handler: RouteHandler, options?: RouteRegistrationOptions): void;
   delete(path: string, handler: RouteHandler, options?: RouteRegistrationOptions): void;
-  use(middleware: Middleware): void;
-  use(path: string, middleware: Middleware): void;
+  options(path: string, handler: RouteHandler, options?: RouteRegistrationOptions): void;
+  head(path: string, handler: RouteHandler, options?: RouteRegistrationOptions): void;
+  /** Add middleware for routes registered after this call. */
+  use(middleware: Middleware | ConditionalMiddleware): void;
+  /** Register the routes defined in `callback` under a prefix, with shared middleware. */
+  group(prefix: string, middleware: Middleware | Middleware[], callback: (router: ObjectRouter) => void): ObjectRouter;
+  /** Build the URL of a named route. */
+  generateUrl(name: string, params?: Record<string, string | number>): string;
   /**
    * Adapt the router to an Express router. Pass the express module itself;
    * the returned value is whatever `express.Router()` produces, so it plugs
@@ -241,27 +346,38 @@ export interface ObjectRouter {
    */
   toExpressRouter<RouterType>(express: { Router: () => RouterType }): RouterType;
   /** Create a bare node:http server that delegates every request to handle(). */
-  createServer(options?: Record<string, unknown>): import('http').Server;
+  createServer(options?: HandleOptions): import('http').Server;
   /**
    * Handle a raw Node request/response pair. The router parses query, params
    * and body itself, so a plain IncomingMessage is accepted.
    */
-  handle(
-    req: IncomingMessage,
-    res: ServerResponse,
-    options?: {
-      /** Overrides the router's configured CORS origin allowlist. */
-      corsOrigin?: string | string[];
-      rateLimit?: RouterRateLimitOptions | false;
-      /** Overrides the router's `trustProxy`. */
-      trustProxy?: boolean | number;
-      /** Overrides the router's `exposeErrors`. */
-      exposeErrors?: boolean;
-      maxBodySize?: number;
-    }
-  ): Promise<void>;
-  getRoutes(): RouteObject;
-  mount(app: any): void;
+  handle(req: IncomingMessage, res: ServerResponse, options?: HandleOptions): Promise<void>;
+  /** Registered routes. */
+  getRoutes(): RouteInfo[];
+  /** Registered routes filtered by method, path substring, name or middleware presence. */
+  findRoutes(criteria?: { method?: string; path?: string; name?: string; hasMiddleware?: boolean }): Array<{
+    method: string;
+    path: string;
+    name: string | null;
+    middlewareCount: number;
+  }>;
+  /** Match a method and path without running anything. */
+  testRoute(method: string, path: string): {
+    matched: boolean;
+    route: { method: string; path: string; name: string | null; middlewareCount: number } | null;
+    params: UrlParams | null;
+    compiledUsed?: boolean;
+  };
+  /** Metrics collected with `enableMetrics`; throws when metrics are off. */
+  getMetrics(): Record<string, any>;
+  /** Forget cached route matches. */
+  clearCache(): void;
+  /** Register a WebSocket route; requires `enableWebSockets`. */
+  addWebSocketRoute(path: string, handler: WebSocketHandler, options?: { name?: string; version?: string }): void;
+  /** Pass a node:http `'upgrade'` event to the router. */
+  handleWebSocketUpgrade(request: IncomingMessage, socket: import('stream').Duplex, head: Buffer): void;
+  /** Send `message` to every open WebSocket on `path` (`'*'` for all). */
+  broadcast(path: string, message: any, excludeId?: string | null): void;
 }
 
 // ============================================================================
@@ -483,7 +599,11 @@ export interface AuthConfig {
   required?: boolean;
 }
 
-/** JWT options */
+/**
+ * JWT options.
+ * @deprecated No runtime API takes this object; pass the secret to
+ * `generateJWT()` / `verifyToken()` / `withAuth({ secret })`.
+ */
 export interface JwtOptions {
   secret: string;
   algorithm?: string;
@@ -506,7 +626,12 @@ export interface AuthUser {
 // Rate Limiting
 // ============================================================================
 
-/** Rate limit configuration */
+/**
+ * Rate limit configuration.
+ * @deprecated Not read by any runtime API. The router takes
+ * `RouterRateLimitOptions`; `withRateLimit()` from `@coherent.js/api/middleware`
+ * takes `{ windowMs, max, message, statusCode }`.
+ */
 export interface RateLimitConfig {
   windowMs?: number;
   max?: number;
@@ -520,7 +645,10 @@ export interface RateLimitConfig {
 // Caching
 // ============================================================================
 
-/** Cache configuration */
+/**
+ * Cache configuration.
+ * @deprecated Not read by any runtime API.
+ */
 export interface CacheConfig {
   ttl?: number;
   key?: string | ((req: ApiRequest) => string);
@@ -532,7 +660,11 @@ export interface CacheConfig {
 // Serialization
 // ============================================================================
 
-/** Serialization configuration */
+/**
+ * Serialization configuration.
+ * @deprecated Not read by any runtime API; `withSerialization()` takes
+ * `SerializationMiddlewareOptions`.
+ */
 export interface SerializationConfig {
   include?: string[];
   exclude?: string[];
@@ -542,7 +674,10 @@ export interface SerializationConfig {
   undefinedValues?: boolean;
 }
 
-/** Serialization options */
+/**
+ * Serialization options.
+ * @deprecated Not read by any runtime API.
+ */
 export interface SerializationOptions {
   space?: number;
   replacer?: (key: string, value: any) => any;
@@ -556,28 +691,28 @@ export interface SerializationOptions {
 
 /**
  * Base API error class.
- * Extends Error with HTTP status code and error code support.
+ * Extends Error with an HTTP status code and details.
  */
 export class ApiError extends Error {
-  constructor(message: string, statusCode?: number, code?: string);
+  constructor(message: string, statusCode?: number, details?: Record<string, any>);
   /** HTTP status code (default: 500) */
   statusCode: number;
-  /** Machine-readable error code */
-  code: string;
-  /** Additional error details */
-  details?: any;
+  /** Additional error details (default: `{}`) */
+  details: Record<string, any>;
   /** Convert error to JSON-serializable object */
-  toJSON(): { message: string; statusCode: number; code: string; details?: any };
+  toJSON(): { error: string; message: string; statusCode: number; details: Record<string, any> };
 }
 
 /**
  * Validation error class.
- * Thrown when request validation fails.
+ * Thrown when request validation fails (HTTP 400).
  */
 export class ValidationError extends ApiError {
-  constructor(message: string, errors?: ValidationErrorInfo[]);
+  constructor(errors: ValidationErrorInfo[], message?: string);
   /** Array of field-level validation errors */
   errors: ValidationErrorInfo[];
+  /** `{ errors }`, sent to the client in the 400 response */
+  details: { errors: ValidationErrorInfo[] };
 }
 
 /**
@@ -879,13 +1014,19 @@ export interface OpenAPIServerVariable {
 // Main Functions
 // ============================================================================
 
-/** Create an object-based router */
-export function createRouter(routes: RouteObject, config?: RouterConfig): ObjectRouter;
+/** Create an object-based router. `routes` may be omitted (or null) and added later. */
+export function createRouter(routes?: RouteObject | null, config?: RouterConfig): ObjectRouter;
 
-/** Error handling HOC */
-export function withErrorHandling(options?: ErrorHandlerOptions): (handler: RouteHandler) => RouteHandler;
+/**
+ * Wrap a handler or middleware so that anything it throws becomes an
+ * `ApiError`: an `ApiError` is rethrown as is, anything else becomes a 500
+ * `ApiError` whose `cause` is the original error.
+ */
+export function withErrorHandling<H extends (req: any, res: any, next?: any) => any>(
+  handler: H
+): (req: Parameters<H>[0], res: Parameters<H>[1], next?: NextFunction) => Promise<Awaited<ReturnType<H>>>;
 
-/** Create error handler middleware */
+/** Create error handler middleware (Express `(err, req, res, next)` signature) */
 export function createErrorHandler(options?: ErrorHandlerOptions): ErrorMiddleware;
 
 /**
@@ -935,30 +1076,80 @@ export function withParamsValidation(schema: SchemaDefinition, options?: Validat
  */
 export function withAuth(config: AuthConfig): Middleware;
 
-/** Role-based authorization middleware */
+/** Role-based authorization middleware: 401 without `req.user`, 403 when `req.user.role` is not listed. */
 export function withRole(roles: string | string[]): Middleware;
 
-/** Input validation middleware (combines body, query, and params) */
-export function withInputValidation(schema: {
-  body?: ValidationSchema;
-  query?: ValidationSchema;
-  params?: ValidationSchema;
-}): Middleware;
+/** Rule for one body field checked by `withInputValidation()`. */
+export interface InputValidationRule {
+  /** Reject undefined, null and '' */
+  required?: boolean;
+  /** Expected `typeof` of the value */
+  type?: 'string' | 'number' | 'boolean' | 'object';
+  minLength?: number;
+  maxLength?: number;
+  pattern?: RegExp;
+}
 
-/** Hash password */
-export function hashPassword(password: string, saltRounds?: number): Promise<string>;
+/**
+ * Lightweight body validation: answers 400 `{ error: 'Validation failed',
+ * details: string[] }` when a field breaks its rule. For nested schemas use
+ * `withValidation()`.
+ */
+export function withInputValidation(rules: Record<string, InputValidationRule>): Middleware;
 
-/** Verify password */
-export function verifyPassword(password: string, hash: string): Promise<boolean>;
+/**
+ * Hash a password with PBKDF2-SHA512 and a random salt. Synchronous; returns
+ * `"<salt>:<hash>"` in hex.
+ */
+export function hashPassword(password: string): string;
 
-/** Generate JWT token */
-export function generateToken(payload: any, options?: JwtOptions): string;
+/** Check a password against a `hashPassword()` result. Synchronous. */
+export function verifyPassword(password: string, hash: string): boolean;
 
-/** Serialization middleware */
-export function withSerialization(config: SerializationConfig): Middleware;
+/**
+ * Random token for non-JWT uses (API keys, reset links...): `length` random
+ * bytes, hex-encoded, so the string is `2 * length` characters (default 32
+ * bytes). For JWTs use `generateJWT()`.
+ */
+export function generateToken(length?: number): string;
 
-/** Serialize for JSON */
-export function serializeForJSON(obj: any, options?: SerializationOptions): any;
+/**
+ * Sign an HS256 JWT. `expiresIn` is `'<n>h'`, `'<n>m'` or `'<n>d'` (default
+ * `'1h'`). Throws a `TypeError` without a secret: there is no default.
+ */
+export function generateJWT(payload: Record<string, any>, expiresIn: string | undefined, secret: string | Buffer): string;
+
+/**
+ * Verify an HS256 JWT (optionally prefixed with `Bearer `). Returns the
+ * payload, or `null` when the token is malformed, forged or expired. Throws
+ * a `TypeError` without a secret.
+ */
+export function verifyToken(token: string | undefined, secret: string | Buffer): Record<string, any> | null;
+
+/** Options for `withSerialization()` */
+export interface SerializationMiddlewareOptions {
+  /** Add `res.serialize.date` / `req.deserialize.date` (default `true`). */
+  enableDate?: boolean;
+  /** Add `res.serialize.map` / `req.deserialize.map` (default `true`). */
+  enableMap?: boolean;
+  /** Add `res.serialize.set` / `req.deserialize.set` (default `true`). */
+  enableSet?: boolean;
+  /** Replacements for the built-in helpers. */
+  custom?: {
+    serializeDate?: (date: Date) => any;
+    deserializeDate?: (value: any) => Date;
+    serializeMap?: (map: Map<any, any>) => any;
+    deserializeMap?: (value: any) => Map<any, any>;
+    serializeSet?: (set: Set<any>) => any;
+    deserializeSet?: (value: any) => Set<any>;
+  };
+}
+
+/** Serialization middleware: attaches `res.serialize` and `req.deserialize` helpers. */
+export function withSerialization(options?: SerializationMiddlewareOptions): Middleware;
+
+/** Convert Dates, Maps and Sets (recursively) into JSON-safe values. */
+export function serializeForJSON(data: any): any;
 
 /** Serialize date */
 export function serializeDate(date: Date): string;
@@ -967,16 +1158,16 @@ export function serializeDate(date: Date): string;
 export function deserializeDate(dateString: string): Date;
 
 /** Serialize Map */
-export function serializeMap(map: Map<any, any>): any;
+export function serializeMap(map: Map<any, any>): Record<string, any>;
 
 /** Deserialize Map */
-export function deserializeMap(obj: any): Map<any, any>;
+export function deserializeMap(obj: Record<string, any>): Map<string, any>;
 
 /** Serialize Set */
-export function serializeSet(set: Set<any>): any;
+export function serializeSet<T>(set: Set<T>): T[];
 
 /** Deserialize Set */
-export function deserializeSet(arr: any[]): Set<any>;
+export function deserializeSet<T>(arr: T[]): Set<T>;
 
 // ============================================================================
 // Default Export
@@ -990,7 +1181,6 @@ declare const coherentApi: {
   AuthorizationError: typeof AuthorizationError;
   NotFoundError: typeof NotFoundError;
   ConflictError: typeof ConflictError;
-  BadRequestError: typeof BadRequestError;
   withErrorHandling: typeof withErrorHandling;
   createErrorHandler: typeof createErrorHandler;
   validateAgainstSchema: typeof validateAgainstSchema;
@@ -1011,6 +1201,8 @@ declare const coherentApi: {
   hashPassword: typeof hashPassword;
   verifyPassword: typeof verifyPassword;
   generateToken: typeof generateToken;
+  generateJWT: typeof generateJWT;
+  verifyToken: typeof verifyToken;
   withInputValidation: typeof withInputValidation;
 };
 
