@@ -155,6 +155,100 @@ describe('Translator', () => {
     });
   });
 
+  describe('Regional locale resolution', () => {
+    beforeEach(() => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('resolves fr-FR to the loaded fr instead of the fallback', () => {
+      translator.setLocale('fr-FR');
+      expect(translator.getLocale()).toBe('fr');
+      expect(translator.t('hello')).toBe('Bonjour');
+      expect(console.warn).not.toHaveBeenCalled();
+    });
+
+    it('matches case-insensitively and accepts underscores', () => {
+      translator.setLocale('FR_fr');
+      expect(translator.getLocale()).toBe('fr');
+      expect(translator.resolveLocale('ES-mx')).toBe('es');
+    });
+
+    it('drops subtags one at a time', () => {
+      translator.addTranslations('zh-Hant', { hello: '你好 (Hant)' });
+      translator.addTranslations('zh', { hello: '你好' });
+      expect(translator.resolveLocale('zh-Hant-TW')).toBe('zh-Hant');
+      expect(translator.resolveLocale('zh-Hans-CN')).toBe('zh');
+    });
+
+    it('still falls back to the fallback locale when no parent is loaded', () => {
+      translator.setLocale('de-AT');
+      expect(translator.getLocale()).toBe('en');
+      expect(console.warn).toHaveBeenCalledWith('Locale de-AT not loaded, using fallback');
+    });
+
+    it('resolves a per-call locale override the same way', () => {
+      expect(translator.t('hello', {}, 'fr-CA')).toBe('Bonjour');
+      expect(translator.has('hello', 'fr-CA')).toBe(true);
+      expect(translator.has('nested.deep.key', 'fr-CA')).toBe(false);
+    });
+
+    it('falls back per key from a regional locale to its language, then the fallback locale', () => {
+      translator.addTranslations('fr-CA', { hello: 'Allô' });
+      expect(translator.t('hello', {}, 'fr-CA')).toBe('Allô');
+      expect(translator.t('welcome', { name: 'Ada' }, 'fr-CA')).toBe('Bienvenue, Ada!');
+      expect(translator.t('nested.deep.key', {}, 'fr-CA')).toBe('Deep value');
+    });
+
+    it('prefers an exact regional match when it is loaded', () => {
+      translator.addTranslations('en-GB', { color: 'colour' });
+      translator.setLocale('en-GB');
+      expect(translator.getLocale()).toBe('en-GB');
+      expect(translator.t('color')).toBe('colour');
+      expect(translator.t('hello')).toBe('Hello');
+    });
+  });
+
+  describe('Plural rules of the message locale', () => {
+    beforeEach(() => {
+      translator.addTranslations('en', { apples: { one: '{{count}} apple', other: '{{count}} apples' } });
+      translator.addTranslations('ru', {
+        hello: 'Привет',
+        files: { one: '{{count}} файл', few: '{{count}} файла', many: '{{count}} файлов', other: '{{count}} файла' }
+      });
+    });
+
+    it('uses English plural rules for English fallback text in a Russian locale', () => {
+      translator.setLocale('ru');
+      // Russian rules put 21 in "one"; the English message must still say "apples".
+      expect(translator.t('apples', { count: 21 })).toBe('21 apples');
+      expect(translator.t('apples', { count: 1 })).toBe('1 apple');
+      expect(translator.t('apples', { count: 3 })).toBe('3 apples');
+    });
+
+    it('uses Russian plural rules for Russian messages', () => {
+      translator.setLocale('ru');
+      expect(translator.t('files', { count: 21 })).toBe('21 файл');
+      expect(translator.t('files', { count: 3 })).toBe('3 файла');
+      expect(translator.t('files', { count: 5 })).toBe('5 файлов');
+    });
+
+    it('keeps the regional plural rules when the message comes from the parent language', () => {
+      translator.addTranslations('pt', { tickets: { one: '{{count}} bilhete', other: '{{count}} bilhetes' } });
+      // pt (Brazil) puts 0 in "one"; pt-PT puts it in "other".
+      expect(translator.t('tickets', { count: 0 }, 'pt')).toBe('0 bilhete');
+      expect(translator.t('tickets', { count: 0 }, 'pt-PT')).toBe('0 bilhetes');
+    });
+
+    it('does not throw for a locale Intl.PluralRules rejects', () => {
+      expect(translator.selectPlural({ one: 'one', other: 'other' }, 1, 'en_US')).toBe('one');
+      expect(translator.selectPlural({ one: 'one', other: 'other' }, 2, 'en_US')).toBe('other');
+    });
+  });
+
   describe('HTML escaping of params', () => {
     const XSS = '<img src=x onerror="alert(\'x\')">&';
     const ESCAPED = '&lt;img src=x onerror=&quot;alert(&#39;x&#39;)&quot;&gt;&amp;';

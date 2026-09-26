@@ -97,15 +97,30 @@ export class Translator {
   /** Recursively merge `source` into `target` */
   deepMerge(target: TranslationMessages, source: TranslationMessages): TranslationMessages;
 
-  /** Switch the active locale */
+  /**
+   * Loaded locales that can serve `locale`, most specific first: the locale,
+   * then its parents with trailing subtags dropped (`zh-Hant-TW` → `zh-Hant`
+   * → `zh`). Case-insensitive; `_` is accepted for `-`.
+   */
+  localeCandidates(locale: string): string[];
+
+  /** The closest loaded locale (`fr-FR` → `fr`), or `null` */
+  resolveLocale(locale: string): string | null;
+
+  /**
+   * Switch the active locale to the closest loaded one (`fr-FR` → `fr`),
+   * or to the fallback locale when neither it nor a parent is loaded.
+   */
   setLocale(locale: string): void;
 
   /** The active locale */
   getLocale(): string;
 
   /**
-   * Resolve a key. Falls back to the fallback locale, then to
-   * `missingKeyHandler`, then to the key itself.
+   * Resolve a key in the target locale, then its parent locales (`fr-CA` →
+   * `fr`), then the fallback locale, then `missingKeyHandler`, then the key
+   * itself. Plural forms are chosen with the plural rules of the language the
+   * message was found in.
    *
    * The third argument is a locale override, or `{ locale, escape }`.
    */
@@ -136,7 +151,10 @@ export class Translator {
    */
   interpolate(str: string, params: TranslationParams, options?: { escape?: boolean }): string;
 
-  /** Whether a key resolves in the given (or current) locale */
+  /**
+   * Whether a key resolves in the given (or current) locale or one of its
+   * parents; the fallback locale is not consulted
+   */
   has(key: TranslationKey, locale?: string | null): boolean;
 
   /** All messages for a locale, or `{}` */
