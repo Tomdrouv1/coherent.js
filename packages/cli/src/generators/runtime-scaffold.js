@@ -262,9 +262,8 @@ const fastify = Fastify({
   logger: true
 });
 
-// Default HTML shell wrapping rendered components. Override per-route by
-// passing a custom \`template\` to setupCoherent or by responding with a
-// pre-rendered string.
+// Default HTML shell wrapping rendered components. Override per-route with
+// reply.coherent(component, { template }) or by sending a pre-rendered string.
 const APP_HTML_TEMPLATE = \`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -306,9 +305,9 @@ await fastify.register(async (scope) => {
   });
 }, { prefix: '/api' });
 ` : ''}
-// Main route - return Coherent.js component (auto-rendered by plugin)
-fastify.get('/', async () => {
-  return HomePage({});
+// Main route - render the Coherent.js component into APP_HTML_TEMPLATE
+fastify.get('/', async (_request, reply) => {
+  return reply.coherent(HomePage({}));
 });
 
 // Start server
@@ -353,8 +352,8 @@ const router = new Router();
 
 const PORT = Number(process.env.PORT) || ${port};
 
-// Default HTML shell wrapping rendered components. Override per-route by
-// passing a custom \`template\` to setupCoherent or by setting ctx.body to a
+// Default HTML shell wrapping rendered components. Override it by passing a
+// custom \`template\` to setupCoherent or by setting ctx.body to a
 // pre-rendered string.
 const APP_HTML_TEMPLATE = \`<!DOCTYPE html>
 <html lang="en">
@@ -394,8 +393,9 @@ const isKoaApiPath = (path${isTypeScript ? ': string' : ''}) =>
 app.use(koaBody());
 app.use(serve('./public'));
 
-// Setup Coherent.js (wraps rendered components in APP_HTML_TEMPLATE)
-setupCoherent(app, { template: APP_HTML_TEMPLATE });
+// Setup Coherent.js: with autoRender, a Coherent.js component set as ctx.body
+// is rendered into APP_HTML_TEMPLATE
+setupCoherent(app, { template: APP_HTML_TEMPLATE, autoRender: true });
 
 ${hasAuth ? `// Auth routes (public). Mount before the protected scope.
 router.use('/api/auth', authRouter.routes(), authRouter.allowedMethods());
@@ -403,7 +403,7 @@ router.use('/api/auth', authRouter.routes(), authRouter.allowedMethods());
 // Add new protected routes here, not as a top-level app.use().
 router.use('/api/protected', authMiddleware);
 ` : ''}
-// Main route - set body to Coherent.js component (auto-rendered by middleware)
+// Main route - set body to a Coherent.js component (rendered by autoRender)
 router.get('/', async (ctx) => {
   ctx.body = HomePage({});
 });

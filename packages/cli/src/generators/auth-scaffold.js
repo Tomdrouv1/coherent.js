@@ -68,14 +68,16 @@ Object.defineProperty(authPlugin, Symbol.for('skip-override'), { value: true });
 `;
 
 /**
- * setupCoherent() from @coherent.js/integrations renders any single-key object
- * body (such as `{ error: '...' }` or `{ user }`) as an HTML component. The
- * generated Fastify/Koa auth code therefore sends its JSON already serialized.
+ * With auto-rendering on (the generated Koa app enables `autoRender`, and older
+ * @coherent.js/integrations releases always did), setupCoherent() renders any
+ * single-key object body (such as `{ error: '...' }` or `{ user }`) as an HTML
+ * component. The generated Fastify/Koa auth code therefore sends its JSON
+ * already serialized.
  */
 function fastifyJsonHelper(ts) {
   return `
-// Replies with JSON. setupCoherent() renders single-key object replies (such
-// as { error }) as HTML components, so the body is sent pre-serialized.
+// Replies with JSON, pre-serialized: when auto-rendering is on, setupCoherent()
+// renders single-key object replies (such as { error }) as HTML components.
 export function sendJson(reply${ts ? ': FastifyReply' : ''}, statusCode${ts ? ': number' : ''}, body${ts ? ': unknown' : ''}) {
   return reply.code(statusCode).type('application/json; charset=utf-8').send(JSON.stringify(body));
 }
@@ -84,8 +86,8 @@ export function sendJson(reply${ts ? ': FastifyReply' : ''}, statusCode${ts ? ':
 
 function koaJsonHelper(ts) {
   return `
-// Responds with JSON. setupCoherent() renders single-key object bodies (such
-// as { error }) as HTML components, so the body is set pre-serialized.
+// Responds with JSON, pre-serialized: with autoRender, setupCoherent() renders
+// single-key object bodies (such as { error }) as HTML components.
 export function sendJson(ctx${ts ? ': Context' : ''}, status${ts ? ': number' : ''}, body${ts ? ': unknown' : ''})${ts ? ': void' : ''} {
   ctx.status = status;
   ctx.type = 'application/json';
