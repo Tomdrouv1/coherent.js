@@ -381,13 +381,25 @@ export interface ValidationOptions {
 // Authentication and Authorization
 // ============================================================================
 
-/** Authentication configuration */
+/**
+ * Authentication configuration for `withAuth()`.
+ *
+ * Either `secret` or `verify` is required: there is no default secret, and
+ * `withAuth()` throws a `TypeError` when neither is given.
+ */
 export interface AuthConfig {
-  required?: boolean;
-  roles?: string[];
-  permissions?: string[];
-  strategy?: 'jwt' | 'session' | 'basic' | 'custom';
+  /**
+   * HS256 secret the `Authorization: Bearer <jwt>` tokens were signed with,
+   * typically `process.env.JWT_SECRET`.
+   */
+  secret?: string | Buffer;
+  /**
+   * Custom verifier used instead of JWT verification. Return the user, or a
+   * falsy value to reject the request. May be async.
+   */
   verify?: (req: ApiRequest) => Promise<any> | any;
+  /** Answer 401 when no valid user is found (default `true`). */
+  required?: boolean;
 }
 
 /** JWT options */
@@ -823,8 +835,11 @@ export function withQueryValidation<T = any>(schema: ValidationSchema): Middlewa
 /** Params validation middleware */
 export function withParamsValidation(schema: ValidationSchema): Middleware;
 
-/** Authentication middleware */
-export function withAuth(config?: AuthConfig): Middleware;
+/**
+ * Authentication middleware. Throws a `TypeError` when created without
+ * `secret` or `verify`.
+ */
+export function withAuth(config: AuthConfig): Middleware;
 
 /** Role-based authorization middleware */
 export function withRole(roles: string | string[]): Middleware;

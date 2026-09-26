@@ -55,7 +55,7 @@ describe('API Security Functions', () => {
   });
 
   it('should create auth middleware', () => {
-    const authMiddleware = withAuth();
+    const authMiddleware = withAuth({ secret: 'test-secret' });
     expect(typeof authMiddleware).toBe('function');
   });
 

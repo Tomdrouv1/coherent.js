@@ -44,13 +44,38 @@ function createSignature(data, secret) {
 }
 
 /**
+ * Refuse to sign or verify without a caller-supplied secret.
+ *
+ * There used to be a built-in default, 'your-secret-key'. It was public, so
+ * anyone could mint a token -- `{ role: 'admin' }` included -- that every
+ * `withAuth()` without a configured secret accepted. A missing secret is a
+ * deployment mistake, so it fails loudly instead of quietly falling back.
+ *
+ * @private
+ * @param {unknown} secret - Secret supplied by the caller
+ * @param {string} usage - How the caller should pass it, for the message
+ */
+function requireSecret(secret, usage) {
+  if (typeof secret === 'string' ? secret.length > 0 : Buffer.isBuffer(secret) && secret.length > 0) {
+    return;
+  }
+  throw new TypeError(
+    `[coherent.js/api] ${usage}: a JWT secret is required (a non-empty string or Buffer), ` +
+      'for example process.env.JWT_SECRET. There is no default secret.'
+  );
+}
+
+/**
  * Generate JWT token
  * @param {Object} payload - Token payload
  * @param {string} expiresIn - Expiration time (e.g., '1h', '30m', '7d')
- * @param {string} secret - Secret key
+ * @param {string} secret - Secret key (required)
  * @returns {string} JWT token
+ * @throws {TypeError} If no secret is given
  */
-export function generateJWT(payload, expiresIn = '1h', secret = 'your-secret-key') {
+export function generateJWT(payload, expiresIn = '1h', secret) {
+  requireSecret(secret, "generateJWT(payload, expiresIn, secret) was called without a secret");
+
   const header = {
     alg: 'HS256',
     typ: 'JWT'
@@ -87,10 +112,13 @@ export function generateJWT(payload, expiresIn = '1h', secret = 'your-secret-key
 /**
  * JWT token verification
  * @param {string} token - Bearer token or JWT token
- * @param {string} secret - Secret key
+ * @param {string} secret - Secret key (required)
  * @returns {Object|null} Decoded payload or null if invalid
+ * @throws {TypeError} If no secret is given
  */
-export function verifyToken(token, secret = 'your-secret-key') {
+export function verifyToken(token, secret) {
+  requireSecret(secret, 'verifyToken(token, secret) was called without a secret');
+
   try {
     let jwtToken = token;
     
@@ -136,22 +164,57 @@ export function verifyToken(token, secret = 'your-secret-key') {
 
 /**
  * Authentication middleware
+ *
+ * Verifies the `Authorization: Bearer <jwt>` header with `options.secret`, or
+ * hands the request to `options.verify` for any other scheme. One of the two
+ * is required: there is no default secret.
+ *
  * @param {Object} options - Auth options
+ * @param {string|Buffer} [options.secret] - HS256 secret the tokens were signed with
+ * @param {Function} [options.verify] - `(req) => user | null`, may be async; replaces JWT verification
+ * @param {boolean} [options.required=true] - Answer 401 when no valid user is found
  * @returns {Function} Middleware function
+ * @throws {TypeError} If neither `secret` nor `verify` is given
  */
 export function withAuth(options = {}) {
-  const { secret, required = true } = options;
-  
+  const { secret, verify, required = true } = options ?? {};
+
+  const reject = (res) => {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Unauthorized' }));
+  };
+
+  if (verify !== undefined) {
+    if (typeof verify !== 'function') {
+      throw new TypeError('[coherent.js/api] withAuth({ verify }) expects verify to be a function (req) => user.');
+    }
+    return async (req, res) => {
+      let user = null;
+      try {
+        user = (await verify(req)) || null;
+      } catch {
+        user = null;
+      }
+      if (required && !user) {
+        reject(res);
+        return;
+      }
+      req.user = user;
+      return null; // Continue to next middleware
+    };
+  }
+
+  requireSecret(secret, 'withAuth({ secret }) was created without a secret');
+
   return (req, res) => {
     const authHeader = req.headers.authorization;
     const user = verifyToken(authHeader, secret);
-    
+
     if (required && !user) {
-      res.writeHead(401, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Unauthorized' }));
+      reject(res);
       return;
     }
-    
+
     req.user = user;
     return null; // Continue to next middleware
   };
