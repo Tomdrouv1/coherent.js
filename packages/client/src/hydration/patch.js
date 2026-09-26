@@ -6,10 +6,12 @@
  * properties, text, raw HTML, and children — added, removed, replaced, and
  * matched by `key` when every sibling has one.
  *
- * Attribute values follow core's renderer: functions are called, style
- * objects become `prop: value` declarations, `true` is a bare attribute and
- * `false`/`null`/`undefined` remove it. `key`, `children`, `text`, `html` and
- * `on*` handlers are never attributes.
+ * Attributes are the ones core's renderer writes (see renderedAttributes()
+ * in vnode.js): functions are called, class arrays and objects are joined,
+ * style objects become `prop: value` declarations, `true` is a bare attribute
+ * and `false`/`null`/`undefined` remove it (aria-* and enumerated attributes
+ * get "true"/"false"). `key`, `children`, `text`, `html` and `on*` handlers
+ * are never attributes.
  *
  * @module @coherent.js/client/hydration/patch
  */
@@ -20,68 +22,13 @@ import {
   getRenderedChildren,
   getSignificantDOMChildren,
   resolveAttributeValue,
+  renderedAttributes,
 } from './vnode.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
-/** Props that are content or identity, never attributes. */
-const NON_ATTRIBUTE_PROPS = new Set(['children', 'text', 'html', 'key']);
-
-/** Prop names that differ from their attribute name. */
-const ATTRIBUTE_NAMES = { className: 'class', htmlFor: 'for' };
-
 /** Form state that lives in properties once the user has touched a field. */
 const LIVE_PROPERTIES = new Set(['value', 'checked', 'selected']);
-
-function isEventProp(name, value) {
-  return name.startsWith('on') && typeof value === 'function';
-}
-
-function toKebabCase(property) {
-  return property.startsWith('--')
-    ? property
-    : property.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
-}
-
-/**
- * Serialise a style object like core's formatAttributes does.
- * @param {Object} style
- * @returns {string}
- */
-export function styleToCss(style) {
-  return Object.entries(style)
-    .filter(([, value]) => value !== null && value !== undefined && value !== false)
-    .map(([property, value]) => `${toKebabCase(property)}: ${value}`)
-    .join('; ');
-}
-
-/**
- * The attributes a props object renders, as name → string ('' for a bare
- * attribute). Omitted names are absent.
- * @param {Object} props
- * @returns {Map<string, string>}
- */
-function renderedAttributes(props) {
-  const attributes = new Map();
-
-  for (const [name, raw] of Object.entries(props)) {
-    if (NON_ATTRIBUTE_PROPS.has(name) || isEventProp(name, raw)) continue;
-
-    const value = resolveAttributeValue(raw);
-    const attrName = ATTRIBUTE_NAMES[name] ?? name;
-
-    if (attrName === 'style' && value && typeof value === 'object') {
-      const css = styleToCss(value);
-      if (css) attributes.set('style', css);
-    } else if (value === true) {
-      attributes.set(attrName, '');
-    } else if (value !== false && value !== null && value !== undefined) {
-      attributes.set(attrName, String(value));
-    }
-  }
-
-  return attributes;
-}
 
 /**
  * Bring an element's live form properties in line with its props. Setting the

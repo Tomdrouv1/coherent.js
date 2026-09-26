@@ -12,6 +12,7 @@ import {
   getSignificantDOMChildren,
   alignChildren,
   resolveAttributeValue,
+  renderedAttributes,
 } from './vnode.js';
 
 /**
@@ -173,10 +174,15 @@ export function detectMismatch(domElement, virtualNode, path = []) {
   }
 
   // Check critical attributes, evaluated the way core renders them
+  const attributes = renderedAttributes(props);
   for (const { virtual, dom } of ATTRIBUTE_CHECKS) {
-    if (props[virtual] === undefined) continue;
+    const isClass = dom === 'class';
+    if (props[virtual] === undefined && !(isClass && props.class !== undefined)) continue;
 
-    const expectedValue = resolveAttributeValue(props[virtual]);
+    // class comes from className, class or both, arrays and objects joined
+    const expectedValue = isClass
+      ? attributes.get('class') ?? null
+      : resolveAttributeValue(props[virtual]);
     const actualValue = domElement.getAttribute(dom);
 
     // true renders a bare attribute; false and null render none

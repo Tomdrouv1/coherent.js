@@ -54,23 +54,31 @@ function callFunctionComponent(fn) {
   return { ok: true, value: result };
 }
 
+/** What core's isCoherentObject (core/object-utils.js) accepts as a tag name. */
+const TAG_NAME = /^[a-zA-Z][a-zA-Z0-9-]*$/;
+
 /**
- * Whether a value is an element virtual node (`{ tagName: props }`).
+ * Whether a value is an element virtual node (`{ tagName: props }`), as core
+ * decides it: a non-empty object whose keys are all tag names. Core renders
+ * an object with any other key (`{ my_tag: ... }`) as nothing.
  * @param {*} vNode
  * @returns {boolean}
  */
 export function isElementVNode(vNode) {
-  return Boolean(vNode) &&
-    typeof vNode === 'object' &&
-    !Array.isArray(vNode) &&
-    !isTrustedContent(vNode) &&
-    Object.keys(vNode).length > 0;
+  if (!vNode || typeof vNode !== 'object' || Array.isArray(vNode) || isTrustedContent(vNode)) {
+    return false;
+  }
+  const keys = Object.keys(vNode);
+  return keys.length > 0 && keys.every((key) => TAG_NAME.test(key));
 }
 
 /**
  * Split an element virtual node into its tag name and props, normalising the
  * shorthand forms core accepts (`{ span: 'text' }`, `{ br: null }`, function
  * content).
+ *
+ * Only the first key is read: an object with several keys is several sibling
+ * elements, which getRenderedChildren() lists one by one.
  * @param {Object} vNode - Element virtual node
  * @returns {{ tagName: string, props: Object }}
  */
@@ -114,8 +122,21 @@ function flatten(node, out) {
     out.push({ type: 'opaque', html: node.__html });
     return;
   }
-  if (isElementVNode(node)) {
-    out.push({ type: 'element', vNode: node });
+  // A lazy() value: core renders what evaluate() returns.
+  if (node.__isLazy === true && typeof node.evaluate === 'function') {
+    const called = callFunctionComponent(() => node.evaluate());
+    if (called.ok) flatten(called.value, out);
+    else out.push({ type: 'opaque' });
+    return;
+  }
+  if (!isElementVNode(node)) {
+    return;
+  }
+  // Every key is an element: `{ span: ..., button: ... }` renders a span and
+  // then a button, as core's renderer does.
+  const tagNames = Object.keys(node);
+  for (const tagName of tagNames) {
+    out.push({ type: 'element', vNode: tagNames.length === 1 ? node : { [tagName]: node[tagName] } });
   }
 }
 
@@ -134,13 +155,120 @@ export function resolveAttributeValue(value) {
   }
 }
 
+/** Props that are content or identity, never attributes. */
+const NON_ATTRIBUTE_PROPS = new Set(['children', 'text', 'html', 'key']);
+
+/** Prop names that differ from their attribute name. */
+const ATTRIBUTE_NAMES = { className: 'class', htmlFor: 'for' };
+
+/**
+ * Enumerated attributes whose `false` is a value that must be written out,
+ * as in core's ENUMERATED_BOOLEAN_ATTRIBUTES (core/html-utils.js).
+ */
+const ENUMERATED_BOOLEAN_ATTRIBUTES = new Set(['spellcheck', 'draggable', 'contenteditable']);
+
+function isEventProp(name, value) {
+  return name.startsWith('on') && typeof value === 'function';
+}
+
+function toKebabCase(property) {
+  return property.startsWith('--')
+    ? property
+    : property.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
+}
+
+/**
+ * Serialise a style object like core's formatAttributes does.
+ * @param {Object} style
+ * @returns {string}
+ */
+function styleToCss(style) {
+  return Object.entries(style)
+    .filter(([, value]) => value !== null && value !== undefined && value !== false)
+    .map(([property, value]) => `${toKebabCase(property)}: ${value}`)
+    .join('; ');
+}
+
+/**
+ * Normalise a class value like core's normalizeClassValue
+ * (core/html-utils.js): strings as-is, arrays flattened with falsy entries
+ * dropped, objects as the keys whose values are truthy (clsx-style).
+ * @param {*} value
+ * @returns {string}
+ */
+function normalizeClassValue(value) {
+  if (Array.isArray(value)) {
+    return value.map(normalizeClassValue).filter(Boolean).join(' ');
+  }
+  if (value && typeof value === 'object') {
+    return Object.keys(value).filter((name) => value[name]).join(' ');
+  }
+  if (value === null || value === undefined || value === false) return '';
+  return String(value);
+}
+
+/**
+ * The attributes a props object renders, as name → string ('' for a bare
+ * attribute), in the order core's formatAttributes writes them. Omitted
+ * names are absent.
+ *
+ * Functions are called, except `on*` handlers, which are not attributes;
+ * `className`/`class` arrays and objects are joined like clsx, and the two
+ * props together make one class attribute; style objects become
+ * `prop: value` declarations; `true` is a bare attribute and `false`, `null`
+ * and `undefined` omit it, except on `aria-*` and enumerated attributes
+ * (`spellcheck`, `draggable`, `contenteditable`), where booleans are the
+ * values "true" and "false".
+ *
+ * @param {Object} props
+ * @returns {Map<string, string>}
+ */
+export function renderedAttributes(props) {
+  const attributes = new Map();
+  // Both given: one class attribute, in `class`'s place, `className` last
+  const mergeClass = props.class !== undefined && props.className !== undefined;
+
+  for (const [name, raw] of Object.entries(props)) {
+    if (NON_ATTRIBUTE_PROPS.has(name) || isEventProp(name, raw)) continue;
+    if (mergeClass && name === 'className') continue;
+
+    const attrName = ATTRIBUTE_NAMES[name] ?? name;
+    let value = mergeClass && name === 'class'
+      ? [raw, props.className].map((v) => normalizeClassValue(resolveAttributeValue(v))).filter(Boolean).join(' ')
+      : resolveAttributeValue(raw);
+
+    if (attrName === 'class' && value !== null && typeof value === 'object') {
+      value = normalizeClassValue(value);
+    }
+    if (
+      typeof value === 'boolean' &&
+      (attrName.startsWith('aria-') || ENUMERATED_BOOLEAN_ATTRIBUTES.has(attrName.toLowerCase()))
+    ) {
+      value = String(value);
+    }
+
+    if (attrName === 'style' && value && typeof value === 'object') {
+      const css = styleToCss(value);
+      if (css) attributes.set('style', css);
+    } else if (value === true) {
+      attributes.set(attrName, '');
+    } else if (value !== false && value !== null && value !== undefined) {
+      attributes.set(attrName, String(value));
+    }
+  }
+
+  return attributes;
+}
+
 /**
  * The children an element's server output contains, in order: element nodes,
  * text nodes (adjacent strings merged, whitespace-only dropped) and opaque
  * regions (raw HTML or components whose output cannot be reproduced).
  *
- * Null, undefined and booleans render nothing; nested arrays are flattened;
- * `text` precedes `children`; an `html` prop replaces both.
+ * Null, undefined and booleans render nothing (as does `text: null`); nested
+ * arrays are flattened; an object with several tag keys is one element per
+ * key, in key order; `text` precedes `children`; an `html` prop replaces both.
+ * Each element entry's `vNode` has a single key.
  *
  * @param {string} tagName
  * @param {Object} props
@@ -161,7 +289,8 @@ export function getRenderedChildren(tagName, props) {
   }
 
   const raw = [];
-  if (props.text !== undefined) {
+  // Null means "no text" to core, not the string "null"
+  if (props.text !== undefined && props.text !== null) {
     const text = resolveAttributeValue(props.text);
     raw.push({ type: 'text', text: String(text) });
   }
