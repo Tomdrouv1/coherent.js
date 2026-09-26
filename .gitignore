@@ -79,3 +79,4 @@ logs
 
 # Misc
 output.txt
+coverage-summary.json
