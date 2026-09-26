@@ -205,29 +205,35 @@ export interface DatabaseManager {
 // Query Builder Types
 // ============================================================================
 
-/** SQL operators for where conditions */
-export type SqlOperator =
+/** Operators accepted in WHERE operator objects (matched case-insensitively). */
+type BaseSqlOperator =
   | '=' | '!=' | '<>' | '>' | '>=' | '<' | '<='
   | 'LIKE' | 'NOT LIKE' | 'ILIKE' | 'NOT ILIKE'
-  | 'IN' | 'NOT IN' | 'BETWEEN' | 'NOT BETWEEN'
-  | 'IS NULL' | 'IS NOT NULL'
-  | 'EXISTS' | 'NOT EXISTS'
-  | 'REGEXP' | 'NOT REGEXP';
+  | 'IN' | 'NOT IN' | 'BETWEEN' | 'NOT BETWEEN';
 
-/** Where condition value */
-export type WhereValue =
-  | string | number | boolean | Date | null
-  | any[]
-  | { [K in SqlOperator]?: any }
-  | QueryConfig;
+/** SQL operators for where conditions */
+export type SqlOperator = BaseSqlOperator | Lowercase<BaseSqlOperator>;
 
-/** Where conditions object */
-export interface WhereConditions {
-  [column: string]: WhereValue | WhereConditions;
-  AND?: WhereConditions | WhereConditions[];
-  OR?: WhereConditions | WhereConditions[];
-  NOT?: WhereConditions;
-}
+/** A single value compared with `=` (or `IS NULL` for null). */
+export type WhereScalar = string | number | bigint | boolean | Date | Uint8Array | null;
+
+/**
+ * Operator object: `{ '>': 18 }`, `{ in: [1, 2] }`, `{ between: [1, 10] }`.
+ * Unknown operators and undefined operands throw.
+ */
+export type WhereOperators = { [K in SqlOperator]?: WhereScalar | WhereScalar[] };
+
+/** Where condition value. `undefined` throws; arrays must go through `{ in: [...] }`. */
+export type WhereValue = WhereScalar | WhereOperators;
+
+/** Where conditions object: columns are ANDed together. */
+export type WhereConditions = {
+  [column: string]: WhereValue | WhereConditions | WhereConditions[];
+} & {
+  $or?: WhereConditions[];
+  $and?: WhereConditions[];
+  $not?: WhereConditions;
+};
 
 /** Order by direction */
 export type OrderDirection = 'ASC' | 'DESC' | 'asc' | 'desc';
@@ -237,77 +243,89 @@ export interface OrderByConfig {
   [column: string]: OrderDirection;
 }
 
+type BaseJoinType = 'INNER' | 'LEFT' | 'RIGHT' | 'FULL' | 'CROSS' | 'LEFT OUTER' | 'RIGHT OUTER' | 'FULL OUTER';
+
 /** Join types */
-export type JoinType = 'INNER' | 'LEFT' | 'RIGHT' | 'FULL' | 'CROSS';
+export type JoinType = BaseJoinType | Lowercase<BaseJoinType>;
 
 /** Join configuration */
 export interface JoinConfig {
   type?: JoinType;
   table: string;
-  on: string | WhereConditions;
+  alias?: string;
+  /** Column comparisons joined with AND, e.g. `'users.id = posts.user_id'`. Not used for CROSS joins. */
+  condition?: string;
+  /** Alias of `condition`. */
+  on?: string;
+}
+
+/** @deprecated Not supported by the query builder; `groupBy` throws. */
+export type GroupByConfig = string | string[];
+
+/** @deprecated Not supported by the query builder; `having` throws. */
+export type HavingConditions = WhereConditions;
+
+/** A table with an optional alias (aliases are only allowed in SELECT queries). */
+export interface TableReference {
+  table: string;
   alias?: string;
 }
 
-/** Group by configuration */
-export type GroupByConfig = string | string[];
-
-/** Having conditions */
-export interface HavingConditions extends WhereConditions {}
-
-/** Query configuration object */
+/**
+ * Query configuration object.
+ *
+ * Identifiers must be `name` or `table.name`; unknown options throw.
+ * UPDATE and DELETE require a non-empty `where` unless `allowFullTable` is true.
+ */
 export interface QueryConfig {
-  table?: string;
+  table?: string | TableReference;
+  /** Alias of `table`. */
+  from?: string | TableReference;
+  /** Alias for `table` in SELECT queries. */
   alias?: string;
+  /** Columns, `*`, `table.*`, or `COUNT|SUM|AVG|MIN|MAX(column)`, each optionally `AS alias`. */
   select?: string | string[] | SelectConfig;
-  distinct?: boolean;
+  joins?: JoinConfig[];
   where?: WhereConditions;
-  join?: JoinConfig | JoinConfig[];
-  leftJoin?: JoinConfig | JoinConfig[];
-  rightJoin?: JoinConfig | JoinConfig[];
-  innerJoin?: JoinConfig | JoinConfig[];
-  fullJoin?: JoinConfig | JoinConfig[];
-  groupBy?: GroupByConfig;
-  having?: HavingConditions;
-  orderBy?: string | string[] | OrderByConfig;
+  orderBy?: string | Array<string | OrderByConfig> | OrderByConfig;
+  /** Non-negative integer; 0 means no limit. */
   limit?: number;
+  /** Non-negative integer. */
   offset?: number;
   insert?: Record<string, any> | Record<string, any>[];
   update?: Record<string, any>;
-  upsert?: Record<string, any>;
   delete?: boolean;
+  /** Columns for a RETURNING clause on insert, update or delete. */
   returning?: string | string[];
-  with?: WithConfig | WithConfig[];
-  union?: QueryConfig[];
-  unionAll?: QueryConfig[];
-  forUpdate?: boolean;
-  forShare?: boolean;
-  skipLocked?: boolean;
-  noWait?: boolean;
+  /** Allow an UPDATE or DELETE without a WHERE clause (affects every row). */
+  allowFullTable?: boolean;
 }
 
-/** Select configuration with column aliasing */
+/** Select configuration with column aliasing: `{ alias: 'column' }` → `column AS alias`. */
 export interface SelectConfig {
   [alias: string]: string;
 }
 
-/** WITH clause configuration for CTEs */
+/** @deprecated Not supported by the query builder. */
 export interface WithConfig {
   name: string;
   query: QueryConfig;
   recursive?: boolean;
 }
 
-/** SQL query result */
+/** Anything with a `query(sql, params)` method, such as a DatabaseManager or a transaction. */
+export interface QueryExecutor {
+  query(sql: string, params?: any[]): Promise<any>;
+}
+
+/** SQL query result, as returned by the SQL adapters. */
 export interface QueryResult<T = any> {
-  sql: string;
-  params: any[];
-  result?: T;
-  rows?: T[];
+  rows: T[];
   rowCount?: number;
-  fields?: FieldInfo[];
-  insertId?: number | string;
+  /** Rows changed by an INSERT, UPDATE or DELETE. */
   affectedRows?: number;
-  changedRows?: number;
+  /** Generated key of an INSERT, when the driver reports one. */
+  insertId?: number | string | null;
 }
 
 /** Field information */
@@ -858,8 +876,12 @@ export type InferModelAttributes<S extends ModelSchema> = {
 /** Create a query configuration object */
 export function createQuery(config: QueryConfig): QueryConfig;
 
-/** Execute a query using the provided configuration */
-export function executeQuery<T = any>(db: DatabaseConnection, query: QueryConfig): Promise<QueryResult<T>>;
+/**
+ * Build and execute a query configuration.
+ * Throws before querying on unsafe identifiers, unknown operators or options, undefined
+ * WHERE values, invalid LIMIT/OFFSET, or UPDATE/DELETE without WHERE (see `allowFullTable`).
+ */
+export function executeQuery<T = any>(db: QueryExecutor, query: QueryConfig): Promise<QueryResult<T>>;
 
 /**
  * Create a typed model.

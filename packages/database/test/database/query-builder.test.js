@@ -138,18 +138,11 @@ describe('QueryBuilder', { concurrency: false }, () => {
       expect(params).toEqual([]);
     });
 
-    it('should handle queries without table gracefully', async () => {
-      // This would typically fail in a real database, but our mock allows it
+    it('should reject queries without a table', async () => {
       const query = createQuery({ select: ['*'] });
-      
-      try {
-        await executeQuery(mockDb, query);
-        const [sql] = mockDb.getLastCall();
-        expect(sql).toBe('SELECT * FROM undefined');
-      } catch {
-        // This is acceptable - missing table should cause an _error
-        expect(true).toBe(true); // Expected error for missing table
-      }
+
+      await expect(executeQuery(mockDb, query)).rejects.toThrow('Query requires a table');
+      expect(mockDb.query.calls).toHaveLength(0);
     });
   });
 });
