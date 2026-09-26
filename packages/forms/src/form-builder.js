@@ -8,7 +8,7 @@
 
 import { render as renderToHTML } from '@coherent.js/core';
 import { isEmailShaped } from './patterns.js';
-import { resolveValidator } from './rules.js';
+import { resolveValidator, serializeValidators } from './rules.js';
 
 /**
  * Class applied to each structural slot. Consumers override any subset via
@@ -436,15 +436,13 @@ export class FormBuilder {
     const error = this.errors[name];
     const isTouched = this.touched[name];
 
-    // Build validator names string for data-validators attribute
-    const validatorNames = field.validators
-      .map(v => {
-        if (typeof v === 'function') return v.name || 'custom';
-        if (typeof v === 'string') return v;
-        return null;
-      })
-      .filter(Boolean)
-      .join(',');
+    // Describe the validators for hydrateForm, as a JSON array of
+    // `{ name, args }` (`[{"name":"minLength","args":[8]}]`), so the client
+    // rebuilds the same rules. It used to emit `v.name || 'custom'`: a
+    // factory-built validator is an anonymous closure, so every one became
+    // `custom`, which the client treated as always valid. Validators that
+    // cannot be described (anonymous functions) are enforced server-side only.
+    const validatorSpec = serializeValidators(field.validators);
 
     const controlClass = joinClasses(
       classNames.control,
@@ -475,8 +473,8 @@ export class FormBuilder {
       inputProps['data-required'] = 'true';
     }
 
-    if (validatorNames) {
-      inputProps['data-validators'] = validatorNames;
+    if (validatorSpec) {
+      inputProps['data-validators'] = validatorSpec;
     }
 
     // Note: Event handlers are attached during hydration, not inline
