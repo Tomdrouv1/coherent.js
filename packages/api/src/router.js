@@ -109,6 +109,81 @@ function responseStarted(res) {
 }
 
 /**
+ * Whether the connection behind a response is gone.
+ * @private
+ */
+function responseClosed(res) {
+  return Boolean(res && (res.closed || res.destroyed || res.writableFinished));
+}
+
+/**
+ * Resolve once `nextSignal` settles or the response finishes or closes.
+ * @private
+ */
+function waitForNextOrResponse(res, nextSignal) {
+  if (responseClosed(res) || typeof res?.once !== 'function') return nextSignal;
+  return new Promise((resolve) => {
+    const done = () => {
+      res.off?.('finish', done);
+      res.off?.('close', done);
+      resolve();
+    };
+    res.once('finish', done);
+    res.once('close', done);
+    nextSignal.then(done);
+  });
+}
+
+/**
+ * Run one middleware under either calling convention.
+ *
+ * - Coherent style, `(req, res) => value`: the request continues when it
+ *   returns.
+ * - Express/Connect style, `(req, res, next)`: the request continues when
+ *   `next()` is called, even if that happens after the function returned
+ *   (an async token lookup, say). `next(err)` fails the request.
+ *
+ * Either way, a middleware that has sent a response has ended the request.
+ * A connection that closes before an Express-style middleware calls `next()`
+ * ends it too: continuing would run the handler without the middleware's
+ * approval.
+ *
+ * @private
+ * @param {Function} fn - Middleware
+ * @param {Object} req - Request
+ * @param {Object} res - Response
+ * @param {boolean} [expectsNext] - Wait for next(); defaults to `fn.length >= 3`
+ * @returns {Promise<{ result: *, proceed: boolean }>}
+ */
+async function runMiddleware(fn, req, res, expectsNext = fn.length >= 3) {
+  let nextCalled = false;
+  let nextError;
+  let wake;
+  const nextSignal = new Promise((resolve) => {
+    wake = resolve;
+  });
+  const next = (err) => {
+    if (nextCalled) return;
+    nextCalled = true;
+    nextError = err;
+    wake();
+  };
+
+  const result = await fn(req, res, next);
+
+  if (expectsNext && !nextCalled && result === undefined && !responseStarted(res)) {
+    await waitForNextOrResponse(res, nextSignal);
+    if (!nextCalled) return { result: undefined, proceed: false };
+  }
+
+  if (nextError) {
+    throw nextError instanceof Error ? nextError : new Error(String(nextError));
+  }
+
+  return { result, proceed: !responseStarted(res) };
+}
+
+/**
  * Rate limiting store
  * @private
  */
@@ -432,23 +507,25 @@ function registerRoute(method, config, router, path) {
     return;
   }
 
-  // Apply _error handling
-  if (errorHandling) {
-    chain.forEach((fn, i) => {
-      chain[i] = withErrorHandling(fn);
-    });
-  }
+  // Whether each step waits for next() is decided on the function the user
+  // wrote: withErrorHandling's wrapper always declares three parameters. The
+  // final handler never waits; it answers by returning or by writing.
+  const steps = chain.map((fn, i) => ({
+    fn: errorHandling ? withErrorHandling(fn) : fn,
+    expectsNext: i < chain.length - 1 && fn.length >= 3
+  }));
 
   // Register route with name option
   router.addRoute(method, routePath, async (req, res) => {
     try {
       // Execute middleware and handler chain
       let result = null;
-      for (const fn of chain) {
-        result = await fn(req, res);
+      for (const { fn, expectsNext } of steps) {
+        const outcome = await runMiddleware(fn, req, res, expectsNext);
+        result = outcome.result;
         // A middleware that wrote its own response (401, 403, 400...) has
         // rejected the request: nothing after it may run.
-        if (responseStarted(res)) return;
+        if (!outcome.proceed) return;
         if (result && typeof result === 'object') {
           break;
         }
@@ -1246,7 +1323,9 @@ class SimpleRouter {
   createConditionalMiddleware(config) {
     const { condition, middleware } = config;
 
-    return async (req, res) => {
+    // Declared with `next` so the chain waits on it: the wrapped middleware
+    // may itself be Express-style and continue asynchronously.
+    return async (req, res, next) => {
       // Evaluate condition
       let shouldExecute = false;
 
@@ -1259,11 +1338,14 @@ class SimpleRouter {
         shouldExecute = !!condition;
       }
 
-      if (shouldExecute) {
-        return await middleware(req, res);
+      if (!shouldExecute) {
+        next(); // Skip middleware
+        return undefined;
       }
 
-      return null; // Skip middleware
+      const { result, proceed } = await runMiddleware(middleware, req, res);
+      if (proceed) next();
+      return result;
     };
   }
 
@@ -1827,8 +1909,8 @@ class SimpleRouter {
         let handled = false;
         if (route.middleware && route.middleware.length > 0) {
           for (const middleware of route.middleware) {
-            const outcome = await middleware(req, res);
-            if (responseStarted(res)) {
+            const { result: outcome, proceed } = await runMiddleware(middleware, req, res);
+            if (!proceed) {
               handled = true;
               break;
             }
@@ -1956,15 +2038,25 @@ class SimpleRouter {
       // Create Express-compatible handler that adapts the Coherent.js handler
       const expressHandler = async (req, res, next) => {
         try {
-          // Apply Coherent.js middleware
+          // Apply Coherent.js middleware. Both `(req, res) => value` and
+          // `(req, res, next)` styles are accepted; waiting on next() alone
+          // hung forever on the former.
+          let result;
+          let handled = false;
           for (const mw of middleware) {
-            await new Promise((resolve, reject) => {
-              mw(req, res, (err) => err ? reject(err) : resolve());
-            });
+            const outcome = await runMiddleware(mw, req, res);
+            if (!outcome.proceed) return;
+            if (outcome.result && (typeof outcome.result === 'object' || typeof outcome.result === 'string')) {
+              result = outcome.result;
+              handled = true;
+              break;
+            }
           }
 
           // Call the handler
-          const result = await handler(req, res);
+          if (!handled) {
+            result = await handler(req, res);
+          }
 
           // If result is returned and response not sent, send as JSON
           if (result !== undefined && !res.headersSent) {
