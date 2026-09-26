@@ -221,7 +221,11 @@ export class DateFormatter {
   /** Date and time together */
   dateTime(date: Date | number | string, options?: Intl.DateTimeFormatOptions): string;
 
-  /** Relative to now (e.g. `2 hours ago`) */
+  /**
+   * Relative to now, past or future (e.g. `2 hours ago`, `tomorrow`,
+   * `in 3 weeks`), in the largest unit that fits: seconds, minutes, hours,
+   * days, weeks (from 7 days), months (from 30 days) or years (from 365 days).
+   */
   relative(date: Date | number | string): string;
 }
 
