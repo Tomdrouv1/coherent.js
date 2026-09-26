@@ -4,9 +4,20 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+    # Everything the static build reads: pages are rendered with core,
+    # the api package is imported by the site, the client bundle is served,
+    # docs/ and the root CHANGELOG.md become pages, and examples/ is listed.
+    # Only watching website/ and client/ left the site on an old renderer
+    # after core-only fixes, and on old docs after doc-only changes.
     paths:
       - 'website/**'
+      - 'packages/core/**'
+      - 'packages/api/**'
       - 'packages/client/**'
+      - 'docs/**'
+      - 'examples/**'
+      - 'CHANGELOG.md'
+      - 'pnpm-lock.yaml'
       - '.github/workflows/deploy-website.yml'
 
 permissions:
