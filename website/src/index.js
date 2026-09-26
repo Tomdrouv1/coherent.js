@@ -119,7 +119,7 @@ export const pageRoutes = [
   { path: '/performance', component: 'Performance', title: 'Performance - Coherent.js', scripts: ['/performance.js'], description: 'Interactive benchmarks for Coherent.js server-side rendering performance.' },
   { path: '/coverage', component: 'Coverage', title: 'Coverage - Coherent.js', description: 'Test coverage reports for the Coherent.js packages.' },
   { path: '/starter-app', component: 'StarterApp', title: 'Starter App - Coherent.js', props: { highlightCode }, description: 'Build your first Coherent.js app in 10 minutes with the starter application.' },
-  { path: '/changelog', component: 'Changelog', title: 'Changelog - Coherent.js', props: { entries: loadChangelog(join(repoRoot, 'CHANGELOG.md')) }, description: 'Release notes and version history for Coherent.js.' },
+  { path: '/changelog', component: 'Changelog', title: 'Changelog - Coherent.js', props: { entries: loadChangelog(join(repoRoot, 'CHANGELOG.md'), { rewriteLinks: (html) => rewriteDocLinks(html, '') }) }, description: 'Release notes and version history for Coherent.js.' },
 ];
 
 export { getExamplesList, Layout };

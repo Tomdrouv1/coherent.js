@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [2.0.0-rc.0] - 2026-09-26
 
-Release candidate for 2.0.0, published under the `rc` tag: `npm install @coherent.js/core@rc`. The [upgrade guide](https://coherentjs.dev/docs/migration/upgrading-from-1.1) lists every breaking change and what to do about it.
+Release candidate for 2.0.0, published under the `rc` tag: `npm install @coherent.js/core@rc`. The [upgrade guide](/docs/migration/upgrading-from-1.1.md) lists every breaking change and what to do about it.
 
 ### Breaking changes
 
