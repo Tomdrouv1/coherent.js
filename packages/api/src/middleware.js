@@ -4,14 +4,36 @@
  */
 
 /**
- * Creates a custom API middleware with _error handling
+ * Send a JSON response on either an Express response (`status().json()`) or
+ * a bare node:http one, so these middleware also work on the Coherent router.
+ * @private
+ */
+function sendJson(res, statusCode, body) {
+  if (typeof res.status === 'function' && typeof res.json === 'function') {
+    return res.status(statusCode).json(body);
+  }
+  res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(body));
+  return undefined;
+}
+
+/**
+ * Creates a custom API middleware with error handling
+ *
+ * Errors thrown synchronously, and rejections of an async handler, are passed
+ * to `next(err)`.
+ *
  * @param {Function} handler - Middleware handler function
  * @returns {Function} Middleware function that catches errors
  */
 export function createApiMiddleware(handler) {
   return (req, res, next) => {
     try {
-      return handler(req, res, next);
+      const result = handler(req, res, next);
+      if (result && typeof result.then === 'function') {
+        return result.catch((_error) => next(_error));
+      }
+      return result;
     } catch (_error) {
       // Pass errors to next middleware
       next(_error);
@@ -21,32 +43,53 @@ export function createApiMiddleware(handler) {
 
 /**
  * Authentication middleware
- * @param {Function} verifyToken - Function to verify authentication token
+ *
+ * `verifyToken(token)` returns the user for a valid token. A falsy return
+ * value (the package's own `verifyToken` answers `null`), a throw, or a
+ * rejected promise all mean the token is invalid, and the request gets a 401.
+ *
+ * @param {Function} verifyToken - `(token) => user | null`, may be async
  * @returns {Function} Middleware function
+ * @throws {TypeError} If verifyToken is not a function
  */
 export function withAuth(verifyToken) {
-  return createApiMiddleware((req, res, next) => {
+  if (typeof verifyToken !== 'function') {
+    throw new TypeError(
+      '[coherent.js/api] middleware withAuth(verifyToken) expects a function (token) => user | null, ' +
+        'e.g. (token) => verifyToken(token, process.env.JWT_SECRET).'
+    );
+  }
+
+  return createApiMiddleware(async (req, res, next) => {
     const authHeader = req.headers.authorization;
-    
-    if (!authHeader) {
-      return res.status(401).json({ 
-        error: 'Unauthorized', 
-        message: 'Missing authorization header' 
+
+    if (!authHeader || typeof authHeader !== 'string') {
+      return sendJson(res, 401, {
+        error: 'Unauthorized',
+        message: 'Missing authorization header'
       });
     }
-    
-    const token = authHeader.replace('Bearer ', '');
-    
+
+    const token = authHeader.replace(/^Bearer\s+/i, '');
+
+    let user = null;
     try {
-      const user = verifyToken(token);
-      req.user = user;
-      next();
+      user = await verifyToken(token);
     } catch {
-      return res.status(401).json({ 
-        error: 'Unauthorized', 
-        message: 'Invalid token' 
+      user = null;
+    }
+
+    // A verifier that answers null/undefined/false has rejected the token.
+    // Calling next() with req.user = null let the request through.
+    if (!user) {
+      return sendJson(res, 401, {
+        error: 'Unauthorized',
+        message: 'Invalid token'
       });
     }
+
+    req.user = user;
+    next();
   });
 }
 
@@ -58,7 +101,7 @@ export function withAuth(verifyToken) {
 export function withPermission(checkPermission) {
   return createApiMiddleware((req, res, next) => {
     if (!req.user) {
-      return res.status(401).json({ 
+      return sendJson(res, 401, {
         error: 'Unauthorized', 
         message: 'User not authenticated' 
       });
@@ -68,7 +111,7 @@ export function withPermission(checkPermission) {
       const hasPermission = checkPermission(req.user, req);
       
       if (!hasPermission) {
-        return res.status(403).json({ 
+        return sendJson(res, 403, {
           error: 'Forbidden', 
           message: 'Insufficient permissions' 
         });
@@ -76,7 +119,7 @@ export function withPermission(checkPermission) {
       
       next();
     } catch {
-      return res.status(403).json({ 
+      return sendJson(res, 403, {
         error: 'Forbidden', 
         message: 'Permission check failed' 
       });
@@ -200,7 +243,7 @@ export function withRateLimit(options = {}) {
     
     // Check if limit exceeded
     if (record.count > max) {
-      return res.status(statusCode).json({
+      return sendJson(res, statusCode, {
         error: 'Rate limit exceeded',
         message
       });
