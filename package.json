@@ -63,7 +63,7 @@
     "perf:analyze": "node scripts/analyze-bundle.mjs",
     "perf:build": "NODE_ENV=production pnpm build",
     "perf:benchmark": "node benchmarks/benchmark.js",
-    "perf:gate": "node benchmarks/perf-gate.js",
+    "perf:gate": "NODE_ENV=production node benchmarks/render-bench.js --quick --check",
     "perf:render": "NODE_ENV=production node benchmarks/render-bench.js",
     "test:node": "pnpm -r run test:node",
     "e2e": "playwright test",
