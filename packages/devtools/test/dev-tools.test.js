@@ -131,6 +131,43 @@ describe('bounded history', () => {
   });
 });
 
+describe('render timing', () => {
+  // The render is timed with performance.now(); drive that clock from the
+  // render itself so the result does not depend on how fast the machine is.
+  function timedDevTools(renderMs) {
+    let clock = 0;
+    vi.spyOn(performance, 'now').mockImplementation(() => clock);
+    const coherent = {
+      render: () => {
+        clock += renderMs;
+        return '<p>x</p>';
+      },
+    };
+    return make(coherent, { enabled: true });
+  }
+
+  const slowWarnings = (devtools) =>
+    devtools.warnings.filter((w) => /^Slow render/.test(w.message));
+
+  it('warns about a render slower than 10 ms', () => {
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    const devtools = timedDevTools(25);
+    devtools.render({ p: { text: 'x' } });
+    expect(slowWarnings(devtools)).toHaveLength(1);
+    expect(slowWarnings(devtools)[0].message).toBe(
+      'Slow render detected: 25.00ms'
+    );
+    expect(devtools.renderHistory.at(-1).renderTime).toBe(25);
+  });
+
+  it('does not warn about a render of 10 ms or less', () => {
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    const devtools = timedDevTools(10);
+    devtools.render({ p: { text: 'x' } });
+    expect(slowWarnings(devtools)).toHaveLength(0);
+  });
+});
+
 describe('browser enablement', () => {
   function shouldEnableInBrowser(location) {
     const realProcess = globalThis.process;
