@@ -12,9 +12,14 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { bootFixture } from '../helpers/server.js';
 
+/** Frames each captured WebSocket has received so far, parsed. */
+const receivedFrames = new WeakMap();
+
 /**
- * Wait for a WS frame matching `predicate` on an already-captured
- * Playwright WebSocket object.
+ * Wait for a WS frame matching `predicate` on a WebSocket captured by
+ * gotoAndCaptureWs(). Frames that already arrived count: the 'connected'
+ * ack can land before page.goto() resolves, and a listener attached only
+ * after that missed it and timed out.
  *
  * @param {import('@playwright/test').WebSocket} ws - captured Playwright WS
  * @param {(data: object) => boolean} predicate
@@ -22,40 +27,54 @@ import { bootFixture } from '../helpers/server.js';
  * @returns {Promise<object>} the parsed frame payload
  */
 function waitForFrame(ws, predicate, timeoutMs = 8_000) {
+  const frames = receivedFrames.get(ws);
+  const seen = frames.list.find(predicate);
+  if (seen) return Promise.resolve(seen);
+
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
-      ws.off('framereceived', handler);
+      frames.waiters.delete(check);
       reject(new Error(`timeout waiting for WS frame after ${timeoutMs}ms`));
     }, timeoutMs);
 
-    function handler({ payload }) {
-      let data;
-      try {
-        data = JSON.parse(typeof payload === 'string' ? payload : payload.toString('utf8'));
-      } catch {
-        return;
-      }
-      if (predicate(data)) {
-        clearTimeout(timer);
-        ws.off('framereceived', handler);
-        resolve(data);
-      }
+    function check(data) {
+      if (!predicate(data)) return;
+      clearTimeout(timer);
+      frames.waiters.delete(check);
+      resolve(data);
     }
-    ws.on('framereceived', handler);
+    frames.waiters.add(check);
   });
 }
 
 /**
  * Navigate to `url` and return the Playwright WebSocket object for the HMR
- * connection. We attach the listener *before* goto so we never miss the
- * 'connected' ack that arrives immediately after the WS handshake.
+ * connection. Its frames are recorded from the moment the socket opens, so
+ * the 'connected' ack that arrives right after the handshake is never
+ * missed, whether or not goto() has resolved yet.
  *
  * @param {import('@playwright/test').Page} page
  * @param {string} url
  * @returns {Promise<import('@playwright/test').WebSocket>}
  */
 async function gotoAndCaptureWs(page, url) {
-  const wsPromise = page.waitForEvent('websocket');
+  const wsPromise = new Promise((resolve) => {
+    page.once('websocket', (ws) => {
+      const frames = { list: [], waiters: new Set() };
+      receivedFrames.set(ws, frames);
+      ws.on('framereceived', ({ payload }) => {
+        let data;
+        try {
+          data = JSON.parse(typeof payload === 'string' ? payload : payload.toString('utf8'));
+        } catch {
+          return;
+        }
+        frames.list.push(data);
+        for (const waiter of [...frames.waiters]) waiter(data);
+      });
+      resolve(ws);
+    });
+  });
   await page.goto(url);
   return wsPromise;
 }
