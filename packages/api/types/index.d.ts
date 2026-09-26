@@ -192,6 +192,12 @@ export interface RouterConfig {
    * address unless this is set; the header is client-controlled otherwise.
    */
   trustProxy?: boolean | number;
+  /**
+   * Send the real message of 5xx errors to clients. Defaults to
+   * `NODE_ENV === 'development'`; otherwise a 5xx carries the generic status
+   * text and the error is logged with `console.error`.
+   */
+  exposeErrors?: boolean;
   /** Default per-request options for `createServer()` / `handle()`. */
   rateLimit?: RouterRateLimitOptions | false;
   maxBodySize?: number;
@@ -249,6 +255,8 @@ export interface ObjectRouter {
       rateLimit?: RouterRateLimitOptions | false;
       /** Overrides the router's `trustProxy`. */
       trustProxy?: boolean | number;
+      /** Overrides the router's `exposeErrors`. */
+      exposeErrors?: boolean;
       maxBodySize?: number;
     }
   ): Promise<void>;
@@ -606,8 +614,17 @@ export class ConflictError extends ApiError {
 
 /** Error handler options */
 export interface ErrorHandlerOptions {
+  /**
+   * Send the real message of 5xx errors to the client. Defaults to
+   * `NODE_ENV === 'development'`; otherwise 5xx bodies carry the generic
+   * status text and the error is only logged.
+   */
+  exposeErrors?: boolean;
+  /** Add `stack` to exposed errors (default: `NODE_ENV === 'development'`). */
   includeStack?: boolean;
+  /** Replaces `console.error` for logging. */
   logger?: (error: Error, req: ApiRequest) => void;
+  /** Builds the JSON body instead of the default `{ error, message, statusCode }`. */
   transform?: (error: Error) => any;
 }
 

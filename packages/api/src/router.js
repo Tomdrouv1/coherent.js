@@ -13,8 +13,9 @@ import { createHash, randomBytes } from 'node:crypto';
 
 import { withValidation } from './validation.js';
 import { withErrorHandling } from './errors.js';
-import { createServer } from 'node:http';
+import { createServer, STATUS_CODES } from 'node:http';
 import { parse as parseUrl } from 'node:url';
+import { env } from 'node:process';
 
 /**
  * HTTP methods supported by the object router
@@ -119,20 +120,57 @@ function errorStatus(error) {
 }
 
 /**
+ * Whether 5xx responses may carry the real error message.
+ *
+ * An explicit `exposeErrors` option wins; otherwise only when NODE_ENV is
+ * 'development'.
+ *
+ * @private
+ * @param {boolean|undefined} exposeErrors - Router/handle option
+ */
+function shouldExposeErrors(exposeErrors) {
+  if (typeof exposeErrors === 'boolean') return exposeErrors;
+  return env.NODE_ENV === 'development';
+}
+
+/**
  * Answer a request whose middleware or handler threw.
  *
  * Client errors (an `ApiError` with a 4xx `statusCode`, such as the
  * `ValidationError` thrown by `withValidation`) keep their message and
  * `details`, so a 400 says which field failed.
  *
+ * Server errors are logged in full and answered with the generic status
+ * text: echoing the message sent strings such as `connect ECONNREFUSED
+ * 10.0.3.7:5432 (db-primary.internal)` to any client. `exposeErrors: true`
+ * (or NODE_ENV=development) sends the real message.
+ *
  * @private
+ * @param {Object} req - HTTP request object
  * @param {Object} res - HTTP response object
  * @param {Error} error - What was thrown
+ * @param {boolean} [exposeErrors] - Send 5xx messages to the client
  */
-function sendError(res, error) {
-  if (responseStarted(res)) return;
+function sendError(req, res, error, exposeErrors) {
   const status = errorStatus(error);
-  const body = { error: error?.message || 'Internal Server Error' };
+
+  if (status >= 500) {
+    console.error(
+      `[coherent.js/api] ${req?.method ?? ''} ${req?.url ?? ''} failed with ${status}:`,
+      error?.cause ?? error
+    );
+  }
+
+  if (responseStarted(res)) return;
+
+  let message;
+  if (status >= 500 && !shouldExposeErrors(exposeErrors)) {
+    message = STATUS_CODES[status] || 'Internal Server Error';
+  } else {
+    message = error?.message || STATUS_CODES[status] || 'Internal Server Error';
+  }
+
+  const body = { error: message };
   const details = error?.details;
   if (status < 500 && details && typeof details === 'object' && Object.keys(details).length > 0) {
     body.details = details;
@@ -715,7 +753,7 @@ function registerRoute(method, config, router, path) {
         res.end();
       }
     } catch (_error) {
-      sendError(res, _error);
+      sendError(req, res, _error, router.exposeErrors);
     }
   }, { name });
 }
@@ -828,6 +866,10 @@ class SimpleRouter {
     // when trustProxy says how many proxies append to it.
     this.rateLimiter = new RateLimiter();
     this.trustProxy = options.trustProxy ?? false;
+
+    // 5xx responses carry a generic message unless this is true (or, when
+    // it is unset, NODE_ENV is 'development'). The real error is logged.
+    this.exposeErrors = options.exposeErrors;
   }
 
   /**
@@ -2077,7 +2119,7 @@ class SimpleRouter {
         return;
       } catch (_error) {
         if (this.enableMetrics) this.metrics.errors++;
-        sendError(res, _error);
+        sendError(req, res, _error, options.exposeErrors ?? this.exposeErrors);
         return;
       }
     }
