@@ -72,8 +72,8 @@ export interface FormField<T = unknown> {
   value?: T;
   /** Options for select/radio fields */
   options?: SelectOption[];
-  /** Validation rules */
-  validators?: Validator[];
+  /** Validation rules, run in order on the server and described to `hydrateForm` */
+  validators?: ValidatorEntry[];
   /** Field-specific validation configuration */
   validation?: FieldValidation<T>;
   /**
@@ -413,16 +413,26 @@ export interface ValidationErrors {
  *
  * The second argument is the whole form, so validators like
  * `validators.matches` can compare fields.
+ *
+ * This is the one calling convention every runner uses: schemas,
+ * `validateField`, `validateForm`, `FormBuilder` fields and `hydrateForm`.
  */
 export interface Validator {
   (value: unknown, formData?: Record<string, unknown>): string | null;
 }
 
 /**
+ * What a validator list accepts: a {@link Validator}, a built-in listed
+ * without calling it (`validators.required`, run with its defaults), or the
+ * name of a built-in or registered validator.
+ */
+export type ValidatorEntry = Validator | BuiltinValidator | string;
+
+/**
  * Per-field validators. A field maps to one validator or a list run in order,
  * stopping at the first error.
  */
-export type ValidationSchema = Record<string, Validator | Validator[]>;
+export type ValidationSchema = Record<string, ValidatorEntry | ValidatorEntry[]>;
 
 /**
  * Runs a {@link ValidationSchema} and tracks errors and touched fields.
@@ -473,9 +483,22 @@ export class FormValidator {
 }
 
 /**
- * Create a form validator
+ * Create a {@link FormValidator} for a schema.
  */
 export function createValidator(schema?: ValidationSchema): FormValidator;
+/**
+ * Wrap a check function as a {@link Validator}: a string result is the error,
+ * another truthy result becomes `message`, a falsy one passes.
+ */
+export function createValidator(
+  validatorFn: (
+    value: unknown,
+    options?: unknown,
+    translator?: unknown,
+    allValues?: Record<string, unknown>
+  ) => unknown,
+  message?: string
+): Validator;
 
 /**
  * Validate data against a schema with a throwaway validator
@@ -491,7 +514,7 @@ export function validate(
  */
 export function validateField(
   value: unknown,
-  validatorList: Validator[],
+  validatorList: ValidatorEntry | ValidatorEntry[],
   formData?: Record<string, unknown>
 ): string | null;
 
@@ -501,7 +524,7 @@ export function validateField(
  */
 export function validateForm(
   formData: Record<string, unknown>,
-  fieldValidators: Record<string, Validator[]>
+  fieldValidators: Record<string, ValidatorEntry | ValidatorEntry[]>
 ): ValidationErrors | null;
 
 /**
@@ -510,54 +533,132 @@ export function validateForm(
  * Unlike the built-ins, which are factories, this stores `validatorFn`
  * directly — so use it as `validators[name]`, not `validators[name]()`.
  * Registering over a built-in therefore changes that name's calling
- * convention.
+ * convention. The form builder describes registered validators to the client
+ * by name, so `hydrateForm` enforces them when the browser registers the same
+ * name.
  */
 export function registerValidator(name: string, validatorFn: Validator): void;
 
 /**
  * Combine validators into one that returns the first error, or `null`.
  */
-export function composeValidators(...validatorFns: Validator[]): Validator;
+export function composeValidators(...validatorFns: ValidatorEntry[]): Validator;
 
 // ============================================================================
 // Built-in Validators
 // ============================================================================
 
+/** Options for the direct form of a built-in: `validators.minLength(value, { min: 8 })`. */
+export interface BuiltinOptions {
+  message?: string;
+  [option: string]: unknown;
+}
+
 /**
- * Built-in validator factories. Each returns a {@link Validator}, so call it
- * before putting it in a schema: `validators.required()`, not
- * `validators.required`.
+ * A built-in validator. Call it as a factory to get a {@link Validator}
+ * (`validators.required()`, `validators.required('Name please')`), list it
+ * uncalled to use its defaults, or call it directly with a value and an
+ * options object (`validators.required(value, {})`) to get the error.
  *
- * Validators added with {@link registerValidator} also appear here, but are
- * stored as bare validators rather than factories.
+ * A lone string argument is always a factory message.
+ */
+export interface BuiltinValidator<Args extends unknown[] = []> {
+  (...args: [...Args, message?: string]): Validator;
+  (value: unknown, options: BuiltinOptions, translator?: unknown, allValues?: Record<string, unknown>): string | null;
+  /** Overrides the default message of this built-in */
+  message?: string;
+}
+
+/** A chain built with `validators.chain()`. */
+export interface ValidatorChain {
+  required(options?: BuiltinOptions): ValidatorChain;
+  email(options?: BuiltinOptions): ValidatorChain;
+  minLength(options?: BuiltinOptions & { min?: number }): ValidatorChain;
+  maxLength(options?: BuiltinOptions & { max?: number }): ValidatorChain;
+  custom(fn: (value: unknown, allValues?: Record<string, unknown>) => unknown, message?: string): ValidatorChain;
+  /** First error (or every error with `stopOnFirstError: false`), or `null` */
+  validate(
+    value: unknown,
+    options?: unknown,
+    translator?: unknown,
+    allValues?: Record<string, unknown>
+  ): string | string[] | null;
+}
+
+/**
+ * The validator registry, shared by `@coherent.js/forms`,
+ * `@coherent.js/forms/validation` and `@coherent.js/forms/validators`.
+ *
+ * Each built-in is a factory returning a {@link Validator}:
+ * `validators.minLength(8)`, `validators.email('Bad email')`. Validators added
+ * with {@link registerValidator} are stored as bare validators.
  */
 export const validators: {
   /** Reject `null`, `undefined` and the empty string */
-  required(message?: string): Validator;
+  required: BuiltinValidator;
   /** Validate email format; empty values pass */
-  email(message?: string): Validator;
-  /** Minimum length; empty values pass */
-  minLength(min: number, message?: string): Validator;
-  /** Maximum length; empty values pass */
-  maxLength(max: number, message?: string): Validator;
-  /** Minimum numeric value */
-  min(min: number, message?: string): Validator;
-  /** Maximum numeric value */
-  max(max: number, message?: string): Validator;
+  email: BuiltinValidator;
   /** Parseable as a URL; empty values pass */
-  url(message?: string): Validator;
+  url: BuiltinValidator;
+  /** Minimum length; empty values pass */
+  minLength: BuiltinValidator<[min: number]>;
+  /** Maximum length; empty values pass */
+  maxLength: BuiltinValidator<[max: number]>;
+  /** Minimum numeric value; empty values pass, non-numeric values fail */
+  min: BuiltinValidator<[min: number]>;
+  /** Maximum numeric value; empty values pass, non-numeric values fail */
+  max: BuiltinValidator<[max: number]>;
   /** Match a regular expression; empty values pass */
-  pattern(regex: RegExp, message?: string): Validator;
-  /** Equal another field's value */
-  matches(fieldName: string, message?: string): Validator;
+  pattern: BuiltinValidator<[regex: RegExp]>;
+  /** Equal another field's value (even when empty) */
+  matches: BuiltinValidator<[fieldName: string]>;
+  /** Equal another field's value; empty values pass */
+  match: BuiltinValidator<[fieldName: string]>;
   /** One of a fixed set; empty values pass */
-  oneOf(options: unknown[], message?: string): Validator;
+  oneOf: BuiltinValidator<[options: unknown[]]>;
   /** Fail when `fn` returns falsy */
-  custom(
-    fn: (value: unknown, formData?: Record<string, unknown>) => boolean,
-    message?: string
+  custom: BuiltinValidator<[fn: (value: unknown, formData?: Record<string, unknown>) => unknown]>;
+  /** A number; empty values pass */
+  number: BuiltinValidator;
+  /** A whole number; empty values pass */
+  integer: BuiltinValidator;
+  /** Digits, spaces and `-+()`, with at least 10 digits; empty values pass */
+  phone: BuiltinValidator;
+  /** Parseable as a date; empty values pass */
+  date: BuiltinValidator;
+  /** Letters only; empty values pass */
+  alpha: BuiltinValidator;
+  /** Letters and digits only; empty values pass */
+  alphanumeric: BuiltinValidator;
+  /** All uppercase; empty values pass */
+  uppercase: BuiltinValidator;
+  /** File MIME type or extension (`'image/*'`, `'.pdf'`) */
+  fileType: BuiltinValidator<[accept: string[]]>;
+  /** File size in bytes */
+  fileSize: BuiltinValidator<[maxSize: number]>;
+  /** File extension (`'.pdf'`) */
+  fileExtension: BuiltinValidator<[extensions: string[]]>;
+
+  /** A registered validator or built-in by name */
+  get(name: string): Validator | BuiltinValidator<unknown[]> | undefined;
+  /** Combine validators into one returning the first error */
+  compose(validatorList: ValidatorEntry[]): Validator;
+  /** Debounce an async validator */
+  debounce<V>(validator: (value: V) => unknown, delay?: number): (value: V) => Promise<unknown>;
+  /** Wrap an async validator so each call aborts the previous one */
+  cancellable<V>(
+    validator: (value: V, signal: AbortSignal | null) => Promise<string | null>
+  ): ((value: V) => Promise<string | null>) & { cancel(): void };
+  /** Run `validator` only when `condition` holds */
+  when(
+    condition: boolean | ((value: unknown, context: Record<string, unknown>) => unknown),
+    validator: ValidatorEntry
   ): Validator;
-  [name: string]: Validator | ((...args: never[]) => Validator);
+  /** Build a validator chain */
+  chain(options?: { stopOnFirstError?: boolean }): ValidatorChain;
+
+  /** Validators added with {@link registerValidator} */
+  [name: string]: (...args: any[]) => any;
 };
 
 // ============================================================================

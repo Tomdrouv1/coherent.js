@@ -6,93 +6,14 @@
  * @module forms/validation
  */
 
-import { isEmailShaped } from './patterns.js';
+import { validators, resolveValidator, wrapValidator } from './rules.js';
 
 /**
- * Built-in validators
+ * Built-in validators (the same registry `@coherent.js/forms/validators`
+ * exports). Each is a factory returning a `(value, formData) => error | null`
+ * validator: `validators.minLength(8)`. See rules.js for the full convention.
  */
-export const validators = {
-  required: (message = 'This field is required') => (value) => {
-    if (value === null || value === undefined || value === '') {
-      return message;
-    }
-    return null;
-  },
-
-  minLength: (min, message = `Minimum length is ${min}`) => (value) => {
-    if (value && value.length < min) {
-      return message;
-    }
-    return null;
-  },
-
-  maxLength: (max, message = `Maximum length is ${max}`) => (value) => {
-    if (value && value.length > max) {
-      return message;
-    }
-    return null;
-  },
-
-  min: (min, message = `Minimum value is ${min}`) => (value) => {
-    if (value !== null && value !== undefined && Number(value) < min) {
-      return message;
-    }
-    return null;
-  },
-
-  max: (max, message = `Maximum value is ${max}`) => (value) => {
-    if (value !== null && value !== undefined && Number(value) > max) {
-      return message;
-    }
-    return null;
-  },
-
-  email: (message = 'Invalid email address') => (value) => {
-    if (value && !isEmailShaped(value)) {
-      return message;
-    }
-    return null;
-  },
-
-  url: (message = 'Invalid URL') => (value) => {
-    if (value) {
-      try {
-        new URL(value);
-      } catch {
-        return message;
-      }
-    }
-    return null;
-  },
-
-  pattern: (regex, message = 'Invalid format') => (value) => {
-    if (value && !regex.test(value)) {
-      return message;
-    }
-    return null;
-  },
-
-  matches: (fieldName, message = 'Fields do not match') => (value, formData) => {
-    if (value !== formData[fieldName]) {
-      return message;
-    }
-    return null;
-  },
-
-  oneOf: (options, message = 'Invalid option') => (value) => {
-    if (value && !options.includes(value)) {
-      return message;
-    }
-    return null;
-  },
-
-  custom: (fn, message = 'Validation failed') => (value, formData) => {
-    if (!fn(value, formData)) {
-      return message;
-    }
-    return null;
-  }
-};
+export { validators };
 
 /**
  * Form Validator
@@ -117,8 +38,10 @@ export class FormValidator {
 
     const validatorArray = Array.isArray(fieldValidators) ? fieldValidators : [fieldValidators];
 
-    for (const validator of validatorArray) {
-      const error = validator(value, formData);
+    for (const entry of validatorArray) {
+      // Accepts `validators.required` as well as `validators.required()`.
+      const validator = resolveValidator(entry);
+      const error = validator ? validator(value, formData) : null;
       if (error) {
         return error;
       }
@@ -209,10 +132,22 @@ export class FormValidator {
 }
 
 /**
- * Create a form validator
+ * Create a validator.
+ *
+ * - `createValidator(schema)` returns a {@link FormValidator} for a
+ *   `{ field: validator | validator[] }` schema.
+ * - `createValidator(fn, message?)` wraps a check function as a validator: a
+ *   string result is the error, another truthy result becomes `message`, a
+ *   falsy one passes.
+ *
+ * Both entry points (`@coherent.js/forms` and `@coherent.js/forms/validators`)
+ * export this same function.
  */
-export function createValidator(schema) {
-  return new FormValidator(schema);
+export function createValidator(schemaOrFn, message) {
+  if (typeof schemaOrFn === 'function') {
+    return wrapValidator(schemaOrFn, message);
+  }
+  return new FormValidator(schemaOrFn);
 }
 
 /**

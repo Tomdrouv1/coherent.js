@@ -7,7 +7,7 @@
  * @module forms/form-hydration
  */
 
-import { validators } from './validators.js';
+import { parseValidators } from './rules.js';
 import { DEFAULT_CLASS_NAMES } from './form-builder.js';
 
 /**
@@ -60,28 +60,6 @@ export function hydrateForm(formSelector, options = {}) {
 
   // Debounce timers
   const debounceTimers = new Map();
-
-  /**
-   * Parse validators from data-validators attribute
-   */
-  function parseValidators(validatorString) {
-    if (!validatorString) return [];
-
-    return validatorString.split(',').map(v => {
-      const trimmed = v.trim();
-
-      // Handle validators with parameters: minLength:8
-      const [name, ...params] = trimmed.split(':');
-
-      if (validators[name]) {
-        return params.length > 0
-          ? validators[name](...params.map(p => isNaN(p) ? p : Number(p)))
-          : validators[name];
-      }
-
-      return null;
-    }).filter(Boolean);
-  }
 
   /**
    * Discover and register fields from form HTML

@@ -8,6 +8,7 @@
 
 import { render as renderToHTML } from '@coherent.js/core';
 import { isEmailShaped } from './patterns.js';
+import { resolveValidator } from './rules.js';
 
 /**
  * Class applied to each structural slot. Consumers override any subset via
@@ -320,9 +321,10 @@ export class FormBuilder {
       }
     }
 
-    // Run validators
-    for (const validator of field.validators || []) {
-      const error = validator(value, this.values);
+    // Run validators (`validators.required` and `validators.required()` alike)
+    for (const entry of field.validators || []) {
+      const validator = resolveValidator(entry);
+      const error = validator ? validator(value, this.values) : null;
       if (error) {
         this.errors[name] = error;
         return error;

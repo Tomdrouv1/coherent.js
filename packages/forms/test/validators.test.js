@@ -13,25 +13,27 @@ import { validators, createValidator, registerValidator } from '../src/validator
 
 describe('Validators', () => {
   describe('Built-in Validators', () => {
+    // Direct checks pass an options object: a lone string argument is a
+    // factory message (`validators.email('Bad email')` returns a validator).
     it('should validate required fields', () => {
-      expect(validators.required('')).toBeTruthy();
-      expect(validators.required('value')).toBeFalsy();
-      expect(validators.required(null)).toBeTruthy();
-      expect(validators.required(undefined)).toBeTruthy();
+      expect(validators.required('', {})).toBeTruthy();
+      expect(validators.required('value', {})).toBeFalsy();
+      expect(validators.required(null, {})).toBe('This field is required');
+      expect(validators.required(undefined, {})).toBe('This field is required');
     });
 
     it('should validate email format', () => {
-      expect(validators.email('test@example.com')).toBeFalsy();
-      expect(validators.email('invalid-email')).toBeTruthy();
-      expect(validators.email('user@domain')).toBeTruthy();
-      expect(validators.email('')).toBeFalsy(); // Empty is valid (use required separately)
+      expect(validators.email('test@example.com', {})).toBeFalsy();
+      expect(validators.email('invalid-email', {})).toBeTruthy();
+      expect(validators.email('user@domain', {})).toBeTruthy();
+      expect(validators.email('', {})).toBeFalsy(); // Empty is valid (use required separately)
     });
 
     it('should validate URL format', () => {
-      expect(validators.url('https://example.com')).toBeFalsy();
-      expect(validators.url('http://test.org')).toBeFalsy();
-      expect(validators.url('invalid-url')).toBeTruthy();
-      expect(validators.url('ftp://files.com')).toBeFalsy();
+      expect(validators.url('https://example.com', {})).toBeFalsy();
+      expect(validators.url('http://test.org', {})).toBeFalsy();
+      expect(validators.url('invalid-url', {})).toBeTruthy();
+      expect(validators.url('ftp://files.com', {})).toBeFalsy();
     });
 
     it('should validate min/max length', () => {
@@ -58,27 +60,27 @@ describe('Validators', () => {
     });
 
     it('should validate number type', () => {
-      expect(validators.number('123')).toBeFalsy();
-      expect(validators.number('abc')).toBeTruthy();
-      expect(validators.number('12.34')).toBeFalsy();
+      expect(validators.number('123', {})).toBeFalsy();
+      expect(validators.number('abc', {})).toBeTruthy();
+      expect(validators.number('12.34', {})).toBeFalsy();
     });
 
     it('should validate integer type', () => {
-      expect(validators.integer('123')).toBeFalsy();
-      expect(validators.integer('12.34')).toBeTruthy();
-      expect(validators.integer('abc')).toBeTruthy();
+      expect(validators.integer('123', {})).toBeFalsy();
+      expect(validators.integer('12.34', {})).toBeTruthy();
+      expect(validators.integer('abc', {})).toBeTruthy();
     });
 
     it('should validate alpha characters', () => {
-      expect(validators.alpha('abcXYZ')).toBeFalsy();
-      expect(validators.alpha('abc123')).toBeTruthy();
-      expect(validators.alpha('hello world')).toBeTruthy();
+      expect(validators.alpha('abcXYZ', {})).toBeFalsy();
+      expect(validators.alpha('abc123', {})).toBeTruthy();
+      expect(validators.alpha('hello world', {})).toBeTruthy();
     });
 
     it('should validate alphanumeric', () => {
-      expect(validators.alphanumeric('abc123')).toBeFalsy();
-      expect(validators.alphanumeric('abc-123')).toBeTruthy();
-      expect(validators.alphanumeric('test@123')).toBeTruthy();
+      expect(validators.alphanumeric('abc123', {})).toBeFalsy();
+      expect(validators.alphanumeric('abc-123', {})).toBeTruthy();
+      expect(validators.alphanumeric('test@123', {})).toBeTruthy();
     });
   });
 
@@ -361,8 +363,8 @@ describe('Validators', () => {
     });
 
     it('should handle special characters', () => {
-      expect(validators.email('user+tag@example.com')).toBeFalsy();
-      expect(validators.email('user@sub.domain.com')).toBeFalsy();
+      expect(validators.email('user+tag@example.com', {})).toBeFalsy();
+      expect(validators.email('user@sub.domain.com', {})).toBeFalsy();
     });
   });
 });
