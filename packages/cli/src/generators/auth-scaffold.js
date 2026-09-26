@@ -3,6 +3,29 @@
  * Generates JWT and session-based authentication setup
  */
 
+import { randomBytes } from 'node:crypto';
+
+/**
+ * Emitted into every generated auth module. Secrets are read from the
+ * environment with no fallback: a default secret ships in this CLI's source,
+ * so it is public and would let anyone forge tokens or session cookies.
+ * A missing secret therefore stops the app at startup instead.
+ */
+function requireSecretHelper(ts) {
+  return `
+// Secrets come from the environment; the npm scripts load .env with
+// \`node --env-file-if-exists=.env\`. There is deliberately no fallback value:
+// a default secret would be public and let anyone forge credentials.
+function requireSecret(name${ts ? ': string' : ''})${ts ? ': string' : ''} {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(name + ' is not set. Add it to .env (see .env.example) — the app refuses to start without it.');
+  }
+  return value;
+}
+`;
+}
+
 /**
  * Password-hashing helpers emitted into every auth middleware/plugin file.
  * scrypt is Node's built-in KDF, so generated projects get real hashing
@@ -38,7 +61,8 @@ import { promisify } from 'node:util';`;
 export function generateJWTAuth(runtime, language = 'javascript') {
   const ts = language === 'typescript';
   const helpers = passwordHelpers(ts);
-  const jwtConstants = `const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
+  const jwtConstants = `${requireSecretHelper(ts)}
+const JWT_SECRET = requireSecret('JWT_SECRET');
 const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN || '7d')${ts ? " as jwt.SignOptions['expiresIn']" : ''};`;
   const tokenPayload = ts
     ? `
@@ -237,9 +261,9 @@ declare module 'express-session' {
     user?: { id: number; email: string };
   }
 }
-` : ''}
+` : ''}${requireSecretHelper(ts)}
 export const sessionConfig = {
-  secret: process.env.SESSION_SECRET || 'your-session-secret-change-this',
+  secret: requireSecret('SESSION_SECRET'),
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -269,9 +293,9 @@ export function optionalAuth(_req${ts ? ': Request' : ''}, _res${ts ? ': Respons
     fastify: `
 import fastifySession from '@fastify/session';
 import fastifyCookie from '@fastify/cookie';
-
+${requireSecretHelper(false)}
 export const sessionConfig = {
-  secret: process.env.SESSION_SECRET || 'your-session-secret-change-this',
+  secret: requireSecret('SESSION_SECRET'),
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
@@ -297,6 +321,8 @@ export async function authPlugin(fastify, options) {
 `,
     koa: `
 import session from 'koa-session';
+${requireSecretHelper(false)}
+const SESSION_SECRET = requireSecret('SESSION_SECRET');
 
 export const sessionConfig = {
   key: 'koa.sess',
@@ -307,7 +333,7 @@ export const sessionConfig = {
 };
 
 export function setupSession(app) {
-  app.keys = [process.env.SESSION_SECRET || 'your-session-secret-change-this'];
+  app.keys = [SESSION_SECRET];
   app.use(session(sessionConfig, app));
 }
 
@@ -879,19 +905,51 @@ export function getAuthDependencies(authType, runtime) {
 }
 
 /**
- * Generate auth environment variables
+ * Generate a fresh random secret for a scaffolded project (256 bits, hex).
  */
-export function generateAuthEnv(authType) {
+export function generateSecret() {
+  return randomBytes(32).toString('hex');
+}
+
+/**
+ * Generate auth environment variables for the project's private `.env`.
+ * Each call produces a new random secret, so no two scaffolded apps share
+ * one and none of them uses a value that is visible in this CLI's source.
+ */
+export function generateAuthEnv(authType, secret = generateSecret()) {
+  if (authType === 'jwt') {
+    return `
+# JWT Configuration (generated for this project — keep it private)
+JWT_SECRET=${secret}
+JWT_EXPIRES_IN=7d
+`;
+  } else if (authType === 'session') {
+    return `
+# Session Configuration (generated for this project — keep it private)
+SESSION_SECRET=${secret}
+`;
+  }
+  return '';
+}
+
+/**
+ * Generate the committed `.env.example` counterpart: the variable names with
+ * an empty value. The app refuses to start while the secret is empty.
+ */
+export function generateAuthEnvExample(authType) {
+  const hint = `# Generate one with: node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`;
   if (authType === 'jwt') {
     return `
 # JWT Configuration
-JWT_SECRET=your-secret-key-change-this-in-production
+${hint}
+JWT_SECRET=
 JWT_EXPIRES_IN=7d
 `;
   } else if (authType === 'session') {
     return `
 # Session Configuration
-SESSION_SECRET=your-session-secret-change-this-in-production
+${hint}
+SESSION_SECRET=
 `;
   }
   return '';
@@ -907,6 +965,7 @@ export function generateAuthScaffolding(authType, runtime, language = 'javascrip
     middleware: isJWT ? generateJWTAuth(runtime, language) : generateSessionAuth(runtime, language),
     routes: generateAuthRoutes(runtime, authType, language),
     dependencies: getAuthDependencies(authType, runtime),
-    env: generateAuthEnv(authType)
+    env: generateAuthEnv(authType),
+    envExample: generateAuthEnvExample(authType)
   };
 }

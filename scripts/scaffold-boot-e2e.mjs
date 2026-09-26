@@ -108,9 +108,10 @@ async function waitForServer(port, timeoutMs = 30_000) {
 async function bootAndProbe(projectPath, permutation) {
   const { port } = permutation;
   const isTypeScript = permutation.options.language === 'typescript';
+  // Load .env like the generated start/dev scripts do (auth secrets live there).
   const entry = isTypeScript
-    ? ['./node_modules/.bin/tsx', ['src/index.ts']]
-    : [process.execPath, ['src/index.js']];
+    ? ['./node_modules/.bin/tsx', ['--env-file-if-exists=.env', 'src/index.ts']]
+    : [process.execPath, ['--env-file-if-exists=.env', 'src/index.js']];
 
   const child = spawn(entry[0], entry[1], {
     cwd: projectPath,
