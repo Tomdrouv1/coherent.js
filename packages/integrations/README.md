@@ -32,6 +32,31 @@ pnpm add express   # or fastify / koa / next / etc. — only the ones you use
 
 Framework peer dependencies are declared optional, so consumers only install the framework(s) they actually use.
 
+## Rendering components (Express, Fastify, Koa)
+
+Render explicitly; plain objects are sent as JSON:
+
+```js
+// Express
+setupCoherent(app, { template: '<!DOCTYPE html>\n{{content}}' });
+app.get('/', (req, res) => res.coherent(HomePage()));
+app.get('/api/users', (req, res) => res.send({ users })); // JSON
+
+// Fastify
+await fastify.register(setupCoherent, { template });
+fastify.get('/', async (request, reply) => reply.coherent(HomePage()));
+
+// Koa
+setupCoherent(app, { template });
+router.get('/', (ctx) => ctx.coherent(HomePage()));
+```
+
+`autoRender: true` restores the earlier behavior of rendering any
+component-shaped object passed to `res.send` / returned from a Fastify handler
+/ assigned to `ctx.body`. It is off by default because "component-shaped"
+means "has exactly one key", which matches JSON such as `{ ok: true }` or
+`{ error: 'Invalid credentials' }` too.
+
 ## License
 
 MIT

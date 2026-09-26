@@ -11,45 +11,81 @@ import {
   isCoherentComponent
 } from '@coherent.js/core';
 
+const DEFAULT_TEMPLATE = '<!DOCTYPE html>\n{{content}}';
+
 /**
- * Coherent.js Express middleware
- * Automatically renders Coherent.js components and handles errors
+ * Coherent.js Express middleware.
+ *
+ * Adds `res.coherent(component, renderOptions?)`, which renders a Coherent.js
+ * component (wrapped in `template`) and sends it as `text/html`. Rendering
+ * errors are forwarded to Express error handling, like `res.render` does.
+ *
+ * With `autoRender: true` it additionally overrides `res.send` so that any
+ * object that looks like a component is rendered to HTML. That detection is
+ * a heuristic -- every single-key object qualifies, so `res.send({ ok: true })`
+ * or `res.json({ users })` routed through `res.send` would be rendered as
+ * `<ok>` / `<users>` instead of serialized as JSON. It is off by default; only
+ * enable it for apps that never send single-key JSON objects.
  *
  * @param {Object} options - Configuration options
- * @param {boolean} options.enablePerformanceMonitoring - Enable performance monitoring
- * @param {string} options.template - HTML template with {{content}} placeholder
+ * @param {boolean} [options.enablePerformanceMonitoring=false] - Enable performance monitoring
+ * @param {string} [options.template] - HTML template with {{content}} placeholder
+ * @param {boolean} [options.autoRender=false] - Render component-shaped objects passed to `res.send`
  * @returns {Function} Express middleware function
  */
 export function coherentMiddleware(options = {}) {
   const {
     enablePerformanceMonitoring = false,
-    template = '<!DOCTYPE html>\n{{content}}'
+    template = DEFAULT_TEMPLATE,
+    autoRender = false
   } = options;
 
   return (req, res, next) => {
     // Store original send method
     const originalSend = res.send;
 
-    // Override send method to handle Coherent.js objects
-    res.send = function(data) {
-      // If data is a Coherent.js object (plain object with a single key), render it
-      if (isCoherentComponent(data)) {
-        try {
-          // Use shared rendering utility
-          const finalHtml = renderWithTemplate(data, { enablePerformanceMonitoring, template });
-
-          // Set content type and send HTML
-          res.set('Content-Type', 'text/html');
-          return originalSend.call(this, finalHtml);
-        } catch (_error) {
-          console.error('Coherent.js rendering error:', _error);
-          return next(_error);
-        }
+    // Explicit rendering: res.coherent(component, { template?, enablePerformanceMonitoring? })
+    res.coherent = function coherent(component, renderOptions = {}) {
+      let finalHtml;
+      try {
+        finalHtml = renderWithTemplate(component, {
+          enablePerformanceMonitoring: renderOptions.enablePerformanceMonitoring ?? enablePerformanceMonitoring,
+          template: renderOptions.template ?? template
+        });
+      } catch (_error) {
+        // Same contract as res.render(): hand the error to the app's error
+        // middleware. req.next is the router's current `next`, so this works
+        // from sync, async (Express 4 and 5) and callback code alike.
+        (req.next ?? next)(_error);
+        return this;
       }
 
-      // For non-Coherent.js data, use original send method
-      return originalSend.call(this, data);
+      this.set('Content-Type', 'text/html; charset=utf-8');
+      return originalSend.call(this, finalHtml);
     };
+
+    if (autoRender) {
+      // Override send method to handle Coherent.js objects
+      res.send = function(data) {
+        // If data looks like a Coherent.js object (plain object with a single key), render it
+        if (isCoherentComponent(data)) {
+          try {
+            // Use shared rendering utility
+            const finalHtml = renderWithTemplate(data, { enablePerformanceMonitoring, template });
+
+            // Set content type and send HTML
+            res.set('Content-Type', 'text/html');
+            return originalSend.call(this, finalHtml);
+          } catch (_error) {
+            console.error('Coherent.js rendering error:', _error);
+            return next(_error);
+          }
+        }
+
+        // For non-Coherent.js data, use original send method
+        return originalSend.call(this, data);
+      };
+    }
 
     next();
   };
@@ -102,15 +138,27 @@ export function enhancedExpressEngine(filePath, options, callback) {
 /**
  * Setup Coherent.js with Express app
  *
+ * Installs {@link coherentMiddleware} (so routes can call `res.coherent()`)
+ * and optionally registers the view engine.
+ *
  * @param {Object} app - Express app instance
  * @param {Object} options - Setup options
+ * @param {boolean} [options.useMiddleware=true] - Install coherentMiddleware
+ * @param {boolean} [options.useEngine=true] - Register the view engine
+ * @param {string} [options.engineName='coherent'] - View engine name / file extension
+ * @param {boolean} [options.enablePerformanceMonitoring=false] - Enable performance monitoring
+ * @param {string} [options.template] - HTML template with {{content}} placeholder
+ * @param {boolean} [options.autoRender=false] - Render component-shaped objects passed to `res.send`
+ *   (see coherentMiddleware for why this is opt-in)
  */
 export function setupCoherent(app, options = {}) {
   const {
     useMiddleware = true,
     useEngine = true,
     engineName = 'coherent',
-    enablePerformanceMonitoring = false
+    enablePerformanceMonitoring = false,
+    template,
+    autoRender = false
   } = options;
 
   // Register enhanced engine
@@ -119,9 +167,9 @@ export function setupCoherent(app, options = {}) {
     app.set('view engine', engineName);
   }
 
-  // Use middleware for automatic rendering
+  // Install the middleware (res.coherent, plus res.send auto-rendering when opted in)
   if (useMiddleware) {
-    app.use(coherentMiddleware({ enablePerformanceMonitoring }));
+    app.use(coherentMiddleware({ enablePerformanceMonitoring, template, autoRender }));
   }
 }
 

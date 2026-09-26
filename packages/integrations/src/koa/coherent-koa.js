@@ -11,25 +11,48 @@ import {
 } from '@coherent.js/core';
 
 /**
- * Coherent.js Koa middleware
- * Automatically renders Coherent.js components and handles errors
+ * Coherent.js Koa middleware.
+ *
+ * Adds `ctx.coherent(component, renderOptions?)`, which renders a Coherent.js
+ * component (wrapped in `template`) into `ctx.body` as `text/html`. Rendering
+ * errors are thrown, so they reach the app's error-handling middleware.
+ *
+ * With `autoRender: true` it additionally renders any `ctx.body` that looks
+ * like a component once downstream middleware has finished. That detection
+ * is a heuristic -- every single-key object qualifies, so
+ * `ctx.body = { ok: true }` would be rendered as `<ok>` instead of serialized
+ * as JSON. It is off by default; only enable it for apps that never respond
+ * with single-key JSON objects.
  *
  * @param {Object} options - Configuration options
- * @param {boolean} options.enablePerformanceMonitoring - Enable performance monitoring
- * @param {string} options.template - HTML template with {{content}} placeholder
+ * @param {boolean} [options.enablePerformanceMonitoring=false] - Enable performance monitoring
+ * @param {string} [options.template] - HTML template with {{content}} placeholder
+ * @param {boolean} [options.autoRender=false] - Render component-shaped `ctx.body` values
  * @returns {Function} Koa middleware function
  */
 export function coherentKoaMiddleware(options = {}) {
   const {
     enablePerformanceMonitoring = false,
-    template = '<!DOCTYPE html>\n{{content}}'
+    template = '<!DOCTYPE html>\n{{content}}',
+    autoRender = false
   } = options;
 
   return async (ctx, next) => {
+    // Explicit rendering: ctx.coherent(component, { template?, enablePerformanceMonitoring? })
+    ctx.coherent = (component, renderOptions = {}) => {
+      const finalHtml = renderWithTemplate(component, {
+        enablePerformanceMonitoring: renderOptions.enablePerformanceMonitoring ?? enablePerformanceMonitoring,
+        template: renderOptions.template ?? template
+      });
+      ctx.type = 'html';
+      ctx.body = finalHtml;
+      return finalHtml;
+    };
+
     await next();
 
-    // If response body is a Coherent.js object, render it
-    if (isCoherentComponent(ctx.body)) {
+    // Opt-in: if the response body looks like a Coherent.js object, render it
+    if (autoRender && isCoherentComponent(ctx.body)) {
       try {
         // Use shared rendering utility
         const finalHtml = renderWithTemplate(ctx.body, { enablePerformanceMonitoring, template });
@@ -75,8 +98,13 @@ export function createHandler(componentFactory, options = {}) {
 /**
  * Setup Coherent.js with Koa app
  *
+ * Installs {@link coherentKoaMiddleware}, so downstream middleware can call
+ * `ctx.coherent(component)`. Every option except `useMiddleware` is forwarded
+ * to the middleware, including `template` and `autoRender`.
+ *
  * @param {Object} app - Koa app instance
  * @param {Object} options - Setup options
+ * @param {boolean} [options.useMiddleware=true] - Install coherentKoaMiddleware
  */
 export function setupCoherent(app, options = {}) {
   const { useMiddleware = true, ...middlewareOptions } = options;

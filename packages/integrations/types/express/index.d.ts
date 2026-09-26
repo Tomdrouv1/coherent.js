@@ -12,7 +12,7 @@ export interface CoherentMiddlewareOptions {
   
   /**
    * HTML template to wrap rendered components
-   * @default '<!DOCTYPE html><html><body>{{content}}</body></html>'
+   * @default '<!DOCTYPE html>\n{{content}}'
    */
   template?: string;
   
@@ -21,6 +21,26 @@ export interface CoherentMiddlewareOptions {
    * @default true
    */
   enableSSR?: boolean;
+
+  /**
+   * Also render component-shaped objects passed to `res.send()`.
+   *
+   * Detection is a heuristic: every single-key object qualifies, so JSON
+   * payloads such as `{ ok: true }` or `{ users: [...] }` would be rendered
+   * as HTML. Use `res.coherent(component)` instead unless the app never
+   * sends single-key JSON objects.
+   * @default false
+   */
+  autoRender?: boolean;
+}
+
+/**
+ * Per-call options for `res.coherent()`; each falls back to the middleware's.
+ */
+export interface CoherentRenderOptions {
+  enablePerformanceMonitoring?: boolean;
+  /** HTML template with a `{{content}}` placeholder. */
+  template?: string;
 }
 
 export interface CoherentHandlerOptions {
@@ -32,7 +52,7 @@ export interface CoherentHandlerOptions {
   
   /**
    * HTML template to wrap rendered components
-   * @default '<!DOCTYPE html><html><body>{{content}}</body></html>'
+   * @default '<!DOCTYPE html>\n{{content}}'
    */
   template?: string;
   
@@ -67,7 +87,20 @@ export interface SetupCoherentExpressOptions {
    * @default false
    */
   enablePerformanceMonitoring?: boolean;
-  
+
+  /**
+   * HTML template with a `{{content}}` placeholder, used by `res.coherent()`
+   * @default '<!DOCTYPE html>\n{{content}}'
+   */
+  template?: string;
+
+  /**
+   * Also render component-shaped objects passed to `res.send()`.
+   * See {@link CoherentMiddlewareOptions.autoRender} for why this is opt-in.
+   * @default false
+   */
+  autoRender?: boolean;
+
   /**
    * Static file directory for client-side assets
    * @default 'public'
@@ -75,9 +108,23 @@ export interface SetupCoherentExpressOptions {
   staticDir?: string;
 }
 
+declare global {
+  namespace Express {
+    interface Response {
+      /**
+       * Render a Coherent.js component (wrapped in the middleware's template)
+       * and send it as `text/html`. Rendering errors are passed to the app's
+       * error middleware, as `res.render()` does. Added by
+       * `coherentMiddleware()` / `setupCoherent()`.
+       */
+      coherent(component: CoherentNode, options?: CoherentRenderOptions): this;
+    }
+  }
+}
+
 /**
  * Coherent.js Express middleware
- * Adds Coherent.js rendering capabilities to Express
+ * Adds `res.coherent()` (and, with `autoRender`, `res.send` rendering)
  * @param options Configuration options
  * @returns Express middleware function
  */

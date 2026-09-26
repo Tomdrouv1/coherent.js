@@ -27,6 +27,17 @@ export interface CoherentFastifyOptions {
   enableSSR?: boolean;
 
   /**
+   * Also render component-shaped objects returned from route handlers.
+   *
+   * Detection is a heuristic: every single-key object qualifies, so JSON
+   * payloads such as `{ ok: true }` or `{ error: '...' }` would be rendered
+   * as HTML, even with a JSON response schema. Use `reply.coherent(component)`
+   * instead unless the app never returns single-key JSON objects.
+   * @default false
+   */
+  autoRender?: boolean;
+
+  /**
    * Static file directory for client-side assets
    * @default 'public'
    */
