@@ -26,27 +26,70 @@ Requirements:
 
 JavaScript (ESM):
 ```js
-import { createRouter, withValidation, ApiError } from '@coherent.js/api';
+import { createRouter, withAuth, generateJWT, NotFoundError } from '@coherent.js/api';
 
-const router = createRouter({
-  'GET /health': () => ({ status: 'ok' }),
-  'POST /echo': withValidation({ body: { message: 'string' } }, ({ body }) => ({ message: body.message }))
-});
+const secret = process.env.JWT_SECRET; // required: there is no default secret
 
-// router.handle(req) -> { statusCode, headers, body }
+const router = createRouter(
+  {
+    health: {
+      GET: () => ({ status: 'ok' })
+    },
+    users: {
+      POST: {
+        validation: {
+          name: { type: 'string', required: true, min: 1 },
+          email: { type: 'email', required: true }
+        },
+        handler: (req) => ({ created: req.body })
+      },
+      ':id': {
+        GET: (req) => {
+          const user = findUser(req.params.id);
+          if (!user) throw new NotFoundError(`User ${req.params.id} not found`);
+          return user;
+        },
+        DELETE: {
+          middleware: [withAuth({ secret })],
+          handler: (req) => ({ deleted: req.params.id, by: req.user.sub })
+        }
+      }
+    }
+  },
+  {
+    corsOrigin: 'https://app.example.com',
+    trustProxy: 1 // one reverse proxy in front; omit when clients connect directly
+  }
+);
+
+router.createServer().listen(3000);
+
+// Issue a token elsewhere, with the same secret:
+const token = generateJWT({ sub: 42, role: 'admin' }, '1h', secret);
 ```
 
-TypeScript:
-```ts
-import { createRouter, withValidation, ApiError } from '@coherent.js/api';
+A method entry is either a handler function or `{ handler, middleware, validation, name, path }`.
+Handlers answer by returning a value (sent as JSON) or by writing to `res`. Routes can also be
+added imperatively: `router.get('/users/:id', handler, { middleware: [...] })`.
 
-type EchoBody = { message: string };
+### Behavior worth knowing
 
-const router = createRouter({
-  'GET /health': () => ({ status: 'ok' }),
-  'POST /echo': withValidation<{ body: EchoBody }>({ body: { message: 'string' } }, ({ body }) => ({ message: body.message }))
-});
-```
+- Middleware runs in order and the handler only runs if none of it has sent a response.
+  Middleware may be Coherent-style `(req, res) => value` or Express-style `(req, res, next)`;
+  the latter is awaited until it calls `next()` (`next(err)` fails the request).
+- `validation` / `withValidation()` accept a field map (`{ email: { type: 'email', required: true } }`)
+  or a JSON-Schema-style object (`{ type: 'object', required: [...], properties: {...} }`). An invalid
+  body is answered with 400 and `details.errors: [{ field, message, rule }]`.
+- An `ApiError` thrown with a 4xx status is answered with its message. Any 5xx is logged and answered
+  with the generic status text; set `exposeErrors: true` (or run with `NODE_ENV=development`) to send
+  the real message.
+- Rate limiting (100 requests per minute per client by default) keys on the connecting address.
+  Behind a reverse proxy set `trustProxy` to the number of proxies, or pass `rateLimit: false` to
+  `createServer()` / `handle()` and limit at the proxy.
+- WebSocket routes (`enableWebSockets: true`) accept same-origin browser handshakes only, unless
+  `wsAllowedOrigins` (router) or `allowedOrigins` (route) lists the origins to allow.
+- `withAuth({ secret })` verifies `Authorization: Bearer <jwt>` (HS256); `withAuth({ verify })`
+  accepts any other scheme. `generateToken()` returns a random hex string, not a JWT.
 
 ## Exports overview (selected)
 
@@ -60,7 +103,7 @@ const router = createRouter({
 - Serialization
   - `serializeDate`, `deserializeDate`, `serializeMap`, `deserializeMap`, `serializeSet`, `deserializeSet`, `withSerialization`, `serializeForJSON`
 - Security
-  - `withAuth`, `withRole`, `hashPassword`, `verifyPassword`, `generateToken`, `withInputValidation`
+  - `withAuth`, `withRole`, `generateJWT`, `verifyToken`, `hashPassword`, `verifyPassword`, `generateToken`, `withInputValidation`
 
 Tip: Combine `withValidation`, `withAuth`, and `withErrorHandling` to build robust endpoints.
 
