@@ -26,3 +26,11 @@ describe('async components and lazy values', () => {
     expect(calls).toBe(1);
   });
 });
+
+describe('function components', () => {
+  it('are called without arguments, whatever their arity', () => {
+    // A function declaring a parameter used to get a render callback.
+    expect(render({ div: { children: [(arg) => ({ p: { text: typeof arg } })] } }))
+      .toBe('<div><p>undefined</p></div>');
+  });
+});

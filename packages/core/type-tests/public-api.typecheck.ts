@@ -430,3 +430,12 @@ void renderedStrict;
 void permissiveDiv;
 void renderedPermissive;
 void StrictComponent;
+
+// className accepts arrays and condition objects; handlers receive the event
+render({
+  button: {
+    className: ['btn', false, null, { 'btn--active': true }],
+    onClick: (event: unknown) => void event,
+    text: 'Save'
+  }
+});

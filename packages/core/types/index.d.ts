@@ -20,15 +20,20 @@ export type Primitive = string | number | boolean | null | undefined;
 /** Allow objects and functions in attributes */
 export type AttributeValue = Primitive | object;
 
+/** Value accepted by `className` / `class` */
+export type ClassValue = string | ReadonlyArray<ClassValue | false | null | undefined> | Record<string, unknown>;
+
 /** HTML attributes object */
 export interface HTMLAttributes {
   [key: string]: AttributeValue;
-  className?: string;
-  class?: string;
+  /** A string, an array (falsy entries dropped) or an object of `{ className: condition }` */
+  className?: ClassValue;
+  class?: ClassValue;
   id?: string;
   style?: string | Record<string, string | number>;
-  onClick?: string | (() => void);
-  onSubmit?: string | (() => void);
+  /** Inline code, or a function attached by @coherent.js/client's hydrate() (not rendered on the server) */
+  onClick?: string | ((event: any) => void);
+  onSubmit?: string | ((event: any) => void);
   href?: string;
   src?: string;
   alt?: string;

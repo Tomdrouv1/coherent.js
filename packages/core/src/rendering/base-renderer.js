@@ -230,19 +230,11 @@ export class BaseRenderer {
      */
     executeFunctionComponent(func, depth = 0) {
         try {
-            // Check if this is a context provider by checking function arity or a marker
-            const isContextProvider = func.length > 0 || func.isContextProvider;
-
-            let result;
-            if (isContextProvider) {
-                // Call with render function for context providers
-                result = func((children) => {
-                    return this.renderComponent(children, this.config, depth + 1);
-                });
-            } else {
-                // Regular function component
-                result = func();
-            }
+            // Always called without arguments. Functions declaring a parameter
+            // used to receive a render callback returning an HTML string,
+            // which then got escaped (double-escaped context providers), and a
+            // `({ name }) => ...` child destructured its props from it.
+            const result = func();
 
             // Handle case where function returns another function
             if (typeof result === 'function') {

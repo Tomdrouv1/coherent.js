@@ -23,29 +23,32 @@ export const VOID_ELEMENTS = new Set([
  * @returns {boolean}
  */
 export function isTrustedContent(value) {
+  // Same brand core's dangerouslySetInnerContent() sets: plain objects with
+  // __trusted/__html keys (e.g. from JSON) are not trusted.
   return Boolean(value) &&
     typeof value === 'object' &&
-    value.__trusted === true &&
+    value[Symbol.for('coherent.js.trustedContent')] === true &&
     typeof value.__html === 'string';
 }
 
 /**
  * Call a function component the way core's renderer does: with no arguments,
- * following returned functions. Components that take an argument receive a
- * render callback from core and cannot be reproduced here.
+ * following returned functions.
  * @returns {{ ok: boolean, value?: * }}
  */
 function callFunctionComponent(fn) {
   let result = fn;
   for (let guard = 0; typeof result === 'function'; guard++) {
-    if (guard > 100 || result.length > 0 || result.isContextProvider) {
+    if (guard > 100) {
       return { ok: false };
     }
     try {
       result = result();
     } catch {
-      // Core renders a throwing function component as nothing.
-      return { ok: true, value: null };
+      // On the server a throwing component either failed the render or was
+      // replaced through render()'s onError; neither is reproducible here,
+      // so treat it as an opaque region.
+      return { ok: false };
     }
   }
   return { ok: true, value: result };

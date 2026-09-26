@@ -21,17 +21,15 @@ function isBrowser() {
 }
 
 /**
- * Evaluate zero-argument function components nested in a tree, so that
- * errors they throw happen inside the boundary's try block. Otherwise the
- * renderer calls them after the boundary has returned and nested errors
- * escape it. Functions taking arguments (context providers) need the
- * renderer and are left as they are.
+ * Evaluate function components nested in a tree (called without arguments,
+ * as the renderer does), so that errors they throw happen inside the
+ * boundary's try block. Otherwise the renderer calls them after the boundary
+ * has returned and nested errors escape it.
  */
 function resolveNestedComponents(node, depth = 0) {
   if (depth > 1000) return node;
 
   if (typeof node === 'function') {
-    if (node.length > 0 || node.isContextProvider) return node;
     return resolveNestedComponents(node(), depth + 1);
   }
 
