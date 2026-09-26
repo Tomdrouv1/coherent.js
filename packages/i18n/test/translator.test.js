@@ -121,6 +121,60 @@ describe('Translator', () => {
       const result = translator.t('welcome', {});
       expect(result).toContain('{{name}}'); // Keeps placeholder
     });
+
+    it('inserts $ replacement patterns in a param literally', () => {
+      translator.addTranslations('en', { hi: 'Hello {{name}}!' });
+      expect(translator.t('hi', { name: "$'" })).toBe("Hello $'!");
+      expect(translator.t('hi', { name: '$&' })).toBe('Hello $&!');
+      expect(translator.t('hi', { name: '$$' })).toBe('Hello $$!');
+      expect(translator.t('hi', { name: '$`' })).toBe('Hello $`!');
+    });
+
+    it('does not interpolate a placeholder that arrives inside a param value', () => {
+      translator.addTranslations('en', { pair: '{{a}} / {{b}}' });
+      expect(translator.t('pair', { a: '{{b}}', b: 'B' })).toBe('{{b}} / B');
+    });
+
+    it('treats param names literally, not as regex', () => {
+      translator.addTranslations('en', { dotted: '{{a.b}} {{axb}}' });
+      expect(translator.t('dotted', { 'a.b': 'dot' })).toBe('dot {{axb}}');
+    });
+
+    it('supports a custom prefix and suffix containing regex metacharacters', () => {
+      const custom = createTranslator({ interpolation: { prefix: '%(', suffix: ')s' } });
+      custom.addTranslations('en', { hi: 'Hello %(name)s, you have %(count)s messages' });
+      expect(custom.t('hi', { name: 'Ada', count: 3 })).toBe('Hello Ada, you have 3 messages');
+    });
+
+    it('keeps the default suffix when only the prefix is overridden', () => {
+      const custom = createTranslator({ interpolation: { prefix: '[[' } });
+      custom.addTranslations('en', { hi: 'Hello [[name}}' });
+      expect(custom.options.interpolation).toEqual({ prefix: '[[', suffix: '}}' });
+      expect(custom.t('hi', { name: 'Ada' })).toBe('Hello Ada');
+    });
+  });
+
+  describe('Inherited properties', () => {
+    it('does not resolve Object.prototype members as translations', () => {
+      expect(translator.t('constructor')).toBe('constructor');
+      expect(translator.t('toString')).toBe('toString');
+      expect(translator.t('__proto__')).toBe('__proto__');
+      expect(translator.t('hasOwnProperty')).toBe('hasOwnProperty');
+      expect(translator.has('constructor')).toBe(false);
+    });
+
+    it('does not resolve inherited members through nested dot keys', () => {
+      expect(translator.t('nested.constructor')).toBe('nested.constructor');
+      expect(translator.t('nested.deep.valueOf')).toBe('nested.deep.valueOf');
+      expect(translator.t('hello.length')).toBe('hello.length');
+      expect(translator.getTranslation('nested.deep.constructor', 'en')).toBeNull();
+    });
+
+    it('still resolves an own key named like a prototype member', () => {
+      translator.addTranslations('en', { toString: 'custom', group: { constructor: 'built' } });
+      expect(translator.t('toString')).toBe('custom');
+      expect(translator.t('group.constructor')).toBe('built');
+    });
   });
 
   describe('Pluralization', () => {

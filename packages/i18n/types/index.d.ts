@@ -45,6 +45,10 @@ export interface TranslatorOptions {
   fallbackLocale?: string;
   /** Called instead of returning the key when a translation is missing */
   missingKeyHandler?: ((key: string, locale: string) => string) | null;
+  /**
+   * Placeholder delimiters, matched literally (not as regex). Merged with the
+   * defaults, so overriding one keeps the other.
+   */
   interpolation?: {
     /** Defaults to `'{{'` */
     prefix?: string;
@@ -90,7 +94,10 @@ export class Translator {
    */
   t(key: TranslationKey, params?: TranslationParams, locale?: string | null): string;
 
-  /** Look a key up in one locale without fallback; `null` if absent */
+  /**
+   * Look a key up in one locale without fallback; `null` if absent. Only own
+   * properties match, so `'constructor'` or `'a.toString'` are absent.
+   */
   getTranslation(
     key: TranslationKey,
     locale: string
@@ -99,7 +106,11 @@ export class Translator {
   /** Pick the plural form matching `count` */
   selectPlural(pluralObject: PluralForms, count: number, locale: string): string;
 
-  /** Substitute `{{param}}` placeholders */
+  /**
+   * Substitute `{{param}}` placeholders in one pass. Values are inserted
+   * literally (`$&` stays `$&`) and are not themselves interpolated;
+   * placeholders without a matching param are left as they are.
+   */
   interpolate(str: string, params: TranslationParams): string;
 
   /** Whether a key resolves in the given (or current) locale */

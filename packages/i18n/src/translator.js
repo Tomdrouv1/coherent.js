@@ -7,20 +7,32 @@
  */
 
 /**
+ * Escape a string for literal use inside a regular expression.
+ * @param {string} value
+ * @returns {string}
+ */
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
  * Translator
  * Manages translations and locale switching
  */
 export class Translator {
   constructor(options = {}) {
+    const { interpolation, ...rest } = options;
     this.options = {
       defaultLocale: 'en',
       fallbackLocale: 'en',
       missingKeyHandler: null,
+      ...rest,
+      // Merged, so overriding only `prefix` keeps the default `suffix`.
       interpolation: {
         prefix: '{{',
-        suffix: '}}'
-      },
-      ...options
+        suffix: '}}',
+        ...interpolation
+      }
     };
     
     this.translations = new Map();
@@ -131,11 +143,13 @@ export class Translator {
     const translations = this.translations.get(locale);
     if (!translations) return null;
     
-    const keys = key.split('.');
+    const keys = String(key).split('.');
     let value = translations;
-    
+
     for (const k of keys) {
-      if (value && typeof value === 'object' && k in value) {
+      // Own properties only: `constructor`, `toString`, `__proto__` … are
+      // inherited from Object.prototype and are not translations.
+      if (value && typeof value === 'object' && Object.hasOwn(value, k)) {
         value = value[k];
       } else {
         return null;
@@ -178,15 +192,23 @@ export class Translator {
    * Interpolate parameters into string
    */
   interpolate(str, params) {
+    if (!params || typeof params !== 'object') return str;
+
+    const names = Object.keys(params);
+    if (names.length === 0) return str;
+
     const { prefix, suffix } = this.options.interpolation;
-    let result = str;
-    
-    for (const [key, value] of Object.entries(params)) {
-      const placeholder = `${prefix}${key}${suffix}`;
-      result = result.replace(new RegExp(placeholder, 'g'), String(value));
-    }
-    
-    return result;
+    // Longest names first, so `{{ab}}` is never read as `{{a}}` + `b}}`.
+    const alternatives = names
+      .sort((a, b) => b.length - a.length)
+      .map(escapeRegExp)
+      .join('|');
+    const pattern = new RegExp(`${escapeRegExp(prefix)}(${alternatives})${escapeRegExp(suffix)}`, 'g');
+
+    // One pass with a replacer function: `$&`, `$'` or `$$` in a value are
+    // inserted literally, and a value that itself contains a placeholder is
+    // not interpolated a second time.
+    return str.replace(pattern, (_match, name) => String(params[name]));
   }
 
   /**
