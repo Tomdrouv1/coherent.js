@@ -1846,6 +1846,78 @@ class SimpleRouter {
   }
 
   /**
+   * Find the route for a method and path.
+   *
+   * Matches are cached per method, path and (with versioning) API version:
+   * the cache used to ignore the version, so once a v1 request was cached a
+   * v2 request for the same path got the v1 handler. The cached parameters
+   * are copied for every request, since the cache used to hand out one
+   * shared object and a handler mutating `req.params` changed it for every
+   * later request.
+   *
+   * @private
+   * @param {string} method - HTTP method
+   * @param {string} pathname - Request path
+   * @param {string|null} requestVersion - API version, when versioning is on
+   * @returns {{ route: Object, params: Object }|null}
+   */
+  findRoute(method, pathname, requestVersion) {
+    const cacheKey = this.enableVersioning
+      ? `${method}:${requestVersion}:${pathname}`
+      : `${method}:${pathname}`;
+
+    const cached = this.routeCache.get(cacheKey);
+    if (cached) {
+      if (this.enableMetrics) this.metrics.cacheHits++;
+      return { route: cached.route, params: { ...cached.params } };
+    }
+
+    // Smart routing: check static routes first for O(1) lookup
+    if (this.enableSmartRouting) {
+      const staticRoute = this.staticRoutes.get(`${method}:${pathname}`);
+
+      // Skip route if versioning is enabled and versions don't match
+      if (staticRoute && (!this.enableVersioning || staticRoute.version === requestVersion)) {
+        // Track static route performance
+        if (this.enableRouteMetrics && this.enableMetrics) {
+          this.metrics.staticRouteMatches = (this.metrics.staticRouteMatches || 0) + 1;
+        }
+        return { route: staticRoute, params: {} }; // Static routes have no parameters
+      }
+    }
+
+    // Fallback to dynamic route matching if no static match found
+    const routesToSearch = this.enableVersioning && this.versionedRoutes.has(requestVersion)
+      ? this.versionedRoutes.get(requestVersion)
+      : this.routes;
+
+    for (const route of routesToSearch) {
+      if (route.method !== method) continue;
+      // Skip route if versioning is enabled and versions don't match
+      if (this.enableVersioning && route.version !== requestVersion) continue;
+
+      const params = this.enableCompilation && route.compiled
+        ? this.matchCompiledRoute(route.compiled, pathname)
+        : extractParams(route.path, pathname);
+
+      if (params !== null) {
+        // Track dynamic route performance
+        if (this.enableRouteMetrics && this.enableMetrics) {
+          this.metrics.dynamicRouteMatches = (this.metrics.dynamicRouteMatches || 0) + 1;
+        }
+
+        // Cache the match if under size limit
+        if (this.routeCache.size < this.maxCacheSize) {
+          this.routeCache.set(cacheKey, { route, params: { ...params } });
+        }
+        return { route, params };
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * Resolve the CORS policy for a request, honouring a per-call override.
    *
    * @private
@@ -1922,91 +1994,15 @@ class SimpleRouter {
       return;
     }
 
-    // Check route cache first
-    const cacheKey = `${req.method}:${pathname}`;
-    let matchedRoute = this.routeCache.get(cacheKey);
+    // Get request version if versioning is enabled
+    const requestVersion = this.enableVersioning ? this.getRequestVersion(req) : null;
 
-    if (matchedRoute && this.enableMetrics) {
-      this.metrics.cacheHits++;
+    // Track version requests in metrics
+    if (this.enableMetrics && requestVersion) {
+      this.metrics.versionRequests.set(requestVersion, (this.metrics.versionRequests.get(requestVersion) || 0) + 1);
     }
 
-    if (!matchedRoute) {
-      // Get request version if versioning is enabled
-      const requestVersion = this.enableVersioning ? this.getRequestVersion(req) : null;
-
-      // Track version requests in metrics
-      if (this.enableMetrics && requestVersion) {
-        this.metrics.versionRequests.set(requestVersion, (this.metrics.versionRequests.get(requestVersion) || 0) + 1);
-      }
-
-      // Find matching route using smart routing optimization
-      matchedRoute = null; // Reset matchedRoute for smart routing search
-
-      // Smart routing: check static routes first for O(1) lookup
-      if (this.enableSmartRouting) {
-        const staticKey = `${req.method}:${pathname}`;
-        const staticRoute = this.staticRoutes.get(staticKey);
-
-        if (staticRoute) {
-          // Skip route if versioning is enabled and versions don't match
-          if (!this.enableVersioning || staticRoute.version === requestVersion) {
-            matchedRoute = { route: staticRoute, params: {} }; // Static routes have no parameters
-
-            // Track static route performance
-            if (this.enableRouteMetrics && this.enableMetrics) {
-              if (!this.metrics.staticRouteMatches) {
-                this.metrics.staticRouteMatches = 0;
-              }
-              this.metrics.staticRouteMatches++;
-            }
-          }
-        }
-      }
-
-      // Fallback to dynamic route matching if no static match found
-      if (!matchedRoute) {
-        const routesToSearch = this.enableVersioning && this.versionedRoutes.has(requestVersion)
-          ? this.versionedRoutes.get(requestVersion)
-          : this.routes;
-
-        for (const route of routesToSearch) {
-          if (route.method === req.method) {
-            // Skip route if versioning is enabled and versions don't match
-            if (this.enableVersioning && route.version !== requestVersion) {
-              continue;
-            }
-
-            let params = null;
-
-            // Use compiled route if available
-            if (this.enableCompilation && route.compiled) {
-              params = this.matchCompiledRoute(route.compiled, pathname);
-            } else {
-              // Fallback to original parameter extraction
-              params = extractParams(route.path, pathname);
-            }
-
-            if (params !== null) {
-              matchedRoute = { route, params };
-
-              // Track dynamic route performance
-              if (this.enableRouteMetrics && this.enableMetrics) {
-                if (!this.metrics.dynamicRouteMatches) {
-                  this.metrics.dynamicRouteMatches = 0;
-                }
-                this.metrics.dynamicRouteMatches++;
-              }
-
-              // Cache the match if under size limit
-              if (this.routeCache.size < this.maxCacheSize) {
-                this.routeCache.set(cacheKey, matchedRoute);
-              }
-              break;
-            }
-          }
-        }
-      }
-    }
+    const matchedRoute = this.findRoute(req.method, pathname, requestVersion);
 
     if (matchedRoute) {
       req.params = matchedRoute.params;
