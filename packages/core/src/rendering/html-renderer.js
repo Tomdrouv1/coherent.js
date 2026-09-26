@@ -31,6 +31,21 @@ const rendererCache = createCacheManager({
 });
 
 /**
+ * render() is synchronous. A Promise in the tree (an async component, or a
+ * lazy() factory that returns one) used to render as an empty string
+ * without any signal.
+ */
+function assertNotThenable(value, path) {
+    if (value && (typeof value === 'object' || typeof value === 'function') && typeof value.then === 'function') {
+        throw new RenderingError(
+            `Cannot render a Promise at ${path === 'root' ? 'root' : formatRenderPath(path)}: render() is synchronous. Await async components (and their data) before rendering.`,
+            undefined,
+            { path: path === 'root' ? 'root' : formatRenderPath(path), renderer: 'html' }
+        );
+    }
+}
+
+/**
  * Render paths are linked lists ({ parent, segment }, null for the root),
  * extended in O(1) per node and formatted only when an error or warning
  * needs them. Copying an array per node ([...path, segment]) and formatting
@@ -134,6 +149,8 @@ class HTMLRenderer extends BaseRenderer {
         this.startTiming();
 
         try {
+            assertNotThenable(component, 'root');
+
             // Input validation
             if (config.validateInput && !this.isValidComponent(component)) {
                 throw new Error('Invalid component structure');
@@ -209,6 +226,14 @@ class HTMLRenderer extends BaseRenderer {
         if (isTrustedContent(component)) {
             return component.__html;
         }
+
+        // Its keys (__isLazy, evaluate...) aren't tag names, so a lazy() value
+        // used to render as nothing unless evaluateLazy() ran first.
+        if (typeof component === 'object' && component.__isLazy === true && typeof component.evaluate === 'function') {
+            return this.renderComponent(component.evaluate(), options, depth + 1, childPath(path, '()'));
+        }
+
+        assertNotThenable(component, path);
 
         // Detect circular references. Only the current ancestor path is
         // tracked (added here, removed in `finally`): the same object may
