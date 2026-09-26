@@ -4,22 +4,24 @@ Get up and running with Coherent.js in under 5 minutes.
 
 ## 📦 Installation
 
-> **Note**: Coherent.js is currently in beta. Use the `@beta` tag to install.
-
-### Using npm
-```bash
-npm install @coherent.js/core@beta
-```
+Coherent.js packages are ESM-only and require Node.js 22.12 or later.
 
 ### Using pnpm (recommended)
 ```bash
-pnpm add @coherent.js/core@beta
+pnpm add @coherent.js/core
+```
+
+### Using npm
+```bash
+npm install @coherent.js/core
 ```
 
 ### Using yarn
 ```bash
-yarn add @coherent.js/core@beta
+yarn add @coherent.js/core
 ```
+
+Your `package.json` needs `"type": "module"` (or use `.mjs` files).
 
 ## ⚡ Quick Start
 
@@ -53,10 +55,7 @@ node hello.js
 
 **Output:**
 ```html
-<div class="greeting">
-  <h1>Hello, Coherent.js!</h1>
-  <p>Your first pure object component.</p>
-</div>
+<div class="greeting"><h1>Hello, Coherent.js!</h1><p>Your first pure object component.</p></div>
 ```
 
 ### 2. Dynamic Components
@@ -144,14 +143,16 @@ const HomePage = {
 };
 
 app.get('/', (req, res) => {
-  const html = render(HomePage); // Includes DOCTYPE automatically
-  res.send(html);
+  const html = render(HomePage);
+  res.send(`<!DOCTYPE html>${html}`); // render() does not add the doctype
 });
 
 app.listen(3000, () => {
   console.log('Server running at http://localhost:3000');
 });
 ```
+
+For Express, Fastify and Koa, `@coherent.js/integrations` adds `res.coherent()` / `reply.coherent()` / `ctx.coherent()` with a document template; see [Framework Integrations](../deployment/integrations.md).
 
 ## 🏗️ Project Structure
 
@@ -194,14 +195,15 @@ Now that you have Coherent.js installed and running:
 Coherent.js includes full TypeScript definitions:
 
 ```typescript
-import { render, ComponentObject } from '@coherent.js/core';
+import { render } from '@coherent.js/core';
+import type { CoherentNode } from '@coherent.js/core';
 
 interface UserProps {
   name: string;
   email: string;
 }
 
-const UserComponent = (props: UserProps): ComponentObject => ({
+const UserComponent = (props: UserProps): CoherentNode => ({
   div: {
     className: 'user',
     children: [
@@ -212,16 +214,16 @@ const UserComponent = (props: UserProps): ComponentObject => ({
 });
 ```
 
-### Development Server
+### CLI and Development Server
 
-For rapid development, Coherent.js includes a dev server:
+`@coherent.js/cli` scaffolds projects and runs a development server:
 
 ```bash
-# Install globally
-npm install -g @coherent.js/core
+pnpm add -g @coherent.js/cli
 
-# Start dev server
-coherent-dev
+coherent create my-app   # interactive scaffold
+cd my-app
+coherent dev             # development server
 ```
 
 ## 🐛 Troubleshooting
@@ -242,17 +244,20 @@ const Valid = { div: { text: 'Hello' } };
 const Invalid = { text: 'Hello' }; // Missing tag wrapper
 ```
 
-**Q: Attributes not working?**
+**Q: My click handler does nothing?**
 ```javascript
-// Use camelCase for attributes
-const Button = {
-  button: {
-    className: 'btn',        // ✅ Correct
-    onClick: 'handleClick', // ✅ Correct
-    class: 'btn'            // ❌ Use className instead
-  }
-};
+// Function: rendered as nothing on the server, attached in the browser by hydrate()
+const SaveButton = { button: { className: ['btn', isActive && 'btn--active'], onClick: () => save(), text: 'Save' } };
+
+// String: rendered as an onclick attribute
+const BackButton = { button: { onclick: 'history.back()', text: 'Back' } };
 ```
+
+Function handlers need client-side hydration (`hydrate()` from `@coherent.js/client`); see [Hydration](../client/hydration.md).
+
+**Q: `render()` throws "Cannot render a Promise"?**
+
+`render()` is synchronous. Await your data (and any `async` component) before rendering.
 
 ## 📚 Resources
 

@@ -15,27 +15,54 @@ Coherent.js can be integrated with:
 ## ⚡ The official integrations package (recommended)
 
 Before hand-rolling anything, reach for `@coherent.js/integrations` — it ships
-ready-made adapters as subpath exports:
+ready-made adapters as subpath exports. Install the framework you use next to it
+(the frameworks are optional peer dependencies):
 
 ```bash
-pnpm add @coherent.js/integrations
+pnpm add @coherent.js/core @coherent.js/integrations express   # or fastify / koa / next ...
 ```
 
-**Express** — mount the middleware (auto-renders returned/`res.send()` component objects) or use handlers:
+The Express, Fastify and Koa adapters render **explicitly**: you hand them a
+component and they send HTML. Anything else — `res.send({ users })`, an object
+returned from a Fastify handler, `ctx.body = { ok: true }` — stays JSON.
+
+**Express** — `setupCoherent()` adds `res.coherent(component, { template? })`:
 
 ```javascript
 import express from 'express';
-import { coherentMiddleware, createCoherentHandler } from '@coherent.js/integrations/express';
+import { setupCoherent, createCoherentHandler } from '@coherent.js/integrations/express';
 
 const app = express();
-app.use(coherentMiddleware());
+setupCoherent(app, { template: '<!DOCTYPE html>\n<html><body>{{content}}</body></html>' });
 
-app.get('/', createCoherentHandler(() => ({
-  h1: { text: 'Hello from Express' }
-})));
+app.get('/', (req, res) => res.coherent(HomePage({ user: req.user })));
+app.get('/api/users', (req, res) => res.send({ users }));   // JSON
+
+// Or a handler factory; the factory receives (req, res, next) and may respond itself
+app.get('/profile', createCoherentHandler((req) => ProfilePage({ id: req.query.id })));
+
+// Render errors go to your error middleware, as with res.render()
+app.use((err, req, res, next) => res.status(500).send('Something went wrong'));
 ```
 
-**Fastify** — register the plugin, then return component objects straight from routes:
+To use `res.render()` with Coherent.js views, opt into the view engine. A `.js`
+view module's default export is the component (a function receives the render
+locals):
+
+```javascript
+// views/home.js
+export default ({ name }) => ({ h1: { text: `Hello ${name}` } });
+
+// app.js
+setupCoherent(app, { useEngine: true, engineName: 'js' });
+app.get('/', (req, res) => res.render('home', { name: 'Ada' }));
+```
+
+The engine only becomes the app's `view engine` when none is set; otherwise call
+`app.set('view engine', 'js')` yourself.
+
+**Fastify** — `setupCoherent` is a Fastify plugin; register it, then use
+`reply.coherent(component, { template? })`:
 
 ```javascript
 import Fastify from 'fastify';
@@ -46,28 +73,64 @@ await fastify.register(setupCoherent, {
   template: '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"></head><body>{{content}}</body></html>'
 });
 
-fastify.get('/', async () => ({ h1: { text: 'Hello from Fastify' } }));
+fastify.get('/', async (request, reply) => reply.coherent(HomePage()));
+fastify.get('/api/status', async () => ({ ok: true }));        // JSON
 ```
 
-**Koa** — set up the middleware, then assign component objects to `ctx.body`:
+Calling `setupCoherent(fastify, options)` directly throws; always `register` it.
+Render errors inside `reply.coherent()` go through Fastify's error pipeline
+(`onError` hooks, `setErrorHandler`, the request logger).
+
+**Koa** — `setupCoherent()` adds `ctx.coherent(component, { template? })`:
 
 ```javascript
 import Koa from 'koa';
 import { setupCoherent } from '@coherent.js/integrations/koa';
 
 const app = new Koa();
-setupCoherent(app, { template: undefined /* optional HTML shell with {{content}} */ });
+setupCoherent(app, { template: '<!DOCTYPE html>\n{{content}}' });
 
 app.use(async (ctx) => {
-  ctx.body = { h1: { text: 'Hello from Koa' } };
+  if (ctx.path === '/api/status') {
+    ctx.body = { ok: true };            // JSON
+    return;
+  }
+  ctx.coherent(HomePage());             // render errors are thrown into the middleware chain
 });
 ```
 
-**Next.js** — wrap components for the pages or app router:
+**Automatic rendering (opt-in).** `autoRender: true` —
+`setupCoherent(app, { autoRender: true })` for Express and Koa,
+`fastify.register(setupCoherent, { autoRender: true })` for Fastify — also renders
+any *component-shaped* value passed to `res.send()`, returned from a Fastify
+handler or assigned to `ctx.body`. "Component-shaped" means "an object with exactly
+one key", which JSON such as `{ ok: true }` or `{ error: 'Invalid credentials' }`
+matches too, so only enable it for apps that serve no JSON through those paths.
+
+**Next.js** — wrap a component factory as a route handler:
 
 ```javascript
-import { createCoherentNextHandler, createCoherentAppRouterHandler } from '@coherent.js/integrations/nextjs';
+// app/users/[id]/route.js (App Router)
+import { createCoherentAppRouterHandler } from '@coherent.js/integrations/nextjs';
+
+export const GET = createCoherentAppRouterHandler(async (request, { params }) => {
+  const { id } = await params; // a Promise from Next.js 15 on
+  return UserPage({ id });
+});
 ```
+
+`createCoherentNextHandler()` does the same for Pages Router API routes.
+`createCoherentServerComponent()` and `createCoherentClientComponent()` are async
+and resolve to React components; pass `{ React }` to supply the React module
+explicitly.
+
+**Astro, Remix and SvelteKit** — `@coherent.js/integrations/astro`
+(`createAstroIntegration()`, with the renderer at `/astro/server`), `/remix`
+(`withCoherent(Component, { as })`, which renders the markup inside a wrapper
+element, a `<div>` by default) and `/sveltekit` (`createPreprocessor()`,
+`createHandle()`).
+
+> **Stability:** the Astro, Remix and SvelteKit adapters are young. Their tests run a real `astro build`, compile and server-render a component with the Svelte compiler, and server-render the Remix wrapper with React, but the adapters have seen little production use.
 
 The sections below show *manual* integration patterns — useful to understand
 what the adapters do under the hood, or when you want full control.
@@ -132,15 +195,13 @@ import { render } from '@coherent.js/core';
 
 const app = express();
 
-// Custom middleware for automatic Coherent.js rendering
-const coherentMiddleware = (options = {}) => (req, res, next) => {
-  const originalSend = res.send;
-  
+// Custom middleware that adds res.sendCoherent()
+const coherentMiddleware = () => (req, res, next) => {
   res.sendCoherent = (component, props = {}) => {
     try {
       const rendered = render(component(props));
       res.set('Content-Type', 'text/html');
-      res.send(rendered);
+      res.send(`<!DOCTYPE html>${rendered}`);
     } catch (error) {
       next(error);
     }
@@ -256,53 +317,35 @@ app.use((error, req, res, next) => {
   
   const status = error.status || 500;
   res.status(status);
-  res.sendCoherent(ErrorPage, { error, status });
+  // Never show internal error messages to users
+  res.sendCoherent(ErrorPage, { error: status < 500 ? error : { message: 'Internal Server Error' }, status });
 });
 ```
 
 ### Performance Monitoring
 
 ```javascript
-import { performanceMonitor } from '@coherent.js/core';
+import { render, performanceMonitor } from '@coherent.js/core';
 
-// Add performance monitoring middleware
-app.use((req, res, next) => {
-  const start = Date.now();
-  
-  res.on('finish', () => {
-    const duration = Date.now() - start;
-    performanceMonitor.recordMetric('request', {
-      path: req.path,
-      method: req.method,
-      status: res.statusCode,
-      duration
-    });
-  });
-  
-  next();
+// Record render timings
+app.get('/', (req, res) => {
+  res.send(`<!DOCTYPE html>${render(HomePage({ user: req.user }), { enableMonitoring: true })}`);
 });
 
-// Performance dashboard endpoint
+// Performance dashboard endpoint (protect it in production)
 app.get('/admin/performance', (req, res) => {
-  const stats = performanceMonitor.getStats();
-  
-  const DashboardPage = ({ stats }) => Layout({
+  const { metrics } = performanceMonitor.generateReport();
+
+  const DashboardPage = () => Layout({
     title: 'Performance Dashboard',
     children: [
       { h1: { text: 'Performance Metrics' } },
-      {
-        div: {
-          children: [
-            { h3: { text: `Total Requests: ${stats.totalRequests}` } },
-            { h3: { text: `Average Response Time: ${stats.averageResponseTime}ms` } },
-            { h3: { text: `Cache Hit Rate: ${stats.cacheHitRate}%` } }
-          ]
-        }
-      }
+      { p: { text: `Renders: ${metrics.renderTime.count}` } },
+      { p: { text: `Average render time: ${metrics.renderTime.avg.toFixed(2)} ms` } }
     ]
   });
-  
-  res.sendCoherent(DashboardPage, { stats });
+
+  res.sendCoherent(DashboardPage);
 });
 ```
 
@@ -375,17 +418,14 @@ import { render } from '@coherent.js/core';
 
 const fastify = Fastify({ logger: true });
 
-// Create Coherent.js plugin
-async function coherentPlugin(fastify, options) {
-  // Add coherent rendering to reply object
-  fastify.decorateReply('sendCoherent', function(component, props = {}) {
-    const rendered = render(component(props));
-    this.type('text/html');
-    return this.send(rendered);
-  });
-}
-
-await fastify.register(coherentPlugin);
+// Add coherent rendering to the reply object. Decorating the root instance
+// directly keeps it visible to every route (a decorator added inside a
+// registered plugin is scoped to that plugin unless it skips encapsulation).
+fastify.decorateReply('sendCoherent', function (component, props = {}) {
+  const rendered = render(component(props));
+  this.type('text/html');
+  return this.send(`<!DOCTYPE html>${rendered}`);
+});
 
 // Reusable components
 const Layout = ({ title, children }) => ({
@@ -525,13 +565,14 @@ fastify.setErrorHandler((error, request, reply) => {
     title: `Error ${status}`,
     children: [
       { h1: { text: `Error ${status}` } },
-      { p: { text: error.message } },
+      { p: { text: status < 500 ? error.message : 'Internal Server Error' } },
       { a: { href: '/', text: 'Go Home' } }
     ]
   });
-  
+
+  request.log.error(error);
   reply.status(status);
-  reply.sendCoherent(ErrorPage, { error, status });
+  return reply.sendCoherent(ErrorPage, { error, status });
 });
 
 // Not found handler
@@ -546,19 +587,18 @@ fastify.setNotFoundHandler((request, reply) => {
   });
   
   reply.status(404);
-  reply.sendCoherent(NotFoundPage);
+  return reply.sendCoherent(NotFoundPage);
 });
 ```
 
 ## Next.js Integration
 
-The Next.js integration provides utilities for using Coherent.js with Next.js applications, including API routes and App Router support.
+The Next.js integration renders Coherent.js components from API routes and App Router route handlers.
 
 ### Installation
 
 ```bash
-npm install next react react-dom
-# Coherent.js is already included in your project
+pnpm add @coherent.js/core @coherent.js/integrations next react react-dom
 ```
 
 ### Usage with API Routes
@@ -588,64 +628,54 @@ export default createCoherentNextHandler((req, res) => {
 ### Usage with App Router
 
 ```javascript
-// app/home/route.js
+// app/users/[id]/route.js
 import { createCoherentAppRouterHandler } from '@coherent.js/integrations/nextjs';
 
-function HomePage({ name }) {
+export const GET = createCoherentAppRouterHandler(async (request, { params }) => {
+  const { id } = await params; // a Promise from Next.js 15 on
   return {
     div: {
       children: [
-        { h1: { text: `Hello, ${name}!` } },
-        { p: { text: 'Welcome to Coherent.js with Next.js App Router!' } }
+        { h1: { text: `User ${id}` } },
+        { p: { text: 'Rendered by Coherent.js in an App Router route handler' } }
       ]
     }
   };
-}
-
-export const GET = createCoherentAppRouterHandler((request) => {
-  return HomePage({ name: 'Next.js App Router User' });
 });
 ```
 
 ### API
 
-- `createCoherentNextHandler(componentFactory, options)`: Create Next.js API route handlers
-- `createCoherentAppRouterHandler(componentFactory, options)`: Create Next.js App Router handlers
-- `createCoherentServerComponent(componentFactory, options)`: Create Next.js Server Components (async)
-- `createCoherentClientComponent(componentFactory, options)`: Create Next.js Client Components (async)
+- `createCoherentNextHandler(componentFactory, options)`: Pages Router API route handler
+- `createCoherentAppRouterHandler(componentFactory, options)`: App Router route handler; the factory receives `(request, context)`
+- `createCoherentServerComponent(componentFactory, options)`: resolves to a Server Component (async)
+- `createCoherentClientComponent(componentFactory, options)`: resolves to a Client Component (async)
+
+`react` and `next` are optional peer dependencies of `@coherent.js/integrations`; pass `{ React }` in the options to supply React explicitly.
 
 ## Performance Monitoring
 
-All integrations support performance monitoring when enabled:
+The adapters accept `enablePerformanceMonitoring`:
 
 ```javascript
-setupCoherent(app, {
-  enablePerformanceMonitoring: true
-});
-
-// Or with middleware
-app.use(coherentMiddleware({
-  enablePerformanceMonitoring: true
-}));
+setupCoherent(app, { enablePerformanceMonitoring: true });
 ```
 
-Performance metrics are automatically collected and can be accessed through the performance monitor:
+The metrics are read from the core monitor:
 
 ```javascript
 import { performanceMonitor } from '@coherent.js/core';
 
-// Get performance statistics
-const stats = performanceMonitor.getStats();
-console.log(stats);
+const { metrics } = performanceMonitor.generateReport();
+console.log(metrics.renderTime);
 ```
 
 ## Template Customization
 
-All integrations support custom HTML templates:
+The Express, Fastify and Koa adapters take a `template` whose `{{content}}` placeholder receives the rendered component (the default is `<!DOCTYPE html>\n{{content}}`):
 
 ```javascript
-const template = `
-<!DOCTYPE html>
+const template = `<!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8">
@@ -654,12 +684,13 @@ const template = `
   <body>
     {{content}}
   </body>
-</html>
-`;
+</html>`;
 
-app.use(coherentMiddleware({
-  template: template
-}));
+setupCoherent(app, { template });                    // default for every res.coherent()
+app.get('/plain', (req, res) => res.coherent(Page(), { template: '{{content}}' })); // per call
+```
+
+The rendered HTML is inserted literally, so `$` sequences in page content are preserved.
 
 ## Raw Node.js Integration
 
@@ -672,7 +703,7 @@ npm install @coherent.js/core
 # No additional dependencies needed
 ```
 
-> **Note**: Use `@rc` for the current release candidate or omit the tag (defaults to the latest stable once released).
+
 
 ### Basic HTTP Server
 
@@ -712,12 +743,12 @@ const HomePage = ({ timestamp }) => Layout({
 
 const server = http.createServer((req, res) => {
   if (req.method === 'GET' && req.url === '/') {
-    const html = render(HomePage({ 
-      timestamp: new Date().toISOString() 
+    const html = render(HomePage({
+      timestamp: new Date().toISOString()
     }));
-    
-    res.writeHead(200, { 'Content-Type': 'text/html' });
-    res.end(html);
+
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(`<!DOCTYPE html>${html}`);
   } else {
     res.writeHead(404, { 'Content-Type': 'text/html' });
     res.end(render(Layout({
@@ -828,7 +859,7 @@ app.listen(3000, () => {
 
 ## Hono Integration
 
-Hono is an ultrafast web framework designed for edge environments.
+Hono is a small web framework that runs on several JavaScript runtimes. Coherent.js is built and tested for Node.js 22.12+; other runtimes are not tested.
 
 ### Installation
 
@@ -918,16 +949,7 @@ export default app;
 
 ## Comparative Performance
 
-Here's how different frameworks perform with Coherent.js:
-
-| Framework | Req/sec | Memory Usage | Cold Start | Bundle Size |
-|-----------|---------|--------------|------------|-------------|
-| **Raw Node.js** | ~12,000 | Lowest | Fastest | Minimal |
-| **Fastify** | ~10,500 | Low | Fast | Small |
-| **Express** | ~8,500 | Medium | Medium | Medium |
-| **Hono** | ~11,000 | Lowest | Fastest | Minimal |
-| **Koa** | ~7,800 | Medium | Medium | Small |
-| **Next.js** | ~6,500 | High | Slower | Large |
+The framework's own overhead usually dominates over rendering. Measure your pages with your framework of choice (for example with `autocannon`), and compare against the rendering benchmark in the repository (`pnpm perf:render`).
 
 ## Best Practices
 
@@ -954,24 +976,31 @@ app.get('/', (req, res) => {
 });
 ```
 
-### 3. Enable Caching
+### 3. Cache Deliberately
+
+Caching is opt-in. Memoize expensive components with `memo()`; for pages that are re-rendered with identical trees, use a bounded whole-render cache:
 
 ```javascript
-// Production setup - use render directly
-import { render } from '@coherent.js/core';
+import { render, createCacheManager } from '@coherent.js/core';
+
+const pageCache = createCacheManager({ maxCacheSize: 500, ttlMs: 60_000 });
+const html = render(AboutPage(), { enableCache: true, cache: pageCache });
 ```
 
 ### 4. Handle Errors Gracefully
 
 ```javascript
-// Universal error handling
+// Universal error page: only show messages meant for users
 const ErrorPage = ({ error, status }) => Layout({
   title: `Error ${status}`,
   children: [
     { h1: { text: `Error ${status}` } },
-    { p: { text: error.message } }
+    { p: { text: status < 500 ? error.message : 'Something went wrong' } }
   ]
 });
+
+// A component that throws makes render() throw (a RenderingError with the
+// component's path), so the framework answers 500 instead of a partial page.
 ```
 
 ### 5. Monitor Performance
@@ -979,32 +1008,27 @@ const ErrorPage = ({ error, status }) => Layout({
 ```javascript
 import { performanceMonitor } from '@coherent.js/core';
 
-// Regular monitoring
+// Regular monitoring of renders made with { enableMonitoring: true }
 setInterval(() => {
-  const stats = performanceMonitor.getStats();
-  console.log('Performance:', stats);
-}, 60000);
+  console.log('Render time:', performanceMonitor.generateReport().metrics.renderTime);
+}, 60000).unref();
 ```
 
 ## Deployment Considerations
 
 ### Production Settings
 
-```javascript
-import { render, performanceMonitor } from '@coherent.js/core';
-
-// Use render() directly and performanceMonitor for production monitoring
-const html = render(myComponent);
-const stats = performanceMonitor.getStats();
-```
+- Set `NODE_ENV=production`.
+- Behind a reverse proxy, tell your framework (`app.set('trust proxy', 1)` in Express) and, for the `@coherent.js/api` router, set `trustProxy`, so rate limits key on the client address.
+- Keep error messages of 5xx responses out of pages and JSON (the API router and the adapters already do).
 
 ### Docker Setup
 
 ```dockerfile
-FROM node:18-alpine
+FROM node:22-alpine
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --production
+RUN npm ci --omit=dev
 COPY . .
 EXPOSE 3000
 CMD ["node", "server.js"]
@@ -1014,8 +1038,7 @@ CMD ["node", "server.js"]
 
 ```bash
 NODE_ENV=production
-CACHE_SIZE=2000
-ENABLE_MONITORING=true
 PORT=3000
 ```
-```
+
+Besides `NODE_ENV`, `@coherent.js/core` reads `COHERENT_SILENT=1` and `COHERENT_DEBUG=1`, which turn its error logging off or on. Add your own variables (database URL, `JWT_SECRET`...) as your app needs them.

@@ -22,20 +22,20 @@ Before deploying your Coherent.js application:
 
 ```dockerfile
 # Multi-stage build for optimal size and security
-FROM node:18-alpine AS base
+FROM node:22-alpine AS base
 WORKDIR /app
 RUN apk add --no-cache dumb-init
 
 FROM base AS deps
 COPY package*.json ./
-RUN npm ci --production --silent && npm cache clean --force
+RUN npm ci --omit=dev --silent && npm cache clean --force
 
 FROM base AS build
 COPY package*.json ./
 RUN npm ci --silent
 COPY . .
 RUN npm run build
-RUN npm prune --production
+RUN npm prune --omit=dev
 
 FROM base AS runtime
 # Create non-root user for security
@@ -51,7 +51,7 @@ COPY --from=build --chown=coherent:nodejs /app/server.js ./server.js
 
 # Optimize Node.js for production
 ENV NODE_ENV=production
-ENV NODE_OPTIONS="--max-old-space-size=2048 --optimize-for-size"
+ENV NODE_OPTIONS="--max-old-space-size=2048"
 ENV UV_THREADPOOL_SIZE=16
 
 # Health check configuration
@@ -495,10 +495,10 @@ export default async function handler(req, res) {
     };
     
     const html = render(HomePage(props));
-    
-    res.setHeader('Content-Type', 'text/html');
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate');
-    res.status(200).send(html);
+    res.status(200).send(`<!DOCTYPE html>${html}`);
   } catch (error) {
     console.error('Render error:', error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -526,10 +526,10 @@ export const handler = async (event, context) => {
     return {
       statusCode: 200,
       headers: {
-        'Content-Type': 'text/html',
+        'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'public, max-age=300'
       },
-      body: html
+      body: `<!DOCTYPE html>${html}`
     };
   } catch (error) {
     console.error('Function error:', error);
@@ -557,24 +557,22 @@ DATABASE_SSL=true
 
 # Cache
 REDIS_URL=redis://user:password@host:6379
-CACHE_TTL=300
-CACHE_SIZE=10000
 
-# Security
-SECRET_KEY=your-super-secret-key
-JWT_SECRET=your-jwt-secret
-COOKIE_SECRET=your-cookie-secret
+# Security: generate each secret, e.g. `openssl rand -hex 32`
+JWT_SECRET=
+COOKIE_SECRET=
 ALLOWED_ORIGINS=https://example.com,https://www.example.com
 
 # Monitoring
 SENTRY_DSN=https://your-sentry-dsn
 LOG_LEVEL=info
-METRICS_ENABLED=true
 
 # Performance
 UV_THREADPOOL_SIZE=16
-NODE_OPTIONS=--max-old-space-size=2048 --optimize-for-size
+NODE_OPTIONS=--max-old-space-size=2048
 ```
+
+These are your application's variables: Coherent.js itself only reads `NODE_ENV` (and `COHERENT_SILENT` / `COHERENT_DEBUG` for its error logging). `@coherent.js/api` has no default JWT secret; `withAuth()` and `generateJWT()` throw without one.
 
 ### Production Server Configuration
 
@@ -590,6 +588,10 @@ import { setupHealthChecks } from './health.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Behind one reverse proxy (nginx, a load balancer...): read the client
+// address from X-Forwarded-For so rate limits apply per client
+app.set('trust proxy', 1);
 
 // Security middleware
 app.use(helmet({
@@ -653,14 +655,14 @@ app.get('*', async (req, res) => {
     };
     
     const html = render(App(props));
-    
+
     // Cache headers
     res.set({
       'Cache-Control': 'public, max-age=300, s-maxage=3600',
       'Vary': 'Accept-Encoding'
     });
-    
-    res.send(html);
+
+    res.send(`<!DOCTYPE html>${html}`);
   } catch (error) {
     console.error('Render error:', error);
     res.status(500).send('Internal Server Error');
@@ -757,11 +759,11 @@ export const setupHealthChecks = (app) => {
       results.status = 'degraded';
     }
 
-    // Check Coherent.js performance
-    const stats = performanceMonitor.getStats();
-    if (stats.averageRenderTime < 100) {
+    // Check Coherent.js render times (renders made with { enableMonitoring: true })
+    const { renderTime } = performanceMonitor.generateReport().metrics;
+    if (renderTime.count === 0 || renderTime.avg < 100) {
       checks.coherent = true;
-      results.details.coherent = `Avg render: ${stats.averageRenderTime}ms`;
+      results.details.coherent = `Avg render: ${renderTime.avg.toFixed(1)}ms`;
     } else {
       checks.coherent = false;
       results.details.coherent = 'Performance degraded';
@@ -793,7 +795,7 @@ export const setupHealthChecks = (app) => {
 ```javascript
 // monitoring.js
 import prometheus from 'prom-client';
-import { performanceMonitor } from '@coherent.js/core';
+import { render, performanceMonitor } from '@coherent.js/core';
 
 const register = prometheus.register;
 
@@ -813,9 +815,9 @@ const coherentRenderDuration = new prometheus.Histogram({
   labelNames: ['component']
 });
 
-const cacheHitRate = new prometheus.Gauge({
-  name: 'coherent_cache_hit_rate',
-  help: 'Cache hit rate percentage'
+const renderP95 = new prometheus.Gauge({
+  name: 'coherent_render_p95_seconds',
+  help: '95th percentile Coherent.js render time in seconds'
 });
 
 export const setupMonitoring = (app) => {
@@ -833,18 +835,21 @@ export const setupMonitoring = (app) => {
     next();
   });
 
-  // Coherent.js metrics integration
-  performanceMonitor.on('render', (data) => {
-    coherentRenderDuration
-      .labels(data.component)
-      .observe(data.duration / 1000);
-  });
+  // Coherent.js render metrics: time renders yourself...
+  app.locals.renderPage = (name, tree) => {
+    const end = coherentRenderDuration.labels(name).startTimer();
+    try {
+      return render(tree, { enableMonitoring: true });
+    } finally {
+      end();
+    }
+  };
 
-  // Update cache metrics periodically
+  // ...and export the monitor's own percentiles periodically
   setInterval(() => {
-    const stats = performanceMonitor.getStats();
-    cacheHitRate.set(stats.cacheHitRate);
-  }, 30000);
+    const { renderTime } = performanceMonitor.generateReport().metrics;
+    renderP95.set(renderTime.p95 / 1000);
+  }, 30000).unref();
 
   // Metrics endpoint
   app.get('/metrics', async (req, res) => {
@@ -855,7 +860,7 @@ export const setupMonitoring = (app) => {
 
   // Performance dashboard
   app.get('/admin/performance', (req, res) => {
-    const stats = performanceMonitor.getStats();
+    const { renderTime } = performanceMonitor.generateReport().metrics;
     
     const dashboard = {
       div: {
@@ -870,18 +875,9 @@ export const setupMonitoring = (app) => {
                     className: 'metric-card',
                     children: [
                       { h3: { text: 'Render Performance' } },
-                      { p: { text: `Average: ${stats.averageRenderTime}ms` } },
-                      { p: { text: `95th percentile: ${stats.p95RenderTime}ms` } }
-                    ]
-                  }
-                },
-                {
-                  div: {
-                    className: 'metric-card',
-                    children: [
-                      { h3: { text: 'Cache Performance' } },
-                      { p: { text: `Hit rate: ${stats.cacheHitRate}%` } },
-                      { p: { text: `Total hits: ${stats.totalCacheHits}` } }
+                      { p: { text: `Renders: ${renderTime.count}` } },
+                      { p: { text: `Average: ${renderTime.avg.toFixed(2)}ms` } },
+                      { p: { text: `95th percentile: ${renderTime.p95.toFixed(2)}ms` } }
                     ]
                   }
                 }
@@ -892,7 +888,7 @@ export const setupMonitoring = (app) => {
       }
     };
     
-    res.send(render(dashboard));
+    res.send(`<!DOCTYPE html>${render(dashboard)}`);
   });
 };
 ```
@@ -902,7 +898,7 @@ export const setupMonitoring = (app) => {
 ```javascript
 // logger.js
 import winston from 'winston';
-import { performanceMonitor } from '@coherent.js/core';
+import { render } from '@coherent.js/core';
 
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
@@ -927,21 +923,16 @@ const logger = winston.createLogger({
   ]
 });
 
-// Log Coherent.js performance events
-performanceMonitor.on('slowRender', (data) => {
-  logger.warn('Slow render detected', {
-    component: data.component,
-    duration: data.duration,
-    threshold: data.threshold
-  });
-});
-
-performanceMonitor.on('cacheHit', (data) => {
-  logger.debug('Cache hit', {
-    key: data.key,
-    level: data.level
-  });
-});
+// Log slow Coherent.js renders
+export function renderLogged(name, tree) {
+  const start = performance.now();
+  const html = render(tree);
+  const duration = performance.now() - start;
+  if (duration > 50) {
+    logger.warn('Slow render detected', { component: name, duration });
+  }
+  return html;
+}
 
 export default logger;
 ```
@@ -961,7 +952,7 @@ on:
     branches: [main]
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '22'
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
@@ -1095,7 +1086,7 @@ variables:
 
 test:
   stage: test
-  image: node:18-alpine
+  image: node:22-alpine
   services:
     - postgres:15-alpine
   variables:
