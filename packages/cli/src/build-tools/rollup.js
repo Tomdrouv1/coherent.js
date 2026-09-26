@@ -1,32 +1,21 @@
 /**
  * Rollup Plugin for Coherent.js
+ *
+ * @experimental A pass-through: it claims no module ids and changes no
+ * code, so Rollup resolves and loads `*.coherent.js` files like any other
+ * module. (It used to return raw relative ids from `resolveId`, which broke
+ * every build importing a `.coherent.js` file.)
  */
 
-export function createRollupPlugin(_options = {}) {
+import { warnExperimental } from './experimental.js';
+
+/**
+ * @param {Object} [options]
+ * @param {boolean} [options.silent] - Hide the experimental notice.
+ */
+export function createRollupPlugin(options = {}) {
+  warnExperimental('createRollupPlugin', options);
   return {
-    name: 'coherent',
-    buildStart() {
-      // Initialize plugin
-    },
-    resolveId(id) {
-      if (id.endsWith('.coherent.js')) {
-        return id;
-      }
-    },
-    load(id) {
-      if (id.endsWith('.coherent.js')) {
-        // Load and process Coherent.js files
-        return null;
-      }
-    },
-    transform(code, id) {
-      if (id.includes('.coherent.js')) {
-        // Transform Coherent.js components
-        return {
-          code,
-          map: null
-        };
-      }
-    }
+    name: 'coherent'
   };
 }

@@ -1,20 +1,17 @@
 /**
  * Coherent.js Webpack Loader
+ *
+ * @experimental A pass-through: returns the source unchanged (with any
+ * incoming source map), so it is safe in a loader chain but does nothing yet.
  */
 
-export function coherentLoader(source) {
-  const callback = this.async();
-  
-  try {
-    // Process Coherent.js component files
-    const transformed = transformCoherentComponent(source);
-    callback(null, transformed);
-  } catch (error) {
-    callback(error);
-  }
-}
+import { warnExperimental } from './experimental.js';
 
-function transformCoherentComponent(source) {
-  // Transform logic for Coherent.js components
+export function coherentLoader(source, map) {
+  warnExperimental('coherentLoader', typeof this?.getOptions === 'function' ? this.getOptions() : {});
+  if (typeof this?.callback === 'function') {
+    this.callback(null, source, map);
+    return undefined;
+  }
   return source;
 }
