@@ -270,8 +270,14 @@ myRouter.clearCaches;
 expectTypeOf(myRouter.push('/about')).toMatchTypeOf<Promise<boolean>>();
 expectTypeOf(myRouter.replace('/home')).toMatchTypeOf<Promise<boolean>>();
 
+// History integration
+expectTypeOf(myRouter.start()).toMatchTypeOf<Promise<boolean>>();
+expectTypeOf(myRouter.start({ interceptLinks: false })).toMatchTypeOf<Promise<boolean>>();
+expectTypeOf(myRouter.stop).toBeFunction();
+
 // Router getters
 expectTypeOf(myRouter.getCurrentRoute()).toMatchTypeOf<Route | null>();
+expectTypeOf<Route['params']>().toEqualTypeOf<Record<string, string> | undefined>();
 expectTypeOf(myRouter.getStats()).toMatchTypeOf<RouterStats>();
 
 // router singleton

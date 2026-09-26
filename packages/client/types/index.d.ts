@@ -584,117 +584,18 @@ export interface PerformanceMonitor {
 }
 
 // ============================================================================
-// Router Types
+// Router Types (the router itself is the @coherent.js/client/router entry)
 // ============================================================================
 
-/** Route configuration */
-export interface RouteConfig {
-  /** Route path pattern */
-  path: string;
-  /** Component to render (can be async for code splitting) */
-  component: CoherentComponent | (() => Promise<CoherentComponent>);
-  /** Route metadata */
-  meta?: Record<string, any>;
-  /** Before enter guard */
-  beforeEnter?: (to: Route, from: Route | null) => boolean | Promise<boolean>;
-  /** Before leave guard */
-  beforeLeave?: (to: Route, from: Route) => boolean | Promise<boolean>;
-  /** Prefetch priority */
-  priority?: number;
-  /** Custom transition for this route */
-  transition?: RouteTransition;
-}
-
-/** Current route state */
-export interface Route {
-  path: string;
-  component?: CoherentComponent;
-  meta?: Record<string, any>;
-  hash?: string;
-  query?: Record<string, string>;
-}
-
-/** Route transition configuration */
-export interface RouteTransition {
-  enter: string;
-  leave: string;
-  duration: number;
-}
-
-/** Scroll behavior configuration */
-export interface ScrollBehaviorConfig {
-  enabled?: boolean;
-  behavior?: ScrollBehavior;
-  position?: 'top' | 'saved';
-  delay?: number;
-  savePosition?: boolean;
-  custom?: (to: Route, from: Route | null, savedPosition: { x: number; y: number } | null) => { x: number; y: number } | { el: Element };
-}
-
-/** Router configuration */
-export interface RouterConfig {
-  mode?: 'history' | 'hash';
-  base?: string;
-  prefetch?: {
-    enabled?: boolean;
-    strategy?: 'hover' | 'visible' | 'idle';
-    delay?: number;
-    maxConcurrent?: number;
-    priority?: {
-      critical?: number;
-      high?: number;
-      normal?: number;
-      low?: number;
-    };
-  };
-  transitions?: {
-    enabled?: boolean;
-    default?: RouteTransition;
-    routes?: Record<string, RouteTransition>;
-    onStart?: (from: string | null, to: string) => void;
-    onComplete?: (from: string | null, to: string) => void;
-  };
-  codeSplitting?: {
-    enabled?: boolean;
-    strategy?: 'route';
-    chunkNaming?: string;
-    preload?: string[];
-    onLoad?: (path: string, component: any, loadTime: number) => void;
-  };
-  scrollBehavior?: ScrollBehaviorConfig;
-}
-
-/** Router statistics */
-export interface RouterStats {
-  navigations: number;
-  prefetches: number;
-  transitionsCompleted: number;
-  chunksLoaded: number;
-  scrollRestores: number;
-  routesRegistered: number;
-  prefetchQueueSize: number;
-  activePrefetches: number;
-  loadedChunks: number;
-  savedPositions: number;
-  historyLength: number;
-}
-
-/** Router instance */
-export interface Router {
-  addRoute(path: string, config: RouteConfig): void;
-  push(path: string, options?: Partial<Route>): Promise<boolean>;
-  replace(path: string, options?: Partial<Route>): Promise<boolean>;
-  back(): void;
-  forward(): void;
-  prefetchRoute(path: string, priority?: number): Promise<void>;
-  prefetchRoutes(paths: string[], priority?: number): void;
-  setupPrefetchStrategy(element: HTMLElement, path: string): void;
-  getRoute(path: string): RouteConfig | undefined;
-  getRoutes(): RouteConfig[];
-  getCurrentRoute(): Route | null;
-  getStats(): RouterStats;
-  clearCaches(): void;
-}
+export type {
+  RouteConfig,
+  Route,
+  RouteTransition,
+  ScrollBehaviorConfig,
+  RouterConfig,
+  RouterStats,
+  Router,
+} from './router.js';
 
 // ============================================================================
 // Utility Types
