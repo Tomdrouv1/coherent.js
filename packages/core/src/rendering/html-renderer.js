@@ -398,7 +398,17 @@ class HTMLRenderer extends BaseRenderer {
 
         // Handle function elements
         if (typeof element === 'function') {
-            const result = this.runFunctionComponent(element, options, depth, path);
+            let result;
+            try {
+                result = this.executeFunctionComponent(element, depth);
+            } catch (error) {
+                if (typeof options.onError !== 'function') throw error;
+                // The replacement stands in for the whole element: rendered
+                // as the element's content it became attributes
+                // (`<div p="[object Object]">`).
+                const replacement = options.onError(error, { path: formatRenderPath(path) });
+                return this.renderComponent(replacement, options, depth + 1, childPath(path, '()'));
+            }
             return this.renderElement(tagName, result, options, depth, childPath(path, '()'));
         }
 

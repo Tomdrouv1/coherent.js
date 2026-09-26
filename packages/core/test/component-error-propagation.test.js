@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, createErrorBoundary, createAsyncErrorBoundary } from '../src/index.js';
+import { render, renderToStream, createErrorBoundary, createAsyncErrorBoundary } from '../src/index.js';
 
 const Boom = () => {
   throw new Error('database unavailable');
@@ -33,6 +33,26 @@ describe('errors thrown by function components', () => {
   it('can be omitted by returning null from onError', () => {
     expect(render({ main: { children: [Boom, { p: { text: 'after' } }] } }, { onError: () => null }))
       .toBe('<main><p>after</p></main>');
+  });
+
+  // Regression: for an element whose content is a function (`{ div: Boom }`)
+  // the replacement was rendered as that element's props, so the fallback
+  // came out as `<div p="[object Object]"></div>`.
+  it('replaces the whole element when its content function throws', () => {
+    const onError = vi.fn(() => ({ p: { className: 'error', text: 'unavailable' } }));
+    const tree = { main: { children: [{ div: Boom }, { p: { text: 'after' } }] } };
+
+    expect(render(tree, { onError })).toBe('<main><p class="error">unavailable</p><p>after</p></main>');
+    expect(onError).toHaveBeenCalledWith(expect.objectContaining({ message: 'database unavailable' }), { path: 'root.main.children[0].div' });
+    expect(render(tree, { onError: () => null })).toBe('<main><p>after</p></main>');
+  });
+
+  it('replaces the whole element when streaming, too', async () => {
+    const tree = { main: { children: [{ div: Boom }, { p: { text: 'after' } }] } };
+    let html = '';
+    for await (const chunk of renderToStream(tree, { onError: () => ({ p: { text: 'unavailable' } }) })) html += chunk;
+
+    expect(html).toBe('<main><p>unavailable</p><p>after</p></main>');
   });
 });
 
