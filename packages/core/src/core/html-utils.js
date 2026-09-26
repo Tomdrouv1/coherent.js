@@ -223,6 +223,72 @@ function stripComments(html) {
   }
 }
 
+/**
+ * Whether `html` ends inside a comment, or with the `>` that closes one
+ * (the same scan as stripComments).
+ */
+function endsInComment(html) {
+  let cursor = 0;
+  for (;;) {
+    const start = html.indexOf('<!--', cursor);
+    if (start === -1) return false;
+    const end = html.indexOf('-->', start + 4);
+    if (end === -1 || end + 3 === html.length) return true;
+    cursor = end + 3;
+  }
+}
+
+/**
+ * Incremental minifyHtml() for streamed markup: the concatenation of what
+ * `push()` and `end()` return equals minifyHtml() of the concatenated input.
+ *
+ * Input is held back until a `>` that minification keeps (not inside or
+ * closing a comment), and output is cut right after it. No whitespace run or
+ * comment then spans a cut, and the next piece is minified with that `>` in
+ * front, so a `>`, whitespace, `<` sequence across the cut collapses as it
+ * does in the whole document.
+ *
+ * @returns {{ push(chunk: string): string, end(): string }}
+ */
+export function createStreamMinifier() {
+  let pending = '';
+  let started = false;
+
+  const minifyPiece = (text, last) => {
+    let out = stripComments(started ? `>${text}` : text)
+      .replace(/\s+/g, ' ')
+      .replace(/>\s+</g, '><');
+    if (started) {
+      out = out.slice(1);
+    } else {
+      out = out.trimStart();
+    }
+    if (last) out = out.trimEnd();
+    started = true;
+    return out;
+  };
+
+  return {
+    push(chunk) {
+      pending += chunk;
+      let cut = pending.lastIndexOf('>');
+      while (cut !== -1 && endsInComment(pending.slice(0, cut + 1))) {
+        cut = cut === 0 ? -1 : pending.lastIndexOf('>', cut - 1);
+      }
+      if (cut === -1) return '';
+
+      const head = pending.slice(0, cut + 1);
+      pending = pending.slice(cut + 1);
+      return minifyPiece(head, false);
+    },
+    end() {
+      const rest = pending;
+      pending = '';
+      return rest || !started ? minifyPiece(rest, true) : '';
+    }
+  };
+}
+
 export function minifyHtml(html, options = {}) {
   if (!options.minify) return html;
 

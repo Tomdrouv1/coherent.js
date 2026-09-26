@@ -160,11 +160,16 @@ export class BaseRenderer {
     /**
      * Check if component is valid for rendering
      */
-    isValidComponent(component) {
+    isValidComponent(component, depth = 0) {
         if (component === null || component === undefined) return true;
         if (typeof component === 'string' || typeof component === 'number') return true;
         if (typeof component === 'function') return true;
-        if (Array.isArray(component)) return component.every(child => this.isValidComponent(child));
+        if (Array.isArray(component)) {
+            // Past maxDepth the renderer reports the depth error; recursing
+            // further overflowed the stack on deeply nested arrays first.
+            if (depth >= this.config.maxDepth) return true;
+            return component.every(child => this.isValidComponent(child, depth + 1));
+        }
         if (isCoherentObject(component)) return true;
         return false;
     }

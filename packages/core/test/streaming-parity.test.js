@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import http from 'node:http';
 import net from 'node:net';
 import { render, renderToStream, streamingUtils, dangerouslySetInnerContent } from '../src/index.js';
+import { createStreamMinifier, minifyHtml } from '../src/core/html-utils.js';
 
 async function collect(component, options) {
   const chunks = [];
@@ -136,5 +137,80 @@ describe('renderToStream', () => {
       server.closeAllConnections();
       await new Promise((resolve) => server.close(resolve));
     }
+  });
+
+  // Regression: renderToStream() ignored `minify`, so the stream differed
+  // from render({ minify: true }).
+  describe('minify', () => {
+    const trees = {
+      'whitespace between children': { div: { children: [{ p: { text: 'a' } }, '\n   ', { p: { text: 'b' } }] } },
+      'comments and raw html': {
+        main: {
+          children: [
+            { div: { html: '  <!-- note -->  <b> x </b>\n' } },
+            dangerouslySetInnerContent('<!-- a > b -->  <i>y</i>  '),
+            ' tail  '
+          ]
+        }
+      },
+      'a large list': bigList(300)
+    };
+
+    for (const [name, tree] of Object.entries(trees)) {
+      it(`matches render() for ${name}`, async () => {
+        const expected = render(tree, { minify: true });
+        for (const chunkSize of [1, 7, 8192]) {
+          expect((await collect(tree, { minify: true, chunkSize })).join('')).toBe(expected);
+        }
+      });
+    }
+
+    it('minifies incrementally exactly like minifyHtml() over the whole input', () => {
+      const alphabet = ['<', '>', '!', '-', ' ', '\n', 'a', '<!--', '-->', '<p>', '</p>', '  ', '\t'];
+      let seed = 7;
+      const random = (n) => {
+        seed = (seed * 1103515245 + 12345) % 2147483648;
+        return seed % n;
+      };
+
+      for (let run = 0; run < 3000; run++) {
+        let input = '';
+        const length = random(30);
+        for (let i = 0; i < length; i++) input += alphabet[random(alphabet.length)];
+
+        const minifier = createStreamMinifier();
+        let output = '';
+        for (let i = 0; i < input.length;) {
+          const size = 1 + random(5);
+          output += minifier.push(input.slice(i, i + size));
+          i += size;
+        }
+        output += minifier.end();
+
+        expect(output, JSON.stringify(input)).toBe(minifyHtml(input, { minify: true }));
+      }
+    });
+  });
+
+  // Regression: arrays and functions skipped the depth check while
+  // streaming, and the input check recursed into nested arrays without a
+  // bound, so deep nesting overflowed the stack instead of reporting maxDepth.
+  describe('maxDepth', () => {
+    const nested = (levels) => {
+      let node = 'leaf';
+      for (let i = 0; i < levels; i++) node = [node];
+      return node;
+    };
+
+    it('reports nested arrays past maxDepth while streaming', async () => {
+      await expect(collect(nested(300), { maxDepth: 100 })).rejects.toThrow(/Maximum render depth \(100\) exceeded/);
+    });
+
+    it('reports maxDepth instead of overflowing the stack on very deep nesting', async () => {
+      const tree = nested(20_000);
+
+      expect(() => render(tree, { maxDepth: 100 })).toThrow(/Maximum render depth \(100\) exceeded/);
+      await expect(collect(tree, { maxDepth: 100 })).rejects.toThrow(/Maximum render depth \(100\) exceeded/);
+    });
   });
 });

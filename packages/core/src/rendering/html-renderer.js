@@ -13,7 +13,8 @@ import {
     isTrustedContent,
     isVoidElement,
     formatAttributes,
-    minifyHtml
+    minifyHtml,
+    createStreamMinifier
 } from '../core/html-utils.js';
 
 import { performanceMonitor } from '../performance/monitor.js';
@@ -464,6 +465,11 @@ class HTMLRenderer extends BaseRenderer {
     async *streamComponent(component, options, depth = 0, path = null) {
         if (component === null || component === undefined) return;
 
+        // Every branch, like renderComponent: deeply nested arrays or
+        // functions returning functions overflowed the stack instead of
+        // reporting maxDepth.
+        this.validateDepth(depth);
+
         if (typeof component === 'function') {
             const result = this.runFunctionComponent(component, options, depth, path);
             yield* this.streamComponent(result, options, depth + 1, childPath(path, '()'));
@@ -482,7 +488,6 @@ class HTMLRenderer extends BaseRenderer {
         if (typeof component === 'object' && !isTrustedContent(component) && component.__isLazy !== true) {
             const { type, value } = this.processComponentType(component);
             if (type === 'element') {
-                this.validateDepth(depth);
                 yield* this.streamTracked(component, options, path, async function* (renderer) {
                     for (const tagName of Object.keys(value)) {
                         yield* renderer.streamElement(tagName, value[tagName], options, depth, childPath(path, tagName));
@@ -797,15 +802,19 @@ export async function* renderToStream(component, options = {}) {
         throw new Error('Invalid component structure');
     }
 
+    // `minify` used to be ignored here, so the stream differed from render().
+    const minifier = config.minify ? createStreamMinifier() : null;
+
     let buffer = '';
     for await (const piece of renderer.streamComponent(component, config, 0, null)) {
-        buffer += piece;
+        buffer += minifier ? minifier.push(piece) : piece;
         if (buffer.length >= chunkSize) {
             yield buffer;
             buffer = '';
             await yieldToEventLoop();
         }
     }
+    if (minifier) buffer += minifier.end();
     if (buffer) yield buffer;
 }
 
