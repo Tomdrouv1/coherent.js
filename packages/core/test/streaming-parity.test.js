@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import http from 'node:http';
+import net from 'node:net';
 import { render, renderToStream, streamingUtils, dangerouslySetInnerContent } from '../src/index.js';
 
 async function collect(component, options) {
@@ -84,7 +86,8 @@ describe('renderToStream', () => {
       getHeader: () => undefined,
       setHeader: (name, value) => events.push(['header', name, value]),
       write: (chunk) => { events.push(['write', chunk.length]); return true; },
-      once: () => {},
+      on: () => {},
+      off: () => {},
       end: () => events.push(['end']),
       destroy: (error) => events.push(['destroy', error.message])
     };
@@ -92,5 +95,46 @@ describe('renderToStream', () => {
     await expect(streamingUtils.streamToResponse(renderToStream({ div: { children: [Boom] } }), response)).rejects.toThrow('boom');
     expect(events).toContainEqual(['destroy', 'boom']);
     expect(events.some(([type]) => type === 'end')).toBe(false);
+  });
+
+  // Regression: after write() returned false it waited for 'drain' only.
+  // A client that disconnected meanwhile never drains, so the promise and
+  // the suspended render (holding the whole tree) stayed pending forever.
+  it('streamToResponse stops rendering when the client disconnects', async () => {
+    let closed = false;
+    async function* tracked() {
+      try {
+        yield* renderToStream(bigList(200_000), { chunkSize: 65_536 });
+      } finally {
+        closed = true;
+      }
+    }
+
+    let result;
+    const server = http.createServer((req, res) => {
+      result = streamingUtils.streamToResponse(tracked(), res);
+    });
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+
+    try {
+      const socket = net.connect(server.address().port, '127.0.0.1');
+      await new Promise((resolve) => socket.once('connect', resolve));
+      socket.write('GET / HTTP/1.1\r\nHost: localhost\r\n\r\n');
+      socket.pause(); // never read, so the server's writes stop draining
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      socket.destroy();
+
+      const outcome = await Promise.race([
+        result.then((bytes) => ({ bytes })),
+        new Promise((resolve) => setTimeout(() => resolve('still pending'), 3000))
+      ]);
+
+      expect(outcome).not.toBe('still pending');
+      expect(outcome.bytes).toBeGreaterThan(0);
+      expect(closed).toBe(true);
+    } finally {
+      server.closeAllConnections();
+      await new Promise((resolve) => server.close(resolve));
+    }
   });
 });

@@ -53,7 +53,8 @@ import { renderToStream, streamingUtils } from '@coherent.js/core';
 // An async generator of HTML chunks with exactly render()'s output
 Readable.from(renderToStream(Page(), { chunkSize: 16384 })).pipe(res);
 
-// or: writes with backpressure and aborts the response if rendering fails
+// or: writes with backpressure, aborts the response if rendering fails and
+// stops rendering if the client disconnects
 await streamingUtils.streamToResponse(renderToStream(Page()), res);
 ```
 

@@ -804,6 +804,27 @@ const yieldToEventLoop = typeof setImmediate === 'function'
     : () => new Promise((resolve) => setTimeout(resolve, 0));
 
 /**
+ * Wait until `response` can take more data. Resolves `true` on 'drain' and
+ * `false` when the response closes (or errors) first.
+ */
+function waitForDrain(response) {
+    if (response.destroyed) return Promise.resolve(false);
+    return new Promise((resolve) => {
+        const settle = (drained) => () => {
+            response.off('drain', onDrain);
+            response.off('close', onClose);
+            response.off('error', onClose);
+            resolve(drained);
+        };
+        const onDrain = settle(true);
+        const onClose = settle(false);
+        response.on('drain', onDrain);
+        response.on('close', onClose);
+        response.on('error', onClose);
+    });
+}
+
+/**
  * Streaming utilities for common use cases
  */
 export const streamingUtils = {
@@ -819,7 +840,13 @@ export const streamingUtils = {
     },
 
     /**
-     * Stream directly to a Node.js response
+     * Stream directly to a Node.js response, with backpressure.
+     *
+     * Resolves with the number of bytes written once the response has ended.
+     * If the client disconnects first, rendering stops (the generator is
+     * closed) and it resolves with the bytes written so far without ending
+     * the response. If rendering fails, the response is destroyed and it
+     * rejects with the rendering error.
      */
     async streamToResponse(chunkGenerator, response) {
         let totalBytes = 0;
@@ -828,12 +855,17 @@ export const streamingUtils = {
         }
 
         try {
+            // Leaving the loop early closes the generator, so a client that
+            // went away stops the render instead of leaving it suspended.
             for await (const chunk of chunkGenerator) {
+                if (response.destroyed) return totalBytes;
                 totalBytes += Buffer.byteLength(chunk);
                 // Respect backpressure instead of buffering the whole page
-                // in the socket when the client reads slowly.
-                if (!response.write(chunk)) {
-                    await new Promise((resolve) => response.once('drain', resolve));
+                // in the socket when the client reads slowly. 'drain' never
+                // comes once the client disconnects: waiting for it alone
+                // left the promise (and the render) pending forever.
+                if (!response.write(chunk) && !(await waitForDrain(response))) {
+                    return totalBytes;
                 }
             }
         } catch (error) {

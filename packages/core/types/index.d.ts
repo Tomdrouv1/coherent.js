@@ -570,7 +570,10 @@ export interface StreamingResponse {
   getHeader?(name: string): unknown;
   setHeader(name: string, value: string): void;
   write(chunk: string): boolean;
-  once(event: 'drain', listener: () => void): unknown;
+  /** Set once the connection is gone (Node's `ServerResponse#destroyed`). */
+  destroyed?: boolean;
+  on(event: 'drain' | 'close' | 'error', listener: (...args: unknown[]) => void): unknown;
+  off(event: 'drain' | 'close' | 'error', listener: (...args: unknown[]) => void): unknown;
   end(): void;
   destroy(error?: Error): void;
 }
@@ -578,7 +581,11 @@ export interface StreamingResponse {
 export const streamingUtils: {
   /** Concatenate every chunk. */
   collectChunks(chunks: AsyncIterable<string>): Promise<string>;
-  /** Write chunks to a Node response with backpressure; aborts it on error. Resolves to the byte count. */
+  /**
+   * Write chunks to a Node response with backpressure; aborts it on error.
+   * Resolves to the byte count. If the client disconnects, rendering stops and
+   * it resolves with the bytes written so far.
+   */
   streamToResponse(chunks: AsyncIterable<string>, response: StreamingResponse): Promise<number>;
   /** Re-yield chunks, reporting progress after each one. */
   streamWithProgress(
