@@ -55,6 +55,7 @@ export class DatabaseManager extends EventEmitter {
     this.isConnected = false;
     this.connectionAttempts = 0;
     this.maxRetries = 3;
+    this.retryDelay = 2000;
 
     // Health check interval
     this.healthCheckInterval = null;
@@ -191,8 +192,8 @@ export class DatabaseManager extends EventEmitter {
       if (this.listenerCount('error') > 0) this.emit('error', _error);
 
       if (this.connectionAttempts < this.maxRetries) {
-        console.warn(`Connection attempt ${this.connectionAttempts} failed. Retrying in 2 seconds...`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        console.warn(`Connection attempt ${this.connectionAttempts} failed. Retrying in ${this.retryDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, this.retryDelay));
         return this.connect();
       }
 
@@ -247,9 +248,11 @@ export class DatabaseManager extends EventEmitter {
     try {
       if (typeof this.adapter.testConnection === 'function') {
         await this.adapter.testConnection(this.pool);
-      } else if (this.adapter.ping) {
-        // Try ping if available
-        await this.adapter.ping();
+      } else if (typeof this.adapter.ping === 'function') {
+        // Adapters whose ping() reports failure as `false` instead of throwing
+        if (await this.adapter.ping() === false) {
+          throw new Error('ping failed');
+        }
       }
       // If no test method is available, we'll assume the connection is good
 
@@ -400,7 +403,9 @@ export class DatabaseManager extends EventEmitter {
     return {
       ...this.stats,
       isConnected: this.isConnected,
-      poolStats: this.pool ? this.adapter.getPoolStats(this.pool) : null
+      poolStats: this.pool && typeof this.adapter?.getPoolStats === 'function'
+        ? this.adapter.getPoolStats(this.pool)
+        : null
     };
   }
 
