@@ -2,14 +2,14 @@
 
 [![npm version](https://img.shields.io/npm/v/@coherent.js/core.svg)](https://www.npmjs.com/package/@coherent.js/core)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](../../LICENSE)
-[![Node >= 20](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
+[![Node >= 22.12](https://img.shields.io/badge/node-%3E%3D22.12-brightgreen)](https://nodejs.org)
 
-Core runtime for Coherent.js — an object-based SSR framework focused on performance, streaming, and simplicity.
+Core runtime for Coherent.js — an object-based SSR framework: components are plain JavaScript objects rendered to HTML.
 
-- ESM-only, Node 20+
-- Pure object rendering to HTML
-- Optional CSS-like scoping for component encapsulation
-- Component system utilities, error boundaries, and performance hooks
+- ESM-only, Node 22.12+
+- Synchronous `render()` to a string, and `renderToStream()` for large pages
+- Escaped text and attribute values by default; raw HTML only through `html:` or `dangerouslySetInnerContent()`
+- Opt-in scoped CSS, memoization and whole-render caching
 
 For a high-level overview and repository-wide instructions, see the root README: ../../README.md
 
@@ -19,103 +19,90 @@ For a high-level overview and repository-wide instructions, see the root README:
 pnpm add @coherent.js/core
 ```
 
-Requirements:
-- Node.js >= 20
-- ESM module system
-
 ## Quick start
 
-JavaScript (ESM):
 ```js
 import { render } from '@coherent.js/core';
 
-const html = render({
-  div: { class: 'greeting', text: 'Hello Coherent' }
+const Greeting = ({ name }) => ({
+  div: {
+    className: ['greeting', name === 'Ada' && 'greeting--vip'],
+    children: [
+      { h1: { text: `Hello ${name}` } },           // text is escaped
+      name === 'Ada' && { p: { text: 'Welcome back' } } // false renders nothing
+    ]
+  }
 });
 
-console.log(html);
+render(Greeting({ name: 'Ada' }));
+// <div class="greeting greeting--vip"><h1>Hello Ada</h1><p>Welcome back</p></div>
 ```
 
-TypeScript:
-```ts
-import { render } from '@coherent.js/core';
+## Rendering
 
-const html = render({
-  div: { class: 'greeting', text: 'Hello Coherent (TS)' }
+- `render(component, options?)` returns an HTML string. It is synchronous: await data and async components first (a Promise in the tree throws).
+- A function component that throws makes `render()` throw a `RenderingError` naming the component's path, with the original error as `cause`. Pass `onError: (error, { path }) => replacement` to render something else in its place (`null` omits it).
+- Options: `scoped` (scoped CSS), `minify`, `maxDepth`, `enableMonitoring`, `enableCache` / `cache` (see below), `onError`.
+
+### Streaming
+
+```js
+import { Readable } from 'node:stream';
+import { renderToStream, streamingUtils } from '@coherent.js/core';
+
+// An async generator of HTML chunks with exactly render()'s output
+Readable.from(renderToStream(Page(), { chunkSize: 16384 })).pipe(res);
+
+// or: writes with backpressure and aborts the response if rendering fails
+await streamingUtils.streamToResponse(renderToStream(Page()), res);
+```
+
+The event loop gets a turn after every chunk, so the first bytes of a large page leave early and other requests keep being served; total render time is somewhat higher than `render()`.
+
+### Caching
+
+Nothing is cached unless you ask:
+
+```js
+import { memo, render, createCacheManager } from '@coherent.js/core';
+
+// Per-component memoization; every memoized component has its own LRU
+const Row = memo(({ item }) => ({ li: { text: item.name } }), {
+  keyFn: ({ item }) => `${item.id}:${item.version}`,
+  maxSize: 1000
 });
-console.log(html);
+
+// Whole-render cache, keyed on the complete tree (trees containing
+// functions are never cached). Only useful for re-rendering identical trees.
+const cache = createCacheManager({ maxCacheSize: 500, ttlMs: 60_000 });
+render(StaticPage(), { enableCache: true, cache });
 ```
+
+### Raw HTML
+
+Text and attribute values are always escaped. Raw markup goes through the `html:` key or `dangerouslySetInnerContent()`; markers from that function carry a symbol brand, so objects parsed from JSON are never treated as trusted. Attribute names that could break out of the tag (whitespace, quotes, `<`, `>`, `/`, `=`) make `render()` throw.
+
+### Event handlers
+
+Function-valued `on*` props render nothing on the server; `@coherent.js/client`'s `hydrate()` attaches them in the browser. Inline string handlers (`onclick: 'history.back()'`) are rendered as attributes.
 
 ## Exports overview
 
-The package ships built ESM and CJS bundles under `dist/` with types under `types/`.
+- Rendering: `render`, `renderToStream`, `streamingUtils`, `formatAttributes`, `escapeHtml`, `isValidAttributeName`, `dangerouslySetInnerContent`, `isTrustedContent`
+- Components: `createComponent`, `defineComponent`, `registerComponent`, `memo`, `memoComponent`, `lazy`, `withState`, `withStateUtils`
+- Error boundaries: `createErrorBoundary`, `withErrorBoundary`, `createAsyncErrorBoundary`, `createGlobalErrorHandler`
+- Caching and monitoring: `createCacheManager`, `cacheManager`, `memoize`, `performanceMonitor`
+- Events: `createEventBus`, `globalEventBus`, `withEventBus`, `eventSystem`
 
-Key APIs (selected):
-- Rendering
-  - `render(input, options?)` – renders a component object to an HTML string
-- Component system (re-exported from internal modules)
-  - `createComponent`, `defineComponent`, `registerComponent`, `getComponent`, `getRegisteredComponents`
-  - State helpers: `withState`, `withStateUtils`, `createStateManager`
-  - Lazy: `lazy`, `isLazy`, `evaluateLazy`
-- Error boundaries (selected)
-  - `createErrorBoundary`, `withErrorBoundary`, `createAsyncErrorBoundary`
-  - `createGlobalErrorHandler`, `GlobalErrorHandler`
-
-Tip: When working in the monorepo website/dev flow, imports can resolve to `src` via `exports.development`.
-
-## Minimal component example
-
-```js
-import { createComponent, render } from '@coherent.js/core';
-
-const Counter = createComponent(({ count = 0 }) => ({
-  div: {
-    class: 'counter',
-    children: [
-      { span: { text: `Count: ${count}` } }
-    ]
-  }
-}));
-
-const html = render(Counter({ count: 2 }));
-```
-
-TypeScript:
-```ts
-import { createComponent, render } from '@coherent.js/core';
-
-type Props = { count?: number };
-
-const Counter = createComponent((props: Props) => ({
-  div: {
-    class: 'counter',
-    children: [ { span: { text: `Count: ${props.count ?? 0}` } } ]
-  }
-}));
-
-const html = render(Counter({ count: 2 }));
-```
+`createComponent()` returns a *stateful instance* (`mount`, `update`, `destroy`, instance state) meant for the browser. On the server, pass per-request data through props: instance state is shared by every request that renders the same component.
 
 ## Development
 
-Run tests for this package:
 ```bash
-pnpm --filter @coherent.js/core run test
-```
-
-Watch mode:
-```bash
-pnpm --filter @coherent.js/core run test:watch
-```
-
-Type check:
-```bash
+pnpm vitest run packages/core     # tests (from the repo root)
 pnpm --filter @coherent.js/core run typecheck
-```
-
-Build (from package dir or via workspace filter):
-```bash
 pnpm --filter @coherent.js/core run build
+pnpm perf:render                  # rendering benchmark
 ```
 
 ## License
