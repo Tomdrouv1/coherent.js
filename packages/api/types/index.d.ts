@@ -152,7 +152,7 @@ export interface RouteDefinition {
   OPTIONS?: RouteHandler;
   HEAD?: RouteHandler;
   middleware?: Middleware | Middleware[];
-  validation?: ValidationSchema;
+  validation?: SchemaDefinition;
   serialization?: SerializationConfig;
   auth?: AuthConfig;
   rateLimit?: RateLimitConfig;
@@ -241,7 +241,7 @@ export interface ObjectRouter {
 /**
  * Primitive validation types.
  */
-export type ValidationPrimitiveType = 'string' | 'number' | 'boolean' | 'date';
+export type ValidationPrimitiveType = 'string' | 'number' | 'integer' | 'boolean' | 'date' | 'null';
 
 /**
  * Compound validation types.
@@ -249,7 +249,7 @@ export type ValidationPrimitiveType = 'string' | 'number' | 'boolean' | 'date';
 export type ValidationCompoundType = 'array' | 'object';
 
 /**
- * String format validation types.
+ * String format validation types. Usable as `type` or as `format`.
  */
 export type ValidationFormatType = 'email' | 'url' | 'uuid' | 'phone' | 'credit-card';
 
@@ -259,8 +259,12 @@ export type ValidationFormatType = 'email' | 'url' | 'uuid' | 'phone' | 'credit-
 export type ValidationType = ValidationPrimitiveType | ValidationCompoundType | ValidationFormatType;
 
 /**
- * Field validation rule.
- * Defines constraints for validating a single field.
+ * Validation rule for one value.
+ *
+ * Accepts both the field-map keywords (`required: true`, `min`, `max`,
+ * `trim`...) and the JSON-Schema ones (`required: [...]` on an object,
+ * `properties`, `minimum`, `format`...). A rule can describe a whole object,
+ * so a JSON-Schema document is a `ValidationRule` too.
  *
  * @example
  * ```typescript
@@ -271,18 +275,27 @@ export type ValidationType = ValidationPrimitiveType | ValidationCompoundType | 
  * };
  *
  * const ageRule: ValidationRule<number> = {
- *   type: 'number',
+ *   type: 'integer',
  *   min: 0,
  *   max: 150,
  *   custom: (value) => value >= 18 || 'Must be 18 or older'
  * };
+ *
+ * const userSchema: ValidationRule = {
+ *   type: 'object',
+ *   required: ['name'],
+ *   properties: { name: { type: 'string', minLength: 1 } }
+ * };
  * ```
  */
 export interface ValidationRule<T = any> {
-  /** The expected type of the field value */
-  type?: ValidationType;
-  /** Whether the field is required */
-  required?: boolean;
+  /** The expected type of the value; an array accepts any of them */
+  type?: ValidationType | ValidationType[];
+  /**
+   * `true`: this field must be present (not undefined, null or '').
+   * An array (on an object rule): the listed keys must be present.
+   */
+  required?: boolean | string[];
   /** Minimum value (for numbers) or minimum length (for strings/arrays) */
   min?: number;
   /** Maximum value (for numbers) or maximum length (for strings/arrays) */
@@ -291,25 +304,48 @@ export interface ValidationRule<T = any> {
   minLength?: number;
   /** Maximum string length */
   maxLength?: number;
-  /** Regex pattern for string validation */
+  /** Minimum number (inclusive) */
+  minimum?: number;
+  /** Maximum number (inclusive) */
+  maximum?: number;
+  /** Number must be greater than this */
+  exclusiveMinimum?: number;
+  /** Number must be less than this */
+  exclusiveMaximum?: number;
+  /** Minimum array length */
+  minItems?: number;
+  /** Maximum array length */
+  maxItems?: number;
+  /** Minimum number of keys (objects) */
+  minProperties?: number;
+  /** Maximum number of keys (objects) */
+  maxProperties?: number;
+  /** Regex pattern for string validation (a string is compiled without anchors) */
   pattern?: RegExp | string;
+  /** String format; unknown formats are ignored */
+  format?: ValidationFormatType | 'uri' | 'date' | 'date-time' | (string & {});
   /** Array of allowed values */
   enum?: T[];
+  /** The only allowed value */
+  const?: T;
   /**
    * Custom validation function.
    * Return true for valid, false or string message for invalid.
+   * `context` is `ValidationOptions.context`.
    */
-  custom?: (value: T, field: string, data: Record<string, any>) => boolean | string;
-  /** Custom error message */
+  custom?: (value: T, field: string, data: any, context?: any) => boolean | string;
+  /** Custom error message, used for every failure of this rule */
   message?: string;
   /** Transform function applied before validation */
   transform?: (value: any) => T;
   /** Default value if field is missing */
   default?: T | (() => T);
   /** Validation for array items (when type is 'array') */
-  items?: ValidationRule;
+  items?: ValidationRule | ValidationSchema;
   /** Validation for object properties (when type is 'object') */
   properties?: ValidationSchema;
+  /** `false` rejects keys not listed in `properties`; a rule validates them */
+  additionalProperties?: boolean | ValidationRule;
   /** Allow null values */
   nullable?: boolean;
   /** Trim whitespace from strings before validation */
@@ -317,8 +353,9 @@ export interface ValidationRule<T = any> {
 }
 
 /**
- * Validation schema defining rules for multiple fields.
- * Can be nested for complex object structures.
+ * Validation schema defining rules for multiple fields (a field map).
+ * Can be nested for complex object structures: an entry that is not a rule
+ * is a nested field map.
  *
  * @example
  * ```typescript
@@ -336,6 +373,9 @@ export interface ValidationSchema {
   [field: string]: ValidationRule | ValidationSchema;
 }
 
+/** Anything the validators accept: a JSON-Schema-style rule or a field map. */
+export type SchemaDefinition = ValidationRule | ValidationSchema;
+
 /**
  * Result of validation operation.
  * Generic type T represents the validated data shape.
@@ -345,21 +385,29 @@ export interface ValidationResult<T = any> {
   valid: boolean;
   /** Array of validation errors (empty if valid) */
   errors: ValidationErrorInfo[];
-  /** Validated and transformed data */
+  /** Validated data, with defaults, trimming, transforms and coercion applied */
   data: T;
+}
+
+/** Result of validating a single value with `validateField()`. */
+export interface FieldValidationResult<T = any> {
+  /** Whether validation passed */
+  valid: boolean;
+  /** Array of validation errors (empty if valid) */
+  errors: ValidationErrorInfo[];
+  /** The value after trimming, transforms and coercion */
+  value: T;
 }
 
 /**
  * Information about a single validation error.
  */
 export interface ValidationErrorInfo {
-  /** Dot-notation path to the field (e.g., 'user.email') */
+  /** Path to the field (e.g., 'user.email', 'tags[0]'); '' for the root */
   field: string;
   /** Human-readable error message */
   message: string;
-  /** The invalid value */
-  value: any;
-  /** The rule that failed (e.g., 'required', 'min', 'pattern') */
+  /** The keyword that failed (e.g., 'required', 'min', 'pattern') */
   rule: string;
 }
 
@@ -367,12 +415,15 @@ export interface ValidationErrorInfo {
 export interface ValidationOptions {
   /** Stop validation on first error */
   abortEarly?: boolean;
-  /** Remove fields not in schema */
+  /** Remove fields not in schema (on objects that list `properties`) */
   stripUnknown?: boolean;
-  /** Allow fields not in schema */
+  /** `false` rejects fields not in schema, like `additionalProperties: false` everywhere */
   allowUnknown?: boolean;
-  /** Skip validation for missing optional fields */
-  skipMissing?: boolean;
+  /**
+   * Convert strings to numbers/booleans where the rule expects them.
+   * On by default for `withQueryValidation` and `withParamsValidation`.
+   */
+  coerceTypes?: boolean;
   /** Additional context passed to custom validators */
   context?: any;
 }
@@ -800,40 +851,44 @@ export function createErrorHandler(options?: ErrorHandlerOptions): ErrorMiddlewa
 
 /**
  * Validate data against a schema.
- * @param schema - The validation schema
+ * @param schema - A JSON-Schema-style rule or a field map
  * @param data - The data to validate
  * @param options - Validation options
  * @returns Validation result with valid flag, errors, and transformed data
  */
 export function validateAgainstSchema<T = any>(
-  schema: ValidationSchema,
+  schema: SchemaDefinition,
   data: any,
   options?: ValidationOptions
 ): ValidationResult<T>;
 
 /**
- * Validate a single field against a rule.
+ * Validate a single value against a rule.
  * @param rule - The validation rule
  * @param value - The value to validate
  * @param field - The field name (for error messages)
- * @param data - The full data object (for cross-field validation)
- * @returns ValidationErrorInfo if invalid, null if valid
+ * @param data - The full data object, passed to `custom` validators
+ * @returns Result with `valid`, the `errors` and the (transformed) `value`
  */
 export function validateField<T = any>(
   rule: ValidationRule<T>,
-  value: T,
-  field: string,
-  data?: Record<string, any>
-): ValidationErrorInfo | null;
+  value: any,
+  field?: string,
+  data?: any
+): FieldValidationResult<T>;
 
-/** Validation middleware for request body */
-export function withValidation<T = any>(schema: ValidationSchema): Middleware;
+/**
+ * Validation middleware for the request body. Throws a `ValidationError`
+ * (400, `details.errors`) for an invalid body; otherwise replaces `req.body`
+ * with the validated data and calls `next()`.
+ */
+export function withValidation<T = any>(schema: SchemaDefinition, options?: ValidationOptions): Middleware;
 
-/** Query validation middleware */
-export function withQueryValidation<T = any>(schema: ValidationSchema): Middleware;
+/** Query validation middleware; converts numeric/boolean strings (`coerceTypes`). */
+export function withQueryValidation<T = any>(schema: SchemaDefinition, options?: ValidationOptions): Middleware;
 
-/** Params validation middleware */
-export function withParamsValidation(schema: ValidationSchema): Middleware;
+/** Params validation middleware; converts numeric/boolean strings (`coerceTypes`). */
+export function withParamsValidation(schema: SchemaDefinition, options?: ValidationOptions): Middleware;
 
 /**
  * Authentication middleware. Throws a `TypeError` when created without

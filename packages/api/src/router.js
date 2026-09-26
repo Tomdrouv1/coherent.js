@@ -109,6 +109,39 @@ function responseStarted(res) {
 }
 
 /**
+ * HTTP status for a thrown error: its `statusCode` when that is a 4xx/5xx
+ * code, 500 otherwise.
+ * @private
+ */
+function errorStatus(error) {
+  const status = error?.statusCode;
+  return Number.isInteger(status) && status >= 400 && status <= 599 ? status : 500;
+}
+
+/**
+ * Answer a request whose middleware or handler threw.
+ *
+ * Client errors (an `ApiError` with a 4xx `statusCode`, such as the
+ * `ValidationError` thrown by `withValidation`) keep their message and
+ * `details`, so a 400 says which field failed.
+ *
+ * @private
+ * @param {Object} res - HTTP response object
+ * @param {Error} error - What was thrown
+ */
+function sendError(res, error) {
+  if (responseStarted(res)) return;
+  const status = errorStatus(error);
+  const body = { error: error?.message || 'Internal Server Error' };
+  const details = error?.details;
+  if (status < 500 && details && typeof details === 'object' && Object.keys(details).length > 0) {
+    body.details = details;
+  }
+  res.writeHead(status, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(body));
+}
+
+/**
  * Whether the connection behind a response is gone.
  * @private
  */
@@ -541,10 +574,7 @@ function registerRoute(method, config, router, path) {
         res.end();
       }
     } catch (_error) {
-      if (responseStarted(res)) return;
-      const statusCode = _error.statusCode || 500;
-      res.writeHead(statusCode, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: _error.message }));
+      sendError(res, _error);
     }
   }, { name });
 }
@@ -1959,10 +1989,7 @@ class SimpleRouter {
         return;
       } catch (_error) {
         if (this.enableMetrics) this.metrics.errors++;
-        if (!res.headersSent) {
-          res.writeHead(500, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: _error.message }));
-        }
+        sendError(res, _error);
         return;
       }
     }
