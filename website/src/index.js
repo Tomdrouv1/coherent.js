@@ -347,8 +347,10 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     standardHeaders: 'draft-7',
     legacyHeaders: false,
   });
-  app.get('/docs/{*slug}', docsLimiter, (req, res) => {
-    const slug = Array.isArray(req.params.slug) ? req.params.slug.join('/') : req.params.slug;
+  // A regex route: `/docs/{*slug}` is Express 5 syntax, and the website runs
+  // Express 4, where it matched nothing and every doc page was a 404.
+  app.get(/^\/docs\/(.+)$/, docsLimiter, (req, res) => {
+    const slug = req.params[0];
     if (!slug) { res.redirect('/docs'); return; }
     const docsDir = join(repoRoot, 'docs');
 
