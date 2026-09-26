@@ -17,7 +17,9 @@
  *     validators.minLength(8)                validators.minLength(8, 'Too short')
  *
  * A built-in may also be listed without calling it (`[validators.required]`);
- * runners call the factory with its defaults first.
+ * runners call the factory with its defaults first. A string names a built-in
+ * or registered validator, and a built-in's name may carry its arguments:
+ * `'minLength:8'` is `validators.minLength(8)` (see argsFromString).
  *
  * For backward compatibility a built-in can still be called **directly** with
  * a value and an options object, returning the error or `null`:
@@ -56,16 +58,64 @@ const isOptionsObject = value =>
   !(value instanceof RegExp);
 
 /**
+ * Factory arguments for the text after the colon of a `'name:…'` string
+ * entry, or `null` when it does not fit the rule.
+ *
+ * - No parameter (`required`, `email`, …): the text is the message —
+ *   `'required:Please enter your name'`.
+ * - `'list'` (`oneOf`, `fileType`, `fileExtension`): every comma-separated
+ *   value goes into the one array parameter — `'oneOf:red,green,blue'`.
+ * - `'regexp'` (`pattern`): the whole text is the regular expression source,
+ *   commas included — `'pattern:^[a-z]{2,8}$'`.
+ * - Otherwise the text up to the first comma is the parameter (a number for
+ *   `'number'`, so `'minLength:abc'` is rejected) and the rest, commas
+ *   included, is the message — `'minLength:8,Use at least 8 characters'`.
+ *
+ * @param {Array} params - The rule's factory parameters
+ * @param {'string'|'number'|'list'|'regexp'} kind - How the text supplies them
+ * @param {string|undefined} text - Text after the colon (`undefined`: none)
+ * @returns {Array|null}
+ */
+function argsFromString(params, kind, text) {
+  if (text === undefined || text.trim() === '') return [];
+  if (params.length === 0) return [text.trim()];
+
+  if (kind === 'list') {
+    return [text.split(',').map(part => part.trim()).filter(Boolean)];
+  }
+  if (kind === 'regexp') {
+    try {
+      return [new RegExp(text)];
+    } catch {
+      return null;
+    }
+  }
+
+  const comma = text.indexOf(',');
+  const raw = (comma === -1 ? text : text.slice(0, comma)).trim();
+  const message = comma === -1 ? '' : text.slice(comma + 1).trim();
+
+  let arg = raw;
+  if (kind === 'number') {
+    arg = Number(raw);
+    if (raw === '' || Number.isNaN(arg)) return null;
+  }
+  return message ? [arg, message] : [arg];
+}
+
+/**
  * Define a built-in rule.
  *
  * @param {string} name - Registry name
  * @param {Object} spec
  * @param {Array<[string, ...string[]]>} [spec.params] - Factory parameters, in
  *   order, each as `[configKey, ...optionAliases]` for direct calls
+ * @param {'string'|'number'|'list'|'regexp'} [spec.stringArg] - How the
+ *   `'name:…'` string form supplies the parameter (see argsFromString)
  * @param {(value: unknown, config: Object, formData: Object) => boolean} spec.valid
  * @param {(config: Object) => string} spec.message - Default error message
  */
-function defineRule(name, { params = [], valid, message }) {
+function defineRule(name, { params = [], stringArg = 'string', valid, message }) {
   const fromOptions = (options = {}) => {
     const config = { message: options.message };
     for (const [key, ...aliases] of params) {
@@ -116,7 +166,11 @@ function defineRule(name, { params = [], valid, message }) {
   }
 
   Object.defineProperty(builtin, 'name', { value: name });
-  builtin[BUILTIN] = { name, factory };
+  builtin[BUILTIN] = {
+    name,
+    factory,
+    argsFromString: (text) => argsFromString(params, stringArg, text)
+  };
   return builtin;
 }
 
@@ -177,12 +231,14 @@ export const validators = {
 
   minLength: defineRule('minLength', {
     params: [['min', 'minLength']],
+    stringArg: 'number',
     valid: (value, { min }) => !value || !(value.length < (min ?? 0)),
     message: ({ min }) => `Minimum length is ${min}`
   }),
 
   maxLength: defineRule('maxLength', {
     params: [['max', 'maxLength']],
+    stringArg: 'number',
     valid: (value, { max }) => !value || !(value.length > (max ?? Infinity)),
     message: ({ max }) => `Maximum length is ${max}`
   }),
@@ -190,6 +246,7 @@ export const validators = {
   // Empty values pass (combine with `required`); a non-numeric value fails.
   min: defineRule('min', {
     params: [['min']],
+    stringArg: 'number',
     valid: (value, { min }) => {
       if (isEmpty(value)) return true;
       const number = toNumber(value);
@@ -200,6 +257,7 @@ export const validators = {
 
   max: defineRule('max', {
     params: [['max']],
+    stringArg: 'number',
     valid: (value, { max }) => {
       if (isEmpty(value)) return true;
       const number = toNumber(value);
@@ -210,6 +268,7 @@ export const validators = {
 
   pattern: defineRule('pattern', {
     params: [['pattern', 'regex']],
+    stringArg: 'regexp',
     valid: (value, { pattern }) => isEmpty(value) || testRegExp(pattern, value),
     message: () => 'Invalid format'
   }),
@@ -230,6 +289,7 @@ export const validators = {
 
   oneOf: defineRule('oneOf', {
     params: [['options', 'values']],
+    stringArg: 'list',
     valid: (value, { options }) => !value || !Array.isArray(options) || options.includes(value),
     message: () => 'Invalid option'
   }),
@@ -278,6 +338,7 @@ export const validators = {
 
   fileType: defineRule('fileType', {
     params: [['accept', 'types']],
+    stringArg: 'list',
     valid: (value, { accept }) =>
       !value || value.type === undefined || fileMatchesType(value, accept || []),
     message: ({ accept }) => `File type must be one of: ${(accept || []).join(', ')}`
@@ -285,6 +346,7 @@ export const validators = {
 
   fileSize: defineRule('fileSize', {
     params: [['maxSize']],
+    stringArg: 'number',
     valid: (value, { maxSize }) =>
       !value || value.size === undefined || !(value.size > (maxSize ?? Infinity)),
     message: ({ maxSize }) => `File size must be less than ${((maxSize ?? Infinity) / (1024 * 1024)).toFixed(2)}MB`
@@ -292,6 +354,7 @@ export const validators = {
 
   fileExtension: defineRule('fileExtension', {
     params: [['extensions']],
+    stringArg: 'list',
     valid: (value, { extensions }) => {
       if (!value) return true;
       const fileName = value.name || value;
@@ -426,21 +489,56 @@ export const validators = {
   }
 };
 
+/** The registry entry named `name`, if it is a validator (not a helper). */
+function lookup(name) {
+  const found = Object.hasOwn(validators, name) && !HELPER_NAMES.has(name)
+    ? validators[name]
+    : null;
+  return typeof found === 'function' ? found : null;
+}
+
+/**
+ * Resolve a string entry: `'required'`, or `'name:arg1,arg2'` for a built-in
+ * with arguments (`'minLength:8'`, `'oneOf:a,b,c'`, `'pattern:^\\d+$'`; see
+ * argsFromString). A registered validator is named without arguments.
+ *
+ * @param {string} entry
+ * @returns {{ name: string, args: Array, validator: Function }|null} `null`
+ *   for an unknown name or arguments that do not fit the rule
+ */
+function resolveString(entry) {
+  // An exact registry name wins, so a validator registered under a name that
+  // contains a colon still resolves.
+  const exact = lookup(entry);
+  const colon = exact ? -1 : entry.indexOf(':');
+  const name = colon === -1 ? entry : entry.slice(0, colon).trim();
+  const found = exact ?? lookup(name);
+  if (!found) return null;
+
+  const text = colon === -1 ? undefined : entry.slice(colon + 1);
+  if (!found[BUILTIN]) {
+    return text === undefined ? { name, args: [], validator: found } : null;
+  }
+
+  const args = found[BUILTIN].argsFromString(text);
+  if (!args) return null;
+  return { name: found[BUILTIN].name, args, validator: found[BUILTIN].factory(...args) };
+}
+
 /**
  * Turn a schema entry into a validator: a built-in factory listed without
- * calling it (`validators.required`) is called with its defaults, a string is
- * looked up in the registry, a function is used as is. Anything else is
- * `null` (skipped).
+ * calling it (`validators.required`) is called with its defaults, a string
+ * names a built-in or registered validator (`'required'`, or a built-in with
+ * arguments: `'minLength:8'`), a function is used as is. Anything else — an
+ * unknown name, or arguments that do not fit (`'minLength:abc'`) — is `null`
+ * (skipped).
  *
  * @param {unknown} entry
  * @returns {Function|null}
  */
 export function resolveValidator(entry) {
   if (typeof entry === 'string') {
-    const found = Object.hasOwn(validators, entry) && !HELPER_NAMES.has(entry)
-      ? validators[entry]
-      : null;
-    return typeof found === 'function' ? resolveValidator(found) : null;
+    return resolveString(entry)?.validator ?? null;
   }
   if (typeof entry !== 'function') return null;
   return entry[BUILTIN] ? entry[BUILTIN].factory() : entry;
@@ -554,13 +652,13 @@ function isSerializable(arg) {
  * such as a function that JSON cannot carry). Those still run on the server.
  */
 export function describeValidator(entry) {
+  let descriptor;
   if (typeof entry === 'string') {
-    return resolveValidator(entry) ? { name: entry, args: [] } : null;
+    // `'minLength:8'` is described like `validators.minLength(8)`.
+    descriptor = resolveString(entry);
+  } else if (typeof entry === 'function') {
+    descriptor = entry[BUILTIN] ? { name: entry[BUILTIN].name, args: [] } : DESCRIPTORS.get(entry);
   }
-  if (typeof entry !== 'function') return null;
-  if (entry[BUILTIN]) return { name: entry[BUILTIN].name, args: [] };
-
-  const descriptor = DESCRIPTORS.get(entry);
   if (!descriptor || !descriptor.args.every(isSerializable)) return null;
 
   // Trailing undefined arguments (an omitted message) are just defaults.

@@ -463,7 +463,11 @@ export interface Validator {
 /**
  * What a validator list accepts: a {@link Validator}, a built-in listed
  * without calling it (`validators.required`, run with its defaults), or the
- * name of a built-in or registered validator.
+ * name of a built-in or registered validator. A built-in's name may carry its
+ * arguments after a colon: `'minLength:8'` (= `validators.minLength(8)`),
+ * `'minLength:8,Too short'`, `'oneOf:s,m,l'`, `'pattern:^[a-z]+$'`,
+ * `'required:Name please'`. Unknown names and arguments that do not fit the
+ * rule are skipped.
  */
 export type ValidatorEntry = Validator | BuiltinValidator | string;
 

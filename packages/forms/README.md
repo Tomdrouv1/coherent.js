@@ -81,7 +81,8 @@ validateForm(
 ```
 
 - A built-in may be listed without calling it (`validators.required`); it runs
-  with its defaults. A string names a built-in or registered validator.
+  with its defaults. A string names a built-in or registered validator (see
+  below).
 - Apart from `required` and `matches`, built-ins pass empty values, so combine
   them with `required`.
 - For direct checks, pass the value and an options object:
@@ -95,6 +96,49 @@ Built-ins: `required`, `email`, `url`, `minLength(min)`, `maxLength(max)`,
 `alphanumeric`, `uppercase`, `fileType(accept)`, `fileSize(maxSize)`,
 `fileExtension(extensions)`. Helpers: `compose`, `when`, `chain`, `debounce`,
 `cancellable`, `get`.
+
+### Accepted validator entries
+
+A validator list — a `FormBuilder` field's `validators`, a `FormValidator`
+schema, `validateField` / `validateForm` — accepts, in any mix:
+
+| Entry | Example | Same as |
+| --- | --- | --- |
+| A validator function | `value => value ? null : 'Required'` | — |
+| A built-in, called | `validators.minLength(8, 'Too short')` | — |
+| A built-in, uncalled | `validators.required` | `validators.required()` |
+| A name | `'required'`, `'email'`, `'noShouting'` (registered) | `validators.required()` |
+| A built-in name with arguments | `'minLength:8'` | `validators.minLength(8)` |
+
+A string with arguments is `'name:arguments'`, read by the built-in's
+parameter:
+
+- a number (`minLength`, `maxLength`, `min`, `max`, `fileSize`): the number,
+  then optionally a comma and a message — `'min:18'`,
+  `'minLength:8,Use at least 8 characters'`;
+- a field name (`matches`, `match`): `'matches:password'`, optionally
+  followed by `,message`;
+- a list (`oneOf`, `fileType`, `fileExtension`): every comma-separated value —
+  `'oneOf:small,medium,large'`, `'fileType:image/*,.pdf'`;
+- a regular expression (`pattern`): everything after the colon, commas
+  included — `'pattern:^[a-z]{2,8}$'` (no flags; use `validators.pattern()`
+  for flags or a message);
+- no parameter (`required`, `email`, …): a message — `'required:Name please'`.
+
+Registered validators take no arguments: name them alone. An unknown name,
+or arguments that do not fit (`'minLength:abc'`), is skipped.
+
+```javascript
+createFormBuilder({
+  fields: [
+    { name: 'password', type: 'password', validators: ['required', 'minLength:8'] },
+    { name: 'size', validators: ['oneOf:s,m,l'] }
+  ]
+});
+```
+
+String entries are enforced on the server and rendered into `data-validators`
+exactly like the equivalent factory call, so `hydrateForm` enforces them too.
 
 Your own validators follow the same shape:
 
