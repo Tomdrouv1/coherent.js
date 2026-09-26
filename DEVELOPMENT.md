@@ -4,7 +4,7 @@ This guide explains how to set up and contribute to the Coherent.js monorepo.
 
 ## Prerequisites
 
-- Node.js >= 20.0.0
+- Node.js >= 22.12.0
 - pnpm >= 8.0.0 (recommended package manager)
 - Git
 
@@ -32,7 +32,6 @@ coherent.js/
 ├── scripts/                            # Build and utility scripts
 ├── examples/                           # Example applications
 ├── website/                            # Documentation website
-├── .junie/                             # Project-specific guidelines
 └── docs/                               # Documentation files
 ```
 
@@ -128,7 +127,7 @@ await buildPackage({
 ### Style Guide
 
 - **ES Modules**: All code uses ES modules (`import`/`export`)
-- **Node.js 20+**: Target Node.js 20+ features
+- **Node.js 22.12+**: Target Node.js 22.12+ features (the `engines` floor)
 - **TypeScript**: Provide type definitions for all packages
 - **Pure Functions**: Prefer pure functions and immutable operations
 - **Error Handling**: Use proper error classes and consistent error handling
@@ -242,7 +241,7 @@ This project uses Changesets for version management:
 
 This project uses GitHub Actions for continuous integration and deployment:
 
-- **CI**: Runs on every push and pull request with tests on Node.js 20.x and 22.x
+- **CI**: Runs on every push and pull request with tests on Node.js 22.x, 24.x and 26.x
 - **Publish**: Triggered manually or on release to publish packages to npm
 - **Deploy**: Automatically deploys website on pushes to main branch
 
