@@ -173,15 +173,31 @@ const RULE_KEYWORDS = {
 
 /**
  * Whether `node` is a rule rather than a nested field map.
+ *
+ * A keyword with a scalar value (`type: 'string'`, `required: true`) makes it
+ * a rule. Keywords that take an object (`items`, `properties`, `default`,
+ * `const`, ...) are also plausible field names, so they only count when no
+ * other key holds a schema: `{ customerId: {...}, items: {...} }` is a field
+ * map whose `items` field is validated like the others. Reading it as a rule
+ * used to skip every field in it.
  * @private
  */
 function isRule(node) {
   if (!isPlainObject(node)) return false;
+
+  let objectKeyword = false;
+  let fieldLike = false;
   for (const key of Object.keys(node)) {
+    const value = node[key];
     const check = RULE_KEYWORDS[key];
-    if (check && check(node[key])) return true;
+    if (check && check(value)) {
+      if (!isPlainObject(value)) return true;
+      objectKeyword = true;
+    } else if (isPlainObject(value)) {
+      fieldLike = true;
+    }
   }
-  return false;
+  return objectKeyword && !fieldLike;
 }
 
 /**

@@ -194,6 +194,42 @@ describe('field-map schemas (the ValidationSchema type)', () => {
   });
 });
 
+// Regression: a field map with a field named after an object-valued keyword
+// (`items`, `default`, `const`, `properties`) was read as a single rule, so
+// none of its fields was validated and any input passed.
+describe('field maps with keyword-named fields', () => {
+  it('validates every field when one is called items', () => {
+    const schema = {
+      customerId: { type: 'string', required: true },
+      total: { type: 'number', minimum: 0, required: true },
+      items: { type: 'array', required: true, minItems: 1 }
+    };
+
+    expect(fields(validateAgainstSchema(schema, { customerId: 42, total: -5 }))).toEqual([
+      'customerId',
+      'items',
+      'total'
+    ]);
+    expect(fields(validateAgainstSchema(schema, { customerId: 'c1', total: 5, items: [] }))).toEqual(['items']);
+    expect(validateAgainstSchema(schema, { customerId: 'c1', total: 5, items: [1] }).valid).toBe(true);
+  });
+
+  it.each(['default', 'const', 'properties', 'additionalProperties'])('validates every field when one is called %s', (name) => {
+    const schema = { name: { type: 'string', required: true }, [name]: { type: 'boolean' } };
+
+    expect(fields(validateAgainstSchema(schema, { [name]: 'yes' }))).toEqual([name, 'name'].sort());
+  });
+
+  it('still reads object-valued keywords next to a scalar keyword as a rule', () => {
+    const schema = {
+      tags: { type: 'array', items: { type: 'string' } },
+      address: { type: 'object', properties: { zip: { type: 'string', required: true } } }
+    };
+
+    expect(fields(validateAgainstSchema(schema, { tags: ['a', 1], address: {} }))).toEqual(['address.zip', 'tags[1]']);
+  });
+});
+
 describe('validation middleware over HTTP', () => {
   let server;
 
