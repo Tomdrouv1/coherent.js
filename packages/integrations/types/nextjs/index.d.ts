@@ -34,6 +34,21 @@ export interface CoherentNextComponentOptions {
    * @default false
    */
   enablePerformanceMonitoring?: boolean;
+
+  /**
+   * React module to build elements with (`import * as React from 'react'`).
+   * Defaults to importing `react` from `@coherent.js/integrations`, which
+   * resolves to the app's copy through the optional peer dependency.
+   */
+  React?: { createElement: (...args: any[]) => any } | { default: { createElement: (...args: any[]) => any } };
+}
+
+/**
+ * Second argument Next.js passes to App Router route handlers.
+ * `params` is a Promise from Next.js 15 on, a plain object before.
+ */
+export interface CoherentAppRouteContext {
+  params: Record<string, string | string[]> | Promise<Record<string, string | string[]>>;
 }
 
 export interface CoherentNextIntegration {
@@ -59,14 +74,17 @@ export function createCoherentNextHandler(
 
 /**
  * Create a Next.js App Router route handler for Coherent.js components
- * @param componentFactory Function that returns a Coherent component
+ * @param componentFactory Function that returns a Coherent component; it
+ *   receives the route handler's `(request, context)`
  * @param options Configuration options
  * @returns Next.js App Router handler
  */
-export function createCoherentAppRouterHandler(
-  componentFactory: (request: Request) => CoherentNode | Promise<CoherentNode>,
+export function createCoherentAppRouterHandler<
+  Context extends CoherentAppRouteContext = CoherentAppRouteContext
+>(
+  componentFactory: (request: Request, context: Context) => CoherentNode | Promise<CoherentNode>,
   options?: CoherentNextHandlerOptions
-): (request: Request) => Promise<Response>;
+): (request: Request, context: Context) => Promise<Response>;
 
 /**
  * Create a Next.js Server Component for Coherent.js
