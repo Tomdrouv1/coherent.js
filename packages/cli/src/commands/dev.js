@@ -162,7 +162,7 @@ export const devCommand = new Command('dev')
         }
       });
 
-      devProcess.on('_error', (_error) => {
+      devProcess.on('error', (_error) => {
         console.error(picocolors.red('❌ Failed to start development server:'), _error.message);
         process.exit(1);
       });

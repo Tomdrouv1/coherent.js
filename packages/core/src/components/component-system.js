@@ -98,7 +98,7 @@ class ComponentState {
             try {
                 listener(newState, oldState);
             } catch (_error) {
-                console.error('State listener _error:', _error);
+                console.error('State listener error:', _error);
             }
         });
 
@@ -317,7 +317,7 @@ export class Component {
 
         } catch (_error) {
             this.handleError(_error);
-            return {div: {className: 'component-_error', text: `Error in ${this.name}`}};
+            return {div: {className: 'component-error', text: `Error in ${this.name}`}};
         }
     }
 
@@ -898,7 +898,7 @@ export function lazy(factory, options = {}) {
                 if (onError) {
                     onError(_error);
                 } else {
-                    console.error('Lazy evaluation _error:', _error);
+                    console.error('Lazy evaluation error:', _error);
                 }
                 return fallback;
             } finally {
@@ -1042,7 +1042,7 @@ export function batchEvaluate(lazyValues, ...args) {
             if (result && typeof result.then === 'function') {
                 promises.push(
                     result.then(value => ({key, value}))
-                        .catch(_error => ({key, _error}))
+                        .catch(error => ({key, error}))
                 );
             } else {
                 results[key] = result;
@@ -1057,9 +1057,9 @@ export function batchEvaluate(lazyValues, ...args) {
     }
 
     return Promise.all(promises).then(asyncResults => {
-        asyncResults.forEach(({key, value, _error}) => {
-            if (_error) {
-                console.error(`Batch evaluation _error for ${key}:`, _error);
+        asyncResults.forEach(({key, value, error}) => {
+            if (error) {
+                console.error(`Batch evaluation error for ${key}:`, error);
                 results[key] = null;
             } else {
                 results[key] = value;
@@ -1708,7 +1708,7 @@ export function withProps(propsTransform, options = {}) {
                 return processProps(transformedProps, originalProps, WrappedComponent, state, context);
 
             } catch (_error) {
-                if (debug) console.error('withProps _error:', _error);
+                if (debug) console.error('withProps error:', _error);
                 if (onError) onError(_error, originalProps);
 
                 // Use fallback props
@@ -2306,7 +2306,7 @@ function createStateContainer(initialState, options) {
                     try {
                         listener(state, prevState);
                     } catch (_error) {
-                        if (debug) console.error('State listener _error:', _error);
+                        if (debug) console.error('State listener error:', _error);
                     }
                 });
 
@@ -2490,8 +2490,10 @@ export const withStateUtils = {
     }),
 
     /**
-     * State with loading/_error handling
+     * State with loading/error handling
      */
+    // `_loading` / `_error` are the documented state keys (docs/components/state.md).
+    /* eslint-disable no-restricted-syntax */
     withLoading: async (initialState) => withState({
         ...initialState,
         _loading: false,
@@ -2524,6 +2526,7 @@ export const withStateUtils = {
             }
         }
     }),
+    /* eslint-enable no-restricted-syntax */
 
     /**
      * State with undo/redo functionality

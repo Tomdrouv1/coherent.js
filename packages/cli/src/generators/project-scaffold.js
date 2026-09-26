@@ -503,7 +503,7 @@ MIT
 node_modules/
 npm-debug.log*
 yarn-debug.log*
-yarn-_error.log*
+yarn-error.log*
 
 # Production builds
 dist/

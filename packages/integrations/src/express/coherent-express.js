@@ -42,7 +42,7 @@ export function coherentMiddleware(options = {}) {
           res.set('Content-Type', 'text/html');
           return originalSend.call(this, finalHtml);
         } catch (_error) {
-          console.error('Coherent.js rendering _error:', _error);
+          console.error('Coherent.js rendering error:', _error);
           return next(_error);
         }
       }
@@ -76,7 +76,7 @@ export function createCoherentHandler(componentFactory, options = {}) {
       res.set('Content-Type', 'text/html');
       res.send(finalHtml);
     } catch (_error) {
-      console.error('Coherent.js handler _error:', _error);
+      console.error('Coherent.js handler error:', _error);
       next(_error);
     }
   };

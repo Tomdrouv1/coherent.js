@@ -114,7 +114,7 @@ export function ${functionName}(options = {}) {
     const token = req.headers?.[header]?.toString();
     if (!token || !token.startsWith(tokenPrefix)) {
       res.statusCode = 401;
-      res.end(JSON.stringify({ _error: 'Unauthorized' }));
+      res.end(JSON.stringify({ error: 'Unauthorized' }));
       return;
     }
 

@@ -91,7 +91,7 @@ test('Koa context handling', async () => {
 
 });
 
-test('Koa _error handling middleware', async () => {
+test('Koa error handling middleware', async () => {
   try {
     const { createHandler } = await import('../../src/koa/coherent-koa.js');
 
@@ -105,7 +105,7 @@ test('Koa _error handling middleware', async () => {
 
   } catch (_error) {
     if (_error.code === 'ERR_MODULE_NOT_FOUND' || _error.message.includes('Cannot resolve')) {
-      console.log('Koa _error handling module not found - testing mock implementation');
+      console.log('Koa error handling module not found - testing mock implementation');
 
       // Test basic _error handling pattern
       const mockErrorHandler = async (ctx, next) => {
@@ -113,13 +113,13 @@ test('Koa _error handling middleware', async () => {
           await next();
         } catch (_error) {
           ctx.status = _error.status || 500;
-          ctx.body = { _error: _error.message };
+          ctx.body = { error: _error.message };
         }
       };
 
       const mockCtx = createMockKoaContext();
       const mockNext = async () => {
-        throw new Error('Test _error');
+        throw new Error('Test error');
       };
 
       await mockErrorHandler(mockCtx, mockNext);
@@ -141,7 +141,7 @@ test('Koa response formatting', () => {
     { data: { message: 'Hello' } },
     { data: [1, 2, 3] },
     { data: 'Simple string' },
-    { _error: 'Something went wrong' }
+    { error: 'Something went wrong' }
   ];
 
   for (const response of testResponses) {

@@ -87,7 +87,7 @@ test('Validation utilities', async () => {
           const reserved = ['key', 'ref'];
           for (const reservedProp of reserved) {
             if (reservedProp in props) {
-              return { valid: false, _error: `Reserved prop: ${reservedProp}` };
+              return { valid: false, error: `Reserved prop: ${reservedProp}` };
             }
           }
           

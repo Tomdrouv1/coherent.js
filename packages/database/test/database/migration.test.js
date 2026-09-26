@@ -209,7 +209,7 @@ describe('Migration', () => {
     //   expect(mockTx.rollback).toHaveBeenCalled();
     // });
 
-    it('should continue on _error when configured', async () => {
+    it('should continue on error when configured', async () => {
       const mockUp1 = vi.fn().mockRejectedValue(new Error('Migration 1 failed'));
       const mockUp2 = vi.fn().mockResolvedValue();
       const mockTx = {

@@ -123,7 +123,7 @@ export class ErrorHandler {
             enableStackTrace: options.enableStackTrace !== false,
             enableSuggestions: options.enableSuggestions !== false,
             enableLogging: options.enableLogging ?? defaultEnableLogging,
-            logLevel: options.logLevel || '_error',
+            logLevel: options.logLevel || 'error',
             maxErrorHistory: options.maxErrorHistory || 100,
             ...options
         };
@@ -317,7 +317,7 @@ export class ErrorHandler {
         if (suggestions.length === 0) {
             suggestions.push(
                 'Enable development tools for more detailed debugging',
-                'Check browser console for additional _error details',
+                'Check browser console for additional error details',
                 'Use component validation tools to identify issues'
             );
         }

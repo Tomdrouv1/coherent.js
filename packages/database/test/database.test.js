@@ -299,13 +299,13 @@ test('Transaction handling', async () => {
       await tx.query('SELECT 1 as test', []);
       
       // Force an _error to test rollback
-      throw new Error('Simulated _error');
+      throw new Error('Simulated error');
     });
   } catch {
     rollbackOccurred = true;
   }
 
-  assert.strictEqual(rollbackOccurred, true, 'Rollback should occur on _error');
+  assert.strictEqual(rollbackOccurred, true, 'Rollback should occur on error');
 
   await dbManager.close();
 });

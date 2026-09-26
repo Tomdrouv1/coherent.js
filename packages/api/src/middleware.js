@@ -30,7 +30,7 @@ export function withAuth(verifyToken) {
     
     if (!authHeader) {
       return res.status(401).json({ 
-        _error: 'Unauthorized', 
+        error: 'Unauthorized', 
         message: 'Missing authorization header' 
       });
     }
@@ -43,7 +43,7 @@ export function withAuth(verifyToken) {
       next();
     } catch {
       return res.status(401).json({ 
-        _error: 'Unauthorized', 
+        error: 'Unauthorized', 
         message: 'Invalid token' 
       });
     }
@@ -59,7 +59,7 @@ export function withPermission(checkPermission) {
   return createApiMiddleware((req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ 
-        _error: 'Unauthorized', 
+        error: 'Unauthorized', 
         message: 'User not authenticated' 
       });
     }
@@ -69,7 +69,7 @@ export function withPermission(checkPermission) {
       
       if (!hasPermission) {
         return res.status(403).json({ 
-          _error: 'Forbidden', 
+          error: 'Forbidden', 
           message: 'Insufficient permissions' 
         });
       }
@@ -77,7 +77,7 @@ export function withPermission(checkPermission) {
       next();
     } catch {
       return res.status(403).json({ 
-        _error: 'Forbidden', 
+        error: 'Forbidden', 
         message: 'Permission check failed' 
       });
     }
@@ -201,7 +201,7 @@ export function withRateLimit(options = {}) {
     // Check if limit exceeded
     if (record.count > max) {
       return res.status(statusCode).json({
-        _error: 'Rate limit exceeded',
+        error: 'Rate limit exceeded',
         message
       });
     }

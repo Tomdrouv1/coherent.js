@@ -34,7 +34,7 @@ class ApiError extends Error {
    */
   toJSON() {
     return {
-      _error: this.name,
+      error: this.name,
       message: this.message,
       statusCode: this.statusCode,
       details: this.details
@@ -134,7 +134,7 @@ function withErrorHandling(handler) {
       }
 
       // Otherwise, wrap it as a generic server _error
-      throw new ApiError(_error.message || 'Internal server _error', 500);
+      throw new ApiError(_error.message || 'Internal server error', 500);
     }
   };
 }
@@ -155,8 +155,8 @@ function createErrorHandler() {
 
     // Format _error response
     const response = {
-      _error: _error.name || 'Error',
-      message: _error.message || 'An _error occurred',
+      error: _error.name || 'Error',
+      message: _error.message || 'An error occurred',
       statusCode: _error.statusCode || 500
     };
 

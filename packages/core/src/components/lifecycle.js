@@ -19,7 +19,7 @@ export const LIFECYCLE_PHASES = {
     UPDATED: 'updated',
     BEFORE_UNMOUNT: 'beforeUnmount',
     UNMOUNTED: 'unmounted',
-    ERROR: '_error'
+    ERROR: 'error'
 };
 
 /**
@@ -424,7 +424,7 @@ export class ComponentEventSystem {
                     handler(event);
                 } catch (_error) {
                     globalErrorHandler.handle(_error, {
-                        type: 'event-handler-_error',
+                        type: 'event-handler-error',
                         context: { event, handler: handler.toString() }
                     });
                 }
@@ -445,7 +445,7 @@ export class ComponentEventSystem {
                     handler(event);
                 } catch (_error) {
                     globalErrorHandler.handle(_error, {
-                        type: 'global-event-handler-_error',
+                        type: 'global-event-handler-error',
                         context: { event, handler: handler.toString() }
                     });
                 }

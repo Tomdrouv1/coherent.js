@@ -126,7 +126,7 @@ export function formatAttributes(props) {
             value = value();
           } catch (_error) {
             console.warn(`Error executing function for attribute '${key}':`, {
-              _error: _error.message,
+              error: _error.message,
               stack: _error.stack,
               attributeKey: key,
             });

@@ -33,8 +33,8 @@ export function createCoherentNextHandler(componentFactory, options = {}) {
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.status(200).send(finalHtml);
     } catch (_error) {
-      console.error('Coherent.js Next.js handler _error:', _error);
-      res.status(500).json({ _error: _error.message });
+      console.error('Coherent.js Next.js handler error:', _error);
+      res.status(500).json({ error: _error.message });
     }
   };
 }
@@ -62,9 +62,9 @@ export function createCoherentAppRouterHandler(componentFactory, options = {}) {
         headers: { 'Content-Type': 'text/html; charset=utf-8' }
       });
     } catch (_error) {
-      console.error('Coherent.js Next.js App Router handler _error:', _error);
+      console.error('Coherent.js Next.js App Router handler error:', _error);
       return new Response(
-        JSON.stringify({ _error: _error.message }),
+        JSON.stringify({ error: _error.message }),
         {
           status: 500,
           headers: { 'Content-Type': 'application/json' }
@@ -122,7 +122,7 @@ export async function createCoherentServerComponent(componentFactory, options = 
         dangerouslySetInnerHTML: { __html: html }
       });
     } catch (_error) {
-      console.error('Coherent.js Next.js Server Component _error:', _error);
+      console.error('Coherent.js Next.js Server Component error:', _error);
       return React.default.createElement('div', null, `Error: ${_error.message}`);
     }
   };
@@ -178,7 +178,7 @@ export async function createCoherentClientComponent(componentFactory, options = 
 
           setHtml(renderedHtml);
         } catch (_error) {
-          console.error('Coherent.js Next.js Client Component _error:', _error);
+          console.error('Coherent.js Next.js Client Component error:', _error);
           setHtml(`Error: ${_error.message}`);
         }
       }

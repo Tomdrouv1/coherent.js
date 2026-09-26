@@ -475,9 +475,9 @@ export class DevTools {
 
         // Browser _error handler
         if (typeof window !== 'undefined') {
-            window.addEventListener('_error', (event) => {
+            window.addEventListener('error', (event) => {
                 this.errors.push({
-                    type: 'browser-_error',
+                    type: 'browser-error',
                     message: event.message,
                     filename: event.filename,
                     lineno: event.lineno,
@@ -493,7 +493,7 @@ export class DevTools {
      */
     handleRenderError(_error, component, context, renderId) {
         this.errors.push({
-            type: 'render-_error',
+            type: 'render-error',
             message: _error.message,
             stack: _error.stack,
             component: this.serializeComponent(component),

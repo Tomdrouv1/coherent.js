@@ -333,7 +333,7 @@ export async function checkDatabaseHealth(db) {
   } catch (_error) {
     return {
       status: 'unhealthy',
-      _error: _error.message,
+      error: _error.message,
       connected: db.isConnected,
       responseTime: Date.now() - startTime
     };
@@ -372,7 +372,7 @@ export async function batchOperations(db, operations, options = {}) {
           const result = await tx.query(operation.sql, operation.params);
           results.push({ success: true, result });
         } catch (_error) {
-          results.push({ success: false, _error: _error.message });
+          results.push({ success: false, error: _error.message });
           
           if (!config.continueOnError) {
             throw _error;
@@ -393,7 +393,7 @@ export async function batchOperations(db, operations, options = {}) {
         const result = await db.query(operation.sql, operation.params);
         results.push({ success: true, result });
       } catch (_error) {
-        results.push({ success: false, _error: _error.message });
+        results.push({ success: false, error: _error.message });
         
         if (!config.continueOnError) {
           throw _error;

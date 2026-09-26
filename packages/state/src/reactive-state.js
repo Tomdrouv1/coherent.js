@@ -58,7 +58,7 @@ export class Observable {
                 observer(newValue, oldValue);
             } catch (_error) {
                 globalErrorHandler.handle(_error, {
-                    type: 'watcher-_error',
+                    type: 'watcher-error',
                     context: { newValue, oldValue }
                 });
             }
@@ -147,7 +147,7 @@ class Computed extends Observable {
             this._dirty = false;
         } catch (_error) {
             globalErrorHandler.handle(_error, {
-                type: 'computed-_error',
+                type: 'computed-error',
                 context: { getter: this._getter.toString() }
             });
         } finally {
@@ -414,7 +414,7 @@ export class ReactiveState {
                 }
             } catch (_error) {
                 globalErrorHandler.handle(_error, {
-                    type: 'middleware-_error',
+                    type: 'middleware-error',
                     context: { action, middleware: middleware.toString() }
                 });
             }

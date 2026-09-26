@@ -85,7 +85,7 @@ export function createSQLiteAdapter() {
       
       db.all(sql, params, (err, rows) => {
         if (err) {
-          return reject(new Error(`SQLite query _error: ${err.message}`));
+          return reject(new Error(`SQLite query error: ${err.message}`));
         }
         resolve({ rows });
       });
@@ -107,7 +107,7 @@ export function createSQLiteAdapter() {
       
       db.run(sql, params, function(err) {
         if (err) {
-          return reject(new Error(`SQLite execute _error: ${err.message}`));
+          return reject(new Error(`SQLite execute error: ${err.message}`));
         }
         
         resolve({

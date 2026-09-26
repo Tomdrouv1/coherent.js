@@ -56,9 +56,9 @@ function coherentFastifyImpl(fastify, options = {}, done) {
       this.header('Content-Type', 'text/html; charset=utf-8');
       this.send(finalHtml);
     } catch (_error) {
-      console.error('Coherent.js rendering _error:', _error);
+      console.error('Coherent.js rendering error:', _error);
       this.status(500).send({
-        _error: 'Internal Server Error',
+        error: 'Internal Server Error',
         message: _error.message
       });
     }
@@ -123,7 +123,7 @@ export function createHandler(componentFactory, options = {}) {
       reply.header('Content-Type', 'text/html; charset=utf-8');
       return finalHtml;
     } catch (_error) {
-      console.error('Coherent.js handler _error:', _error);
+      console.error('Coherent.js handler error:', _error);
       throw _error;
     }
   };

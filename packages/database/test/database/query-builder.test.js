@@ -127,7 +127,7 @@ describe('QueryBuilder', { concurrency: false }, () => {
     });
   });
 
-  describe('_error handling', () => {
+  describe('error handling', () => {
     it('should handle empty queries gracefully', async () => {
       // Test that an empty query object still creates a basic SELECT query
       const query = createQuery({ table: 'users' });
@@ -148,7 +148,7 @@ describe('QueryBuilder', { concurrency: false }, () => {
         expect(sql).toBe('SELECT * FROM undefined');
       } catch {
         // This is acceptable - missing table should cause an _error
-        expect(true).toBe(true); // Expected _error for missing table
+        expect(true).toBe(true); // Expected error for missing table
       }
     });
   });

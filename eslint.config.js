@@ -264,5 +264,28 @@ export default [
         rules: {
             'no-unused-expressions': 'off' // Allow assertions in tests
         }
+    },
+    {
+        // A bulk `error` -> `_error` identifier rename once leaked into string
+        // literals and object keys: `pool.on('_error')` never fires, and API
+        // responses carried `{ _error: ... }`. Identifiers may keep the prefix;
+        // strings, template text and keys may not.
+        files: ['packages/*/src/**/*.js', 'packages/*/bin/**/*.js'],
+        rules: {
+            'no-restricted-syntax': ['error',
+                {
+                    selector: 'Literal[value=/(^|[^A-Za-z0-9])_error([^A-Za-z0-9]|$)/]',
+                    message: "'_error' inside a string is almost certainly the old rename leaking; use 'error'."
+                },
+                {
+                    selector: 'TemplateElement[value.raw=/(^|[^A-Za-z0-9$])_error([^A-Za-z0-9]|$)/]',
+                    message: "'_error' inside template text is almost certainly the old rename leaking; use 'error'."
+                },
+                {
+                    selector: 'Property > Identifier.key[name="_error"]',
+                    message: "Use an 'error' key; '_error' keys come from the old rename."
+                }
+            ]
+        }
     }
 ];

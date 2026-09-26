@@ -249,7 +249,7 @@ describe('HTML Utils', () => {
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('Error executing function for attribute'),
         expect.objectContaining({
-          _error: 'Function execution failed',
+          error: 'Function execution failed',
           attributeKey: 'value'
         })
       );

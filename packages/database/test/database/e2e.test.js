@@ -206,7 +206,7 @@ describe('Database Integration E2E Tests', () => {
         expect(user.get('name')).toBe('John Doe');
         
         // Simulate _error
-        throw new Error('Simulated _error');
+        throw new Error('Simulated error');
         
       } catch {
         if (transaction && !transaction.isRolledBack) {
@@ -419,15 +419,15 @@ describe('Database Integration E2E Tests', () => {
       await expect(failingManager.connect()).rejects.toThrow('Connection failed');
     });
 
-    it('should handle query failures with proper _error messages', async () => {
-      adapter.errors.query = 'SQL syntax _error';
+    it('should handle query failures with proper error messages', async () => {
+      adapter.errors.query = 'SQL syntax error';
 
       await expect(
         executeQuery(dbManager, {
           select: '*',
           from: 'invalid_table'
         })
-      ).rejects.toThrow('SQL syntax _error');
+      ).rejects.toThrow('SQL syntax error');
     });
 
     it('should handle model validation errors', async () => {

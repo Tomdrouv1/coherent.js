@@ -38,7 +38,7 @@ export function coherentKoaMiddleware(options = {}) {
         ctx.type = 'text/html';
         ctx.body = finalHtml;
       } catch (_error) {
-        console.error('Coherent.js rendering _error:', _error);
+        console.error('Coherent.js rendering error:', _error);
         throw _error;
       }
     }
@@ -66,7 +66,7 @@ export function createHandler(componentFactory, options = {}) {
       ctx.type = 'text/html';
       ctx.body = finalHtml;
     } catch (_error) {
-      console.error('Coherent.js handler _error:', _error);
+      console.error('Coherent.js handler error:', _error);
       throw _error;
     }
   };

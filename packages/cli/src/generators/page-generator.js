@@ -476,13 +476,13 @@ export const ${name} = createComponent(({ initialData = {}, errors = {} }) => {
                                           id: 'name',
                                           name: 'name',
                                           value: initialData.name || '',
-                                          className: errors.name ? '_error' : '',
+                                          className: errors.name ? 'error' : '',
                                           required: true
                                         }
                                       },
                                       errors.name ? {
                                         span: {
-                                          className: '_error-message',
+                                          className: 'error-message',
                                           text: errors.name
                                         }
                                       } : null
@@ -505,13 +505,13 @@ export const ${name} = createComponent(({ initialData = {}, errors = {} }) => {
                                           id: 'email',
                                           name: 'email',
                                           value: initialData.email || '',
-                                          className: errors.email ? '_error' : '',
+                                          className: errors.email ? 'error' : '',
                                           required: true
                                         }
                                       },
                                       errors.email ? {
                                         span: {
-                                          className: '_error-message',
+                                          className: 'error-message',
                                           text: errors.email
                                         }
                                       } : null

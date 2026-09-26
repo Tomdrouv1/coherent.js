@@ -69,7 +69,7 @@ export function withDatabase(db, options = {}) {
 
     } catch (_error) {
       // Log database errors
-      console.error('Database middleware _error:', _error);
+      console.error('Database middleware error:', _error);
       
       // Pass _error to _error handler
       if (typeof next === 'function') {
@@ -388,7 +388,7 @@ export function withHealthCheck(db, options = {}) {
     } catch (_error) {
       req.dbHealth = {
         status: 'unhealthy',
-        _error: _error.message,
+        error: _error.message,
         connected: db.isConnected
       };
       

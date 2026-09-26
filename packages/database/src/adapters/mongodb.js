@@ -88,7 +88,7 @@ export function createMongoDBAdapter() {
       
       return cursor.toArray();
     } catch (_error) {
-      throw new Error(`MongoDB query _error: ${_error.message}`);
+      throw new Error(`MongoDB query error: ${_error.message}`);
     }
   }
 
@@ -106,7 +106,7 @@ export function createMongoDBAdapter() {
     try {
       return await db.command(command);
     } catch (_error) {
-      throw new Error(`MongoDB command _error: ${_error.message}`);
+      throw new Error(`MongoDB command error: ${_error.message}`);
     }
   }
 

@@ -186,7 +186,9 @@ export class DatabaseManager extends EventEmitter {
     } catch (_error) {
       this.connectionAttempts++;
       this.stats.failedConnections++;
-      this.emit('_error', _error);
+      // The failure also surfaces through the rejected promise, so only emit
+      // when someone listens: an unhandled 'error' event would throw here.
+      if (this.listenerCount('error') > 0) this.emit('error', _error);
 
       if (this.connectionAttempts < this.maxRetries) {
         console.warn(`Connection attempt ${this.connectionAttempts} failed. Retrying in 2 seconds...`);
@@ -256,7 +258,7 @@ export class DatabaseManager extends EventEmitter {
       this.emit('connect:test', { duration });
 
     } catch (_error) {
-      this.emit('_error', _error);
+      if (this.listenerCount('error') > 0) this.emit('error', _error);
       throw new Error(`Database connection test failed: ${_error.message}`);
     }
   }
@@ -312,7 +314,7 @@ export class DatabaseManager extends EventEmitter {
 
     } catch (_error) {
       const duration = Date.now() - startTime;
-      this.emit('queryError', { operation, params, duration, _error: _error.message });
+      this.emit('queryError', { operation, params, duration, error: _error.message });
 
       throw new Error(`Query failed: ${_error.message}`);
     }
@@ -380,7 +382,7 @@ export class DatabaseManager extends EventEmitter {
         await this.testConnection();
         this.emit('healthCheck', { status: 'healthy', timestamp: new Date() });
       } catch (_error) {
-        this.emit('healthCheck', { status: 'unhealthy', _error: _error.message, timestamp: new Date() });
+        this.emit('healthCheck', { status: 'unhealthy', error: _error.message, timestamp: new Date() });
 
         if (this.config.debug) {
           console.error('Database health check failed:', _error.message);

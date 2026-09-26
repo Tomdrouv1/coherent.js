@@ -59,7 +59,7 @@ function parseBody(req, maxSize = 1024 * 1024) { // 1MB limit
       }
     });
 
-    req.on('_error', reject);
+    req.on('error', reject);
   });
 }
 
@@ -446,7 +446,7 @@ function registerRoute(method, config, router, path) {
     } catch (_error) {
       const statusCode = _error.statusCode || 500;
       res.writeHead(statusCode, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ _error: _error.message }));
+      res.end(JSON.stringify({ error: _error.message }));
     }
   }, { name });
 }
@@ -652,7 +652,7 @@ class SimpleRouter {
       if (!handler) {
         res.writeHead(406, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
-          _error: 'Not Acceptable',
+          error: 'Not Acceptable',
           supportedTypes: Object.keys(handlers)
         }));
         return;
@@ -892,7 +892,7 @@ class SimpleRouter {
         try {
           ws.onclose();
         } catch (_error) {
-          console.error('WebSocket onclose handler _error:', _error);
+          console.error('WebSocket onclose handler error:', _error);
         }
       }
 
@@ -906,7 +906,7 @@ class SimpleRouter {
     try {
       matchedRoute.route.handler(ws, request);
     } catch (err) {
-      console.error('WebSocket upgrade _error:', err);
+      console.error('WebSocket upgrade error:', err);
       socket.end('HTTP/1.1 500 Internal Server Error\r\n\r\n');
     }
   }
@@ -1012,8 +1012,8 @@ class SimpleRouter {
     });
 
     // Handle socket errors
-    socket.on('_error', (err) => {
-      console.error('WebSocket socket _error (connection likely closed):', err.code);
+    socket.on('error', (err) => {
+      console.error('WebSocket socket error (connection likely closed):', err.code);
       // Don't re-throw the _error, just log it
     });
 
@@ -1680,7 +1680,7 @@ class SimpleRouter {
     const clientIP = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
     if (!checkRateLimit(clientIP, rateLimit.windowMs, rateLimit.maxRequests)) {
       res.writeHead(429, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ _error: 'Too Many Requests' }));
+      res.end(JSON.stringify({ error: 'Too Many Requests' }));
       return;
     }
 
@@ -1698,7 +1698,7 @@ class SimpleRouter {
       if (this.enableMetrics) this.metrics.errors++;
       const statusCode = _error.message.includes('too large') ? 413 : 400;
       res.writeHead(statusCode, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ _error: _error.message }));
+      res.end(JSON.stringify({ error: _error.message }));
       return;
     }
 
@@ -1842,7 +1842,7 @@ class SimpleRouter {
         if (this.enableMetrics) this.metrics.errors++;
         if (!res.headersSent) {
           res.writeHead(500, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ _error: _error.message }));
+          res.end(JSON.stringify({ error: _error.message }));
         }
         return;
       }
@@ -1852,7 +1852,7 @@ class SimpleRouter {
     if (this.enableMetrics) this.metrics.errors++;
     if (!res.headersSent) {
       res.writeHead(404, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ _error: 'Not Found' }));
+      res.end(JSON.stringify({ error: 'Not Found' }));
     }
   }
 
