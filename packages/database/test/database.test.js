@@ -1,107 +1,13 @@
 /**
  * Pure Object-Based Database Tests
- * Test suite for Coherent.js pure object model system
+ * Test suite for Coherent.js pure object model system, against a real in-memory SQLite
+ * database so the assertions check stored rows rather than canned mock results.
  */
 
-import { test, assert } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { DatabaseManager } from '../src/connection-manager.js';
 import { createModel } from '../src/model.js';
 import { executeQuery } from '../src/query-builder.js';
-
-// Mock adapter for testing
-class MockAdapter {
-  constructor() {
-    this.connected = false;
-    this.queries = [];
-  }
-
-  async createPool() {
-    return new MockPool();
-  }
-
-  async closePool(pool) {
-    this.connected = false;
-    if (pool) {
-      pool.connected = false;
-    }
-  }
-
-  async disconnect() {
-    this.connected = false;
-  }
-
-  async testConnection() {
-    this.connected = true;
-    return true;
-  }
-
-  async close() {
-    this.connected = false;
-  }
-
-  async query(pool, sql, params = [], options = {}) {
-    this.queries.push({ sql, params, options });
-    
-    if (sql.includes('INSERT')) {
-      return { insertId: 1, affectedRows: 1 };
-    } else if (sql.includes('UPDATE') || sql.includes('DELETE')) {
-      return { affectedRows: 1 };
-    } else {
-      return { 
-        rows: [{ id: 1, name: 'Test User', email: 'test@example.com' }],
-        rowCount: 1 
-      };
-    }
-  }
-
-  async beginTransaction() {
-    return new MockTransaction();
-  }
-
-  async transaction(callback) {
-    const tx = new MockTransaction();
-    try {
-      const result = await callback(tx);
-      await tx.commit();
-      return result;
-    } catch (_error) {
-      await tx.rollback();
-      throw _error;
-    }
-  }
-}
-
-class MockPool {
-  constructor() {
-    this.connected = true;
-  }
-}
-
-class MockTransaction {
-  constructor() {
-    this.isCommitted = false;
-    this.isRolledBack = false;
-  }
-
-  async query() {
-    return { rows: [], rowCount: 1 };
-  }
-
-  async commit() {
-    this.isCommitted = true;
-  }
-
-  async rollback() {
-    this.isRolledBack = true;
-  }
-}
-
-// Test configuration
-const testConfig = {
-  type: 'sqlite',
-  database: 'test.db',
-  connection: { filename: ':memory:' }
-};
 
 // Pure object model definitions
 const UserModel = {
@@ -111,7 +17,8 @@ const UserModel = {
     id: { type: 'number', autoIncrement: true, primaryKey: true },
     name: { type: 'string', required: true },
     email: { type: 'string', required: true },
-    age: { type: 'number' }
+    age: { type: 'number' },
+    active: { type: 'boolean' }
   },
   methods: {
     getDisplayName: function() {
@@ -126,196 +33,125 @@ const PostModel = {
   attributes: {
     id: { type: 'number', autoIncrement: true, primaryKey: true },
     title: { type: 'string', required: true },
-    content: { type: 'text' },
-    userId: { type: 'number', required: true }
+    published: { type: 'boolean' }
   }
 };
 
-test('Database initialization with config', async () => {
-  const dbConfig = { type: 'sqlite', database: ':memory:' };
-  const dbManager = new DatabaseManager(dbConfig);
-  const mockAdapter = new MockAdapter();
-  dbManager.adapter = mockAdapter;
+describe('pure object model system', () => {
+  let dbManager;
+  let statements;
 
-  await dbManager.testConnection();
-  assert.strictEqual(mockAdapter.connected, true, 'Should be connected after testConnection()');
-});
-
-test('DatabaseManager connection management', async () => {
-  const dbManager = new DatabaseManager(testConfig);
-  const mockAdapter = new MockAdapter();
-  dbManager.adapter = mockAdapter;
-
-  await dbManager.testConnection();
-  assert.strictEqual(mockAdapter.connected, true, 'Should be connected after testConnection()');
-
-  // Call adapter.close() directly since that's what sets connected = false
-  await mockAdapter.close();
-  assert.strictEqual(mockAdapter.connected, false, 'Should be disconnected after close()');
-});
-
-test('Pure Object Model System', async () => {
-  const dbManager = new DatabaseManager(testConfig);
-  const mockAdapter = new MockAdapter();
-  dbManager.adapter = mockAdapter;
-  dbManager.isConnected = true;
-  dbManager.pool = new MockPool();
-
-  const model = createModel(dbManager);
-  
-  // Register User model
-  const User = model.registerModel('User', UserModel);
-  
-  // Test model creation
-  const user = await User.create({
-    name: 'John Doe',
-    email: 'john@example.com'
-  });
-  
-  assert.strictEqual(user.name, 'Test User');
-  assert.strictEqual(user.email, 'test@example.com');
-  assert.strictEqual(typeof user.save, 'function');
-  assert.strictEqual(typeof user.delete, 'function');
-  
-  // Test model query
-  const allUsers = await User.all();
-  assert.strictEqual(Array.isArray(allUsers), true);
-  
-  // Test where query
-  const activeUsers = await User.where({
-    select: '*',
-    where: { active: true }
-  });
-  assert.strictEqual(Array.isArray(activeUsers), true);
-
-  // Test find
-  const foundUser = await User.find(1);
-  assert.ok(foundUser, 'Should find user');
-  assert.strictEqual(foundUser.name, 'Test User', 'Found user name should match mock data');
-
-  // Test update
-  const updateCount = await User.updateWhere({ name: 'John Doe' }, { age: 30 });
-  assert.strictEqual(updateCount, 1, 'Should update one user');
-
-  // Test delete
-  const deleteCount = await User.deleteWhere({ name: 'John Doe' });
-  assert.strictEqual(deleteCount, 1, 'Should delete one user');
-
-  await dbManager.close();
-});
-
-test('QueryBuilder with object configuration', async () => {
-  const dbManager = new DatabaseManager(testConfig);
-  const mockAdapter = new MockAdapter();
-  dbManager.adapter = mockAdapter;
-  dbManager.isConnected = true;
-  dbManager.pool = new MockPool();
-
-  const queryConfig = {
-    select: ['id', 'name', 'email'],
-    from: 'users',
-    where: { active: true },
-    orderBy: { created_at: 'DESC' },
-    limit: 10
-  };
-
-  const result = await executeQuery(dbManager, queryConfig);
-  assert.ok(result, 'Should return query result');
-
-  await dbManager.close();
-});
-
-test('Multi-model query execution', async () => {
-  const dbManager = new DatabaseManager(testConfig);
-  const mockAdapter = new MockAdapter();
-  dbManager.adapter = mockAdapter;
-  dbManager.isConnected = true;
-  dbManager.pool = new MockPool();
-
-  const model = createModel(dbManager);
-  model.registerModel('User', UserModel);
-  model.registerModel('Post', PostModel);
-
-  // Execute multi-model query
-  const results = await model.execute({
-    User: {
-      select: '*',
-      where: { active: true }
-    },
-    Post: {
-      select: ['id', 'title'],
-      where: { published: true }
-    }
-  });
-  
-  assert.ok(results.User, 'Should have User results');
-  assert.ok(results.Post, 'Should have Post results');
-  assert.strictEqual(Array.isArray(results.User), true);
-  assert.strictEqual(Array.isArray(results.Post), true);
-
-  await dbManager.close();
-});
-
-test('Model instance methods', async () => {
-  const dbManager = new DatabaseManager(testConfig);
-  const mockAdapter = new MockAdapter();
-  dbManager.adapter = mockAdapter;
-  dbManager.isConnected = true;
-  dbManager.pool = new MockPool();
-
-  const model = createModel(dbManager);
-  
-  // Register User model
-  const User = model.registerModel('User', UserModel);
-  
-  // Create instance using model.create
-  const userInstance = await User.create({
-    name: 'John Doe',
-    email: 'john@example.com'
+  beforeEach(async () => {
+    dbManager = new DatabaseManager({ type: 'sqlite', database: ':memory:' });
+    await dbManager.connect();
+    await dbManager.query('CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT, age INTEGER, active BOOLEAN)');
+    await dbManager.query('CREATE TABLE posts (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, published BOOLEAN)');
+    statements = [];
+    dbManager.on('query', ({ operation }) => statements.push(operation));
   });
 
-  // Test instance method
-  assert.strictEqual(userInstance.getDisplayName(), 'Test User', 'Instance method should work');
+  afterEach(async () => {
+    await dbManager.close();
+  });
 
-  // Test save method
-  assert.ok(typeof userInstance.save === 'function', 'Should have save method');
+  it('writes to the model table and reads the created row back', async () => {
+    const User = createModel(dbManager).registerModel('User', UserModel);
 
-  // Test delete method
-  assert.ok(typeof userInstance.delete === 'function', 'Should have delete method');
+    const user = await User.create({ name: 'John Doe', email: 'john@example.com' });
 
-  await dbManager.close();
-});
+    expect(statements[0]).toBe('INSERT INTO users (name, email) VALUES (?, ?)');
+    expect(user).toMatchObject({ id: 1, name: 'John Doe', email: 'john@example.com' });
+    expect(typeof user.save).toBe('function');
+    expect(typeof user.delete).toBe('function');
+  });
 
-test('Transaction handling', async () => {
-  const dbManager = new DatabaseManager(testConfig);
-  dbManager.adapter = new MockAdapter();
-  await dbManager.testConnection();
+  it('queries, finds, updates and deletes through the model table', async () => {
+    const User = createModel(dbManager).registerModel('User', UserModel);
+    await User.create({ name: 'John Doe', email: 'john@example.com', active: true });
+    await User.create({ name: 'Jane', email: 'jane@example.com', active: false });
 
-  let rollbackOccurred = false;
+    expect((await User.all()).map(user => user.name)).toEqual(['John Doe', 'Jane']);
 
-  try {
-    await dbManager.transaction(async (tx) => {
-      // Simulate some database operations
-      await tx.query('SELECT 1 as test', []);
-      
-      // Force an _error to test rollback
-      throw new Error('Simulated error');
+    const activeUsers = await User.where({ select: '*', where: { active: true } });
+    expect(activeUsers.map(user => user.name)).toEqual(['John Doe']);
+
+    expect((await User.find(2)).name).toBe('Jane');
+    expect(await User.find(424242)).toBe(null);
+
+    expect(await User.updateWhere({ name: 'John Doe' }, { age: 30 })).toBe(1);
+    expect(await User.updateWhere({ name: 'Nobody' }, { age: 30 })).toBe(0);
+    expect((await User.find(1)).age).toBe(30);
+
+    expect(await User.deleteWhere({ name: 'John Doe' })).toBe(1);
+    expect((await User.all()).map(user => user.name)).toEqual(['Jane']);
+  });
+
+  it('does not mutate the query config it is given', async () => {
+    const User = createModel(dbManager).registerModel('User', UserModel);
+    const config = { select: '*', where: { active: true } };
+
+    await User.query(config);
+
+    expect(config).toEqual({ select: '*', where: { active: true } });
+  });
+
+  it('saves instances without sending their methods as columns', async () => {
+    const User = createModel(dbManager).registerModel('User', UserModel);
+    const user = await User.create({ name: 'John Doe', email: 'john@example.com' });
+
+    user.age = 41;
+    await user.save();
+
+    expect(statements.at(-1)).toBe('UPDATE users SET name = ?, email = ?, age = ?, active = ? WHERE id = ?');
+    expect((await User.find(user.id)).age).toBe(41);
+
+    expect(await user.delete()).toBe(1);
+    expect(await User.all()).toEqual([]);
+  });
+
+  it('runs instance methods on the loaded row', async () => {
+    const User = createModel(dbManager).registerModel('User', UserModel);
+    const user = await User.create({ name: 'John Doe', email: 'john@example.com' });
+
+    expect(user.getDisplayName()).toBe('John Doe');
+  });
+
+  it('executes multi-model queries', async () => {
+    const models = createModel(dbManager);
+    const User = models.registerModel('User', UserModel);
+    const Post = models.registerModel('Post', PostModel);
+    await User.create({ name: 'John Doe', email: 'john@example.com', active: true });
+    await Post.create({ title: 'Draft', published: false });
+    await Post.create({ title: 'Live', published: true });
+
+    const results = await models.execute({
+      User: { select: '*', where: { active: true } },
+      Post: { select: ['id', 'title'], where: { published: true } }
     });
-  } catch {
-    rollbackOccurred = true;
-  }
 
-  assert.strictEqual(rollbackOccurred, true, 'Rollback should occur on error');
+    expect(results.User.map(user => user.name)).toEqual(['John Doe']);
+    expect(results.Post.map(post => ({ id: post.id, title: post.title }))).toEqual([{ id: 2, title: 'Live' }]);
+  });
 
-  await dbManager.close();
+  it('executes object queries through the manager', async () => {
+    await dbManager.query('INSERT INTO users (name, email, active) VALUES (?, ?, ?)', ['a', 'a@example.com', 1]);
+
+    const result = await executeQuery(dbManager, {
+      select: ['id', 'name', 'email'],
+      from: 'users',
+      where: { active: true },
+      orderBy: { id: 'DESC' },
+      limit: 10
+    });
+
+    expect(result.rows).toEqual([{ id: 1, name: 'a', email: 'a@example.com' }]);
+  });
+
+  it('rolls back a transaction', async () => {
+    const tx = await dbManager.transaction();
+    await tx.query('INSERT INTO users (name) VALUES (?)', ['temp']);
+    await tx.rollback();
+
+    expect((await dbManager.query('SELECT * FROM users')).rows).toEqual([]);
+  });
 });
-
-// Auto-close test process
-process.on('exit', () => {
-  console.log('✓ All pure object-based database tests completed');
-});
-
-// Force exit after tests
-setTimeout(() => {
-  process.exit(0);
-}, 1000);

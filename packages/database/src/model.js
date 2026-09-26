@@ -603,6 +603,14 @@ export function createModel(db) {
   const models = new Map();
 
   // Helper functions
+
+  /** An instance's column values: its own properties minus the attached methods. */
+  function instanceData(instance) {
+    return Object.fromEntries(
+      Object.entries(instance).filter(([, value]) => typeof value !== 'function')
+    );
+  }
+
   function validateModelDefinition(definition) {
     if (!definition.tableName) {
       throw new Error('Model must have a tableName');
@@ -632,14 +640,16 @@ export function createModel(db) {
     instance.save = async () => {
       const primaryKey = model.primaryKey || 'id';
       const id = instance[primaryKey];
+      const data = instanceData(instance);
 
       if (id) {
         // Update existing
-        await model.updateWhere({ [primaryKey]: id }, instance);
+        delete data[primaryKey];
+        await model.updateWhere({ [primaryKey]: id }, data);
       } else {
         // Create new
         const result = await model.query({
-          insert: instance
+          insert: data
         });
         if (result.insertId) {
           instance[primaryKey] = result.insertId;
@@ -672,11 +682,10 @@ export function createModel(db) {
 
       // Core query method
       query: async (config) => {
-        if (!config.from && definition.tableName) {
-          config.from = definition.tableName;
-        }
+        // Default to the model's table without mutating the caller's config
+        const query = config.table || config.from ? { ...config } : { ...config, table: definition.tableName };
 
-        const result = await executeQuery(db, config);
+        const result = await executeQuery(db, query);
 
         // Convert results to model instances for SELECT queries
         if (config.select && result.rows) {
