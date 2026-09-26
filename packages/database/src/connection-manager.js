@@ -60,6 +60,9 @@ export class DatabaseManager extends EventEmitter {
     // Health check interval (config.healthCheckInterval, in milliseconds)
     this.healthCheckInterval = null;
     this.healthCheckFrequency = this.config.healthCheckInterval ?? 30000;
+    if (!Number.isFinite(this.healthCheckFrequency) || this.healthCheckFrequency <= 0) {
+      throw new Error(`healthCheckInterval must be a positive number of milliseconds, got ${this.healthCheckFrequency}`);
+    }
 
     // Connection statistics
     this.stats = {
@@ -216,6 +219,7 @@ export class DatabaseManager extends EventEmitter {
     const { adapter, pool } = this;
     this.pool = null;
     this.adapter = null;
+    this.isConnected = false;
 
     if (!adapter || !pool) {
       return;
@@ -452,10 +456,6 @@ export class DatabaseManager extends EventEmitter {
   startHealthCheck() {
     if (this.healthCheckInterval) {
       return;
-    }
-
-    if (!Number.isFinite(this.healthCheckFrequency) || this.healthCheckFrequency <= 0) {
-      throw new Error(`healthCheckInterval must be a positive number of milliseconds, got ${this.healthCheckFrequency}`);
     }
 
     this.healthCheckInterval = setInterval(async () => {

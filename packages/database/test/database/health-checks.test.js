@@ -55,6 +55,11 @@ describe('periodic health checks', () => {
     expect(db.healthCheckInterval).toBe(null);
   });
 
+  it('rejects an invalid interval when the manager is created', () => {
+    expect(() => createDatabaseManager({ adapter: adapterWith(async () => {}), healthCheckInterval: 0 }))
+      .toThrow('healthCheckInterval must be a positive number of milliseconds');
+  });
+
   it('does not keep the process alive', async () => {
     const db = createDatabaseManager({ adapter: adapterWith(async () => {}) });
     await db.connect();
