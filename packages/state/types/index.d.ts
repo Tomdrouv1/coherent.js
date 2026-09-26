@@ -265,32 +265,57 @@ export const globalStateManager: {
 // ============================================================================
 
 /**
- * Push a context value, remembering the previous one so
- * {@link restoreContext} can unwind it.
+ * Run `fn` in a fresh, isolated context scope — one per request or render.
+ * On Node (AsyncLocalStorage) the scope follows `fn`'s async work, so wrap
+ * each request, and each consumer of a streaming render, in it. `values`
+ * seeds the scope.
+ */
+export function runWithContext<T>(fn: () => T, values?: Record<string, unknown>): T;
+
+/**
+ * Push a context value for the rest of the current execution, remembering the
+ * previous one so {@link restoreContext} can unwind it. On Node the value is
+ * scoped to the calling async execution, so concurrent requests do not see it.
  */
 export function provideContext(key: string, value: unknown): void;
 
+/** A context provider created by {@link createContextProvider}. */
+export interface ContextProvider<C = unknown> {
+  /**
+   * Called by the renderer as a zero-argument component: returns the children
+   * between two marker components that enter and leave the context.
+   */
+  (): [() => null, () => C, () => null];
+  /**
+   * Run `renderFunction(children)` with the context provided. On Node an
+   * async render function keeps the context across its awaits.
+   */
+  <R>(renderFunction: (children: C) => R): R;
+}
+
 /**
- * Wrap children in a context. The returned function provides the context,
- * renders, then restores the previous value.
+ * Wrap children in a context. Place the result in a component tree; the
+ * children see `value`, their siblings do not.
  */
-export function createContextProvider<C = unknown, R = unknown>(
+export function createContextProvider<C = unknown>(
   key: string,
   value: unknown,
   children: C
-): (renderFunction?: (children: C) => R) => R | C;
+): ContextProvider<C>;
 
 /** Pop one context value, restoring what {@link provideContext} replaced. */
 export function restoreContext(key: string): void;
 
 /**
- * Unwind every tracked context to the value it held before its first
- * `provideContext()`. Call between renders so one request's contexts do not
- * leak into the next.
+ * Drop every context provided in the current execution. Values set through
+ * {@link globalStateManager} are left alone.
  */
 export function clearAllContexts(): void;
 
-/** Read the current context value, or `undefined`. */
+/**
+ * Read the current context value. Falls back to {@link globalStateManager}
+ * when no context was provided for `key`.
+ */
 export function useContext<T = unknown>(key: string): T | undefined;
 
 // ============================================================================

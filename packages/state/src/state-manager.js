@@ -46,7 +46,11 @@ export function createState(initialState = {}) {
 }
 
 /**
- * Global state for sharing data across components during SSR
+ * Global state for sharing data across components during SSR.
+ *
+ * This store is process-wide: every request sees it. It is also the fallback
+ * useContext() reads when no context has been provided for a key, so it suits
+ * application-wide defaults, never request data.
  */
 export const globalStateManager = {
     set(key, value) {
@@ -71,123 +75,224 @@ export const globalStateManager = {
     }
 };
 
-/**
- * Context stack for managing nested context providers
- */
-const contextStacks = new Map();
+// ============================================================================
+// Context API
+// ============================================================================
+//
+// A scope is an immutable Map from context key to a linked stack entry
+// `{ value, previous }`. A holder `{ scope, owned }` points at the current
+// scope.
+//
+// On Node the holder lives in an AsyncLocalStorage, so it follows each
+// request's async execution:
+//
+// - runWithContext() (and a provider's render-callback form) runs its callback
+//   with a fresh holder that it owns. Inside it every change updates that
+//   holder in place, so the value stays put across the awaits and yields of
+//   an async or streaming render, and nothing leaks out of it.
+// - Outside any owned holder, a change never mutates the holder it found:
+//   it moves the current execution onto a new one with `enterWith`. Two
+//   concurrent handlers that each provide a value and then `await` read back
+//   their own value, and nothing becomes visible process-wide.
+//
+// Browsers have no AsyncLocalStorage. There a single module holder is updated
+// in place, which is exact for synchronous rendering; a value read after an
+// `await` sees whatever is current at that point.
+
+const EMPTY_SCOPE = new Map();
+
+function createAsyncStorage() {
+    try {
+        // Never a static import: this module also runs in browsers.
+        const asyncHooks = globalThis.process?.getBuiltinModule?.('node:async_hooks');
+        const AsyncLocalStorage = asyncHooks?.AsyncLocalStorage;
+        return typeof AsyncLocalStorage === 'function' ? new AsyncLocalStorage() : null;
+    } catch {
+        return null;
+    }
+}
+
+const asyncStorage = createAsyncStorage();
+
+/** The holder used when AsyncLocalStorage is unavailable. */
+const syncHolder = { scope: EMPTY_SCOPE, owned: true };
+
+function currentHolder() {
+    return asyncStorage ? asyncStorage.getStore() : syncHolder;
+}
+
+function currentScope() {
+    return currentHolder()?.scope ?? EMPTY_SCOPE;
+}
 
 /**
- * Context provider for passing data down the component tree
+ * Make `scope` current for the rest of this execution, preferring `holder`
+ * (the one the change was computed from) when it may be updated in place.
+ */
+function setScope(scope, holder = currentHolder()) {
+    if (holder?.owned) {
+        holder.scope = scope;
+    } else {
+        asyncStorage.enterWith({ scope, owned: false });
+    }
+}
+
+/**
+ * Run `fn(...args)` with `scope` current in a holder of its own, restoring the
+ * previous scope afterwards.
+ */
+function runInScope(scope, fn, args) {
+    if (asyncStorage) {
+        return asyncStorage.run({ scope, owned: true }, fn, ...args);
+    }
+
+    const previous = syncHolder.scope;
+    syncHolder.scope = scope;
+    try {
+        return fn(...args);
+    } finally {
+        syncHolder.scope = previous;
+    }
+}
+
+function withValue(scope, key, value) {
+    const next = new Map(scope);
+    next.set(key, { value, previous: scope.get(key) });
+    return next;
+}
+
+/**
+ * Run `fn` in a fresh, isolated context scope — one per request or render.
+ *
+ * Nothing provided inside `fn` is visible outside it and nothing provided
+ * outside is visible inside. On Node this holds across `await`s, so wrap each
+ * request (or each `renderToStream()` consumer) in it.
+ *
+ * @template T
+ * @param {() => T} fn - Work to run, typically a request handler or a render
+ * @param {Object} [values] - Initial context values, keyed by context key
+ * @returns {T} Whatever `fn` returns (a promise for an async `fn`)
+ */
+export function runWithContext(fn, values) {
+    if (typeof fn !== 'function') {
+        throw new TypeError(`runWithContext() requires a function, received: ${typeof fn}`);
+    }
+
+    let scope = EMPTY_SCOPE;
+    if (values && typeof values === 'object') {
+        for (const [key, value] of Object.entries(values)) {
+            scope = withValue(scope, key, value);
+        }
+    }
+
+    return runInScope(scope, fn, []);
+}
+
+/**
+ * Provide a context value for the rest of the current execution, remembering
+ * the previous one so {@link restoreContext} can unwind it.
+ *
+ * On Node the value is scoped to the calling async execution: a concurrent
+ * request does not see it, even across `await`s.
+ *
  * @param {string} key - Context key
  * @param {*} value - Context value
- * @param {Object} children - Children to render with context
- * @returns {Object} Children with context available
  */
 export function provideContext(key, value) {
-    // Initialize context stack if it doesn't exist
-    if (!contextStacks.has(key)) {
-        contextStacks.set(key, []);
-    }
-    
-    const stack = contextStacks.get(key);
-    
-    // Store previous value
-    const previousValue = globalState.get(key);
-    
-    // Push previous value to stack and set new value
-    stack.push(previousValue);
-    globalState.set(key, value);
+    setScope(withValue(currentScope(), key, value));
 }
 
 /**
- * Create a context provider component that works with the rendering system
+ * Create a context provider component.
+ *
+ * The provider is a zero-argument function component. When the renderer calls
+ * it, it returns its children between two marker components that enter and
+ * leave the context; the renderer renders array items in order, so the
+ * children see the value and their following siblings do not. Nothing is
+ * pre-rendered, so the renderer escapes the children exactly once.
+ *
+ * Called with a render function instead, the provider runs
+ * `renderFunction(children)` with the context provided and returns its result.
+ * On Node an async render function keeps the context across its `await`s.
+ *
  * @param {string} key - Context key
  * @param {*} value - Context value
- * @param {Object} children - Children to render with context
- * @returns {Function} Component function that provides context
+ * @param {*} children - Children to render with context
+ * @returns {Function} Context provider component
  */
 export function createContextProvider(key, value, children) {
-    // Return a function that will render the children within the context
-    return (renderFunction) => {
-        try {
-            // Provide context
-            provideContext(key, value);
-            
-            // If a render function is provided, use it to render children
-            // Otherwise return children to be rendered by the caller
-            if (renderFunction && typeof renderFunction === 'function') {
-                return renderFunction(children);
-            } else {
-                return children;
-            }
-        } finally {
-            // Always restore context when done
-            restoreContext(key);
+    // Rest parameters keep `length` at 0, so core's renderer calls this as an
+    // ordinary function component instead of handing it a callback that
+    // returns an HTML string (which it would then escape a second time).
+    function contextProvider(...args) {
+        const renderFunction = args[0];
+
+        if (typeof renderFunction === 'function') {
+            return runInScope(withValue(currentScope(), key, value), renderFunction, [children]);
         }
-    };
+
+        let holder;
+        let outer = EMPTY_SCOPE;
+        return [
+            function enterContext() {
+                holder = currentHolder();
+                outer = holder?.scope ?? EMPTY_SCOPE;
+                setScope(withValue(outer, key, value), holder);
+                return null;
+            },
+            function contextChildren() {
+                return children;
+            },
+            function leaveContext() {
+                setScope(outer, holder);
+                return null;
+            }
+        ];
+    }
+
+    return contextProvider;
 }
 
 /**
- * Restore context to previous value
+ * Restore context to its previous value
  * @param {string} key - Context key
  */
 export function restoreContext(key) {
-    if (!contextStacks.has(key)) return;
-    
-    const stack = contextStacks.get(key);
-    
-    // Restore previous value from stack
-    const previousValue = stack.pop();
-    
-    if (stack.length === 0) {
-        // No more providers, delete the key if it was undefined before
-        if (previousValue === undefined) {
-            globalState.delete(key);
-        } else {
-            globalState.set(key, previousValue);
-        }
-        
-        // Clean up empty stack
-        contextStacks.delete(key);
+    const scope = currentScope();
+    const entry = scope.get(key);
+    if (!entry) return;
+
+    const next = new Map(scope);
+    if (entry.previous) {
+        next.set(key, entry.previous);
     } else {
-        // Restore previous value
-        globalState.set(key, previousValue);
+        next.delete(key);
     }
+    setScope(next);
 }
 
 /**
- * Clear all context stacks (useful for cleanup after rendering)
+ * Drop every context provided in the current execution.
  *
- * useContext() reads from globalState, which is module-level and therefore
- * shared by every render in the process. Clearing only contextStacks left the
- * values themselves in place, so a context provided while rendering one
- * request stayed readable while rendering the next — and became unrecoverable,
- * since restoreContext() bails out once a key's stack is gone.
- *
- * Unwind each tracked key to the value it held before its first
- * provideContext() — the bottom of that key's stack. Only keys that were
- * actually provided as contexts are touched, so unrelated global state
- * survives, which is what the previous implementation was trying to protect.
+ * Values set through {@link globalStateManager} are not contexts and are left
+ * alone; useContext() falls back to them again.
  */
 export function clearAllContexts() {
-    for (const [key, stack] of contextStacks) {
-        const beforeFirstProvide = stack[0];
-
-        if (beforeFirstProvide === undefined) {
-            globalState.delete(key);
-        } else {
-            globalState.set(key, beforeFirstProvide);
-        }
+    if (currentScope().size > 0) {
+        setScope(EMPTY_SCOPE);
     }
-
-    contextStacks.clear();
 }
 
 /**
  * Context consumer to access provided context
+ *
+ * Falls back to {@link globalStateManager} when no context has been provided
+ * for `key`.
+ *
  * @param {string} key - Context key
  * @returns {*} Context value
  */
 export function useContext(key) {
-    return globalState.get(key);
+    const entry = currentScope().get(key);
+    return entry ? entry.value : globalState.get(key);
 }

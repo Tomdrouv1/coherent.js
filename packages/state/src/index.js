@@ -32,7 +32,8 @@ import {
     createContextProvider,
     restoreContext,
     clearAllContexts,
-    useContext
+    useContext,
+    runWithContext
 } from './state-manager.js';
 
 import {
@@ -63,7 +64,8 @@ export {
     createContextProvider,
     restoreContext,
     clearAllContexts,
-    useContext
+    useContext,
+    runWithContext
 } from './state-manager.js';
 
 // Re-export everything from state-persistence
@@ -107,6 +109,7 @@ export default {
     restoreContext,
     clearAllContexts,
     useContext,
+    runWithContext,
 
     // Persistence utilities
     createPersistentState,

@@ -45,23 +45,50 @@ console.log(doubled.value); // 10
 ### SSR-Compatible State
 
 ```javascript
-import { createState, provideContext } from '@coherent.js/state';
+import { render } from '@coherent.js/core';
+import {
+  createState,
+  runWithContext,
+  provideContext,
+  useContext,
+  createContextProvider
+} from '@coherent.js/state';
 
-// Create state container for a request
-const state = createState({ userId: 123, theme: 'dark' });
+// Run each request in its own context scope
+app.get('/', (req, res) => runWithContext(async () => {
+  // Create state container for this request
+  const state = createState({ userId: req.user.id, theme: 'dark' });
+  provideContext('request', state);
 
-// Provide context during SSR
-provideContext('request', state);
+  const user = await loadUser(req);   // context survives the await
+  res.send(render(Page(user)));
+}));
 
 // Access in components
-import { useContext } from '@coherent.js/state';
-
 function MyComponent() {
   const requestState = useContext('request');
   const userId = requestState.get('userId');
   // ... render component
 }
+
+// Scope a value to part of the tree
+const Page = (user) => ({
+  main: {
+    children: [
+      createContextProvider('theme', user.theme, { button: { className: () => `btn-${useContext('theme')}` } }),
+      Footer()   // does not see 'theme'
+    ]
+  }
+});
 ```
+
+On Node, context lives in `AsyncLocalStorage`: a value provided by one request
+is never visible to another, including across `await`s. `runWithContext(fn)`
+gives `fn` a fresh scope that ends when it returns; use it per request, and
+always around a streaming render, whose yields otherwise lose provider values.
+Browsers have no `AsyncLocalStorage`, so there context is only reliable for
+synchronous rendering. `useContext(key)` falls back to `globalStateManager`
+when no context was provided for `key`.
 
 ### State Persistence
 

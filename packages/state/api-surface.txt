@@ -30,6 +30,7 @@ globalStateManager
 observable
 provideContext
 restoreContext
+runWithContext
 stateUtils
 useContext
 validators
@@ -44,6 +45,7 @@ createState
 globalStateManager
 provideContext
 restoreContext
+runWithContext
 useContext
 
 == ./persistence ==

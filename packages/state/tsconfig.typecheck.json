@@ -14,5 +14,5 @@
     "composite": false,
     "incremental": false
   },
-  "include": ["types/**/*.d.ts"]
+  "include": ["types/**/*.d.ts", "type-tests/**/*.ts"]
 }
