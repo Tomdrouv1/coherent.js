@@ -583,7 +583,7 @@ function elementParts(tagName, element) {
     // children/text/html are content, and key is reconciliation identity:
     // none of them is rendered as an attribute. formatAttributes skips
     // them instead of this copying the props with rest destructuring.
-    const { children, text, html: rawHtml } = element || {};
+    const { children, text: rawText, html: rawHtml } = element || {};
 
     const attributeString = formatAttributes(element, RESERVED_PROPS);
     const open = attributeString ? `<${tagName} ${attributeString}>` : `<${tagName}>`;
@@ -595,11 +595,14 @@ function elementParts(tagName, element) {
 
     const close = `</${tagName}>`;
 
-    // Raw HTML injection (unescaped) — for SSR use cases like syntax highlighting
-    if (rawHtml !== undefined) {
-        const resolved = typeof rawHtml === 'function' ? rawHtml() : rawHtml;
-        return { open, content: isTrustedContent(resolved) ? resolved.__html : String(resolved), children: null, close };
+    // Raw HTML injection (unescaped) — for SSR use cases like syntax
+    // highlighting. null (or a function returning it) means no raw HTML, as
+    // for `text`, instead of the string "null".
+    const html = typeof rawHtml === 'function' ? rawHtml() : rawHtml;
+    if (html !== undefined && html !== null) {
+        return { open, content: isTrustedContent(html) ? html.__html : String(html), children: null, close };
     }
+    const text = typeof rawText === 'function' && !isTrustedContent(rawText) ? rawText() : rawText;
 
     // Content marked by dangerouslySetInnerContent() is emitted verbatim.
     if (isTrustedContent(text)) {
@@ -609,7 +612,7 @@ function elementParts(tagName, element) {
     // Text content (null means "no text", not the string "null")
     let content = '';
     if (text !== undefined && text !== null) {
-        const raw = typeof text === 'function' ? String(text()) : String(text);
+        const raw = String(text);
         if (tagName === 'script' || tagName === 'style') {
             // Prevent </script> or </style> early-terminating the tag
             content = raw

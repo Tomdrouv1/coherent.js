@@ -77,6 +77,17 @@ const PARITY_CASES = [
   ['text: null as no text', { p: { text: null, children: ['after'] } }],
   ['text: undefined as no text', { span: { text: undefined } }],
   ['zero as text and attribute', { span: { text: 0, 'data-n': 0 } }],
+  // Core used to get these wrong itself (htmlFor="x", "color: false",
+  // style="", --main-color, "null", a function's source in class).
+  ['htmlFor as for', { label: { htmlFor: 'email', text: 'Email' } }],
+  ['style values that are null, undefined or false as left out', {
+    div: { style: { color: false, margin: null, padding: undefined, fontSize: '2px' } },
+  }],
+  ['an empty style as no attribute', { div: { style: {}, id: 's' } }],
+  ['custom properties with their case', { div: { style: { '--mainColor': 'red' } } }],
+  ['a text function returning null as no text', { p: { text: () => null, children: ['after'] } }],
+  ['html: null as no raw HTML', { p: { html: null, text: 'fallback' } }],
+  ['a function in class next to className, called', { div: { class: () => 'a', className: 'b' } }],
 ];
 
 describe('createElement() builds what render() renders', () => {

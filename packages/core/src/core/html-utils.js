@@ -116,11 +116,53 @@ function normalizeClassValue(value) {
  * @param {Set<string>} [skip] - Prop names not rendered as attributes
  * @returns {string} Attributes separated by spaces
  */
+/**
+ * Call a function-valued attribute. A throwing one renders as ''.
+ */
+function callAttribute(key, value) {
+  try {
+    return value();
+  } catch (_error) {
+    console.warn(`Error executing function for attribute '${key}':`, {
+      error: _error.message,
+      stack: _error.stack,
+      attributeKey: key,
+    });
+    return '';
+  }
+}
+
+/** Prop names written under another attribute name. */
+const ATTRIBUTE_NAMES = {
+  className: 'class',
+  // Written as is, browsers read `htmlFor` as an unknown `htmlfor`
+  // attribute: the label was not associated with its control.
+  htmlFor: 'for'
+};
+
+/**
+ * Serialize a style object. Null, undefined and false values are left out
+ * (`{ color: active && 'red' }` rendered "color: false"); custom properties
+ * keep their case, since `--mainColor` and `--main-color` are different
+ * properties.
+ */
+function styleToCss(style) {
+  return Object.entries(style)
+    .filter(([, val]) => val !== null && val !== undefined && val !== false)
+    .map(([prop, val]) => {
+      const name = prop.startsWith('--') ? prop : prop.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`);
+      return `${name}: ${val}`;
+    })
+    .join('; ');
+}
+
 export function formatAttributes(props, skip) {
   // `class` and `className` together used to produce two class attributes.
+  // Function values are called first: they were joined as source code.
   if (props && props.class !== undefined && props.className !== undefined) {
     const { className, ...rest } = props;
-    props = { ...rest, class: [normalizeClassValue(props.class), normalizeClassValue(className)].filter(Boolean).join(' ') };
+    const resolve = (key, value) => normalizeClassValue(typeof value === 'function' ? callAttribute(key, value) : value);
+    props = { ...rest, class: [resolve('class', props.class), resolve('className', className)].filter(Boolean).join(' ') };
   }
 
   let formatted = '';
@@ -128,8 +170,7 @@ export function formatAttributes(props, skip) {
     if (Object.prototype.hasOwnProperty.call(props, key) && !(skip && skip.has(key))) {
       let value = props[key];
 
-      // Convert className to class for HTML output
-      const attributeName = key === 'className' ? 'class' : key;
+      const attributeName = ATTRIBUTE_NAMES[key] ?? key;
 
       // Names are emitted unescaped: `{ 'onmouseover="alert(1)" x': 'y' }`
       // used to render a live handler, and a key containing `>` ended the tag.
@@ -148,17 +189,7 @@ export function formatAttributes(props, skip) {
           continue;
         } else {
           // For other function attributes, call them to get the value
-          try {
-            value = value();
-          } catch (_error) {
-            console.warn(`Error executing function for attribute '${key}':`, {
-              error: _error.message,
-              stack: _error.stack,
-              attributeKey: key,
-            });
-            // Consider different fallback strategies based on attribute type
-            value = '';
-          }
+          value = callAttribute(key, value);
         }
       }
 
@@ -174,14 +205,8 @@ export function formatAttributes(props, skip) {
 
       // Handle style objects by converting to CSS string
       if (attributeName === 'style' && typeof value === 'object' && value !== null) {
-        const cssString = Object.entries(value)
-          .map(([prop, val]) => {
-            // Convert camelCase to kebab-case
-            const kebabProp = prop.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`);
-            return `${kebabProp}: ${val}`;
-          })
-          .join('; ');
-        formatted += ` ${attributeName}="${escapeHtml(cssString)}"`;
+        const cssString = styleToCss(value);
+        if (cssString) formatted += ` ${attributeName}="${escapeHtml(cssString)}"`;
       } else if (value === true) {
         formatted += ` ${attributeName}`;
       } else if (value !== false && value !== null && value !== undefined) {

@@ -280,18 +280,19 @@ export function getRenderedChildren(tagName, props) {
   if (!props || VOID_ELEMENTS.has(String(tagName).toLowerCase())) {
     return [];
   }
-  if (props.html !== undefined) {
-    const html = resolveAttributeValue(props.html);
+  // Null (or a function returning it) means "no raw HTML" / "no text" to
+  // core, not the string "null"
+  const html = resolveAttributeValue(props.html);
+  if (html !== undefined && html !== null) {
     return [{ type: 'opaque', html: isTrustedContent(html) ? html.__html : String(html) }];
   }
-  if (isTrustedContent(props.text)) {
-    return [{ type: 'opaque', html: props.text.__html }];
+  const text = resolveAttributeValue(props.text);
+  if (isTrustedContent(text)) {
+    return [{ type: 'opaque', html: text.__html }];
   }
 
   const raw = [];
-  // Null means "no text" to core, not the string "null"
-  if (props.text !== undefined && props.text !== null) {
-    const text = resolveAttributeValue(props.text);
+  if (text !== undefined && text !== null) {
     raw.push({ type: 'text', text: String(text) });
   }
   flatten(props.children, raw);
