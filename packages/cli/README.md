@@ -316,36 +316,19 @@ export const Home = createComponent(({ title = 'Home' }) => ({
 
 ## 🔌 API Routes
 
-`coherent generate api users` writes a route module to `src/api/`. **Known issue:** the generated module imports `createApiRouter`, which `@coherent.js/api` does not export, and passes validation middleware positionally; until the generator is fixed, adjust it to the router's real API:
+`coherent generate api users` writes `src/api/users.js` (and a test) built on the `@coherent.js/api` router: object routes with `validation:` schemas, handlers that return plain data (sent as JSON), and `NotFoundError` for missing items:
 
-```javascript
-// src/api/users.js
-import { createRouter, withValidation } from '@coherent.js/api';
-
-const usersAPI = createRouter();
-
-const userSchema = {
-  type: 'object',
-  properties: {
-    name: { type: 'string', minLength: 1 },
-    email: { type: 'string', format: 'email' }
-  },
-  required: ['name', 'email']
-};
-
-// GET /api/users
-usersAPI.get('/api/users', () => ({ users: [] }));
-
-// POST /api/users (invalid bodies get a 400 before the handler runs)
-usersAPI.post('/api/users', (req) => {
-  const { name, email } = req.body;
-  return { user: { id: 1, name, email } };
-}, { middleware: [withValidation(userSchema)] });
-
-export default usersAPI;
+```text
+GET    /users          List items (?page=1&limit=10&search=text)
+GET    /users/:id      Get one item
+POST   /users          Create an item (201; invalid bodies get a 400 listing the fields)
+PUT    /users/:id      Update an item
+DELETE /users/:id      Delete an item
 ```
 
-Serve it with `usersAPI.createServer().listen(3000)`, or forward `/api/` requests to `usersAPI.handle(req, res)` from another server (see the [API usage guide](../../docs/api/usage.md)).
+The module exports the routes (`usersRoutes`) and a router (`default`). Serve it on its own with `usersAPI.createServer().listen(3000)`, or forward requests to `usersAPI.handle(req, res)` from another server (see the [API usage guide](../../docs/api/usage.md)).
+
+`coherent generate api users --template rpc` generates a JSON-RPC 2.0 endpoint instead: one `POST /rpc/users` route dispatching on `method`, with `result` / `error` envelopes, the standard error codes, batches and notifications.
 
 ## ⚙️ Configuration
 
