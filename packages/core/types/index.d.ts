@@ -385,13 +385,16 @@ export interface WithStateHOC {
 
 /** Memoization options */
 export interface MemoOptions {
+  /**
+   * 'lru' (default) and 'ttl' keep at most `maxSize` entries; 'simple' is an
+   * unbounded Map; 'weak' keys on the identity of the first argument.
+   */
   strategy?: 'lru' | 'ttl' | 'weak' | 'simple';
   maxSize?: number;
+  /** Entry lifetime in milliseconds (default 5000 with the 'ttl' strategy). */
   ttl?: number;
   keyFn?: (...args: any[]) => string;
   keySerializer?: (value: any) => string;
-  compareFn?: (a: any, b: any) => boolean;
-  shallow?: boolean;
   onHit?: (key: string, value: any, args: any[]) => void;
   onMiss?: (key: string, args: any[]) => void;
   onEvict?: (key: string, value: any) => void;
@@ -580,7 +583,7 @@ export const withState: WithStateHOC;
 /** Memoization function */
 export function memo<T extends (...args: any[]) => any>(
   fn: T,
-  options?: MemoOptions
+  options?: MemoOptions | ((props: Parameters<T>[0]) => string)
 ): MemoizedFunction<T>;
 
 /** Validate component structure */

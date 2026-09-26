@@ -27,7 +27,8 @@ import {
   getRegisteredComponents,
   lazy,
   isLazy,
-  evaluateLazy
+  evaluateLazy,
+  memo as memoWithOptions
 } from './components/component-system.js';
 
 // Component lifecycle imports
@@ -356,26 +357,24 @@ export {
   HTMLNestingError
 } from './core/html-nesting-rules.js';
 
-// Simple memoization
-const memoCache = new Map();
-
-export function memo(component, keyGenerator) {
-  return function MemoizedComponent(props = {}) {
-    const key = keyGenerator ? keyGenerator(props) : JSON.stringify(props);
-    if (memoCache.has(key)) {
-      return memoCache.get(key);
-    }
-    const result = component(props);
-    memoCache.set(key, result);
-
-    // Simple cache cleanup - keep only last 100 items
-    if (memoCache.size > 100) {
-      const firstKey = memoCache.keys().next().value;
-      memoCache.delete(firstKey);
-    }
-
-    return result;
-  };
+/**
+ * Memoize a component (or any function). Each memoized function has its own
+ * cache: this used to be one module-level Map keyed only by props, so two
+ * components called with the same props returned each other's output.
+ *
+ * @param {Function} component - Component or function to memoize
+ * @param {Function|Object} [options] - Key function `(props) => key`, or
+ *   options `{ keyFn, maxSize, strategy, ttl, stats, onHit, onMiss, onEvict }`
+ * @returns {Function} Memoized function with `clear()`, `has()`, `size()`...
+ */
+export function memo(component, options = {}) {
+  // Components receive `{}` when called without props, as they always have.
+  const withDefaultProps = (props = {}, ...rest) => component(props, ...rest);
+  if (typeof options === 'function') {
+    const keyGenerator = options;
+    return memoWithOptions(withDefaultProps, { keyFn: (props = {}, ...rest) => keyGenerator(props, ...rest) });
+  }
+  return memoWithOptions(withDefaultProps, options);
 }
 
 export function validateComponent(obj) {

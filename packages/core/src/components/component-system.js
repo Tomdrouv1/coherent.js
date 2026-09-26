@@ -1209,22 +1209,37 @@ export const lazyUtils = {
 /**
  * Enhanced memoization with multiple caching strategies
  */
+const functionIds = new WeakMap();
+let nextFunctionId = 0;
+
+function functionId(fn) {
+    let id = functionIds.get(fn);
+    if (id === undefined) {
+        id = ++nextFunctionId;
+        functionIds.set(fn, id);
+    }
+    return id;
+}
+
+/**
+ * Default memo key: JSON with functions identified by reference.
+ * Plain JSON.stringify drops functions, so calls differing only in a
+ * callback prop (onSelect) shared a key and got the first call's result.
+ */
+function serializeMemoKey(value) {
+    return JSON.stringify(value, (_key, v) => (typeof v === 'function' ? `\u0000fn:${functionId(v)}` : v));
+}
+
 export function memo(fn, options = {}) {
     const {
         // Caching strategy
         strategy = 'lru',           // 'lru', 'ttl', 'weak', 'simple'
-        maxSize = 100,              // Maximum cache entries
+        maxSize = 100,              // Maximum cache entries ('lru' and 'ttl')
         ttl = null,                 // Time to live in milliseconds
 
         // Key generation
         keyFn = null,               // Custom key function
-        keySerializer = JSON.stringify,  // Default serialization
-
-        // Comparison
-        // eslint-disable-next-line no-unused-vars
-        compareFn = null,           // Custom equality comparison
-        // eslint-disable-next-line no-unused-vars
-        shallow = false,            // Shallow comparison for objects
+        keySerializer = serializeMemoKey,
 
         // Lifecycle hooks
         onHit = null,               // Called on cache hit
@@ -1238,90 +1253,95 @@ export function memo(fn, options = {}) {
         debug = false               // Debug logging
     } = options;
 
-    // Choose cache implementation based on strategy
-    let cache;
-    const stats_data = stats ? {hits: 0, misses: 0, evictions: 0} : null;
+    const statsData = {hits: 0, misses: 0, evictions: 0};
+    const expiresIn = strategy === 'ttl' && ttl === null ? 5000 : ttl;
 
-    switch (strategy) {
-        case 'lru':
-            cache = new LRUCache(maxSize, {onEvict: onEvict});
-            break;
-        case 'ttl':
-            cache = new TTLCache(ttl, {onEvict: onEvict});
-            break;
-        case 'weak':
-            cache = new WeakMap();
-            break;
-        default:
-            cache = new Map();
-    }
+    // Every memoized function owns its cache. Entries are {value, expires}
+    // so falsy results are cached too and expiry is checked on read (no
+    // timers keeping the process alive).
+    const store = strategy === 'simple'
+        ? new Map()
+        : new LRUCache(maxSize, {
+            onEvict: (key, entry) => {
+                statsData.evictions++;
+                if (onEvict) onEvict(key, entry.value);
+            }
+        });
+    // 'weak' keys on the identity of the first argument, so entries go away
+    // with it. Primitive first arguments aren't cached.
+    const weakStore = strategy === 'weak' ? new WeakMap() : null;
 
-    // Generate cache key
     const generateKey = keyFn || ((...args) => {
         if (args.length === 0) return '__empty__';
         if (args.length === 1) return keySerializer(args[0]);
         return keySerializer(args);
     });
 
-    // Compare values for equality (inline via compareFn or defaults where used)
+    const isFresh = (entry) => entry.expires === null || Date.now() < entry.expires;
+
+    const lookup = (args) => {
+        if (weakStore) {
+            const [first] = args;
+            const cacheable = first !== null && (typeof first === 'object' || typeof first === 'function');
+            return {cacheable, key: first, entries: weakStore};
+        }
+        try {
+            return {cacheable: true, key: generateKey(...args), entries: store};
+        } catch {
+            // Circular or BigInt arguments can't be serialized: don't cache.
+            return {cacheable: false};
+        }
+    };
 
     const memoizedFn = (...args) => {
-        const key = generateKey(...args);
+        const {cacheable, key, entries} = lookup(args);
+        if (!cacheable) return fn(...args);
 
-        // Check cache hit
-        if (cache.has(key)) {
-            const cached = cache.get(key);
-
-            // For TTL cache or custom validation
-            if (cached && (!cached.expires || Date.now() < cached.expires)) {
-                if (debug) console.log(`Memo cache hit for key: ${key}`);
+        const cached = entries.get(key);
+        if (cached !== undefined) {
+            if (isFresh(cached)) {
+                if (debug) console.log(`Memo cache hit for key: ${String(key)}`);
                 if (onHit) onHit(key, cached.value, args);
-                if (stats_data) stats_data.hits++;
-
-                return cached.value || cached;
-            } else {
-                // Expired entry
-                cache.delete(key);
+                statsData.hits++;
+                return cached.value;
             }
+            entries.delete(key);
         }
 
-        // Cache miss - compute result
-        if (debug) console.log(`Memo cache miss for key: ${key}`);
+        if (debug) console.log(`Memo cache miss for key: ${String(key)}`);
         if (onMiss) onMiss(key, args);
-        if (stats_data) stats_data.misses++;
+        statsData.misses++;
 
-        const result = fn(...args);
-
-        // Store in cache
-        const cacheEntry = ttl ?
-            {value: result, expires: Date.now() + ttl} :
-            result;
-
-        cache.set(key, cacheEntry);
-
-        return result;
+        const value = fn(...args);
+        entries.set(key, {value, expires: expiresIn ? Date.now() + expiresIn : null});
+        return value;
     };
 
     // Attach utility methods
-    memoizedFn.cache = cache;
-    memoizedFn.clear = () => cache.clear();
-    memoizedFn.delete = (key) => cache.delete(key);
-    memoizedFn.has = (key) => cache.has(key);
-    memoizedFn.size = () => cache.size;
+    memoizedFn.cache = weakStore || (store instanceof LRUCache ? store.cache : store);
+    memoizedFn.clear = () => {
+        if (!weakStore) store.clear();
+    };
+    memoizedFn.delete = (key) => (weakStore || store).delete(key);
+    memoizedFn.has = (key) => {
+        const entry = (weakStore || store).get(key);
+        return entry !== undefined && isFresh(entry);
+    };
+    memoizedFn.size = () => (weakStore ? undefined : store.size);
 
-    if (stats_data) {
-        memoizedFn.stats = () => ({...stats_data});
+    if (stats) {
+        memoizedFn.stats = () => ({...statsData});
         memoizedFn.resetStats = () => {
-            stats_data.hits = 0;
-            stats_data.misses = 0;
-            stats_data.evictions = 0;
+            statsData.hits = 0;
+            statsData.misses = 0;
+            statsData.evictions = 0;
         };
     }
 
     // Force recomputation for specific args
     memoizedFn.refresh = (...args) => {
-        const key = generateKey(...args);
-        cache.delete(key);
+        const {cacheable, key, entries} = lookup(args);
+        if (cacheable) entries.delete(key);
         return memoizedFn(...args);
     };
 
@@ -1447,88 +1467,6 @@ class LRUCache {
     }
 
     clear() {
-        this.cache.clear();
-    }
-
-    get size() {
-        return this.cache.size;
-    }
-}
-
-/**
- * TTL Cache implementation
- */
-class TTLCache {
-    constructor(ttl, options = {}) {
-        this.ttl = ttl;
-        this.cache = new Map();
-        this.timers = new Map();
-        this.onEvict = options.onEvict;
-    }
-
-    get(key) {
-        if (this.cache.has(key)) {
-            const entry = this.cache.get(key);
-
-            if (Date.now() < entry.expires) {
-                return entry.value;
-            } else {
-                // Expired
-                this.delete(key);
-            }
-        }
-        return undefined;
-    }
-
-    set(key, value) {
-        // Clear existing timer
-        if (this.timers.has(key)) {
-            clearTimeout(this.timers.get(key));
-        }
-
-        const expires = Date.now() + this.ttl;
-        this.cache.set(key, {value, expires});
-
-        // Set expiration timer
-        const timer = setTimeout(() => {
-            this.delete(key);
-        }, this.ttl);
-
-        this.timers.set(key, timer);
-    }
-
-    has(key) {
-        if (this.cache.has(key)) {
-            const entry = this.cache.get(key);
-            return Date.now() < entry.expires;
-        }
-        return false;
-    }
-
-    delete(key) {
-        const had = this.cache.has(key);
-
-        if (had) {
-            const entry = this.cache.get(key);
-            this.cache.delete(key);
-
-            if (this.timers.has(key)) {
-                clearTimeout(this.timers.get(key));
-                this.timers.delete(key);
-            }
-
-            if (this.onEvict) {
-                this.onEvict(key, entry.value);
-            }
-        }
-
-        return had;
-    }
-
-    clear() {
-        // Clear all timers
-        this.timers.forEach(timer => clearTimeout(timer));
-        this.timers.clear();
         this.cache.clear();
     }
 
