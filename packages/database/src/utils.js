@@ -5,7 +5,7 @@
  */
 
 import { DatabaseManager } from './connection-manager.js';
-// Migration utilities are handled by the createMigration factory function
+import { createMigration } from './migration.js';
 
 /**
  * Model registry for managing model classes
@@ -108,7 +108,6 @@ export function getAllModels() {
  * });
  */
 export async function runMigrations(db, config = {}) {
-  const { createMigration } = await import('./migration.js');
   const migration = createMigration(db, config);
   return await migration.run();
 }
@@ -125,7 +124,6 @@ export async function runMigrations(db, config = {}) {
  * const rolledBack = await rollbackMigrations(db, 2);
  */
 export async function rollbackMigrations(db, steps = 1, config = {}) {
-  const { createMigration } = await import('./migration.js');
   const migration = createMigration(db, config);
   return await migration.rollback(steps);
 }
@@ -141,7 +139,6 @@ export async function rollbackMigrations(db, steps = 1, config = {}) {
  * const filePath = await createMigration('create_users_table');
  */
 export async function createMigrationFile(name, config = {}) {
-  const { createMigration } = await import('./migration.js');
   const migration = createMigration(null, config);
   return await migration.create(name);
 }
