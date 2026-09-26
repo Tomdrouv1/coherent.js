@@ -98,9 +98,11 @@ const Page = (user) => ({
 
 On Node, context lives in `AsyncLocalStorage`: a value provided by one request
 is never visible to another, including across `await`s. `runWithContext(fn)`
-gives `fn` a fresh scope that ends when it returns; use it per request, and
-always around a streaming render, whose yields otherwise lose provider values.
-Browsers have no `AsyncLocalStorage`, so there context is only reliable for
+gives `fn` a fresh scope that ends when it returns; use it per request.
+`provideContext()` throws outside it on Node: there the value would outlive the
+request (a keep-alive connection carries it into the next one). A provider
+evaluates its subtree's components with the value set, so it needs no
+`runWithContext()` of its own. Browsers have no `AsyncLocalStorage`, so there context is only reliable for
 synchronous rendering. `useContext(key)` falls back to `globalStateManager`
 when no context was provided for `key`.
 

@@ -990,7 +990,7 @@ app.get('/profile', (req, res) => runWithContext(async () => {
 render({ div: { children: [createContextProvider('theme', 'dark', ThemedButton)] } });
 ```
 
-On Node, context lives in `AsyncLocalStorage`: a value provided in one request is never visible to a concurrent one. `runWithContext(fn, values?)` gives `fn` a fresh scope that ends when it returns — use it per request, and always around a streaming render. Browsers have no `AsyncLocalStorage`, so there the context is only reliable for synchronous rendering. `useContext(key)` falls back to `globalStateManager` when nothing was provided for `key`.
+On Node, context lives in `AsyncLocalStorage`: a value provided in one request is never visible to a concurrent one. `runWithContext(fn, values?)` gives `fn` a fresh scope that ends when it returns — use it per request. `provideContext()` throws outside it on Node, where the value would outlive the request (a keep-alive connection carries it into the next one). `createContextProvider()` evaluates its subtree's components with the value set, so it works with or without `runWithContext()`. Browsers have no `AsyncLocalStorage`, so there the context is only reliable for synchronous rendering. `useContext(key)` falls back to `globalStateManager` when nothing was provided for `key`.
 
 ### Reactive Persistence
 

@@ -86,14 +86,12 @@ export const globalStateManager = {
 // On Node the holder lives in an AsyncLocalStorage, so it follows each
 // request's async execution:
 //
-// - runWithContext() (and a provider's render-callback form) runs its callback
-//   with a fresh holder that it owns. Inside it every change updates that
-//   holder in place, so the value stays put across the awaits and yields of
-//   an async or streaming render, and nothing leaks out of it.
-// - Outside any owned holder, a change never mutates the holder it found:
-//   it moves the current execution onto a new one with `enterWith`. Two
-//   concurrent handlers that each provide a value and then `await` read back
-//   their own value, and nothing becomes visible process-wide.
+// - runWithContext() (and a provider) runs its callback with a fresh holder
+//   that it owns. Inside it every change updates that holder in place, so
+//   the value stays put across the awaits and yields of an async or
+//   streaming render, and nothing leaks out of it.
+// - Outside any owned holder there is nothing request-scoped to write to, so
+//   providing a value throws (see setScope()).
 //
 // Browsers have no AsyncLocalStorage. There a single module holder is updated
 // in place, which is exact for synchronous rendering; a value read after an
@@ -126,15 +124,23 @@ function currentScope() {
 }
 
 /**
- * Make `scope` current for the rest of this execution, preferring `holder`
- * (the one the change was computed from) when it may be updated in place.
+ * Make `scope` current in `holder` (the scope of the enclosing
+ * runWithContext() call, or the browser's single holder).
+ *
+ * There is deliberately no fallback outside runWithContext() on the server.
+ * AsyncLocalStorage#enterWith() attached the value to the caller's async
+ * context, and a request's async context is shared with the next request
+ * on the same keep-alive connection: the value leaked to other users (and
+ * a module-level store would leak to every request).
  */
 function setScope(scope, holder = currentHolder()) {
-    if (holder?.owned) {
-        holder.scope = scope;
-    } else {
-        asyncStorage.enterWith({ scope, owned: false });
+    if (!holder?.owned) {
+        throw new Error(
+            'Context can only be provided inside runWithContext() on the server: outside it the value ' +
+            'would leak into other requests. Wrap each request or render: runWithContext(() => ...).'
+        );
     }
+    holder.scope = scope;
 }
 
 /**
@@ -189,11 +195,14 @@ export function runWithContext(fn, values) {
 }
 
 /**
- * Provide a context value for the rest of the current execution, remembering
- * the previous one so {@link restoreContext} can unwind it.
+ * Provide a context value for the rest of the current runWithContext() scope,
+ * remembering the previous one so {@link restoreContext} can unwind it.
  *
- * On Node the value is scoped to the calling async execution: a concurrent
- * request does not see it, even across `await`s.
+ * On Node it must be called inside {@link runWithContext} (it throws
+ * otherwise); a concurrent request does not see the value, even across
+ * `await`s. In browsers it may be called anywhere.
+ *
+ * @throws {Error} On Node, when called outside runWithContext()
  *
  * @param {string} key - Context key
  * @param {*} value - Context value
@@ -206,10 +215,11 @@ export function provideContext(key, value) {
  * Create a context provider component.
  *
  * The provider is a zero-argument function component. When the renderer calls
- * it, it returns its children between two marker components that enter and
- * leave the context; the renderer renders array items in order, so the
- * children see the value and their following siblings do not. Nothing is
- * pre-rendered, so the renderer escapes the children exactly once.
+ * it, it evaluates the function components and function-valued props below
+ * it with the value provided, and returns the resulting plain tree; its
+ * siblings do not see the value. Nothing is pre-rendered, so the renderer
+ * escapes the children exactly once. Values read later, such as in an event
+ * handler, do not see it.
  *
  * Called with a render function instead, the provider runs
  * `renderFunction(children)` with the context provided and returns its result.
@@ -221,36 +231,112 @@ export function provideContext(key, value) {
  * @returns {Function} Context provider component
  */
 export function createContextProvider(key, value, children) {
-    // Rest parameters keep `length` at 0, so core's renderer calls this as an
-    // ordinary function component instead of handing it a callback that
-    // returns an HTML string (which it would then escape a second time).
+    // Rest parameters keep `length` at 0, so a renderer calls this as an
+    // ordinary function component.
     function contextProvider(...args) {
         const renderFunction = args[0];
+        const scope = withValue(currentScope(), key, value);
 
         if (typeof renderFunction === 'function') {
-            return runInScope(withValue(currentScope(), key, value), renderFunction, [children]);
+            return runInScope(scope, renderFunction, [children]);
         }
 
-        let holder;
-        let outer = EMPTY_SCOPE;
-        return [
-            function enterContext() {
-                holder = currentHolder();
-                outer = holder?.scope ?? EMPTY_SCOPE;
-                setScope(withValue(outer, key, value), holder);
-                return null;
-            },
-            function contextChildren() {
-                return children;
-            },
-            function leaveContext() {
-                setScope(outer, holder);
-                return null;
-            }
-        ];
+        // Evaluate the function components below the provider inside its
+        // scope, and hand the renderer the resulting plain tree. The scope
+        // is restored even when a child throws; enter/leave marker
+        // components used to leave the value set for the next request when
+        // a child threw before the "leave" marker ran.
+        return runInScope(scope, resolveComponents, [children]);
     }
 
     return contextProvider;
+}
+
+const TAG_NAME = /^[a-zA-Z][a-zA-Z0-9-]*$/;
+
+/**
+ * Call the function components in a tree the way the renderer does (no
+ * arguments, following returned functions), so context reads happen now.
+ * Unchanged nodes are returned as they are (trusted-content markers keep
+ * their brand); event handlers are props and are never called.
+ */
+function resolveComponents(node, depth = 0) {
+    if (depth > 1000) return node;
+
+    if (typeof node === 'function') {
+        return resolveComponents(node(), depth + 1);
+    }
+    if (Array.isArray(node)) {
+        let changed = false;
+        const resolved = node.map((child) => {
+            const next = resolveComponents(child, depth + 1);
+            if (next !== child) changed = true;
+            return next;
+        });
+        return changed ? resolved : node;
+    }
+    if (!node || typeof node !== 'object') return node;
+
+    if (node.__isLazy === true && typeof node.evaluate === 'function') {
+        return resolveComponents(node.evaluate(), depth + 1);
+    }
+
+    const tags = Object.keys(node);
+    if (tags.length === 0 || !tags.every((tag) => TAG_NAME.test(tag))) return node;
+
+    let changed = false;
+    const resolved = {};
+    for (const tag of tags) {
+        let content = node[tag];
+        if (typeof content === 'function') {
+            content = resolveComponents(content(), depth + 1);
+        }
+        if (content && typeof content === 'object' && !Array.isArray(content) && !isTrusted(content)) {
+            content = resolveProps(content, depth);
+        }
+        if (content !== node[tag]) changed = true;
+        resolved[tag] = content;
+    }
+    return changed ? resolved : node;
+}
+
+function isTrusted(value) {
+    return value[Symbol.for('coherent.js.trustedContent')] === true;
+}
+
+/**
+ * Evaluate the function-valued props the renderer would call (`text`,
+ * `html` and attributes other than `on*` event handlers) and the children.
+ * An attribute function that throws is left for the renderer, which
+ * reports it and renders an empty value.
+ */
+function resolveProps(props, depth) {
+    let next = props;
+    const set = (key, value) => {
+        if (next === props) next = { ...props };
+        next[key] = value;
+    };
+
+    for (const key of Object.keys(props)) {
+        const value = props[key];
+        if (key === 'children') {
+            if (value !== undefined && value !== null) {
+                const children = resolveComponents(value, depth + 1);
+                if (children !== value) set(key, children);
+            }
+        } else if (typeof value === 'function' && key !== 'key') {
+            if (key === 'text' || key === 'html') {
+                set(key, value());
+            } else if (!key.startsWith('on')) {
+                try {
+                    set(key, value());
+                } catch {
+                    // left in place for the renderer
+                }
+            }
+        }
+    }
+    return next;
 }
 
 /**

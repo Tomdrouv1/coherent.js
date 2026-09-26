@@ -9,8 +9,12 @@ import {
   globalStateManager
 } from '../src/state-manager.js';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import http from 'node:http';
 
 const tick = (ms = 0) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Run a test body the way a request handler should: in its own scope. */
+const inRequest = (fn) => () => runWithContext(fn);
 
 // A fresh element per use: core's renderer rejects the same object instance
 // appearing twice in one tree as a circular reference.
@@ -126,20 +130,19 @@ describe('context isolation between concurrent requests', () => {
   // provideContext() wrote to one module-level Map, so the handler that
   // resumed last saw whichever request provided last.
   it('keeps each request handler on its own value across awaits', async () => {
-    async function handleRequest(user, delay) {
-      provideContext('user', user);
-      await tick(delay);
-      const seen = useContext('user');
-      restoreContext('user');
-      return seen;
-    }
+    const handleRequest = (user, delay) =>
+      runWithContext(async () => {
+        provideContext('user', user);
+        await tick(delay);
+        return useContext('user');
+      });
 
     const seen = await Promise.all([handleRequest('alice', 1), handleRequest('bob', 5)]);
 
     expect(seen).toEqual(['alice', 'bob']);
   });
 
-  it('isolates runWithContext scopes from each other and from the caller', async () => {
+  it('isolates runWithContext scopes from each other and from the caller', inRequest(async () => {
     provideContext('user', 'outer');
 
     const seen = await Promise.all(
@@ -159,7 +162,7 @@ describe('context isolation between concurrent requests', () => {
     ]);
     expect(useContext('user')).toBe('outer');
     restoreContext('user');
-  });
+  }));
 
   it('seeds runWithContext with initial values', () => {
     const seen = runWithContext(() => useContext('locale'), { locale: 'fr' });
@@ -275,25 +278,25 @@ describe('clearAllContexts', () => {
     globalStateManager.clear();
   });
 
-  it('removes provided contexts', () => {
+  it('removes provided contexts', inRequest(() => {
     provideContext('currentUser', { id: 42 });
     expect(useContext('currentUser')).toEqual({ id: 42 });
 
     clearAllContexts();
 
     expect(useContext('currentUser')).toBeUndefined();
-  });
+  }));
 
-  it('does not leak a context into the next render', () => {
+  it('does not leak a context into the next render', inRequest(() => {
     // Render one: an authenticated request.
     provideContext('currentUser', { id: 42, email: 'alice@example.com' });
     clearAllContexts();
 
     // Render two: a different, anonymous visitor.
     expect(useContext('currentUser')).toBeUndefined();
-  });
+  }));
 
-  it('clears every provided key, not just the most recent', () => {
+  it('clears every provided key, not just the most recent', inRequest(() => {
     provideContext('theme', 'dark');
     provideContext('locale', 'fr');
     provideContext('currentUser', { id: 7 });
@@ -303,20 +306,20 @@ describe('clearAllContexts', () => {
     expect(useContext('theme')).toBeUndefined();
     expect(useContext('locale')).toBeUndefined();
     expect(useContext('currentUser')).toBeUndefined();
-  });
+  }));
 
-  it('clears nested providers of the same key', () => {
+  it('clears nested providers of the same key', inRequest(() => {
     provideContext('theme', 'dark');
     provideContext('theme', 'light');
 
     clearAllContexts();
 
     expect(useContext('theme')).toBeUndefined();
-  });
+  }));
 
   // What the previous implementation was trying to protect by clearing
   // nothing: globalState holds more than contexts.
-  it('leaves unrelated global state alone', () => {
+  it('leaves unrelated global state alone', inRequest(() => {
     globalStateManager.set('requestId', 'abc-123');
     provideContext('theme', 'dark');
 
@@ -324,9 +327,9 @@ describe('clearAllContexts', () => {
 
     expect(globalStateManager.get('requestId')).toBe('abc-123');
     expect(useContext('theme')).toBeUndefined();
-  });
+  }));
 
-  it('restores a pre-existing value rather than deleting the key', () => {
+  it('restores a pre-existing value rather than deleting the key', inRequest(() => {
     globalStateManager.set('theme', 'system');
     provideContext('theme', 'dark');
     expect(useContext('theme')).toBe('dark');
@@ -334,9 +337,9 @@ describe('clearAllContexts', () => {
     clearAllContexts();
 
     expect(useContext('theme')).toBe('system');
-  });
+  }));
 
-  it('leaves restoreContext harmless afterwards', () => {
+  it('leaves restoreContext harmless afterwards', inRequest(() => {
     provideContext('theme', 'dark');
     clearAllContexts();
 
@@ -344,5 +347,131 @@ describe('clearAllContexts', () => {
     restoreContext('theme');
 
     expect(useContext('theme')).toBeUndefined();
+  }));
+});
+
+
+/**
+ * Regression: outside runWithContext() provideContext() used
+ * AsyncLocalStorage#enterWith(), which attaches the value to the caller's
+ * async context. Node runs every request of a keep-alive connection in the
+ * same one, so a value provided while handling one user's request was read by
+ * the next request on that socket.
+ */
+describe('context outside runWithContext() on the server', () => {
+  it('throws instead of providing a value that outlives the call', () => {
+    expect(() => provideContext('user', 'alice')).toThrow(/runWithContext/);
+    expect(useContext('user')).toBeUndefined();
+  });
+
+  it('does not carry a value into the next request on a keep-alive connection', async () => {
+    const server = http.createServer(async (req, res) => {
+      if (req.url === '/login') {
+        try {
+          provideContext('user', 'alice');
+        } catch {
+          // the fix: refused outside runWithContext()
+        }
+      }
+      await tick(5);
+      res.end(String(useContext('user')));
+    });
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const agent = new http.Agent({ keepAlive: true, maxSockets: 1 });
+    const get = (path) =>
+      new Promise((resolve, reject) => {
+        http
+          .get({ host: '127.0.0.1', port: server.address().port, path, agent }, (res) => {
+            let body = '';
+            res.on('data', (chunk) => (body += chunk));
+            res.on('end', () => resolve(body));
+          })
+          .on('error', reject);
+      });
+
+    try {
+      await get('/login');
+      expect(await get('/other')).toBe('undefined');
+    } finally {
+      agent.destroy();
+      await new Promise((resolve) => server.close(resolve));
+    }
+  });
+
+  it('lets restoreContext() and clearAllContexts() run when there is nothing to remove', () => {
+    expect(() => restoreContext('user')).not.toThrow();
+    expect(() => clearAllContexts()).not.toThrow();
+  });
+});
+
+/**
+ * Regression: a provider entered its value with one marker component and left
+ * it with another after its children. A child that threw skipped the "leave"
+ * marker, so the value stayed current for the rest of the scope (and, outside
+ * runWithContext(), for the next request on the connection).
+ */
+describe('createContextProvider with a throwing child', () => {
+  const failing = () => {
+    throw new Error('boom');
+  };
+
+  it('restores the outer value when rendering fails', inRequest(() => {
+    expect(() =>
+      render({ div: { children: [createContextProvider('user', 'alice', failing)] } })
+    ).toThrow(/boom/);
+
+    expect(useContext('user')).toBeUndefined();
+  }));
+
+  it('restores the outer value outside runWithContext()', () => {
+    expect(() =>
+      render({ div: { children: [createContextProvider('user', 'alice', { p: { children: [failing] } })] } })
+    ).toThrow(/boom/);
+
+    expect(useContext('user')).toBeUndefined();
+  });
+
+  it('keeps nested providers balanced when an inner child fails', inRequest(() => {
+    provideContext('theme', 'outer');
+    const tree = createContextProvider('theme', 'dark', {
+      section: { children: [createContextProvider('theme', 'light', failing)] }
+    });
+
+    expect(() => render({ main: { children: [tree] } })).toThrow(/boom/);
+
+    expect(useContext('theme')).toBe('outer');
+  }));
+});
+
+describe('createContextProvider subtree evaluation', () => {
+  it('evaluates text, html and attribute functions in the context', () => {
+    const html = render(
+      createContextProvider('theme', 'dark', {
+        p: {
+          title: () => useContext('theme'),
+          text: () => `text-${useContext('theme')}`,
+          children: [{ span: { html: () => `<b>${useContext('theme')}</b>` } }]
+        }
+      })
+    );
+
+    expect(html).toBe('<p title="dark">text-dark<span><b>dark</b></span></p>');
+  });
+
+  it('never calls event handlers', () => {
+    const onclick = vi.fn();
+    const html = render(createContextProvider('theme', 'dark', { button: { onclick, text: 'Go' } }));
+
+    expect(onclick).not.toHaveBeenCalled();
+    expect(html).toBe('<button>Go</button>');
+  });
+
+  it('keeps trusted content markers usable', async () => {
+    const { dangerouslySetInnerContent } = await import('@coherent.js/core');
+    const html = render(
+      createContextProvider('theme', 'dark', { div: { children: [dangerouslySetInnerContent('<i>raw</i>')] } })
+    );
+
+    expect(html).toBe('<div><i>raw</i></div>');
   });
 });

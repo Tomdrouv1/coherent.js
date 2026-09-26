@@ -13,7 +13,8 @@ import {
   createValidatedState,
   validators,
   provideContext,
-  useContext
+  useContext,
+  runWithContext
 } from '@coherent.js/state';
 
 // =============================================================================
@@ -132,23 +133,25 @@ try {
 
 console.log('\n📦 Example 5: SSR Context API');
 
-// Simulate a request handler
+// Simulate a request handler: each request runs in its own context scope
 function handleRequest(userId) {
-  const requestState = {
-    userId,
-    timestamp: new Date().toISOString(),
-    theme: 'dark'
-  };
+  return runWithContext(() => {
+    const requestState = {
+      userId,
+      timestamp: new Date().toISOString(),
+      theme: 'dark'
+    };
 
-  // Provide context for this request
-  provideContext('request', requestState);
+    // Provide context for this request (visible to nothing outside it)
+    provideContext('request', requestState);
 
-  // Render components that use the context
-  const html = render(UserDashboard());
+    // Render components that use the context
+    const html = render(UserDashboard());
 
-  console.log('Rendered HTML:', html);
+    console.log('Rendered HTML:', html);
 
-  return html;
+    return html;
+  });
 }
 
 function UserDashboard() {

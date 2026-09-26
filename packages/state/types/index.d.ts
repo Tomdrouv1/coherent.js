@@ -303,9 +303,10 @@ export const globalStateManager: {
 export function runWithContext<T>(fn: () => T, values?: Record<string, unknown>): T;
 
 /**
- * Push a context value for the rest of the current execution, remembering the
- * previous one so {@link restoreContext} can unwind it. On Node the value is
- * scoped to the calling async execution, so concurrent requests do not see it.
+ * Push a context value for the rest of the current runWithContext() scope,
+ * remembering the previous one so {@link restoreContext} can unwind it. On
+ * Node it throws outside runWithContext(), where the value would leak into
+ * other requests.
  */
 export function provideContext(key: string, value: unknown): void;
 
@@ -313,9 +314,10 @@ export function provideContext(key: string, value: unknown): void;
 export interface ContextProvider<C = unknown> {
   /**
    * Called by the renderer as a zero-argument component: returns the children
-   * between two marker components that enter and leave the context.
+   * with their function components and function-valued props evaluated in
+   * the context.
    */
-  (): [() => null, () => C, () => null];
+  (): C;
   /**
    * Run `renderFunction(children)` with the context provided. On Node an
    * async render function keeps the context across its awaits.
