@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { render } from '@coherent.js/core';
 import { StructuredDataBuilder, createStructuredData, generateStructuredData } from '../src/structured-data.js';
 
 describe('StructuredDataBuilder', () => {
@@ -173,5 +174,46 @@ describe('generateStructuredData', () => {
     const result = generateStructuredData('custom', { '@type': 'Custom', name: 'test' });
     const data = JSON.parse(result.script.text);
     expect(data['@type']).toBe('Custom');
+  });
+});
+
+describe('JSON-LD script safety', () => {
+  it('escapes <, >, &, U+2028 and U+2029 as JSON unicode escapes', () => {
+    const result = generateStructuredData('custom', {
+      '@type': 'Thing',
+      name: 'a<!--<script>b</script>c & d > e f g'
+    });
+
+    expect(result.script.text).toBe(
+      '{\n' +
+      '  "@type": "Thing",\n' +
+      '  "name": "a\\u003c!--\\u003cscript\\u003eb\\u003c/script\\u003ec \\u0026 d \\u003e e\\u2028f\\u2029g"\n' +
+      '}'
+    );
+    // Still the same data once parsed.
+    expect(JSON.parse(result.script.text).name).toBe('a<!--<script>b</script>c & d > e f g');
+  });
+
+  it('applies the same escaping to toJSON()', () => {
+    const builder = new StructuredDataBuilder().add({ name: '<!--<script>' });
+    expect(builder.toJSON()).toBe('{\n  "name": "\\u003c!--\\u003cscript\\u003e"\n}');
+  });
+
+  it('cannot swallow the rest of the page when rendered by core', () => {
+    const jsonLd = generateStructuredData('custom', { name: 'Evil <!--<script>' });
+    const html = render({
+      html: {
+        children: [
+          { head: { children: [jsonLd] } },
+          { body: { children: [{ p: { text: 'after' } }] } }
+        ]
+      }
+    });
+
+    expect(html).toContain(
+      '<head><script type="application/ld+json">{\n  "name": "Evil \\u003c!--\\u003cscript\\u003e"\n}</script></head>' +
+      '<body><p>after</p></body>'
+    );
+    expect(html).not.toContain('<!--');
   });
 });

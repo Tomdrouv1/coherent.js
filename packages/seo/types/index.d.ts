@@ -351,10 +351,14 @@ export class StructuredDataBuilder {
   faq(questions: FAQItem[]): this;
   person(data: PersonData): this;
 
-  /** Render a `<script type="application/ld+json">` node, or `null` if empty */
+  /**
+   * Render a `<script type="application/ld+json">` node, or `null` if empty.
+   * `<`, `>`, `&`, U+2028 and U+2029 are emitted as `\uXXXX` escapes so no
+   * value can end or corrupt the script element.
+   */
   build(): CoherentNode | null;
 
-  /** Serialize the schemas as a JSON string */
+  /** Serialize the schemas as a JSON string, escaped as in {@link build} */
   toJSON(): string;
 
   /** Discard all schemas */

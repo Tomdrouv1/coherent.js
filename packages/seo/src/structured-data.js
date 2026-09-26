@@ -6,6 +6,34 @@
  * @module seo/structured-data
  */
 
+/** Characters that could end or confuse the HTML parser inside a `<script>`. */
+const SCRIPT_UNSAFE = /[<>&\u2028\u2029]/g;
+const SCRIPT_ESCAPES = {
+  '<': '\\u003c',
+  '>': '\\u003e',
+  '&': '\\u0026',
+  '\u2028': '\\u2028',
+  '\u2029': '\\u2029'
+};
+
+/**
+ * Serialize JSON-LD so it is safe to place inside `<script type="application/ld+json">`.
+ *
+ * `<`, `>`, `&`, U+2028 and U+2029 are written as JSON `\uXXXX` escapes. The
+ * result parses to the same data, but a value such as `</script>` or
+ * `<!--<script>` can no longer end the element early or push the HTML parser
+ * into the script-data-double-escaped state (which swallows the rest of the
+ * page).
+ *
+ * @param {unknown} data
+ * @returns {string | undefined}
+ */
+function serializeJsonLd(data) {
+  const json = JSON.stringify(data, null, 2);
+  // JSON.stringify(undefined) is undefined; keep returning that as before.
+  return json === undefined ? json : json.replace(SCRIPT_UNSAFE, (char) => SCRIPT_ESCAPES[char]);
+}
+
 /**
  * Structured Data Builder
  * Creates JSON-LD structured data
@@ -180,17 +208,18 @@ export class StructuredDataBuilder {
     return {
       script: {
         type: 'application/ld+json',
-        text: JSON.stringify(data, null, 2)
+        text: serializeJsonLd(data)
       }
     };
   }
 
   /**
-   * Build as JSON string
+   * Build as JSON string (with `<`, `>`, `&`, U+2028/U+2029 escaped, so it is
+   * also safe to embed in a `<script>` element)
    */
   toJSON() {
     const data = this.schemas.length === 1 ? this.schemas[0] : this.schemas;
-    return JSON.stringify(data, null, 2);
+    return serializeJsonLd(data);
   }
 
   /**
