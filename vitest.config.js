@@ -44,7 +44,19 @@ export default defineConfig({
     // Coverage configuration
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html', 'lcov'],
+      reporter: ['text', 'json', 'html', 'lcov', 'json-summary'],
+      // Measure every source file, not only those some test happened to
+      // load: files nothing imports used to be left out, which reported
+      // ~55% when the real figure was ~43%.
+      include: ['packages/*/src/**/*.js'],
+      // A floor just under the current figures (lines 61%, statements 60%,
+      // functions 58%, branches 59%): raise it as coverage grows.
+      thresholds: {
+        lines: 60,
+        statements: 59,
+        functions: 57,
+        branches: 57
+      },
       exclude: [
         'node_modules/**',
         'dist/**',
