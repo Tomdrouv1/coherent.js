@@ -480,17 +480,45 @@ export function profile<F extends (...args: never[]) => unknown>(fn: F): F;
 // DevTools
 // ============================================================================
 
+export interface DevToolsOptions {
+  /** Force on or off; defaults to `shouldEnable()` */
+  enabled?: boolean;
+  /** Cap on retained warnings and errors each; defaults to `100` */
+  maxEntries?: number;
+  /** Record console.error calls; defaults to `true` */
+  captureConsoleErrors?: boolean;
+  /**
+   * Record unhandled promise rejections (Node). They still crash the process
+   * as they would without DevTools. Defaults to `false`.
+   */
+  trackUnhandledRejections?: boolean;
+  /** Browser only: hot-reload WebSocket URL; no connection is made without it */
+  hotReloadUrl?: string | null;
+  /** Expose `$inspect`, `$history`, … on `globalThis`; defaults to `true` */
+  globalHelpers?: boolean;
+}
+
+/** The part of a Coherent instance DevTools uses, e.g. `import * as coherent from '@coherent.js/core'`. */
+export interface DevToolsTarget {
+  render?: (component: unknown, context?: Record<string, unknown>, options?: Record<string, unknown>) => string;
+  createComponent?: (config: Record<string, unknown>) => unknown;
+  cache?: unknown;
+}
+
 /**
- * Development-only instrumentation: render interception, validation, hot
+ * Development-only instrumentation: render timing, validation, optional hot
  * reload and a browser panel.
  *
- * Enabled only when `NODE_ENV=development`, or on localhost / `?dev=true` in
- * a browser. `isEnabled` is a property, not a method.
+ * Enabled when `NODE_ENV=development`, or on a localhost page in a browser;
+ * anything else needs `{ enabled: true }`. It never mutates the instance it
+ * wraps — render through {@link DevTools.render}. `isEnabled` is a property,
+ * not a method.
  */
 export class DevTools {
-  constructor(coherentInstance?: unknown);
+  constructor(coherentInstance?: DevToolsTarget | null, options?: DevToolsOptions);
 
-  coherent: unknown;
+  coherent: DevToolsTarget | null;
+  options: Required<Omit<DevToolsOptions, 'enabled' | 'hotReloadUrl'>> & DevToolsOptions;
   /** Whether instrumentation is active in this environment */
   isEnabled: boolean;
   renderHistory: unknown[];
@@ -504,6 +532,18 @@ export class DevTools {
 
   /** Install every hook; called by the constructor when enabled */
   initialize(): void;
+
+  /** Remove everything `initialize()` installed */
+  destroy(): void;
+
+  /** Append to a bounded list (warnings, errors), dropping the oldest */
+  record<T>(list: T[], entry: T): T;
+
+  /** Render through the wrapped instance, recording timing and warnings */
+  render(component: unknown, context?: Record<string, unknown>, options?: Record<string, unknown>): string;
+
+  /** The wrapped instance's `createComponent()`, registering the result */
+  createComponent(config: Record<string, unknown>): unknown;
 
   /** Report a component's type, structure and props */
   inspectComponent(component: unknown): Record<string, unknown>;
@@ -537,7 +577,7 @@ export class DevTools {
 }
 
 /** Create a {@link DevTools} instance bound to a Coherent instance. */
-export function createDevTools(coherentInstance?: unknown): DevTools;
+export function createDevTools(coherentInstance?: DevToolsTarget | null, options?: DevToolsOptions): DevTools;
 
 // ============================================================================
 // Component Visualizer
