@@ -245,7 +245,7 @@ function generatePackageJson(name, options) {
     type: 'module',
     main: isTypeScript ? 'dist/index.js' : `src/index${fileExt}`,
     // --env-file-if-exists loads .env (secrets, DB credentials) without a
-    // dotenv dependency.
+    // dotenv dependency; `dev` restarts the server when a source file changes.
     scripts: isTypeScript ? {
       dev: 'tsx watch --env-file-if-exists=.env src/index.ts',
       build: 'tsc',
@@ -253,7 +253,7 @@ function generatePackageJson(name, options) {
       typecheck: 'tsc --noEmit',
       test: 'vitest run'
     } : {
-      dev: 'node --env-file-if-exists=.env src/index.js',
+      dev: 'node --watch --env-file-if-exists=.env src/index.js',
       build: 'coherent build',
       start: 'node --env-file-if-exists=.env src/index.js',
       test: 'vitest run'
@@ -267,7 +267,8 @@ function generatePackageJson(name, options) {
     },
     devDependencies: {
       '@coherent.js/cli': cliRange,
-      vitest: '^4.1.10'
+      // Same major as the monorepo's own vitest.
+      vitest: '^5.0.0'
     }
   };
 

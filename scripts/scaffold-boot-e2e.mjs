@@ -56,6 +56,24 @@ const PERMUTATIONS = [
     name: 'ts-express-auth-sqlite',
     options: { language: 'typescript', runtime: 'express', packages: ['api'], database: 'sqlite', auth: 'jwt' },
     port: 4316
+  },
+  // Fastify + auth used to crash on boot (FST_ERR_HOOK_INVALID_HANDLER: the
+  // encapsulated authPlugin's `authenticate` decorator was invisible to the routes).
+  {
+    name: 'js-fastify-auth-sqlite',
+    options: { language: 'javascript', runtime: 'fastify', packages: ['api'], database: 'sqlite', auth: 'jwt' },
+    port: 4317
+  },
+  // Koa + auth used to answer every /api/auth/* with the object router's 404.
+  {
+    name: 'js-koa-auth-sqlite',
+    options: { language: 'javascript', runtime: 'koa', packages: ['api'], database: 'sqlite', auth: 'jwt' },
+    port: 4318
+  },
+  {
+    name: 'ts-fastify-auth-sqlite',
+    options: { language: 'typescript', runtime: 'fastify', packages: [], database: 'sqlite', auth: 'jwt' },
+    port: 4319
   }
 ];
 
@@ -184,6 +202,11 @@ async function bootAndProbe(projectPath, permutation) {
       if (!meRes.ok || meBody.user?.email !== 'ada@example.com') {
         throw new Error(`GET /me failed (${meRes.status}): ${JSON.stringify(meBody)}`);
       }
+
+      const anonRes = await fetch(`${base}/me`);
+      if (anonRes.status !== 401) {
+        throw new Error(`GET /me without a token returned ${anonRes.status}, expected 401`);
+      }
     }
   } catch (error) {
     error.message += `\n--- server output ---\n${output.slice(-2000)}`;
@@ -238,17 +261,27 @@ async function main() {
     process.exit(2);
   }
 
-  console.log(`Scaffold boot E2E — ${PERMUTATIONS.length} permutations`);
+  // Optional name filters: `node scripts/scaffold-boot-e2e.mjs koa fastify-auth`
+  const filters = process.argv.slice(2);
+  const selected = filters.length
+    ? PERMUTATIONS.filter((p) => filters.some((f) => p.name.includes(f)))
+    : PERMUTATIONS;
+  if (selected.length === 0) {
+    console.error(`No permutation matches ${filters.join(', ')}`);
+    process.exit(2);
+  }
+
+  console.log(`Scaffold boot E2E — ${selected.length} permutations`);
   let failed = 0;
-  for (const permutation of PERMUTATIONS) {
+  for (const permutation of selected) {
     if (!(await testPermutation(permutation))) failed++;
   }
 
   if (failed > 0) {
-    console.error(`\n❌ ${failed}/${PERMUTATIONS.length} permutations failed`);
+    console.error(`\n❌ ${failed}/${selected.length} permutations failed`);
     process.exit(1);
   }
-  console.log(`\n✅ All ${PERMUTATIONS.length} scaffold permutations install, typecheck, test, and boot.`);
+  console.log(`\n✅ All ${selected.length} scaffold permutations install, typecheck, test, and boot.`);
 }
 
 main().catch((error) => {

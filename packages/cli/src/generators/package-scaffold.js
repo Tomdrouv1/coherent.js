@@ -128,8 +128,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const module = await import(\`/components/\${componentName}.js\`);
       const Component = module.default || module[componentName];
 
-      // Hydrate component
-      hydrate(element, Component);
+      // Hydrate component — hydrate(component, container, options)
+      hydrate(Component, element);
     } catch (error) {
       console.error(\`Failed to hydrate component: \${componentName}\`, error);
     }

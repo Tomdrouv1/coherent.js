@@ -327,7 +327,7 @@ try {
  * Generate Koa server setup
  */
 export function generateKoaServer(options = {}) {
-  const { port = 3000, hasApi = false, hasDatabase = false, hasAuth = false } = options;
+  const { port = 3000, hasApi = false, hasDatabase = false, hasAuth = false, isTypeScript = false } = options;
 
   const imports = [
     `import Koa from 'koa';`,
@@ -374,8 +374,14 @@ await initDatabase();
 ${hasApi ? `// API routes — delegate /api/* to the Coherent.js object router.
 // Mounted before koaBody() so the router can parse the request body itself;
 // ctx.respond = false hands the raw response over to the router.
-app.use(async (ctx, next) => {
-  if (ctx.path.startsWith('/api')) {
+${hasAuth ? `// /api/auth and /api/protected are served by the Koa router below, so they
+// are left to Koa instead of being answered (with a 404) by the object router.
+const KOA_API_PREFIXES = ['/api/auth', '/api/protected'];
+const isKoaApiPath = (path${isTypeScript ? ': string' : ''}) =>
+  KOA_API_PREFIXES.some((prefix) => path === prefix || path.startsWith(prefix + '/'));
+
+` : ''}app.use(async (ctx, next) => {
+  if (ctx.path.startsWith('/api')${hasAuth ? ' && !isKoaApiPath(ctx.path)' : ''}) {
     ctx.respond = false;
     ctx.req.url = (ctx.req.url || '').replace(/^\\/api/, '') || '/';
     await apiRoutes.handle(ctx.req, ctx.res);

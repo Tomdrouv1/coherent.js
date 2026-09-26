@@ -52,6 +52,48 @@ export async function verifyPassword(password${ts ? ': string' : ''}, storedHash
 `;
 }
 
+/**
+ * Appended after the generated Fastify `authPlugin`. A plugin registered with
+ * fastify.register() gets its own encapsulated context, so its decorators are
+ * invisible to sibling plugins: `onRequest: [fastify.authenticate]` in the auth
+ * routes resolved to undefined and boot failed with FST_ERR_HOOK_INVALID_HANDLER.
+ * `skip-override` is the flag the fastify-plugin package sets; setting it
+ * directly avoids adding that dependency to generated projects.
+ */
+const SKIP_OVERRIDE = `
+// Decorate the parent instance rather than an encapsulated child context, so
+// routes registered elsewhere can use fastify.authenticate (this is what the
+// fastify-plugin package does).
+Object.defineProperty(authPlugin, Symbol.for('skip-override'), { value: true });
+`;
+
+/**
+ * setupCoherent() from @coherent.js/integrations renders any single-key object
+ * body (such as `{ error: '...' }` or `{ user }`) as an HTML component. The
+ * generated Fastify/Koa auth code therefore sends its JSON already serialized.
+ */
+function fastifyJsonHelper(ts) {
+  return `
+// Replies with JSON. setupCoherent() renders single-key object replies (such
+// as { error }) as HTML components, so the body is sent pre-serialized.
+export function sendJson(reply${ts ? ': FastifyReply' : ''}, statusCode${ts ? ': number' : ''}, body${ts ? ': unknown' : ''}) {
+  return reply.code(statusCode).type('application/json; charset=utf-8').send(JSON.stringify(body));
+}
+`;
+}
+
+function koaJsonHelper(ts) {
+  return `
+// Responds with JSON. setupCoherent() renders single-key object bodies (such
+// as { error }) as HTML components, so the body is set pre-serialized.
+export function sendJson(ctx${ts ? ': Context' : ''}, status${ts ? ': number' : ''}, body${ts ? ': unknown' : ''})${ts ? ': void' : ''} {
+  ctx.status = status;
+  ctx.type = 'application/json';
+  ctx.body = JSON.stringify(body);
+}
+`;
+}
+
 const CRYPTO_IMPORTS = `import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';`;
 
@@ -146,13 +188,13 @@ declare module 'fastify' {
     optionalAuth: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
   }
 }
-` : ''}${helpers}${tokenFns}
+` : ''}${helpers}${tokenFns}${fastifyJsonHelper(ts)}
 export async function authPlugin(fastify${ts ? ': FastifyInstance' : ''}, _options${ts ? ': unknown' : ''})${ts ? ': Promise<void>' : ''} {
   fastify.decorate('authenticate', async function(request${ts ? ': FastifyRequest' : ''}, reply${ts ? ': FastifyReply' : ''}) {
     const authHeader = request.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      reply.code(401).send({ error: 'No token provided' });
+      sendJson(reply, 401, { error: 'No token provided' });
       return;
     }
 
@@ -160,7 +202,7 @@ export async function authPlugin(fastify${ts ? ': FastifyInstance' : ''}, _optio
     const decoded = verifyToken(token);
 
     if (!decoded) {
-      reply.code(401).send({ error: 'Invalid or expired token' });
+      sendJson(reply, 401, { error: 'Invalid or expired token' });
       return;
     }
 
@@ -179,19 +221,18 @@ export async function authPlugin(fastify${ts ? ': FastifyInstance' : ''}, _optio
     }
   });
 }
-`,
+${SKIP_OVERRIDE}`,
     koa: `
 import jwt from 'jsonwebtoken';
 ${CRYPTO_IMPORTS}
 ${ts ? "import type { Context, Next } from 'koa';\n" : ''}
 ${jwtConstants}
-${tokenPayload}${helpers}${tokenFns}
+${tokenPayload}${helpers}${tokenFns}${koaJsonHelper(ts)}
 export async function authMiddleware(ctx${ts ? ': Context' : ''}, next${ts ? ': Next' : ''})${ts ? ': Promise<void>' : ''} {
   const authHeader = ctx.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    ctx.status = 401;
-    ctx.body = { error: 'No token provided' };
+    sendJson(ctx, 401, { error: 'No token provided' });
     return;
   }
 
@@ -199,8 +240,7 @@ export async function authMiddleware(ctx${ts ? ': Context' : ''}, next${ts ? ': 
   const decoded = verifyToken(token);
 
   if (!decoded) {
-    ctx.status = 401;
-    ctx.body = { error: 'Invalid or expired token' };
+    sendJson(ctx, 401, { error: 'Invalid or expired token' });
     return;
   }
 
@@ -303,13 +343,14 @@ export const sessionConfig = {
   }
 };
 
+${fastifyJsonHelper(false)}
 export async function authPlugin(fastify, options) {
   await fastify.register(fastifyCookie);
   await fastify.register(fastifySession, sessionConfig);
 
   fastify.decorate('authenticate', async function(request, reply) {
     if (!request.session.user) {
-      reply.code(401).send({ error: 'Not authenticated' });
+      sendJson(reply, 401, { error: 'Not authenticated' });
       return;
     }
   });
@@ -318,7 +359,7 @@ export async function authPlugin(fastify, options) {
     // Session is always available, just proceed
   });
 }
-`,
+${SKIP_OVERRIDE}`,
     koa: `
 import session from 'koa-session';
 ${requireSecretHelper(false)}
@@ -332,6 +373,7 @@ export const sessionConfig = {
   signed: true,
 };
 
+${koaJsonHelper(false)}
 export function setupSession(app) {
   app.keys = [SESSION_SECRET];
   app.use(session(sessionConfig, app));
@@ -339,8 +381,7 @@ export function setupSession(app) {
 
 export async function authMiddleware(ctx, next) {
   if (!ctx.session.user) {
-    ctx.status = 401;
-    ctx.body = { error: 'Not authenticated' };
+    sendJson(ctx, 401, { error: 'Not authenticated' });
     return;
   }
   await next();
@@ -592,7 +633,7 @@ export function setupAuthRoutes() {
 }
 `,
     fastify: `
-${ts ? "import type { FastifyInstance } from 'fastify';\n" : ''}import { generateToken, hashPassword, verifyPassword } from '../plugins/auth.js';
+${ts ? "import type { FastifyInstance } from 'fastify';\n" : ''}import { generateToken, hashPassword, verifyPassword, sendJson } from '../plugins/auth.js';
 import { UserModel } from '../db/models/User.js';
 
 export default async function authRoutes(fastify${ts ? ': FastifyInstance' : ''})${ts ? ': Promise<void>' : ''} {
@@ -603,13 +644,13 @@ export default async function authRoutes(fastify${ts ? ': FastifyInstance' : ''}
 
       // Validate input
       if (!email || !name || !password) {
-        return reply.code(400).send({ error: 'Missing required fields' });
+        return sendJson(reply, 400, { error: 'Missing required fields' });
       }
 
       // Check if user exists
       const existingUser = await UserModel.findByEmail(email);
       if (existingUser) {
-        return reply.code(400).send({ error: 'User already exists' });
+        return sendJson(reply, 400, { error: 'User already exists' });
       }
 
       // Create user with a hashed password — never store the plain text
@@ -619,10 +660,10 @@ export default async function authRoutes(fastify${ts ? ': FastifyInstance' : ''}
       // Generate token
       const token = generateToken({ id: user.id, email: user.email });
 
-      return { user: { id: user.id, email: user.email, name: user.name }, token };
+      return sendJson(reply, 200, { user: { id: user.id, email: user.email, name: user.name }, token });
     } catch (error) {
       fastify.log.error({ err: error }, 'Register error');
-      return reply.code(500).send({ error: 'Registration failed' });
+      return sendJson(reply, 500, { error: 'Registration failed' });
     }
   });
 
@@ -633,7 +674,7 @@ export default async function authRoutes(fastify${ts ? ': FastifyInstance' : ''}
 
       // Validate input
       if (!email || !password) {
-        return reply.code(400).send({ error: 'Missing required fields' });
+        return sendJson(reply, 400, { error: 'Missing required fields' });
       }
 
       // Find user and verify password (single 401 either way, so responses
@@ -641,16 +682,16 @@ export default async function authRoutes(fastify${ts ? ': FastifyInstance' : ''}
       const user = await UserModel.findByEmail(email);
       const passwordOk = user && await verifyPassword(password, ${storedHash});
       if (!passwordOk) {
-        return reply.code(401).send({ error: 'Invalid credentials' });
+        return sendJson(reply, 401, { error: 'Invalid credentials' });
       }
 
       // Generate token
       const token = generateToken({ id: user.id, email: user.email });
 
-      return { user: { id: user.id, email: user.email, name: user.name }, token };
+      return sendJson(reply, 200, { user: { id: user.id, email: user.email, name: user.name }, token });
     } catch (error) {
       fastify.log.error({ err: error }, 'Login error');
-      return reply.code(500).send({ error: 'Login failed' });
+      return sendJson(reply, 500, { error: 'Login failed' });
     }
   });
 
@@ -661,23 +702,23 @@ export default async function authRoutes(fastify${ts ? ': FastifyInstance' : ''}
     try {
       const authUser = request.user;
       if (!authUser) {
-        return reply.code(401).send({ error: 'Not authenticated' });
+        return sendJson(reply, 401, { error: 'Not authenticated' });
       }
       const user = await UserModel.findById(authUser.id);
       if (!user) {
-        return reply.code(404).send({ error: 'User not found' });
+        return sendJson(reply, 404, { error: 'User not found' });
       }
-      return { user: { id: user.id, email: user.email, name: user.name } };
+      return sendJson(reply, 200, { user: { id: user.id, email: user.email, name: user.name } });
     } catch (error) {
       fastify.log.error({ err: error }, 'Get user error');
-      return reply.code(500).send({ error: 'Failed to get user' });
+      return sendJson(reply, 500, { error: 'Failed to get user' });
     }
   });
 }
 `,
     koa: `
 import Router from '@koa/router';
-import { generateToken, hashPassword, verifyPassword, authMiddleware } from '../middleware/auth.js';
+import { generateToken, hashPassword, verifyPassword, authMiddleware, sendJson } from '../middleware/auth.js';
 import { UserModel } from '../db/models/User.js';
 
 const router = new Router();
@@ -689,16 +730,14 @@ router.post('/register', async (ctx) => {
 
     // Validate input
     if (!email || !name || !password) {
-      ctx.status = 400;
-      ctx.body = { error: 'Missing required fields' };
+      sendJson(ctx, 400, { error: 'Missing required fields' });
       return;
     }
 
     // Check if user exists
     const existingUser = await UserModel.findByEmail(email);
     if (existingUser) {
-      ctx.status = 400;
-      ctx.body = { error: 'User already exists' };
+      sendJson(ctx, 400, { error: 'User already exists' });
       return;
     }
 
@@ -709,11 +748,10 @@ router.post('/register', async (ctx) => {
     // Generate token
     const token = generateToken({ id: user.id, email: user.email });
 
-    ctx.body = { user: { id: user.id, email: user.email, name: user.name }, token };
+    sendJson(ctx, 200, { user: { id: user.id, email: user.email, name: user.name }, token });
   } catch (error) {
     console.error('Register error:', error);
-    ctx.status = 500;
-    ctx.body = { error: 'Registration failed' };
+    sendJson(ctx, 500, { error: 'Registration failed' });
   }
 });
 
@@ -724,8 +762,7 @@ router.post('/login', async (ctx) => {
 
     // Validate input
     if (!email || !password) {
-      ctx.status = 400;
-      ctx.body = { error: 'Missing required fields' };
+      sendJson(ctx, 400, { error: 'Missing required fields' });
       return;
     }
 
@@ -734,19 +771,17 @@ router.post('/login', async (ctx) => {
     const user = await UserModel.findByEmail(email);
     const passwordOk = user && await verifyPassword(password, ${storedHash});
     if (!passwordOk) {
-      ctx.status = 401;
-      ctx.body = { error: 'Invalid credentials' };
+      sendJson(ctx, 401, { error: 'Invalid credentials' });
       return;
     }
 
     // Generate token
     const token = generateToken({ id: user.id, email: user.email });
 
-    ctx.body = { user: { id: user.id, email: user.email, name: user.name }, token };
+    sendJson(ctx, 200, { user: { id: user.id, email: user.email, name: user.name }, token });
   } catch (error) {
     console.error('Login error:', error);
-    ctx.status = 500;
-    ctx.body = { error: 'Login failed' };
+    sendJson(ctx, 500, { error: 'Login failed' });
   }
 });
 
@@ -755,21 +790,18 @@ router.get('/me', authMiddleware, async (ctx) => {
   try {
     const authUser = ctx.state.user;
     if (!authUser) {
-      ctx.status = 401;
-      ctx.body = { error: 'Not authenticated' };
+      sendJson(ctx, 401, { error: 'Not authenticated' });
       return;
     }
     const user = await UserModel.findById(authUser.id);
     if (!user) {
-      ctx.status = 404;
-      ctx.body = { error: 'User not found' };
+      sendJson(ctx, 404, { error: 'User not found' });
       return;
     }
-    ctx.body = { user: { id: user.id, email: user.email, name: user.name } };
+    sendJson(ctx, 200, { user: { id: user.id, email: user.email, name: user.name } });
   } catch (error) {
     console.error('Get user error:', error);
-    ctx.status = 500;
-    ctx.body = { error: 'Failed to get user' };
+    sendJson(ctx, 500, { error: 'Failed to get user' });
   }
 });
 
