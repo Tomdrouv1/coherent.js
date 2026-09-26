@@ -26,7 +26,7 @@
 
 /**
  * @typedef {Object} CacheOptions
- * @property {number} [maxCacheSize=1000] - Maximum number of entries per cache type
+ * @property {number} [maxCacheSize=1000] - Maximum number of entries per cache type (alias: `maxSize`)
  * @property {number} [maxMemoryMB=100] - Maximum memory usage in MB
  * @property {number} [ttlMs=300000] - Default time-to-live in milliseconds (5 minutes)
  * @property {boolean} [enableStatistics=true] - Whether to collect usage statistics
@@ -39,11 +39,12 @@
  */
 export function createCacheManager(options = {}) {
   const {
-    maxCacheSize = 1000,
     maxMemoryMB = 100,
     ttlMs = 1000 * 60 * 5, // 5 minutes
     enableStatistics = true
   } = options;
+  const maxCacheSize = options.maxCacheSize ?? options.maxSize ?? 1000;
+  const maxMemoryBytes = maxMemoryMB * 1024 * 1024;
 
   // Internal state
   const caches = {
@@ -106,31 +107,40 @@ export function createCacheManager(options = {}) {
    * @returns {any|null} Cached value or null if not found
    */
   function get(key, type = 'component') {
-    const cache = caches[type] || caches.component;
+    // Unknown types share the component cache. Normalizing here also keeps
+    // the statistics bounded: counting under the raw `type` added one key
+    // per distinct value, which was an unbounded leak when callers passed
+    // arguments in the wrong order.
+    const cacheType = caches[type] ? type : 'component';
+    const cache = caches[cacheType];
     const entry = cache.get(key);
 
     if (!entry) {
       stats.misses++;
-      if (enableStatistics) stats.accessCount[type]++;
+      if (enableStatistics) stats.accessCount[cacheType]++;
       return null;
     }
 
     // Check TTL
-    if (Date.now() - entry.timestamp > ttlMs) {
+    if (Date.now() - entry.timestamp > entry.ttl) {
       cache.delete(key);
       updateMemoryUsage(-entry.size);
       stats.misses++;
-      if (enableStatistics) stats.accessCount[type]++;
+      if (enableStatistics) stats.accessCount[cacheType]++;
       return null;
     }
 
-    // Update access time and stats
+    // Map iteration order is insertion order: re-inserting on a hit keeps
+    // the least recently used entry first, which is what eviction removes.
+    cache.delete(key);
+    cache.set(key, entry);
+
     entry.lastAccess = Date.now();
     entry.accessCount++;
     stats.hits++;
     if (enableStatistics) {
-      stats.accessCount[type]++;
-      stats.hitRate[type] = (stats.hits / (stats.hits + stats.misses)) * 100;
+      stats.accessCount[cacheType]++;
+      stats.hitRate[cacheType] = (stats.hits / (stats.hits + stats.misses)) * 100;
     }
 
     return entry.value;
@@ -144,35 +154,38 @@ export function createCacheManager(options = {}) {
    * @param {Object} [metadata={}] - Additional metadata
    */
   function set(key, value, type = 'component', metadata = {}) {
-    const cache = caches[type] || caches.component;
-    const size = calculateSize(value);
+    const cacheType = caches[type] ? type : 'component';
+    const cache = caches[cacheType];
+    // Keys count too: render-cache keys serialize a whole component tree
+    // and are often larger than the HTML they map to.
+    const size = calculateSize(value) + calculateSize(key);
 
-    // Check memory limits
-    if (memoryUsage + size > maxMemoryMB * 1024 * 1024) {
-      optimize(type, size);
-    }
+    // Too large to ever fit: caching it would only evict everything else.
+    if (size > maxMemoryBytes) return;
 
-    const entry = {
-      value,
-      timestamp: Date.now(),
-      lastAccess: Date.now(),
-      size,
-      metadata,
-      accessCount: 0
-    };
-
-    // Remove existing entry if it exists
     const existing = cache.get(key);
     if (existing) {
+      cache.delete(key);
       updateMemoryUsage(-existing.size);
     }
 
-    cache.set(key, entry);
+    const now = Date.now();
+    cache.set(key, {
+      value,
+      timestamp: now,
+      lastAccess: now,
+      size,
+      metadata,
+      ttl: typeof metadata.ttlMs === 'number' ? metadata.ttlMs : ttlMs,
+      accessCount: 0
+    });
     updateMemoryUsage(size);
 
-    // Enforce cache size limits
-    if (cache.size > maxCacheSize) {
-      optimize(type);
+    // Evict least recently used entries until both limits hold.
+    evict(cache, () => cache.size > maxCacheSize);
+    for (const other of Object.values(caches)) {
+      if (memoryUsage <= maxMemoryBytes) break;
+      evict(other, () => memoryUsage > maxMemoryBytes);
     }
   }
 
@@ -214,11 +227,14 @@ export function createCacheManager(options = {}) {
     if (type) {
       const cache = caches[type];
       if (cache) {
+        for (const entry of cache.values()) {
+          updateMemoryUsage(-entry.size);
+        }
         cache.clear();
       }
-    } else {
-      Object.values(caches).forEach(cache => cache.clear());
+      return;
     }
+    Object.values(caches).forEach(cache => cache.clear());
     memoryUsage = 0;
   }
 
@@ -248,7 +264,7 @@ export function createCacheManager(options = {}) {
 
     for (const [, cache] of Object.entries(caches)) {
       for (const [key, entry] of cache.entries()) {
-        if (now - entry.timestamp > ttlMs) {
+        if (now - entry.timestamp > entry.ttl) {
           cache.delete(key);
           updateMemoryUsage(-entry.size);
           freed++;
@@ -278,21 +294,19 @@ export function createCacheManager(options = {}) {
     memoryUsage = Math.max(0, memoryUsage + delta);
   }
 
-  function optimize(type, requiredSpace = 0) {
-    const cache = caches[type] || caches.component;
-    const entries = Array.from(cache.entries())
-      .sort(([, a], [, b]) => a.lastAccess - b.lastAccess);
-
+  /**
+   * Delete least recently used entries while `shouldEvict()` holds.
+   * Entries are kept in recency order (see get), so this never sorts.
+   */
+  function evict(cache, shouldEvict) {
     let freed = 0;
-    for (const [key, entry] of entries) {
-      if (freed >= requiredSpace) break;
-      
+    for (const [key, entry] of cache) {
+      if (!shouldEvict()) break;
       cache.delete(key);
       updateMemoryUsage(-entry.size);
       freed += entry.size;
     }
-
-    return { freed };
+    return freed;
   }
 
   function simpleHash(str) {

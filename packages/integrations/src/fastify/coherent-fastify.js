@@ -24,12 +24,22 @@ import {
  * @param {Object} options - Plugin options
  * @param {boolean} [options.enablePerformanceMonitoring] - Enable performance monitoring
  * @param {string} [options.template] - HTML template with {{content}} placeholder
+ * @param {boolean} [options.autoRender] - Render component-shaped handler return values
+ *   (see the preSerialization hook below for why this is opt-in)
  * @param {Function} done - Callback to signal plugin registration completion
  */
 function coherentFastifyImpl(fastify, options = {}, done) {
+  if (typeof done !== 'function') {
+    throw new TypeError(
+      'coherentFastify/setupCoherent is a Fastify plugin and cannot be called directly: ' +
+      'use `await fastify.register(setupCoherent, options)`.'
+    );
+  }
+
   const {
     enablePerformanceMonitoring = false,
-    template = '<!DOCTYPE html>\n{{content}}'
+    template = '<!DOCTYPE html>\n{{content}}',
+    autoRender = false
   } = options;
 
   // Add decorator to check if an object is a Coherent.js component
@@ -48,39 +58,47 @@ function coherentFastifyImpl(fastify, options = {}, done) {
       template: renderTemplate = template
     } = renderOptions;
 
+    let finalHtml;
     try {
-      const finalHtml = renderWithTemplate(component, {
+      finalHtml = renderWithTemplate(component, {
         enablePerformanceMonitoring: renderPerformanceMonitoring,
         template: renderTemplate
       });
-      this.header('Content-Type', 'text/html; charset=utf-8');
-      this.send(finalHtml);
     } catch (_error) {
-      console.error('Coherent.js rendering _error:', _error);
-      this.status(500).send({
-        _error: 'Internal Server Error',
-        message: _error.message
-      });
+      // Sending an Error runs Fastify's error pipeline (onError hooks, the
+      // app's setErrorHandler, its logger) instead of answering with the raw
+      // message.
+      return this.send(_error);
     }
+
+    this.header('Content-Type', 'text/html; charset=utf-8');
+    return this.send(finalHtml);
   });
 
-  // Auto-render: if a handler returns a Coherent.js component object,
-  // intercept before serialization and replace the payload with HTML.
+  // Auto-render (opt-in): if a handler returns a Coherent.js component
+  // object, intercept before serialization and replace the payload with HTML.
+  //
+  // Off by default because detection is a heuristic -- every single-key
+  // object qualifies, so `return { ok: true }` or a 401 `{ error: '...' }`
+  // would be rendered as `<ok>` / `<error>` HTML even with a JSON response
+  // schema. Use `reply.coherent(component)` for explicit rendering instead.
   //
   // - `onSend` runs after JSON serialization (payload is already a string),
   //   so the component object would never be detected there.
   // - `preSerialization` runs before serialization. We render to HTML and
   //   install an identity serializer for this reply, so Fastify doesn't
   //   JSON-stringify the HTML string we just produced.
-  fastify.addHook('preSerialization', async (request, reply, payload) => {
-    if (reply.isCoherentObject?.(payload)) {
-      const finalHtml = renderWithTemplate(payload, { enablePerformanceMonitoring, template });
-      reply.header('Content-Type', 'text/html; charset=utf-8');
-      reply.serializer((p) => p);
-      return finalHtml;
-    }
-    return payload;
-  });
+  if (autoRender) {
+    fastify.addHook('preSerialization', async (request, reply, payload) => {
+      if (reply.isCoherentObject?.(payload)) {
+        const finalHtml = renderWithTemplate(payload, { enablePerformanceMonitoring, template });
+        reply.header('Content-Type', 'text/html; charset=utf-8');
+        reply.serializer((p) => p);
+        return finalHtml;
+      }
+      return payload;
+    });
+  }
 
   done();
 }
@@ -88,10 +106,14 @@ function coherentFastifyImpl(fastify, options = {}, done) {
 /**
  * Fastify plugin for Coherent.js — wrapped with fastify-plugin so decorators
  * and hooks apply to the parent (root) context. Register at the top of your
- * app, then define routes that return Coherent.js component objects:
+ * app, then render components explicitly with `reply.coherent()`:
  *
  *   await fastify.register(coherentFastify, { template: APP_HTML_TEMPLATE });
- *   fastify.get('/', async () => HomePage({}));
+ *   fastify.get('/', async (request, reply) => reply.coherent(HomePage({})));
+ *
+ * Pass `autoRender: true` to also render component objects returned from
+ * handlers (`fastify.get('/', async () => HomePage({}))`); see the
+ * preSerialization hook above for why that is not the default.
  */
 export const coherentFastify = fp(coherentFastifyImpl, {
   name: 'coherent-fastify',
@@ -123,7 +145,7 @@ export function createHandler(componentFactory, options = {}) {
       reply.header('Content-Type', 'text/html; charset=utf-8');
       return finalHtml;
     } catch (_error) {
-      console.error('Coherent.js handler _error:', _error);
+      console.error('Coherent.js handler error:', _error);
       throw _error;
     }
   };

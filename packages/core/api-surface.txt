@@ -64,6 +64,7 @@ isCoherentObject
 isLazy
 isPeerDependencyAvailable
 isTrustedContent
+isValidAttributeName
 isVoidElement
 lazy
 lifecycleUtils
@@ -79,9 +80,11 @@ registerAction
 registerComponent
 render
 renderComponentFactory
+renderToStream
 renderWithMonitoring
 renderWithTemplate
 shadowDOM
+streamingUtils
 useHooks
 validateComponent
 validateNesting

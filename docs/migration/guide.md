@@ -1,6 +1,6 @@
 # Coherent.js Migration Guide
 
-> **Upgrading from 1.0.0-beta.* to 1.0.0?** See [`MIGRATION-1.0.md`](../../MIGRATION-1.0.md) at the repo root for the authoritative 1.0 breaking-changes guide. This page covers migrating from OTHER frameworks (React, Vue, Express, etc.) to Coherent.js.
+> **Upgrading Coherent.js itself?** From 1.1, see [Upgrading from 1.1](upgrading-from-1.1.md); from 1.0.0-beta.*, see [`MIGRATION-1.0.md`](../../MIGRATION-1.0.md). This page covers migrating from OTHER frameworks (React, Vue, Express, etc.) to Coherent.js.
 
 This guide helps developers migrate from traditional frameworks (React, Vue, Express, etc.) or template engines (Handlebars, EJS, etc.) to Coherent.js.
 
@@ -19,16 +19,12 @@ pnpm add -D @coherent.js/devtools
 
 ### Step 2: Configure Package.json
 
+Coherent.js is ESM-only and needs Node.js 22.12 or later:
+
 ```json
 {
-  "coherent": {
-    "enableTreeShaking": true,
-    "enableStreaming": true,
-    "enableLRUCaching": true,
-    "performance": {
-      "enableMetrics": true
-    }
-  }
+  "type": "module",
+  "engines": { "node": ">=22.12.0" }
 }
 ```
 
@@ -38,7 +34,7 @@ pnpm add -D @coherent.js/devtools
 import { createFormState, createListState } from '@coherent.js/state';
 
 const userForm = createFormState({ name: '', email: '' });
-const productList = createListState([], { pageSize: 20 });
+const userList = createListState([], { pageSize: 20 });
 ```
 
 ### Step 4: Convert Components
@@ -47,7 +43,7 @@ const productList = createListState([], { pageSize: 20 });
 const UserList = () => ({
   div: {
     className: 'user-list',
-    children: productList.sortedItems.map(user => UserCard(user))
+    children: userList.paginatedItems.map(user => UserCard(user))
   }
 });
 ```
@@ -96,18 +92,23 @@ function Counter() {
 }
 ```
 
-**Coherent.js with withState:**
-```javascript
-import { withState } from '@coherent.js/core';
+**Coherent.js:** the server renders the initial state; `hydrate()` in the browser attaches the handler and re-renders on `setState()`:
 
-const Counter = withState({ count: 0 })(({ state, setState }) => ({
+```javascript
+// Shared component
+export const Counter = ({ count = 0 }) => ({
   div: {
+    className: 'counter',
     children: [
-      { p: { text: `Count: ${state.count}` } },
-      { button: { text: 'Increment', onclick: () => setState({ count: state.count + 1 }) } }
+      { p: { text: `Count: ${count}` } },
+      { button: { text: 'Increment', onClick: (event) => event.setState({ count: event.state.count + 1 }) } }
     ]
   }
-}));
+});
+
+// Browser
+import { hydrate } from '@coherent.js/client';
+hydrate(Counter, document.querySelector('.counter'), { initialState: { count: 0 } });
 ```
 
 ### Conditional Rendering
@@ -137,6 +138,8 @@ function UserProfile({ user }) {
   };
 }
 ```
+
+`cond && { ... }` works too: `false`, `null` and `undefined` children render nothing.
 
 ### List Rendering
 
@@ -171,10 +174,11 @@ function TodoList({ todos }) {
 }
 ```
 
-### React Performance Benefits
+### Differences to keep in mind
 
-- **100% cacheable** pure functional components
-- **Better memory management** with OOP state encapsulation
+- Rendering is synchronous and server-first: load data before `render()`, there are no effects.
+- Event handlers only run in the browser, after `hydrate()`.
+- `className` accepts strings, arrays and `{ name: condition }` objects.
 
 ## From Vue
 
@@ -199,7 +203,7 @@ const ProductCard = (product) => ({
     children: [
       { h3: { text: product.name } },
       { p: { text: `$${product.price}` } },
-      { button: { text: 'Add to Cart', onclick: () => addToCart(product) } }
+      { button: { text: 'Add to Cart', onClick: () => addToCart(product) } } // attached by hydrate()
     ]
   }
 });
@@ -214,13 +218,15 @@ const cart = ref([]);
 const total = computed(() => cart.value.reduce((sum, item) => sum + item.price, 0));
 ```
 
-**Coherent.js:**
+**Coherent.js (`@coherent.js/state`):**
 ```javascript
-const shoppingCart = createListState([]);
-shoppingCart.addToCart = (product) => {
-  shoppingCart.addItem(product);
-  updateTotal();
-};
+import { observable, computed } from '@coherent.js/state';
+
+const cart = observable([]);
+const total = computed(() => cart.value.reduce((sum, item) => sum + item.price, 0));
+
+cart.value = [...cart.value, { name: 'Book', price: 12 }];
+total.value; // 12
 ```
 
 ## From Template Engines (Handlebars, EJS)
@@ -317,19 +323,28 @@ app.get('/api/users/:id', async (req, res) => {
 });
 ```
 
-**Coherent.js API (with LRU caching):**
+**Coherent.js API (`@coherent.js/api`):**
 ```javascript
-const api = createAPI({
-  routes: {
-    'GET /api/users/:id': async ({ params }) => {
-      const user = await getUser(params.id);
-      return { status: 200, body: user };
+import { createRouter, NotFoundError } from '@coherent.js/api';
+
+const router = createRouter({
+  api: {
+    users: {
+      ':id': {
+        GET: async (req) => {
+          const user = await getUser(req.params.id);
+          if (!user) throw new NotFoundError('User not found');
+          return user; // sent as JSON
+        }
+      }
     }
-  },
-  enableLRUCaching: true,
-  cacheSize: 1000
+  }
 });
+
+router.createServer().listen(3000);
 ```
+
+Errors thrown by a handler become JSON responses with their status; a 5xx answers with the generic status text instead of the internal message. See the [API usage guide](../api/usage.md).
 
 ## Hydration Migration
 
@@ -347,36 +362,31 @@ function Counter() {
 
 **Coherent.js (explicit hydration):**
 ```javascript
-// Server-side component
-const Counter = withState({ count: 0 })(({ state, stateUtils }) => {
-  const { setState } = stateUtils;
-  return {
-    div: {
-      'data-coherent-component': 'counter',
-      children: [
-        { p: { text: `Count: ${state.count}` } },
-        { button: { text: 'Increment', onclick: () => setState({ count: state.count + 1 }) } }
-      ]
-    }
-  };
+// Shared component
+const Counter = ({ count = 0 }) => ({
+  button: {
+    text: `Count: ${count}`,
+    onClick: (event) => event.setState({ count: event.state.count + 1 })
+  }
 });
 
-// Client-side hydration
+// Server: <button>Count: 0</button>
+render(Counter({ count: 0 }));
+
+// Client
 import { hydrate } from '@coherent.js/client';
-document.addEventListener('DOMContentLoaded', () => {
-  hydrate(Counter, document.getElementById('counter-root'));
-});
+hydrate(Counter, document.querySelector('#counter-root > button'), { initialState: { count: 0 } });
 ```
 
 ### Key Hydration Differences
 
-1. **Event Handler Serialization**: In Coherent.js, event handlers become `data-action` attributes during SSR, then are reconnected during hydration.
+1. **Handlers are client-only**: function-valued `on*` props render nothing on the server; `hydrate()` calls the component again in the browser and attaches them through event delegation.
 
-2. **Component Identification**: Uses explicit `data-coherent-component` attributes instead of React's reconciliation.
+2. **Explicit mounting**: call `hydrate(Component, element)` for each interactive root, where `element` is the element the component's root renders. There is no automatic component registry scan.
 
-3. **State Initialization**: Extract from DOM or pass through props rather than automatic matching.
+3. **State initialization**: pass `initialState`, or render it into a `data-state` attribute with `serializeState()`.
 
-4. **Explicit mounting**: Call `hydrate()` for each interactive root — there is no automatic component registry scan.
+4. **Mismatch detection** runs in development (`NODE_ENV=development`) or with `detectMismatch: true`.
 
 ### Progressive Enhancement Pattern
 
@@ -385,7 +395,7 @@ document.addEventListener('DOMContentLoaded', () => {
   form: {
     action: '/api/submit',      // Fallback for no-JS
     method: 'POST',
-    onsubmit: enhancedSubmit,   // Enhanced with hydration
+    onSubmit: enhancedSubmit,   // Attached by hydrate()
     children: [
       { input: { name: 'email', required: true } },
       { button: { type: 'submit', text: 'Submit' } }
@@ -400,13 +410,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
 **Before (React):** `<button onClick={handleClick}>Click me</button>`
 
-**After (Coherent.js):** `{ button: { text: 'Click me', onclick: handleClick } }`
+**After (Coherent.js):** `{ button: { text: 'Click me', onClick: handleClick } }` — attached in the browser by `hydrate()`
 
 ### Styling
 
 **Before:** `<div className="container highlighted">Content</div>`
 
-**After:** `{ div: { className: 'container highlighted', text: 'Content' } }`
+**After:** `{ div: { className: ['container', isHighlighted && 'highlighted'], text: 'Content' } }`
 
 ### Data Attributes
 
@@ -419,10 +429,10 @@ document.addEventListener('DOMContentLoaded', () => {
 ### Bundle Size Optimization
 
 ```javascript
-// Avoid: Import entire DevTools
-import DevTools from '@coherent.js/devtools';
+// Avoid: the root entry point pulls in every tool
+import { logComponentTree } from '@coherent.js/devtools';
 
-// Recommended: Tree-shakable imports
+// Recommended: subpath imports
 import { logComponentTree } from '@coherent.js/devtools/visualizer';
 import { createPerformanceDashboard } from '@coherent.js/devtools/performance';
 ```
@@ -460,7 +470,7 @@ export default {
 5. **No Build Step**: Pure JavaScript with no compilation required
 6. **Progressive Enhancement**: Forms and interactions work without JavaScript
 7. **Streaming**: Native support for streaming large documents
-8. **Memory Efficiency**: Smart caching and object pooling
+8. **Opt-in Caching**: per-component `memo()` and whole-render caching when you ask for it
 
 ## Migration Checklist
 
@@ -468,9 +478,8 @@ export default {
 
 - [ ] Identify components that need to be converted
 - [ ] Convert JSX/templates to Coherent.js object structure
-- [ ] Replace state management with `withState`
-- [ ] Update event handling (onclick, etc.)
-- [ ] Add `data-coherent-component` attributes for interactive components
+- [ ] Load data before rendering (`render()` is synchronous)
+- [ ] Move event handlers to function `on*` props (attached by `hydrate()`)
 - [ ] Test server-side rendering output
 
 ### Client-Side Hydration Setup
@@ -491,7 +500,7 @@ export default {
 - [ ] Implement selective hydration for performance
 - [ ] Configure tree shaking for production
 - [ ] Test bundle size (see `packages/*/bundle-size.json` for per-package baselines)
-- [ ] Validate performance (target: 240+ renders/sec)
+
 - [ ] Update build/deployment processes
 
 ---

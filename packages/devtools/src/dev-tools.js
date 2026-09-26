@@ -2,22 +2,52 @@
  * Development Tools for Coherent.js
  * Provides debugging, profiling, and development utilities
  * Only active in development environment for zero production overhead
+ *
+ * DevTools never mutates the Coherent instance it is given (ESM namespace
+ * objects are frozen, so patching `render` threw): it wraps it instead —
+ * render through `devtools.render()` / `devtools.createComponent()`.
+ * It installs no process-level handlers unless asked to, and never keeps
+ * the process alive or exits it.
  */
 
 import { performanceMonitor, validateComponent, isCoherentObject } from '@coherent.js/core';
+
+const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
 
 /**
  * Main DevTools class
  */
 export class DevTools {
-    constructor(coherentInstance) {
+    /**
+     * @param {Object} [coherentInstance] - Object exposing `render` (and optionally
+     *   `createComponent` / `cache`), e.g. `import * as coherent from '@coherent.js/core'`.
+     * @param {Object} [options]
+     * @param {boolean} [options.enabled] - Force on or off; defaults to {@link DevTools#shouldEnable}.
+     * @param {number} [options.maxEntries=100] - Cap on retained warnings and errors each.
+     * @param {boolean} [options.captureConsoleErrors=true] - Record console.error calls.
+     * @param {boolean} [options.trackUnhandledRejections=false] - Record unhandled promise
+     *   rejections (Node). They still crash the process as they would without DevTools.
+     * @param {string} [options.hotReloadUrl] - Browser only: WebSocket URL of a dev server
+     *   sending `component-updated` / `full-reload` messages. No connection is made without it.
+     * @param {boolean} [options.globalHelpers=true] - Expose `$inspect`, `$history`, … globally.
+     */
+    constructor(coherentInstance = null, options = {}) {
         this.coherent = coherentInstance;
-        this.isEnabled = this.shouldEnable();
+        this.options = {
+            maxEntries: 100,
+            captureConsoleErrors: true,
+            trackUnhandledRejections: false,
+            hotReloadUrl: null,
+            globalHelpers: true,
+            ...options
+        };
+        this.isEnabled = typeof options.enabled === 'boolean' ? options.enabled : this.shouldEnable();
         this.renderHistory = [];
         this.componentRegistry = new Map();
         this.warnings = [];
         this.errors = [];
         this.hotReloadEnabled = false;
+        this._teardown = [];
 
         if (this.isEnabled) {
             this.initialize();
@@ -25,19 +55,19 @@ export class DevTools {
     }
 
     /**
-     * Check if dev tools should be enabled
+     * Check if dev tools should be enabled: NODE_ENV=development in Node, a
+     * localhost page in the browser. Anything else (a query parameter on a
+     * production host, say) needs the explicit `enabled: true` option.
      */
     shouldEnable() {
         // Only enable in development
-        if (typeof process !== 'undefined') {
+        if (typeof process !== 'undefined' && process?.env) {
             return process.env.NODE_ENV === 'development';
         }
 
         // Browser development detection
-        if (typeof window !== 'undefined') {
-            return window.location.hostname === 'localhost' ||
-                window.location.hostname === '127.0.0.1' ||
-                window.location.search.includes('dev=true');
+        if (typeof window !== 'undefined' && window.location) {
+            return LOCAL_HOSTNAMES.has(window.location.hostname);
         }
 
         return false;
@@ -49,21 +79,101 @@ export class DevTools {
     initialize() {
         console.log('🛠️ Coherent.js Dev Tools Enabled');
 
-        this.setupGlobalHelpers();
-        this.setupRenderInterception();
+        if (this.options.globalHelpers) {
+            this.setupGlobalHelpers();
+        }
         this.setupErrorHandling();
         this.setupHotReload();
-        this.setupComponentInspector();
 
         // Browser-specific setup
-        if (typeof window !== 'undefined') {
+        if (typeof window !== 'undefined' && typeof document !== 'undefined') {
             this.setupBrowserDevTools();
         }
+    }
 
-        // Node.js specific setup
-        if (typeof process !== 'undefined') {
-            this.setupNodeDevTools();
+    /**
+     * Undo everything initialize() installed: global helpers, the
+     * console.error hook, the unhandled-rejection listener, the hot-reload
+     * socket and the browser panel.
+     */
+    destroy() {
+        while (this._teardown.length) {
+            try {
+                this._teardown.pop()();
+            } catch {
+                // keep tearing down the rest
+            }
         }
+    }
+
+    /**
+     * Append to a bounded list (warnings, errors), dropping the oldest.
+     */
+    record(list, entry) {
+        list.push(entry);
+        const max = Math.max(1, this.options.maxEntries);
+        if (list.length > max) {
+            list.splice(0, list.length - max);
+        }
+        return entry;
+    }
+
+    /**
+     * Render through the wrapped Coherent instance, recording timing,
+     * validation warnings and errors.
+     */
+    render(component, context = {}, options = {}) {
+        const render = this.coherent?.render;
+        if (typeof render !== 'function') {
+            throw new TypeError('DevTools.render() needs a Coherent instance with a render() function: createDevTools(coherent)');
+        }
+        if (!this.isEnabled) {
+            return render.call(this.coherent, component, context, options);
+        }
+
+        const renderStart = performance.now();
+        const renderId = this.generateRenderId();
+
+        try {
+            // Pre-render validation and logging
+            this.preRenderAnalysis(component, context, renderId);
+
+            // Actual render
+            const result = render.call(this.coherent, component, context, {
+                ...options,
+                _devRenderId: renderId
+            });
+
+            // Post-render analysis
+            const renderTime = performance.now() - renderStart;
+            this.postRenderAnalysis(component, result, renderTime, renderId);
+
+            return result;
+
+        } catch (_error) {
+            this.handleRenderError(_error, component, context, renderId);
+            throw _error;
+        }
+    }
+
+    /**
+     * createComponent() of the wrapped instance, registering the result for
+     * inspection.
+     */
+    createComponent(config) {
+        const create = this.coherent?.createComponent;
+        if (typeof create !== 'function') {
+            throw new TypeError('DevTools.createComponent() needs a Coherent instance with createComponent()');
+        }
+        const component = create.call(this.coherent, config);
+        if (this.isEnabled) {
+            this.componentRegistry.set(config?.name || 'anonymous', {
+                config,
+                component,
+                registeredAt: Date.now()
+            });
+        }
+        return component;
     }
 
     /**
@@ -97,44 +207,15 @@ export class DevTools {
         };
 
         // Expose helpers globally
-        if (typeof window !== 'undefined') {
-            Object.assign(window, helpers);
-        } else if (typeof global !== 'undefined') {
-            Object.assign(global, helpers);
-        }
-    }
-
-    /**
-     * Intercept render calls for debugging
-     */
-    setupRenderInterception() {
-        const originalRender = this.coherent.render;
-
-        this.coherent.render = (component, context = {}, options = {}) => {
-            const renderStart = performance.now();
-            const renderId = this.generateRenderId();
-
-            try {
-                // Pre-render validation and logging
-                this.preRenderAnalysis(component, context, renderId);
-
-                // Actual render
-                const result = originalRender.call(this.coherent, component, context, {
-                    ...options,
-                    _devRenderId: renderId
-                });
-
-                // Post-render analysis
-                const renderTime = performance.now() - renderStart;
-                this.postRenderAnalysis(component, result, renderTime, renderId);
-
-                return result;
-
-            } catch (_error) {
-                this.handleRenderError(_error, component, context, renderId);
-                throw _error;
+        const target = globalThis;
+        const previous = Object.fromEntries(Object.keys(helpers).map((key) => [key, target[key]]));
+        Object.assign(target, helpers);
+        this._teardown.push(() => {
+            for (const [key, value] of Object.entries(previous)) {
+                if (value === undefined) delete target[key];
+                else target[key] = value;
             }
-        };
+        });
     }
 
     /**
@@ -144,7 +225,7 @@ export class DevTools {
         // Component structure validation
         const validation = this.deepValidateComponent(component);
         if (!validation.isValid) {
-            this.warnings.push({
+            this.record(this.warnings, {
                 type: 'validation',
                 message: validation.message,
                 component: this.serializeComponent(component),
@@ -156,7 +237,7 @@ export class DevTools {
         // Performance warnings
         const complexity = this.analyzeComplexity(component);
         if (complexity > 1000) {
-            this.warnings.push({
+            this.record(this.warnings, {
                 type: 'performance',
                 message: `High complexity component detected (${complexity} nodes)`,
                 renderId,
@@ -165,7 +246,7 @@ export class DevTools {
         }
 
         // Context analysis
-        this.analyzeContext(context, renderId);
+        this.analyzeContext(context ?? {}, renderId);
     }
 
     /**
@@ -178,7 +259,7 @@ export class DevTools {
             timestamp: Date.now(),
             component: this.serializeComponent(component),
             renderTime,
-            outputSize: result.length,
+            outputSize: typeof result === 'string' ? result.length : 0,
             complexity: this.analyzeComplexity(component)
         };
 
@@ -191,7 +272,7 @@ export class DevTools {
 
         // Performance analysis
         if (renderTime > 10) {
-            this.warnings.push({
+            this.record(this.warnings, {
                 type: 'performance',
                 message: `Slow render detected: ${renderTime.toFixed(2)}ms`,
                 renderId,
@@ -293,29 +374,30 @@ export class DevTools {
      * Context analysis
      */
     analyzeContext(context, renderId) {
-        // Large context warning
-        const contextSize = JSON.stringify(context).length;
-        if (contextSize > 10000) {
-            this.warnings.push({
-                type: 'context',
-                message: `Large context object: ${contextSize} characters`,
-                renderId,
-                timestamp: Date.now()
-            });
-        }
-
-        // Circular reference check
+        let contextSize;
         try {
-            JSON.stringify(context);
+            contextSize = JSON.stringify(context)?.length ?? 0;
         } catch (_error) {
-            if (_error.message.includes('circular')) {
-                this.warnings.push({
+            // Circular reference check
+            if (/circular/i.test(_error.message)) {
+                this.record(this.warnings, {
                     type: 'context',
                     message: 'Circular reference detected in context',
                     renderId,
                     timestamp: Date.now()
                 });
             }
+            return;
+        }
+
+        // Large context warning
+        if (contextSize > 10000) {
+            this.record(this.warnings, {
+                type: 'context',
+                message: `Large context object: ${contextSize} characters`,
+                renderId,
+                timestamp: Date.now()
+            });
         }
     }
 
@@ -443,48 +525,65 @@ export class DevTools {
     }
 
     /**
-     * Setup _error handling
+     * Record errors. console.error calls are captured (and still printed);
+     * unhandled rejections only when `trackUnhandledRejections` is set, and
+     * then they still crash the process exactly as they would without us.
      */
     setupErrorHandling() {
-        // Global _error handler
-        const originalConsoleError = console.error;
-        console.error = (...args) => {
-            // Log to dev tools
-            this.errors.push({
-                type: 'console',
-                message: args.join(' '),
-                timestamp: Date.now(),
-                stack: new Error().stack
-            });
-
-            // Call original
-            originalConsoleError.apply(console, args);
-        };
-
-        // Unhandled rejection handler (Node.js)
-        if (typeof process !== 'undefined') {
-            process.on('unhandledRejection', (reason, promise) => {
-                this.errors.push({
-                    type: 'unhandled-rejection',
-                    message: reason.toString(),
-                    promise: promise.toString(),
-                    timestamp: Date.now()
+        if (this.options.captureConsoleErrors) {
+            const originalConsoleError = console.error;
+            const hooked = (...args) => {
+                // Log to dev tools
+                this.record(this.errors, {
+                    type: 'console',
+                    message: args.map((arg) => String(arg)).join(' '),
+                    timestamp: Date.now(),
+                    stack: new Error().stack
                 });
+
+                // Call original
+                originalConsoleError.apply(console, args);
+            };
+            console.error = hooked;
+            this._teardown.push(() => {
+                if (console.error === hooked) console.error = originalConsoleError;
             });
         }
 
-        // Browser _error handler
-        if (typeof window !== 'undefined') {
-            window.addEventListener('_error', (event) => {
-                this.errors.push({
-                    type: 'browser-_error',
+        // Unhandled rejection handler (Node.js). Adding a listener turns off
+        // Node's default crash, so rethrow unless someone else handles it.
+        if (this.options.trackUnhandledRejections && typeof process !== 'undefined' && typeof process.on === 'function') {
+            const listener = (reason) => {
+                this.record(this.errors, {
+                    type: 'unhandled-rejection',
+                    message: reason instanceof Error ? reason.message : String(reason),
+                    stack: reason instanceof Error ? reason.stack : undefined,
+                    timestamp: Date.now()
+                });
+                if (process.listenerCount('unhandledRejection') === 1) {
+                    throw reason instanceof Error
+                        ? reason
+                        : new Error(`Unhandled promise rejection: ${String(reason)}`);
+                }
+            };
+            process.on('unhandledRejection', listener);
+            this._teardown.push(() => process.off('unhandledRejection', listener));
+        }
+
+        // Browser error handler
+        if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+            const listener = (event) => {
+                this.record(this.errors, {
+                    type: 'browser-error',
                     message: event.message,
                     filename: event.filename,
                     lineno: event.lineno,
                     colno: event.colno,
                     timestamp: Date.now()
                 });
-            });
+            };
+            window.addEventListener('error', listener);
+            this._teardown.push(() => window.removeEventListener('error', listener));
         }
     }
 
@@ -492,8 +591,8 @@ export class DevTools {
      * Handle render errors specifically
      */
     handleRenderError(_error, component, context, renderId) {
-        this.errors.push({
-            type: 'render-_error',
+        this.record(this.errors, {
+            type: 'render-error',
             message: _error.message,
             stack: _error.stack,
             component: this.serializeComponent(component),
@@ -507,28 +606,30 @@ export class DevTools {
     }
 
     /**
-     * Setup hot reload capability
+     * Connect to a hot-reload WebSocket, only when `hotReloadUrl` is set
+     * (browser only).
      */
     setupHotReload() {
-        if (typeof window !== 'undefined' && 'WebSocket' in window) {
-            // Browser hot reload
-            this.setupBrowserHotReload();
-        } else if (typeof require !== 'undefined') {
-            // Node.js file watching
-            this.setupNodeHotReload();
+        if (this.options.hotReloadUrl && typeof window !== 'undefined' && 'WebSocket' in window) {
+            this.setupBrowserHotReload(this.options.hotReloadUrl);
         }
     }
 
     /**
      * Browser hot reload setup
      */
-    setupBrowserHotReload() {
+    setupBrowserHotReload(url) {
         // Connect to development server WebSocket
         try {
-            const ws = new WebSocket('ws://localhost:3001/coherent-dev');
+            const ws = new window.WebSocket(url);
 
             ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
+                let data;
+                try {
+                    data = JSON.parse(event.data);
+                } catch {
+                    return;
+                }
 
                 if (data.type === 'component-updated') {
                     console.log('🔄 Component updated:', data.componentName);
@@ -548,33 +649,9 @@ export class DevTools {
                 this.hotReloadEnabled = false;
             };
 
+            this._teardown.push(() => ws.close());
         } catch {
             // Dev server not available
-        }
-    }
-
-    /**
-     * Node.js hot reload setup
-     */
-    setupNodeHotReload() {
-        // File system watching for component changes
-        try {
-            const fs = require('fs');
-            const path = require('path');
-
-            const watchDir = path.join(process.cwd(), 'src');
-
-            fs.watch(watchDir, { recursive: true }, (eventType, filename) => {
-                if (filename && filename.endsWith('.js')) {
-                    console.log(`🔄 File changed: ${filename}`);
-                    this.handleFileChange(filename, eventType);
-                }
-            });
-
-            this.hotReloadEnabled = true;
-
-        } catch {
-            // File watching not available
         }
     }
 
@@ -583,7 +660,7 @@ export class DevTools {
      */
     handleComponentUpdate(updateData) {
         // Clear related caches
-        if (this.coherent.cache) {
+        if (this.coherent?.cache?.invalidatePattern) {
             this.coherent.cache.invalidatePattern(updateData.componentName);
         }
 
@@ -600,19 +677,6 @@ export class DevTools {
     }
 
     /**
-     * Handle file changes
-     */
-    handleFileChange(filename, eventType) {
-        // Clear require cache for the changed file
-        if (typeof require !== 'undefined' && require.cache) {
-            const fullPath = require.resolve(path.resolve(filename));
-            delete require.cache[fullPath];
-        }
-
-        console.log(`📝 ${eventType}: ${filename}`);
-    }
-
-    /**
      * Setup browser-specific dev tools
      */
     setupBrowserDevTools() {
@@ -620,7 +684,7 @@ export class DevTools {
         this.createDevPanel();
 
         // Add keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
+        const onKeyDown = (e) => {
             // Ctrl+Shift+C = Toggle dev panel
             if (e.ctrlKey && e.shiftKey && e.code === 'KeyC') {
                 this.toggleDevPanel();
@@ -632,7 +696,9 @@ export class DevTools {
                 console.table(this.getPerformanceInsights());
                 e.preventDefault();
             }
-        });
+        };
+        document.addEventListener('keydown', onKeyDown);
+        this._teardown.push(() => document.removeEventListener('keydown', onKeyDown));
     }
 
     /**
@@ -661,6 +727,10 @@ export class DevTools {
 
         document.body.appendChild(panel);
         this.devPanel = panel;
+        this._teardown.push(() => {
+            panel.remove();
+            this.devPanel = null;
+        });
         this.updateDevPanel();
     }
 
@@ -730,17 +800,6 @@ export class DevTools {
     }
 
     /**
-     * Setup Node.js specific dev tools
-     */
-    setupNodeDevTools() {
-        // Add process event listeners
-        process.on('SIGINT', () => {
-            this.printDevSummary();
-            process.exit();
-        });
-    }
-
-    /**
      * Print development summary
      */
     printDevSummary() {
@@ -780,7 +839,7 @@ export class DevTools {
         }
 
         // Get cache stats if available
-        if (this.coherent.cache && this.coherent.cache.getStats) {
+        if (this.coherent?.cache?.getStats) {
             const cacheStats = this.coherent.cache.getStats();
             insights.cacheHits = cacheStats.hits;
             insights.cacheHitRate = cacheStats.hitRate;
@@ -855,7 +914,7 @@ export class DevTools {
     toggleFeature(feature) {
         switch (feature) {
             case 'cache':
-                if (this.coherent.cache) {
+                if (this.coherent?.cache) {
                     this.coherent.cache.enabled = !this.coherent.cache.enabled;
                     console.log(`Cache ${this.coherent.cache.enabled ? 'enabled' : 'disabled'}`);
                 }
@@ -878,33 +937,13 @@ export class DevTools {
     validateComponent(component) {
         return this.deepValidateComponent(component);
     }
-
-    setupComponentInspector() {
-        // Register components for inspection
-        const originalCreateComponent = this.coherent.createComponent;
-
-        if (originalCreateComponent) {
-            this.coherent.createComponent = (config) => {
-                const component = originalCreateComponent.call(this.coherent, config);
-
-                // Register component
-                this.componentRegistry.set(config.name || 'anonymous', {
-                    config,
-                    component,
-                    registeredAt: Date.now()
-                });
-
-                return component;
-            };
-        }
-    }
 }
 
 /**
  * Create a lightweight dev tools instance
  */
-export function createDevTools(coherentInstance) {
-    return new DevTools(coherentInstance);
+export function createDevTools(coherentInstance, options) {
+    return new DevTools(coherentInstance, options);
 }
 
 /**

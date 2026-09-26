@@ -30,6 +30,9 @@ const sessionStorageMock = (() => {
 global.localStorage = localStorageMock;
 global.sessionStorage = sessionStorageMock;
 
+// Browser storage is only used in a browser; on the server it is a no-op.
+global.window = global.window ?? {};
+
 describe('State Persistence', () => {
   beforeEach(() => {
     // Clear storage before each test

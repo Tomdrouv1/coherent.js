@@ -20,16 +20,16 @@ export interface RouteTransition {
 
 /** Route configuration */
 export interface RouteConfig {
-  /** Route path pattern */
-  path: string;
+  /** Route path pattern (the `addRoute()` argument is what counts) */
+  path?: string;
   /** Component to render (can be async for code splitting) */
   component: CoherentComponent | (() => Promise<CoherentComponent>);
   /** Route metadata */
   meta?: Record<string, any>;
-  /** Before enter guard */
-  beforeEnter?: (to: Route, from: Route | null) => boolean | Promise<boolean>;
-  /** Before leave guard */
-  beforeLeave?: (to: Route, from: Route) => boolean | Promise<boolean>;
+  /** Before enter guard; returning `false` cancels the navigation */
+  beforeEnter?: (to: Route, from: Route | null) => boolean | void | Promise<boolean | void>;
+  /** Before leave guard; returning `false` cancels the navigation */
+  beforeLeave?: (to: Route, from: Route) => boolean | void | Promise<boolean | void>;
   /** Prefetch priority */
   priority?: number;
   /** Custom transition for this route */
@@ -38,9 +38,15 @@ export interface RouteConfig {
 
 /** Current route state */
 export interface Route {
+  /** Path without query or hash, e.g. `/users/42` */
   path: string;
+  /** Path as navigated to, e.g. `/users/42?tab=posts#top` */
+  fullPath?: string;
+  /** Values of the matched pattern's `:params` (and `pathMatch` for `*`) */
+  params?: Record<string, string>;
   component?: CoherentComponent;
   meta?: Record<string, any>;
+  /** `#hash`, including the `#`, or `''` */
   hash?: string;
   query?: Record<string, string>;
 }
@@ -65,7 +71,9 @@ export interface ScrollBehaviorConfig {
 
 /** Router configuration options */
 export interface RouterConfig {
+  /** How URLs are written once `start()` is called; defaults to `'history'` */
   mode?: 'history' | 'hash';
+  /** Path prefix of the app in history mode, e.g. `'/app'` */
   base?: string;
   prefetch?: {
     enabled?: boolean;
@@ -121,23 +129,38 @@ export interface RouterStats {
 
 /** Router instance */
 export interface Router {
-  /** Add a route to the router */
+  /**
+   * Add a route. `path` may contain `:param` segments and end in `/*`;
+   * exact paths win over patterns, patterns match in registration order.
+   */
   addRoute(path: string, config: RouteConfig): void;
-  /** Navigate to a path */
+  /**
+   * Navigate to a path (with optional `?query` and `#hash`), adding a history
+   * entry. Resolves `false` when no route matches, a guard cancels, loading
+   * fails, or a later navigation superseded this one.
+   */
   push(path: string, options?: Partial<Route>): Promise<boolean>;
-  /** Replace current route */
+  /** Like `push()`, replacing the current history entry */
   replace(path: string, options?: Partial<Route>): Promise<boolean>;
-  /** Go back in history */
+  /** Go back in history (the browser's after `start()`, the router's before) */
   back(): void;
   /** Go forward in history */
   forward(): void;
+  /**
+   * Follow the browser: navigate to the current location, handle back/forward
+   * (popstate, or hashchange in hash mode) and, unless `interceptLinks` is
+   * `false`, clicks on same-origin links to registered routes.
+   */
+  start(options?: { interceptLinks?: boolean }): Promise<boolean>;
+  /** Detach the listeners added by `start()` */
+  stop(): void;
   /** Prefetch a single route */
   prefetchRoute(path: string, priority?: number): Promise<void>;
   /** Prefetch multiple routes */
   prefetchRoutes(paths: string[], priority?: number): void;
   /** Setup prefetch strategy for an element */
   setupPrefetchStrategy(element: HTMLElement, path: string): void;
-  /** Get route configuration by path */
+  /** Get the route configuration registered for, or matching, a path */
   getRoute(path: string): RouteConfig | undefined;
   /** Get all registered routes */
   getRoutes(): RouteConfig[];

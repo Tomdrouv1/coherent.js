@@ -15,6 +15,7 @@
  */
 
 import { WebSocketServer } from 'ws';
+import { isHostAllowed, isOriginAllowed } from './access.js';
 
 /**
  * @typedef {Object} HmrServer
@@ -31,11 +32,26 @@ import { WebSocketServer } from 'ws';
  * a `{type: 'connected'}` ack on open. Dead clients are pruned on
  * the next broadcast.
  *
+ * Upgrades are refused (403) when the Host header does not name this
+ * server or when a browser Origin belongs to another site: without that,
+ * any page the developer visits could subscribe to the change feed.
+ *
  * @param {import('node:http').Server} httpServer - HTTP server to attach to.
+ * @param {import('./access.js').HostOptions} [options] - Accepted hosts (see access.js).
  * @returns {HmrServer}
  */
-export function createHmrServer(httpServer) {
-  const wss = new WebSocketServer({ server: httpServer });
+export function createHmrServer(httpServer, options = {}) {
+  const hostOptions = { host: options.host, allowedHosts: options.allowedHosts ?? [] };
+  const wss = new WebSocketServer({
+    server: httpServer,
+    verifyClient: ({ origin, req }, done) => {
+      if (isHostAllowed(req.headers.host, hostOptions) && isOriginAllowed(origin, hostOptions)) {
+        done(true);
+      } else {
+        done(false, 403, 'Forbidden');
+      }
+    },
+  });
 
   wss.on('connection', (socket) => {
     // Defer the initial ack by one event-loop turn so the client-side
@@ -72,8 +88,11 @@ export function createHmrServer(httpServer) {
       }
     },
     close() {
+      // terminate(), not close(): close() waits up to 30s for the browser to
+      // answer the closing handshake, and a tab that doesn't (busy, or
+      // already reconnecting) held the dev server's shutdown that long.
       for (const client of wss.clients) {
-        try { client.close(); } catch { /* ignore */ }
+        try { client.terminate(); } catch { /* ignore */ }
       }
       wss.close();
     },

@@ -9,8 +9,13 @@ import picocolors from 'picocolors';
 import { generateComponent } from '../generators/component-generator.js';
 import { generatePage } from '../generators/page-generator.js';
 import { generateAPI } from '../generators/api-generator.js';
-import { validateComponentName } from '../utils/validation.js';
+import { validateApiName, validateComponentName } from '../utils/validation.js';
 import { requireInteractive } from '../utils/interactive.js';
+
+// API names may be lowercase (`coherent generate api users`); components and
+// pages are PascalCase.
+const API_TYPES = ['api', 'route', 'r'];
+const nameValidator = (type) => (API_TYPES.includes(type) ? validateApiName : validateComponentName);
 
 export const generateCommand = new Command('generate')
   .alias('g')
@@ -21,6 +26,7 @@ export const generateCommand = new Command('generate')
   .option('-t, --template <template>', 'template to use')
   .option('--skip-test', 'skip generating test file')
   .option('--skip-story', 'skip generating story file')
+  .option('-f, --force', 'overwrite files that already exist')
   .action(async (type, name, options) => {
     let generationType = type;
     let itemName = name;
@@ -61,7 +67,7 @@ export const generateCommand = new Command('generate')
         type: 'text',
         name: 'name',
         message: `What is the ${generationType} name?`,
-        validate: validateComponentName
+        validate: nameValidator(generationType)
       });
 
       if (!response.name) {
@@ -73,7 +79,7 @@ export const generateCommand = new Command('generate')
     }
 
     // Validate name
-    const nameValidation = validateComponentName(itemName);
+    const nameValidation = nameValidator(generationType)(itemName);
     if (nameValidation !== true) {
       console.error(picocolors.red('❌ Invalid name:'), nameValidation);
       process.exit(1);

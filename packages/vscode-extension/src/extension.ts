@@ -47,8 +47,10 @@ export function activate(context: ExtensionContext): void {
   };
 
   // Create and start the language client
+  // The id is the settings prefix: `coherent.trace.server` (contributed in
+  // package.json) only takes effect when the client id is 'coherent'.
   client = new LanguageClient(
-    'coherentLanguageServer',
+    'coherent',
     'Coherent.js Language Server',
     serverOptions,
     clientOptions

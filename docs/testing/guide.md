@@ -67,6 +67,42 @@ describe('HomePage', () => {
 });
 ```
 
+## Custom matchers
+
+`extendExpect(expect)` adds matchers that read a `renderComponent()` result.
+It does not replace Vitest's built-in matchers (`toMatchSnapshot`,
+`toHaveBeenCalled*`...):
+
+```javascript
+import { describe, it, expect } from 'vitest';
+import { renderComponent, extendExpect } from '@coherent.js/tooling/testing';
+
+extendExpect(expect);
+
+const Button = ({ label }) => ({
+  button: { className: ['btn', 'btn-primary'], 'data-testid': 'save', text: label }
+});
+
+describe('Button', () => {
+  it('renders its label and classes', () => {
+    const result = renderComponent(Button({ label: 'Save' }));
+    expect(result).toHaveText('Save');          // text content, entities decoded
+    expect(result).toHaveClass('btn');          // whole class tokens only
+    expect(result).not.toHaveClass('btn-prim');
+    expect(result.getByTestId('save')).toBeTruthy();
+    expect(result).toBeValidHTML();
+  });
+
+  it('matches the snapshot', () => {
+    expect(renderComponent(Button({ label: 'Save' })).toSnapshot()).toMatchSnapshot();
+  });
+});
+```
+
+`toHaveAttribute` and `toHaveTagName` look at the component's root element.
+Mocks from `createMock()` / `createSpy()` work with the built-in
+`toHaveBeenCalled*` matchers.
+
 ## Reusable smoke tests
 
 A pattern that scales well — one helper asserting any component renders:

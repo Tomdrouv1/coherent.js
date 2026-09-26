@@ -12,6 +12,26 @@ import { join } from 'path';
 import { startDevServer } from '../dev-server/index.js';
 
 /**
+ * Open `url` in the default browser via the optional `open` package, which
+ * this CLI does not depend on. Never throws: prints how to enable it instead.
+ */
+export async function openBrowser(url, importOpen = () => import('open')) {
+  try {
+    const { default: open } = await importOpen();
+    await open(url);
+    return true;
+  } catch (error) {
+    if (error?.code === 'ERR_MODULE_NOT_FOUND') {
+      console.log(picocolors.yellow('⚠️  --open needs the optional "open" package: npm install --save-dev open'));
+    } else {
+      console.log(picocolors.yellow(`⚠️  Could not open a browser: ${error?.message ?? error}`));
+    }
+    console.log(picocolors.gray(`   Open ${url} manually.`));
+    return false;
+  }
+}
+
+/**
  * True when the current project should use the built-in Coherent dev
  * server instead of delegating to vite/webpack/nodemon. Either the
  * `--coherent` flag is set, or a `coherent.config.js`/`.mjs` file
@@ -22,13 +42,25 @@ function shouldUseCoherentDevServer(cwd, options) {
   return existsSync(join(cwd, 'coherent.config.js')) || existsSync(join(cwd, 'coherent.config.mjs'));
 }
 
+/** Split a comma-separated option value into its trimmed, non-empty entries. */
+function splitList(value) {
+  return String(value).split(',').map((entry) => entry.trim()).filter(Boolean);
+}
+
+/** Commander parser for a comma-separated option that may also be repeated. */
+function collectList(value, previous = []) {
+  return [...previous, ...splitList(value)];
+}
+
 export const devCommand = new Command('dev')
   .description('Start development server with hot reload')
   .option('-p, --port <port>', 'port number', '3000')
-  .option('-h, --host <host>', 'host address', 'localhost')
+  .option('-H, --host <host>', 'host address', 'localhost')
   .option('--open', 'open browser automatically')
   .option('--no-hmr', 'disable hot module replacement')
   .option('--coherent', 'use the built-in Coherent HMR dev server (HTTP + WebSocket + chokidar)')
+  .option('--allowed-hosts <hosts>', 'built-in server: comma-separated extra Host names to answer (besides localhost, IPs and --host)')
+  .option('--fs-allow <dirs>', 'built-in server: comma-separated extra directories files may be served from, relative to the project root (repeatable)', collectList)
   .action(async (options) => {
     console.log(picocolors.cyan('🚀 Starting Coherent.js development server...'));
     console.log();
@@ -55,9 +87,11 @@ export const devCommand = new Command('dev')
           root: cwd,
           port: Number(options.port),
           host: options.host,
-          open: Boolean(options.open),
+          open: false,
           log: true,
           hmr: options.hmr !== false,
+          allowedHosts: options.allowedHosts ? splitList(options.allowedHosts) : [],
+          fsAllow: options.fsAllow ?? [],
         });
 
         const cleanup = async () => {
@@ -68,6 +102,10 @@ export const devCommand = new Command('dev')
         };
         process.on('SIGINT', cleanup);
         process.on('SIGTERM', cleanup);
+
+        if (options.open) {
+          await openBrowser(`http://${server.host}:${server.port}`);
+        }
       } catch (error) {
         console.error(picocolors.red('❌ Failed to start Coherent dev server:'), error.message);
         process.exit(1);
@@ -75,12 +113,11 @@ export const devCommand = new Command('dev')
       return;
     }
 
-    // --- Fallback: existing delegation behavior (unchanged) ---
+    // --- Fallback: existing delegation behavior ---
     const spinner = ora('Starting development server...').start();
+    let devProcess;
 
     try {
-      let devProcess;
-
       if (packageJson.scripts && packageJson.scripts.dev) {
         spinner.text = 'Running dev script...';
 
@@ -138,11 +175,6 @@ export const devCommand = new Command('dev')
       console.log(picocolors.gray('Press Ctrl+C to stop the server'));
       console.log();
 
-      if (options.open) {
-        const { default: open } = await import('open');
-        await open(`http://${options.host}:${options.port}`);
-      }
-
       const cleanup = () => {
         console.log();
         console.log(picocolors.yellow('👋 Stopping development server...'));
@@ -162,12 +194,20 @@ export const devCommand = new Command('dev')
         }
       });
 
-      devProcess.on('_error', (_error) => {
+      devProcess.on('error', (_error) => {
         console.error(picocolors.red('❌ Failed to start development server:'), _error.message);
         process.exit(1);
       });
 
+      if (options.open) {
+        await openBrowser(`http://${options.host}:${options.port}`);
+      }
+
     } catch (error) {
+      // Never leave a server running behind a command that reports failure
+      if (devProcess && devProcess.exitCode === null) {
+        devProcess.kill();
+      }
       spinner.fail('Failed to start development server');
       console.error(picocolors.red('❌ Error:'), error.message);
 

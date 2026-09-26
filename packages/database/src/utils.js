@@ -5,7 +5,7 @@
  */
 
 import { DatabaseManager } from './connection-manager.js';
-// Migration utilities are handled by the createMigration factory function
+import { createMigration } from './migration.js';
 
 /**
  * Model registry for managing model classes
@@ -108,7 +108,6 @@ export function getAllModels() {
  * });
  */
 export async function runMigrations(db, config = {}) {
-  const { createMigration } = await import('./migration.js');
   const migration = createMigration(db, config);
   return await migration.run();
 }
@@ -125,7 +124,6 @@ export async function runMigrations(db, config = {}) {
  * const rolledBack = await rollbackMigrations(db, 2);
  */
 export async function rollbackMigrations(db, steps = 1, config = {}) {
-  const { createMigration } = await import('./migration.js');
   const migration = createMigration(db, config);
   return await migration.rollback(steps);
 }
@@ -141,7 +139,6 @@ export async function rollbackMigrations(db, steps = 1, config = {}) {
  * const filePath = await createMigration('create_users_table');
  */
 export async function createMigrationFile(name, config = {}) {
-  const { createMigration } = await import('./migration.js');
   const migration = createMigration(null, config);
   return await migration.create(name);
 }
@@ -193,17 +190,17 @@ export function validateConfig(config) {
   if (!config.type) {
     errors.push('Database type is required');
   } else {
-    const supportedTypes = ['postgresql', 'mysql', 'sqlite', 'mongodb'];
+    const supportedTypes = ['postgresql', 'mysql', 'sqlite', 'mongodb', 'memory'];
     if (!supportedTypes.includes(config.type)) {
       errors.push(`Unsupported database type: ${config.type}`);
     }
   }
 
-  if (!config.database) {
+  if (!config.database && config.type !== 'memory') {
     errors.push('Database name is required');
   }
 
-  if (config.type !== 'sqlite') {
+  if (config.type !== 'sqlite' && config.type !== 'memory') {
     if (!config.host) {
       errors.push('Host is required for non-SQLite databases');
     }
@@ -222,50 +219,23 @@ export function validateConfig(config) {
 }
 
 /**
- * Create database backup
- * 
- * @param {DatabaseManager} db - Database manager instance
- * @param {Object} [options={}] - Backup options
- * @returns {Promise<string>} Backup file path or data
- * 
- * @example
- * const backupPath = await createBackup(db, {
- *   format: 'sql',
- *   outputPath: './backups'
- * });
+ * Create database backup -- not implemented.
+ *
+ * @throws {Error} Always: use the database's own backup tool
  */
-export async function createBackup(db, options = {}) {
-  const backupConfig = {
-    format: 'sql',
-    outputPath: './backups',
-    timestamp: true,
-    ...options
-  };
-
-  const timestamp = backupConfig.timestamp ? new Date().toISOString().replace(/[:.]/g, '-') : '';
-  const fileName = `backup${timestamp ? `_${  timestamp}` : ''}.${backupConfig.format}`;
-  const filePath = `${backupConfig.outputPath}/${fileName}`;
-
-  // This would be adapter-specific implementation
-  // For now, return a placeholder
-  console.log(`Backup would be created at: ${filePath}`);
-  return filePath;
+export async function createBackup() {
+  // Not implemented: it used to log and return a path without writing any backup
+  throw new Error('createBackup() is not implemented. Use your database\'s own backup tool (pg_dump, mysqldump, sqlite3 .backup, mongodump).');
 }
 
 /**
- * Restore database from backup
- * 
- * @param {DatabaseManager} db - Database manager instance
- * @param {string} backupPath - Path to backup file
- * @param {Object} [options={}] - Restore options
- * @returns {Promise<void>}
- * 
- * @example
- * await restoreBackup(db, './backups/backup_2023-12-01.sql');
+ * Restore database from backup -- not implemented.
+ *
+ * @throws {Error} Always: use the database's own restore tool
  */
-export async function restoreBackup(db, backupPath) {
-  // This would be adapter-specific implementation
-  console.log(`Restore would be performed from: ${backupPath}`);
+export async function restoreBackup() {
+  // Not implemented: it used to log and return without restoring anything
+  throw new Error('restoreBackup() is not implemented. Use your database\'s own restore tool (psql, mysql, sqlite3 .restore, mongorestore).');
 }
 
 /**
@@ -333,7 +303,7 @@ export async function checkDatabaseHealth(db) {
   } catch (_error) {
     return {
       status: 'unhealthy',
-      _error: _error.message,
+      error: _error.message,
       connected: db.isConnected,
       responseTime: Date.now() - startTime
     };
@@ -372,7 +342,7 @@ export async function batchOperations(db, operations, options = {}) {
           const result = await tx.query(operation.sql, operation.params);
           results.push({ success: true, result });
         } catch (_error) {
-          results.push({ success: false, _error: _error.message });
+          results.push({ success: false, error: _error.message });
           
           if (!config.continueOnError) {
             throw _error;
@@ -393,7 +363,7 @@ export async function batchOperations(db, operations, options = {}) {
         const result = await db.query(operation.sql, operation.params);
         results.push({ success: true, result });
       } catch (_error) {
-        results.push({ success: false, _error: _error.message });
+        results.push({ success: false, error: _error.message });
         
         if (!config.continueOnError) {
           throw _error;

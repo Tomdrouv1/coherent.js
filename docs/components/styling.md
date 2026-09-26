@@ -55,7 +55,7 @@ const styles = `
 
 ### 2. Inline Styles
 
-For dynamic or component-specific styling:
+For dynamic or component-specific styling. `style` takes a string, or an object whose camelCase keys are written as CSS properties (`{ backgroundColor: 'red' }` renders `style="background-color: red"`):
 
 ```javascript
 const ProgressBar = ({ progress = 0, color = '#007bff', height = '20px' }) => ({
@@ -92,199 +92,104 @@ const progressBar = ProgressBar({
 
 ### 3. Conditional Styling
 
-Apply styles based on component state or props:
+`className` accepts a string, an array (falsy entries are skipped) or an object (keys whose value is truthy are kept):
 
 ```javascript
-const Alert = ({ type = 'info', message, dismissible = false, onDismiss }) => {
-  const alertStyles = {
-    info: 'alert-info',
-    success: 'alert-success',
-    warning: 'alert-warning',
-    error: 'alert-error'
-  };
-
-  return {
-    div: {
-      className: `alert ${alertStyles[type]} ${dismissible ? 'alert-dismissible' : ''}`,
-      role: 'alert',
-      children: [
-        { span: { text: message } },
-        dismissible ? {
-          button: {
-            className: 'alert-close',
-            'aria-label': 'Close',
-            onclick: onDismiss,
-            children: [{ span: { text: '×' } }]
-          }
-        } : null
-      ].filter(Boolean)
-    }
-  };
-};
-```
-
-## 📁 External CSS Files
-
-Coherent.js supports loading CSS files separately from your JavaScript code, making it easy to organize styles in dedicated files.
-
-### Loading CSS Files
-
-Use the `cssFiles` option in render functions to automatically load and inject CSS files:
-
-```javascript
-import { render } from 'coherent';
-
-const App = () => ({
+const Alert = ({ type = 'info', message, dismissible = false }) => ({
   div: {
-    className: 'app-container',
+    className: ['alert', `alert-${type}`, { 'alert-dismissible': dismissible }],
+    role: 'alert',
     children: [
-      { h1: { className: 'app-title', text: 'My Application' } },
-      { p: { className: 'app-description', text: 'Welcome to my app!' } }
+      { span: { text: message } },
+      dismissible && {
+        button: {
+          className: 'alert-close',
+          'aria-label': 'Close',
+          onClick: (event) => event.target.closest('.alert').remove(), // attached by hydrate()
+          children: [{ span: { text: '×' } }]
+        }
+      }
     ]
   }
 });
 
-// Automatically load CSS files
-const html = await render(App(), {
-  cssFiles: [
-    './styles/main.css',
-    './styles/components.css',
-    './styles/themes/default.css'
-  ]
-});
+render(Alert({ type: 'success', message: 'Saved', dismissible: true }));
+// <div class="alert alert-success alert-dismissible" role="alert">...
 ```
 
-### CSS File Organization
+## 📁 Stylesheets
 
-Organize your CSS files by feature or component:
+Coherent.js renders HTML; stylesheets are ordinary elements in your document's `head`.
+
+### Linking CSS Files
+
+```javascript
+import { render } from '@coherent.js/core';
+
+const Document = ({ title, children }) => ({
+  html: {
+    children: [
+      { head: {
+        children: [
+          { title: { text: title } },
+          { link: { rel: 'stylesheet', href: '/styles/main.css' } },
+          { link: { rel: 'stylesheet', href: '/styles/components.css' } },
+          { link: { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Inter&display=swap' } }
+        ]
+      }},
+      { body: { children } }
+    ]
+  }
+});
+
+const html = `<!DOCTYPE html>${render(Document({ title: 'My App', children: [App()] }))}`;
+```
+
+Serve the CSS files as static assets (for example with `express.static`), organised however you like:
 
 ```
 /styles/
   ├── main.css              // Global styles
   ├── components/
-  │   ├── button.css        // Button component styles
-  │   ├── form.css          // Form component styles
-  │   └── navigation.css    // Navigation styles
-  ├── themes/
-  │   ├── light.css         // Light theme
-  │   └── dark.css          // Dark theme
-  └── utilities/
-      ├── spacing.css       // Spacing utilities
-      └── typography.css    // Typography utilities
+  │   ├── button.css
+  │   └── form.css
+  └── themes/
+      ├── light.css
+      └── dark.css
 ```
 
-Example `styles/components/button.css`:
-
-```css
-.btn {
-  display: inline-block;
-  padding: 0.375rem 0.75rem;
-  margin-bottom: 0;
-  font-size: 1rem;
-  font-weight: 400;
-  line-height: 1.5;
-  text-align: center;
-  white-space: nowrap;
-  vertical-align: middle;
-  cursor: pointer;
-  user-select: none;
-  border: 1px solid transparent;
-  border-radius: 0.25rem;
-  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.btn-primary {
-  color: #fff;
-  background-color: #007bff;
-  border-color: #007bff;
-}
-
-.btn-primary:hover {
-  color: #fff;
-  background-color: #0056b3;
-  border-color: #004085;
-}
-
-.btn-secondary {
-  color: #fff;
-  background-color: #6c757d;
-  border-color: #6c757d;
-}
-
-.btn-large {
-  padding: 0.5rem 1rem;
-  font-size: 1.25rem;
-  border-radius: 0.3rem;
-}
-```
-
-### CSS Links and Inline Styles
-
-You can also use external CSS links and inline styles:
+### Inline `<style>` Elements
 
 ```javascript
-const html = await render(App(), {
-  // External CDN stylesheets
-  cssLinks: [
-    'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css',
-    'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'
-  ],
-  
-  // Inline CSS for quick overrides
-  cssInline: `
-    .custom-override {
-      color: #333;
-      font-family: 'Inter', sans-serif;
-    }
-  `,
-  
-  // Local CSS files
-  cssFiles: ['./styles/custom.css']
-});
+{ style: { text: `.custom-override { color: #333; font-family: 'Inter', sans-serif; }` } }
 ```
 
-### CSS Minification
+The text of a `<style>` element is not HTML-escaped (selectors such as `a > b` keep working), but a `</style` sequence inside it is neutralised so the CSS cannot close the element.
 
-Enable CSS minification for production builds:
+### Scoped CSS
 
-```javascript
-const html = await render(App(), {
-  cssFiles: ['./styles/main.css'],
-  cssMinify: process.env.NODE_ENV === 'production'
-});
-```
-
-### Working with CSS Modules
-
-For CSS Modules support, use the CSS file loading with scoped class names:
+Pass `scoped: true` (alias `encapsulate`) to `render()` to scope a component's own `<style>` rules to its elements, similar to Angular's view encapsulation:
 
 ```javascript
-// styles.module.css
-/*
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-.title {
-  font-size: 2.5rem;
-  color: #333;
-  margin-bottom: 1rem;
-}
-*/
-
-import styles from './styles.module.css';
-
-const Component = () => ({
+const Card = () => ({
   div: {
-    className: styles.container,
+    className: 'card',
     children: [
-      { h1: { className: styles.title, text: 'Title' } }
+      { style: { text: '.card { padding: 1rem; } @media (max-width: 600px) { .card { padding: 0; } }' } },
+      { h2: { className: 'title', text: 'Hello' } }
     ]
   }
 });
+
+render(Card(), { scoped: true });
+// <div class="card" coh-1ltr1dj=""><style coh-1ltr1dj="">.card[coh-1ltr1dj] { padding: 1rem; }
+//   @media (max-width: 600px) { .card[coh-1ltr1dj] { padding: 0; } }</style>
+//   <h2 class="title" coh-1ltr1dj="">Hello</h2></div>
 ```
+
+- Scoping is off by default.
+- The `coh-…` id is derived from the component's CSS, so the same component renders the same HTML every time (safe for HTML caching and hydration).
+- Rules inside `@media`, `@supports`, `@container` and `@layer` are scoped; `@keyframes`, `@font-face` and other at-rules are left intact.
 
 ## 🎭 CSS-in-JS Patterns
 
@@ -324,7 +229,8 @@ const createStyles = (theme) => ({
   }
 });
 
-// Convert style object to CSS string
+// `style` accepts these objects directly; this helper is only needed when you
+// want to combine them with a CSS string
 const stylesToString = (styles) => {
   return Object.entries(styles)
     .map(([property, value]) => {
@@ -339,29 +245,29 @@ const Card = ({ title, content, actions, theme }) => {
   
   return {
     div: {
-      style: stylesToString(styles.container),
+      style: styles.container,
       children: [
-        title ? {
+        title && {
           h2: {
-            style: stylesToString(styles.header),
+            style: styles.header,
             text: title
           }
-        } : null,
-        
-        content ? {
+        },
+
+        content && {
           div: {
-            style: stylesToString(styles.body),
+            style: styles.body,
             children: Array.isArray(content) ? content : [content]
           }
-        } : null,
-        
-        actions ? {
+        },
+
+        actions && {
           div: {
-            style: stylesToString(styles.footer),
+            style: styles.footer,
             children: Array.isArray(actions) ? actions : [actions]
           }
-        } : null
-      ].filter(Boolean)
+        }
+      ]
     }
   };
 };
@@ -438,7 +344,7 @@ const DynamicButton = (props) => {
   
   return {
     button: {
-      style: stylesToString(styles),
+      style: styles,
       disabled,
       ...restProps,
       children: Array.isArray(children) ? children : [children]
@@ -452,6 +358,14 @@ const DynamicButton = (props) => {
 ### Theme Definition
 
 ```javascript
+const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+const deepMerge = (base, overrides) => Object.fromEntries(
+  [...new Set([...Object.keys(base), ...Object.keys(overrides)])].map((key) => [
+    key,
+    isObject(base[key]) && isObject(overrides[key]) ? deepMerge(base[key], overrides[key]) : overrides[key] ?? base[key]
+  ])
+);
+
 const createTheme = (overrides = {}) => {
   const baseTheme = {
     colors: {
@@ -561,53 +475,36 @@ const highContrastTheme = createTheme({
 
 ### Theme Provider
 
+On the server, share the theme through the SSR context API of `@coherent.js/state` instead of threading it through every component:
+
 ```javascript
-const ThemeProvider = withState({ 
-  currentTheme: 'light',
-  themes: {
-    light: createTheme(),
-    dark: darkTheme,
-    highContrast: highContrastTheme
-  }
-})(({ state, stateUtils, children }) => {
-  const { setState } = stateUtils;
-  
-  const setTheme = (themeName) => {
-    setState({ currentTheme: themeName });
-    
-    // Apply theme to document
-    if (typeof document !== 'undefined') {
-      document.documentElement.setAttribute('data-theme', themeName);
-    }
-  };
-  
-  const theme = state.themes[state.currentTheme];
-  
-  // Provide theme context to children
-  const enhanceChild = (child) => {
-    if (typeof child === 'function') {
-      return child({ theme, setTheme });
-    }
-    return child;
-  };
-  
+import { render } from '@coherent.js/core';
+import { createContextProvider, useContext, runWithContext } from '@coherent.js/state';
+
+const themes = { light: createTheme(), dark: darkTheme, highContrast: highContrastTheme };
+
+const ThemedButton = () => {
+  const theme = useContext('theme');
   return {
-    div: {
-      'data-theme': state.currentTheme,
-      style: `
-        --color-primary: ${theme.colors.primary};
-        --color-background: ${theme.colors.background};
-        --color-text: ${theme.colors.text};
-        --spacing-medium: ${theme.spacing.medium};
-        --border-radius: ${theme.borderRadius};
-      `,
-      children: Array.isArray(children) 
-        ? children.map(enhanceChild)
-        : [enhanceChild(children)]
+    button: {
+      style: { background: theme.colors.primary, color: theme.colors.white, borderRadius: theme.borderRadius },
+      text: 'Save'
     }
   };
-});
+};
+
+app.get('/', (req, res) => runWithContext(() => {
+  const theme = themes[req.query.theme] ?? themes.light;
+  res.send(render({
+    div: {
+      'data-theme': req.query.theme ?? 'light',
+      children: [createContextProvider('theme', theme, ThemedButton)]
+    }
+  }));
+}));
 ```
+
+`runWithContext()` keeps each request's context separate. Switching themes in the browser is usually easiest with CSS custom properties (see [CSS Variable Generation](#css-variable-generation)) and a `data-theme` attribute on `<html>`.
 
 ### Theme-Aware Components
 
@@ -644,7 +541,7 @@ const ThemedCard = ({ theme, title, content, variant = 'default' }) => {
         font-family: ${theme.fonts.family.body};
       `,
       children: [
-        title ? {
+        title && {
           h3: {
             style: `
               margin: 0 0 ${theme.spacing.small} 0;
@@ -653,9 +550,9 @@ const ThemedCard = ({ theme, title, content, variant = 'default' }) => {
             `,
             text: title
           }
-        } : null,
-        
-        content ? {
+        },
+
+        content && {
           div: {
             style: `
               font-size: ${theme.fonts.sizes.medium};
@@ -663,8 +560,8 @@ const ThemedCard = ({ theme, title, content, variant = 'default' }) => {
             `,
             children: Array.isArray(content) ? content : [content]
           }
-        } : null
-      ].filter(Boolean)
+        }
+      ]
     }
   };
 };
@@ -674,51 +571,34 @@ const ThemedCard = ({ theme, title, content, variant = 'default' }) => {
 
 ### Media Query Utilities
 
+Media queries cannot go in a `style` attribute; put them in a `<style>` element, and render with `scoped: true` to keep the rules local to the component:
+
 ```javascript
 const mediaQueries = (theme) => ({
   mobile: `@media (max-width: ${theme.breakpoints.mobile})`,
-  tablet: `@media (max-width: ${theme.breakpoints.tablet})`,
-  desktop: `@media (min-width: ${theme.breakpoints.desktop})`,
-  wide: `@media (min-width: ${theme.breakpoints.wide})`
+  tablet: `@media (max-width: ${theme.breakpoints.tablet})`
 });
 
 const ResponsiveGrid = ({ theme, items, columns = { mobile: 1, tablet: 2, desktop: 3 } }) => {
-  const generateGridStyles = () => {
-    const mq = mediaQueries(theme);
-    
-    return `
-      display: grid;
-      gap: ${theme.spacing.medium};
-      grid-template-columns: repeat(${columns.desktop}, 1fr);
-      
-      ${mq.tablet} {
-        grid-template-columns: repeat(${columns.tablet}, 1fr);
-      }
-      
-      ${mq.mobile} {
-        grid-template-columns: repeat(${columns.mobile}, 1fr);
-      }
-    `;
-  };
-  
+  const mq = mediaQueries(theme);
+
   return {
     div: {
-      style: generateGridStyles(),
-      children: items.map((item, index) => ({
-        div: {
-          key: index,
-          style: `
-            background: ${theme.colors.surface};
-            padding: ${theme.spacing.medium};
-            border-radius: ${theme.borderRadius};
-            border: 1px solid ${theme.colors.border};
-          `,
-          children: [item]
-        }
-      }))
+      className: 'grid',
+      children: [
+        { style: { text: `
+          .grid { display: grid; gap: ${theme.spacing.medium}; grid-template-columns: repeat(${columns.desktop}, 1fr); }
+          ${mq.tablet} { .grid { grid-template-columns: repeat(${columns.tablet}, 1fr); } }
+          ${mq.mobile} { .grid { grid-template-columns: repeat(${columns.mobile}, 1fr); } }
+          .grid-item { background: ${theme.colors.surface}; padding: ${theme.spacing.medium}; border-radius: ${theme.borderRadius}; }
+        ` } },
+        ...items.map((item) => ({ div: { className: 'grid-item', children: [item] } }))
+      ]
     }
   };
 };
+
+render(ResponsiveGrid({ theme: createTheme(), items }), { scoped: true });
 ```
 
 ### Responsive Typography
@@ -761,11 +641,11 @@ const ResponsiveText = ({
   
   return {
     span: {
-      style: stylesToString({
+      style: {
         ...styles,
         fontFamily: theme.fonts.family.body,
         color: theme.colors.text
-      }),
+      },
       children: Array.isArray(children) ? children : [children]
     }
   };
@@ -794,11 +674,11 @@ const AnimatedButton = ({ theme, children, loading = false, ...props }) => {
   
   return {
     button: {
-      style: stylesToString(buttonStyles),
+      style: buttonStyles,
       disabled: loading,
       ...props,
       children: [
-        loading ? {
+        loading && {
           span: {
             style: `
               position: absolute;
@@ -813,7 +693,7 @@ const AnimatedButton = ({ theme, children, loading = false, ...props }) => {
               animation: spin 1s linear infinite;
             `
           }
-        } : null,
+        },
         
         {
           span: {
@@ -821,7 +701,7 @@ const AnimatedButton = ({ theme, children, loading = false, ...props }) => {
             children: Array.isArray(children) ? children : [children]
           }
         }
-      ].filter(Boolean)
+      ]
     }
   };
 };
@@ -852,6 +732,7 @@ const generateKeyframes = () => `
   }
 `;
 
+// Include the keyframes once per page: { style: { text: generateKeyframes() } }
 const AnimatedCard = ({ theme, animation = 'fadeIn', delay = 0, children }) => {
   const animationStyles = {
     fadeIn: `fadeIn 0.5s ease ${delay}s both`,
@@ -942,7 +823,7 @@ const ThemeVariables = ({ theme }) => {
   
   return {
     style: {
-      textContent: `:root { ${cssVariables} }`
+      text: `:root { ${cssVariables} }`
     }
   };
 };
@@ -956,20 +837,24 @@ const ThemeVariables = ({ theme }) => {
 // ✅ Good - Use design tokens
 const Button = ({ theme, variant }) => ({
   button: {
-    padding: theme.spacing.medium,
-    fontSize: theme.fonts.sizes.medium,
-    borderRadius: theme.borderRadius,
-    backgroundColor: theme.colors[variant]
+    style: {
+      padding: theme.spacing.medium,
+      fontSize: theme.fonts.sizes.medium,
+      borderRadius: theme.borderRadius,
+      backgroundColor: theme.colors[variant]
+    }
   }
 });
 
 // ❌ Avoid - Magic numbers
-const Button = ({ variant }) => ({
+const MagicButton = ({ variant }) => ({
   button: {
-    padding: '12px 24px',
-    fontSize: '14px',
-    borderRadius: '4px',
-    backgroundColor: variant === 'primary' ? '#007bff' : '#6c757d'
+    style: {
+      padding: '12px 24px',
+      fontSize: '14px',
+      borderRadius: '4px',
+      backgroundColor: variant === 'primary' ? '#007bff' : '#6c757d'
+    }
   }
 });
 ```
@@ -986,38 +871,34 @@ const buttonStyles = {
 // ❌ Avoid - Recreating styles
 const Button = () => ({
   button: {
-    style: stylesToString({
+    style: {
       padding: '0.5rem 1rem', // Recreated every render
       border: 'none'
-    })
+    }
   }
 });
 ```
 
 ### 3. Accessibility
 
+Focus styles need a pseudo-class, so they belong in a stylesheet rather than a `style` attribute:
+
 ```javascript
-const AccessibleButton = ({ theme, children, ...props }) => ({
+const AccessibleButton = ({ children, ...props }) => ({
   button: {
-    style: `
-      background: ${theme.colors.primary};
-      color: ${theme.colors.white};
-      border: 2px solid transparent;
-      padding: ${theme.spacing.medium};
-      font-size: ${theme.fonts.sizes.medium};
-      border-radius: ${theme.borderRadius};
-      cursor: pointer;
-      transition: all 0.2s ease;
-    `,
-    // Focus styles for accessibility
-    'data-focus-styles': `
-      outline: 2px solid ${theme.colors.primary};
-      outline-offset: 2px;
-    `,
+    className: 'btn',
     ...props,
     children
   }
 });
+
+// In your stylesheet (or a { style: { text } } element)
+const focusStyles = `
+  .btn:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+`;
 ```
 
 ### 4. Maintainable CSS

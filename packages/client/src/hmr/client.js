@@ -142,29 +142,36 @@ export class HMRClient {
     try {
       const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
       const wsUrl = `${protocol}://${location.host}`;
-      this.socket = new WebSocket(wsUrl);
+      const socket = new WebSocket(wsUrl);
+      this.socket = socket;
 
       // Share socket with module tracker for invalidation messages
-      moduleTracker.setSocket(this.socket);
+      moduleTracker.setSocket(socket);
 
-      this.socket.addEventListener('open', () => {
+      // Events from a socket that disconnect() dropped, or that a newer
+      // connection replaced, are ignored: its close must not reconnect.
+      const isCurrent = () => this.socket === socket;
+
+      socket.addEventListener('open', () => {
+        if (!isCurrent()) return;
         console.log('[HMR] Connected');
         this.connected = true;
         this.reconnectAttempts = 0;
         connectionIndicator.update('connected');
 
         // Send connection acknowledgment
-        this.socket.send(JSON.stringify({ type: 'connected' }));
+        socket.send(JSON.stringify({ type: 'connected' }));
 
         // If reconnecting after disconnect, reload (server may have restarted)
         if (this.hadDisconnect) {
           console.log('[HMR] Reconnected after disconnect, reloading page');
-          setTimeout(() => location.reload(), 200);
+          setTimeout(() => this.reload(), 200);
           return;
         }
       });
 
-      this.socket.addEventListener('close', () => {
+      socket.addEventListener('close', () => {
+        if (!isCurrent()) return;
         this.connected = false;
         this.hadDisconnect = true;
         connectionIndicator.update('disconnected');
@@ -172,17 +179,19 @@ export class HMRClient {
         this.scheduleReconnect();
       });
 
-      this.socket.addEventListener('error', (event) => {
+      socket.addEventListener('error', (event) => {
+        if (!isCurrent()) return;
         console.warn('[HMR] WebSocket error:', event);
         connectionIndicator.update('error');
         try {
-          this.socket.close();
+          socket.close();
         } catch {
           // Ignore close errors
         }
       });
 
-      this.socket.addEventListener('message', (event) => {
+      socket.addEventListener('message', (event) => {
+        if (!isCurrent()) return;
         this.handleMessage(event);
       });
     } catch (error) {
@@ -244,7 +253,7 @@ export class HMRClient {
       case 'hmr-full-reload':
       case 'reload':
         console.warn('[HMR] Server requested full reload');
-        location.reload();
+        this.reload();
         break;
 
       case 'hmr-component-update':
@@ -274,7 +283,8 @@ export class HMRClient {
    * 2. Execute dispose handlers
    * 3. Clean up module resources
    * 4. Re-import module
-   * 5. Execute accept handlers
+   * 5. Execute accept handlers, or reload the page when the module does not
+   *    accept updates (nothing else can apply its new code)
    * 6. Restore state
    *
    * @param {Object} data - Update message data
@@ -303,16 +313,16 @@ export class HMRClient {
 
       // 4. Re-import module with cache bust
       const importPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
-      const newModule = await import(`${importPath}?t=${Date.now()}`);
+      const newModule = await this.importModule(`${importPath}?t=${Date.now()}`);
 
       // 5. Execute accept handler if module can hot-update
-      const accepted = moduleTracker.canHotUpdate(moduleId);
-      if (accepted) {
-        moduleTracker.executeAccept(moduleId, newModule);
-      } else {
-        // Fall back to autoHydrate for components without explicit accept
-        await this.fallbackHydrate();
+      if (!moduleTracker.canHotUpdate(moduleId)) {
+        // No accept handler: only a reload runs the new code
+        console.log(`[HMR] ${filePath} does not accept hot updates, reloading`);
+        this.reload();
+        return;
       }
+      moduleTracker.executeAccept(moduleId, newModule);
 
       // 6. Restore state
       stateCapturer.restoreAll();
@@ -328,25 +338,20 @@ export class HMRClient {
   }
 
   /**
-   * Fall back to autoHydrate for non-HMR-aware modules
+   * Import an updated module (overridable, e.g. in tests)
    *
-   * @private
+   * @param {string} url - Module URL with cache-busting query
+   * @returns {Promise<Object>} Module namespace
    */
-  async fallbackHydrate() {
-    try {
-      // Try to import autoHydrate from the hydration module
-      const { autoHydrate } = await import('../hydration.js');
+  importModule(url) {
+    return import(/* @vite-ignore */ url);
+  }
 
-      // If examples register a component registry on window, prefer targeted hydrate
-      if (typeof window !== 'undefined' && window.componentRegistry) {
-        autoHydrate(window.componentRegistry);
-      } else {
-        autoHydrate();
-      }
-    } catch {
-      // autoHydrate not available or failed
-      console.warn('[HMR] autoHydrate not available, component may need manual refresh');
-    }
+  /**
+   * Reload the page
+   */
+  reload() {
+    location.reload();
   }
 
   /**
@@ -425,12 +430,15 @@ export class HMRClient {
     }
 
     if (this.socket) {
+      const socket = this.socket;
+      // Cleared first, so the close event of this socket is ignored rather
+      // than scheduling a reconnect
+      this.socket = null;
       try {
-        this.socket.close();
+        socket.close();
       } catch {
         // Ignore close errors
       }
-      this.socket = null;
     }
 
     this.connected = false;

@@ -2,11 +2,11 @@
 
 [![npm version](https://img.shields.io/npm/v/@coherent.js/i18n.svg)](https://www.npmjs.com/package/@coherent.js/i18n)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](../../LICENSE)
-[![Node >= 20](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
+[![Node >= 22.12](https://img.shields.io/badge/node-%3E%3D22.12-brightgreen)](https://nodejs.org)
 
 Internationalization utilities for Coherent.js applications.
 
-- ESM-only, Node 20+
+- ESM-only, Node 22.12+
 - Translator + locale management
 - Date/number/currency/list formatters
 
@@ -49,6 +49,35 @@ translator.setLocale('fr');
 console.log(translator.t('hello', { name: 'Coherent' })); // Bonjour, Coherent !
 ```
 
+`setLocale('fr-FR')` resolves to the closest loaded locale (`fr` here); a key
+missing from a regional locale is looked up in its language, then in the
+fallback locale.
+
+### Server-side rendering: one translator per request
+
+`setLocale()` changes the shared instance's current locale, so on a server
+where concurrent requests render with the same translator, one request's
+locale leaks into another's output. Keep `setLocale()` for the browser and
+bind a translator to each request instead:
+
+```js
+// Created once at startup
+const i18n = createTranslator({ defaultLocale: 'en' });
+i18n.addTranslations('en', { hello: 'Hello, {{name}}!' });
+i18n.addTranslations('fr', { hello: 'Bonjour, {{name}} !' });
+
+// Per request — never mutates `i18n`
+app.get('/', (req, res) => {
+  const { t } = i18n.forLocale(req.acceptsLanguages('en', 'fr') || 'en');
+  res.send(render({ p: { text: t('hello', { name: req.query.name }) } }));
+});
+```
+
+`forLocale(locale)` resolves the locale like `setLocale()` (falling back to
+the fallback locale without a warning, since request locales are untrusted)
+and returns `{ locale, t, has, getLocale }`. Pass `{ escape: true }` as a
+second argument to escape params in every call.
+
 TypeScript:
 ```ts
 import { createTranslator } from '@coherent.js/i18n';
@@ -58,6 +87,31 @@ translator.addTranslations('en', { hello: 'Hello, {{name}}!' });
 
 console.log(translator.t('hello', { name: 'TS' }));
 ```
+
+### Rendering translations safely
+
+Interpolated params are inserted verbatim by default. Render translations
+through core's `text:` property, which HTML-escapes the whole string — that is
+the safe sink:
+
+```js
+{ p: { text: translator.t('hello', { name: userInput }) } }
+```
+
+If a translation contains markup and has to go through `html:`, escape the
+params (the translation template itself is trusted and never escaped), either
+per call or for every call:
+
+```js
+translator.addTranslations('en', { joined: '<strong>{{name}}</strong> joined' });
+
+{ p: { html: translator.t('joined', { name: userInput }, { escape: true }) } }
+
+const safe = createTranslator({ escape: true }); // escape params on every call
+```
+
+The third argument of `t()` is either a locale string or
+`{ locale, escape }`.
 
 ### Formatters and locale
 

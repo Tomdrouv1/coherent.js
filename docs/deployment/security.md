@@ -1,532 +1,342 @@
-# Coherent.js API Security Guide
+# Coherent.js Security Guide
 
-This guide covers the comprehensive security features built into the Coherent.js API framework and best practices for secure API development.
+This guide covers the security features built into Coherent.js — the renderer, the `@coherent.js/api` router and the other packages — and how to use them safely.
 
 ## Table of Contents
 
-- [Built-in Security Features](#built-in-security-features)
+- [Rendering and XSS](#rendering-and-xss)
 - [Authentication & Authorization](#authentication--authorization)
-- [Input Validation & Sanitization](#input-validation--sanitization)
+- [Input Validation](#input-validation)
 - [Rate Limiting & DoS Protection](#rate-limiting--dos-protection)
 - [Security Headers](#security-headers)
 - [CORS Configuration](#cors-configuration)
 - [Request Size Limits](#request-size-limits)
+- [Error Messages](#error-messages)
 - [Password Security](#password-security)
-- [Security Best Practices](#security-best-practices)
-- [Common Vulnerabilities Prevention](#common-vulnerabilities-prevention)
+- [CSRF Protection](#csrf-protection)
+- [Database Queries](#database-queries)
+- [Development Server](#development-server)
+- [Security Testing](#security-testing)
 
-## Built-in Security Features
+## Rendering and XSS
 
-The Coherent.js API framework includes enterprise-grade security features out of the box:
+`@coherent.js/core` escapes by default:
 
-- **Automatic Security Headers** - CORS, XSS protection, content type sniffing prevention
-- **Rate Limiting** - IP-based request throttling with configurable windows
-- **Input Sanitization** - XSS prevention and prototype pollution protection
-- **Request Size Limits** - Protection against large payload attacks
-- **Authentication Middleware** - JWT-based authentication with role support
-- **Input Validation** - JSON Schema validation with security considerations
+- `text` and every attribute value are HTML-escaped.
+- Attribute **names** are validated: a name containing whitespace, quotes, `<`, `>`, `/`, `=` or control characters makes `render()` throw, so spreading request data into props cannot inject an attribute or break out of a tag.
+- Function-valued `on*` props render nothing on the server.
+- The text of a `<script>` or `<style>` element cannot close the element.
+
+Raw HTML only goes through two explicit doors, `html:` and `dangerouslySetInnerContent()`:
+
+```javascript
+import { dangerouslySetInnerContent } from '@coherent.js/core';
+
+{ div: { html: sanitizedHtml } }                                   // raw
+{ div: { children: [dangerouslySetInnerContent(sanitizedHtml)] } } // raw
+```
+
+Markers from `dangerouslySetInnerContent()` carry a non-enumerable symbol brand. A plain object such as `{ "__html": "<img onerror=...>", "__trusted": true }` — for example from a JSON request body — is never treated as trusted. Only pass HTML you produced or sanitized with a dedicated HTML sanitizer (a regex-based "escape" is not a sanitizer).
+
+Related helpers:
+
+- `@coherent.js/seo` writes JSON-LD with `<`, `>` and `&` escaped, so structured data cannot swallow the page.
+- `@coherent.js/i18n` can escape interpolated params: `createTranslator({ escape: true })` or `t(key, params, { escape: true })`. `text:` is escaped by core anyway; this matters when you insert a translation through `html:`.
 
 ## Authentication & Authorization
 
-### JWT Token Authentication
+### JWT Authentication
+
+`@coherent.js/api` has no default secret: `withAuth()`, `generateJWT()` and `verifyToken()` throw without one.
 
 ```javascript
-const { withAuth, withRole, generateToken } = require('../src/api/security');
+import { createRouter, withAuth, withRole, generateJWT } from '@coherent.js/api';
 
-// Generate tokens
-const token = generateToken({
-  userId: 123,
-  username: 'john_doe',
-  role: 'user',
-  permissions: ['read', 'write']
-}, '24h'); // Token expires in 24 hours
+const secret = process.env.JWT_SECRET; // e.g. `openssl rand -hex 32`
+const auth = withAuth({ secret });     // verifies Authorization: Bearer <jwt> (HS256)
 
-// Protected routes
-const routes = {
+// Issue a token (payload, expiresIn, secret)
+const token = generateJWT({ sub: 123, role: 'user' }, '24h', secret);
+
+const router = createRouter({
   api: {
     profile: {
-      GET: {
-        middleware: [withAuth],
-        handler: async (req, res) => {
-          // req.user contains decoded token data
-          return { user: req.user };
-        }
-      }
+      GET: { middleware: [auth], handler: (req) => ({ user: req.user }) }
     },
     admin: {
-      GET: {
-        middleware: [withAuth, withRole('admin')],
-        handler: async (req, res) => {
-          return { message: 'Admin access granted' };
-        }
-      }
+      GET: { middleware: [auth, withRole('admin')], handler: () => ({ message: 'Admin access granted' }) }
     }
   }
-};
+});
 ```
+
+Middleware that answers (401 from `withAuth`, 403 from `withRole`) stops the chain: the handler does not run. Signatures are compared in constant time, and `verifyToken()` returns `null` for an invalid, forged or expired token.
 
 ### Custom Authentication
 
-```javascript
-const customAuth = async (req, res) => {
-  const apiKey = req.headers['x-api-key'];
-  
-  if (!apiKey || !await validateApiKey(apiKey)) {
-    res.statusCode = 401;
-    throw new Error('Invalid API key');
-  }
-  
-  req.user = await getUserByApiKey(apiKey);
-};
+`withAuth({ verify })` accepts any scheme; the verifier may be async and returns the user or `null`:
 
-const routes = {
-  api: {
-    data: {
-      GET: {
-        middleware: [customAuth],
-        handler: async (req, res) => {
-          return { data: 'Protected data' };
-        }
-      }
-    }
+```javascript
+const apiKeyAuth = withAuth({
+  verify: async (req) => {
+    const apiKey = req.headers['x-api-key'];
+    return apiKey ? await getUserByApiKey(apiKey) : null; // null → 401
+  }
+});
+```
+
+Or throw an error class from middleware:
+
+```javascript
+import { AuthenticationError } from '@coherent.js/api';
+
+const requireApiKey = async (req) => {
+  if (!(await validateApiKey(req.headers['x-api-key']))) {
+    throw new AuthenticationError('Invalid API key'); // answered with 401
   }
 };
 ```
 
-## Input Validation & Sanitization
-
-### JSON Schema Validation
+## Input Validation
 
 ```javascript
-const { withValidation } = require('../src/api/security');
+import { createRouter } from '@coherent.js/api';
 
 const userSchema = {
   type: 'object',
   properties: {
-    username: {
-      type: 'string',
-      minLength: 3,
-      maxLength: 30,
-      pattern: '^[a-zA-Z0-9_]+$' // Alphanumeric and underscore only
-    },
-    email: {
-      type: 'string',
-      format: 'email',
-      maxLength: 255
-    },
-    age: {
-      type: 'integer',
-      minimum: 13,
-      maximum: 120
-    }
+    username: { type: 'string', minLength: 3, maxLength: 30, pattern: '^[a-zA-Z0-9_]+$' },
+    email: { type: 'string', format: 'email', maxLength: 255 },
+    age: { type: 'integer', minimum: 13, maximum: 120 }
   },
   required: ['username', 'email'],
-  additionalProperties: false // Prevent extra properties
+  additionalProperties: false
 };
 
-const routes = {
+const router = createRouter({
   api: {
     users: {
       POST: {
-        middleware: [withValidation(userSchema)],
-        handler: async (req, res) => {
-          // req.body is validated and sanitized
-          return { success: true, user: req.body };
-        }
+        validation: userSchema,              // or middleware: [withValidation(userSchema)]
+        handler: (req) => createUser(req.body) // req.body is the validated data
       }
     }
   }
-};
+});
 ```
+
+Invalid input is answered with 400 and `details.errors: [{ field, message, rule }]`. JSON bodies are parsed with `__proto__`, `constructor` and `prototype` keys removed at every depth.
 
 ### Custom Validation
 
 ```javascript
-const validateUserInput = async (req, res) => {
-  const { username, email } = req.body;
-  
-  // Custom validation logic
-  if (await userExists(username)) {
-    res.statusCode = 409;
-    throw new Error('Username already exists');
-  }
-  
-  if (await isEmailBlacklisted(email)) {
-    res.statusCode = 400;
-    throw new Error('Email domain not allowed');
-  }
-};
+import { ApiError, ConflictError } from '@coherent.js/api';
 
-const routes = {
-  api: {
-    register: {
-      POST: {
-        middleware: [withValidation(userSchema), validateUserInput],
-        handler: async (req, res) => {
-          return await createUser(req.body);
-        }
-      }
-    }
+const validateUserInput = async (req) => {
+  if (await userExists(req.body.username)) {
+    throw new ConflictError('Username already exists');    // 409
+  }
+  if (await isEmailBlocked(req.body.email)) {
+    throw new ApiError('Email domain not allowed', 400);
   }
 };
 ```
+
+`withSanitization()` from `@coherent.js/api/middleware` HTML-escapes every string in `req.body`, `req.query` and `req.params` (idempotently). Prefer escaping at render time, which core already does; sanitizing input changes the data you store.
 
 ## Rate Limiting & DoS Protection
 
-### Basic Rate Limiting
+### Router Rate Limiting
+
+The router limits every client to 100 requests per minute by default and answers 429 with `Retry-After`:
 
 ```javascript
-const server = router.createServer({
-  rateLimit: {
-    windowMs: 60000, // 1 minute window
-    maxRequests: 100 // 100 requests per minute per IP
-  }
+const router = createRouter(routes, {
+  rateLimit: { windowMs: 60_000, maxRequests: 100 },
+  trustProxy: 1 // one reverse proxy in front of the server
 });
 ```
 
-### Advanced Rate Limiting
+- The client is the **TCP peer address**. Behind a reverse proxy, set `trustProxy` to the number of proxies that append to `X-Forwarded-For` (`true` means one); the client is then read that many hops from the right, so spoofed leading entries are ignored. Without it, every client shares the proxy's budget.
+- `rateLimit.keyGenerator(req)` supplies your own key (for example the user id); `rateLimit: false` disables the limiter when the proxy already limits.
+- Each router has its own store, capped at 100,000 clients.
+
+### Per-Route Limits
+
+`withRateLimit({ windowMs, max })` from `@coherent.js/api/middleware` adds a stricter limit to one route (it keys on `req.ip`, or the socket address):
 
 ```javascript
-// Different limits for different endpoints
-const rateLimitConfig = {
-  '/api/login': { windowMs: 300000, maxRequests: 5 }, // 5 login attempts per 5 minutes
-  '/api/upload': { windowMs: 60000, maxRequests: 10 }, // 10 uploads per minute
-  '/api/search': { windowMs: 60000, maxRequests: 1000 } // 1000 searches per minute
-};
+import { withRateLimit } from '@coherent.js/api/middleware';
 
-// Custom rate limiting middleware
-const customRateLimit = (endpoint) => {
-  const config = rateLimitConfig[endpoint] || { windowMs: 60000, maxRequests: 100 };
-  
-  return async (req, res) => {
-    const clientIP = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-    
-    if (!checkRateLimit(clientIP, config.windowMs, config.maxRequests)) {
-      res.statusCode = 429;
-      throw new Error('Too Many Requests');
-    }
-  };
-};
+router.post('/api/login', loginHandler, {
+  middleware: [withRateLimit({ windowMs: 5 * 60_000, max: 5 })]
+});
 ```
 
 ## Security Headers
 
-### Default Security Headers
-
-The framework automatically adds these security headers:
+The router adds these headers to every response (`enableSecurityHeaders: false` turns them off):
 
 ```javascript
-// Automatically added to all responses:
 {
-  'Access-Control-Allow-Origin': 'http://localhost:3000', // Configurable
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'X-Frame-Options': 'DENY',
   'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
   'X-XSS-Protection': '1; mode=block',
-  'Content-Security-Policy': "default-src 'self'"
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'",
+  'Referrer-Policy': 'strict-origin-when-cross-origin'
 }
 ```
 
-### Custom Security Headers
+Add others with middleware:
 
 ```javascript
-const addCustomHeaders = async (req, res) => {
-  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+const addCustomHeaders = (req, res) => {
   res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 };
 
-const routes = {
-  api: {
-    secure: {
-      GET: {
-        middleware: [addCustomHeaders],
-        handler: async (req, res) => {
-          return { message: 'Secure endpoint' };
-        }
-      }
-    }
-  }
-};
+router.get('/api/secure', () => ({ message: 'Secure endpoint' }), { middleware: [addCustomHeaders] });
 ```
 
 ## CORS Configuration
 
-### Basic CORS Setup
-
 ```javascript
-const server = router.createServer({
-  corsOrigin: 'https://yourdomain.com' // Single origin
-});
-```
+createRouter(routes, { corsOrigin: 'https://yourdomain.com' });
 
-### Multiple Origins
-
-```javascript
-const server = router.createServer({
-  corsOrigin: [
-    'https://app.yourdomain.com',
-    'https://admin.yourdomain.com',
-    'https://mobile.yourdomain.com'
-  ]
+createRouter(routes, {
+  corsOrigin: ['https://app.yourdomain.com', 'https://admin.yourdomain.com']
 });
 ```
 
 The request's `Origin` is matched against the allowlist and echoed back on a
 match, together with `Vary: Origin` so caches do not serve one origin's
 response to another. An unlisted origin receives no CORS headers.
+`Access-Control-Allow-Credentials: true` is sent only for an explicitly configured origin, never with `'*'`.
 
-### Dynamic CORS
+### WebSockets
 
-```javascript
-const dynamicCors = async (req, res) => {
-  const origin = req.headers.origin;
-  const allowedOrigins = await getAllowedOrigins(); // From database
-  
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-};
-```
+WebSocket routes (`enableWebSockets: true`) accept only same-origin browser handshakes unless `wsAllowedOrigins` (router) or `allowedOrigins` (route) lists the origins to allow, which prevents cross-site WebSocket hijacking. Messages above `wsMaxPayload` (1 MiB) close the connection.
 
 ## Request Size Limits
 
-### Basic Size Limits
-
 ```javascript
-const server = router.createServer({
-  maxBodySize: 5 * 1024 * 1024 // 5MB limit
-});
+createRouter(routes, { maxBodySize: 5 * 1024 * 1024 }); // default 1 MB
 ```
 
-### Endpoint-Specific Limits
+Larger bodies are answered with 413; a `Content-Length` above the limit is rejected before the body is read, and the connection is closed. For an endpoint that needs its own limit, check it in middleware:
 
 ```javascript
-const checkFileUploadSize = async (req, res) => {
-  const contentLength = parseInt(req.headers['content-length'] || '0');
-  const maxSize = 50 * 1024 * 1024; // 50MB for file uploads
-  
-  if (contentLength > maxSize) {
-    res.statusCode = 413;
-    throw new Error('File too large');
-  }
-};
+import { ApiError } from '@coherent.js/api';
 
-const routes = {
-  api: {
-    upload: {
-      POST: {
-        middleware: [checkFileUploadSize],
-        handler: async (req, res) => {
-          return await handleFileUpload(req.body);
-        }
-      }
-    }
+const limitUploads = (req) => {
+  if (Number(req.headers['content-length'] ?? 0) > 50 * 1024 * 1024) {
+    throw new ApiError('File too large', 413);
   }
 };
 ```
+
+The router-level `maxBodySize` must be at least as large as any per-route limit, since the body is read before the route runs.
+
+## Error Messages
+
+5xx responses carry only the generic status text (`{ "error": "Internal Server Error" }`); the real error is logged with `console.error`. `exposeErrors: true` (or `NODE_ENV=development`) sends the message, for local debugging only. The same rule applies to `createErrorHandler()` for Express, and the Fastify adapter routes render errors through Fastify's own error handler.
 
 ## Password Security
 
-### Password Hashing
-
 ```javascript
-const { hashPassword, verifyPassword } = require('../src/api/security');
+import { hashPassword, verifyPassword, generateJWT } from '@coherent.js/api';
 
 // Registration
-const registerUser = async (req, res) => {
-  const { username, password } = req.body;
-  
-  // Hash password before storing
-  const hashedPassword = await hashPassword(password);
-  
-  const user = await createUser({
-    username,
-    password: hashedPassword
-  });
-  
-  return { success: true, userId: user.id };
-};
+const passwordHash = hashPassword(password);   // "<salt>:<hash>", synchronous
+await createUser({ username, passwordHash });
 
 // Login
-const loginUser = async (req, res) => {
-  const { username, password } = req.body;
-  
-  const user = await getUserByUsername(username);
-  if (!user || !await verifyPassword(password, user.password)) {
-    res.statusCode = 401;
-    throw new Error('Invalid credentials');
-  }
-  
-  const token = generateToken({ userId: user.id, username });
-  return { token, user: { id: user.id, username } };
-};
+const user = await getUserByUsername(username);
+if (!user || !verifyPassword(password, user.passwordHash)) {
+  throw new AuthenticationError('Invalid credentials');
+}
+const token = generateJWT({ sub: user.id }, '1h', process.env.JWT_SECRET);
 ```
+
+`hashPassword()` uses PBKDF2-SHA512 with 10,000 iterations, below current OWASP guidance; for new systems prefer argon2, scrypt or bcrypt. `verifyPassword()` compares in constant time.
 
 ### Password Policies
 
 ```javascript
 const validatePassword = (password) => {
-  const minLength = 8;
-  const hasUpperCase = /[A-Z]/.test(password);
-  const hasLowerCase = /[a-z]/.test(password);
-  const hasNumbers = /\d/.test(password);
-  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-  
-  if (password.length < minLength) {
-    throw new Error('Password must be at least 8 characters long');
-  }
-  
-  if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasSpecialChar) {
-    throw new Error('Password must contain uppercase, lowercase, numbers, and special characters');
+  if (password.length < 12) {
+    throw new ApiError('Password must be at least 12 characters long', 400);
   }
 };
 ```
 
-## Security Best Practices
+Length matters more than character classes; also reject passwords known from breaches.
 
-### 1. Input Validation
+## CSRF Protection
 
-- Always validate and sanitize user input
-- Use JSON Schema for structured validation
-- Implement whitelist-based validation
-- Reject unexpected data structures
-
-### 2. Authentication
-
-- Use strong JWT secrets (256-bit minimum)
-- Implement token expiration
-- Use refresh tokens for long-lived sessions
-- Store sensitive data server-side only
-
-### 3. Authorization
-
-- Implement role-based access control
-- Use principle of least privilege
-- Validate permissions on every request
-- Audit access patterns regularly
-
-### 4. Data Protection
-
-- Hash passwords with salt
-- Encrypt sensitive data at rest
-- Use HTTPS for all communications
-- Implement proper session management
-
-### 5. Error Handling
-
-- Don't expose internal errors to clients
-- Log security events for monitoring
-- Implement proper error responses
-- Use consistent error formats
-
-### 6. Monitoring
-
-- Log authentication attempts
-- Monitor rate limiting triggers
-- Track unusual access patterns
-- Set up security alerts
-
-## Common Vulnerabilities Prevention
-
-### SQL Injection Prevention
+`@coherent.js/forms/csrf` (server-only) issues stateless tokens tied to a session:
 
 ```javascript
-// Use parameterized queries
-const getUserById = async (id) => {
-  // Good: Parameterized query
-  return await db.query('SELECT * FROM users WHERE id = ?', [id]);
-  
-  // Bad: String concatenation
-  // return await db.query(`SELECT * FROM users WHERE id = ${id}`);
-};
+import { render } from '@coherent.js/core';
+import { createFormBuilder } from '@coherent.js/forms';
+import { createCsrfToken, verifyCsrfToken } from '@coherent.js/forms/csrf';
+
+const signup = createFormBuilder({ action: '/signup', method: 'post', fields: [/* ... */] });
+
+// GET: the token becomes a hidden _csrf input
+const csrfToken = createCsrfToken(process.env.CSRF_SECRET, req.session.id);
+res.send(render(signup.buildForm({ csrfToken })));
+
+// POST: reject the request unless the token matches this session
+if (!verifyCsrfToken(req.body._csrf, process.env.CSRF_SECRET, req.session.id, { maxAge: 3_600_000 })) {
+  return res.status(403).send('Invalid CSRF token');
+}
 ```
 
-### XSS Prevention
+`verifyCsrfToken()` returns `false` (it never throws) for a missing, malformed, forged, expired or other-session token, and compares in constant time. See [Forms](../packages/forms.md).
 
-```javascript
-// Input sanitization is automatic, but for HTML content:
-const sanitizeHtml = (html) => {
-  return html
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;')
-    .replace(/\//g, '&#x2F;');
-};
-```
+## Database Queries
 
-### CSRF Prevention
+- `db.query(sql, params)`: always use `?` placeholders for values.
+- The object query builder (`executeQuery`) binds values and validates identifiers, operators, `orderBy` directions and `limit` / `offset`; it refuses UPDATE and DELETE without `where` unless `allowFullTable: true`.
+- **Do not pass request data as a WHERE value unchecked**: a plain object is read as an operator object, so `where: { id: req.body.id }` lets a client send `{ "id": { ">": 0 } }`. Check the type first (`Number.isInteger(id)`), or use `Model.where()`, which rejects operator objects and arrays.
 
-```javascript
-const csrfProtection = async (req, res) => {
-  const token = req.headers['x-csrf-token'];
-  const sessionToken = req.session?.csrfToken;
-  
-  if (!token || token !== sessionToken) {
-    res.statusCode = 403;
-    throw new Error('Invalid CSRF token');
-  }
-};
-```
+## Development Server
 
-### Prototype Pollution Prevention
-
-```javascript
-// Automatic sanitization prevents prototype pollution
-// But for additional safety:
-const safeObjectAssign = (target, source) => {
-  const dangerousKeys = ['__proto__', 'constructor', 'prototype'];
-  
-  Object.keys(source).forEach(key => {
-    if (!dangerousKeys.includes(key)) {
-      target[key] = source[key];
-    }
-  });
-  
-  return target;
-};
-```
+The CLI's built-in development server (`coherent dev --coherent`) serves only files whose real path (after symlinks) is inside the project, its workspace root or the real directory of a linked `node_modules` package; dotfiles such as `.env` and `.git` are refused. Requests whose `Host` is not `localhost`, an IP address, the bound host or a name passed with `--allowed-hosts a,b` get 403, and HMR WebSocket connections from another origin are refused. It is still a development tool: do not expose it publicly.
 
 ## Security Testing
 
-### Testing Security Features
-
 ```javascript
-// Example security test
-const testSecurity = async () => {
-  // Test rate limiting
-  const responses = await Promise.all(
-    Array(110).fill().map(() => fetch('/api/test'))
-  );
-  const rateLimited = responses.some(r => r.status === 429);
-  console.log('Rate limiting:', rateLimited ? 'PASS' : 'FAIL');
-  
-  // Test XSS protection
-  const xssPayload = { name: '<script>alert("xss")</script>' };
-  const xssResponse = await fetch('/api/users', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(xssPayload)
+import { describe, it, expect } from 'vitest';
+
+describe('security', () => {
+  it('rejects unauthenticated requests', async () => {
+    const res = await fetch(`${baseUrl}/api/profile`);
+    expect(res.status).toBe(401);
   });
-  console.log('XSS protection:', xssResponse.ok ? 'PASS' : 'FAIL');
-  
-  // Test authentication
-  const protectedResponse = await fetch('/api/protected');
-  console.log('Auth protection:', protectedResponse.status === 401 ? 'PASS' : 'FAIL');
-};
+
+  it('rejects invalid input', async () => {
+    const res = await fetch(`${baseUrl}/api/users`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: '<script>', email: 'nope' })
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('escapes user content in pages', () => {
+    const html = render({ p: { text: '<script>alert(1)</script>' } });
+    expect(html).not.toContain('<script>');
+  });
+
+  it('does not leak internal errors', async () => {
+    const res = await fetch(`${baseUrl}/api/boom`);
+    expect(await res.json()).toEqual({ error: 'Internal Server Error' });
+  });
+});
 ```
 
 ## Conclusion
 
-The Coherent.js API framework provides comprehensive security features out of the box, but security is a shared responsibility. Always:
-
-1. Keep the framework updated
-2. Follow security best practices
-3. Regularly audit your code
-4. Monitor security logs
-5. Test security features
-6. Stay informed about new threats
-
-For additional security questions or to report vulnerabilities, please refer to the project's security policy.
+Security is a shared responsibility. Keep dependencies updated, keep secrets out of code, set `trustProxy` behind proxies, validate input, and let the renderer escape output. To report a vulnerability, see the project's [security policy](../../SECURITY.md).

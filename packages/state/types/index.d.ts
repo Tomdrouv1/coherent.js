@@ -15,10 +15,18 @@ export type Watcher<T = unknown> = (
 ) => void;
 
 export interface ObservableOptions {
-  /** Notify even when the new value is `===` the old one; defaults to `true` */
+  /**
+   * Re-assigning the same object still notifies, since it may have been
+   * mutated in place; defaults to `true`. Identical primitives never notify.
+   */
   deep?: boolean;
   /** Invoke watchers on subscribe; defaults to `true` */
   immediate?: boolean;
+  /**
+   * Receives errors thrown by watchers (and middleware); defaults to
+   * {@link globalErrorHandler}. The other watchers still run.
+   */
+  onError?: (error: unknown, context: { type: string; [key: string]: unknown }) => void;
   [option: string]: unknown;
 }
 
@@ -26,7 +34,8 @@ export interface ObservableOptions {
  * A single reactive value.
  *
  * Read and write through the `value` accessor — assigning notifies watchers
- * and invalidates any computed that read it.
+ * and invalidates any computed that read it. Watchers run after the write
+ * (after the outermost {@link batch}), each in isolation.
  *
  * ```ts
  * const count = observable(0);
@@ -41,15 +50,24 @@ export class Observable<T = unknown> {
   get value(): T;
   set value(newValue: T);
 
+  /** Read the value without recording a computed dependency */
+  peek(): T;
+
   /** Subscribe to changes; returns an unwatch function */
   watch(callback: Watcher<T>, options?: { immediate?: boolean }): () => void;
 
-  /** Remove one observer */
-  unwatch(observer: (newValue: T, oldValue: T | undefined) => void): void;
+  /** Remove a watcher, by the callback passed to {@link watch} */
+  unwatch(callback: Watcher<T>): void;
 
-  /** Remove every observer and computed dependent */
+  /** Remove every watcher */
   unwatchAll(): void;
 }
+
+/**
+ * Defer watcher notifications until `fn` returns; each watcher then runs
+ * once, with the final value. Batches nest. `fn` must be synchronous.
+ */
+export function batch<T>(fn: () => T): T;
 
 /** Raised by the reactive primitives. */
 export class StateError extends Error {
@@ -107,30 +125,37 @@ export interface HistoryEntry {
 export class ReactiveState {
   constructor(initialState?: Record<string, unknown>, options?: ReactiveStateOptions);
 
-  /** Current value of a key, or `undefined` */
+  /** Current value of a key or dot path (`'user.name'`), or `undefined` */
   get<T = unknown>(key: string): T | undefined;
 
-  /** Write a key; `false` when middleware cancelled the write */
+  /**
+   * Write a key; `false` when middleware cancelled the write. A dot path
+   * writes a copy of the parent object, notifying watchers of both.
+   */
   set(key: string, value: unknown, options?: ReactiveStateOptions): boolean;
 
-  /** Whether the key exists */
+  /** Whether the key (or dot path) exists */
   has(key: string): boolean;
 
-  /** Drop a key and its watchers; `false` when it was absent */
+  /**
+   * Drop a key (or dot path) and the key's watchers; computed properties that
+   * read it update. `false` when it was absent.
+   */
   delete(key: string): boolean;
 
   /** Drop every key */
   clear(): void;
 
   /** Define a computed property derived from other keys */
-  computed(key: string, getter: () => unknown, options?: ObservableOptions): void;
+  computed<T = unknown>(key: string, getter: () => T, options?: ObservableOptions): Observable<T>;
 
   /** Current value of a computed property, or `undefined` */
   getComputed<T = unknown>(key: string): T | undefined;
 
   /**
-   * Watch one key, or a getter expression. Returns an unwatch function, and
-   * throws {@link StateError} for a key that does not exist.
+   * Watch one key, a dot path, or a getter expression (re-evaluated when what
+   * it reads changes). Returns an unwatch function, and throws
+   * {@link StateError} for a key that does not exist.
    */
   watch<T = unknown>(
     key: string | (() => T),
@@ -138,7 +163,10 @@ export class ReactiveState {
     options?: { immediate?: boolean }
   ): () => void;
 
-  /** Apply several writes with history suppressed until the batch ends */
+  /**
+   * Apply several writes as one: watchers run once afterwards, with the final
+   * values, and history records a single entry
+   */
   batch<T>(updates: ((state: this) => T) | Record<string, unknown>): T | undefined;
 
   /** Subscribe to one or more keys; returns an unsubscribe function */
@@ -187,7 +215,9 @@ export function observable<T = unknown>(value: T, options?: ObservableOptions): 
 
 /**
  * Create a read-only observable derived from other observables. Dependencies
- * are tracked automatically; assigning to `value` throws {@link StateError}.
+ * are tracked automatically and it recomputes lazily; assigning to `value`,
+ * or reading it from its own getter (directly or through others), throws
+ * {@link StateError}.
  */
 export function computed<T = unknown>(
   getter: () => T,
@@ -265,32 +295,59 @@ export const globalStateManager: {
 // ============================================================================
 
 /**
- * Push a context value, remembering the previous one so
- * {@link restoreContext} can unwind it.
+ * Run `fn` in a fresh, isolated context scope — one per request or render.
+ * On Node (AsyncLocalStorage) the scope follows `fn`'s async work, so wrap
+ * each request, and each consumer of a streaming render, in it. `values`
+ * seeds the scope.
+ */
+export function runWithContext<T>(fn: () => T, values?: Record<string, unknown>): T;
+
+/**
+ * Push a context value for the rest of the current runWithContext() scope,
+ * remembering the previous one so {@link restoreContext} can unwind it. On
+ * Node it throws outside runWithContext(), where the value would leak into
+ * other requests.
  */
 export function provideContext(key: string, value: unknown): void;
 
+/** A context provider created by {@link createContextProvider}. */
+export interface ContextProvider<C = unknown> {
+  /**
+   * Called by the renderer as a zero-argument component: returns the children
+   * with their function components and function-valued props evaluated in
+   * the context.
+   */
+  (): C;
+  /**
+   * Run `renderFunction(children)` with the context provided. On Node an
+   * async render function keeps the context across its awaits.
+   */
+  <R>(renderFunction: (children: C) => R): R;
+}
+
 /**
- * Wrap children in a context. The returned function provides the context,
- * renders, then restores the previous value.
+ * Wrap children in a context. Place the result in a component tree; the
+ * children see `value`, their siblings do not.
  */
-export function createContextProvider<C = unknown, R = unknown>(
+export function createContextProvider<C = unknown>(
   key: string,
   value: unknown,
   children: C
-): (renderFunction?: (children: C) => R) => R | C;
+): ContextProvider<C>;
 
 /** Pop one context value, restoring what {@link provideContext} replaced. */
 export function restoreContext(key: string): void;
 
 /**
- * Unwind every tracked context to the value it held before its first
- * `provideContext()`. Call between renders so one request's contexts do not
- * leak into the next.
+ * Drop every context provided in the current execution. Values set through
+ * {@link globalStateManager} are left alone.
  */
 export function clearAllContexts(): void;
 
-/** Read the current context value, or `undefined`. */
+/**
+ * Read the current context value. Falls back to {@link globalStateManager}
+ * when no context was provided for `key`.
+ */
 export function useContext<T = unknown>(key: string): T | undefined;
 
 // ============================================================================
@@ -300,8 +357,13 @@ export function useContext<T = unknown>(key: string): T | undefined;
 /** Where persistent state is written. */
 export type StorageKind = 'localStorage' | 'sessionStorage' | 'indexedDB' | 'memory';
 
-/** Storage backend contract. */
+/**
+ * Storage backend contract. `set` resolves `true` once stored; rejecting or
+ * resolving `false` is reported through `onError`. An adapter whose
+ * `available` is `false` is never written to.
+ */
 export interface PersistenceAdapter {
+  available?: boolean;
   get(key: string): Promise<string | null> | string | null;
   set(key: string, value: string): Promise<boolean> | boolean;
   remove(key: string): Promise<boolean> | boolean;
@@ -309,8 +371,14 @@ export interface PersistenceAdapter {
 }
 
 export interface PersistentStateOptions {
-  /** Backend; defaults to `'localStorage'` */
+  /**
+   * Backend; defaults to `'localStorage'`. On the server (no `window`) the
+   * browser backends read and write nothing, since Web Storage there would be
+   * shared by every request.
+   */
   storage?: StorageKind;
+  /** Custom backend, used as is (also on the server); overrides `storage` */
+  adapter?: PersistenceAdapter | null;
   /** Storage key; defaults to `'coherent-state'` */
   key?: string;
   /** Coalesce writes; defaults to `true` */
@@ -323,8 +391,12 @@ export interface PersistentStateOptions {
   include?: string[] | null;
   /** Persist everything except these keys */
   exclude?: string[] | null;
-  /** Obfuscate the payload with `encryptionKey` */
+  /**
+   * XOR-obfuscate the payload with `encryptionKey`. This is obfuscation, not
+   * encryption: the key ships to the browser. Never store secrets.
+   */
   encrypt?: boolean;
+  /** Required when `encrypt` is `true`; there is no default key */
   encryptionKey?: string | null;
   onSave?: ((state: Record<string, unknown>) => void) | null;
   onLoad?: ((state: Record<string, unknown>) => void) | null;
@@ -332,11 +404,25 @@ export interface PersistentStateOptions {
   /** Tag stored payloads with `version` and run `migrate` on mismatch */
   versioning?: boolean;
   version?: string;
-  migrate?: ((state: Record<string, unknown>, from: string) => Record<string, unknown>) | null;
+  /**
+   * Receives the stored payload as serialized by `serialize`, returns it
+   * migrated (still serialized) for `deserialize`
+   */
+  migrate?: ((serializedState: string, fromVersion: string, toVersion: string) => string) | null;
   /** Discard stored state older than this many ms */
   ttl?: number | null;
-  /** Mirror updates to other tabs over BroadcastChannel */
+  /**
+   * Mirror updates to other tabs holding the same `key`, over a
+   * BroadcastChannel named after it. Off on the server.
+   */
   crossTab?: boolean;
+  /** IndexedDB database name (`storage: 'indexedDB'`); defaults to `'coherent-db'` */
+  dbName?: string;
+  /**
+   * IndexedDB object store name (`storage: 'indexedDB'`); defaults to
+   * `'state'`. Added to an existing database in a version upgrade.
+   */
+  storeName?: string;
 }
 
 /** A state container backed by storage. */
@@ -357,20 +443,31 @@ export interface PersistentState {
   subscribe(
     listener: (state: Record<string, unknown>, oldState: Record<string, unknown>) => void
   ): () => void;
-  /** Force an immediate write */
-  persist(): Promise<void>;
+  /** Force an immediate write; `false` when nothing was stored */
+  persist(): Promise<boolean>;
   /** Reload from storage; `false` when nothing was stored */
   restore(): Promise<boolean>;
   /** Remove the stored payload */
   clearStorage(): Promise<void>;
   load(): Promise<Record<string, unknown> | null>;
-  save(): Promise<void>;
+  /** Write now; `false` when nothing was stored (failures go to `onError`) */
+  save(): Promise<boolean>;
+  /**
+   * Flush a pending debounced save, close the cross-tab channel and drop
+   * listeners.
+   */
+  destroy(): Promise<void>;
+  /**
+   * Settles once the automatic restore on creation is done: `true` when
+   * stored state was restored. Keys set before then keep their new value.
+   */
+  readonly ready: Promise<boolean>;
   readonly adapter: PersistenceAdapter;
 }
 
 /**
  * Create a state container that persists to storage. Unless the backend is
- * `'memory'`, stored state is restored on creation.
+ * `'memory'`, stored state is restored on creation; await `ready` for it.
  */
 export function createPersistentState(
   initialState?: Record<string, unknown>,
@@ -450,7 +547,11 @@ export interface ValidatedStateOptions {
   validators?: Record<string, Validator | Validator[]>;
   /** Reject writes that fail validation */
   strict?: boolean;
-  /** Convert values to the declared type where possible */
+  /**
+   * Convert values to the declared type where that is unambiguous: numeric
+   * strings to numbers, `'true'`/`'false'`/`'1'`/`'0'` to booleans, numbers
+   * and booleans to strings. Anything else stays a type error.
+   */
   coerce?: boolean;
   onError?: ((errors: ValidationError[]) => void) | null;
   /** Validate on write; defaults to `true` */
@@ -458,7 +559,10 @@ export interface ValidatedStateOptions {
   /** Validate on read; defaults to `false` */
   validateOnGet?: boolean;
   required?: string[];
-  /** Permit keys the schema does not mention; defaults to `true` */
+  /**
+   * Permit keys an object schema's `properties` do not mention; defaults to
+   * `true`. A schema's own `additionalProperties: false` always rejects them.
+   */
   allowUnknown?: boolean;
 }
 
@@ -578,7 +682,10 @@ export class ListState<T = unknown> {
 export class ModalState<D = unknown, R = unknown> {
   constructor(initialState?: Record<string, unknown>);
 
-  /** Open with data; resolves once closed */
+  /**
+   * Open with data; resolves once closed. Opening again while open replaces
+   * the modal, resolving the earlier promise with `null`.
+   */
   open(data?: D): Promise<R | null>;
   /** Close, resolving the pending `open()` */
   close(result?: R | null): void;

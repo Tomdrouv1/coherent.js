@@ -7,16 +7,15 @@ Guidance for any AI code assistant (ChatGPT, Claude, Copilot, Code Llama, etc.) 
 Coherent.js is a high-performance server-side rendering framework centered on pure JavaScript objects. The repo is a pnpm monorepo with multiple packages under `packages/*` and strict ESM across the codebase.
 
 Key properties:
-- Node.js: >= 20 (enforced via engines)
+- Node.js: >= 22.12 (enforced via engines)
 - Package manager: pnpm (workspace/monorepo)
 - Module system: ESM (no CommonJS unless in `dist/*` artifacts)
-- Tests: Vitest v3 with process isolation (`pool: 'forks'`, `isolate: true`)
+- Tests: Vitest 5 with process isolation (`pool: 'forks'`, `isolate: true`)
 
 Useful root files:
 - `vitest.config.js` – Root testing config and coverage settings
 - `eslint.config.js` – Lint rules and globals
 - `package.json` – Scripts used throughout the repo
-- `.junie/guidelines.md` – Deep project-specific runbooks (build/test tips)
 
 Primary packages (examples, not exhaustive):
 - `@coherent.js/core` – Core runtime and rendering
@@ -63,12 +62,12 @@ Examples (a subset):
 ```bash
 pnpm example:basic
 pnpm example:components
-pnpm example:performance
 pnpm example:streaming
 pnpm example:hydration
+pnpm examples:check   # run them all (after pnpm build)
 ```
 
-## Testing Workflow (Vitest v3)
+## Testing Workflow (Vitest 5)
 
 Global configuration lives in `vitest.config.js`:
 - Environment: `node`
@@ -86,15 +85,16 @@ pnpm test:watch       # watch mode
 pnpm test:coverage    # run with coverage
 ```
 
-Focused runs (preferred stability in a monorepo):
+Focused runs:
 ```bash
-# Run a single test file in @coherent.js/core (most reliable approach)
-pnpm --filter @coherent.js/core run test -- test/example-render.test.js
+# Run one test file from the repo root. The root config aliases
+# @coherent.js/* to package sources, so no build is needed.
+pnpm vitest run packages/core/test/example-render.test.js
 ```
 
 Notes:
-- Root-level `vitest run <file>` may still collect other workspaces; prefer package-scoped runs.
-- For browser-like tests, create shims (see `packages/client/test/event-system.test.js`). Example pattern:
+- A path argument limits the run to the matching files.
+- For browser-like tests, create shims (see `packages/client/test/vdom-diffing.test.js`). Example pattern:
   ```js
   global.window = { __coherentEventRegistry: {}, addEventListener: vi.fn() };
   global.document = { querySelector: vi.fn(), querySelectorAll: vi.fn(() => []) };
@@ -114,7 +114,7 @@ Coverage output:
 - Reset mocks/state between tests; avoid `global.*` leaks.
 - If touching client-side utilities, add browser shims in tests as needed; default environment is Node.
 - For performance-sensitive areas (streaming SSR, memoization), prefer stateless helpers; if stateful, ensure compatibility with streaming and memoization.
-- Use package-scoped test runs to validate changes locally.
+- Run the affected test files from the repo root to validate changes locally.
 
 Safety/operational constraints:
 - Use pnpm only; avoid yarn/npm.
@@ -146,17 +146,16 @@ Add a new core test:
 # Create: packages/core/test/example-render.test.js
 # Content:
 import { describe, it, expect } from 'vitest';
-import { renderToString } from '../src/index.js';
+import { render } from '../src/index.js';
 
-describe('renderToString smoke', () => {
-  it('renders a simple element', async () => {
-    const html = await renderToString({ div: { text: 'Hello World' } });
-    expect(html).toContain('Hello World');
+describe('render smoke', () => {
+  it('renders a simple element', () => {
+    expect(render({ div: { text: 'Hello World' } })).toBe('<div>Hello World</div>');
   });
 });
 
-# Run it deterministically (package-scoped):
-pnpm --filter @coherent.js/core run test -- test/example-render.test.js
+# Run it from the repo root:
+pnpm vitest run packages/core/test/example-render.test.js
 ```
 
 Run all tests:
@@ -178,7 +177,7 @@ pnpm website:dev
 
 Do:
 - Use Node 22.12+, pnpm, and ESM imports.
-- Prefer package-scoped tests for focused runs.
+- Prefer focused runs (`pnpm vitest run <path>`) while iterating.
 - Keep tests hermetic; use shims for browser APIs.
 - Maintain consistent code style and follow `eslint.config.js` rules.
 
@@ -190,8 +189,7 @@ Don't:
 
 ## References
 
-- `.junie/guidelines.md` – Comprehensive project-specific development guide
 - `vitest.config.js` – Root test config and isolation settings
 - `packages/core/vitest.config.js` – Package-level test config
-- `packages/client/test/event-system.test.js` – Example of browser shims in tests
+- `packages/client/test/vdom-diffing.test.js` – Example of browser shims in tests
 - `package.json` (root) – Authoritative scripts for build/test/dev flows

@@ -5,7 +5,9 @@ const entries = [
   'src/form-builder.js',
   'src/form-hydration.js',
   'src/validation.js',
-  'src/validators.js'
+  'src/validators.js',
+  // Server-only (node:crypto); never imported by the entries above.
+  'src/csrf.js'
 ];
 
 for (const entry of entries) {

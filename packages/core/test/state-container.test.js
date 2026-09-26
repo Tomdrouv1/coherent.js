@@ -34,3 +34,16 @@ describe('State Container', () => {
     }).not.toThrow();
   });
 });
+
+describe('withStateUtils.shared', () => {
+  it('shares one container between components with the same key', async () => {
+    const { withStateUtils, render } = await import('../src/index.js');
+    const key = `shared-${Date.now()}`;
+    const A = withStateUtils.shared({ theme: 'light' }, key)(({ state }) => ({ p: { text: `A:${state.theme}` } }));
+    const B = withStateUtils.shared({ theme: 'ignored' }, key)(({ state }) => ({ p: { text: `B:${state.theme}` } }));
+
+    // It threw "middleware is not iterable" before rendering anything.
+    expect(render(A())).toBe('<p>A:light</p>');
+    expect(render(B())).toBe('<p>B:light</p>');
+  });
+});

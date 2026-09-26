@@ -28,6 +28,17 @@ describe('MetaBuilder', () => {
     expect(tags).toContainEqual({ title: { text: 'My Page | My Site' } });
   });
 
+  it('inserts $ replacement patterns in a templated title literally', () => {
+    builder.title("Win $& and $' and $` and $$", { template: 'Save %s now | Shop' });
+    const expected = "Save Win $& and $' and $` and $$ now | Shop";
+
+    expect(builder.build()).toEqual([
+      { title: { text: expected } },
+      { meta: { property: 'og:title', content: expected } },
+      { meta: { name: 'twitter:title', content: expected } }
+    ]);
+  });
+
   it('sets description with og and twitter tags', () => {
     builder.description('A test page');
     const tags = builder.build();

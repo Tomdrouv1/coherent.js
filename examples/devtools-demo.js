@@ -97,12 +97,14 @@ console.log(`- Issues: ${validation2.issues.join(', ')}`);
 // Example 3: Performance Profiler
 console.log('\n--- Example 3: Performance Profiler ---\n');
 
+// Profilers are opt-in: one that is merely constructed records nothing.
 const profiler = createProfiler({
+  enabled: true,
   slowThreshold: 10,
   trackMemory: true
 });
 
-const sessionId = profiler.startSession('demo-session');
+const sessionId = profiler.start('demo-session');
 console.log(`Started profiling session: ${sessionId}`);
 
 // Simulate some renders
@@ -118,7 +120,7 @@ for (let i = 0; i < 5; i++) {
   profiler.endRender(measureId);
 }
 
-const sessionAnalysis = profiler.endSession(sessionId);
+const sessionAnalysis = profiler.stop(sessionId);
 
 console.log('\nSession Analysis:');
 console.log(`- Duration: ${sessionAnalysis.duration}ms`);

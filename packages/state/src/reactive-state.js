@@ -1,6 +1,23 @@
 /**
  * Reactive State Management System for Coherent.js
  * Provides computed properties, watchers, and reactive updates
+ *
+ * Design:
+ *
+ * - Reading an Observable or Computed inside a computed getter records it as a
+ *   dependency. A Computed recomputes lazily, on read, and only when a
+ *   dependency actually changed (version check).
+ * - A Computed that is watched, or that a watched Computed depends on, is
+ *   "live": it subscribes to its dependencies so a change marks it dirty and
+ *   schedules its watchers. When it stops being watched it unsubscribes, so
+ *   nothing keeps a discarded computed reachable.
+ * - Watchers do not run inside the setter: changes are queued and flushed in
+ *   a loop once the outermost batch() ends (every write outside a batch is its
+ *   own batch). A watcher that writes queues further work instead of
+ *   recursing; a loop that never settles is stopped and reported.
+ * - Each watcher runs in isolation: an error is reported through the
+ *   `onError` option, or `globalErrorHandler`, and the other watchers still run.
+ * - Reading a computed that (indirectly) reads itself throws a StateError.
  */
 
 // Simple error handling for this module
@@ -21,14 +38,140 @@ export const globalErrorHandler = {
     }
 };
 
+/** Flush iterations after which a watcher loop is considered runaway. */
+const MAX_FLUSH_ITERATIONS = 100;
+
+/** The computed currently collecting dependencies. */
+let activeComputed = null;
+/** Nesting depth of batch(). */
+let batchDepth = 0;
+/** Whether the notification queue is being flushed. */
+let flushing = false;
+/** Observables with watchers that changed: observable -> value before the change. */
+const pendingObservables = new Map();
+/** Watched computeds whose dependencies changed. */
+const pendingComputeds = new Set();
+/** Bumped on every write, so an unobserved computed can skip validation. */
+let globalVersion = 0;
+
+function reportError(source, error, type, context = {}) {
+    const onError = source?._options?.onError;
+    if (typeof onError === 'function') {
+        try {
+            onError(error, { type, ...context });
+            return;
+        } catch (handlerError) {
+            error = handlerError;
+        }
+    }
+    globalErrorHandler.handle(error, { type, context });
+}
+
+function runObserver(source, observer, newValue, oldValue) {
+    try {
+        observer.callback(newValue, oldValue, observer.unwatch);
+    } catch (error) {
+        reportError(source, error, 'watcher-error', { newValue, oldValue });
+    }
+}
+
+function flush() {
+    flushing = true;
+    let iterations = 0;
+
+    try {
+        while (pendingObservables.size > 0 || pendingComputeds.size > 0) {
+            if (++iterations > MAX_FLUSH_ITERATIONS) {
+                const culprits = [...pendingObservables.keys(), ...pendingComputeds];
+                pendingObservables.clear();
+                pendingComputeds.clear();
+                reportError(
+                    culprits[0],
+                    new StateError(
+                        `Watchers kept changing state after ${MAX_FLUSH_ITERATIONS} rounds; ` +
+                        'a watcher probably writes a new value to a state it (indirectly) watches.',
+                        { type: 'update-depth' }
+                    ),
+                    'update-depth'
+                );
+                return;
+            }
+
+            const observables = [...pendingObservables];
+            pendingObservables.clear();
+            for (const [source, oldValue] of observables) {
+                const newValue = source._value;
+                // Changed and changed back within one batch
+                if (!source._changed(oldValue, newValue)) continue;
+                for (const observer of [...source._observers]) {
+                    if (source._observers.has(observer)) {
+                        runObserver(source, observer, newValue, oldValue);
+                    }
+                }
+            }
+
+            const computeds = [...pendingComputeds];
+            pendingComputeds.clear();
+            for (const source of computeds) {
+                if (source._observers.size === 0) continue;
+                try {
+                    source._refresh();
+                } catch (error) {
+                    reportError(source, error, 'computed-error');
+                    continue;
+                }
+                const newValue = source._value;
+                const oldValue = source._lastNotified;
+                if (Object.is(newValue, oldValue)) continue;
+                source._lastNotified = newValue;
+                for (const observer of [...source._observers]) {
+                    if (source._observers.has(observer)) {
+                        runObserver(source, observer, newValue, oldValue);
+                    }
+                }
+            }
+        }
+    } finally {
+        flushing = false;
+    }
+}
+
+function scheduleFlush() {
+    if (batchDepth === 0 && !flushing) {
+        flush();
+    }
+}
+
+/**
+ * Run `fn` with watcher notifications deferred until it returns; every
+ * watcher then runs once, with the final value. Nested batches flush when the
+ * outermost one ends. `fn` must be synchronous.
+ *
+ * @template T
+ * @param {() => T} fn
+ * @returns {T}
+ */
+export function batch(fn) {
+    batchDepth++;
+    try {
+        return fn();
+    } finally {
+        batchDepth--;
+        scheduleFlush();
+    }
+}
+
 /**
  * Observable wrapper for tracking state changes
  */
 export class Observable {
     constructor(value, options = {}) {
         this._value = value;
+        this._version = 0;
+        /** @type {Set<{callback: Function, unwatch: Function}>} */
         this._observers = new Set();
-        this._computedDependents = new Set();
+        /** Live computeds depending on this value */
+        this._subscribers = new Set();
         this._options = {
             deep: options.deep !== false,
             immediate: options.immediate !== false,
@@ -37,37 +180,68 @@ export class Observable {
     }
 
     get value() {
-        // Track dependency for computed properties
-        if (Observable._currentComputed) {
-            this._computedDependents.add(Observable._currentComputed);
-        }
+        activeComputed?._track(this);
         return this._value;
     }
 
     set value(newValue) {
-        if (this._value === newValue && !this._options.deep) {
+        this._write(newValue);
+    }
+
+    /** Read without registering a dependency. */
+    peek() {
+        return this._value;
+    }
+
+    /**
+     * Whether a write from `oldValue` to `newValue` is a change. Identical
+     * primitives never are; with `deep` (the default) re-assigning the same
+     * object is, since it may have been mutated in place.
+     * @private
+     */
+    _changed(oldValue, newValue) {
+        if (!Object.is(oldValue, newValue)) return true;
+        return this._options.deep && newValue !== null && typeof newValue === 'object';
+    }
+
+    /** @private */
+    _write(newValue) {
+        const oldValue = this._value;
+        if (!this._changed(oldValue, newValue)) {
             return;
         }
 
-        const oldValue = this._value;
         this._value = newValue;
+        this._version++;
+        globalVersion++;
 
-        // Notify observers
-        this._observers.forEach(observer => {
-            try {
-                observer(newValue, oldValue);
-            } catch (_error) {
-                globalErrorHandler.handle(_error, {
-                    type: 'watcher-_error',
-                    context: { newValue, oldValue }
-                });
-            }
-        });
+        for (const subscriber of [...this._subscribers]) {
+            subscriber._markDirty();
+        }
+        if (this._observers.size > 0 && !pendingObservables.has(this)) {
+            pendingObservables.set(this, oldValue);
+        }
+        scheduleFlush();
+    }
 
-        // Update computed dependents
-        this._computedDependents.forEach(computed => {
-            computed._invalidate();
-        });
+    /** @private */
+    _addSubscriber(computed) {
+        this._subscribers.add(computed);
+    }
+
+    /** @private */
+    _removeSubscriber(computed) {
+        this._subscribers.delete(computed);
+    }
+
+    /** @private */
+    _addObserver(observer) {
+        this._observers.add(observer);
+    }
+
+    /** @private */
+    _removeObserver(observer) {
+        this._observers.delete(observer);
     }
 
     watch(callback, options = {}) {
@@ -75,28 +249,36 @@ export class Observable {
             throw new StateError('Watch callback must be a function');
         }
 
-        const observer = (newValue, oldValue) => {
-            callback(newValue, oldValue, () => this.unwatch(observer));
-        };
-
-        this._observers.add(observer);
+        const observer = { callback, unwatch: null };
+        observer.unwatch = () => this._removeObserver(observer);
+        this._addObserver(observer);
 
         // Call immediately if requested
         if (options.immediate !== false) {
-            observer(this._value, undefined);
+                runObserver(this, observer, this._value, undefined);
         }
 
         // Return unwatch function
-        return () => this.unwatch(observer);
+        return observer.unwatch;
     }
 
-    unwatch(observer) {
-        this._observers.delete(observer);
+    /**
+     * Remove a watcher, by the callback passed to watch()
+     * @param {Function} callback
+     */
+    unwatch(callback) {
+        for (const observer of [...this._observers]) {
+            if (observer.callback === callback || observer.unwatch === callback) {
+                this._removeObserver(observer);
+            }
+        }
     }
 
+    /** Remove every watcher. */
     unwatchAll() {
-        this._observers.clear();
-        this._computedDependents.clear();
+        for (const observer of [...this._observers]) {
+            this._removeObserver(observer);
+        }
     }
 }
 
@@ -105,75 +287,237 @@ export class Observable {
  */
 class Computed extends Observable {
     constructor(getter, options = {}) {
-        super(undefined, options);
-        this._getter = getter;
-        this._cached = false;
-        this._dirty = true;
-
         if (typeof getter !== 'function') {
             throw new StateError('Computed getter must be a function');
         }
+        super(undefined, options);
+        this._getter = getter;
+        /** Dependencies read by the last computation: source -> its version then */
+        this._deps = new Map();
+        this._dirty = true;
+        this._computing = false;
+        this._globalVersionSeen = -1;
+        this._lastNotified = undefined;
     }
 
     get value() {
-        if (this._dirty || !this._cached) {
-            this._compute();
-        }
+        this._refresh();
+        activeComputed?._track(this);
         return this._value;
     }
 
-    set value(newValue) {
+    set value(_newValue) {
         throw new StateError('Cannot set value on computed property');
     }
 
-    _compute() {
-        const prevComputed = Observable._currentComputed;
-        Observable._currentComputed = this;
+    peek() {
+        this._refresh();
+        return this._value;
+    }
 
-        try {
-            const newValue = this._getter();
+    /** Watched, or a dependency of a live computed. @private */
+    get _live() {
+        return this._observers.size > 0 || this._subscribers.size > 0;
+    }
 
-            if (newValue !== this._value) {
-                const oldValue = this._value;
-                this._value = newValue;
-
-                // Notify observers
-                this._observers.forEach(observer => {
-                    observer(newValue, oldValue);
-                });
-            }
-
-            this._cached = true;
-            this._dirty = false;
-        } catch (_error) {
-            globalErrorHandler.handle(_error, {
-                type: 'computed-_error',
-                context: { getter: this._getter.toString() }
-            });
-        } finally {
-            Observable._currentComputed = prevComputed;
+    /** @private */
+    _track(source) {
+        if (!this._deps.has(source)) {
+            this._deps.set(source, source._version);
         }
     }
 
-    _invalidate() {
+    /** Bring the cached value up to date. @private */
+    _refresh() {
+        if (this._computing) {
+            throw new StateError('Circular dependency between computed properties', {
+                type: 'computed-cycle',
+                context: { getter: this._getter.name || 'anonymous' }
+            });
+        }
+        if (!this._dirty) {
+            // A live computed is marked dirty by its dependencies
+            if (this._live || this._globalVersionSeen === globalVersion) return;
+            if (!this._dependenciesChanged()) {
+                this._globalVersionSeen = globalVersion;
+                return;
+            }
+        }
+        this._recompute();
+    }
+
+    /** @private */
+    _dependenciesChanged() {
+        for (const [source, version] of this._deps) {
+            if (source instanceof Computed) {
+                source._refresh();
+            }
+            if (source._version !== version) return true;
+        }
+        return false;
+    }
+
+    /** @private */
+    _recompute() {
+        const previousDeps = this._deps;
+        const previousActive = activeComputed;
+        this._deps = new Map();
+        this._computing = true;
+        activeComputed = this;
+
+        let newValue;
+        try {
+            newValue = this._getter();
+        } catch (error) {
+            // Stay dirty so the next read retries
+            this._deps = previousDeps;
+            this._dirty = true;
+            throw error;
+        } finally {
+            this._computing = false;
+            activeComputed = previousActive;
+        }
+
+        if (this._live) {
+            for (const source of previousDeps.keys()) {
+                if (!this._deps.has(source)) source._removeSubscriber(this);
+            }
+            for (const source of this._deps.keys()) {
+                if (!previousDeps.has(source)) source._addSubscriber(this);
+            }
+        }
+
+        this._dirty = false;
+        this._globalVersionSeen = globalVersion;
+        if (!Object.is(newValue, this._value)) {
+            this._value = newValue;
+            this._version++;
+        }
+    }
+
+    /** A dependency changed. @private */
+    _markDirty() {
+        if (this._dirty) return;
         this._dirty = true;
-        this._computedDependents.forEach(computed => {
-            computed._invalidate();
-        });
+        if (this._observers.size > 0) {
+            pendingComputeds.add(this);
+        }
+        for (const subscriber of [...this._subscribers]) {
+            subscriber._markDirty();
+        }
+    }
+
+    /** Subscribe to dependencies. @private */
+    _goLive() {
+        this._refresh();
+        for (const source of this._deps.keys()) {
+            source._addSubscriber(this);
+        }
+    }
+
+    /** Unsubscribe from dependencies. @private */
+    _goLazy() {
+        for (const source of this._deps.keys()) {
+            source._removeSubscriber(this);
+        }
+    }
+
+    /** @private */
+    _addSubscriber(computed) {
+        const wasLive = this._live;
+        this._subscribers.add(computed);
+        if (!wasLive) this._goLive();
+    }
+
+    /** @private */
+    _removeSubscriber(computed) {
+        this._subscribers.delete(computed);
+        if (!this._live) this._goLazy();
+    }
+
+    /** @private */
+    _addObserver(observer) {
+        const hadObservers = this._observers.size > 0;
+        const wasLive = this._live;
+        this._observers.add(observer);
+        try {
+            if (wasLive) {
+                this._refresh();
+            } else {
+                this._goLive();
+            }
+        } catch (error) {
+            this._observers.delete(observer);
+            throw error;
+        }
+        if (!hadObservers) {
+            // Baseline for the next notification's oldValue
+            this._lastNotified = this._value;
+        }
+    }
+
+    /** @private */
+    _removeObserver(observer) {
+        if (!this._observers.delete(observer)) return;
+        if (!this._live) this._goLazy();
     }
 }
 
-// Static property for tracking current computed
-Observable._currentComputed = null;
+/** Placeholder observables for keys read before they exist or after delete(). */
+const ABSENT = Symbol('absent');
+
+function isPath(key) {
+    return typeof key === 'string' && key.includes('.');
+}
+
+function readPath(value, segments) {
+    let current = value;
+    for (const segment of segments) {
+        if (current === null || current === undefined) return undefined;
+        current = current[segment];
+    }
+    return current;
+}
+
+/** A copy of `target` with `segments` set to `value`, creating objects as needed. */
+function writePath(target, segments, value) {
+    const [head, ...rest] = segments;
+    const base = target !== null && typeof target === 'object'
+        ? (Array.isArray(target) ? [...target] : { ...target })
+        : {};
+    const next = rest.length === 0 ? value : writePath(base[head], rest, value);
+    Object.defineProperty(base, head, { value: next, enumerable: true, writable: true, configurable: true });
+    return base;
+}
+
+/** A copy of `target` without the property at `segments`. */
+function deletePath(target, segments) {
+    if (target === null || typeof target !== 'object') return target;
+    const [head, ...rest] = segments;
+    if (!Object.prototype.hasOwnProperty.call(target, head)) return target;
+    const base = Array.isArray(target) ? [...target] : { ...target };
+    if (rest.length === 0) {
+        delete base[head];
+    } else {
+        base[head] = deletePath(base[head], rest);
+    }
+    return base;
+}
 
 /**
  * Reactive state container with advanced features
+ *
+ * Keys may be dot paths into object values: `set('user.name', 'Ada')` writes
+ * a copy of `user` with the new name (notifying watchers of `user` and of
+ * `user.name`), and `get`/`has`/`watch`/`delete` accept paths too.
  */
 export class ReactiveState {
     constructor(initialState = {}, options = {}) {
+        /** @type {Map<string, Observable>} */
         this._state = new Map();
         this._computed = new Map();
         this._watchers = new Map();
+        this._expressionWatchers = new Set();
         this._middleware = [];
         this._history = [];
         this._options = {
@@ -190,12 +534,43 @@ export class ReactiveState {
         });
     }
 
+    /** Observable for a key, created as an absent placeholder if needed. @private */
+    _observable(key) {
+        let observable = this._state.get(key);
+        if (!observable) {
+            observable = new Observable(ABSENT, this._options);
+            this._state.set(key, observable);
+        }
+        return observable;
+    }
+
+    /** Whether a key is stored under its full name. @private */
+    _hasOwnKey(key) {
+        const observable = this._state.get(key);
+        return Boolean(observable) && observable._value !== ABSENT;
+    }
+
+    /** [rootKey, pathSegments] for a dot path, or null for a plain key. @private */
+    _splitPath(key) {
+        if (!isPath(key)) return null;
+        const [root, ...segments] = key.split('.');
+        return [root, segments];
+    }
+
     /**
      * Get reactive state value
      */
     get(key) {
-        const observable = this._state.get(key);
-        return observable ? observable.value : undefined;
+        const path = this._splitPath(key);
+        if (path) {
+            return readPath(this.get(path[0]), path[1]);
+        }
+        // Reading a missing key inside a computed still records the
+        // dependency, so the computed updates once the key is set.
+        const observable = activeComputed ? this._observable(key) : this._state.get(key);
+        if (!observable) return undefined;
+        const value = observable.value;
+        return value === ABSENT ? undefined : value;
     }
 
     /**
@@ -203,56 +578,93 @@ export class ReactiveState {
      */
     set(key, value, options = {}) {
         const config = { ...this._options, ...options };
+        const oldValue = this.get(key);
 
         // Run middleware
         if (config.enableMiddleware) {
-            const middlewareResult = this._runMiddleware('set', { key, value, oldValue: this.get(key) });
+            const middlewareResult = this._runMiddleware('set', { key, value, oldValue });
             if (middlewareResult.cancelled) {
                 return false;
             }
             value = middlewareResult.value !== undefined ? middlewareResult.value : value;
         }
 
-        // Get or create observable
-        let observable = this._state.get(key);
-        if (!observable) {
-            observable = new Observable(value, config);
-            this._state.set(key, observable);
-        } else {
-            // Record history
+        const path = this._splitPath(key);
+        if (path) {
+            const [root, segments] = path;
             if (config.enableHistory) {
-                this._addToHistory('set', key, observable.value, value);
+                this._addToHistory('set', key, oldValue, value);
             }
-
-            observable.value = value;
+            this._writeKey(root, writePath(this.get(root), segments, value));
+            return true;
         }
 
+        // Record history
+        if (config.enableHistory && this._hasOwnKey(key)) {
+            this._addToHistory('set', key, oldValue, value);
+        }
+
+        this._writeKey(key, value);
         return true;
+    }
+
+    /** @private */
+    _writeKey(key, value) {
+        this._observable(key)._write(value);
     }
 
     /**
      * Check if state has a key
      */
     has(key) {
-        return this._state.has(key);
+        const path = this._splitPath(key);
+        if (path) {
+            const parent = readPath(this.get(path[0]), path[1].slice(0, -1));
+            return parent !== null && typeof parent === 'object' &&
+                Object.prototype.hasOwnProperty.call(parent, path[1][path[1].length - 1]);
+        }
+        return this._hasOwnKey(key);
     }
 
     /**
-     * Delete state key
+     * Delete state key. Its watchers are removed; computed properties that
+     * read it update.
      */
     delete(key) {
-        const observable = this._state.get(key);
-        if (observable) {
-            // Record history
+        const path = this._splitPath(key);
+        if (path) {
+            if (!this.has(key)) return false;
             if (this._options.enableHistory) {
-                this._addToHistory('delete', key, observable.value, undefined);
+                this._addToHistory('delete', key, this.get(key), undefined);
             }
-
-            observable.unwatchAll();
-            this._state.delete(key);
+            this._writeKey(path[0], deletePath(this.get(path[0]), path[1]));
             return true;
         }
-        return false;
+
+        if (!this._hasOwnKey(key)) {
+            return false;
+        }
+
+        const observable = this._state.get(key);
+
+        // Record history
+        if (this._options.enableHistory) {
+            this._addToHistory('delete', key, observable._value, undefined);
+        }
+
+        observable.unwatchAll();
+        this._releaseKeyWatchers(key);
+        observable._write(ABSENT);
+        return true;
+    }
+
+    /** @private */
+    _releaseKeyWatchers(key) {
+        const unwatchers = this._watchers.get(key);
+        if (unwatchers) {
+            for (const unwatch of unwatchers) unwatch();
+            this._watchers.delete(key);
+        }
     }
 
     /**
@@ -264,12 +676,14 @@ export class ReactiveState {
             this._addToHistory('clear', null, this.toObject(), {});
         }
 
-        // Cleanup observables
-        for (const observable of this._state.values()) {
-            observable.unwatchAll();
-        }
+        batch(() => {
+            for (const [key, observable] of this._state) {
+                observable.unwatchAll();
+                this._releaseKeyWatchers(key);
+                observable._write(ABSENT);
+            }
+        });
 
-        this._state.clear();
         this._computed.clear();
         this._watchers.clear();
     }
@@ -297,7 +711,8 @@ export class ReactiveState {
     }
 
     /**
-     * Watch state changes
+     * Watch state changes: a key, a dot path into a key, or a getter
+     * expression (re-evaluated whenever what it reads changes).
      */
     watch(key, callback, options = {}) {
         if (typeof key === 'function') {
@@ -305,34 +720,53 @@ export class ReactiveState {
             return this._watchComputed(key, callback, options);
         }
 
-        const observable = this._state.get(key);
-        if (!observable) {
+        const path = this._splitPath(key);
+        if (path) {
+            if (!this._hasOwnKey(path[0])) {
+                throw new StateError(`Cannot watch undefined state key: ${path[0]}`);
+            }
+            const computed = new Computed(() => this.get(key), { ...this._options, ...options });
+            return this._track(key, computed.watch(callback, options));
+        }
+
+        if (!this._hasOwnKey(key)) {
             throw new StateError(`Cannot watch undefined state key: ${key}`);
         }
 
-        const unwatch = observable.watch(callback, options);
+        return this._track(key, this._state.get(key).watch(callback, options));
+    }
 
-        // Store watcher for cleanup
+    /** Remember an unwatch function for cleanup. @private */
+    _track(key, unwatch) {
         if (!this._watchers.has(key)) {
             this._watchers.set(key, new Set());
         }
-        this._watchers.get(key).add(unwatch);
-
-        return unwatch;
+        const unwatchers = this._watchers.get(key);
+        const release = () => {
+            unwatch();
+            unwatchers.delete(release);
+        };
+        unwatchers.add(release);
+        return release;
     }
 
     /**
      * Watch computed expression
      */
     _watchComputed(expression, callback, options = {}) {
-        const computed = new Computed(expression, options);
+        const computed = new Computed(expression, { ...this._options, ...options });
         const unwatch = computed.watch(callback, options);
-
-        return unwatch;
+        const release = () => {
+            unwatch();
+            this._expressionWatchers.delete(release);
+        };
+        this._expressionWatchers.add(release);
+        return release;
     }
 
     /**
-     * Batch state updates
+     * Batch state updates: watchers run once, after every update, with the
+     * final values.
      */
     batch(updates) {
         if (typeof updates === 'function') {
@@ -341,7 +775,7 @@ export class ReactiveState {
             this._options.enableHistory = false;
 
             try {
-                const result = updates(this);
+                const result = batch(() => updates(this));
 
                 // Record batch in history
                 if (oldEnableHistory) {
@@ -412,11 +846,8 @@ export class ReactiveState {
                         break;
                     }
                 }
-            } catch (_error) {
-                globalErrorHandler.handle(_error, {
-                    type: 'middleware-_error',
-                    context: { action, middleware: middleware.toString() }
-                });
+            } catch (error) {
+                reportError(this, error, 'middleware-error', { action });
             }
         }
 
@@ -492,30 +923,34 @@ export class ReactiveState {
      * Convert state to plain object
      */
     toObject() {
-        const result = {};
-        for (const [key, observable] of this._state.entries()) {
-            result[key] = observable.value;
-        }
-        return result;
+        // Object.fromEntries defines own properties, so a "__proto__" key
+        // stays a key instead of replacing the result's prototype.
+        return Object.fromEntries(
+            [...this._state]
+                .filter(([, observable]) => observable._value !== ABSENT)
+                .map(([key, observable]) => [key, observable._value])
+        );
     }
 
     /**
      * Convert computed properties to object
      */
     getComputedValues() {
-        const result = {};
-        for (const [key, computed] of this._computed.entries()) {
-            result[key] = computed.value;
-        }
-        return result;
+        return Object.fromEntries(
+            [...this._computed].map(([key, computed]) => [key, computed.value])
+        );
     }
 
     /**
      * Get state statistics
      */
     getStats() {
+        let stateKeys = 0;
+        for (const observable of this._state.values()) {
+            if (observable._value !== ABSENT) stateKeys++;
+        }
         return {
-            stateKeys: this._state.size,
+            stateKeys,
             computedKeys: this._computed.size,
             watcherKeys: this._watchers.size,
             historyLength: this._history.length,
@@ -528,6 +963,12 @@ export class ReactiveState {
      */
     destroy() {
         // Clear all watchers
+        for (const key of [...this._watchers.keys()]) {
+            this._releaseKeyWatchers(key);
+        }
+        for (const release of [...this._expressionWatchers]) {
+            release();
+        }
         for (const observable of this._state.values()) {
             observable.unwatchAll();
         }

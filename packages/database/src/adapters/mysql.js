@@ -4,6 +4,8 @@
  * @fileoverview MySQL adapter implementation with connection pooling and transaction support.
  */
 
+import { normalizeIsolationLevel } from './isolation-level.js';
+
 /**
  * Create MySQL adapter instance
  * 
@@ -97,11 +99,46 @@ export function createMySQLAdapter() {
 
     /**
      * Start database transaction
+     *
+     * @param {Object} pool - mysql2 pool
+     * @param {Object} [options={}]
+     * @param {string} [options.isolationLevel] - READ UNCOMMITTED, READ COMMITTED, REPEATABLE READ or SERIALIZABLE
+     * @param {boolean} [options.readOnly] - Start a READ ONLY transaction
      */
-    async transaction(pool) {
+    async transaction(pool, options = {}) {
+      // Validate before taking a connection, so a bad option cannot leak one
+      const isolationLevel = normalizeIsolationLevel(options.isolationLevel);
+
       const connection = await pool.getConnection();
-      
-      await connection.beginTransaction();
+
+      let released = false;
+      const release = () => {
+        if (!released) {
+          released = true;
+          connection.release();
+        }
+      };
+
+      try {
+        if (isolationLevel) {
+          // Applies to the next transaction started on this connection only
+          await connection.query(`SET TRANSACTION ISOLATION LEVEL ${isolationLevel}`);
+        }
+        if (options.readOnly) {
+          await connection.query('START TRANSACTION READ ONLY');
+        } else {
+          await connection.beginTransaction();
+        }
+      } catch (_error) {
+        release();
+        throw _error;
+      }
+
+      const assertActive = () => {
+        if (transaction.isCommitted || transaction.isRolledBack) {
+          throw new Error('Transaction already completed');
+        }
+      };
 
       const transaction = {
         connection,
@@ -113,13 +150,13 @@ export function createMySQLAdapter() {
           if (transaction.isCommitted || transaction.isRolledBack) {
             throw new Error('Cannot execute query on completed transaction');
           }
-          
+
           const [rows] = await connection.execute(sql, params);
-          
+
           if (queryOptions && queryOptions.single) {
             return Array.isArray(rows) ? rows[0] || null : rows;
           }
-          
+
           if (Array.isArray(rows)) {
             return {
               rows,
@@ -138,28 +175,28 @@ export function createMySQLAdapter() {
         },
 
         commit: async () => {
-          if (transaction.isCommitted || transaction.isRolledBack) {
-            throw new Error('Transaction already completed');
-          }
+          assertActive();
 
           try {
             await connection.commit();
             transaction.isCommitted = true;
+          } catch (_error) {
+            transaction.isRolledBack = true;
+            await connection.rollback().catch(() => {});
+            throw _error;
           } finally {
-            connection.release();
+            release();
           }
         },
 
         rollback: async () => {
-          if (transaction.isCommitted || transaction.isRolledBack) {
-            throw new Error('Transaction already completed');
-          }
+          assertActive();
+          transaction.isRolledBack = true;
 
           try {
             await connection.rollback();
-            transaction.isRolledBack = true;
           } finally {
-            connection.release();
+            release();
           }
         }
       };

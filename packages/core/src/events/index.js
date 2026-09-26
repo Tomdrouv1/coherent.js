@@ -59,6 +59,7 @@ const eventSystem = {
     registerAction: globalEventBus.registerAction.bind(globalEventBus),
     registerActions: globalEventBus.registerActions.bind(globalEventBus),
     handleAction: globalEventBus.handleAction.bind(globalEventBus),
+    createScope: globalEventBus.createScope.bind(globalEventBus),
 
     // Statistics and debugging
     getStats: globalEventBus.getStats.bind(globalEventBus),

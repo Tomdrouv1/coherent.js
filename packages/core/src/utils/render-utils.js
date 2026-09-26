@@ -49,7 +49,10 @@ export function renderWithTemplate(component, options = {}) {
   } = options;
 
   const html = renderWithMonitoring(component, options);
-  return template.replace('{{content}}', html);
+  // Replacer function, not string: a string replacement expands `$&`, `$'`,
+  // `` $` `` and `$$`, so page text like "Pay $$10" would be corrupted and
+  // "$'" would splice the rest of the template into the page.
+  return template.replace('{{content}}', () => html);
 }
 
 /**
@@ -77,11 +80,23 @@ export async function renderComponentFactory(componentFactory, factoryArgs, opti
 }
 
 /**
- * Check if an object is a Coherent.js component
- * A Coherent.js component is a plain object with a single key representing an HTML tag
- * 
- * @param {any} obj - Object to check
- * @returns {boolean} True if object is a Coherent.js component
+ * Structural check for the *shape* of a Coherent.js element: a non-array
+ * object with exactly one own key (the tag name).
+ *
+ * This is a heuristic, not a type test. It cannot tell a component from an
+ * ordinary JSON payload that happens to have one key — `{ ok: true }`,
+ * `{ users: [...] }`, `{ error: 'Invalid credentials' }` all return `true` —
+ * and tag-name lists do not help, because `data`, `meta`, `title`, `label`,
+ * `summary` and `code` are both HTML tags and common JSON keys.
+ *
+ * Framework integrations therefore only use it when auto-rendering has been
+ * opted into explicitly (`autoRender: true`); by default they render only
+ * what is handed to their explicit APIs (`res.coherent()`,
+ * `reply.coherent()`, `ctx.coherent()`, the handler factories). Do not use it
+ * to decide how to serialize data you do not control.
+ *
+ * @param {any} obj - Value to check
+ * @returns {boolean} True if the value has the shape of a Coherent.js element
  */
 export function isCoherentComponent(obj) {
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {

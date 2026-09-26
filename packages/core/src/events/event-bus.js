@@ -387,6 +387,30 @@ export class EventBus {
   }
 
   /**
+   * A view of this bus whose event and action names are prefixed with
+   * `${scope}:`. It shares listeners with the bus, so `scope:event` can
+   * still be observed from the unscoped bus. withEventBus({ scope }) and
+   * emitEvent(name, { scope }) called this, but it didn't exist, so any
+   * scoped usage threw "createScope is not a function".
+   *
+   * @param {string} scope - Scope name
+   * @returns {Object} Scoped event bus
+   */
+  createScope(scope) {
+    const prefix = `${scope}:`;
+    return {
+      emit: (event, data) => this.emit(prefix + event, data),
+      emitSync: (event, data) => this.emitSync(prefix + event, data),
+      on: (event, listener, options) => this.on(prefix + event, listener, options),
+      once: (event, listener, options) => this.once(prefix + event, listener, options),
+      off: (event, listenerId) => this.off(prefix + event, listenerId),
+      registerAction: (action, handler) => this.registerAction(prefix + action, handler),
+      handleAction: (action, element, event, data) => this.handleAction(prefix + action, element, event, data),
+      createScope: (child) => this.createScope(prefix + child)
+    };
+  }
+
+  /**
    * Remove all listeners for an event
    */
   removeAllListeners(event) {

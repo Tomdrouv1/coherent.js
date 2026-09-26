@@ -128,8 +128,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const module = await import(\`/components/\${componentName}.js\`);
       const Component = module.default || module[componentName];
 
-      // Hydrate component
-      hydrate(element, Component);
+      // Hydrate component — hydrate(component, container, options)
+      hydrate(Component, element);
     } catch (error) {
       console.error(\`Failed to hydrate component: \${componentName}\`, error);
     }
@@ -314,7 +314,8 @@ export function generateDevtoolsScaffolding() {
 import { inspect, createProfiler, createLogger } from '@coherent.js/devtools';
 
 // Dev-time helpers — import these where useful during development.
-export const profiler = createProfiler();
+// Profilers record nothing unless enabled.
+export const profiler = createProfiler({ enabled: process.env.NODE_ENV !== 'production' });
 export const logger = createLogger();
 
 /**
@@ -342,8 +343,15 @@ export function generateSeoScaffolding(projectName = 'My App') {
   const metaHelper = `
 import { generateMeta, generateSitemap } from '@coherent.js/seo';
 
+// Public origin of the site, used for canonical URLs, Open Graph images and
+// the sitemap (search engines need absolute URLs). Set BASE_URL in production;
+// https://example.com is only a placeholder.
+export function getBaseUrl() {
+  return (process.env.BASE_URL || 'https://example.com').replace(/\\/+$/, '');
+}
+
 export function getPageMeta(page, data = {}) {
-  const baseUrl = process.env.BASE_URL || 'https://example.com';
+  const baseUrl = getBaseUrl();
 
   const metaConfigs = {
     home: {
@@ -371,11 +379,12 @@ export function getPageMeta(page, data = {}) {
 }
 
 export function getSitemap() {
+  // Paths are resolved against the hostname, so every <loc> is absolute
   return generateSitemap([
     { url: '/', priority: 1.0, changefreq: 'daily' },
     { url: '/about', priority: 0.8, changefreq: 'weekly' },
     { url: '/contact', priority: 0.6, changefreq: 'monthly' }
-  ]);
+  ], { hostname: getBaseUrl() });
 }
 `;
 

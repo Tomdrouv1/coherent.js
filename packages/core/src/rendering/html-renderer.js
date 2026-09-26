@@ -3,20 +3,18 @@
  * Converts object-based components to HTML strings with advanced optimizations
  */
 
-import { BaseRenderer, RendererUtils } from './base-renderer.js';
-import {
-    hasChildren,
-    normalizeChildren,
-} from '../core/object-utils.js';
+import { BaseRenderer, RendererUtils, serializeForCache } from './base-renderer.js';
+import { normalizeChildren } from '../core/object-utils.js';
 
-import { validateNesting } from '../core/html-nesting-rules.js';
+import { validateNesting, FORBIDDEN_CHILDREN } from '../core/html-nesting-rules.js';
 
 import {
     escapeHtml,
     isTrustedContent,
     isVoidElement,
     formatAttributes,
-    minifyHtml
+    minifyHtml,
+    createStreamMinifier
 } from '../core/html-utils.js';
 
 import { performanceMonitor } from '../performance/monitor.js';
@@ -24,17 +22,51 @@ import { createCacheManager } from '../performance/cache-manager.js';
 import { cssUtils, defaultCSSManager } from './css-manager.js';
 import { CoherentError, RenderingError, globalErrorHandler } from '../utils/error-handler.js';
 
-// Create a global cache instance for the renderer
+// Element props rendered as content or identity, never as attributes.
+const RESERVED_PROPS = new Set(['children', 'text', 'key', 'html']);
+
+// Shared by every render() call that opts in with `enableCache: true`.
 const rendererCache = createCacheManager({
-    maxSize: 1000,
+    maxCacheSize: 1000,
     ttlMs: 300000 // 5 minutes
 });
 
+/**
+ * render() is synchronous. A Promise in the tree (an async component, or a
+ * lazy() factory that returns one) used to render as an empty string
+ * without any signal.
+ */
+function assertNotThenable(value, path) {
+    if (value && (typeof value === 'object' || typeof value === 'function') && typeof value.then === 'function') {
+        throw new RenderingError(
+            `Cannot render a Promise at ${path === 'root' ? 'root' : formatRenderPath(path)}: render() is synchronous. Await async components (and their data) before rendering.`,
+            undefined,
+            { path: path === 'root' ? 'root' : formatRenderPath(path), renderer: 'html' }
+        );
+    }
+}
+
+/**
+ * Render paths are linked lists ({ parent, segment }, null for the root),
+ * extended in O(1) per node and formatted only when an error or warning
+ * needs them. Copying an array per node ([...path, segment]) and formatting
+ * a string per child made rendering quadratic in tree depth.
+ */
+function childPath(parent, segment) {
+    return { parent, segment };
+}
+
 function formatRenderPath(path) {
-    if (!path || path.length === 0) return 'root';
+    const segments = [];
+    if (Array.isArray(path)) {
+        segments.push(...path);
+    } else {
+        for (let node = path; node; node = node.parent) segments.push(node.segment);
+        segments.reverse();
+    }
 
     let rendered = 'root';
-    for (const segment of path) {
+    for (const segment of segments) {
         if (typeof segment !== 'string' || segment.length === 0) continue;
         if (segment.startsWith('[')) {
             rendered += segment;
@@ -54,13 +86,18 @@ function formatRenderPath(path) {
  * Converts object-based components to HTML strings with advanced optimizations.
  *
  * @param {Object} [options={}] - Renderer configuration options
- * @param {boolean} [options.enableCache=true] - Enable component caching
+ * @param {boolean} [options.enableCache=false] - Cache the HTML of whole renders, keyed on
+ *   the full component tree (trees containing functions are never cached)
+ * @param {Object} [options.cache] - Cache instance from createCacheManager() to use
+ *   instead of the shared one (e.g. with its own `maxCacheSize` / `ttlMs`)
  * @param {boolean} [options.enableMonitoring=true] - Enable performance monitoring
  * @param {boolean} [options.minify=false] - Enable HTML minification
  * @param {boolean} [options.streaming=false] - Enable streaming mode
  * @param {number} [options.maxDepth=100] - Maximum rendering depth
- * @param {number} [options.cacheSize=1000] - Cache size limit
- * @param {number} [options.cacheTTL=300000] - Cache TTL in milliseconds
+ * @param {number} [options.cacheTTL=300000] - Cache TTL in milliseconds for entries this render adds
+ * @param {Function} [options.onError] - `(error, { path }) => replacement` called when a
+ *   function component throws; its return value is rendered in place of the component
+ *   (return null to omit it). Without it the error propagates out of render().
  *
  * @example
  * const renderer = new HTMLRenderer({
@@ -74,17 +111,16 @@ function formatRenderPath(path) {
 class HTMLRenderer extends BaseRenderer {
     constructor(options = {}) {
         super({
-            enableCache: options.enableCache !== false,
             enableMonitoring: options.enableMonitoring !== false,
             minify: options.minify || false,
             streaming: options.streaming || false,
             maxDepth: options.maxDepth || 100,
-            ...options
+            ...options,
+            enableCache: options.enableCache === true
         });
 
-        // Initialize cache if enabled
-        if (this.config.enableCache && !this.cache) {
-            this.cache = rendererCache;
+        if (this.config.enableCache) {
+            this.cache = options.cache || rendererCache;
         }
     }
 
@@ -114,9 +150,26 @@ class HTMLRenderer extends BaseRenderer {
         this.startTiming();
 
         try {
+            assertNotThenable(component, 'root');
+
             // Input validation
             if (config.validateInput && !this.isValidComponent(component)) {
                 throw new Error('Invalid component structure');
+            }
+
+            // One cache entry per whole render. Caching every element
+            // separately meant serializing each subtree again at every level
+            // (quadratic in depth) and made rendering slower than not caching.
+            const cacheKey = this.cache && config.enableCache
+                ? serializeForCache(component)
+                : null;
+            const fullKey = cacheKey === null ? null : `render:${config.minify ? 'min' : 'raw'}:${cacheKey}`;
+            if (fullKey !== null) {
+                const cached = this.cache.get(fullKey);
+                if (cached !== null) {
+                    this.endTiming();
+                    return cached;
+                }
             }
 
             // Initialize seenObjects for circular reference detection
@@ -126,8 +179,14 @@ class HTMLRenderer extends BaseRenderer {
             };
 
             // Main rendering logic
-            const html = this.renderComponent(component, renderOptions, 0, []);
+            const html = this.renderComponent(component, renderOptions, 0, null);
             const finalHtml = config.minify ? minifyHtml(html, config) : html;
+
+            if (fullKey !== null) {
+                this.cache.set(fullKey, finalHtml, 'component', {
+                    ttlMs: typeof config.cacheTTL === 'number' ? config.cacheTTL : undefined
+                });
+            }
 
             // Performance monitoring
             this.endTiming();
@@ -154,7 +213,7 @@ class HTMLRenderer extends BaseRenderer {
     /**
      * Render a single component with full optimization pipeline
      */
-    renderComponent(component, options, depth = 0, path = []) {
+    renderComponent(component, options, depth = 0, path = null) {
         // Handle nullish and empty inputs immediately
         if (component === null || component === undefined) {
             return '';
@@ -169,9 +228,23 @@ class HTMLRenderer extends BaseRenderer {
             return component.__html;
         }
 
-        // Detect circular references (objects only)
-        if (typeof component === 'object' && component !== null && !Array.isArray(component)) {
-            if (options.seenObjects && options.seenObjects.has(component)) {
+        // Its keys (__isLazy, evaluate...) aren't tag names, so a lazy() value
+        // used to render as nothing unless evaluateLazy() ran first.
+        if (typeof component === 'object' && component.__isLazy === true && typeof component.evaluate === 'function') {
+            return this.renderComponent(component.evaluate(), options, depth + 1, childPath(path, '()'));
+        }
+
+        assertNotThenable(component, path);
+
+        // Detect circular references. Only the current ancestor path is
+        // tracked (added here, removed in `finally`): the same object may
+        // legitimately appear twice in a tree — a shared node, or a memo()
+        // result rendered twice — and that used to be reported as a cycle.
+        const tracked = options.seenObjects && typeof component === 'object' && component !== null
+            ? component
+            : null;
+        if (tracked) {
+            if (options.seenObjects.has(tracked)) {
                 throw new RenderingError(
                     'Circular reference detected in component tree',
                     component,
@@ -179,9 +252,7 @@ class HTMLRenderer extends BaseRenderer {
                     ['Remove the circular reference', 'Use lazy loading to break the cycle']
                 );
             }
-            if (options.seenObjects) {
-                options.seenObjects.add(component);
-            }
+            options.seenObjects.add(tracked);
         }
 
         // Use base class depth validation
@@ -198,8 +269,8 @@ class HTMLRenderer extends BaseRenderer {
                     return escapeHtml(value);
                 case 'function':
                     {
-                        const result = this.executeFunctionComponent(value, depth);
-                        return this.renderComponent(result, options, depth + 1, [...path, '()']);
+                        const result = this.runFunctionComponent(value, options, depth, path);
+                        return this.renderComponent(result, options, depth + 1, childPath(path, '()'));
                     }
                 case 'array':
                     // Development mode warning for missing keys
@@ -226,13 +297,26 @@ class HTMLRenderer extends BaseRenderer {
                             );
                         }
                     }
-                    return value.map((child, index) => this.renderComponent(child, options, depth + 1, [...path, `[${index}]`])).join('');
+                    {
+                        let html = '';
+                        for (let index = 0; index < value.length; index++) {
+                            html += this.renderComponent(value[index], options, depth + 1, childPath(path, `[${index}]`));
+                        }
+                        return html;
+                    }
                 case 'element':
                     {
-                        // Process object-based component
-                        const tagName = Object.keys(value)[0];
-                        const elementContent = value[tagName];
-                        return this.renderElement(tagName, elementContent, options, depth, [...path, tagName]);
+                        // Every key is an element; siblings render in order.
+                        // Keys after the first used to be dropped silently.
+                        const tagNames = Object.keys(value);
+                        if (tagNames.length === 1) {
+                            return this.renderElement(tagNames[0], value[tagNames[0]], options, depth, childPath(path, tagNames[0]));
+                        }
+                        let html = '';
+                        for (const tagName of tagNames) {
+                            html += this.renderElement(tagName, value[tagName], options, depth, childPath(path, tagName));
+                        }
+                        return html;
                     }
                 default:
                     this.recordError('renderComponent', new Error(`Unknown component type: ${type}`));
@@ -250,19 +334,40 @@ class HTMLRenderer extends BaseRenderer {
                 throw _error;
             }
 
-            throw new RenderingError(_error.message, undefined, { path: renderPath, renderer: 'html' });
+            const wrapped = new RenderingError(_error.message, undefined, { path: renderPath, renderer: 'html' });
+            wrapped.cause = _error;
+            throw wrapped;
+        } finally {
+            if (tracked) options.seenObjects.delete(tracked);
+        }
+    }
+
+    /**
+     * Run a function component, giving `options.onError` the chance to
+     * replace a component that throws.
+     */
+    runFunctionComponent(func, options, depth, path) {
+        try {
+            return this.executeFunctionComponent(func, depth);
+        } catch (error) {
+            if (typeof options.onError === 'function') {
+                return options.onError(error, { path: formatRenderPath(path) });
+            }
+            throw error;
         }
     }
 
     /**
      * Render an HTML element with advanced caching and optimization
      */
-    renderElement(tagName, element, options, depth = 0, path = []) {
-        const startTime = performance.now();
-
-        // Check for circular references in element props
-        if (element && typeof element === 'object' && !Array.isArray(element)) {
-            if (options.seenObjects && options.seenObjects.has(element)) {
+    renderElement(tagName, element, options, depth = 0, path = null) {
+        // Check for circular references in element props (ancestor path only,
+        // see renderComponent).
+        const tracked = options.seenObjects && element && typeof element === 'object' && !Array.isArray(element)
+            ? element
+            : null;
+        if (tracked) {
+            if (options.seenObjects.has(tracked)) {
                 throw new RenderingError(
                     'Circular reference detected in component tree',
                     element,
@@ -270,30 +375,17 @@ class HTMLRenderer extends BaseRenderer {
                     ['Remove the circular reference', 'Use lazy loading to break the cycle']
                 );
             }
-            if (options.seenObjects) {
-                options.seenObjects.add(element);
-            }
+            options.seenObjects.add(tracked);
         }
+        try {
+            return this.renderElementContent(tagName, element, options, depth, path);
+        } finally {
+            if (tracked) options.seenObjects.delete(tracked);
+        }
+    }
 
-        // Track element usage for performance analysis (via stats in the new cache manager)
-        if (options.enableMonitoring && this.cache) {
-            // The new cache manager tracks usage automatically via get/set operations
-        }
-
-        // Check cache first for static elements
-        if (options.enableCache && this.cache && RendererUtils.isStaticElement(element)) {
-            try {
-                const cacheKey = `static:${tagName}:${JSON.stringify(element)}`;
-                const cached = this.cache.get('static', cacheKey);
-                if (cached) {
-                    this.recordPerformance(tagName, startTime, true);
-                    return cached.value; // Return the cached HTML
-                }
-            } catch {
-                // Circular reference in element - skip caching and continue with rendering
-                // The circular reference will be detected and properly reported during render
-            }
-        }
+    renderElementContent(tagName, element, options, depth = 0, path = null) {
+        const startTime = options.enableMonitoring ? performance.now() : 0;
 
         // Handle text-only elements including booleans
         if (typeof element === 'string' || typeof element === 'number' || typeof element === 'boolean') {
@@ -301,15 +393,24 @@ class HTMLRenderer extends BaseRenderer {
                 ? `<${tagName}>`
                 : `<${tagName}>${escapeHtml(String(element))}</${tagName}>`;
 
-            this.cacheIfStatic(tagName, element, html, options);
             this.recordPerformance(tagName, startTime, false);
             return html;
         }
 
         // Handle function elements
         if (typeof element === 'function') {
-            const result = this.executeFunctionComponent(element, depth);
-            return this.renderElement(tagName, result, options, depth, [...path, '()']);
+            let result;
+            try {
+                result = this.executeFunctionComponent(element, depth);
+            } catch (error) {
+                if (typeof options.onError !== 'function') throw error;
+                // The replacement stands in for the whole element: rendered
+                // as the element's content it became attributes
+                // (`<div p="[object Object]">`).
+                const replacement = options.onError(error, { path: formatRenderPath(path) });
+                return this.renderComponent(replacement, options, depth + 1, childPath(path, '()'));
+            }
+            return this.renderElement(tagName, result, options, depth, childPath(path, '()'));
         }
 
         // Handle object elements (complex elements with props and children)
@@ -333,131 +434,214 @@ class HTMLRenderer extends BaseRenderer {
     }
 
     /**
-     * Cache element if it's static
-     */
-    cacheIfStatic(tagName, element, html) {
-        if (this.config.enableCache && this.cache && RendererUtils.isStaticElement(element)) {
-            try {
-                const cacheKey = `static:${tagName}:${JSON.stringify(element)}`;
-                this.cache.set('static', cacheKey, html, {
-                    ttlMs: this.config.cacheTTL || 5 * 60 * 1000, // 5 minutes default
-                    size: html.length // Approximate size
-                });
-            } catch {
-                // Circular reference - skip caching
-            }
-        }
-    }
-
-    /**
      * Render complex object elements with attributes and children
      */
-    renderObjectElement(tagName, element, options, depth = 0, path = []) {
-        const startTime = performance.now();
+    renderObjectElement(tagName, element, options, depth = 0, path = null) {
+        const startTime = options.enableMonitoring ? performance.now() : 0;
+        const parts = elementParts(tagName, element);
 
-        // Check component-level cache
-        if (options.enableCache && this.cache) {
-            const cacheKey = RendererUtils.generateCacheKey(tagName, element);
-            if (cacheKey) {
-                const cached = this.cache.get(cacheKey);
-                if (cached) {
-                    this.recordPerformance(tagName, startTime, true);
-                    return cached;
-                }
+        let html = parts.open + parts.content;
+        if (parts.children) {
+            const forbidden = FORBIDDEN_CHILDREN[tagName.toLowerCase()];
+            for (let index = 0; index < parts.children.length; index++) {
+                const child = parts.children[index];
+                const segment = childPath(path, `children[${index}]`);
+                checkNesting(tagName, forbidden, child, segment);
+                html += this.renderComponent(child, options, depth + 1, segment);
             }
         }
-
-        // Extract props and children directly from element content
-        // Note: key is extracted but NOT rendered as an HTML attribute
-        // It's used for reconciliation identity, not DOM output
-        // html prop is extracted to prevent it from being rendered as an attribute
-        const { children, text, key: _key, html: _rawHtml, ...attributes } = element || {};
-
-        // Build opening tag with attributes
-        const attributeString = formatAttributes(attributes);
-        const openingTag = attributeString
-            ? `<${tagName} ${attributeString}>`
-            : `<${tagName}>`;
-
-        // Void elements: no closing tag; any text/children are dropped.
-        if (isVoidElement(tagName)) {
-            if (options.enableCache && this.cache && RendererUtils.isCacheable(element, options)) {
-                const cacheKey = RendererUtils.generateCacheKey(tagName, element);
-                if (cacheKey) {
-                    this.cache.set(cacheKey, openingTag);
-                }
-            }
-            this.recordPerformance(tagName, startTime, false);
-            return openingTag;
-        }
-
-        // Handle raw HTML injection (unescaped) — for SSR use cases like syntax highlighting
-        if (_rawHtml !== undefined) {
-            const resolvedHtml = typeof _rawHtml === 'function' ? _rawHtml() : _rawHtml;
-            const rawContent = isTrustedContent(resolvedHtml)
-                ? resolvedHtml.__html
-                : String(resolvedHtml);
-            const result = `${openingTag}${rawContent}</${tagName}>`;
-            return result;
-        }
-
-        // Content marked by dangerouslySetInnerContent() is emitted verbatim.
-        if (isTrustedContent(text)) {
-            return `${openingTag}${text.__html}</${tagName}>`;
-        }
-
-        // Handle text content
-        let textContent = '';
-        if (text !== undefined) {
-            const isScript = tagName === 'script';
-            const isStyle = tagName === 'style';
-            const isRawTag = isScript || isStyle;
-            const raw = typeof text === 'function' ? String(text()) : String(text);
-            if (isRawTag) {
-                // Prevent </script> or </style> early-terminating the tag
-                const safe = raw
-                  .replace(/<\/(script)/gi, '<\\/$1')
-                  .replace(/<\/(style)/gi, '<\\/$1')
-                  // Escape problematic Unicode line separators in JS
-                  .replace(/\u2028/g, '\\u2028')
-                  .replace(/\u2029/g, '\\u2029');
-                textContent = safe;
-            } else {
-                textContent = escapeHtml(raw);
-            }
-        }
-
-        // Handle children
-        let childrenHtml = '';
-        if (hasChildren(element)) {
-            const normalizedChildren = normalizeChildren(children);
-            childrenHtml = normalizedChildren
-                .map((child, index) => {
-                    // Validate HTML nesting before rendering child
-                    if (child && typeof child === 'object' && !Array.isArray(child)) {
-                        const childTagName = Object.keys(child)[0];
-                        if (childTagName) {
-                            validateNesting(tagName, childTagName, formatRenderPath([...path, `children[${index}]`]));
-                        }
-                    }
-                    return this.renderComponent(child, options, depth + 1, [...path, `children[${index}]`]);
-                })
-                .join('');
-        }
-
-        // Build complete HTML
-        const html = `${openingTag}${textContent}${childrenHtml}</${tagName}>`;
-
-        // Cache the result if appropriate
-        if (options.enableCache && this.cache && RendererUtils.isCacheable(element, options)) {
-            const cacheKey = RendererUtils.generateCacheKey(tagName, element);
-            if (cacheKey) {
-                this.cache.set(cacheKey, html);
-            }
-        }
+        html += parts.close;
 
         this.recordPerformance(tagName, startTime, false);
         return html;
+    }
+
+    /**
+     * Streaming counterpart of renderComponent: yields HTML pieces. Elements
+     * with many children are streamed child by child; everything else goes
+     * through the synchronous renderer, which is exact and faster, so the
+     * streamed output is the same as render()'s by construction.
+     */
+    async *streamComponent(component, options, depth = 0, path = null) {
+        if (component === null || component === undefined) return;
+
+        // Every branch, like renderComponent: deeply nested arrays or
+        // functions returning functions overflowed the stack instead of
+        // reporting maxDepth.
+        this.validateDepth(depth);
+
+        if (typeof component === 'function') {
+            const result = this.runFunctionComponent(component, options, depth, path);
+            yield* this.streamComponent(result, options, depth + 1, childPath(path, '()'));
+            return;
+        }
+
+        if (Array.isArray(component)) {
+            yield* this.streamTracked(component, options, path, async function* (renderer) {
+                for (let index = 0; index < component.length; index++) {
+                    yield* renderer.streamComponent(component[index], options, depth + 1, childPath(path, `[${index}]`));
+                }
+            });
+            return;
+        }
+
+        if (typeof component === 'object' && !isTrustedContent(component) && component.__isLazy !== true) {
+            const { type, value } = this.processComponentType(component);
+            if (type === 'element') {
+                yield* this.streamTracked(component, options, path, async function* (renderer) {
+                    for (const tagName of Object.keys(value)) {
+                        yield* renderer.streamElement(tagName, value[tagName], options, depth, childPath(path, tagName));
+                    }
+                });
+                return;
+            }
+        }
+
+        yield this.renderComponent(component, options, depth, path);
+    }
+
+    async *streamElement(tagName, element, options, depth, path) {
+        if (!element || typeof element !== 'object' || Array.isArray(element) || !shouldStream(element.children)) {
+            yield this.renderElement(tagName, element, options, depth, path);
+            return;
+        }
+
+        yield* this.streamTracked(element, options, path, async function* (renderer) {
+            const parts = elementParts(tagName, element);
+            yield parts.open + parts.content;
+            if (parts.children) {
+                const forbidden = FORBIDDEN_CHILDREN[tagName.toLowerCase()];
+                for (let index = 0; index < parts.children.length; index++) {
+                    const child = parts.children[index];
+                    const segment = childPath(path, `children[${index}]`);
+                    checkNesting(tagName, forbidden, child, segment);
+                    yield* renderer.streamComponent(child, options, depth + 1, segment);
+                }
+            }
+            yield parts.close;
+        });
+    }
+
+    /**
+     * Run `body` with `value` on the ancestor path used for cycle detection.
+     */
+    async *streamTracked(value, options, path, body) {
+        if (options.seenObjects.has(value)) {
+            throw new RenderingError(
+                'Circular reference detected in component tree',
+                value,
+                { path: formatRenderPath(path) },
+                ['Remove the circular reference', 'Use lazy loading to break the cycle']
+            );
+        }
+        options.seenObjects.add(value);
+        try {
+            yield* body(this);
+        } finally {
+            options.seenObjects.delete(value);
+        }
+    }
+}
+
+// Elements with at least this many children are streamed child by child.
+const STREAM_MIN_CHILDREN = 8;
+
+/**
+ * Whether to stream an element's children one by one rather than render the
+ * element in one synchronous step: when it has many children, or when a
+ * child has children of its own (wrappers like body > main > list must be
+ * descended into to reach the long list) or is a function whose output size
+ * is unknown. Leaf-level rows (a <tr> of text <td>s) render synchronously.
+ */
+function shouldStream(children) {
+    if (children === undefined || children === null) return false;
+    const list = Array.isArray(children) ? children : [children];
+    if (list.length >= STREAM_MIN_CHILDREN) return true;
+
+    for (const child of list) {
+        if (typeof child === 'function' || Array.isArray(child)) return true;
+        if (child && typeof child === 'object') {
+            for (const key in child) {
+                const content = child[key];
+                if (typeof content === 'function') return true;
+                if (content && typeof content === 'object' && content.children !== undefined && content.children !== null) return true;
+            }
+        }
+    }
+    return false;
+}
+
+/**
+ * Split an element into the markup around its children. Shared by render()
+ * and renderToStream() so the two can't drift apart (the old streaming
+ * renderer escaped <script> bodies, dropped children next to text, emitted
+ * key="..." and skipped tag-name validation).
+ *
+ * @returns {{open: string, content: string, children: Array|null, close: string}}
+ */
+function elementParts(tagName, element) {
+    // children/text/html are content, and key is reconciliation identity:
+    // none of them is rendered as an attribute. formatAttributes skips
+    // them instead of this copying the props with rest destructuring.
+    const { children, text: rawText, html: rawHtml } = element || {};
+
+    const attributeString = formatAttributes(element, RESERVED_PROPS);
+    const open = attributeString ? `<${tagName} ${attributeString}>` : `<${tagName}>`;
+
+    // Void elements: no closing tag; any text/children are dropped.
+    if (isVoidElement(tagName)) {
+        return { open, content: '', children: null, close: '' };
+    }
+
+    const close = `</${tagName}>`;
+
+    // Raw HTML injection (unescaped) — for SSR use cases like syntax
+    // highlighting. null (or a function returning it) means no raw HTML, as
+    // for `text`, instead of the string "null".
+    const html = typeof rawHtml === 'function' ? rawHtml() : rawHtml;
+    if (html !== undefined && html !== null) {
+        return { open, content: isTrustedContent(html) ? html.__html : String(html), children: null, close };
+    }
+    const text = typeof rawText === 'function' && !isTrustedContent(rawText) ? rawText() : rawText;
+
+    // Content marked by dangerouslySetInnerContent() is emitted verbatim.
+    if (isTrustedContent(text)) {
+        return { open, content: text.__html, children: null, close };
+    }
+
+    // Text content (null means "no text", not the string "null")
+    let content = '';
+    if (text !== undefined && text !== null) {
+        const raw = String(text);
+        if (tagName === 'script' || tagName === 'style') {
+            // Prevent </script> or </style> early-terminating the tag
+            content = raw
+                .replace(/<\/(script)/gi, '<\\/$1')
+                .replace(/<\/(style)/gi, '<\\/$1')
+                // Escape problematic Unicode line separators in JS
+                .replace(/\u2028/g, '\\u2028')
+                .replace(/\u2029/g, '\\u2029');
+        } else {
+            content = escapeHtml(raw);
+        }
+    }
+
+    // Children are checked directly: hasChildren() validates every prop name
+    // against the tag-name pattern, so an element with a prop like `@click`
+    // or `data_id` silently lost all of its children.
+    const normalized = children !== undefined && children !== null ? normalizeChildren(children) : null;
+    return { open, content, children: normalized && normalized.length > 0 ? normalized : null, close };
+}
+
+/**
+ * Validate HTML nesting, formatting the path only on a violation.
+ */
+function checkNesting(tagName, forbidden, child, path) {
+    if (forbidden && child && typeof child === 'object' && !Array.isArray(child)) {
+        const childTagName = Object.keys(child)[0];
+        if (childTagName && forbidden.has(childTagName.toLowerCase())) {
+            validateNesting(tagName, childTagName, formatRenderPath(path));
+        }
     }
 }
 
@@ -469,7 +653,6 @@ class HTMLRenderer extends BaseRenderer {
 export function render(component, options = {}) {
     // Merge default options with provided options
     const mergedOptions = {
-        enableCache: true,
         enableMonitoring: false,
         ...options
     };
@@ -586,7 +769,6 @@ export function renderBatch(components, options = {}) {
 
     // Merge default options with provided options
     const mergedOptions = {
-        enableCache: true,
         enableMonitoring: false,
         ...options
     };
@@ -596,141 +778,72 @@ export function renderBatch(components, options = {}) {
 }
 
 /**
- * Real streaming render - yields chunks progressively as HTML is generated
- * Ideal for large component trees or memory-constrained environments
+ * Stream a component as HTML chunks: an async generator yielding strings of
+ * about `chunkSize` characters. The output is exactly render()'s; the event
+ * loop gets a turn after every chunk, so a large page doesn't block other
+ * requests and the first bytes can leave before the whole tree is rendered.
+ *
+ * Errors propagate out of the generator (after the chunks already yielded):
+ * abort the response rather than end it, so a truncated page isn't taken as
+ * complete. `onError` works as in render().
+ *
+ * @example
+ * import { Readable } from 'node:stream';
+ * Readable.from(renderToStream(Page())).pipe(res);
+ *
+ * @param {*} component - Component to render
+ * @param {Object} [options] - render() options, plus `chunkSize` (default 8192)
+ * @returns {AsyncGenerator<string>}
  */
 export async function* renderToStream(component, options = {}) {
-    const config = {
-        chunkSize: 8192, // 8KB default chunk size
-        maxDepth: 1000,
-        yieldThreshold: 100, // Yield control every 100 elements
-        encoding: 'utf8',
-        ...options
-    };
+    const { chunkSize = 8192, ...renderOptions } = options;
+    const renderer = new HTMLRenderer({ enableMonitoring: false, ...renderOptions, enableCache: false });
+    const config = { ...renderer.config, seenObjects: new WeakSet() };
+
+    assertNotThenable(component, 'root');
+    if (config.validateInput && !renderer.isValidComponent(component)) {
+        throw new Error('Invalid component structure');
+    }
+
+    // `minify` used to be ignored here, so the stream differed from render().
+    const minifier = config.minify ? createStreamMinifier() : null;
 
     let buffer = '';
-    let elementCount = 0;
-
-    // Helper to flush buffer when it reaches chunk size
-    async function* flushBuffer(force = false) {
-        if (force || buffer.length >= config.chunkSize) {
-            if (buffer.length > 0) {
-                yield buffer;
-                buffer = '';
-            }
+    for await (const piece of renderer.streamComponent(component, config, 0, null)) {
+        buffer += minifier ? minifier.push(piece) : piece;
+        if (buffer.length >= chunkSize) {
+            yield buffer;
+            buffer = '';
+            await yieldToEventLoop();
         }
     }
+    if (minifier) buffer += minifier.end();
+    if (buffer) yield buffer;
+}
 
-    // Helper to add to buffer
-    async function* write(text) {
-        buffer += text;
-        yield* flushBuffer();
-    }
+const yieldToEventLoop = typeof setImmediate === 'function'
+    ? () => new Promise((resolve) => setImmediate(resolve))
+    : () => new Promise((resolve) => setTimeout(resolve, 0));
 
-    // Recursive streaming component renderer
-    async function* streamComponent(comp, depth = 0) {
-        if (depth > config.maxDepth) {
-            throw new Error(`Maximum nesting depth exceeded: ${config.maxDepth}`);
-        }
-
-        // Handle null/undefined
-        if (comp === null || comp === undefined) return;
-
-        // Content marked by dangerouslySetInnerContent() is emitted verbatim.
-        if (isTrustedContent(comp)) {
-            yield* write(comp.__html);
-            return;
-        }
-
-        // Handle primitives
-        if (typeof comp === 'string' || typeof comp === 'number') {
-            yield* write(escapeHtml(String(comp)));
-            return;
-        }
-
-        // Handle arrays
-        if (Array.isArray(comp)) {
-            for (const child of comp) {
-                yield* streamComponent(child, depth);
-
-                // Yield control periodically
-                if (elementCount++ % config.yieldThreshold === 0) {
-                    await new Promise(resolve => setImmediate(resolve));
-                }
-            }
-            return;
-        }
-
-        // Handle functions
-        if (typeof comp === 'function') {
-            const result = comp();
-            yield* streamComponent(result, depth);
-            return;
-        }
-
-        // Handle objects (HTML elements)
-        if (typeof comp === 'object') {
-            for (const [tagName, props] of Object.entries(comp)) {
-                if (typeof props === 'object' && props !== null) {
-                    const { children, text, html: rawHtml, ...attributes } = props;
-                    const attrsStr = formatAttributes(attributes);
-                    // Built directly rather than via openTag.replace('>', ' />'),
-                    // which rewrites the first '>' in the string — an attribute
-                    // value carrying one would be corrupted instead of the tag
-                    // being closed.
-                    const attrsPart = attrsStr ? ` ${attrsStr}` : '';
-                    const openTag = `<${tagName}${attrsPart}>`;
-
-                    if (isVoidElement(tagName)) {
-                        yield* write(`<${tagName}${attrsPart} />`);
-                        elementCount++;
-                        return;
-                    }
-
-                    yield* write(openTag);
-
-                    if (rawHtml !== undefined) {
-                        const resolved = typeof rawHtml === 'function' ? rawHtml() : rawHtml;
-                        yield* write(isTrustedContent(resolved) ? resolved.__html : String(resolved));
-                    } else if (isTrustedContent(text)) {
-                        yield* write(text.__html);
-                    } else if (text !== undefined) {
-                        yield* write(escapeHtml(String(text)));
-                    } else if (children) {
-                        yield* streamComponent(children, depth + 1);
-                    }
-
-                    yield* write(`</${tagName}>`);
-                    elementCount++;
-                } else if (props === null || props === undefined) {
-                    // Handle null/undefined props - render empty element
-                    if (isVoidElement(tagName)) {
-                        yield* write(`<${tagName} />`);
-                    } else {
-                        yield* write(`<${tagName}></${tagName}>`);
-                    }
-                    elementCount++;
-                } else if (typeof props === 'string') {
-                    const content = escapeHtml(props);
-                    if (isVoidElement(tagName)) {
-                        yield* write(`<${tagName} />`);
-                    } else {
-                        yield* write(`<${tagName}>${content}</${tagName}>`);
-                    }
-                    elementCount++;
-                }
-            }
-        }
-    }
-
-    // Start streaming
-    try {
-        yield* streamComponent(component);
-        yield* flushBuffer(true); // Force flush remaining buffer
-    } catch (error) {
-        // Stream error as HTML comment
-        yield `<!-- Streaming Error: ${error.message} -->`;
-    }
+/**
+ * Wait until `response` can take more data. Resolves `true` on 'drain' and
+ * `false` when the response closes (or errors) first.
+ */
+function waitForDrain(response) {
+    if (response.destroyed) return Promise.resolve(false);
+    return new Promise((resolve) => {
+        const settle = (drained) => () => {
+            response.off('drain', onDrain);
+            response.off('close', onClose);
+            response.off('error', onClose);
+            resolve(drained);
+        };
+        const onDrain = settle(true);
+        const onClose = settle(false);
+        response.on('drain', onDrain);
+        response.on('close', onClose);
+        response.on('error', onClose);
+    });
 }
 
 /**
@@ -749,16 +862,39 @@ export const streamingUtils = {
     },
 
     /**
-     * Stream directly to a Node.js response
+     * Stream directly to a Node.js response, with backpressure.
+     *
+     * Resolves with the number of bytes written once the response has ended.
+     * If the client disconnects first, rendering stops (the generator is
+     * closed) and it resolves with the bytes written so far without ending
+     * the response. If rendering fails, the response is destroyed and it
+     * rejects with the rendering error.
      */
     async streamToResponse(chunkGenerator, response) {
         let totalBytes = 0;
-        response.setHeader('Content-Type', 'text/html; charset=utf-8');
-        response.setHeader('Transfer-Encoding', 'chunked');
+        if (!response.headersSent && !response.getHeader?.('Content-Type')) {
+            response.setHeader('Content-Type', 'text/html; charset=utf-8');
+        }
 
-        for await (const chunk of chunkGenerator) {
-            response.write(chunk);
-            totalBytes += Buffer.byteLength(chunk);
+        try {
+            // Leaving the loop early closes the generator, so a client that
+            // went away stops the render instead of leaving it suspended.
+            for await (const chunk of chunkGenerator) {
+                if (response.destroyed) return totalBytes;
+                totalBytes += Buffer.byteLength(chunk);
+                // Respect backpressure instead of buffering the whole page
+                // in the socket when the client reads slowly. 'drain' never
+                // comes once the client disconnects: waiting for it alone
+                // left the promise (and the render) pending forever.
+                if (!response.write(chunk) && !(await waitForDrain(response))) {
+                    return totalBytes;
+                }
+            }
+        } catch (error) {
+            // Headers are gone: abort the connection so the client sees a
+            // failed response, not a complete-looking truncated page.
+            response.destroy(error);
+            throw error;
         }
 
         response.end();
@@ -791,7 +927,6 @@ export const streamingUtils = {
  */
 export function* renderToChunks(component, options = {}) {
     const mergedOptions = {
-        enableCache: true,
         enableMonitoring: false,
         ...options,
         chunkSize: options.chunkSize || 1024 // Default 1KB chunks
@@ -834,7 +969,7 @@ export function getRenderingStats() {
  * Precompile static components for maximum performance
  */
 export function precompileComponent(component, options = {}) {
-    if (!isStaticElement(component)) {
+    if (!RendererUtils.isStaticElement(component)) {
         throw new Error('Can only precompile static components');
     }
 

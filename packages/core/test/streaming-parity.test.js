@@ -1,0 +1,216 @@
+import { describe, it, expect } from 'vitest';
+import http from 'node:http';
+import net from 'node:net';
+import { render, renderToStream, streamingUtils, dangerouslySetInnerContent } from '../src/index.js';
+import { createStreamMinifier, minifyHtml } from '../src/core/html-utils.js';
+
+async function collect(component, options) {
+  const chunks = [];
+  for await (const chunk of renderToStream(component, options)) chunks.push(chunk);
+  return chunks;
+}
+
+const bigList = (n) => ({ ul: { children: Array.from({ length: n }, (_, i) => ({ li: { key: i, className: 'row', text: `item ${i} <&>` } })) } });
+
+describe('renderToStream', () => {
+  const cases = {
+    'script bodies are not HTML-escaped': { script: { text: 'if (a < b && c) { run("x"); }' } },
+    'text and children both render': { p: { text: 'Hello ', children: [{ b: { text: 'world' } }] } },
+    'key is not an attribute': { div: { key: 'k1', id: 'x', text: 'y' } },
+    'number shorthand': { td: 42 },
+    'invalid tag names render nothing': { div: { children: [{ 'img src=x onerror=alert(1)': {} }] } },
+    'void elements': { div: { children: [{ br: {} }, { img: { src: '/a.png', alt: '' } }] } },
+    'trusted content': { div: { children: [dangerouslySetInnerContent('<em>raw</em>')] } },
+    'booleans in children': { ul: { children: [false && { li: 'x' }, { li: 'y' }] } },
+    'multi-key objects': { h1: { text: 'Title' }, p: { text: 'Paragraph' } },
+    'streamed large list with nested small subtrees': { main: { children: [{ h1: 'List' }, bigList(50), { footer: { children: [{ small: '(c)' }] } }] } }
+  };
+
+  for (const [name, component] of Object.entries(cases)) {
+    it(`matches render(): ${name}`, async () => {
+      expect((await collect(component)).join('')).toBe(render(component));
+    });
+  }
+
+  it('matches render() with scoped CSS and a function component', async () => {
+    const Card = () => ({ div: { children: [{ style: { text: '.c{color:red}' } }, { p: { className: 'c', text: 'x' } }] } });
+    expect((await collect(Card, { scoped: true })).join('')).toBe(render(Card, { scoped: true }));
+  });
+
+  it('yields several chunks and gives the event loop a turn between them', async () => {
+    let ticks = 0;
+    let running = true;
+    const tick = () => {
+      if (!running) return;
+      ticks++;
+      setImmediate(tick);
+    };
+    setImmediate(tick);
+
+    const chunks = await collect({ table: { children: [bigList(3000)] } }, { chunkSize: 4096 });
+    running = false;
+
+    expect(chunks.length).toBeGreaterThan(10);
+    expect(ticks).toBeGreaterThanOrEqual(chunks.length - 1);
+    expect(chunks.join('')).toBe(render({ table: { children: [bigList(3000)] } }));
+  });
+
+  it('throws errors instead of hiding them in an HTML comment', async () => {
+    const Boom = () => {
+      throw new Error('boom --> <script>alert(1)</script>');
+    };
+    await expect(collect({ div: { children: [bigList(20), Boom] } })).rejects.toThrow('boom');
+  });
+
+  it('supports onError like render()', async () => {
+    const Boom = () => {
+      throw new Error('boom');
+    };
+    const tree = { div: { children: [Boom, { p: 'after' }] } };
+    const onError = () => ({ p: 'fallback' });
+    expect((await collect(tree, { onError })).join('')).toBe(render(tree, { onError }));
+  });
+
+  it('reports cycles', async () => {
+    const children = [{ span: 'a' }];
+    children.push(children);
+    await expect(collect({ div: { children } })).rejects.toThrow(/Circular reference/);
+  });
+
+  it('streamToResponse aborts the response when rendering fails', async () => {
+    const Boom = () => {
+      throw new Error('boom');
+    };
+    const events = [];
+    const response = {
+      headersSent: false,
+      getHeader: () => undefined,
+      setHeader: (name, value) => events.push(['header', name, value]),
+      write: (chunk) => { events.push(['write', chunk.length]); return true; },
+      on: () => {},
+      off: () => {},
+      end: () => events.push(['end']),
+      destroy: (error) => events.push(['destroy', error.message])
+    };
+
+    await expect(streamingUtils.streamToResponse(renderToStream({ div: { children: [Boom] } }), response)).rejects.toThrow('boom');
+    expect(events).toContainEqual(['destroy', 'boom']);
+    expect(events.some(([type]) => type === 'end')).toBe(false);
+  });
+
+  // Regression: after write() returned false it waited for 'drain' only.
+  // A client that disconnected meanwhile never drains, so the promise and
+  // the suspended render (holding the whole tree) stayed pending forever.
+  it('streamToResponse stops rendering when the client disconnects', async () => {
+    let closed = false;
+    async function* tracked() {
+      try {
+        yield* renderToStream(bigList(200_000), { chunkSize: 65_536 });
+      } finally {
+        closed = true;
+      }
+    }
+
+    let result;
+    const server = http.createServer((req, res) => {
+      result = streamingUtils.streamToResponse(tracked(), res);
+    });
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+
+    try {
+      const socket = net.connect(server.address().port, '127.0.0.1');
+      await new Promise((resolve) => socket.once('connect', resolve));
+      socket.write('GET / HTTP/1.1\r\nHost: localhost\r\n\r\n');
+      socket.pause(); // never read, so the server's writes stop draining
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      socket.destroy();
+
+      const outcome = await Promise.race([
+        result.then((bytes) => ({ bytes })),
+        new Promise((resolve) => setTimeout(() => resolve('still pending'), 3000))
+      ]);
+
+      expect(outcome).not.toBe('still pending');
+      expect(outcome.bytes).toBeGreaterThan(0);
+      expect(closed).toBe(true);
+    } finally {
+      server.closeAllConnections();
+      await new Promise((resolve) => server.close(resolve));
+    }
+  });
+
+  // Regression: renderToStream() ignored `minify`, so the stream differed
+  // from render({ minify: true }).
+  describe('minify', () => {
+    const trees = {
+      'whitespace between children': { div: { children: [{ p: { text: 'a' } }, '\n   ', { p: { text: 'b' } }] } },
+      'comments and raw html': {
+        main: {
+          children: [
+            { div: { html: '  <!-- note -->  <b> x </b>\n' } },
+            dangerouslySetInnerContent('<!-- a > b -->  <i>y</i>  '),
+            ' tail  '
+          ]
+        }
+      },
+      'a large list': bigList(300)
+    };
+
+    for (const [name, tree] of Object.entries(trees)) {
+      it(`matches render() for ${name}`, async () => {
+        const expected = render(tree, { minify: true });
+        for (const chunkSize of [1, 7, 8192]) {
+          expect((await collect(tree, { minify: true, chunkSize })).join('')).toBe(expected);
+        }
+      });
+    }
+
+    it('minifies incrementally exactly like minifyHtml() over the whole input', () => {
+      const alphabet = ['<', '>', '!', '-', ' ', '\n', 'a', '<!--', '-->', '<p>', '</p>', '  ', '\t'];
+      let seed = 7;
+      const random = (n) => {
+        seed = (seed * 1103515245 + 12345) % 2147483648;
+        return seed % n;
+      };
+
+      for (let run = 0; run < 3000; run++) {
+        let input = '';
+        const length = random(30);
+        for (let i = 0; i < length; i++) input += alphabet[random(alphabet.length)];
+
+        const minifier = createStreamMinifier();
+        let output = '';
+        for (let i = 0; i < input.length;) {
+          const size = 1 + random(5);
+          output += minifier.push(input.slice(i, i + size));
+          i += size;
+        }
+        output += minifier.end();
+
+        expect(output, JSON.stringify(input)).toBe(minifyHtml(input, { minify: true }));
+      }
+    });
+  });
+
+  // Regression: arrays and functions skipped the depth check while
+  // streaming, and the input check recursed into nested arrays without a
+  // bound, so deep nesting overflowed the stack instead of reporting maxDepth.
+  describe('maxDepth', () => {
+    const nested = (levels) => {
+      let node = 'leaf';
+      for (let i = 0; i < levels; i++) node = [node];
+      return node;
+    };
+
+    it('reports nested arrays past maxDepth while streaming', async () => {
+      await expect(collect(nested(300), { maxDepth: 100 })).rejects.toThrow(/Maximum render depth \(100\) exceeded/);
+    });
+
+    it('reports maxDepth instead of overflowing the stack on very deep nesting', async () => {
+      const tree = nested(20_000);
+
+      expect(() => render(tree, { maxDepth: 100 })).toThrow(/Maximum render depth \(100\) exceeded/);
+      await expect(collect(tree, { maxDepth: 100 })).rejects.toThrow(/Maximum render depth \(100\) exceeded/);
+    });
+  });
+});

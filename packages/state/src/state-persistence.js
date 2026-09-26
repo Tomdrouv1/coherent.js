@@ -11,6 +11,8 @@
 /**
  * @typedef {Object} PersistenceOptions
  * @property {StorageType} [storage='localStorage'] - Storage backend to use
+ * @property {StorageAdapter} [adapter] - Custom storage backend; used as is,
+ *   also on the server
  * @property {string} [key='coherent-state'] - Storage key prefix
  * @property {boolean} [debounce=true] - Debounce state saves
  * @property {number} [debounceDelay=300] - Debounce delay in ms
@@ -18,129 +20,88 @@
  * @property {Function} [deserialize=JSON.parse] - Deserialization function
  * @property {Array<string>} [include] - Keys to include (whitelist)
  * @property {Array<string>} [exclude] - Keys to exclude (blacklist)
- * @property {boolean} [encrypt=false] - Encrypt stored data
- * @property {string} [encryptionKey] - Encryption key
+ * @property {boolean} [encrypt=false] - Obfuscate stored data with
+ *   `encryptionKey` (XOR — not encryption; anyone with the key, which ships
+ *   to the browser, can read it)
+ * @property {string} [encryptionKey] - Obfuscation key; required with `encrypt`
  * @property {Function} [onSave] - Callback when state is saved
  * @property {Function} [onLoad] - Callback when state is loaded
- * @property {Function} [onError] - Error callback
+ * @property {Function} [onError] - Error callback (load, save or storage failures)
  * @property {boolean} [versioning=false] - Enable versioning
  * @property {string} [version='1.0.0'] - Current version
  * @property {Function} [migrate] - Migration function for version changes
  * @property {number} [ttl] - Time to live in milliseconds
  * @property {boolean} [crossTab=false] - Enable cross-tab synchronization
+ * @property {string} [dbName='coherent-db'] - IndexedDB database name (`storage: 'indexedDB'`)
+ * @property {string} [storeName='state'] - IndexedDB object store name (`storage: 'indexedDB'`)
  */
 
 /**
- * Storage adapter interface
+ * Storage adapter interface: async get/set/remove/clear. `set` resolves to
+ * `true` once the value is stored and rejects (or resolves `false`) when it
+ * could not be.
  * @interface StorageAdapter
  */
 
 /**
- * LocalStorage adapter
+ * Web Storage adapter (localStorage / sessionStorage). Storage errors, such as
+ * QuotaExceededError, propagate to the caller.
  */
-class LocalStorageAdapter {
-  constructor() {
-    this.available = typeof localStorage !== 'undefined';
+class WebStorageAdapter {
+  constructor(storageName) {
+    this.storageName = storageName;
+    this.available = typeof globalThis[storageName] !== 'undefined' && globalThis[storageName] !== null;
+  }
+
+  get storage() {
+    return globalThis[this.storageName];
   }
 
   async get(key) {
     if (!this.available) return null;
-    try {
-      return localStorage.getItem(key);
-    } catch (error) {
-      console.error('LocalStorage get error:', error);
-      return null;
-    }
+    return this.storage.getItem(key);
   }
 
   async set(key, value) {
     if (!this.available) return false;
-    try {
-      localStorage.setItem(key, value);
-      return true;
-    } catch (error) {
-      console.error('LocalStorage set error:', error);
-      return false;
-    }
+    this.storage.setItem(key, value);
+    return true;
   }
 
   async remove(key) {
     if (!this.available) return false;
-    try {
-      localStorage.removeItem(key);
-      return true;
-    } catch (error) {
-      console.error('LocalStorage remove error:', error);
-      return false;
-    }
+    this.storage.removeItem(key);
+    return true;
   }
 
   async clear() {
     if (!this.available) return false;
-    try {
-      localStorage.clear();
-      return true;
-    } catch (error) {
-      console.error('LocalStorage clear error:', error);
-      return false;
-    }
+    this.storage.clear();
+    return true;
+  }
+}
+
+/**
+ * LocalStorage adapter
+ */
+class LocalStorageAdapter extends WebStorageAdapter {
+  constructor() {
+    super('localStorage');
   }
 }
 
 /**
  * SessionStorage adapter
  */
-class SessionStorageAdapter {
+class SessionStorageAdapter extends WebStorageAdapter {
   constructor() {
-    this.available = typeof sessionStorage !== 'undefined';
-  }
-
-  async get(key) {
-    if (!this.available) return null;
-    try {
-      return sessionStorage.getItem(key);
-    } catch (error) {
-      console.error('SessionStorage get error:', error);
-      return null;
-    }
-  }
-
-  async set(key, value) {
-    if (!this.available) return false;
-    try {
-      sessionStorage.setItem(key, value);
-      return true;
-    } catch (error) {
-      console.error('SessionStorage set error:', error);
-      return false;
-    }
-  }
-
-  async remove(key) {
-    if (!this.available) return false;
-    try {
-      sessionStorage.removeItem(key);
-      return true;
-    } catch (error) {
-      console.error('SessionStorage remove error:', error);
-      return false;
-    }
-  }
-
-  async clear() {
-    if (!this.available) return false;
-    try {
-      sessionStorage.clear();
-      return true;
-    } catch (error) {
-      console.error('SessionStorage clear error:', error);
-      return false;
-    }
+    super('sessionStorage');
   }
 }
 
 /**
- * IndexedDB adapter
+ * IndexedDB adapter: values are kept in the object store `storeName` of the
+ * database `dbName`.
  */
 class IndexedDBAdapter {
   constructor(dbName = 'coherent-db', storeName = 'state') {
@@ -148,14 +109,18 @@ class IndexedDBAdapter {
     this.storeName = storeName;
     this.available = typeof indexedDB !== 'undefined';
     this.db = null;
+    this.opening = null;
   }
 
-  async init() {
-    if (!this.available) return false;
-    if (this.db) return true;
-
+  /**
+   * Open the database, creating the store in an upgrade. Without `version`,
+   * opens the current version (creating version 1 for a new database).
+   */
+  open(version) {
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open(this.dbName, 1);
+      const request = version === undefined
+        ? indexedDB.open(this.dbName)
+        : indexedDB.open(this.dbName, version);
 
       request.onerror = () => {
         console.error('IndexedDB open error:', request.error);
@@ -163,8 +128,7 @@ class IndexedDBAdapter {
       };
 
       request.onsuccess = () => {
-        this.db = request.result;
-        resolve(true);
+        resolve(request.result);
       };
 
       request.onupgradeneeded = (event) => {
@@ -174,6 +138,33 @@ class IndexedDBAdapter {
         }
       };
     });
+  }
+
+  async init() {
+    if (!this.available) return false;
+    if (this.db) return true;
+
+    this.opening ??= (async () => {
+      let db = await this.open();
+      // The database already exists without this store (another store with
+      // the same dbName created it): add the store in a version upgrade.
+      if (!db.objectStoreNames.contains(this.storeName)) {
+        const version = db.version + 1;
+        db.close();
+        db = await this.open(version);
+      }
+      // Let another store's upgrade proceed; reopen on the next access.
+      db.onversionchange = () => {
+        db.close();
+        if (this.db === db) this.db = null;
+      };
+      this.db = db;
+      return true;
+    })().finally(() => {
+      this.opening = null;
+    });
+
+    return this.opening;
   }
 
   async get(key) {
@@ -285,50 +276,103 @@ class MemoryAdapter {
   }
 }
 
+
 /**
- * Simple encryption/decryption (basic XOR cipher)
- * For production, use Web Crypto API or a proper crypto library
+ * Stand-in for browser storage on the server. Web Storage there (Node's
+ * `--experimental-webstorage`, on by default in newer releases) is shared by
+ * every request in the process, so one visitor's state would be restored into
+ * another's render. Nothing is read or written.
  */
-class SimpleEncryption {
+class ServerAdapter {
+  constructor() {
+    this.available = false;
+  }
+
+  async get() {
+    return null;
+  }
+
+  async set() {
+    return false;
+  }
+
+  async remove() {
+    return false;
+  }
+
+  async clear() {
+    return false;
+  }
+}
+
+function toBase64(bytes) {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(binary);
+}
+
+function fromBase64(encoded) {
+  const binary = atob(encoded);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+/**
+ * XOR obfuscation of the stored payload (option `encrypt`).
+ *
+ * This is NOT encryption: the key has to ship to the browser, and XOR with a
+ * repeating key is trivially reversible. It only keeps casual readers of the
+ * storage from seeing plain JSON. Do not store secrets in browser storage.
+ *
+ * Works on UTF-8 bytes, so any Unicode text round-trips.
+ */
+class XorObfuscation {
   constructor(key) {
-    this.key = key || 'default-key';
-  }
-
-  encrypt(text) {
-    let result = '';
-    for (let i = 0; i < text.length; i++) {
-      result += String.fromCharCode(
-        text.charCodeAt(i) ^ this.key.charCodeAt(i % this.key.length)
+    if (typeof key !== 'string' || key.length === 0) {
+      throw new TypeError(
+        'createPersistentState: `encrypt: true` requires a non-empty `encryptionKey`. ' +
+        'It is XOR obfuscation, not encryption; there is no default key.'
       );
     }
-    return btoa(result);
+    this.keyBytes = new globalThis.TextEncoder().encode(key);
   }
 
-  decrypt(encrypted) {
-    const text = atob(encrypted);
-    let result = '';
-    for (let i = 0; i < text.length; i++) {
-      result += String.fromCharCode(
-        text.charCodeAt(i) ^ this.key.charCodeAt(i % this.key.length)
-      );
+  xor(bytes) {
+    for (let i = 0; i < bytes.length; i++) {
+      bytes[i] ^= this.keyBytes[i % this.keyBytes.length];
     }
-    return result;
+    return bytes;
+  }
+
+  encode(text) {
+    return toBase64(this.xor(new globalThis.TextEncoder().encode(text)));
+  }
+
+  decode(encoded) {
+    return new globalThis.TextDecoder().decode(this.xor(fromBase64(encoded)));
   }
 }
 
 /**
  * Create storage adapter
  * @param {StorageType} type - Storage type
+ * @param {Pick<PersistenceOptions, 'dbName'|'storeName'>} [options] - IndexedDB
+ *   database and object store names
  * @returns {StorageAdapter} Storage adapter instance
  */
-function createStorageAdapter(type) {
+function createStorageAdapter(type, options = {}) {
   switch (type) {
     case 'localStorage':
       return new LocalStorageAdapter();
     case 'sessionStorage':
       return new SessionStorageAdapter();
     case 'indexedDB':
-      return new IndexedDBAdapter();
+      return new IndexedDBAdapter(options.dbName ?? undefined, options.storeName ?? undefined);
     case 'memory':
       return new MemoryAdapter();
     default:
@@ -336,8 +380,25 @@ function createStorageAdapter(type) {
   }
 }
 
+function createInstanceId() {
+  const cryptoApi = globalThis.crypto;
+  if (cryptoApi && typeof cryptoApi.randomUUID === 'function') {
+    return cryptoApi.randomUUID();
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+}
+
 /**
  * Create persistent state manager
+ *
+ * Unless the backend is `'memory'`, stored state is restored on creation;
+ * `ready` settles once that is done. Keys set before then keep the value they
+ * were set to rather than the stored one.
+ *
+ * On the server (no `window`), browser storage backends read and write
+ * nothing and cross-tab sync is off; pass an explicit `adapter` to persist
+ * there.
+ *
  * @param {Object} initialState - Initial state
  * @param {PersistenceOptions} options - Persistence options
  * @returns {Object} Persistent state manager
@@ -345,6 +406,7 @@ function createStorageAdapter(type) {
 export function createPersistentState(initialState = {}, options = {}) {
   const opts = {
     storage: 'localStorage',
+    adapter: null,
     key: 'coherent-state',
     debounce: true,
     debounceDelay: 300,
@@ -365,12 +427,36 @@ export function createPersistentState(initialState = {}, options = {}) {
     ...options
   };
 
-  const adapter = createStorageAdapter(opts.storage);
-  const encryption = opts.encrypt ? new SimpleEncryption(opts.encryptionKey) : null;
+  const onServer = typeof window === 'undefined';
+  const obfuscation = opts.encrypt ? new XorObfuscation(opts.encryptionKey) : null;
 
+  let adapter;
+  if (opts.adapter) {
+    adapter = opts.adapter;
+  } else if (onServer && opts.storage !== 'memory') {
+    adapter = new ServerAdapter();
+  } else {
+    adapter = createStorageAdapter(opts.storage, opts);
+  }
+
+  const instanceId = createInstanceId();
   let state = { ...initialState };
   let saveTimeout = null;
+  let destroyed = false;
   const listeners = new Set();
+
+  // Keys written while the initial restore is in flight; it must not
+  // overwrite them with the older stored values.
+  let initialRestorePending = false;
+  const touchedKeys = new Set();
+
+  function reportError(error) {
+    if (opts.onError) {
+      opts.onError(error);
+    } else {
+      console.error('State persistence error:', error);
+    }
+  }
 
   /**
    * Filter state keys based on include/exclude options
@@ -403,15 +489,41 @@ export function createPersistentState(initialState = {}, options = {}) {
     return obj;
   }
 
+  // Cross-tab synchronisation: one channel per storage key, so unrelated
+  // stores never merge each other's state, and messages carry the sender's
+  // id so a store never applies its own update.
+  let channel = null;
+  if (opts.crossTab && !onServer && typeof BroadcastChannel !== 'undefined') {
+    channel = new BroadcastChannel(`coherent-state-sync:${opts.key}`);
+    channel.onmessage = (event) => {
+      const message = event.data;
+      if (destroyed || !message || message.type !== 'state-update' || message.source === instanceId) {
+        return;
+      }
+      const oldState = { ...state };
+      state = { ...state, ...message.state };
+      notifyListeners(oldState, state);
+    };
+    // Node: do not keep the process alive for this channel
+    channel.unref?.();
+  }
+
+  function broadcast(filteredState) {
+    if (!channel) return;
+    try {
+      channel.postMessage({ type: 'state-update', source: instanceId, state: filteredState });
+    } catch (error) {
+      reportError(error);
+    }
+  }
+
   /**
-   * Save state to storage
-   * @param {boolean} immediate - Save immediately without debounce
+   * Write the current state now.
+   * @returns {Promise<boolean>} Whether it was stored
    */
-  async function save(immediate = false) {
-    if (opts.debounce && !immediate) {
-      clearTimeout(saveTimeout);
-      saveTimeout = setTimeout(() => save(true), opts.debounceDelay);
-      return;
+  async function write() {
+    if (adapter.available === false) {
+      return false;
     }
 
     try {
@@ -428,30 +540,50 @@ export function createPersistentState(initialState = {}, options = {}) {
 
       let dataString = JSON.stringify(data);
 
-      // Encrypt if enabled
-      if (encryption) {
-        dataString = encryption.encrypt(dataString);
+      if (obfuscation) {
+        dataString = obfuscation.encode(dataString);
       }
 
-      await adapter.set(opts.key, dataString);
+      const stored = await adapter.set(opts.key, dataString);
+      if (stored === false) {
+        throw new Error(`State "${opts.key}" could not be written to storage`);
+      }
 
       // Call onSave callback
       if (opts.onSave) {
         opts.onSave(filteredState);
       }
 
-      // Broadcast to other tabs if cross-tab sync is enabled
-      if (opts.crossTab && typeof BroadcastChannel !== 'undefined') {
-        const channel = new BroadcastChannel('coherent-state-sync');
-        channel.postMessage({ type: 'state-update', state: filteredState });
-        channel.close();
-      }
+      broadcast(filteredState);
+      return true;
     } catch (error) {
-      console.error('State save error:', error);
-      if (opts.onError) {
-        opts.onError(error);
-      }
+      reportError(error);
+      return false;
     }
+  }
+
+  /**
+   * Save state to storage
+   * @param {boolean} immediate - Save immediately without debounce
+   * @returns {Promise<boolean>|undefined} Whether it was stored (immediate saves)
+   */
+  function save(immediate = false) {
+    if (destroyed) {
+      return Promise.resolve(false);
+    }
+
+    if (opts.debounce && !immediate) {
+      clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(() => {
+        saveTimeout = null;
+        write();
+      }, opts.debounceDelay);
+      return undefined;
+    }
+
+    clearTimeout(saveTimeout);
+    saveTimeout = null;
+    return write();
   }
 
   /**
@@ -462,9 +594,8 @@ export function createPersistentState(initialState = {}, options = {}) {
       let dataString = await adapter.get(opts.key);
       if (!dataString) return null;
 
-      // Decrypt if enabled
-      if (encryption) {
-        dataString = encryption.decrypt(dataString);
+      if (obfuscation) {
+        dataString = obfuscation.decode(dataString);
       }
 
       const data = JSON.parse(dataString);
@@ -496,10 +627,7 @@ export function createPersistentState(initialState = {}, options = {}) {
 
       return loadedState;
     } catch (error) {
-      console.error('State load error:', error);
-      if (opts.onError) {
-        opts.onError(error);
-      }
+      reportError(error);
       return null;
     }
   }
@@ -530,6 +658,29 @@ export function createPersistentState(initialState = {}, options = {}) {
   }
 
   /**
+   * Merge loaded state, optionally leaving keys touched since creation alone.
+   * @returns {boolean} Whether stored state was found
+   */
+  function applyLoaded(loaded, skipTouched) {
+    if (!loaded || typeof loaded !== 'object') {
+      return false;
+    }
+
+    // Object.fromEntries defines keys as own data properties, so a stored
+    // "__proto__" key cannot reach a prototype.
+    const updates = Object.fromEntries(
+      Object.entries(loaded).filter(([key]) => !skipTouched || !touchedKeys.has(key))
+    );
+
+    if (Object.keys(updates).length > 0) {
+      const oldState = { ...state };
+      state = { ...state, ...updates };
+      notifyListeners(oldState, state);
+    }
+    return true;
+  }
+
+  /**
    * Get current state
    * @param {string} [key] - State key
    * @returns {*} State value or entire state
@@ -550,6 +701,10 @@ export function createPersistentState(initialState = {}, options = {}) {
       updates = updates(oldState);
     }
 
+    if (initialRestorePending && updates && typeof updates === 'object') {
+      for (const key of Object.keys(updates)) touchedKeys.add(key);
+    }
+
     state = { ...state, ...updates };
 
     notifyListeners(oldState, state);
@@ -565,6 +720,12 @@ export function createPersistentState(initialState = {}, options = {}) {
    */
   function resetState(persist = true) {
     const oldState = { ...state };
+
+    if (initialRestorePending) {
+      for (const key of Object.keys(oldState)) touchedKeys.add(key);
+      for (const key of Object.keys(initialState)) touchedKeys.add(key);
+    }
+
     state = { ...initialState };
     notifyListeners(oldState, state);
 
@@ -577,45 +738,63 @@ export function createPersistentState(initialState = {}, options = {}) {
    * Clear persisted state
    */
   async function clearStorage() {
-    await adapter.remove(opts.key);
+    try {
+      await adapter.remove(opts.key);
+    } catch (error) {
+      reportError(error);
+    }
   }
 
   /**
    * Manually trigger persistence
+   * @returns {Promise<boolean>} Whether it was stored
    */
   async function persist() {
-    await save(true);
+    return save(true);
   }
 
   /**
    * Restore state from storage
+   * @returns {Promise<boolean>} Whether stored state was found
    */
   async function restore() {
-    const loaded = await load();
-    if (loaded) {
-      const oldState = { ...state };
-      state = { ...state, ...loaded };
-      notifyListeners(oldState, state);
-      return true;
-    }
-    return false;
+    return applyLoaded(await load(), false);
   }
 
-  // Setup cross-tab synchronization
-  if (opts.crossTab && typeof BroadcastChannel !== 'undefined') {
-    const channel = new BroadcastChannel('coherent-state-sync');
-    channel.onmessage = (event) => {
-      if (event.data.type === 'state-update') {
-        const oldState = { ...state };
-        state = { ...state, ...event.data.state };
-        notifyListeners(oldState, state);
-      }
-    };
+  /**
+   * Stop syncing and saving: flushes a pending debounced save, closes the
+   * cross-tab channel and drops listeners.
+   * @returns {Promise<void>}
+   */
+  async function destroy() {
+    if (destroyed) return;
+    const pending = saveTimeout !== null;
+    clearTimeout(saveTimeout);
+    saveTimeout = null;
+    if (pending) {
+      await write();
+    }
+    destroyed = true;
+    channel?.close();
+    channel = null;
+    listeners.clear();
   }
 
   // Auto-restore on creation
-  if (opts.storage !== 'memory') {
-    restore();
+  let ready;
+  if (opts.storage !== 'memory' || opts.adapter) {
+    initialRestorePending = true;
+    ready = load().then((loaded) => {
+      initialRestorePending = false;
+      if (destroyed) return false;
+      const restored = applyLoaded(loaded, true);
+      // Keys set meanwhile were saved without the restored ones; save the merge
+      if (restored && touchedKeys.size > 0) save();
+      touchedKeys.clear();
+      return restored;
+    });
+  } else {
+    ready = Promise.resolve(false);
   }
 
   return {
@@ -628,6 +807,9 @@ export function createPersistentState(initialState = {}, options = {}) {
     clearStorage,
     load,
     save: () => save(true),
+    destroy,
+    /** Settles once the automatic restore on creation is done */
+    ready,
     get adapter() {
       return adapter;
     }

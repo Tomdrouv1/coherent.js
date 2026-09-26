@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * Coherent.js Language Server
  *
@@ -7,6 +6,11 @@
  * - Validation of attributes and HTML nesting
  * - Hover documentation for elements and attributes
  * - Quick fix code actions for common issues
+ *
+ * Importing this module has no side effects: call {@link startServer} to
+ * serve a connection. The `coherent-language-server` binary (bin.ts) does
+ * that over the transport named on its command line (--stdio, --node-ipc,
+ * --socket=<port>).
  *
  * @see https://microsoft.github.io/language-server-protocol/
  */
@@ -20,6 +24,7 @@ import {
   InitializeResult,
   CodeActionKind,
   DidChangeConfigurationNotification,
+  type Connection,
 } from 'vscode-languageserver/node';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
@@ -29,86 +34,101 @@ import { registerCompletionProvider } from './providers/completion.js';
 import { registerHoverProvider } from './providers/hover.js';
 import { registerCodeActionProvider } from './providers/code-actions.js';
 
-// Create connection using all proposed features
-export const connection = createConnection(ProposedFeatures.all);
+export interface LanguageServer {
+  connection: Connection;
+  documents: TextDocuments<TextDocument>;
+}
 
-// Text document manager for syncing documents
-export const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
+/**
+ * Serve the Coherent.js language server on `connection` and start
+ * listening.
+ *
+ * @param connection - Defaults to a connection over the transport given on
+ *   the process command line (--stdio, --node-ipc, --socket=<port>).
+ */
+export function startServer(
+  connection: Connection = createConnection(ProposedFeatures.all)
+): LanguageServer {
+  // Text document manager for syncing documents
+  const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 
-// Server capabilities
-let hasConfigurationCapability = false;
-let hasWorkspaceFolderCapability = false;
+  // Server capabilities
+  let hasConfigurationCapability = false;
+  let hasWorkspaceFolderCapability = false;
 
-connection.onInitialize((params: InitializeParams): InitializeResult => {
-  const capabilities = params.capabilities;
+  connection.onInitialize((params: InitializeParams): InitializeResult => {
+    const capabilities = params.capabilities;
 
-  // Check client capabilities
-  hasConfigurationCapability = !!(
-    capabilities.workspace && !!capabilities.workspace.configuration
-  );
-  hasWorkspaceFolderCapability = !!(
-    capabilities.workspace && !!capabilities.workspace.workspaceFolders
-  );
+    // Check client capabilities
+    hasConfigurationCapability = !!(
+      capabilities.workspace && !!capabilities.workspace.configuration
+    );
+    hasWorkspaceFolderCapability = !!(
+      capabilities.workspace && !!capabilities.workspace.workspaceFolders
+    );
 
-  const result: InitializeResult = {
-    capabilities: {
-      // Incremental document sync for performance
-      textDocumentSync: TextDocumentSyncKind.Incremental,
+    const result: InitializeResult = {
+      capabilities: {
+        // Incremental document sync for performance
+        textDocumentSync: TextDocumentSyncKind.Incremental,
 
-      // Autocomplete provider
-      completionProvider: {
-        resolveProvider: true,
-        triggerCharacters: ['{', ':', '"', "'"],
-      },
+        // Autocomplete provider
+        completionProvider: {
+          resolveProvider: true,
+          triggerCharacters: ['{', ':', '"', "'"],
+        },
 
-      // Hover provider for documentation
-      hoverProvider: true,
+        // Hover provider for documentation
+        hoverProvider: true,
 
-      // Code action provider for quick fixes
-      codeActionProvider: {
-        codeActionKinds: [CodeActionKind.QuickFix],
-      },
-    },
-  };
-
-  // Add workspace folder support if available
-  if (hasWorkspaceFolderCapability) {
-    result.capabilities.workspace = {
-      workspaceFolders: {
-        supported: true,
+        // Code action provider for quick fixes
+        codeActionProvider: {
+          codeActionKinds: [CodeActionKind.QuickFix],
+        },
       },
     };
-  }
 
-  // Log capabilities for debugging
-  console.error('[coherent-lsp] Initialized with capabilities:', JSON.stringify(result.capabilities, null, 2));
+    // Add workspace folder support if available
+    if (hasWorkspaceFolderCapability) {
+      result.capabilities.workspace = {
+        workspaceFolders: {
+          supported: true,
+        },
+      };
+    }
 
-  return result;
-});
+    // Log capabilities for debugging
+    console.error('[coherent-lsp] Initialized with capabilities:', JSON.stringify(result.capabilities, null, 2));
 
-connection.onInitialized(() => {
-  if (hasConfigurationCapability) {
-    // Register for configuration changes
-    connection.client.register(DidChangeConfigurationNotification.type, undefined);
-  }
+    return result;
+  });
 
-  if (hasWorkspaceFolderCapability) {
-    connection.workspace.onDidChangeWorkspaceFolders((_event: unknown) => {
-      console.error('[coherent-lsp] Workspace folder change event received');
-    });
-  }
+  connection.onInitialized(() => {
+    if (hasConfigurationCapability) {
+      // Register for configuration changes
+      connection.client.register(DidChangeConfigurationNotification.type, undefined);
+    }
 
-  // Register providers
-  registerDiagnosticProvider(connection, documents);
-  registerCompletionProvider(connection, documents);
-  registerHoverProvider(connection, documents);
-  registerCodeActionProvider(connection, documents);
+    if (hasWorkspaceFolderCapability) {
+      connection.workspace.onDidChangeWorkspaceFolders((_event: unknown) => {
+        console.error('[coherent-lsp] Workspace folder change event received');
+      });
+    }
 
-  console.error('[coherent-lsp] Server initialized successfully');
-});
+    // Register providers
+    registerDiagnosticProvider(connection, documents);
+    registerCompletionProvider(connection, documents);
+    registerHoverProvider(connection, documents);
+    registerCodeActionProvider(connection, documents);
 
-// Start listening for document events
-documents.listen(connection);
+    console.error('[coherent-lsp] Server initialized successfully');
+  });
 
-// Start the connection
-connection.listen();
+  // Start listening for document events
+  documents.listen(connection);
+
+  // Start the connection
+  connection.listen();
+
+  return { connection, documents };
+}

@@ -1,33 +1,32 @@
 # 🚀 Complete Full-Stack Tutorial - Coherent.js
 
-**The definitive guide to building full-stack applications with Coherent.js**
+**Build a server-rendered, interactive app with Coherent.js in about 10 minutes.**
 
-This tutorial shows you how to build a complete, working full-stack application with server-side rendering and client-side hydration.
+This tutorial builds a small counter app: the server renders the HTML with `@coherent.js/core`, and the browser makes it interactive with `hydrate()` from `@coherent.js/client`.
 
 ---
 
 ## 🎯 What You'll Build
 
-A simple counter app that demonstrates:
+A counter app that demonstrates:
 - ✅ Server-Side Rendering (SSR)
-- ✅ Client-Side Hydration  
-- ✅ Interactive Components
-- ✅ State Management
+- ✅ Client-Side Hydration
+- ✅ Event Handling
+- ✅ Client State
 
-**Time to complete:** 10 minutes  
-**Difficulty:** Beginner  
-**Prerequisites:** Node.js 18+
+**Time to complete:** 10 minutes
+**Difficulty:** Beginner
+**Prerequisites:** Node.js 22.12+
 
 ---
 
 ## 📁 Step 1: Project Setup
 
-Create your project structure:
-
 ```bash
 mkdir my-coherent-app
 cd my-coherent-app
 npm init -y
+npm pkg set type=module
 npm install @coherent.js/core @coherent.js/client
 npm install -D esbuild
 ```
@@ -40,7 +39,7 @@ my-coherent-app/
 │   └── Counter.js
 ├── client.js
 ├── public/
-│   └── hydration.js
+│   └── hydration.js   (generated)
 ├── server.js
 └── package.json
 ```
@@ -49,73 +48,42 @@ my-coherent-app/
 
 ## 🎨 Step 2: Create the Counter Component
 
-Create `components/Counter.js`:
+Create `components/Counter.js`. The same component runs on the server (to produce HTML) and in the browser (to attach the handlers):
 
 ```javascript
-import { withState } from '@coherent.js/core';
-
-export const Counter = withState({ count: 0 })(({ state, setState }) => ({
-  div: {
-    'data-coherent-component': 'counter',  // ← Required for hydration
-    className: 'counter',
-    children: [
-      { h2: { text: 'Interactive Counter' } },
-      { 
-        p: { 
-          text: `Count: ${state.count}`,
-          className: 'count-display'
-        } 
-      },
-      {
-        div: {
-          className: 'button-group',
-          children: [
-            {
-              button: {
-                text: '−',
-                className: 'btn',
-                // Event handler signature: (event, state, setState)
-                onclick: (event, state, setState) => {
-                  setState({ count: state.count - 1 });
-                }
-              }
-            },
-            {
-              button: {
-                text: 'Reset',
-                className: 'btn',
-                onclick: (event, state, setState) => {
-                  setState({ count: 0 });
-                }
-              }
-            },
-            {
-              button: {
-                text: '+',
-                className: 'btn',
-                onclick: (event, state, setState) => {
-                  setState({ count: state.count + 1 });
-                }
-              }
-            }
-          ]
+export function Counter({ count = 0 }) {
+  return {
+    div: {
+      className: 'counter',
+      children: [
+        { h2: { text: 'Interactive Counter' } },
+        { p: { className: 'count-display', text: `Count: ${count}` } },
+        {
+          div: {
+            className: 'button-group',
+            children: [
+              { button: { className: 'btn', text: '−', onClick: (event) => event.setState({ count: event.state.count - 1 }) } },
+              { button: { className: 'btn', text: 'Reset', onClick: (event) => event.setState({ count: 0 }) } },
+              { button: { className: 'btn', text: '+', onClick: (event) => event.setState({ count: event.state.count + 1 }) } }
+            ]
+          }
         }
-      }
-    ]
-  }
-}));
+      ]
+    }
+  };
+}
 ```
 
 ### Key Points:
 
-1. **`withState({ count: 0 })`** - Adds state management
-2. **`data-coherent-component`** - Required for hydration to find the component
-3. **Event handler signature** - `(event, state, setState) => {}`
-4. **`setState({ count: ... })`** - Updates state and re-renders
+1. **Props in, object out** - `Counter({ count })` returns a plain object describing the HTML.
+2. **Event handlers are functions** - on the server they render nothing; in the browser `hydrate()` attaches them.
+3. **One event argument** - a handler receives a wrapped event with `event.state`, `event.setState()`, `event.props`, `event.target` and `event.preventDefault()`.
+4. **`event.setState({ count })`** - updates the hydrated component's state and patches the DOM.
 
 ---
 
-## 🖥️ Step 3: Create the Server
+## 🖥️ Step 3: Create the Client and the Server
 
 Create `client.js`:
 
@@ -123,12 +91,12 @@ Create `client.js`:
 import { hydrate } from '@coherent.js/client';
 import { Counter } from './components/Counter.js';
 
-// Mount each interactive root explicitly:
-const counterEl = document.querySelector('[data-component="counter"]');
-if (counterEl) hydrate(Counter, counterEl);
+// Hydrate the element the component's root renders
+const counterEl = document.querySelector('.counter');
+if (counterEl) hydrate(Counter, counterEl, { initialState: { count: 0 } });
 ```
 
-Bundle the client for the browser:
+Bundle it for the browser:
 
 ```bash
 npx esbuild client.js --bundle --format=esm --outfile=public/hydration.js
@@ -137,17 +105,14 @@ npx esbuild client.js --bundle --format=esm --outfile=public/hydration.js
 Create `server.js`:
 
 ```javascript
-import { createServer } from 'http';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import { render, dangerouslySetInnerContent } from '@coherent.js/core';
+import { createServer } from 'node:http';
+import { readFileSync } from 'node:fs';
+import { render } from '@coherent.js/core';
 import { Counter } from './components/Counter.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const hydrationBundle = readFileSync(new URL('./public/hydration.js', import.meta.url), 'utf-8');
 
-// Create the HTML page
+// The whole page is a component too
 const createPage = () => ({
   html: {
     lang: 'en',
@@ -159,15 +124,15 @@ const createPage = () => ({
             { title: { text: 'My Coherent.js App' } },
             {
               style: {
-                text: dangerouslySetInnerContent(`
+                text: `
                   body { font-family: Arial, sans-serif; padding: 40px; }
                   .counter { background: #f0f0f0; padding: 20px; border-radius: 8px; }
                   .count-display { font-size: 2rem; font-weight: bold; margin: 20px 0; }
                   .button-group { display: flex; gap: 10px; }
-                  .btn { padding: 10px 20px; border: none; border-radius: 4px; 
+                  .btn { padding: 10px 20px; border: none; border-radius: 4px;
                          cursor: pointer; background: #007bff; color: white; }
                   .btn:hover { background: #0056b3; }
-                `)
+                `
               }
             }
           ]
@@ -177,9 +142,7 @@ const createPage = () => ({
         body: {
           children: [
             { h1: { text: 'My Coherent.js App' } },
-            Counter(),  // ← Render the counter
-
-            // Hydration bundle (bundled from client.js)
+            Counter({ count: 0 }),
             { script: { type: 'module', src: '/hydration.js' } }
           ]
         }
@@ -188,21 +151,21 @@ const createPage = () => ({
   }
 });
 
-// HTTP Server
 const server = createServer((req, res) => {
-  // Serve hydration bundle
   if (req.url === '/hydration.js') {
-    const hydrationPath = join(__dirname, 'public/hydration.js');
-    const hydrationCode = readFileSync(hydrationPath, 'utf-8');
-    res.setHeader('Content-Type', 'application/javascript');
-    res.end(hydrationCode);
+    res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8' });
+    res.end(hydrationBundle);
     return;
   }
-  
-  // Serve main page
-  res.setHeader('Content-Type', 'text/html');
-  const html = render(createPage());
-  res.end(html);
+
+  if (req.url === '/') {
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(`<!DOCTYPE html>${render(createPage())}`);
+    return;
+  }
+
+  res.writeHead(404, { 'Content-Type': 'text/plain' });
+  res.end('Not found');
 });
 
 server.listen(3000, () => {
@@ -212,10 +175,10 @@ server.listen(3000, () => {
 
 ### Key Points:
 
-1. **`render()`** - Renders components to HTML (SSR)
-2. **`dangerouslySetInnerContent()`** - Prevents HTML escaping for scripts/styles
-3. **`/hydration.js`** - Serves the client-side hydration bundle
-4. **`hydrate()`** - Called on each interactive root to make server-rendered HTML interactive
+1. **`render()`** - Renders the page to an HTML string (synchronously); add the doctype yourself.
+2. **`<style>` and `<script>` text** - is not HTML-escaped, so CSS and JavaScript work as written (a closing `</style>` / `</script>` inside is neutralised).
+3. **`/hydration.js`** - Serves the client bundle.
+4. **`hydrate()`** - Makes the server-rendered HTML interactive.
 
 ---
 
@@ -225,9 +188,7 @@ server.listen(3000, () => {
 node server.js
 ```
 
-Open your browser to `http://localhost:3000`
-
-**Click the buttons - they work!** 🎉
+Open your browser at `http://localhost:3000` and click the buttons. 🎉
 
 ---
 
@@ -235,89 +196,86 @@ Open your browser to `http://localhost:3000`
 
 ### 1. Server-Side Rendering (SSR)
 
-When you visit the page:
-
 ```
 Browser Request → Server
                   ↓
-          Counter Component
+          Counter({ count: 0 })
                   ↓
           render()
                   ↓
-          Complete HTML
+          <div class="counter">…<button class="btn">+</button>…</div>
                   ↓
-Browser ← HTML (instant display!)
+Browser ← HTML (instant display)
 ```
 
 **Benefits:**
 - Fast initial load
 - SEO-friendly
-- Works without JavaScript
+- Content visible without JavaScript
 
 ### 2. Client-Side Hydration
-
-After HTML loads:
 
 ```
 Browser loads /hydration.js
         ↓
-hydrate() is called on each interactive root
+hydrate(Counter, element, { initialState })
         ↓
-Finds data-coherent-component="counter"
+Calls Counter(state) and pairs its output with the existing DOM
         ↓
-Attaches event handlers
+Attaches onClick through event delegation
         ↓
-Buttons become interactive! ✨
+event.setState() re-renders and patches the DOM ✨
 ```
 
 **Benefits:**
-- Preserves server-rendered HTML
-- No flash of unstyled content
+- The server-rendered HTML is kept, not re-created
 - Progressive enhancement
 
 ---
 
 ## 🔧 Common Patterns
 
-### Adding More State
+### More State
+
+State is passed to the component as props:
 
 ```javascript
-withState({ 
-  count: 0,
-  name: '',
-  items: []
-})(({ state, setState }) => {
-  // Access: state.count, state.name, state.items
-  // Update: setState({ count: 5 })
-})
+hydrate(Profile, el, { initialState: { name: '', items: [] } });
+
+// In a handler
+onClick: (event) => event.setState({ items: [...event.state.items, 'new'] })
+
+// Or with an updater function
+onClick: (event) => event.setState((state) => ({ count: state.count + 1 }))
 ```
 
 ### Multiple Event Handlers
+
+Any DOM event works: `onClick`, `onInput`, `onSubmit`, `onMouseEnter`, `onDoubleClick`...
 
 ```javascript
 {
   button: {
     text: 'Click',
-    onclick: (event, state, setState) => {
-      console.log('Clicked!');
-      setState({ clicked: true });
-    },
-    onmouseenter: (event, state, setState) => {
-      setState({ hovering: true });
-    }
+    onClick: (event) => event.setState({ clicked: true }),
+    onMouseEnter: (event) => event.setState({ hovering: true })
   }
 }
 ```
 
+Handlers bubble like DOM events: a click inside nested elements that both have `onClick` runs both, innermost first; call `event.stopPropagation()` to stop.
+
 ### Conditional Rendering
+
+`false`, `null` and `undefined` children render nothing:
 
 ```javascript
 {
   div: {
     children: [
-      state.count > 10 && { p: { text: 'Count is high!' } },
-      state.count === 0 && { p: { text: 'Count is zero' } }
-    ].filter(Boolean)
+      count > 10 && { p: { text: 'Count is high!' } },
+      count === 0 && { p: { text: 'Count is zero' } }
+    ]
   }
 }
 ```
@@ -327,60 +285,28 @@ withState({
 ```javascript
 {
   ul: {
-    children: state.items.map(item => ({
-      li: { text: item.name, key: item.id }
-    }))
+    children: items.map((item) => ({ li: { key: item.id, text: item.name } }))
   }
 }
 ```
+
+With a `key` on every item, re-renders keep the DOM nodes of unchanged items.
 
 ---
 
 ## ⚠️ Important Rules
 
-### 1. Event Handler Signature
+### 1. Hydrate the component's root element
 
-**Always use this signature:**
+`hydrate(Counter, element)` pairs `Counter`'s output with `element`, so `element` must be the element the component's root renders (here `.counter`), not a wrapper around it.
 
-```javascript
-onclick: (event, state, setState) => {
-  // Your code
-}
-```
+### 2. Render the same thing on both sides
 
-**Not this:**
-```javascript
-onclick: () => {  // ❌ Won't work with hydration!
-  // Your code
-}
-```
+The server and the browser must call the component with the same props/state. Keep values that differ between the two (the current time, random ids, `window` reads) out of the first render. In development (`NODE_ENV=development`), or with `hydrate(..., { detectMismatch: true })`, differences are reported in the console.
 
-### 2. Hydration Marker
+### 3. Raw HTML is explicit
 
-**Always add `data-coherent-component`:**
-
-```javascript
-{
-  div: {
-    'data-coherent-component': 'my-component',  // ✅ Required
-    children: [...]
-  }
-}
-```
-
-### 3. dangerouslySetInnerContent
-
-**Use for scripts and styles:**
-
-```javascript
-{
-  script: {
-    text: dangerouslySetInnerContent(`console.log('Hello');`)
-  }
-}
-```
-
-**Why?** Without it, apostrophes become `&#x27;` and break JavaScript.
+`text` is always escaped. Only use `html:` or `dangerouslySetInnerContent()` for markup you control or have sanitized.
 
 ---
 
@@ -389,42 +315,38 @@ onclick: () => {  // ❌ Won't work with hydration!
 ### Add a Todo List
 
 ```javascript
-export const TodoList = withState({ 
-  todos: [],
-  input: ''
-})(({ state, setState }) => ({
-  div: {
-    'data-coherent-component': 'todo-list',
-    children: [
-      {
-        input: {
-          value: state.input,
-          oninput: (e, state, setState) => {
-            setState({ input: e.target.value });
+export function TodoList({ todos = [], input = '' }) {
+  return {
+    div: {
+      className: 'todo-list',
+      children: [
+        {
+          input: {
+            value: input,
+            onInput: (event) => event.setState({ input: event.originalEvent.target.value })
           }
-        }
-      },
-      {
-        button: {
-          text: 'Add',
-          onclick: (e, state, setState) => {
-            setState({
-              todos: [...state.todos, state.input],
+        },
+        {
+          button: {
+            text: 'Add',
+            onClick: (event) => event.setState({
+              todos: [...event.state.todos, event.state.input],
               input: ''
-            });
+            })
+          }
+        },
+        {
+          ul: {
+            children: todos.map((todo, i) => ({ li: { key: i, text: todo } }))
           }
         }
-      },
-      {
-        ul: {
-          children: state.todos.map((todo, i) => ({
-            li: { text: todo, key: i }
-          }))
-        }
-      }
-    ]
-  }
-}));
+      ]
+    }
+  };
+}
+
+// client.js
+hydrate(TodoList, document.querySelector('.todo-list'), { initialState: { todos: [], input: '' } });
 ```
 
 ### Add Routing
@@ -432,15 +354,17 @@ export const TodoList = withState({
 ```javascript
 const server = createServer((req, res) => {
   if (req.url === '/') {
-    res.end(render(homePage()));
+    res.end(`<!DOCTYPE html>${render(homePage())}`);
   } else if (req.url === '/about') {
-    res.end(render(aboutPage()));
+    res.end(`<!DOCTYPE html>${render(aboutPage())}`);
   } else {
     res.writeHead(404);
     res.end('Not found');
   }
 });
 ```
+
+For Express, Fastify or Koa, `@coherent.js/integrations` adds `res.coherent()` / `reply.coherent()` / `ctx.coherent()` (see [Framework Integrations](../deployment/integrations.md)); in the browser, `@coherent.js/client/router` handles client-side navigation (see [Router](../client/router.md)).
 
 ### Add API Endpoints
 
@@ -451,6 +375,8 @@ if (req.url === '/api/data') {
 }
 ```
 
+For more than a couple of endpoints, use `@coherent.js/api` (see the [API usage guide](../api/usage.md)).
+
 ---
 
 ## 📚 Reference
@@ -460,7 +386,7 @@ if (req.url === '/api/data') {
 ```javascript
 {
   tagName: {
-    className: 'my-class',
+    className: 'my-class',        // or ['a', cond && 'b'], or { active: cond }
     id: 'my-id',
     children: [
       { h1: { text: 'Title' } },
@@ -470,24 +396,14 @@ if (req.url === '/api/data') {
 }
 ```
 
-### State Management
-
-```javascript
-withState(initialState)(({ state, setState, stateUtils }) => {
-  // state - current state
-  // setState - update state
-  // stateUtils - advanced utilities
-})
-```
-
 ### Event Handlers
 
 ```javascript
 {
   button: {
-    onclick: (event, state, setState) => {},
-    onmouseenter: (event, state, setState) => {},
-    onsubmit: (event, state, setState) => {}
+    onClick: (event) => {},       // event.state, event.setState(), event.props
+    onMouseEnter: (event) => {},
+    onSubmit: (event) => { event.preventDefault(); }
   }
 }
 ```
@@ -498,28 +414,22 @@ withState(initialState)(({ state, setState, stateUtils }) => {
 
 Before deploying, make sure:
 
-- [ ] All components have `data-coherent-component`
-- [ ] Event handlers use `(event, state, setState)` signature
-- [ ] Scripts/styles use `dangerouslySetInnerContent()`
-- [ ] `/hydration.js` is served correctly
-- [ ] `hydrate()` is called on each interactive root
-- [ ] Browser console shows "✅ Hydration complete!"
+- [ ] The client bundle (`/hydration.js`) is served
+- [ ] `hydrate()` is called with each interactive component's root element
+- [ ] Server and client render the component with the same props/state
+- [ ] No hydration mismatch warnings appear in development
 
 ---
 
 ## 🎉 Success!
 
-You've built a complete full-stack Coherent.js application!
+You've built a server-rendered, hydrated Coherent.js application.
 
 **What you learned:**
 - ✅ Server-Side Rendering
 - ✅ Client-Side Hydration
-- ✅ State Management
+- ✅ Client State
 - ✅ Event Handling
 - ✅ Component Structure
 
-**Next:** Check out the [starter-app example](../../examples/starter-app) for a complete working template!
-
----
-
-**Questions?** Check the [documentation](../../examples/README.md) or [examples](../../examples/)
+**Next:** Check out the [starter-app example](../../examples/starter-app) for a complete working template, and the [Hydration guide](../client/hydration.md) for the details.

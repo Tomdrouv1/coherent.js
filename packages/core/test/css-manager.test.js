@@ -263,8 +263,21 @@ describe('CSSManager', () => {
       const filePaths = ['file&name.css'];
       const result = cssManager.generateCSSLinks(filePaths);
 
-      // Should include the URL as-is (no HTML escaping in this implementation)
-      expect(result).toContain('<link rel="stylesheet" href="/file&name.css" />');
+      // Attribute values are HTML-escaped; the browser decodes &amp; back to &
+      expect(result).toContain('<link rel="stylesheet" href="/file&amp;name.css" />');
+    });
+
+    it('should not let a URL break out of the href attribute', () => {
+      const result = cssManager.generateCSSLinks(['"><script>alert(1)</script>']);
+
+      expect(result).not.toContain('<script>');
+      expect(result).toContain('href="/&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;"');
+    });
+
+    it('should not let inline CSS close the style element', () => {
+      const result = cssManager.generateInlineStyles('a{} </style><script>x</script>');
+
+      expect(result).toBe('<style type="text/css">\na{} <\\/style><script>x</script>\n</style>');
     });
   });
 

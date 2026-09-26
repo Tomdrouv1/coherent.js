@@ -288,7 +288,7 @@ export function validateComponent(component: unknown): boolean;
 // ============================================================================
 
 export interface ProfilerOptions {
-  /** Record anything at all; defaults to `true` */
+  /** Record anything at all; defaults to `false` (opt in) */
   enabled?: boolean;
   /** Fraction of sessions and renders to record, 0 to 1; defaults to `1.0` */
   sampleRate?: number;
@@ -307,7 +307,10 @@ export interface MemoryUsage {
   limit: number;
 }
 
-/** One recorded render. */
+/**
+ * One recorded render. Times are `performance.now()` milliseconds
+ * (sub-millisecond, relative to the time origin), not epoch timestamps.
+ */
 export interface RenderMeasurement {
   id: string;
   componentName: string;
@@ -317,7 +320,8 @@ export interface RenderMeasurement {
   duration?: number;
   startMemory: MemoryUsage | null;
   endMemory?: MemoryUsage | null;
-  memoryDelta?: number;
+  /** Change in used heap bytes, or `null` where heap usage is unavailable */
+  memoryDelta?: number | null;
   phase: string;
   result?: Record<string, unknown>;
   /** Whether `duration` exceeded `slowThreshold` */
@@ -452,6 +456,9 @@ export class PerformanceProfiler {
   /** Suggestions derived from the recorded measurements */
   getRecommendations(): unknown[];
 
+  /** Append a measurement, dropping the oldest beyond `maxSamples` */
+  addMeasurement(measurement: RenderMeasurement | Record<string, unknown>): void;
+
   /** Drop measurements, sessions and marks */
   clear(): void;
 
@@ -465,7 +472,9 @@ export class PerformanceProfiler {
 export function createProfiler(options?: ProfilerOptions): PerformanceProfiler;
 
 /**
- * Time an async function. Rejects with `{ error, duration }` when `fn` throws.
+ * Time a (possibly async) function with `profiler`, or an enabled ad-hoc one.
+ * When `fn` throws, rejects with that Error (non-Error values are wrapped,
+ * the original kept as `cause`) carrying a `duration` property.
  */
 export function measure<T>(
   name: string,
@@ -473,24 +482,65 @@ export function measure<T>(
   profiler?: PerformanceProfiler | null
 ): Promise<{ value: T; duration: number }>;
 
-/** Wrap a function so calls to it can be profiled. */
-export function profile<F extends (...args: never[]) => unknown>(fn: F): F;
+export interface ProfileOptions {
+  /** Profiler to record into; an enabled one is created when omitted */
+  profiler?: PerformanceProfiler;
+  /** Measurement name; defaults to the function's name */
+  name?: string;
+}
+
+/**
+ * Wrap a function so every call (sync or async) is recorded as a render
+ * measurement on `wrapped.profiler`.
+ */
+export function profile<F extends (...args: never[]) => unknown>(
+  fn: F,
+  options?: PerformanceProfiler | ProfileOptions
+): F & { profiler: PerformanceProfiler };
 
 // ============================================================================
 // DevTools
 // ============================================================================
 
+export interface DevToolsOptions {
+  /** Force on or off; defaults to `shouldEnable()` */
+  enabled?: boolean;
+  /** Cap on retained warnings and errors each; defaults to `100` */
+  maxEntries?: number;
+  /** Record console.error calls; defaults to `true` */
+  captureConsoleErrors?: boolean;
+  /**
+   * Record unhandled promise rejections (Node). They still crash the process
+   * as they would without DevTools. Defaults to `false`.
+   */
+  trackUnhandledRejections?: boolean;
+  /** Browser only: hot-reload WebSocket URL; no connection is made without it */
+  hotReloadUrl?: string | null;
+  /** Expose `$inspect`, `$history`, … on `globalThis`; defaults to `true` */
+  globalHelpers?: boolean;
+}
+
+/** The part of a Coherent instance DevTools uses, e.g. `import * as coherent from '@coherent.js/core'`. */
+export interface DevToolsTarget {
+  render?: (component: unknown, context?: Record<string, unknown>, options?: Record<string, unknown>) => string;
+  createComponent?: (config: Record<string, unknown>) => unknown;
+  cache?: unknown;
+}
+
 /**
- * Development-only instrumentation: render interception, validation, hot
+ * Development-only instrumentation: render timing, validation, optional hot
  * reload and a browser panel.
  *
- * Enabled only when `NODE_ENV=development`, or on localhost / `?dev=true` in
- * a browser. `isEnabled` is a property, not a method.
+ * Enabled when `NODE_ENV=development`, or on a localhost page in a browser;
+ * anything else needs `{ enabled: true }`. It never mutates the instance it
+ * wraps — render through {@link DevTools.render}. `isEnabled` is a property,
+ * not a method.
  */
 export class DevTools {
-  constructor(coherentInstance?: unknown);
+  constructor(coherentInstance?: DevToolsTarget | null, options?: DevToolsOptions);
 
-  coherent: unknown;
+  coherent: DevToolsTarget | null;
+  options: Required<Omit<DevToolsOptions, 'enabled' | 'hotReloadUrl'>> & DevToolsOptions;
   /** Whether instrumentation is active in this environment */
   isEnabled: boolean;
   renderHistory: unknown[];
@@ -504,6 +554,18 @@ export class DevTools {
 
   /** Install every hook; called by the constructor when enabled */
   initialize(): void;
+
+  /** Remove everything `initialize()` installed */
+  destroy(): void;
+
+  /** Append to a bounded list (warnings, errors), dropping the oldest */
+  record<T>(list: T[], entry: T): T;
+
+  /** Render through the wrapped instance, recording timing and warnings */
+  render(component: unknown, context?: Record<string, unknown>, options?: Record<string, unknown>): string;
+
+  /** The wrapped instance's `createComponent()`, registering the result */
+  createComponent(config: Record<string, unknown>): unknown;
 
   /** Report a component's type, structure and props */
   inspectComponent(component: unknown): Record<string, unknown>;
@@ -537,7 +599,7 @@ export class DevTools {
 }
 
 /** Create a {@link DevTools} instance bound to a Coherent instance. */
-export function createDevTools(coherentInstance?: unknown): DevTools;
+export function createDevTools(coherentInstance?: DevToolsTarget | null, options?: DevToolsOptions): DevTools;
 
 // ============================================================================
 // Component Visualizer

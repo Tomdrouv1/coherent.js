@@ -3,7 +3,7 @@
  * @fileoverview Provides authentication, authorization, and security utilities
  */
 
-import { createHmac, randomBytes, pbkdf2Sync } from 'crypto';
+import { createHmac, randomBytes, pbkdf2Sync, timingSafeEqual } from 'crypto';
 import { Buffer } from 'buffer';
 
 /**
@@ -44,13 +44,38 @@ function createSignature(data, secret) {
 }
 
 /**
+ * Refuse to sign or verify without a caller-supplied secret.
+ *
+ * There used to be a built-in default, 'your-secret-key'. It was public, so
+ * anyone could mint a token -- `{ role: 'admin' }` included -- that every
+ * `withAuth()` without a configured secret accepted. A missing secret is a
+ * deployment mistake, so it fails loudly instead of quietly falling back.
+ *
+ * @private
+ * @param {unknown} secret - Secret supplied by the caller
+ * @param {string} usage - How the caller should pass it, for the message
+ */
+function requireSecret(secret, usage) {
+  if (typeof secret === 'string' ? secret.length > 0 : Buffer.isBuffer(secret) && secret.length > 0) {
+    return;
+  }
+  throw new TypeError(
+    `[coherent.js/api] ${usage}: a JWT secret is required (a non-empty string or Buffer), ` +
+      'for example process.env.JWT_SECRET. There is no default secret.'
+  );
+}
+
+/**
  * Generate JWT token
  * @param {Object} payload - Token payload
  * @param {string} expiresIn - Expiration time (e.g., '1h', '30m', '7d')
- * @param {string} secret - Secret key
+ * @param {string} secret - Secret key (required)
  * @returns {string} JWT token
+ * @throws {TypeError} If no secret is given
  */
-export function generateJWT(payload, expiresIn = '1h', secret = 'your-secret-key') {
+export function generateJWT(payload, expiresIn = '1h', secret) {
+  requireSecret(secret, "generateJWT(payload, expiresIn, secret) was called without a secret");
+
   const header = {
     alg: 'HS256',
     typ: 'JWT'
@@ -87,10 +112,13 @@ export function generateJWT(payload, expiresIn = '1h', secret = 'your-secret-key
 /**
  * JWT token verification
  * @param {string} token - Bearer token or JWT token
- * @param {string} secret - Secret key
+ * @param {string} secret - Secret key (required)
  * @returns {Object|null} Decoded payload or null if invalid
+ * @throws {TypeError} If no secret is given
  */
-export function verifyToken(token, secret = 'your-secret-key') {
+export function verifyToken(token, secret) {
+  requireSecret(secret, 'verifyToken(token, secret) was called without a secret');
+
   try {
     let jwtToken = token;
     
@@ -115,7 +143,7 @@ export function verifyToken(token, secret = 'your-secret-key') {
     const data = `${encodedHeader}.${encodedPayload}`;
     const expectedSignature = createSignature(data, secret);
     
-    if (signature !== expectedSignature) {
+    if (!safeEqual(signature, expectedSignature)) {
       return null;
     }
 
@@ -136,22 +164,57 @@ export function verifyToken(token, secret = 'your-secret-key') {
 
 /**
  * Authentication middleware
+ *
+ * Verifies the `Authorization: Bearer <jwt>` header with `options.secret`, or
+ * hands the request to `options.verify` for any other scheme. One of the two
+ * is required: there is no default secret.
+ *
  * @param {Object} options - Auth options
+ * @param {string|Buffer} [options.secret] - HS256 secret the tokens were signed with
+ * @param {Function} [options.verify] - `(req) => user | null`, may be async; replaces JWT verification
+ * @param {boolean} [options.required=true] - Answer 401 when no valid user is found
  * @returns {Function} Middleware function
+ * @throws {TypeError} If neither `secret` nor `verify` is given
  */
 export function withAuth(options = {}) {
-  const { secret, required = true } = options;
-  
+  const { secret, verify, required = true } = options ?? {};
+
+  const reject = (res) => {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Unauthorized' }));
+  };
+
+  if (verify !== undefined) {
+    if (typeof verify !== 'function') {
+      throw new TypeError('[coherent.js/api] withAuth({ verify }) expects verify to be a function (req) => user.');
+    }
+    return async (req, res) => {
+      let user = null;
+      try {
+        user = (await verify(req)) || null;
+      } catch {
+        user = null;
+      }
+      if (required && !user) {
+        reject(res);
+        return;
+      }
+      req.user = user;
+      return null; // Continue to next middleware
+    };
+  }
+
+  requireSecret(secret, 'withAuth({ secret }) was created without a secret');
+
   return (req, res) => {
     const authHeader = req.headers.authorization;
     const user = verifyToken(authHeader, secret);
-    
+
     if (required && !user) {
-      res.writeHead(401, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ _error: 'Unauthorized' }));
+      reject(res);
       return;
     }
-    
+
     req.user = user;
     return null; // Continue to next middleware
   };
@@ -168,13 +231,13 @@ export function withRole(roles) {
   return (req, res) => {
     if (!req.user) {
       res.writeHead(401, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ _error: 'Unauthorized' }));
+      res.end(JSON.stringify({ error: 'Unauthorized' }));
       return;
     }
     
     if (!requiredRoles.includes(req.user.role)) {
       res.writeHead(403, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ _error: 'Forbidden' }));
+      res.end(JSON.stringify({ error: 'Forbidden' }));
       return;
     }
     
@@ -183,18 +246,58 @@ export function withRole(roles) {
 }
 
 /**
+ * PBKDF2 parameters of the `"<salt>:<hash>"` format. Changing them would
+ * make every stored hash fail to verify, so they stay as they are.
+ * @private
+ */
+const PBKDF2_ITERATIONS = 10000;
+const PBKDF2_KEY_LENGTH = 64;
+const PBKDF2_DIGEST = 'sha512';
+
+/**
+ * Compare two strings in time that depends only on their length.
+ *
+ * `===` stops at the first differing character, which lets an attacker who
+ * can time responses recover a valid HMAC signature byte by byte.
+ *
+ * @private
+ * @param {string} a - Received value
+ * @param {string} b - Expected value
+ * @returns {boolean} True when equal
+ */
+function safeEqual(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  const left = Buffer.from(a);
+  const right = Buffer.from(b);
+  // timingSafeEqual needs equal lengths; the expected length is public.
+  if (left.length !== right.length) return false;
+  return timingSafeEqual(left, right);
+}
+
+/**
  * Password hashing utility
+ *
+ * PBKDF2-HMAC-SHA512, 10,000 iterations, 16-byte random salt, stored as
+ * `"<salt hex>:<hash hex>"`. It is synchronous and blocks the event loop for
+ * the duration of the derivation (a few milliseconds); that iteration count
+ * is well below current OWASP guidance (210,000 for PBKDF2-SHA512), so for
+ * new systems prefer a dedicated password hashing library (argon2, bcrypt,
+ * or `crypto.scrypt`) with its async API.
+ *
  * @param {string} password - Plain text password
  * @returns {string} Hashed password
  */
 export function hashPassword(password) {
   const salt = randomBytes(16).toString('hex');
-  const hash = pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
+  const hash = pbkdf2Sync(password, salt, PBKDF2_ITERATIONS, PBKDF2_KEY_LENGTH, PBKDF2_DIGEST).toString('hex');
   return `${salt}:${hash}`;
 }
 
 /**
  * Password verification utility
+ *
+ * Compares in constant time. Synchronous, like `hashPassword()`.
+ *
  * @param {string} password - Plain text password
  * @param {string} hashedPassword - Hashed password from database
  * @returns {boolean} True if password matches
@@ -202,8 +305,9 @@ export function hashPassword(password) {
 export function verifyPassword(password, hashedPassword) {
   try {
     const [salt, hash] = hashedPassword.split(':');
-    const verifyHash = pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
-    return hash === verifyHash;
+    if (!salt || !hash) return false;
+    const verifyHash = pbkdf2Sync(password, salt, PBKDF2_ITERATIONS, PBKDF2_KEY_LENGTH, PBKDF2_DIGEST).toString('hex');
+    return safeEqual(hash, verifyHash);
   } catch {
     return false;
   }
@@ -211,10 +315,19 @@ export function verifyPassword(password, hashedPassword) {
 
 /**
  * Generate secure random token (for non-JWT use cases)
- * @param {number} length - Token length
+ * @param {number} length - Number of random bytes; the hex string is twice as long
  * @returns {string} Random token
+ * @throws {TypeError} If length is not a positive integer (e.g. a JWT payload)
  */
 export function generateToken(length = 32) {
+  if (!Number.isInteger(length) || length <= 0) {
+    // The type definitions used to describe generateToken(payload, { secret })
+    // as a JWT generator; point callers who followed them to the real one.
+    throw new TypeError(
+      '[coherent.js/api] generateToken(length) returns random hex and takes a byte count. ' +
+        'To sign a JWT use generateJWT(payload, expiresIn, secret).'
+    );
+  }
   return randomBytes(length).toString('hex');
 }
 
@@ -254,7 +367,7 @@ export function withInputValidation(rules) {
     
     if (errors.length > 0) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ _error: 'Validation failed', details: errors }));
+      res.end(JSON.stringify({ error: 'Validation failed', details: errors }));
       return;
     }
     

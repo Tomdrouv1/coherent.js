@@ -55,10 +55,14 @@ export class DatabaseManager extends EventEmitter {
     this.isConnected = false;
     this.connectionAttempts = 0;
     this.maxRetries = 3;
+    this.retryDelay = 2000;
 
-    // Health check interval
+    // Health check interval (config.healthCheckInterval, in milliseconds)
     this.healthCheckInterval = null;
-    this.healthCheckFrequency = 30000; // 30 seconds
+    this.healthCheckFrequency = this.config.healthCheckInterval ?? 30000;
+    if (!Number.isFinite(this.healthCheckFrequency) || this.healthCheckFrequency <= 0) {
+      throw new Error(`healthCheckInterval must be a positive number of milliseconds, got ${this.healthCheckFrequency}`);
+    }
 
     // Connection statistics
     this.stats = {
@@ -108,12 +112,12 @@ export class DatabaseManager extends EventEmitter {
       throw new Error('Either database type or adapter is required');
     }
 
-    const supportedTypes = ['postgresql', 'mysql', 'sqlite', 'mongodb'];
+    const supportedTypes = ['postgresql', 'mysql', 'sqlite', 'mongodb', 'memory'];
     if (!supportedTypes.includes(type)) {
       throw new Error(`Unsupported database type: ${type}. Supported types: ${supportedTypes.join(', ')}`);
     }
 
-    if (!database) {
+    if (!database && type !== 'memory') {
       throw new Error('Database name is required for type-based configuration');
     }
 
@@ -122,7 +126,8 @@ export class DatabaseManager extends EventEmitter {
       postgresql: 5432,
       mysql: 3306,
       mongodb: 27017,
-      sqlite: null
+      sqlite: null,
+      memory: null
     };
 
     return {
@@ -177,24 +182,59 @@ export class DatabaseManager extends EventEmitter {
       this.isConnected = true;
       this.connectionAttempts = 0;
 
-      // Start health checks if supported by the adapter
-      if (this.adapter.startHealthChecks) {
-        this.startHealthChecks();
+      // Start health checks if the adapter can test its connection
+      if (this.config.healthCheck !== false &&
+          (typeof this.adapter.testConnection === 'function' || typeof this.adapter.ping === 'function')) {
+        this.startHealthCheck();
       }
 
       return this;
     } catch (_error) {
+      // Close whatever this attempt opened before retrying, or every retry leaks a pool
+      await this.discardFailedConnection();
+
       this.connectionAttempts++;
       this.stats.failedConnections++;
-      this.emit('_error', _error);
+      // The failure also surfaces through the rejected promise, so only emit
+      // when someone listens: an unhandled 'error' event would throw here.
+      if (this.listenerCount('error') > 0) this.emit('error', _error);
 
       if (this.connectionAttempts < this.maxRetries) {
-        console.warn(`Connection attempt ${this.connectionAttempts} failed. Retrying in 2 seconds...`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        console.warn(`Connection attempt ${this.connectionAttempts} failed. Retrying in ${this.retryDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, this.retryDelay));
         return this.connect();
       }
 
       throw new Error(`Failed to connect to database after ${this.connectionAttempts} attempts: ${_error.message}`);
+    }
+  }
+
+  /**
+   * Close the pool of a connection attempt that failed.
+   *
+   * @private
+   * @returns {Promise<void>}
+   */
+  async discardFailedConnection() {
+    const { adapter, pool } = this;
+    this.pool = null;
+    this.adapter = null;
+    this.isConnected = false;
+
+    if (!adapter || !pool) {
+      return;
+    }
+
+    try {
+      if (typeof adapter.closePool === 'function') {
+        await adapter.closePool(pool);
+      } else if (typeof adapter.disconnect === 'function') {
+        await adapter.disconnect();
+      }
+    } catch (closeError) {
+      if (this.config.debug) {
+        console.error('Failed to close pool after a failed connection attempt:', closeError.message);
+      }
     }
   }
 
@@ -245,9 +285,11 @@ export class DatabaseManager extends EventEmitter {
     try {
       if (typeof this.adapter.testConnection === 'function') {
         await this.adapter.testConnection(this.pool);
-      } else if (this.adapter.ping) {
-        // Try ping if available
-        await this.adapter.ping();
+      } else if (typeof this.adapter.ping === 'function') {
+        // Adapters whose ping() reports failure as `false` instead of throwing
+        if (await this.adapter.ping() === false) {
+          throw new Error('ping failed');
+        }
       }
       // If no test method is available, we'll assume the connection is good
 
@@ -256,7 +298,7 @@ export class DatabaseManager extends EventEmitter {
       this.emit('connect:test', { duration });
 
     } catch (_error) {
-      this.emit('_error', _error);
+      if (this.listenerCount('error') > 0) this.emit('error', _error);
       throw new Error(`Database connection test failed: ${_error.message}`);
     }
   }
@@ -312,7 +354,7 @@ export class DatabaseManager extends EventEmitter {
 
     } catch (_error) {
       const duration = Date.now() - startTime;
-      this.emit('queryError', { operation, params, duration, _error: _error.message });
+      this.emit('queryError', { operation, params, duration, error: _error.message });
 
       throw new Error(`Query failed: ${_error.message}`);
     }
@@ -342,12 +384,20 @@ export class DatabaseManager extends EventEmitter {
   }
 
   /**
-   * Start a database transaction
+   * Start a database transaction, or run a callback in one
    *
-   * @returns {Promise<Object>} Transaction object
+   * With options (or nothing), resolves to a transaction object with `query`, `commit`
+   * and `rollback`. With a callback, runs it with the transaction, commits when it
+   * resolves, rolls back when it throws, and resolves to the callback's result.
+   *
+   * @param {Function|Object} [callbackOrOptions] - Callback, or transaction options
+   * @param {Object} [options={}] - Transaction options when a callback is given
+   * @param {string} [options.isolationLevel] - READ UNCOMMITTED, READ COMMITTED, REPEATABLE READ or SERIALIZABLE
+   * @param {boolean} [options.readOnly] - Start a read-only transaction
+   * @returns {Promise<Object|*>} Transaction object, or the callback's result
    *
    * @example
-   * const tx = await db.transaction();
+   * const tx = await db.transaction({ isolationLevel: 'SERIALIZABLE' });
    * try {
    *   await tx.query('INSERT INTO users (name) VALUES (?)', ['John']);
    *   await tx.query('INSERT INTO profiles (user_id) VALUES (?)', [userId]);
@@ -356,17 +406,50 @@ export class DatabaseManager extends EventEmitter {
    *   await tx.rollback();
    *   throw _error;
    * }
+   *
+   * @example
+   * const user = await db.transaction(async (tx) => {
+   *   await tx.query('INSERT INTO users (name) VALUES (?)', ['John']);
+   *   return (await tx.query('SELECT * FROM users WHERE name = ?', ['John'])).rows[0];
+   * });
    */
-  async transaction() {
+  async transaction(callbackOrOptions, options) {
     if (!this.isConnected) {
       throw new Error('Database not connected. Call connect() first.');
     }
 
-    return await this.adapter.transaction(this.pool);
+    if (typeof this.adapter.transaction !== 'function') {
+      throw new Error(`The ${this.config.type || 'configured'} adapter does not support transactions`);
+    }
+
+    if (typeof callbackOrOptions !== 'function') {
+      return await this.adapter.transaction(this.pool, callbackOrOptions || {});
+    }
+
+    const tx = await this.adapter.transaction(this.pool, options || {});
+    let result;
+    try {
+      result = await callbackOrOptions(tx);
+    } catch (_error) {
+      if (!tx.isCommitted && !tx.isRolledBack) {
+        await tx.rollback();
+      }
+      throw _error;
+    }
+
+    if (!tx.isCommitted && !tx.isRolledBack) {
+      await tx.commit();
+    }
+    return result;
   }
 
   /**
    * Start health check monitoring
+   *
+   * Runs the connection test every `config.healthCheckInterval` ms (default 30s) and
+   * emits `healthCheck` with `{ status: 'healthy' | 'unhealthy', ... }`. Started by
+   * connect() unless `config.healthCheck` is false; stopped by close(). The timer does
+   * not keep the process alive.
    *
    * @private
    */
@@ -380,13 +463,14 @@ export class DatabaseManager extends EventEmitter {
         await this.testConnection();
         this.emit('healthCheck', { status: 'healthy', timestamp: new Date() });
       } catch (_error) {
-        this.emit('healthCheck', { status: 'unhealthy', _error: _error.message, timestamp: new Date() });
+        this.emit('healthCheck', { status: 'unhealthy', error: _error.message, timestamp: new Date() });
 
         if (this.config.debug) {
           console.error('Database health check failed:', _error.message);
         }
       }
     }, this.healthCheckFrequency);
+    this.healthCheckInterval.unref?.();
   }
 
   /**
@@ -398,7 +482,9 @@ export class DatabaseManager extends EventEmitter {
     return {
       ...this.stats,
       isConnected: this.isConnected,
-      poolStats: this.pool ? this.adapter.getPoolStats(this.pool) : null
+      poolStats: this.pool && typeof this.adapter?.getPoolStats === 'function'
+        ? this.adapter.getPoolStats(this.pool)
+        : null
     };
   }
 

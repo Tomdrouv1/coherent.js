@@ -4,7 +4,7 @@
  * @description Client-side hydration with Islands Architecture.
  */
 
-import { makeHydratable, autoHydrate } from '@coherent.js/client';
+import { hydrate } from '@coherent.js/client';
 import { withState } from '@coherent.js/core';
 
 // Interactive counter with hydration support
@@ -93,12 +93,12 @@ const CounterComponent = withState({ count: 0, step: 1 })(({ state, props = {} }
   };
 });
 
-const HydratableCounter = makeHydratable(CounterComponent, { componentName: 'HydratableCounter' });
+// Any pure-object component is hydratable: no wrapper needed (makeHydratable was removed in 1.0).
+const HydratableCounter = CounterComponent;
 
 // Interactive todo list with hydration support
 // Interactive user profile form with hydration support
-const HydratableUserProfile = makeHydratable(
-  withState({
+const HydratableUserProfile = withState({
     firstName: 'John',
     lastName: 'Doe',
     age: 30,
@@ -254,11 +254,9 @@ const HydratableUserProfile = makeHydratable(
         ]
       }
     };
-  }), { componentName: 'HydratableUserProfile' }
-);
+  });
 
-const HydratableTodoList = makeHydratable(
-  withState({ todos: [], newTodo: '', filter: 'all' })(({ state }) => {
+const HydratableTodoList = withState({ todos: [], newTodo: '', filter: 'all' })(({ state }) => {
     // Define functions that accept setState as parameter for hydration compatibility
     const addTodo = (event, state, setState) => {
       if (state.newTodo.trim()) {
@@ -413,8 +411,7 @@ const HydratableTodoList = makeHydratable(
         ]
       }
     };
-  }), { componentName: 'HydratableTodoList' }
-);
+  });
 
 // Complete hydration demo page
 export const hydrationDemo = {
@@ -803,7 +800,7 @@ export const hydrationDemo = {
                                 text: 'A stateful counter with step control. State is preserved during hydration and updates are reactive.',
                                 class: 'section-description'
                               }},
-                              HydratableCounter.renderWithHydration({ initialCount: 5 })
+                              HydratableCounter({ initialCount: 5 })
                             ]
                           }
                         },
@@ -816,7 +813,7 @@ export const hydrationDemo = {
                                 text: 'A form component with various input types, computed properties, and real-time validation.',
                                 class: 'section-description'
                               }},
-                              HydratableUserProfile.renderWithHydration()
+                              HydratableUserProfile()
                             ]
                           }
                         },
@@ -829,7 +826,7 @@ export const hydrationDemo = {
                                 text: 'A complex stateful component with filtering, statistics, and real-time interactions.',
                                 class: 'section-description'
                               }},
-                              HydratableTodoList.renderWithHydration()
+                              HydratableTodoList()
                             ]
                           }
                         },
@@ -855,20 +852,20 @@ export const hydrationDemo = {
   }
 };
 
-// Make the demo page hydratable
-const HydrationDemoPage = makeHydratable(() => hydrationDemo);
+const HydrationDemoPage = () => hydrationDemo;
 
-// Export component registry for dev server (only in browser environment)
+// In the browser, hydrate each server-rendered root explicitly
+// (autoHydrate was removed in 1.0).
 if (typeof window !== 'undefined') {
-  // Initialize component registry
-  window.componentRegistry = {
-    HydratableCounter,
-    HydratableUserProfile,
-    HydratableTodoList
+  const roots = {
+    counter: [HydratableCounter, { initialCount: 5 }],
+    'user-profile': [HydratableUserProfile, {}],
+    'todo-list': [HydratableTodoList, {}]
   };
-  
-  // Auto-hydrate all components with explicit registry
-  autoHydrate(window.componentRegistry);
+  for (const [name, [Component, props]] of Object.entries(roots)) {
+    const element = document.querySelector(`[data-coherent-component="${name}"]`);
+    if (element) hydrate(Component, element, { props });
+  }
 }
 
 

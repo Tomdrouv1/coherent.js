@@ -8,10 +8,7 @@
  * to maintain a single source of truth for element definitions.
  */
 
-import { createRequire } from 'module';
-
-// Use createRequire to import JSON in ESM
-const require = createRequire(import.meta.url);
+import { loadGeneratedData } from './generated-data.js';
 
 export interface AttributeInfo {
   name: string;
@@ -35,36 +32,29 @@ export interface ExtractedData {
 }
 
 // Load generated data or use fallback
-let data: ExtractedData;
-
-try {
-  data = require('./element-attributes.generated.json') as ExtractedData;
-} catch {
-  // Fallback for development when generated file doesn't exist
-  data = {
-    elements: {},
-    voidElements: ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'],
-    globalAttributes: [
-      { name: 'id', type: 'string', optional: true },
-      { name: 'className', type: 'string', optional: true },
-      { name: 'class', type: 'string', optional: true },
-      { name: 'style', type: 'string | Record<string, string | number>', optional: true },
-      { name: 'title', type: 'string', optional: true },
-      { name: 'hidden', type: 'boolean', optional: true },
-      { name: 'tabIndex', type: 'number', optional: true },
-      { name: 'key', type: 'string | number', optional: true },
-      { name: 'text', type: 'string | number', optional: true },
-      { name: 'html', type: 'string', optional: true },
-      { name: 'children', type: 'CoherentChild | CoherentChild[]', optional: true },
-    ],
-    eventHandlers: [
-      { name: 'onClick', type: 'string | ((event: MouseEvent) => void)', optional: true },
-      { name: 'onChange', type: 'string | ((event: Event) => void)', optional: true },
-      { name: 'onSubmit', type: 'string | ((event: SubmitEvent) => void)', optional: true },
-    ],
-    generatedAt: 'fallback',
-  };
-}
+const data: ExtractedData = loadGeneratedData() ?? {
+  elements: {},
+  voidElements: ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'],
+  globalAttributes: [
+    { name: 'id', type: 'string', optional: true },
+    { name: 'className', type: 'string', optional: true },
+    { name: 'class', type: 'string', optional: true },
+    { name: 'style', type: 'string | Record<string, string | number>', optional: true },
+    { name: 'title', type: 'string', optional: true },
+    { name: 'hidden', type: 'boolean', optional: true },
+    { name: 'tabIndex', type: 'number', optional: true },
+    { name: 'key', type: 'string | number', optional: true },
+    { name: 'text', type: 'string | number', optional: true },
+    { name: 'html', type: 'string', optional: true },
+    { name: 'children', type: 'CoherentChild | CoherentChild[]', optional: true },
+  ],
+  eventHandlers: [
+    { name: 'onClick', type: 'string | ((event: MouseEvent) => void)', optional: true },
+    { name: 'onChange', type: 'string | ((event: Event) => void)', optional: true },
+    { name: 'onSubmit', type: 'string | ((event: SubmitEvent) => void)', optional: true },
+  ],
+  generatedAt: 'fallback',
+};
 
 /**
  * Set of all valid HTML element tag names.

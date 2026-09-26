@@ -20,15 +20,20 @@ export type Primitive = string | number | boolean | null | undefined;
 /** Allow objects and functions in attributes */
 export type AttributeValue = Primitive | object;
 
+/** Value accepted by `className` / `class` */
+export type ClassValue = string | ReadonlyArray<ClassValue | false | null | undefined> | Record<string, unknown>;
+
 /** HTML attributes object */
 export interface HTMLAttributes {
   [key: string]: AttributeValue;
-  className?: string;
-  class?: string;
+  /** A string, an array (falsy entries dropped) or an object of `{ className: condition }` */
+  className?: ClassValue;
+  class?: ClassValue;
   id?: string;
   style?: string | Record<string, string | number>;
-  onClick?: string | (() => void);
-  onSubmit?: string | (() => void);
+  /** Inline code, or a function attached by @coherent.js/client's hydrate() (not rendered on the server) */
+  onClick?: string | ((event: any) => void);
+  onSubmit?: string | ((event: any) => void);
   href?: string;
   src?: string;
   alt?: string;
@@ -385,13 +390,16 @@ export interface WithStateHOC {
 
 /** Memoization options */
 export interface MemoOptions {
+  /**
+   * 'lru' (default) and 'ttl' keep at most `maxSize` entries; 'simple' is an
+   * unbounded Map; 'weak' keys on the identity of the first argument.
+   */
   strategy?: 'lru' | 'ttl' | 'weak' | 'simple';
   maxSize?: number;
+  /** Entry lifetime in milliseconds (default 5000 with the 'ttl' strategy). */
   ttl?: number;
   keyFn?: (...args: any[]) => string;
   keySerializer?: (value: any) => string;
-  compareFn?: (a: any, b: any) => boolean;
-  shallow?: boolean;
   onHit?: (key: string, value: any, args: any[]) => void;
   onMiss?: (key: string, args: any[]) => void;
   onEvict?: (key: string, value: any) => void;
@@ -516,18 +524,75 @@ export interface PerformanceMetrics {
 
 /** Render options for `render(component, options)` */
 export interface RenderOptions {
+  /**
+   * Cache the HTML of whole renders, keyed on the full component tree.
+   * Off by default; trees containing functions are never cached.
+   */
   enableCache?: boolean;
+  /** Cache instance (from createCacheManager) to use instead of the shared one. */
+  cache?: CacheManager;
   enableMonitoring?: boolean;
   minify?: boolean;
   maxDepth?: number;
+  /** @deprecated Ignored. Pass `cache: createCacheManager({ maxCacheSize })` instead. */
   cacheSize?: number;
+  /** Time-to-live in milliseconds for cache entries this render adds. */
   cacheTTL?: number;
+  /**
+   * Called when a function component throws. Its return value is rendered in
+   * place of the component (`null` omits it). Without it, the error
+   * propagates out of render().
+   */
+  onError?: (error: unknown, info: { path: string }) => CoherentNode;
   scoped?: boolean;
   encapsulate?: boolean;
 }
 
 /** Render a Coherent node to an HTML string */
 export function render(component: CoherentNode, options?: RenderOptions): string;
+
+export interface StreamOptions extends Omit<RenderOptions, 'enableCache' | 'cache' | 'cacheSize' | 'cacheTTL' | 'minify'> {
+  /** Approximate size of each yielded chunk in characters (default 8192). */
+  chunkSize?: number;
+}
+
+/**
+ * Stream a Coherent node as HTML chunks with the same output as render().
+ * The event loop gets a turn after every chunk. Errors reject the iteration.
+ *
+ * @example
+ * Readable.from(renderToStream(Page())).pipe(res);
+ */
+export function renderToStream(component: CoherentNode, options?: StreamOptions): AsyncGenerator<string, void, undefined>;
+
+export interface StreamingResponse {
+  headersSent?: boolean;
+  getHeader?(name: string): unknown;
+  setHeader(name: string, value: string): void;
+  write(chunk: string): boolean;
+  /** Set once the connection is gone (Node's `ServerResponse#destroyed`). */
+  destroyed?: boolean;
+  on(event: 'drain' | 'close' | 'error', listener: (...args: unknown[]) => void): unknown;
+  off(event: 'drain' | 'close' | 'error', listener: (...args: unknown[]) => void): unknown;
+  end(): void;
+  destroy(error?: Error): void;
+}
+
+export const streamingUtils: {
+  /** Concatenate every chunk. */
+  collectChunks(chunks: AsyncIterable<string>): Promise<string>;
+  /**
+   * Write chunks to a Node response with backpressure; aborts it on error.
+   * Resolves to the byte count. If the client disconnects, rendering stops and
+   * it resolves with the bytes written so far.
+   */
+  streamToResponse(chunks: AsyncIterable<string>, response: StreamingResponse): Promise<number>;
+  /** Re-yield chunks, reporting progress after each one. */
+  streamWithProgress(
+    chunks: AsyncIterable<string>,
+    onProgress?: (progress: { chunkCount: number; totalBytes: number; chunk: string }) => void
+  ): AsyncGenerator<string, void, undefined>;
+};
 
 export interface RenderUtilityOptions {
   enablePerformanceMonitoring?: boolean;
@@ -572,7 +637,7 @@ export const withState: WithStateHOC;
 /** Memoization function */
 export function memo<T extends (...args: any[]) => any>(
   fn: T,
-  options?: MemoOptions
+  options?: MemoOptions | ((props: Parameters<T>[0]) => string)
 ): MemoizedFunction<T>;
 
 /** Validate component structure */
@@ -715,6 +780,10 @@ export interface PerformanceMonitor {
   startRender(componentName?: string): string;
   endRender(renderId: string): number;
   recordMetric(name: string, value: number, tags?: Record<string, any>): void;
+  /** Called by the renderer when `enableMonitoring` is on. */
+  recordRender(operation: string, duration: number, fromCache?: boolean, metadata?: Record<string, any>): void;
+  /** Called by the renderer when `enableMonitoring` is on. */
+  recordError(operation: string, error: unknown, metadata?: Record<string, any>): void;
   addMetric(name: string, value: number, tags?: Record<string, any>): void;
   measure<T>(name: string, fn: () => T): T;
   measureAsync<T>(name: string, fn: () => Promise<T>): Promise<T>;
@@ -734,20 +803,43 @@ export const performanceMonitor: PerformanceMonitor;
 
 /** Cache manager options */
 export interface CacheManagerOptions {
+  /** Maximum entries per cache type (default 1000). */
+  maxCacheSize?: number;
+  /** Alias for `maxCacheSize`. */
   maxSize?: number;
-  ttl?: number;
-  strategy?: 'lru' | 'fifo' | 'lfu';
+  /** Memory budget across all cache types, keys included (default 100). */
+  maxMemoryMB?: number;
+  /** Default time-to-live in milliseconds (default 5 minutes). */
+  ttlMs?: number;
+  enableStatistics?: boolean;
 }
 
-/** Cache manager interface */
+export type CacheType = 'static' | 'component' | 'template' | 'data';
+
+export interface CacheStats {
+  hits: number;
+  misses: number;
+  /** Approximate memory use in bytes. */
+  size: number;
+  entries: number;
+  hitRate: Record<CacheType, number>;
+  accessCount: Record<CacheType, number>;
+}
+
+/** Cache manager: one least-recently-used map per cache type. */
 export interface CacheManager {
-  get(key: string): any;
-  set(key: string, value: any, ttl?: number): void;
-  has(key: string): boolean;
-  delete(key: string): boolean;
-  clear(): void;
-  size(): number;
-  prune(): void;
+  /** Returns the cached value, or null when missing or expired. */
+  get(key: string, type?: CacheType): any;
+  set(key: string, value: any, type?: CacheType, metadata?: { ttlMs?: number; [key: string]: any }): void;
+  remove(key: string, type?: CacheType): boolean;
+  clear(type?: CacheType): void;
+  getStats(): CacheStats;
+  cleanup(): { freed: number };
+  destroy(): void;
+  generateCacheKey(component: any, props?: Record<string, any>, context?: Record<string, any>): string;
+  hashObject(obj: any): string;
+  readonly memoryUsage: number;
+  readonly maxMemory: number;
 }
 
 /** Shared cache manager instance */
@@ -891,14 +983,23 @@ export function formatAttributes(props: Record<string, any>): string;
 /** Mark content as trusted so it is emitted without escaping */
 export function dangerouslySetInnerContent(content: string): TrustedContent;
 
-/** Content marked trusted by dangerouslySetInnerContent() */
+/** Content marked trusted by dangerouslySetInnerContent() (frozen, symbol-branded) */
 export interface TrustedContent {
-  __html: string;
-  __trusted: true;
+  readonly __html: string;
+  readonly __trusted: true;
 }
 
-/** Detect content marked by dangerouslySetInnerContent() */
+/**
+ * Detect content marked by dangerouslySetInnerContent(). Markers carry a
+ * symbol brand, so objects parsed from JSON are never trusted.
+ */
 export function isTrustedContent(value: unknown): value is TrustedContent;
+
+/**
+ * Whether a string can be emitted as an attribute name. Rendering an element
+ * with an invalid name (whitespace, quotes, `<`, `>`, `/`, `=`, controls) throws.
+ */
+export function isValidAttributeName(name: string): boolean;
 
 // ============================================================================
 // Utility Types and Constants
@@ -913,6 +1014,7 @@ export const compose: ComposeUtils;
 /** Default export with all core functionality */
 declare const coherent: {
   render: typeof render;
+  renderToStream: typeof renderToStream;
   withState: typeof withState;
   memo: typeof memo;
   validateComponent: typeof validateComponent;

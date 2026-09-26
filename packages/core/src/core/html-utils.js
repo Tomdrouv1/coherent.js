@@ -2,15 +2,38 @@
  * HTML-specific utility functions
  */
 
+const HTML_ESCAPE_TEST = /[&<>"']/;
+const HTML_ESCAPE = /[&<>"']/g;
+const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+
 export function escapeHtml(text) {
   if (typeof text !== 'string') return text;
+  // Most text needs no escaping: return it without allocating.
+  if (!HTML_ESCAPE_TEST.test(text)) return text;
+  return text.replace(HTML_ESCAPE, (ch) => HTML_ESCAPES[ch]);
+}
 
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+/**
+ * Brand for trusted-content markers. A symbol can't come out of JSON.parse,
+ * so request data can't forge a marker the way `{ "__trusted": true,
+ * "__html": "<img onerror=...>" }` could when the check read plain keys.
+ * Symbol.for (not a module-private symbol) keeps markers valid across two
+ * loaded copies of core, e.g. the ESM and CJS builds.
+ */
+const TRUSTED_CONTENT = Symbol.for('coherent.js.trustedContent');
+
+/**
+ * Create a trusted-content marker. Use `dangerouslySetInnerContent()`.
+ *
+ * @param {string} content - Markup to emit verbatim
+ * @returns {{__html: string, __trusted: true}} Frozen marker
+ */
+export function createTrustedContent(content) {
+  const marker = { __html: String(content), __trusted: true };
+  // Non-enumerable, so spreading or merging a marker into another object
+  // doesn't carry the brand along.
+  Object.defineProperty(marker, TRUSTED_CONTENT, { value: true });
+  return Object.freeze(marker);
 }
 
 /**
@@ -23,8 +46,25 @@ export function escapeHtml(text) {
 export function isTrustedContent(value) {
   return Boolean(value) &&
     typeof value === 'object' &&
-    value.__trusted === true &&
+    value[TRUSTED_CONTENT] === true &&
     typeof value.__html === 'string';
+}
+
+/**
+ * Characters the HTML spec forbids in attribute names, plus whitespace and
+ * controls. Everything else is allowed: data-*, aria-*, x-on:click, @click,
+ * :class, xlink:href.
+ */
+const INVALID_ATTRIBUTE_NAME = /[\s"'<>/=\u0000-\u001F\u007F-\u009F]/;
+
+/**
+ * Check that a string can be emitted as an attribute name as-is.
+ *
+ * @param {string} name - Attribute name
+ * @returns {boolean} True when the name can't break out of the tag
+ */
+export function isValidAttributeName(name) {
+  return typeof name === 'string' && name.length > 0 && !INVALID_ATTRIBUTE_NAME.test(name);
 }
 
 export function unescapeHtml(text) {
@@ -44,108 +84,129 @@ export function isVoidElement(tagName) {
     return false;
   }
 
-  const voidElements = new Set([
-    'area',
-    'base',
-    'br',
-    'col',
-    'embed',
-    'hr',
-    'img',
-    'input',
-    'link',
-    'meta',
-    'param',
-    'source',
-    'track',
-    'wbr',
-  ]);
-  return voidElements.has(tagName.toLowerCase());
+  // The module-level set below (this allocated a new Set on every call).
+  return voidElements.has(tagName) || voidElements.has(tagName.toLowerCase());
 }
 
-export function formatAttributes(props) {
+/**
+ * Enumerated attributes whose "false" is meaningful and must be written out
+ * (a bare or missing attribute means something else).
+ */
+const ENUMERATED_BOOLEAN_ATTRIBUTES = new Set(['spellcheck', 'draggable', 'contenteditable']);
+
+/**
+ * Normalize a class value: strings as-is, arrays flattened with falsy
+ * entries dropped, objects as the keys whose values are truthy (clsx-style).
+ */
+function normalizeClassValue(value) {
+  if (Array.isArray(value)) {
+    return value.map(normalizeClassValue).filter(Boolean).join(' ');
+  }
+  if (value && typeof value === 'object') {
+    return Object.keys(value).filter((name) => value[name]).join(' ');
+  }
+  if (value === null || value === undefined || value === false) return '';
+  return String(value);
+}
+
+/**
+ * Serialize props into an HTML attribute string.
+ *
+ * @param {Object} props - Element props
+ * @param {Set<string>} [skip] - Prop names not rendered as attributes
+ * @returns {string} Attributes separated by spaces
+ */
+/**
+ * Call a function-valued attribute. A throwing one renders as ''.
+ */
+function callAttribute(key, value) {
+  try {
+    return value();
+  } catch (_error) {
+    console.warn(`Error executing function for attribute '${key}':`, {
+      error: _error.message,
+      stack: _error.stack,
+      attributeKey: key,
+    });
+    return '';
+  }
+}
+
+/** Prop names written under another attribute name. */
+const ATTRIBUTE_NAMES = {
+  className: 'class',
+  // Written as is, browsers read `htmlFor` as an unknown `htmlfor`
+  // attribute: the label was not associated with its control.
+  htmlFor: 'for'
+};
+
+/**
+ * Serialize a style object. Null, undefined and false values are left out
+ * (`{ color: active && 'red' }` rendered "color: false"); custom properties
+ * keep their case, since `--mainColor` and `--main-color` are different
+ * properties.
+ */
+function styleToCss(style) {
+  return Object.entries(style)
+    .filter(([, val]) => val !== null && val !== undefined && val !== false)
+    .map(([prop, val]) => {
+      const name = prop.startsWith('--') ? prop : prop.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`);
+      return `${name}: ${val}`;
+    })
+    .join('; ');
+}
+
+export function formatAttributes(props, skip) {
+  // `class` and `className` together used to produce two class attributes.
+  // Function values are called first: they were joined as source code.
+  if (props && props.class !== undefined && props.className !== undefined) {
+    const { className, ...rest } = props;
+    const resolve = (key, value) => normalizeClassValue(typeof value === 'function' ? callAttribute(key, value) : value);
+    props = { ...rest, class: [resolve('class', props.class), resolve('className', className)].filter(Boolean).join(' ') };
+  }
+
   let formatted = '';
   for (const key in props) {
-    if (props.hasOwnProperty(key)) {
+    if (Object.prototype.hasOwnProperty.call(props, key) && !(skip && skip.has(key))) {
       let value = props[key];
 
-      // Convert className to class for HTML output
-      const attributeName = key === 'className' ? 'class' : key;
+      const attributeName = ATTRIBUTE_NAMES[key] ?? key;
 
-      // Handle function values - for event handlers, use data-action attributes
+      // Names are emitted unescaped: `{ 'onmouseover="alert(1)" x': 'y' }`
+      // used to render a live handler, and a key containing `>` ended the tag.
+      if (!isValidAttributeName(attributeName)) {
+        throw new Error(`Invalid attribute name ${JSON.stringify(key)}: attribute names cannot contain whitespace, quotes, '<', '>', '/', '=' or control characters`);
+      }
+
+      // Function values: event handlers render nothing. The client's
+      // hydrate() re-attaches them from the component tree; the server has
+      // no way to ship a closure. They used to be stored in a process-wide
+      // __coherentActionRegistry under a Date.now()+Math.random() id that
+      // nothing ever read: every render leaked its handlers (and whatever
+      // request data they closed over) and produced different HTML.
       if (typeof value === 'function') {
-        // Check if this is an event handler (starts with 'on')
         if (attributeName.startsWith('on')) {
-          // For event handlers, create a unique action identifier
-          const actionId = `__coherent_action_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          const DEBUG = (typeof process !== 'undefined' && process && process.env && (process.env.COHERENT_DEBUG === '1' || process.env.NODE_ENV === 'development'))
-            || (typeof window !== 'undefined' && window && window.COHERENT_DEBUG === true);
-          
-          // Store the function in a global registry that will be available during hydration
-          // Check if we're in Node.js or browser environment
-          if (typeof global !== 'undefined') {
-            // Server-side, store in global for hydration
-            if (!global.__coherentActionRegistry) {
-              global.__coherentActionRegistry = {};
-              if (DEBUG) console.log('Initialized global action registry');
-            }
-            global.__coherentActionRegistry[actionId] = value;
-            if (DEBUG) console.log(`Added action ${actionId} to global registry, total: ${Object.keys(global.__coherentActionRegistry).length}`);
-            if (DEBUG) console.log(`Global registry keys: ${Object.keys(global.__coherentActionRegistry).join(', ')}`);
-            
-            // Log the global object to see if it's being reset
-            if (DEBUG) {
-              if (typeof global.__coherentActionRegistryLog === 'undefined') {
-                global.__coherentActionRegistryLog = [];
-              }
-              global.__coherentActionRegistryLog.push({
-                action: 'add',
-                actionId: actionId,
-                timestamp: Date.now(),
-                registrySize: Object.keys(global.__coherentActionRegistry).length
-              });
-            }
-          } else if (typeof window !== 'undefined') {
-            // Browser-side, store in window
-            if (!window.__coherentActionRegistry) {
-              window.__coherentActionRegistry = {};
-              if (DEBUG) console.log('Initialized window action registry');
-            }
-            window.__coherentActionRegistry[actionId] = value;
-            if (DEBUG) console.log(`Added action ${actionId} to window registry, total: ${Object.keys(window.__coherentActionRegistry).length}`);
-            if (DEBUG) console.log(`Window registry keys: ${Object.keys(window.__coherentActionRegistry).join(', ')}`);
-          }
-          
-          // Use data-action and data-event attributes instead of inline JS
-          const eventType = attributeName.substring(2); // Remove 'on' prefix
-          formatted += ` data-action="${actionId}" data-event="${eventType}"`;
-          continue; // Skip normal processing
+          continue;
         } else {
           // For other function attributes, call them to get the value
-          try {
-            value = value();
-          } catch (_error) {
-            console.warn(`Error executing function for attribute '${key}':`, {
-              _error: _error.message,
-              stack: _error.stack,
-              attributeKey: key,
-            });
-            // Consider different fallback strategies based on attribute type
-            value = '';
-          }
+          value = callAttribute(key, value);
         }
+      }
+
+      if (attributeName === 'class' && typeof value === 'object' && value !== null) {
+        // ['a', cond && 'b'] or { a: true, b: false } — was "a,b" / "[object Object]"
+        value = normalizeClassValue(value);
+      }
+
+      if (typeof value === 'boolean' && (attributeName.startsWith('aria-') || ENUMERATED_BOOLEAN_ATTRIBUTES.has(attributeName.toLowerCase()))) {
+        // aria-hidden="false", spellcheck="false": false is a value here, not absence
+        value = String(value);
       }
 
       // Handle style objects by converting to CSS string
       if (attributeName === 'style' && typeof value === 'object' && value !== null) {
-        const cssString = Object.entries(value)
-          .map(([prop, val]) => {
-            // Convert camelCase to kebab-case
-            const kebabProp = prop.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`);
-            return `${kebabProp}: ${val}`;
-          })
-          .join('; ');
-        formatted += ` ${attributeName}="${escapeHtml(cssString)}"`;
+        const cssString = styleToCss(value);
+        if (cssString) formatted += ` ${attributeName}="${escapeHtml(cssString)}"`;
       } else if (value === true) {
         formatted += ` ${attributeName}`;
       } else if (value !== false && value !== null && value !== undefined) {
@@ -185,6 +246,72 @@ function stripComments(html) {
 
     cursor = end + 3;
   }
+}
+
+/**
+ * Whether `html` ends inside a comment, or with the `>` that closes one
+ * (the same scan as stripComments).
+ */
+function endsInComment(html) {
+  let cursor = 0;
+  for (;;) {
+    const start = html.indexOf('<!--', cursor);
+    if (start === -1) return false;
+    const end = html.indexOf('-->', start + 4);
+    if (end === -1 || end + 3 === html.length) return true;
+    cursor = end + 3;
+  }
+}
+
+/**
+ * Incremental minifyHtml() for streamed markup: the concatenation of what
+ * `push()` and `end()` return equals minifyHtml() of the concatenated input.
+ *
+ * Input is held back until a `>` that minification keeps (not inside or
+ * closing a comment), and output is cut right after it. No whitespace run or
+ * comment then spans a cut, and the next piece is minified with that `>` in
+ * front, so a `>`, whitespace, `<` sequence across the cut collapses as it
+ * does in the whole document.
+ *
+ * @returns {{ push(chunk: string): string, end(): string }}
+ */
+export function createStreamMinifier() {
+  let pending = '';
+  let started = false;
+
+  const minifyPiece = (text, last) => {
+    let out = stripComments(started ? `>${text}` : text)
+      .replace(/\s+/g, ' ')
+      .replace(/>\s+</g, '><');
+    if (started) {
+      out = out.slice(1);
+    } else {
+      out = out.trimStart();
+    }
+    if (last) out = out.trimEnd();
+    started = true;
+    return out;
+  };
+
+  return {
+    push(chunk) {
+      pending += chunk;
+      let cut = pending.lastIndexOf('>');
+      while (cut !== -1 && endsInComment(pending.slice(0, cut + 1))) {
+        cut = cut === 0 ? -1 : pending.lastIndexOf('>', cut - 1);
+      }
+      if (cut === -1) return '';
+
+      const head = pending.slice(0, cut + 1);
+      pending = pending.slice(cut + 1);
+      return minifyPiece(head, false);
+    },
+    end() {
+      const rest = pending;
+      pending = '';
+      return rest || !started ? minifyPiece(rest, true) : '';
+    }
+  };
 }
 
 export function minifyHtml(html, options = {}) {

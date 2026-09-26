@@ -2,582 +2,243 @@
 
 > **1.0 update:** The legacy hydration helpers (`hydrateAll`, `hydrateBySelector`, `makeHydratable`, `autoHydrate`, `enableClientEvents`, `registerEventHandler`) were removed in 1.0. Use the unified `hydrate()` API documented below. See [`MIGRATION-1.0.md`](../../MIGRATION-1.0.md) for migration help.
 
-This guide covers how to add interactivity to server-rendered Coherent.js components through client-side hydration -- from basic setup to advanced patterns.
+This guide covers how to make server-rendered Coherent.js components interactive in the browser.
 
 ## What is Hydration?
 
-Hydration is the process of attaching event listeners and making server-rendered HTML interactive on the client-side. When a component is hydrated, event listeners are attached, state is initialized, and the component becomes fully interactive. Coherent.js provides seamless hydration that maintains the pure JavaScript object philosophy.
+The server renders a component to HTML with `render()` from `@coherent.js/core`. Function-valued event props (`onClick: () => ...`) render **nothing** on the server — there is no way to send a closure to the browser. In the browser, `hydrate()` from `@coherent.js/client` calls the same component again, pairs its output with the existing DOM, and attaches the handlers through document-level event delegation. The HTML is not re-created.
 
 ## Quick Start
 
 ```javascript
-import { hydrate } from '@coherent.js/client';
-import { MyComponent } from './components/MyComponent.js';
-
-document.addEventListener('DOMContentLoaded', () => {
-  const element = document.getElementById('app');
-  hydrate(MyComponent, element, { initialState: { name: 'World' } });
-});
-```
-
-## Hydration Utilities
-
-### `hydrate(component, container, options)`
-
-Hydrates a single DOM container with a Coherent component. Returns `{ unmount, rerender, getState, setState }` for lifecycle control.
-
-```javascript
-import { hydrate } from '@coherent.js/client';
-
-const container = document.getElementById('my-component');
-const instance = hydrate(MyComponent, container, { initialState: { count: 0 } });
-```
-
-Options: `initialState` (object — initial state for the component), `detectMismatch` (boolean — default `true` in dev), `strict` (boolean — throw on mismatch instead of warn), `onMismatch` (function — custom mismatch handler), `props` (object — additional props merged with state).
-
-## Server-Side Rendering with Hydration
-
-### Server-side (Node.js)
-
-```javascript
-import { render } from '@coherent.js/core';
-
-function Counter(props) {
+// components/Counter.js — shared by server and client
+export function Counter({ count = 0 }) {
   return {
     div: {
       className: 'counter',
-      'data-coherent-component': 'Counter',
       children: [
-        { h3: { text: 'Counter' } },
-        { span: { text: `Count: ${props.count}` } },
-        { button: { 'data-action': 'increment', text: 'Increment' } },
-        { button: { 'data-action': 'decrement', text: 'Decrement' } }
+        { span: { text: `Count: ${count}` } },
+        { button: { text: '+1', onClick: (event) => event.setState({ count: event.state.count + 1 }) } }
       ]
     }
   };
 }
+```
+
+```javascript
+// server.js
+import { render } from '@coherent.js/core';
+import { Counter } from './components/Counter.js';
 
 const html = render(Counter({ count: 0 }));
-
-res.send(`
-<!DOCTYPE html>
-<html>
-<head><title>Hydration Example</title></head>
-<body>
-  <div id="counter">${html}</div>
-  <script type="module" src="/hydration.js"></script>
-</body>
-</html>
-`);
+// <div class="counter"><span>Count: 0</span><button>+1</button></div>
 ```
 
-Bundle the browser entrypoint:
+```javascript
+// client.js
+import { hydrate } from '@coherent.js/client';
+import { Counter } from './components/Counter.js';
+
+hydrate(Counter, document.querySelector('.counter'), { initialState: { count: 0 } });
+```
+
+The container is the element the component's root renders (here the `.counter` div), not a wrapper around it.
+
+Bundle the browser entry point with your bundler of choice:
 
 ```bash
-npx esbuild client.js --bundle --format=esm --outfile=public/hydration.js
+npx esbuild client.js --bundle --format=esm --outfile=public/client.js
 ```
 
-### Client-side (Browser)
+## `hydrate(component, container, options?)`
+
+Returns `{ unmount, rerender, getState, setState }`.
+
+| Option | Default | |
+| --- | --- | --- |
+| `initialState` | the container's `data-state` attribute | State to hydrate with; passed to the component as props |
+| `props` | `{}` | Extra props passed to the component |
+| `detectMismatch` | on only when `process.env.NODE_ENV === 'development'`, or when `strict` / `onMismatch` is set | Compare the server DOM with the component's output |
+| `strict` | `false` | Throw on mismatch instead of warning |
+| `onMismatch` | — | Receive the mismatches instead of the console warning |
+
+The component is called with `{ ...props, ...state }`. Hydrating a container that is already hydrated unmounts the previous hydration first.
+
+### Instance API
 
 ```javascript
-import { hydrate } from '@coherent.js/client';
-import { Counter } from './components/Counter.js';
+const app = hydrate(Counter, container, { initialState: { count: 0 } });
 
-document.addEventListener('DOMContentLoaded', () => {
-  const counterEl = document.getElementById('counter');
-  if (counterEl) hydrate(Counter, counterEl);
-});
+app.setState({ count: 5 });      // or app.setState((s) => ({ count: s.count + 1 })); re-renders and patches the DOM
+app.getState();                  // { count: 5 }
+app.rerender({ label: 'Total' }); // re-render with extra props
+app.unmount();                   // releases the handlers; later setState()/rerender() do nothing
 ```
 
-## Hydrating Stateful Components
-
-Components created with `withState` require special handling:
-
-```javascript
-// components/Counter.js
-import { withState } from '@coherent.js/core';
-
-const CounterComponent = withState({ count: 0, step: 1 }, { debug: true });
-
-const CounterView = (props) => {
-  const { state, stateUtils } = props;
-  const { setState } = stateUtils;
-
-  return {
-    div: {
-      className: 'counter',
-      'data-coherent-component': 'counter',
-      children: [
-        { h2: { text: `Count: ${state.count}` } },
-        {
-          div: {
-            className: 'controls',
-            children: [
-              { button: { text: 'Decrement', onclick: () => setState({ count: state.count - state.step }) } },
-              { input: { type: 'number', value: state.step, min: 1, max: 10, oninput: (e) => setState({ step: parseInt(e.target.value, 10) || 1 }) } },
-              { button: { text: 'Increment', onclick: () => setState({ count: state.count + state.step }) } }
-            ]
-          }
-        }
-      ]
-    }
-  };
-};
-
-export const Counter = CounterComponent(CounterView);
-
-// client.js - Hydration
-import { hydrate } from '@coherent.js/client';
-import { Counter } from './components/Counter.js';
-
-document.addEventListener('DOMContentLoaded', () => {
-  const counterEl = document.querySelector('[data-coherent-component="counter"]');
-  if (counterEl) {
-    const initialState = {
-      count: parseInt(counterEl.getAttribute('data-initial-count') || '0'),
-      step: 1
-    };
-    hydrate(Counter, counterEl, { initialState });
-  }
-});
-```
-
-## Component Instance API
-
-When a component is hydrated, it returns an instance object:
-
-### `update(newProps)`
-
-```javascript
-instance.update({ count: 10 });
-```
-
-### `setState(newState)`
-
-```javascript
-instance.setState({ count: 15 });
-```
-
-### `destroy()`
-
-Cleans up event listeners and tears down the component.
-
-```javascript
-instance.destroy();
-```
+Re-renders diff the previous output against the new one: children are added, removed or replaced (matched by `key` when every sibling has one), attributes follow the server's rules, and `value`, `checked` and `selected` are written to the element's properties, so form fields are controlled by state.
 
 ## Event Handling
 
-### Data-Action Attributes
-
-During server-side rendering, Coherent.js converts function event handlers to data attributes:
+`on*` props become delegated handlers: `onClick` → `click`, `onDoubleClick` → `dblclick`, `onPointerDown` → `pointerdown` and so on — any DOM event works. A handler receives one wrapped event:
 
 ```javascript
-// Component definition:
-{ button: { text: 'Click me', onclick: () => console.log('Clicked!') } }
-
-// Renders as HTML:
-// <button data-action="__coherent_action_1234567890_abc123" data-event="click">Click me</button>
-```
-
-The hydration system automatically reconnects these handlers by finding elements with `data-action` attributes, looking up functions in the global registry, and attaching event listeners.
-
-### Manual Event Handler Setup
-
-For complex cases:
-
-```javascript
-function setupCustomHandlers() {
-  const specialButtons = document.querySelectorAll('[data-special-handler]');
-  
-  specialButtons.forEach(button => {
-    const handlerName = button.getAttribute('data-special-handler');
-    const handler = window[handlerName];
-    
-    if (handler && typeof handler === 'function') {
-      button.addEventListener('click', (event) => {
-        event.preventDefault();
-        handler(event);
-      });
+{
+  button: {
+    text: 'Save',
+    onClick: (event) => {
+      event.preventDefault();        // works: listeners are not passive
+      event.stopPropagation();       // stops handlers on ancestors
+      event.originalEvent;           // the native event
+      event.target;                  // the element carrying this handler
+      event.state;                   // component state when the event fired
+      event.setState({ saving: true });
+      event.props;                   // props the component rendered with
     }
-  });
-}
-
-document.addEventListener('DOMContentLoaded', setupCustomHandlers);
-```
-
-## State Management During Hydration
-
-### Component-Level State
-
-```javascript
-const TodoApp = ({ initialTodos = [] }) => {
-  let todos = [...initialTodos];
-  
-  const addTodo = (text) => {
-    todos.push({ id: Date.now(), text, completed: false });
-    render();
-  };
-
-  const toggleTodo = (id) => {
-    todos = todos.map(todo =>
-      todo.id === id ? { ...todo, completed: !todo.completed } : todo
-    );
-    render();
-  };
-
-  return {
-    div: {
-      className: 'todo-app',
-      children: [
-        { h2: { text: 'Todo List' } },
-        { ul: {
-          children: todos.map(todo => ({
-            li: {
-              className: todo.completed ? 'completed' : '',
-              children: [
-                { input: { type: 'checkbox', checked: todo.completed, onchange: () => toggleTodo(todo.id) } },
-                { span: { text: todo.text } }
-              ]
-            }
-          }))
-        }}
-      ]
-    }
-  };
-};
-```
-
-### Global State Management
-
-```javascript
-class SimpleStore {
-  constructor(initialState = {}) {
-    this.state = initialState;
-    this.listeners = [];
-  }
-  
-  getState() { return this.state; }
-  
-  setState(newState) {
-    this.state = { ...this.state, ...newState };
-    this.listeners.forEach(listener => listener(this.state));
-  }
-  
-  subscribe(listener) {
-    this.listeners.push(listener);
-    return () => { this.listeners = this.listeners.filter(l => l !== listener); };
   }
 }
-
-export const store = new SimpleStore({
-  user: null,
-  theme: 'light',
-  notifications: []
-});
 ```
 
-## Advanced Hydration
+Handlers run from the target outwards through every ancestor that has one, like native bubbling: a click inside nested elements that both have `onClick` runs both, innermost first. Non-bubbling events (`mouseenter`, `load`, ...) only run the handler on their own element. `touchstart`, `touchmove`, `wheel` and `scroll` are delegated passively, so `preventDefault()` has no effect on them.
 
-### Selective Hydration
+Inline **string** handlers (`onclick: 'history.back()'`) are rendered as attributes on the server and are not managed by `hydrate()`.
 
-Only hydrate components that need interactivity:
+## Passing State from the Server
+
+Put the initial state in a `data-state` attribute with `serializeState()` so the client does not need to repeat it:
 
 ```javascript
-document.addEventListener('DOMContentLoaded', () => {
-  const interactiveComponents = document.querySelectorAll('[data-coherent-component][data-interactive="true"]');
-  
-  if (interactiveComponents.length > 0) {
-    import('./full-hydration.js').then(({ initializeHydration }) => {
-      initializeHydration();
-    });
-  }
-});
+// server.js
+import { render } from '@coherent.js/core';
+import { serializeState } from '@coherent.js/client';
+
+const state = { count: 3 };
+const tree = Counter(state);
+tree.div['data-state'] = serializeState(state); // base64 JSON; functions are dropped
+const html = render(tree);
 ```
+
+```javascript
+// client.js — initialState defaults to the container's data-state
+hydrate(Counter, document.querySelector('.counter'));
+```
+
+`extractState(element)` reads the attribute back yourself; it returns `null` when there is none.
+
+## Advanced Patterns
 
 ### Lazy Hydration
 
-Use IntersectionObserver to hydrate components only when visible:
-
-```javascript
-const createLazyHydrator = (component, props = {}) => {
-  return (element) => {
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          hydrate(component, entry.target, { props });
-          observer.unobserve(entry.target);
-        }
-      });
-    }, {
-      rootMargin: '100px'
-    });
-    
-    observer.observe(element);
-  };
-};
-
-document.addEventListener('DOMContentLoaded', () => {
-  // Hydrate immediately visible components
-  const header = document.querySelector('.header');
-  if (header) hydrate(HeaderComponent, header);
-  
-  // Lazy hydrate below-fold components
-  const lazyComponents = document.querySelectorAll('.lazy-component');
-  lazyComponents.forEach(element => {
-    const componentType = element.dataset.component;
-    const lazyHydrator = createLazyHydrator(componentMap[componentType]);
-    lazyHydrator(element);
-  });
-});
-```
-
-### Form Enhancement
-
-Enhance server-rendered forms with client-side features:
+Hydrate below-the-fold components when they become visible:
 
 ```javascript
 import { hydrate } from '@coherent.js/client';
 
-function enhanceForm(formElement) {
-  const submitHandler = (event) => {
-    const formData = new FormData(event.target);
-    const data = Object.fromEntries(formData);
-    
-    if (!validateData(data)) {
-      event.preventDefault();
-      showValidationErrors();
-      return;
+function hydrateWhenVisible(component, element, options) {
+  const observer = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) {
+        hydrate(component, entry.target, options);
+        observer.unobserve(entry.target);
+      }
     }
-    
-    event.preventDefault();
-    submitWithLoadingState(data);
-  };
-  
-  formElement.addEventListener('submit', submitHandler);
+  }, { rootMargin: '100px' });
+  observer.observe(element);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('form[data-enhance="true"]').forEach(enhanceForm);
+document.querySelectorAll('[data-widget="comments"]').forEach((el) => {
+  hydrateWhenVisible(Comments, el);
 });
+```
+
+### Code-Split Hydration
+
+Load a component's code only on pages that contain it:
+
+```javascript
+const el = document.querySelector('.chart');
+if (el) {
+  const { Chart } = await import('./components/Chart.js');
+  hydrate(Chart, el);
+}
 ```
 
 ### Hydration Error Handling
 
+`hydrate()` throws synchronously for invalid arguments (a non-function component, a missing container) and, with `strict: true`, on a mismatch:
+
 ```javascript
-const safeHydrate = async (component, container, props = {}) => {
+function safeHydrate(component, element, options) {
   try {
-    const instance = await hydrate(component, container, { props });
-    console.log('Successfully hydrated:', component.name || 'Anonymous component');
-    return instance;
+    return hydrate(component, element, options);
   } catch (error) {
-    console.error('Hydration failed for element:', element, error);
+    console.error('Hydration failed:', error);
     element.classList.add('hydration-failed');
-    element.title = 'Interactive features unavailable';
-    
-    if (window.errorReporting) {
-      window.errorReporting.captureException(error, {
-        tags: { type: 'hydration-error', component: component.name || 'unknown' }
-      });
-    }
-    
     return null;
   }
-};
-
-const hydrateWithRetry = async (elements, components, propsArray = []) => {
-  const results = [];
-  for (let i = 0; i < elements.length; i++) {
-    try {
-      results.push(await safeHydrate(elements[i], components[i], propsArray[i] || {}));
-    } catch (error) {
-      console.warn(`Skipping hydration for element ${i}:`, error);
-      results.push(null);
-    }
-  }
-  return results;
-};
-```
-
-### Hydration Data Management
-
-Serialize complex data safely for hydration:
-
-```javascript
-const serializeHydrationData = (data) => {
-  return JSON.stringify(data, (key, value) => {
-    if (value instanceof Date) return { __type: 'Date', value: value.toISOString() };
-    if (typeof value === 'function') return undefined;
-    return value;
-  });
-};
-
-const deserializeHydrationData = (json) => {
-  return JSON.parse(json, (key, value) => {
-    if (value && value.__type === 'Date') return new Date(value.value);
-    return value;
-  });
-};
+}
 ```
 
 ## Best Practices
 
-### 1. Component Identification
+### 1. Share components between server and client
 
-Always use `data-coherent-component` attributes:
+Import the same module on both sides so the output matches. Keep browser-only work inside event handlers, which only run in the browser.
 
-```javascript
-// Good
-{ div: { 'data-coherent-component': 'my-component', className: 'my-component', children: [...] } }
+### 2. Progressive enhancement
 
-// Bad - no identification
-{ div: { className: 'my-component', children: [...] } }
-```
-
-### 2. Timing and Loading
-
-```javascript
-// Good - proper timing
-document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => {
-    initializeHydration();
-  }, 100);
-});
-
-// Bad - too early
-initializeHydration(); // Scripts might not be loaded yet
-```
-
-### 3. Progressive Enhancement
-
-Ensure functionality works without JavaScript:
+Make the page work without JavaScript, then enhance it:
 
 ```javascript
 {
   form: {
-    action: '/api/submit',          // Works without JS
+    action: '/subscribe',             // works without JS
     method: 'POST',
-    onsubmit: clientSideEnhancement, // Enhanced with JS
+    onSubmit: (event) => {            // attached by hydrate()
+      event.preventDefault();
+      submitWithFetch(new FormData(event.target));
+    },
     children: [
       { input: { name: 'email', type: 'email', required: true } },
-      { button: { type: 'submit', text: 'Submit' } }
+      { button: { type: 'submit', text: 'Subscribe' } }
     ]
   }
 }
 ```
 
-### 4. Error Handling
+### 3. Check for mismatches in development
 
-```javascript
-try {
-  hydrate(Component, container, { props });
-  console.log('Hydration successful');
-} catch (error) {
-  console.error('Hydration failed:', error);
-}
-```
+Run your development build with `NODE_ENV=development` (most bundlers set it), or pass `detectMismatch: true`, to be warned when the server HTML and the client component disagree. Mismatch detection is off in production so that hydration does not walk the whole DOM.
 
-### 5. State Preservation
+### 4. Clean up
 
-```javascript
-const initialState = extractStateFromDOM(container);
-hydrate(Component, container, { initialState, props });
-
-function extractStateFromDOM(element) {
-  const stateAttr = element.getAttribute('data-coherent-state');
-  return stateAttr ? JSON.parse(stateAttr) : {};
-}
-```
-
-### 6. Server-Client Code Sharing
-
-```javascript
-// shared/components.js - Works on both server and client
-export const Button = ({ text, onClick, variant = 'primary' }) => ({
-  button: {
-    className: `btn btn--${variant}`,
-    onclick: onClick,
-    text: text
-  }
-});
-
-if (typeof window !== 'undefined') {
-  // Client-only code
-}
-
-if (typeof process !== 'undefined') {
-  // Server-only code
-}
-```
-
-## Debugging
-
-### Enable Debug Mode
-
-```javascript
-// For state components
-const DebugComponent = withState(initialState, { debug: true });
-
-// For hydration
-window.COHERENT_DEBUG = true;
-```
-
-### Common Debug Patterns
-
-```javascript
-// Check if components are found
-const components = document.querySelectorAll('[data-coherent-component]');
-console.log(`Found ${components.length} components to hydrate`);
-
-// Check if handlers are available
-const requiredHandlers = ['runPerformanceTests', 'clearResults'];
-const availableHandlers = requiredHandlers.filter(name => typeof window[name] === 'function');
-console.log(`Available handlers: ${availableHandlers.join(', ')}`);
-```
+Call `instance.unmount()` before removing a hydrated element from the page.
 
 ## Troubleshooting
 
-### "Hydration can only be performed in a browser environment"
-
-This error occurs when trying to hydrate in Node.js. Make sure hydration code only runs in the browser.
-
 ### Buttons don't work after hydration
 
-1. Check if functions are loaded: `console.log(typeof window.myFunction);`
-2. Verify timing: `setTimeout(initHydration, 200);`
-3. Check for conflicting handlers: `button.removeAttribute('data-action');`
+1. Make sure the client bundle calls `hydrate()` with the element the component's root renders.
+2. Make sure the handler is a function prop (`onClick: () => ...`) on the component passed to `hydrate()`.
+3. Turn on `detectMismatch: true` to see whether the DOM and the component disagree.
 
 ### State not updating
 
-1. Ensure proper `setState` usage (not direct mutation)
-2. Check that the component was properly wrapped with `withState`
+Update state with `event.setState()` in a handler or `instance.setState()`; mutating `event.state` does not re-render.
 
 ### Hydration mismatch
 
-1. Ensure server and client render identically
-2. Handle client-only content: `const isClient = typeof window !== 'undefined';`
-
-### Memory leaks
-
-1. Clean up event listeners when components are removed
-2. Use `instance.destroy()` when components are no longer needed
-
-```javascript
-const instance = hydrate(Component, container, { props });
-// Later:
-if (instance && instance.unmount) {
-  instance.unmount();
-}
-```
+1. Render the same component with the same props/state on both sides.
+2. Keep client-only values (dates, random ids, `window` reads) out of the first render.
 
 ## Browser Support
 
-Hydration requires a modern browser with support for ES modules. For older browsers, you may need to transpile the code or provide polyfills.
+Hydration requires a browser with ES module support. `process.env.NODE_ENV` is read at runtime; bundlers usually replace it, and a page without `process` counts as production.
 
 ---
 
 ## Related Documentation
 
+- [Router](router.md) - Client-side routing
 - [Basic Components](../components/basics.md) - Component creation guide
-- [State Management](../components/state.md) - Using withState
+- [State Management](../components/state.md)
 - [Performance Guide](../deployment/performance.md) - Optimization strategies

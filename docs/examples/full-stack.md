@@ -1,99 +1,71 @@
 # Coherent.js Full-Stack Guide
 
-**Coherent.js is a full-stack JavaScript framework** that combines server-side rendering (SSR) with progressive client-side enhancement.
+**Coherent.js combines server-side rendering (SSR) with progressive client-side enhancement.** The server renders complete HTML; the browser hydrates the parts that need to be interactive.
 
 ## 🌊 The Full-Stack Flow
 
 ### 1️⃣ **Server Renders** (SSR)
-The server generates HTML using `@coherent.js/core`:
+
+The server loads the data, then renders HTML with `@coherent.js/core`:
 
 ```javascript
 // server.js
 import express from 'express';
-import { render } from '@coherent.js/core';
-import { provideContext } from '@coherent.js/state';
+import { setupCoherent } from '@coherent.js/integrations/express';
+import { UserProfilePage } from './components/UserProfilePage.js';
 
 const app = express();
+setupCoherent(app, {
+  template: '<!DOCTYPE html><html><head><title>User Profile</title>' +
+    '<script type="module" src="/bundle.js"></script></head><body>{{content}}</body></html>'
+});
 
 app.get('/users/:id', async (req, res) => {
-  // Fetch data on server
-  const user = await db.users.findById(req.params.id);
-
-  // Provide context for SSR
-  provideContext('user', user);
-
-  // Render to HTML
-  const html = render(UserProfilePage());
-
-  res.send(`
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>User Profile</title>
-        <script src="/bundle.js" defer></script>
-      </head>
-      <body>
-        <div id="app">${html}</div>
-      </body>
-    </html>
-  `);
+  const user = await db.users.findById(req.params.id); // load data first: render() is synchronous
+  res.coherent(UserProfilePage({ user }));
 });
 ```
 
-**Result**: Fast initial page load with SEO-friendly HTML
+**Result**: fast initial page load with SEO-friendly HTML.
 
 ### 2️⃣ **Client Hydrates** (Progressive Enhancement)
-The browser makes the server HTML interactive:
+
+The browser runs the same component again and attaches its event handlers to the existing HTML:
 
 ```javascript
 // client.js
 import { hydrate } from '@coherent.js/client';
-
 import { UserProfilePage } from './components/UserProfilePage.js';
 
-// Attach event listeners to server-rendered HTML
-hydrate(UserProfilePage, document.getElementById('app'));
+const root = document.querySelector('.user-profile'); // the element UserProfilePage's root renders
+hydrate(UserProfilePage, root, { initialState: { user: window.__USER__ } });
 ```
 
-**Result**: Server HTML becomes fully interactive
+**Result**: the server HTML becomes interactive without being re-created.
 
 ### 3️⃣ **Client Enhances** (SPA Features)
-After hydration, add reactive features:
+
+After hydration, add client-side navigation and reactive state:
 
 ```javascript
 // client.js
-import { hydrate } from '@coherent.js/client';
 import { createRouter } from '@coherent.js/client/router';
 import { createReactiveState } from '@coherent.js/state';
 
-// Hydrate first
-hydrate(UserProfilePage, document.getElementById('app'));
+const router = createRouter({ mode: 'history' });
+router.addRoute('/', { component: () => import('./pages/Home.js') });
+router.addRoute('/users/:id', { component: () => import('./pages/UserProfile.js') });
+router.addRoute('/products', { component: () => import('./pages/Products.js') });
 
-// Enable client-side routing (SPA-like navigation)
-const router = createRouter({
-  mode: 'history',
-  routes: {
-    '/': HomePage,
-    '/users/:id': UserProfilePage,
-    '/products': ProductsPage
-  }
+const appState = createReactiveState({ cart: [], notifications: [] });
+appState.watch('cart', (cart) => {
+  document.querySelector('.cart-count').textContent = String(cart.length);
 });
 
-// Add reactive state for interactions
-const appState = createReactiveState({
-  cart: [],
-  notifications: []
-});
-
-appState.watch('cart', (newCart) => {
-  console.log('Cart updated:', newCart);
-  // Update UI reactively
-});
-
-router.start('#app');
+await router.start(); // follows the URL and intercepts clicks on links to registered routes
 ```
 
-**Result**: SPA-like experience with instant navigation
+The router resolves routes and loads their modules; rendering the matched page into the document is up to your application (see [Router](../client/router.md)).
 
 ## 🎯 Complete Example: Full-Stack App
 
@@ -103,55 +75,44 @@ router.start('#app');
 // server/index.js
 import express from 'express';
 import { render } from '@coherent.js/core';
-import { provideContext } from '@coherent.js/state';
 import { createFormBuilder, validators } from '@coherent.js/forms';
 
 const app = express();
+app.use(express.static('public'));
 
-// SSR route with form
-app.get('/signup', (req, res) => {
-  // Build form on server with validation metadata
-  const signupForm = createFormBuilder({ name: 'signup' })
-    .field('email', {
-      type: 'email',
-      label: 'Email',
-      required: true,
-      validators: ['email'] // Embedded in HTML as data-validators="email"
-    })
-    .field('password', {
-      type: 'password',
-      label: 'Password',
-      required: true,
-      validators: ['minLength:8'] // Embedded as data-validators="minLength:8"
-    });
-
-  // Render form to HTML (includes validation metadata)
-  const html = render({
-    div: {
-      children: [
-        { h1: { text: 'Sign Up' } },
-        signupForm.buildForm()
-      ]
-    }
+// The form definition is shared by every request
+const signupForm = createFormBuilder({ name: 'signup', action: '/signup', method: 'post' })
+  .field('email', {
+    type: 'email',
+    label: 'Email',
+    required: true,
+    validators: [validators.email()]
+  })
+  .field('password', {
+    type: 'password',
+    label: 'Password',
+    required: true,
+    validators: [validators.minLength(8)]
   });
 
-  res.send(wrapHTML(html, '/bundle.js'));
+const page = (content) => `<!DOCTYPE html>
+<html><head><title>Sign up</title><script type="module" src="/bundle.js"></script></head>
+<body>${render(content)}</body></html>`;
+
+app.get('/signup', (req, res) => {
+  // The rules are embedded in the HTML as data-validators='[{"name":"minLength","args":[8]}]'
+  res.send(page({ div: { children: [{ h1: { text: 'Sign Up' } }, signupForm.buildForm()] } }));
 });
 
-// Handle form submission (server-side validation)
+// Server-side validation with the same rules (never trust the client)
 app.post('/signup', express.json(), async (req, res) => {
-  // Validate with SAME rules as client
-  const { valid, errors } = validators.validate(req.body, {
-    email: ['required', 'email'],
-    password: ['required', 'minLength:8']
-  });
-
-  if (!valid) {
+  const errors = signupForm.fork().setValues(req.body).validate();
+  if (Object.keys(errors).length > 0) {
     return res.status(400).json({ errors });
   }
 
   const user = await db.users.create(req.body);
-  res.json({ user });
+  res.json({ user: { id: user.id, email: user.email } });
 });
 
 app.listen(3000);
@@ -161,88 +122,44 @@ app.listen(3000);
 
 ```javascript
 // client/index.js
-import { hydrate } from '@coherent.js/client';
 import { createRouter } from '@coherent.js/client/router';
-import { createReactiveState, withLocalStorage } from '@coherent.js/state';
-import { hydrateForm } from '@coherent.js/forms';
+import { withLocalStorage } from '@coherent.js/state';
+import { hydrateForm } from '@coherent.js/forms/hydration';
 
-// 1. Hydrate server HTML
-hydrate(App, document.getElementById('app'));
+// 1. Client-side routing
+const router = createRouter({ mode: 'history', prefetch: { enabled: true, strategy: 'hover' } });
+router.addRoute('/', { component: () => import('./pages/Home.js') });
+router.addRoute('/products', { component: () => import('./pages/Products.js') });
+router.addRoute('/cart', { component: () => import('./pages/Cart.js') });
 
-// 2. Set up client-side routing
-const router = createRouter({
-  mode: 'history',
-  routes: {
-    '/': HomePage,
-    '/products': ProductsPage,
-    '/cart': CartPage
-  },
-  prefetch: {
-    enabled: true,
-    strategy: 'hover' // Prefetch on hover
-  }
+// 2. Persistent client state
+const cart = withLocalStorage({ items: [] }, 'cart');
+await cart.ready; // stored state is restored asynchronously
+cart.subscribe((state) => {
+  fetch('/api/cart', { method: 'POST', body: JSON.stringify({ items: state.items }) });
 });
 
-// 3. Set up reactive state
-const cartState = withLocalStorage(
-  createReactiveState({ items: [], total: 0 }),
-  'cart'
-);
-
-cartState.watch('items', async (items) => {
-  // Sync with server
-  await fetch('/api/cart', {
-    method: 'POST',
-    body: JSON.stringify({ items })
-  });
-});
-
-// 4. Hydrate server-rendered forms (progressive enhancement)
-const signupForm = hydrateForm('form[name="signup"]', {
+// 3. Enhance the server-rendered form: reads data-validators, validates on blur and submit
+const signup = hydrateForm('form[name="signup"]', {
   validateOnBlur: true,
-  validateOnChange: false,
-  debounce: 300,
-  onSubmit: async (data, event) => {
-    // Client-side submission with fetch
+  onSubmit: async (values) => {
     const response = await fetch('/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      body: JSON.stringify(values)
     });
-
-    if (!response.ok) {
-      const { errors } = await response.json();
-      console.error('Validation errors:', errors);
-      return false; // Don't submit form
-    }
-
-    const { user } = await response.json();
-    console.log('User created:', user);
-    router.push('/dashboard');
-  },
-  onError: (errors) => {
-    console.error('Form errors:', errors);
+    if (response.ok) router.push('/dashboard');
   }
 });
-// ^^^ Reads data-validators from HTML
-//     Attaches event listeners
-//     No duplication - enhances server HTML!
 
-// Start the router
-router.start('#app');
+await router.start();
 ```
 
-### **Components (Universal - Works on Both Server and Client)**
+### **Components (Universal - Work on Both Server and Client)**
 
 ```javascript
 // components/ProductsPage.js
-import { useContext } from '@coherent.js/state';
-
-export function ProductsPage() {
-  // On server: reads from context provided during SSR
-  // On client: reads from reactive state
-  const products = useContext('products') || [];
-
+export function ProductsPage({ products = [] }) {
   return {
     div: {
       className: 'products-page',
@@ -251,16 +168,18 @@ export function ProductsPage() {
         {
           div: {
             className: 'product-grid',
-            children: products.map(product => ({
+            children: products.map((product) => ({
               div: {
                 className: 'product-card',
+                key: product.id,
                 children: [
                   { h3: { text: product.name } },
                   { p: { text: `$${product.price}` } },
                   {
                     button: {
                       text: 'Add to Cart',
-                      onclick: `addToCart(${product.id})`
+                      // Rendered as nothing on the server, attached by hydrate() in the browser
+                      onClick: (event) => event.setState({ cart: [...(event.state.cart ?? []), product.id] })
                     }
                   }
                 ]
@@ -273,6 +192,8 @@ export function ProductsPage() {
   };
 }
 ```
+
+Data reaches components as props. On the server, the SSR context API of `@coherent.js/state` (`runWithContext`, `provideContext`, `useContext`) can share request-scoped values without threading them through every component; see [State Management](../components/state.md#context-api).
 
 ## 📊 Architecture Comparison
 
@@ -294,17 +215,17 @@ export function ProductsPage() {
 ┌─────────────────┐
 │   Server        │
 │  - Renders HTML │ ← Fast initial load
-│  - Full reload  │ ← Every navigation is slow
+│  - Full reload  │ ← Every navigation reloads
 └─────────────────┘
 ```
 ✅ Fast initial load
 ✅ Good SEO
-❌ Slow subsequent navigation
+❌ Full page loads on navigation
 
 ### **Coherent.js Full-Stack**
 ```
 ┌─────────────────┐     ┌─────────────────┐
-│   Server (SSR)  │  →  │  Client (SPA)   │
+│   Server (SSR)  │  →  │  Client         │
 │  - Renders HTML │     │  - Hydrates     │
 │  - Fast initial │     │  - Routes       │
 │  - SEO ready    │     │  - Reactive     │
@@ -312,8 +233,8 @@ export function ProductsPage() {
 ```
 ✅ Fast initial load (SSR)
 ✅ Good SEO (SSR)
-✅ Fast subsequent navigation (Client routing)
-✅ Progressive enhancement (Reactive state)
+✅ Client-side navigation where you want it
+✅ Progressive enhancement
 
 ## 🎯 Best Practices
 
@@ -322,8 +243,7 @@ export function ProductsPage() {
 // ✅ Good: Render above-the-fold content on server
 app.get('/products', async (req, res) => {
   const products = await db.products.limit(20).findAll();
-  provideContext('products', products);
-  res.send(render(ProductsPage()));
+  res.coherent(ProductsPage({ products }));
 });
 
 // ❌ Bad: Empty server response, client-only rendering
@@ -332,120 +252,79 @@ app.get('/products', (req, res) => {
 });
 ```
 
-### **2. Hydrate Before Adding Interactivity**
+### **2. Hydrate the Element the Component Renders**
 ```javascript
-// ✅ Good: Hydrate first, then enhance
-hydrate(App, document.getElementById('app'));
-const router = createRouter({ /* ... */ });
+// ✅ Good: the component's root element
+hydrate(ProductsPage, document.querySelector('.products-page'), { initialState: { products } });
 
-// ❌ Bad: Router before hydration
-const router = createRouter({ /* ... */ });
-hydrate(App, document.getElementById('app')); // Conflicts!
+// ❌ Bad: a wrapper around it; hydrate() pairs the component's root with the container itself
+hydrate(ProductsPage, document.getElementById('app'));
 ```
 
 ### **3. Use Reactive State for Client-Only Features**
 ```javascript
-// ✅ Good: Reactive state for UI interactions
 import { observable } from '@coherent.js/state';
 
-const sidebarOpen = observable(false); // Client-only UI state
-
-// ✅ Good: SSR state for data
-import { withState } from '@coherent.js/core';
-
-const Page = withState({ products: [] })(({ state }) => {
-  // Rendered on server
-});
+const sidebarOpen = observable(false); // client-only UI state
+sidebarOpen.watch((open) => document.body.classList.toggle('sidebar-open', open));
 ```
+
+Keep request data on the server in props (or the request-scoped context), never in module-level state shared by all requests.
 
 ### **4. Forms: SSR + Hydration (No Duplication!)**
 ```javascript
-// ✅ Good: Build form once on server, hydrate on client
 // SERVER
-import { createFormBuilder } from '@coherent.js/forms';
+import { createFormBuilder, validators } from '@coherent.js/forms';
 
-const form = createFormBuilder()
-  .field('email', { validators: ['email', 'required'] });
+const form = createFormBuilder({ name: 'newsletter' })
+  .field('email', { type: 'email', required: true, validators: [validators.email()] });
 const html = render(form.buildForm());
-// Renders: <input data-validators="email,required" required />
+// <input ... required data-required="true" data-validators="[{&quot;name&quot;:&quot;email&quot;,...}]">
 
 // CLIENT
-import { hydrateForm } from '@coherent.js/forms';
+import { hydrateForm } from '@coherent.js/forms/hydration';
 
-hydrateForm('form'); // Reads data-validators, attaches behavior
-
-// ❌ Bad: Defining form twice (duplication!)
-// SERVER: createFormBuilder().field('email', ...)
-// CLIENT: createFormBuilder({ fields: { email: ... } }) // Why repeat this?
+hydrateForm('form[name="newsletter"]'); // rebuilds the same rules from data-validators
 ```
 
 ### **5. Validate on Both Server and Client (Same Rules)**
 ```javascript
-// Shared validators
-import { validators } from '@coherent.js/forms';
+import { validators, validateForm } from '@coherent.js/forms';
+
+const rules = { email: [validators.required(), validators.email()] };
 
 // Server (REQUIRED for security)
-app.post('/api/form', (req, res) => {
-  const { valid, errors } = validators.validate(req.body, {
-    email: ['required', 'email']
-  });
+app.post('/api/form', express.json(), (req, res) => {
+  const errors = validateForm(req.body, rules); // { email: 'Invalid email address' } or {}
+  if (Object.keys(errors).length > 0) return res.status(400).json({ errors });
+  res.json({ ok: true });
 });
 
-// Client (OPTIONAL for UX) - same validators automatically applied via hydration
-hydrateForm('form'); // Uses validators from HTML metadata
+// Client (for UX): hydrateForm() applies the rules the server rendered
 ```
 
 ## 📝 Forms: Complete SSR + Hydration Example
-
-### The Right Way (No Duplication)
 
 ```javascript
 // ============================================
 // SERVER: Build form with validation metadata
 // ============================================
+import { render } from '@coherent.js/core';
 import { createFormBuilder, validators } from '@coherent.js/forms';
 
+const contactForm = createFormBuilder({ name: 'contact', action: '/contact', method: 'post' })
+  .field('name', { label: 'Full Name', required: true, validators: [validators.minLength(3)] })
+  .field('email', { label: 'Email', type: 'email', required: true, validators: [validators.email()] })
+  .field('message', { label: 'Message', type: 'textarea', required: true, validators: [validators.minLength(10)] });
+
 app.get('/contact', (req, res) => {
-  const contactForm = createFormBuilder({ name: 'contact' })
-    .field('name', {
-      label: 'Full Name',
-      required: true,
-      validators: ['required', 'minLength:3']
-    })
-    .field('email', {
-      label: 'Email',
-      type: 'email',
-      required: true,
-      validators: ['required', 'email']
-    })
-    .field('message', {
-      label: 'Message',
-      type: 'textarea',
-      required: true,
-      validators: ['required', 'minLength:10']
-    });
-
-  // Renders HTML with validation metadata embedded:
-  // <input name="name"
-  //        data-validators="required,minLength:3"
-  //        required
-  //        data-required="true" />
-  const html = render({
-    div: { children: [contactForm.buildForm()] }
-  });
-
-  res.send(wrapHTML(html, '/bundle.js'));
+  res.send(page({ div: { children: [contactForm.buildForm()] } }));
 });
 
-// Server-side validation (REQUIRED - never trust client)
+// Server-side validation (REQUIRED - never trust the client)
 app.post('/contact', express.json(), async (req, res) => {
-  const { valid, errors } = validators.validate(req.body, {
-    name: ['required', 'minLength:3'],
-    email: ['required', 'email'],
-    message: ['required', 'minLength:10']
-  });
-
-  if (!valid) {
+  const errors = contactForm.fork().setValues(req.body).validate();
+  if (Object.keys(errors).length > 0) {
     return res.status(400).json({ errors });
   }
 
@@ -456,37 +335,29 @@ app.post('/contact', express.json(), async (req, res) => {
 // ============================================
 // CLIENT: Hydrate server-rendered form
 // ============================================
-import { hydrateForm } from '@coherent.js/forms';
+import { hydrateForm } from '@coherent.js/forms/hydration';
 
-// Reads validation metadata from HTML and attaches behavior
-const contactForm = hydrateForm('form[name="contact"]', {
+const contact = hydrateForm('form[name="contact"]', {
   validateOnBlur: true,
-  debounce: 300,
-  async onSubmit(data) {
+  async onSubmit(values) {
     const response = await fetch('/contact', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      body: JSON.stringify(values)
     });
-
-    if (!response.ok) {
-      const { errors } = await response.json();
-      // Errors automatically displayed by hydration
-      return false;
+    if (response.ok) {
+      alert('Message sent!');
+      contact.reset();
     }
-
-    alert('Message sent!');
-    contactForm.reset();
   }
 });
 ```
 
 **Key Benefits:**
-- ✅ **No duplication** - Form defined once on server
+- ✅ **No duplication** - Form defined once on the server
 - ✅ **Progressive enhancement** - Works without JS
 - ✅ **Shared validation** - Same rules on server and client
 - ✅ **SEO-friendly** - Form HTML in initial response
-- ✅ **Better UX** - Client-side validation without full page reload
 
 ## 📦 Package Usage Guide
 
@@ -494,41 +365,21 @@ const contactForm = hydrateForm('form[name="contact"]', {
 |---------|--------------|-------------------|---------------------|
 | **@coherent.js/core** | ✅ Rendering | ❌ | ❌ |
 | **@coherent.js/client** | ❌ | ✅ Hydration | ✅ Router, HMR |
-| **@coherent.js/state** | ✅ Context API | ❌ | ✅ Reactive state |
-| **@coherent.js/forms** | ✅ Form builder | ✅ Form hydration | ✅ Client validation |
+| **@coherent.js/state** | ✅ Context API | ❌ | ✅ Reactive state, persistence |
+| **@coherent.js/forms** | ✅ Form builder, CSRF | ✅ Form hydration | ✅ Client validation |
 | **@coherent.js/integrations/express** | ✅ Integration | ❌ | ❌ |
 
 ## 🚀 Deployment
 
-### **Production Build**
-```bash
-# Build server bundle
-npm run build:server
-
-# Build client bundle
-npm run build:client
-
-# Deploy to production
-npm run deploy
-```
-
-### **Environment Variables**
-```bash
-# Server
-NODE_ENV=production
-PORT=3000
-
-# Client bundle path
-CLIENT_BUNDLE_URL=/static/bundle.js
-```
+Bundle the client entry for the browser (esbuild, Vite, Rollup...) and serve it as a static file; run the server with Node.js 22.12+ and `NODE_ENV=production`. See the [Deployment Guide](../deployment/index.md).
 
 ## 🎓 Learning Path
 
 1. **Start with SSR** - Learn `@coherent.js/core` rendering
 2. **Add Hydration** - Make it interactive with `@coherent.js/client`
-3. **Enable Routing** - Add SPA navigation with client router
+3. **Enable Routing** - Add client navigation with `@coherent.js/client/router`
 4. **Add Reactivity** - Enhance UX with `@coherent.js/state`
-5. **Optimize** - Prefetch routes, cache data, monitor performance
+5. **Optimize** - Prefetch routes, cache deliberately, monitor performance
 
 ## 📚 Next Steps
 
@@ -537,7 +388,3 @@ CLIENT_BUNDLE_URL=/static/bundle.js
 - [Client Router](../client/router.md)
 - [Reactive State Management](../components/state.md)
 - [Full-Stack Forms](../packages/forms.md)
-
----
-
-**Coherent.js gives you the best of both worlds**: Fast initial loads with SEO (SSR) + Instant navigation and reactivity (SPA). Build modern full-stack applications with a single framework! 🚀

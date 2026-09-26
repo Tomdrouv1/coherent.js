@@ -2,8 +2,10 @@
  * Static File Handler for the dev server.
  *
  * Tiny zero-dep request handler that:
- *   - Maps `req.url` to a file under `root` (with safe path-traversal
- *     rejection)
+ *   - Answers only requests addressed to localhost / an IP / the bound
+ *     host (DNS-rebinding protection)
+ *   - Maps `req.url` to a file under `root`, refusing path traversal,
+ *     dotfiles, and symlinks that resolve outside the allow-list
  *   - Sets a content-type by extension
  *   - For .html responses, injects a `<script>` tag pointing at the
  *     HMR client bootstrap right before `</body>`, idempotently
@@ -17,7 +19,8 @@
  */
 
 import { readFile, stat } from 'node:fs/promises';
-import { resolve, sep, extname, join } from 'node:path';
+import { extname, join } from 'node:path';
+import { createFsAccess, hasDotSegment, isHostAllowed } from './access.js';
 
 const HMR_CLIENT_PATH = '/__coherent_hmr_client.js';
 const HMR_SCRIPT_TAG = `<script type="module" src="${HMR_CLIENT_PATH}"></script>`;
@@ -67,49 +70,72 @@ function injectHmrScript(html) {
 }
 
 /**
- * Resolve `urlPath` relative to `root` while rejecting path traversal.
- * Returns null if the resolved path escapes `root`.
+ * Split a request URL into decoded path segments. Returns null for a
+ * malformed escape, a NUL byte, or a '.'/'..' segment.
+ *
+ * @param {string} url
+ * @returns {string[]|null}
  */
-// Deliberately no symlink resolution here, and it should stay that way.
-//
-// A dev server has to follow links: pnpm builds node_modules almost entirely
-// out of them, so realpath-ing the target and demanding it stay under the
-// project root 404s every dependency. That was tried and reverted.
-//
-// The residual risk is a symlink planted inside the project pointing at
-// something else on disk. Reaching it requires write access to the project
-// tree — and anything with that can already run code through an install
-// script or an imported module, which is strictly more powerful than reading
-// a file. The server also binds localhost by default (see dev-server/index.js),
-// so it is not reachable off the machine unless a host is passed explicitly.
-//
-// URL traversal is the risk that matters here, and the containment check
-// below stops it: '..', percent-encoded variants and absolute paths are all
-// refused.
-function safeResolve(root, urlPath) {
-  // Strip query/hash; decode percent-escapes.
-  const cleaned = decodeURIComponent(urlPath.split('?')[0].split('#')[0]);
-  // Strip leading slashes so `join` treats it as relative.
-  const rel = cleaned.replace(/^\/+/, '');
-  const abs = resolve(root, rel);
-  const rootResolved = resolve(root);
-  if (abs !== rootResolved && !abs.startsWith(rootResolved + sep)) {
+function urlSegments(url) {
+  let decoded;
+  try {
+    decoded = decodeURIComponent(url.split('?')[0].split('#')[0]);
+  } catch {
     return null;
   }
-  return abs;
+  if (decoded.includes('\0')) return null;
+  const segments = decoded.split(/[/\\]+/).filter(Boolean);
+  if (segments.some((segment) => segment === '.' || segment === '..')) return null;
+  return segments;
 }
 
+// Files are served only from an allow-list, checked against the *real* path
+// after symlinks are followed (see access.js): the project root, the
+// workspace root that contains it, the real directory of each
+// node_modules/<pkg> entry, and anything passed as `fsAllow`. Dot segments
+// (.env, .git, .npmrc, ...) are refused, both in the URL and in the path a
+// symlink resolves to.
+//
+// This replaces an earlier rule that followed every symlink, justified by
+// "pnpm builds node_modules out of links". That is true, but pnpm's links
+// point into node_modules/.pnpm, which is inside the project (or workspace)
+// root, so they pass the allow-list. The failure that motivated following
+// everything came from the e2e harness, which linked
+// node_modules/@coherent.js/client straight into <repo>/packages/client —
+// a layout a real install never produces, and which the node_modules/<pkg>
+// rule above covers anyway. What following everything did expose is any
+// symlink in the project that points elsewhere on disk.
 
 /**
  * Create an HTTP request handler that serves files under `root`.
  *
  * @param {Object} options
  * @param {string} options.root - Absolute path to the project root.
+ * @param {boolean} [options.hmr=true] - Serve the HMR bootstrap and inject it into HTML.
+ * @param {string[]} [options.fsAllow] - Extra directories files may be served from.
+ * @param {string} [options.host] - Host the server is bound to (accepted as a Host header).
+ * @param {string[]|true} [options.allowedHosts] - Extra accepted Host names, or `true` to accept any.
  * @returns {(req: import('node:http').IncomingMessage, res: import('node:http').ServerResponse) => Promise<void>}
  */
-export function createStaticHandler({ root, hmr = true }) {
+export function createStaticHandler({ root, hmr = true, fsAllow = [], host, allowedHosts = [] }) {
+  const fsAccess = createFsAccess({ root, fsAllow });
+  const hostOptions = { host, allowedHosts };
+
+  function deny(res, status, message) {
+    res.statusCode = status;
+    res.setHeader('content-type', 'text/plain; charset=utf-8');
+    res.end(message);
+  }
+
   return async function handle(req, res) {
     try {
+      // DNS rebinding: a page on evil.example re-pointed at 127.0.0.1 sends
+      // "Host: evil.example". Only answer requests addressed to this server.
+      if (!isHostAllowed(req.headers.host, hostOptions)) {
+        deny(res, 403, 'Blocked request: this host is not allowed. Add it to allowedHosts to serve it.');
+        return;
+      }
+
       const urlPath = req.url || '/';
 
       // Serve the inline HMR client bootstrap.
@@ -121,15 +147,18 @@ export function createStaticHandler({ root, hmr = true }) {
         return;
       }
 
-      const resolved = safeResolve(root, urlPath);
-      if (!resolved) {
-        res.statusCode = 404;
-        res.end('Not Found');
+      const segments = urlSegments(urlPath);
+      if (!segments) {
+        deny(res, 400, 'Bad Request');
+        return;
+      }
+      if (hasDotSegment(segments)) {
+        deny(res, 403, 'Forbidden: dotfiles are not served');
         return;
       }
 
       // If the path is a directory (or '/'), try its index.html.
-      let target = resolved;
+      let target = join(fsAccess.roots[0], ...segments);
       try {
         const s = await stat(target);
         if (s.isDirectory()) {
@@ -137,8 +166,12 @@ export function createStaticHandler({ root, hmr = true }) {
           await stat(target); // throws if missing
         }
       } catch {
-        res.statusCode = 404;
-        res.end('Not Found');
+        deny(res, 404, 'Not Found');
+        return;
+      }
+
+      if (!(await fsAccess.isAllowed(segments, target))) {
+        deny(res, 403, 'Forbidden: outside the files the dev server may serve (see fsAllow)');
         return;
       }
 
@@ -153,9 +186,9 @@ export function createStaticHandler({ root, hmr = true }) {
       } else {
         res.end(buf);
       }
-    } catch (err) {
-      res.statusCode = 500;
-      res.end(`Internal Server Error: ${err.message}`);
+    } catch {
+      // No error details: fs messages carry absolute paths.
+      deny(res, 500, 'Internal Server Error');
     }
   };
 }

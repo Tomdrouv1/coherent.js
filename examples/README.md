@@ -14,9 +14,11 @@ pnpm build
 | Basic Usage | `pnpm example:basic` | Simple components, conditional rendering, composition |
 | Components | `pnpm example:components` | Higher-order components, mixins, hydration patterns |
 | Streaming | `pnpm example:streaming` | Streaming SSR for large documents |
-| Performance | `pnpm example:performance` | Benchmarks, caching, recursive components |
 | Hydration | `pnpm example:hydration` | Server-to-client state transfer |
-| Advanced | `pnpm example:advanced` | Master showcase of all features |
+| State | `pnpm example:state` | Reactive state, computed values, persistence |
+| Express | `pnpm example:express` | Express server rendering pages with `res.coherent()` |
+
+`pnpm examples:check` runs every example (CI does too); `pnpm perf:render` benchmarks rendering.
 
 ## All Examples
 
@@ -24,7 +26,6 @@ pnpm build
 
 - **basic-usage.js** — Greeting components, user cards, page composition
 - **component-composition.js** — HOCs, `withState`, `makeHydratable`
-- **master-showcase.js** — Comprehensive demo (SSR + hydration + esbuild)
 - **streaming.js** — Streaming rendering for large datasets
 
 ### State & Events
@@ -46,13 +47,7 @@ pnpm build
 ### Developer Tools
 
 - **devtools-demo.js** — Inspector, profiler, logger
-- **plugin-system-demo.js** — Plugin architecture, hooks, custom extensions
 - **error-boundary-demo.js** — Error handling, fallback UI, recovery
-- **performance-test.js** — Performance monitoring and cache benchmarks
-
-### Testing
-
-- **testing-demo.test.js** — Component testing with Vitest (`pnpm test -- examples/testing-demo.test.js`)
 
 ## Project Examples
 

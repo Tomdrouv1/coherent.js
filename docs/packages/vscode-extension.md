@@ -7,10 +7,9 @@
 Install from the VS Code Marketplace by searching for "Coherent.js Language Support", or build from source:
 
 ```bash
-cd packages/vscode-extension
 pnpm install
-pnpm build
-pnpm package   # produces a .vsix file
+pnpm --filter coherent-language-support run build
+pnpm --filter coherent-language-support run package   # produces a .vsix file
 ```
 
 Then install the `.vsix` file via **Extensions > Install from VSIX...** in VS Code.
@@ -25,7 +24,7 @@ Then install the `.vsix` file via **Extensions > Install from VSIX...** in VS Co
 
 ## Supported Languages
 
-The extension activates for: JavaScript, TypeScript, JSX, and TSX files.
+The extension activates when a JavaScript, TypeScript, JSX or TSX file is opened.
 
 ## Configuration
 
@@ -46,7 +45,7 @@ VS Code Extension (client)
 
 ## Requirements
 
-- VS Code 1.85.0 or later.
+- VS Code 1.125.0 or later.
 - The language server is bundled with the extension; no separate installation is needed.
 
 ## Known Limitations

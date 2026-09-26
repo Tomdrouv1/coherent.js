@@ -7,6 +7,19 @@
  */
 
 /**
+ * Units for `DateFormatter#relative`, largest first, with their length in
+ * seconds (months and years approximated as 30 and 365 days).
+ */
+const RELATIVE_TIME_UNITS = [
+  ['year', 365 * 24 * 60 * 60],
+  ['month', 30 * 24 * 60 * 60],
+  ['week', 7 * 24 * 60 * 60],
+  ['day', 24 * 60 * 60],
+  ['hour', 60 * 60],
+  ['minute', 60]
+];
+
+/**
  * Date Formatter
  * Formats dates according to locale
  */
@@ -105,41 +118,43 @@ export class DateFormatter {
   }
 
   /**
-   * Format relative time (e.g., "2 days ago")
+   * Format relative time (e.g., "2 days ago", "tomorrow", "in 3 weeks")
+   *
+   * Works for past and future dates and uses the largest unit that fits:
+   * seconds, minutes, hours, days, weeks (from 7 days), months (from 30 days)
+   * or years (from 365 days). Values are truncated toward zero, so 36 hours
+   * ago is "yesterday".
    */
   relative(date) {
     const dateObj = date instanceof Date ? date : new Date(date);
-    const now = new Date();
-    const diffMs = now - dateObj;
-    const diffSec = Math.floor(diffMs / 1000);
-    const diffMin = Math.floor(diffSec / 60);
-    const diffHour = Math.floor(diffMin / 60);
-    const diffDay = Math.floor(diffHour / 24);
+    // Negative for the past, positive for the future. Rounded to the second so
+    // the milliseconds elapsed since the caller computed `date` do not turn
+    // "tomorrow" into "in 23 hours".
+    const diffSec = Math.round((dateObj.getTime() - Date.now()) / 1000);
+    const absSec = Math.abs(diffSec);
+
+    let unit = 'second';
+    let amount = absSec;
+    for (const [name, seconds] of RELATIVE_TIME_UNITS) {
+      if (absSec >= seconds) {
+        unit = name;
+        amount = Math.floor(absSec / seconds);
+        break;
+      }
+    }
+    const value = diffSec < 0 ? -amount : amount;
 
     if (typeof Intl !== 'undefined' && Intl.RelativeTimeFormat) {
       const rtf = new Intl.RelativeTimeFormat(this.locale, { numeric: 'auto' });
-      
-      if (diffDay > 0) {
-        return rtf.format(-diffDay, 'day');
-      } else if (diffHour > 0) {
-        return rtf.format(-diffHour, 'hour');
-      } else if (diffMin > 0) {
-        return rtf.format(-diffMin, 'minute');
-      } else {
-        return rtf.format(-diffSec, 'second');
-      }
+      return rtf.format(value, unit);
     }
 
     // Fallback
-    if (diffDay > 0) {
-      return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
-    } else if (diffHour > 0) {
-      return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`;
-    } else if (diffMin > 0) {
-      return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
-    } else {
+    if (unit === 'second') {
       return 'just now';
     }
+    const label = `${amount} ${unit}${amount > 1 ? 's' : ''}`;
+    return value < 0 ? `${label} ago` : `in ${label}`;
   }
 }
 

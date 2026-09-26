@@ -9,6 +9,11 @@ on:
 permissions:
   contents: read
 
+# A newer push to the same branch or PR supersedes the running checks.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 env:
   PNPM_CONFIG_MINIMUM_RELEASE_AGE: "0"
 
@@ -50,13 +55,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
+      # Build outputs are not cached: restoring packages/*/dist from an older
+      # commit left files the current sources no longer produce, and the
+      # gates below (API surface, publint, bundle size) then checked them.
       - name: Setup build cache
         uses: actions/cache@v6
         with:
-          path: |
-            ~/.cache
-            ./packages/*/dist
-            ./website/dist
+          path: ~/.cache
           key: ${{ runner.os }}-build-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-build-${{ hashFiles('**/pnpm-lock.yaml') }}-
@@ -103,6 +108,12 @@ jobs:
       - name: Type check packages
         run: pnpm run typecheck:packages
 
+      # Budgets are ~20x the measured medians: this catches order-of-magnitude
+      # regressions (a default cache once took a page from 1 ms to 500 ms),
+      # not runner noise.
+      - name: Rendering performance budget
+        run: pnpm run perf:gate
+
       - name: Unit tests with coverage
         run: pnpm run test:coverage:ci
         env:
@@ -132,6 +143,11 @@ jobs:
 
       - name: Build website (sanity check)
         run: pnpm run website:build
+
+      # Examples are the first thing people run; half of them used to crash
+      # on APIs that no longer existed.
+      - name: Run examples
+        run: pnpm run examples:check
 
   e2e:
     name: Playwright E2E

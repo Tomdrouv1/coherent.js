@@ -59,5 +59,8 @@
   "sideEffects": false,
   "devDependencies": {
     "expect-type": "1.4.0"
+  },
+  "peerDependencies": {
+    "@coherent.js/core": "workspace:^"
   }
 }

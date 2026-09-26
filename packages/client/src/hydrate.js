@@ -9,15 +9,29 @@
 
 import { eventDelegation, handlerRegistry } from './events/index.js';
 import { extractState, detectMismatch, reportMismatches } from './hydration/index.js';
+import { isElementVNode, readElement, pairElementChildren } from './hydration/vnode.js';
+import { patchRoot } from './hydration/patch.js';
+
+/**
+ * Live hydrations by container, so hydrating a container again replaces the
+ * previous hydration instead of stacking a second set of handlers on it.
+ * @type {WeakMap<Element, {unmount: Function}>}
+ */
+const hydratedContainers = new WeakMap();
 
 /**
  * Hydrate a server-rendered component
+ *
+ * Hydrating a container that is already hydrated unmounts the previous
+ * hydration first.
  *
  * @param {Function} component - Component function that returns virtual DOM
  * @param {HTMLElement} container - DOM element containing server-rendered HTML
  * @param {Object} [options] - Hydration options
  * @param {Object} [options.initialState] - Initial state to override extracted state
- * @param {boolean} [options.detectMismatch=true] - Enable mismatch detection (dev mode)
+ * @param {boolean} [options.detectMismatch] - Compare the server DOM with the
+ *   component's output. Defaults to on when `strict` or `onMismatch` is given
+ *   or `process.env.NODE_ENV` is `'development'`, off otherwise
  * @param {boolean} [options.strict=false] - Throw on mismatch instead of warning
  * @param {Function} [options.onMismatch] - Custom mismatch handler
  * @param {Object} [options.props] - Additional props to pass to component
@@ -39,32 +53,50 @@ export function hydrate(component, container, options = {}) {
     );
   }
 
+  // One hydration per container: drop the previous one's handlers
+  hydratedContainers.get(container)?.unmount();
+
   // Initialize event delegation (idempotent)
   eventDelegation.initialize();
 
   // Extract options with defaults
   const {
     initialState: providedState,
-    // eslint-disable-next-line no-restricted-globals -- statically replaced by esbuild `define` at build time
-    detectMismatch: shouldDetectMismatch = process.env.NODE_ENV !== 'production',
     strict = false,
     onMismatch,
     props: additionalProps = {},
   } = options;
 
+  // Mismatch detection walks the whole DOM: only when asked for, implied by
+  // `strict` or `onMismatch`, or in development
+  const shouldDetectMismatch = options.detectMismatch ??
+    (strict || typeof onMismatch === 'function' || isDevelopment());
+
   // Extract state from DOM data-state attribute, or use provided initial state
   let state = providedState ?? extractState(container) ?? {};
+  let mounted = true;
+  let root = container;
 
-  // Store event listeners for cleanup
-  const eventListeners = [];
+  // Handler ids and the attributes pointing at them, from the latest render
+  let registeredHandlerIds = new Set();
+  let boundAttributes = [];
 
-  // Track registered handler IDs for cleanup
-  const registeredHandlerIds = new Set();
+  const currentProps = () => ({ ...additionalProps, ...state });
 
-  // Create component reference for handler registry
+  // Component reference handed to event handlers (event.state, event.setState, ...)
   const componentRef = {
+    component,
+    get state() {
+      return state;
+    },
+    get props() {
+      return currentProps();
+    },
     getState: () => state,
     setState: (newState) => {
+      if (!mounted) {
+        return;
+      }
       if (typeof newState === 'function') {
         state = { ...state, ...newState(state) };
       } else {
@@ -76,8 +108,7 @@ export function hydrate(component, container, options = {}) {
   };
 
   // Generate virtual DOM from component
-  const componentProps = { ...additionalProps, ...state };
-  let virtualDOM = component(componentProps);
+  let virtualDOM = renderComponent(component, currentProps());
 
   // Detect mismatches if enabled
   if (shouldDetectMismatch) {
@@ -96,42 +127,57 @@ export function hydrate(component, container, options = {}) {
   }
 
   // Walk virtual DOM and register event handlers
-  registerEventHandlers(container, virtualDOM, componentRef, registeredHandlerIds);
+  registerEventHandlers(root, virtualDOM, componentRef, registeredHandlerIds, boundAttributes);
 
   /**
    * Re-render the component with current state
    */
   function doRerender() {
-    const newProps = { ...additionalProps, ...state };
-    virtualDOM = component(newProps);
+    if (!mounted) {
+      return;
+    }
 
-    // Update DOM with new virtual DOM
-    // For now, we do a simple patch - just update text content and attributes
-    // Full reconciliation would be in a separate module
-    patchDOM(container, virtualDOM);
+    const previousVirtualDOM = virtualDOM;
+    virtualDOM = renderComponent(component, currentProps());
 
-    // Re-register event handlers after DOM update
-    registerEventHandlers(container, virtualDOM, componentRef, registeredHandlerIds);
+    // Update the DOM to match the new virtual DOM
+    const previousRoot = root;
+    root = patchRoot(root, previousVirtualDOM, virtualDOM);
+    if (root !== previousRoot) {
+      hydratedContainers.delete(previousRoot);
+      hydratedContainers.set(root, controller);
+      root.setAttribute('data-coherent-hydrated', 'true');
+    }
+
+    // Swap handlers: register the new render's, then drop the previous ones
+    const previousIds = registeredHandlerIds;
+    const previousAttributes = boundAttributes;
+    registeredHandlerIds = new Set();
+    boundAttributes = [];
+    registerEventHandlers(root, virtualDOM, componentRef, registeredHandlerIds, boundAttributes);
+    releaseHandlers(previousIds, previousAttributes);
   }
 
   /**
-   * Unmount the component and clean up
+   * Unmount the component and clean up. Terminal: later setState() and
+   * rerender() calls do nothing.
    */
   function unmount() {
-    // Remove registered event handlers
-    for (const handlerId of registeredHandlerIds) {
-      handlerRegistry.unregister(handlerId);
+    if (!mounted) {
+      return;
     }
-    registeredHandlerIds.clear();
+    mounted = false;
 
-    // Remove direct event listeners
-    for (const { element, event, handler, options } of eventListeners) {
-      element.removeEventListener(event, handler, options);
+    releaseHandlers(registeredHandlerIds, boundAttributes);
+    registeredHandlerIds = new Set();
+    boundAttributes = [];
+
+    if (hydratedContainers.get(root) === controller) {
+      hydratedContainers.delete(root);
     }
-    eventListeners.length = 0;
 
     // Clear container's hydration marker
-    container.removeAttribute('data-coherent-hydrated');
+    root.removeAttribute('data-coherent-hydrated');
   }
 
   /**
@@ -139,6 +185,9 @@ export function hydrate(component, container, options = {}) {
    * @param {Object} [newProps] - New props to merge
    */
   function rerender(newProps) {
+    if (!mounted) {
+      return;
+    }
     if (newProps) {
       Object.assign(additionalProps, newProps);
     }
@@ -161,33 +210,88 @@ export function hydrate(component, container, options = {}) {
     componentRef.setState(newState);
   }
 
-  // Mark container as hydrated
-  container.setAttribute('data-coherent-hydrated', 'true');
-
   // Return control object
-  return {
+  const controller = {
     unmount,
     rerender,
     getState,
     setState,
   };
+
+  // Mark container as hydrated
+  container.setAttribute('data-coherent-hydrated', 'true');
+  hydratedContainers.set(container, controller);
+
+  return controller;
+}
+
+/**
+ * Whether the app runs in development. `process.env.NODE_ENV` is read at
+ * runtime — this package's build leaves it for the app's bundler to replace —
+ * and counts as production when there is no `process` at all.
+ * @private
+ */
+function isDevelopment() {
+  try {
+    // eslint-disable-next-line no-restricted-globals -- replaced by the app's bundler; guarded for browsers without one
+    return process.env.NODE_ENV === 'development';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Call a component and resolve returned function components, as core does
+ * @private
+ */
+function renderComponent(component, props) {
+  let vNode = component(props);
+  for (let guard = 0; typeof vNode === 'function' && vNode.length === 0 && guard < 100; guard++) {
+    vNode = vNode();
+  }
+  return vNode;
+}
+
+/**
+ * Unregister handler ids and remove the data-coherent-* attributes that still
+ * point at them
+ * @private
+ */
+function releaseHandlers(handlerIds, attributes) {
+  for (const handlerId of handlerIds) {
+    handlerRegistry.unregister(handlerId);
+  }
+  for (const { element, name, handlerId } of attributes) {
+    if (element.getAttribute(name) === handlerId) {
+      element.removeAttribute(name);
+    }
+  }
+}
+
+/** Prop names whose lower-cased suffix is not the DOM event type. */
+const EVENT_TYPE_ALIASES = {
+  doubleclick: 'dblclick',
+};
+
+/**
+ * DOM event type for an `on*` prop: onClick -> click, onDoubleClick -> dblclick
+ * @private
+ */
+function toEventType(propName) {
+  const type = propName.slice(2).toLowerCase();
+  return EVENT_TYPE_ALIASES[type] ?? type;
 }
 
 /**
  * Walk virtual DOM tree and register event handlers
  * @private
  */
-function registerEventHandlers(domElement, vNode, componentRef, handlerIds) {
-  if (!vNode || typeof vNode !== 'object' || Array.isArray(vNode)) {
+function registerEventHandlers(domElement, vNode, componentRef, handlerIds, boundAttributes) {
+  if (!domElement || !isElementVNode(vNode)) {
     return;
   }
 
-  const tagName = Object.keys(vNode)[0];
-  const props = vNode[tagName];
-
-  if (!props || typeof props !== 'object') {
-    return;
-  }
+  const { tagName, props } = readElement(vNode);
 
   // Look for event handler props (on* functions)
   const eventProps = Object.keys(props).filter(
@@ -195,8 +299,11 @@ function registerEventHandlers(domElement, vNode, componentRef, handlerIds) {
   );
 
   for (const eventProp of eventProps) {
-    const eventType = eventProp.slice(2).toLowerCase(); // onClick -> click
+    const eventType = toEventType(eventProp); // onClick -> click
     const handler = props[eventProp];
+
+    // Delegate this event type even if it is not one of the defaults
+    eventDelegation.listen(eventType);
 
     // Generate unique handler ID
     const handlerId = `${tagName}-${eventType}-${Math.random().toString(36).slice(2, 9)}`;
@@ -209,118 +316,15 @@ function registerEventHandlers(domElement, vNode, componentRef, handlerIds) {
     const attrName = `data-coherent-${eventType}`;
     if (domElement.setAttribute) {
       domElement.setAttribute(attrName, handlerId);
+      boundAttributes.push({ element: domElement, name: attrName, handlerId });
     }
   }
 
-  // Recursively process children
-  const children = getVNodeChildren(props);
-  const domChildren = getSignificantDOMChildren(domElement);
-
-  children.forEach((child, index) => {
-    if (child && typeof child === 'object' && !Array.isArray(child) && domChildren[index]) {
-      registerEventHandlers(domChildren[index], child, componentRef, handlerIds);
-    }
-  });
-}
-
-/**
- * Simple DOM patching for re-renders
- * @private
- */
-function patchDOM(domElement, vNode) {
-  if (!vNode || !domElement) {
-    return;
+  // Pair element children the way the server rendered them: null, booleans,
+  // nested arrays and text never shift which element a child binds to.
+  for (const [childVNode, childElement] of pairElementChildren(tagName, props, domElement)) {
+    registerEventHandlers(childElement, childVNode, componentRef, handlerIds, boundAttributes);
   }
-
-  // Handle text/number
-  if (typeof vNode === 'string' || typeof vNode === 'number') {
-    if (domElement.textContent !== String(vNode)) {
-      domElement.textContent = String(vNode);
-    }
-    return;
-  }
-
-  // Handle arrays
-  if (Array.isArray(vNode)) {
-    return; // Array patching would need reconciliation
-  }
-
-  if (typeof vNode !== 'object') {
-    return;
-  }
-
-  const tagName = Object.keys(vNode)[0];
-  const props = vNode[tagName] || {};
-
-  // Update attributes
-  const attributeMap = {
-    className: 'class',
-    htmlFor: 'for',
-  };
-
-  for (const [key, value] of Object.entries(props)) {
-    if (key === 'children' || key === 'text' || key.startsWith('on')) {
-      continue;
-    }
-
-    const attrName = attributeMap[key] || key;
-
-    if (value === true) {
-      domElement.setAttribute(attrName, '');
-    } else if (value === false || value === null || value === undefined) {
-      domElement.removeAttribute(attrName);
-    } else if (domElement.getAttribute(attrName) !== String(value)) {
-      domElement.setAttribute(attrName, String(value));
-    }
-  }
-
-  // Handle text content
-  if (props.text !== undefined) {
-    const textContent = String(props.text);
-    if (domElement.textContent !== textContent) {
-      domElement.textContent = textContent;
-    }
-    return;
-  }
-
-  // Recursively patch children
-  const children = getVNodeChildren(props);
-  const domChildren = getSignificantDOMChildren(domElement);
-
-  children.forEach((child, index) => {
-    if (domChildren[index]) {
-      patchDOM(domChildren[index], child);
-    }
-  });
-}
-
-/**
- * Get children from virtual node props
- * @private
- */
-function getVNodeChildren(props) {
-  if (!props) return [];
-  if (props.children) {
-    return Array.isArray(props.children) ? props.children : [props.children];
-  }
-  return [];
-}
-
-/**
- * Get significant DOM children (elements and non-whitespace text)
- * @private
- */
-function getSignificantDOMChildren(element) {
-  if (!element || !element.childNodes) return [];
-
-  return Array.from(element.childNodes).filter((node) => {
-    if (node.nodeType === 1) return true; // Element
-    if (node.nodeType === 3) {
-      // Text node
-      return node.textContent && node.textContent.trim().length > 0;
-    }
-    return false;
-  });
 }
 
 export default hydrate;

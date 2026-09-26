@@ -170,7 +170,7 @@ export function generateExpressServer(options = {}) {
 
   const imports = [
     `import express from 'express';`,
-    `import { render } from '@coherent.js/core';`
+    `import { setupCoherent } from '@coherent.js/integrations/express';`
   ];
 
   if (hasApi) imports.push(`import apiRoutes from './api/routes.js';`);
@@ -187,10 +187,28 @@ import { HomePage } from './components/HomePage.js';
 const app = express();
 const PORT = Number(process.env.PORT) || ${port};
 
+// Default HTML shell wrapping rendered components. Override it per route with
+// res.coherent(component, { template }).
+const APP_HTML_TEMPLATE = \`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coherent.js App</title>
+</head>
+<body>
+{{content}}
+</body>
+</html>\`;
+
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
+
+// Setup Coherent.js: adds res.coherent(component), which renders the component
+// into APP_HTML_TEMPLATE and sends it as HTML
+setupCoherent(app, { template: APP_HTML_TEMPLATE });
 
 ${hasDatabase ? `// Initialize database
 await initDatabase();
@@ -203,21 +221,9 @@ app.use('/api/protected', authMiddleware);
 ${hasApi ? `// API routes - convert Coherent.js router to Express middleware
 app.use('/api', apiRoutes.toExpressRouter(express));
 ` : ''}
-// Main route - render Coherent.js component to HTML
+// Main route - render the Coherent.js component into APP_HTML_TEMPLATE
 app.get('/', (_req, res) => {
-  const content = render(HomePage({}));
-  const html = \`<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Coherent.js App</title>
-</head>
-<body>
-  \${content}
-</body>
-</html>\`;
-  res.type('html').send(html);
+  res.coherent(HomePage({}));
 });
 
 // Error handling (Express identifies error middleware by its 4-parameter signature)
@@ -262,9 +268,8 @@ const fastify = Fastify({
   logger: true
 });
 
-// Default HTML shell wrapping rendered components. Override per-route by
-// passing a custom \`template\` to setupCoherent or by responding with a
-// pre-rendered string.
+// Default HTML shell wrapping rendered components. Override it per route with
+// reply.coherent(component, { template }).
 const APP_HTML_TEMPLATE = \`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -306,9 +311,9 @@ await fastify.register(async (scope) => {
   });
 }, { prefix: '/api' });
 ` : ''}
-// Main route - return Coherent.js component (auto-rendered by plugin)
-fastify.get('/', async () => {
-  return HomePage({});
+// Main route - render the Coherent.js component into APP_HTML_TEMPLATE
+fastify.get('/', async (_request, reply) => {
+  return reply.coherent(HomePage({}));
 });
 
 // Start server
@@ -327,7 +332,7 @@ try {
  * Generate Koa server setup
  */
 export function generateKoaServer(options = {}) {
-  const { port = 3000, hasApi = false, hasDatabase = false, hasAuth = false } = options;
+  const { port = 3000, hasApi = false, hasDatabase = false, hasAuth = false, isTypeScript = false } = options;
 
   const imports = [
     `import Koa from 'koa';`,
@@ -353,9 +358,8 @@ const router = new Router();
 
 const PORT = Number(process.env.PORT) || ${port};
 
-// Default HTML shell wrapping rendered components. Override per-route by
-// passing a custom \`template\` to setupCoherent or by setting ctx.body to a
-// pre-rendered string.
+// Default HTML shell wrapping rendered components. Override it per route with
+// ctx.coherent(component, { template }).
 const APP_HTML_TEMPLATE = \`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -374,8 +378,14 @@ await initDatabase();
 ${hasApi ? `// API routes — delegate /api/* to the Coherent.js object router.
 // Mounted before koaBody() so the router can parse the request body itself;
 // ctx.respond = false hands the raw response over to the router.
-app.use(async (ctx, next) => {
-  if (ctx.path.startsWith('/api')) {
+${hasAuth ? `// /api/auth and /api/protected are served by the Koa router below, so they
+// are left to Koa instead of being answered (with a 404) by the object router.
+const KOA_API_PREFIXES = ['/api/auth', '/api/protected'];
+const isKoaApiPath = (path${isTypeScript ? ': string' : ''}) =>
+  KOA_API_PREFIXES.some((prefix) => path === prefix || path.startsWith(prefix + '/'));
+
+` : ''}app.use(async (ctx, next) => {
+  if (ctx.path.startsWith('/api')${hasAuth ? ' && !isKoaApiPath(ctx.path)' : ''}) {
     ctx.respond = false;
     ctx.req.url = (ctx.req.url || '').replace(/^\\/api/, '') || '/';
     await apiRoutes.handle(ctx.req, ctx.res);
@@ -388,7 +398,8 @@ app.use(async (ctx, next) => {
 app.use(koaBody());
 app.use(serve('./public'));
 
-// Setup Coherent.js (wraps rendered components in APP_HTML_TEMPLATE)
+// Setup Coherent.js: adds ctx.coherent(component), which renders the component
+// into APP_HTML_TEMPLATE and sets it as the HTML response body
 setupCoherent(app, { template: APP_HTML_TEMPLATE });
 
 ${hasAuth ? `// Auth routes (public). Mount before the protected scope.
@@ -397,9 +408,9 @@ router.use('/api/auth', authRouter.routes(), authRouter.allowedMethods());
 // Add new protected routes here, not as a top-level app.use().
 router.use('/api/protected', authMiddleware);
 ` : ''}
-// Main route - set body to Coherent.js component (auto-rendered by middleware)
+// Main route - render the Coherent.js component into APP_HTML_TEMPLATE
 router.get('/', async (ctx) => {
-  ctx.body = HomePage({});
+  ctx.coherent(HomePage({}));
 });
 
 app.use(router.routes());

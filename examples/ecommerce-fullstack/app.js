@@ -1,21 +1,28 @@
 /**
  * Coherent.js E-commerce Full-Stack Application
  *
- * Demonstrates production-ready features:
- * - Hybrid FP/OOP architecture
- * - Tree shaking optimization
- * - LRU caching (247 renders/sec)
+ * Demonstrates:
+ * - Hybrid FP/OOP architecture (pure object components, OOP state classes)
+ * - Server-side rendering with @coherent.js/core
+ * - A JSON API built on the @coherent.js/api object router
  * - Enhanced state management
- * - Performance monitoring
+ * - Performance monitoring (NODE_ENV=development)
+ *
+ * Run: node app.js (PORT=0 picks a free port), then open / or /api/products.
+ * The components' onclick handlers only run in a browser after hydration;
+ * the server-rendered page is static, and state changes go through the API.
  */
 
-import { createCoherent } from '@coherent.js/core';
-import { createAPI } from '@coherent.js/api';
+import { createServer } from 'node:http';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { render } from '@coherent.js/core';
+import { createRouter, ConflictError, NotFoundError } from '@coherent.js/api';
 import { createFormState, createListState, createModalState } from '@coherent.js/state';
 
 // Development tools (tree-shakable - won't be in production bundle)
 import { logComponentTree } from '@coherent.js/devtools/visualizer';
-import { createPerformanceDashboard } from '@coherent.js/devtools/performance';
+import { createPerformanceDashboard, showPerformanceDashboard } from '@coherent.js/devtools/performance';
 
 // ============================================================================
 // OOP STATE MANAGEMENT (Enhanced Patterns)
@@ -378,94 +385,182 @@ const App = () => ({
 });
 
 // ============================================================================
-// API ENDPOINTS (LRU Caching Enabled)
+// API ENDPOINTS (@coherent.js/api object router)
 // ============================================================================
 
-const api = createAPI({
-  routes: {
-    'GET /api/products': async () => {
-      return {
-        status: 200,
-        body: productCatalog.sortedItems
-      };
-    },
+/**
+ * Send a JSON response with a status other than 200.
+ * The router hands handlers a plain node:http response.
+ */
+function sendJson(res, statusCode, body) {
+  res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(body));
+}
 
-    'POST /api/products': async ({ body }) => {
-      productCatalog.addItem({ ...body, id: Date.now() });
-      return { status: 201, body: { message: 'Product created' } };
-    },
+function cartSummary() {
+  return {
+    items: shoppingCart.getValue('items') || [],
+    total: shoppingCart.getValue('total') || 0
+  };
+}
 
-    'GET /api/cart': async () => {
-      return {
-        status: 200,
-        body: {
-          items: shoppingCart.getValue('items') || [],
-          total: shoppingCart.getValue('total') || 0
+let nextProductId = 100;
+
+// Handlers return data (sent as JSON) or answer through `res`; a thrown
+// ApiError (NotFoundError, ConflictError...) is answered with its status, and
+// a body that fails `validation` gets a 400 listing the invalid fields.
+const api = createRouter({
+  api: {
+    products: {
+      GET: () => productCatalog.sortedItems,
+
+      POST: {
+        validation: {
+          name: { type: 'string', required: true, minLength: 1, maxLength: 100 },
+          price: { type: 'number', required: true, minimum: 0 },
+          category: { type: 'string', default: 'misc' },
+          inStock: { type: 'boolean', default: true }
+        },
+        handler: (req, res) => {
+          const product = { ...req.body, id: nextProductId++ };
+          productCatalog.addItem(product);
+          sendJson(res, 201, { message: 'Product created', product });
         }
-      };
+      }
     },
 
-    'POST /api/cart/add': async ({ body }) => {
-      shoppingCart.addToCart(body);
-      return { status: 200, body: { message: 'Item added to cart' } };
-    },
+    cart: {
+      GET: () => cartSummary(),
 
-    'GET /api/health': async () => {
-      return {
-        status: 200,
-        body: {
-          status: 'healthy',
-          performance: '247 renders/sec',
-          architecture: 'hybrid FP/OOP',
-          treeShaking: '79.5% reduction'
+      add: {
+        // Only a product id is accepted: name and price come from the catalog,
+        // never from the client.
+        POST: {
+          validation: { id: { type: 'integer', required: true } },
+          handler: (req) => {
+            const product = productCatalog.sortedItems.find((item) => item.id === req.body.id);
+            if (!product) throw new NotFoundError(`Product ${req.body.id} not found`);
+            if (!product.inStock) throw new ConflictError(`${product.name} is out of stock`);
+
+            shoppingCart.addToCart(product);
+            return { message: 'Item added to cart', ...cartSummary() };
+          }
         }
-      };
+      }
+    },
+
+    health: {
+      GET: () => ({
+        status: 'healthy',
+        architecture: 'hybrid FP/OOP',
+        products: productCatalog.sortedItems.length
+      })
     }
-  },
-
-  // Enable LRU caching for optimal performance
-  enableLRUCaching: true,
-  cacheSize: 1000,
-  enableSmartRouting: true
-});
-
-// ============================================================================
-// COHERENT.JS APPLICATION SETUP
-// ============================================================================
-
-const app = createCoherent({
-  components: { App },
-
-  // Performance optimizations
-  enableCaching: true,
-  enableCompression: true,
-  enableSecurityHeaders: true,
-
-  // Development tools (tree-shakable - excluded from production)
-  devtools: process.env.NODE_ENV === 'development' ? {
-    visualizer: true,
-    performance: true,
-    errors: true
-  } : false,
-
-  // Hybrid architecture configuration
-  architecture: {
-    stateManagement: 'oop', // Enhanced state patterns
-    componentComposition: 'fp', // Pure functional components
-    treeShaking: true
   }
 });
 
-// Development monitoring (won't be in production bundle)
-if (process.env.NODE_ENV === 'development') {
-  console.log('🔍 Component Tree Visualization:');
-  logComponentTree(App(), 'App', { colorOutput: true });
+// ============================================================================
+// SERVER (node:http: pages rendered by Coherent.js, /api/* by the router)
+// ============================================================================
 
-  console.log('\n📊 Performance Dashboard:');
-  const dashboard = createPerformanceDashboard();
-  dashboard.start();
+/**
+ * Full HTML document for the storefront
+ */
+export function renderPage() {
+  return `<!DOCTYPE html>${render({
+    html: {
+      lang: 'en',
+      children: [
+        {
+          head: {
+            children: [
+              { meta: { charset: 'utf-8' } },
+              { meta: { name: 'viewport', content: 'width=device-width, initial-scale=1' } },
+              { title: { text: 'Coherent.js E-commerce Demo' } }
+            ]
+          }
+        },
+        { body: { style: 'margin: 0; font-family: system-ui, sans-serif;', children: [App()] } }
+      ]
+    }
+  })}`;
 }
 
-// Export for production
-export default app;
-export { api, productCatalog, shoppingCart, userAuth };
+/**
+ * Request handler: the API router for /api/*, the rendered page for GET /
+ */
+export async function handleRequest(req, res) {
+  const { pathname } = new URL(req.url || '/', 'http://localhost');
+
+  if (pathname === '/api' || pathname.startsWith('/api/')) {
+    await api.handle(req, res);
+    return;
+  }
+
+  if ((req.method === 'GET' || req.method === 'HEAD') && pathname === '/') {
+    try {
+      const html = renderPage();
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(html);
+    } catch (error) {
+      console.error('Render failed:', error);
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end('Internal Server Error');
+    }
+    return;
+  }
+
+  res.writeHead(404, { 'Content-Type': 'text/plain' });
+  res.end('Not Found');
+}
+
+/**
+ * Start the storefront server (PORT=0 picks a free port).
+ *
+ * With NODE_ENV=development it also prints the component tree and records
+ * every page render and API request in a performance dashboard, printed
+ * every 30 seconds.
+ */
+export function startServer(port = Number(process.env.PORT ?? 3000)) {
+  let dashboard = null;
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 Component Tree Visualization:');
+    logComponentTree(App(), 'App', { colorOutput: true });
+    dashboard = createPerformanceDashboard();
+    dashboard.startMonitoring();
+  }
+
+  const server = createServer(async (req, res) => {
+    const started = performance.now();
+    await handleRequest(req, res);
+    if (!dashboard) return;
+    const duration = performance.now() - started;
+    if (req.url?.startsWith('/api')) {
+      dashboard.recordAPIRequest(duration, 'dynamic');
+    } else {
+      dashboard.recordComponentRender(duration, 'App');
+    }
+  });
+
+  if (dashboard) {
+    const timer = setInterval(() => showPerformanceDashboard(dashboard), 30_000);
+    timer.unref();
+    server.on('close', () => {
+      clearInterval(timer);
+      dashboard.stopMonitoring();
+    });
+  }
+
+  server.listen(port, () => {
+    console.log(`🛒 Coherent.js e-commerce demo: http://localhost:${server.address().port}`);
+  });
+  return server;
+}
+
+// `node app.js` starts the server; importing the module does not.
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  startServer();
+}
+
+export default handleRequest;
+export { api, App, productCatalog, shoppingCart, userAuth };

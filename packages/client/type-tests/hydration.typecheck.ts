@@ -4,8 +4,8 @@
  * Tests type correctness for:
  * - hydrate() function (clean API)
  * - SerializableState type
- * - EventHandler types
- * - ClientComponent interface
+ * - Delegated event handler types (CoherentEvent)
+ * - State serialization and mismatch detection
  * - Integration with core types
  *
  * @module @coherent.js/client/type-tests/hydration
@@ -15,20 +15,15 @@ import { expectTypeOf } from 'expect-type';
 import type {
   // Core types from client (re-exported from core)
   CoherentNode,
-  CoherentElement,
-  StrictCoherentElement,
   CoherentComponent,
-  ComponentProps,
   // Hydration types
   HydrateControl,
   HydrationOptions,
   HydrationMismatch,
-  HydrationResult,
-  BatchHydrationResult,
   // State types
   SerializableState,
-  SerializablePrimitive,
   // Event handler types
+  CoherentEvent,
   EventHandler,
   ClickHandler,
   KeyHandler,
@@ -41,13 +36,6 @@ import type {
   TouchHandler,
   WheelHandler,
   StateAwareHandler,
-  // Client component types
-  ClientComponent,
-  ComponentFactory,
-  ComponentRegistryEntry,
-  // Event delegation types
-  EventDelegation,
-  HandlerRegistry,
 } from '@coherent.js/client';
 
 import {
@@ -68,34 +56,25 @@ import {
 // Test: hydrate() function (clean API)
 // ============================================================================
 
-// hydrate() should accept a CoherentComponent and return HydrateControl
 declare const MyComponent: CoherentComponent;
 declare const container: HTMLElement;
 
 const control = hydrate(MyComponent, container);
 expectTypeOf(control).toMatchTypeOf<HydrateControl>();
-
-// HydrateControl should have unmount, rerender, getState, setState
-expectTypeOf(control.unmount).toBeFunction();
-expectTypeOf(control.rerender).toBeFunction();
-expectTypeOf(control.getState).toBeFunction();
-expectTypeOf(control.setState).toBeFunction();
-
-// getState should return SerializableState
 expectTypeOf(control.getState()).toMatchTypeOf<SerializableState>();
 
-// setState should accept partial state or updater function
 control.setState({ count: 1 });
 control.setState((prev) => ({ count: (prev.count as number) + 1 }));
-
-// rerender should accept optional new props
 control.rerender();
 control.rerender({ title: 'New Title' });
-
-// unmount should have no parameters
 control.unmount();
 
-// hydrate() should accept options
+// Plain function components with props work too
+const Counter = ({ count = 0 }: { count?: number }): CoherentNode => ({
+  button: { text: String(count) },
+});
+expectTypeOf(hydrate(Counter, container)).toMatchTypeOf<HydrateControl>();
+
 const controlWithOptions = hydrate(MyComponent, container, {
   initialState: { count: 0 },
   detectMismatch: true,
@@ -107,22 +86,16 @@ const controlWithOptions = hydrate(MyComponent, container, {
 });
 expectTypeOf(controlWithOptions).toMatchTypeOf<HydrateControl>();
 
-// ============================================================================
-// Test: StateAwareHandler used downstream (kept for clickHandler reference)
-// ============================================================================
-
-const clickHandler: StateAwareHandler<{ count: number }, MouseEvent> = (event, state, setState) => {
-  expectTypeOf(event).toMatchTypeOf<MouseEvent>();
-  expectTypeOf(state).toMatchTypeOf<{ count: number }>();
-  expectTypeOf(setState).toBeFunction();
-  setState({ count: state.count + 1 });
-};
+// Options that hydrate() never read are gone
+// @ts-expect-error timeout is not a hydrate() option
+const withTimeout: HydrationOptions = { timeout: 1000 };
+// @ts-expect-error onError is not a hydrate() option
+const withOnError: HydrationOptions = { onError: () => {} };
 
 // ============================================================================
 // Test: SerializableState type
 // ============================================================================
 
-// SerializableState should allow primitives
 const stateWithPrimitives: SerializableState = {
   count: 42,
   name: 'John',
@@ -131,313 +104,160 @@ const stateWithPrimitives: SerializableState = {
   maybe: undefined,
 };
 
-// SerializableState should allow arrays of primitives
-const stateWithArrays: SerializableState = {
-  numbers: [1, 2, 3],
-  names: ['a', 'b', 'c'],
-  flags: [true, false],
-};
-
-// SerializableState should allow nested objects
 const stateWithNested: SerializableState = {
-  user: {
-    name: 'John',
-    age: 30,
-    address: {
-      city: 'NYC',
-      zip: '10001',
-    },
-  },
+  user: { name: 'John', address: { city: 'NYC' } },
+  todos: [{ id: 1, done: false }],
+  tags: ['a', 'b'],
 };
 
-// SerializableState should allow arrays of objects
-const stateWithObjectArrays: SerializableState = {
-  todos: [
-    { id: 1, text: 'Task 1', completed: false },
-    { id: 2, text: 'Task 2', completed: true },
-  ],
-};
-
-// Type checking - these should all be assignable to SerializableState
 expectTypeOf(stateWithPrimitives).toMatchTypeOf<SerializableState>();
-expectTypeOf(stateWithArrays).toMatchTypeOf<SerializableState>();
 expectTypeOf(stateWithNested).toMatchTypeOf<SerializableState>();
-expectTypeOf(stateWithObjectArrays).toMatchTypeOf<SerializableState>();
 
 // ============================================================================
-// Test: EventHandler types
+// Test: delegated handlers receive a CoherentEvent
 // ============================================================================
 
-// Generic EventHandler should accept Event, element, and optional data
-const genericHandler: EventHandler = (event, element, data) => {
-  expectTypeOf(event).toMatchTypeOf<Event>();
-  expectTypeOf(element).toMatchTypeOf<HTMLElement>();
-  expectTypeOf(data).toBeAny();
+const genericHandler: EventHandler = (event) => {
+  expectTypeOf(event).toMatchTypeOf<CoherentEvent>();
+  expectTypeOf(event.originalEvent).toMatchTypeOf<Event>();
+  expectTypeOf(event.target).toMatchTypeOf<Element>();
+  expectTypeOf(event.defaultPrevented).toBeBoolean();
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
 };
 
-// ClickHandler should receive MouseEvent
-const myClickHandler: ClickHandler = (event, element) => {
-  expectTypeOf(event).toMatchTypeOf<MouseEvent>();
-  expectTypeOf(element).toMatchTypeOf<HTMLElement>();
-  // MouseEvent-specific properties should be available
-  event.clientX;
-  event.clientY;
-  event.button;
+const myClickHandler: ClickHandler = (event) => {
+  expectTypeOf(event.originalEvent).toMatchTypeOf<MouseEvent>();
+  event.originalEvent.clientX;
 };
 
-// KeyHandler should receive KeyboardEvent
-const myKeyHandler: KeyHandler = (event, element) => {
-  expectTypeOf(event).toMatchTypeOf<KeyboardEvent>();
-  // KeyboardEvent-specific properties should be available
-  event.key;
-  event.code;
-  event.ctrlKey;
+const myKeyHandler: KeyHandler = (event) => {
+  expectTypeOf(event.originalEvent).toMatchTypeOf<KeyboardEvent>();
+  event.originalEvent.key;
 };
 
-// FocusHandler should receive FocusEvent
-const myFocusHandler: FocusHandler = (event, element) => {
-  expectTypeOf(event).toMatchTypeOf<FocusEvent>();
-  event.relatedTarget;
+const myFocusHandler: FocusHandler = (event) => {
+  event.originalEvent.relatedTarget;
+};
+const mySubmitHandler: SubmitHandler = (event) => {
+  event.originalEvent.submitter;
+};
+const myChangeHandler: ChangeHandler = (event) => {
+  event.originalEvent.type;
+};
+const myInputHandler: InputHandler = (event) => {
+  event.originalEvent.inputType;
+};
+const myMouseHandler: MouseHandler = (event) => {
+  event.originalEvent.button;
+};
+const myDragHandler: DragHandler = (event) => {
+  event.originalEvent.dataTransfer;
+};
+const myTouchHandler: TouchHandler = (event) => {
+  event.originalEvent.touches;
+};
+const myWheelHandler: WheelHandler = (event) => {
+  event.originalEvent.deltaY;
 };
 
-// SubmitHandler should receive SubmitEvent
-const mySubmitHandler: SubmitHandler = (event, element) => {
-  expectTypeOf(event).toMatchTypeOf<SubmitEvent>();
-  event.submitter;
-};
-
-// ChangeHandler should receive Event
-const myChangeHandler: ChangeHandler = (event, element) => {
-  expectTypeOf(event).toMatchTypeOf<Event>();
-};
-
-// InputHandler should receive InputEvent
-const myInputHandler: InputHandler = (event, element) => {
-  expectTypeOf(event).toMatchTypeOf<InputEvent>();
-  event.data;
-  event.inputType;
-};
-
-// MouseHandler should receive MouseEvent
-const myMouseHandler: MouseHandler = (event, element) => {
-  expectTypeOf(event).toMatchTypeOf<MouseEvent>();
-};
-
-// DragHandler should receive DragEvent
-const myDragHandler: DragHandler = (event, element) => {
-  expectTypeOf(event).toMatchTypeOf<DragEvent>();
-  event.dataTransfer;
-};
-
-// TouchHandler should receive TouchEvent
-const myTouchHandler: TouchHandler = (event, element) => {
-  expectTypeOf(event).toMatchTypeOf<TouchEvent>();
-  event.touches;
-  event.changedTouches;
-};
-
-// WheelHandler should receive WheelEvent
-const myWheelHandler: WheelHandler = (event, element) => {
-  expectTypeOf(event).toMatchTypeOf<WheelEvent>();
-  event.deltaX;
-  event.deltaY;
-};
-
-// EventHandler can return void or Promise<void>
-const asyncHandler: EventHandler = async (event, element) => {
+const asyncHandler: EventHandler = async () => {
   await Promise.resolve();
 };
 expectTypeOf(asyncHandler).returns.toMatchTypeOf<void | Promise<void>>();
 
-// ============================================================================
-// Test: StateAwareHandler type
-// ============================================================================
-
-// StateAwareHandler should receive event, state, and setState
-const counterHandler: StateAwareHandler<{ count: number }> = (event, state, setState) => {
-  expectTypeOf(event).toMatchTypeOf<Event>();
-  expectTypeOf(state).toMatchTypeOf<{ count: number }>();
-  expectTypeOf(setState).toBeFunction();
-
-  // setState should accept partial state
-  setState({ count: state.count + 1 });
-
-  // setState should accept updater function
-  setState((prev) => ({ count: prev.count + 1 }));
+// StateAwareHandler: state and setState come on the event
+const counterHandler: StateAwareHandler<{ count: number }, MouseEvent> = (event) => {
+  expectTypeOf(event.state).toEqualTypeOf<{ count: number } | null>();
+  expectTypeOf(event.props).toMatchTypeOf<Record<string, any> | null>();
+  event.setState?.({ count: (event.state?.count ?? 0) + 1 });
+  event.setState?.((prev) => ({ count: prev.count + 1 }));
 };
 
-// StateAwareHandler can be typed with specific event type
-const typedHandler: StateAwareHandler<{ value: string }, KeyboardEvent> = (event, state, setState) => {
-  expectTypeOf(event).toMatchTypeOf<KeyboardEvent>();
-  expectTypeOf(state).toMatchTypeOf<{ value: string }>();
-
-  if (event.key === 'Enter') {
-    setState({ value: '' });
-  }
-};
-
-// ============================================================================
-// Test: ClientComponent interface
-// ============================================================================
-
-declare const clientComponent: ClientComponent;
-
-// Should have readonly properties
-expectTypeOf(clientComponent.element).toMatchTypeOf<HTMLElement>();
-expectTypeOf(clientComponent.state).toMatchTypeOf<SerializableState>();
-expectTypeOf(clientComponent.isHydrated).toBeBoolean();
-expectTypeOf(clientComponent.id).toBeString();
-
-// Should have state management methods
-expectTypeOf(clientComponent.setState).toBeFunction();
-expectTypeOf(clientComponent.updateState).toBeFunction();
-expectTypeOf(clientComponent.getState).toBeFunction();
-expectTypeOf(clientComponent.resetState).toBeFunction();
-
-// getState should return SerializableState
-expectTypeOf(clientComponent.getState()).toMatchTypeOf<SerializableState>();
-
-// Should have lifecycle methods
-expectTypeOf(clientComponent.render).toBeFunction();
-expectTypeOf(clientComponent.destroy).toBeFunction();
-expectTypeOf(clientComponent.refresh).toBeFunction();
-
-// Should have event methods
-expectTypeOf(clientComponent.addEventListener).toBeFunction();
-expectTypeOf(clientComponent.removeEventListener).toBeFunction();
-expectTypeOf(clientComponent.trigger).toBeFunction();
-
-// Should have serialization methods
-expectTypeOf(clientComponent.serialize).toBeFunction();
-expectTypeOf(clientComponent.toJSON).toBeFunction();
-expectTypeOf(clientComponent.serialize()).toBeString();
-expectTypeOf(clientComponent.toJSON()).toMatchTypeOf<SerializableState>();
+// The handler receives one argument, not (event, state, setState)
+// @ts-expect-error a delegated handler takes a single event argument
+const threeArgs: StateAwareHandler = (_event, _state, _setState) => {};
 
 // ============================================================================
 // Test: State serialization functions
 // ============================================================================
 
-// serializeState should accept SerializableState and return string
 const encoded = serializeState({ count: 42, name: 'Test' });
-expectTypeOf(encoded).toBeString();
+expectTypeOf(encoded).toEqualTypeOf<string | null>();
 
-// deserializeState should accept string and return SerializableState
 const decoded = deserializeState(encoded);
-expectTypeOf(decoded).toMatchTypeOf<SerializableState>();
+expectTypeOf(decoded).toEqualTypeOf<SerializableState | null>();
 
-// extractState should accept element and return SerializableState or null
 const extracted = extractState(container);
-expectTypeOf(extracted).toMatchTypeOf<SerializableState | null>();
+expectTypeOf(extracted).toEqualTypeOf<SerializableState | null>();
 
-// serializeStateWithWarning should accept state and optional component name
-const encodedWithWarning = serializeStateWithWarning({ count: 42 });
-expectTypeOf(encodedWithWarning).toBeString();
-const encodedWithComponentName = serializeStateWithWarning({ count: 42 }, 'Counter');
-expectTypeOf(encodedWithComponentName).toBeString();
+expectTypeOf(serializeStateWithWarning({ count: 42 }, 'Counter')).toEqualTypeOf<string | null>();
 
 // ============================================================================
 // Test: Mismatch detection functions
 // ============================================================================
 
-// detectMismatch should accept element and vNode, return mismatches
 declare const vNode: CoherentNode;
 const mismatches = detectMismatch(container, vNode);
 expectTypeOf(mismatches).toMatchTypeOf<HydrationMismatch[]>();
 
-// HydrationMismatch should have path, type, expected, actual
-if (mismatches.length > 0) {
-  const mismatch = mismatches[0];
-  expectTypeOf(mismatch.path).toBeString();
-  expectTypeOf(mismatch.type).toMatchTypeOf<'text' | 'attribute' | 'tag' | 'children' | 'missing' | 'extra'>();
-  expectTypeOf(mismatch.expected).toBeAny();
-  expectTypeOf(mismatch.actual).toBeAny();
-}
+declare const mismatch: HydrationMismatch;
+expectTypeOf(mismatch.path).toBeString();
+expectTypeOf(mismatch.domPath).toBeString();
+expectTypeOf(mismatch.type).toEqualTypeOf<
+  'text' | 'tagName' | 'attribute' | 'children_count' | 'missing_dom_child' | 'extra_dom_child'
+>();
 
-// reportMismatches should accept mismatches and options
 reportMismatches(mismatches);
 reportMismatches(mismatches, { componentName: 'Counter', strict: true });
 
-// formatPath should accept path array and return string
-const formattedPath = formatPath(['div', 0, 'span']);
-expectTypeOf(formattedPath).toBeString();
+expectTypeOf(formatPath(['div', 0, 'span'])).toBeString();
 
 // ============================================================================
 // Test: Event delegation exports
 // ============================================================================
 
-// eventDelegation should be an EventDelegation instance
-expectTypeOf(eventDelegation.initialize).toBeFunction();
-expectTypeOf(eventDelegation.destroy).toBeFunction();
-expectTypeOf(eventDelegation.isInitialized).toBeFunction();
+expectTypeOf(eventDelegation.listen).toBeFunction();
 expectTypeOf(eventDelegation.isInitialized()).toBeBoolean();
-
-// handlerRegistry should be a HandlerRegistry instance
-expectTypeOf(handlerRegistry.register).toBeFunction();
-expectTypeOf(handlerRegistry.unregister).toBeFunction();
-expectTypeOf(handlerRegistry.get).toBeFunction();
-expectTypeOf(handlerRegistry.has).toBeFunction();
-expectTypeOf(handlerRegistry.clear).toBeFunction();
 expectTypeOf(handlerRegistry.has('my-handler')).toBeBoolean();
-expectTypeOf(handlerRegistry.unregister('my-handler')).toBeBoolean();
+handlerRegistry.register('my-handler', counterHandler, null);
 
-// wrapEvent should return handlerId and dataAttribute
-const wrapped = wrapEvent('click', clickHandler);
-expectTypeOf(wrapped.handlerId).toBeString();
-expectTypeOf(wrapped.dataAttribute).toBeString();
-
-// wrapEvent should accept optional handlerId
-const wrappedWithId = wrapEvent('click', clickHandler, 'custom-id');
-expectTypeOf(wrappedWithId.handlerId).toBeString();
+// wrapEvent wraps a native event for a handler
+declare const nativeClick: MouseEvent;
+declare const button: HTMLButtonElement;
+const wrapped = wrapEvent<{ count: number }, MouseEvent>(nativeClick, button, {
+  state: { count: 1 },
+  setState: () => {},
+});
+expectTypeOf(wrapped).toEqualTypeOf<CoherentEvent<{ count: number }, MouseEvent>>();
+expectTypeOf(wrapped.originalEvent).toEqualTypeOf<MouseEvent>();
 
 // ============================================================================
 // Test: Integration with core types
 // ============================================================================
 
-// CoherentComponent from client should be compatible with core
-const componentFunction: CoherentComponent = (props) => {
-  return {
-    div: {
-      className: 'container',
-      children: [
-        { h1: { text: props?.title || 'Hello' } },
-        { p: { text: 'Content' } },
-      ],
-    },
-  };
-};
-
-// Should be able to hydrate with this component
-const coreIntegrationControl = hydrate(componentFunction, container);
-expectTypeOf(coreIntegrationControl).toMatchTypeOf<HydrateControl>();
-
-// CoherentNode should be accepted by detectMismatch
-const strictElement: StrictCoherentElement = {
+const componentFunction: CoherentComponent = () => ({
   div: {
-    className: 'test',
+    className: 'container',
     children: [{ span: { text: 'Hello' } }],
   },
+});
+expectTypeOf(hydrate(componentFunction, container)).toMatchTypeOf<HydrateControl>();
+
+export {
+  withTimeout,
+  withOnError,
+  genericHandler,
+  myClickHandler,
+  myKeyHandler,
+  myFocusHandler,
+  mySubmitHandler,
+  myChangeHandler,
+  myInputHandler,
+  myMouseHandler,
+  myDragHandler,
+  myTouchHandler,
+  myWheelHandler,
+  threeArgs,
 };
-const strictMismatches = detectMismatch(container, strictElement);
-expectTypeOf(strictMismatches).toMatchTypeOf<HydrationMismatch[]>();
-
-// CoherentElement should also work
-const permissiveElement: CoherentElement = {
-  div: {
-    className: 'test',
-    customAttr: 'value', // Permissive allows any attribute
-  },
-};
-const permissiveMismatches = detectMismatch(container, permissiveElement);
-expectTypeOf(permissiveMismatches).toMatchTypeOf<HydrationMismatch[]>();
-
-// ============================================================================
-// Test: Type guards and narrowing
-// ============================================================================
-
-// Verify state extraction null check
-const maybeState = extractState(container);
-if (maybeState !== null) {
-  // TypeScript should narrow to SerializableState
-  const count = maybeState.count;
-  expectTypeOf(count).toMatchTypeOf<SerializablePrimitive | SerializablePrimitive[] | SerializableState | SerializableState[] | undefined>();
-}

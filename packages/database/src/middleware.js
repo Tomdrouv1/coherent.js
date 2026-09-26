@@ -6,6 +6,51 @@
  */
 
 /**
+ * Continue the chain: call `next` when the framework passed one (Express, Koa, ...).
+ * Routers that run middleware without `next` continue on their own.
+ *
+ * @private
+ */
+async function proceed(next) {
+  if (typeof next === 'function') {
+    await next();
+  }
+}
+
+/**
+ * Report an error raised by the middleware itself (not by later handlers) to `next`
+ * when there is one, else throw it.
+ *
+ * @private
+ */
+function fail(next, _error) {
+  if (typeof next === 'function') {
+    return next(_error);
+  }
+  throw _error;
+}
+
+/**
+ * An error carrying its HTTP status under both names routers read: Express's
+ * default handler uses `status` (or `statusCode`); the `@coherent.js/api`
+ * router uses `statusCode`, as its `ApiError` classes do, and answered 500
+ * for an error that only had `status`.
+ *
+ * @private
+ * @param {string} message - Error message sent to the client
+ * @param {number} status - 4xx HTTP status
+ * @returns {Error}
+ */
+function httpError(message, status) {
+  const _error = new Error(message);
+  _error.status = status;
+  _error.statusCode = status;
+  // Like `http-errors`: a client error's message is safe to show
+  _error.expose = true;
+  return _error;
+}
+
+/**
  * Database middleware for router integration
  * 
  * @param {DatabaseManager} db - Database manager instance
@@ -64,30 +109,57 @@ export function withDatabase(db, options = {}) {
       if (config.attachModels && db.models) {
         req.models = db.models;
       }
-
-      await next();
-
     } catch (_error) {
       // Log database errors
-      console.error('Database middleware _error:', _error);
-      
-      // Pass _error to _error handler
-      if (typeof next === 'function') {
-        next(_error);
-      } else {
-        throw _error;
-      }
+      console.error('Database middleware error:', _error);
+      return fail(next, _error);
     }
+
+    // Outside the try: an error from a later handler must not call next() a second time
+    await proceed(next);
   };
 }
 
 /**
+ * Finish a transaction when the response ends: commit after a successful response,
+ * roll back after an error status or when the connection closes first.
+ *
+ * @private
+ */
+function settleWhenResponseEnds(res, settle) {
+  const listen = res && (typeof res.once === 'function' ? res.once : res.on);
+  if (typeof listen !== 'function') {
+    return false;
+  }
+
+  const report = (_error) => console.error('withTransaction: failed to finish the transaction:', _error);
+  listen.call(res, 'finish', () => {
+    settle(res.statusCode >= 400).catch(report);
+  });
+  listen.call(res, 'close', () => {
+    settle(true).catch(report);
+  });
+  return true;
+}
+
+/**
  * Transaction middleware for automatic transaction management
- * 
+ *
+ * The transaction is exposed as `req.tx` and finished:
+ * - when `next()` returns a promise (async frameworks): after it settles, committing on
+ *   success and rolling back if it rejects;
+ * - otherwise (Express, whose `next()` returns before an async handler is done, or a
+ *   router that calls middleware without `next`): when the response ends, committing
+ *   on a status below 400 and rolling back on an error status or a closed connection.
+ *
+ * A transaction the handler already committed or rolled back is left alone.
+ *
  * @param {DatabaseManager} db - Database manager instance
  * @param {Object} [options={}] - Transaction options
+ * @param {string} [options.isolationLevel] - READ UNCOMMITTED, READ COMMITTED, REPEATABLE READ or SERIALIZABLE
+ * @param {boolean} [options.readOnly=false] - Start a read-only transaction
  * @returns {Function} Middleware function
- * 
+ *
  * @example
  * router.post('/transfer', withTransaction(db), async (req, res) => {
  *   // All database operations in this handler will be wrapped in a transaction
@@ -107,21 +179,44 @@ export function withTransaction(db, options = {}) {
     const tx = await db.transaction(config);
     req.tx = tx;
 
-    try {
-      await next();
-      
-      // Commit transaction if not already committed
-      if (!tx.isCommitted && !tx.isRolledBack) {
+    let settled = false;
+    const settle = async (failed) => {
+      if (settled) return;
+      settled = true;
+      if (tx.isCommitted || tx.isRolledBack) return;
+      if (failed) {
+        await tx.rollback();
+      } else {
         await tx.commit();
       }
-      
+    };
+
+    let result;
+    try {
+      result = typeof next === 'function' ? next() : undefined;
     } catch (_error) {
-      // Rollback transaction if not already rolled back
-      if (!tx.isRolledBack && !tx.isCommitted) {
-        await tx.rollback();
-      }
-      
+      await settle(true);
       throw _error;
+    }
+
+    if (result && typeof result.then === 'function') {
+      try {
+        await result;
+      } catch (_error) {
+        await settle(true);
+        throw _error;
+      }
+      await settle(false);
+      return;
+    }
+
+    // The handler may still be running: finish the transaction with the response
+    if (!settleWhenResponseEnds(res, settle)) {
+      await settle(true);
+      throw new Error(
+        'withTransaction cannot tell when the request ends: next() did not return a promise ' +
+        'and the response does not emit "finish"/"close". The transaction was rolled back.'
+      );
     }
   };
 }
@@ -164,29 +259,21 @@ export function withModel(ModelClass, paramName = 'id', requestKey = null) {
       const paramValue = req.params[paramName];
       
       if (!paramValue) {
-        const _error = new Error(`Parameter '${paramName}' is required`);
-        _error.status = 400;
-        throw _error;
+        throw httpError(`Parameter '${paramName}' is required`, 400);
       }
 
       const model = await ModelClass.find(paramValue);
       
       if (!model) {
-        const _error = new Error(`${ModelClass.name} not found`);
-        _error.status = 404;
-        throw _error;
+        throw httpError(`${ModelClass.name} not found`, 404);
       }
 
       req[key] = model;
-      await next();
-      
     } catch (_error) {
-      if (typeof next === 'function') {
-        next(_error);
-      } else {
-        throw _error;
-      }
+      return fail(next, _error);
     }
+
+    await proceed(next);
   };
 }
 
@@ -236,7 +323,7 @@ export function withPagination(options = {}) {
       totalCount: null // To be set by the handler
     };
 
-    await next();
+    await proceed(next);
   };
 }
 
@@ -272,9 +359,7 @@ export function withQueryValidation(schema, options = {}) {
         // Skip if not provided and not required
         if (value === undefined || value === null || value === '') {
           if (rules.required) {
-            const _error = new Error(`Query parameter '${key}' is required`);
-            _error.status = 400;
-            throw _error;
+            throw httpError(`Query parameter '${key}' is required`, 400);
           }
           continue;
         }
@@ -286,9 +371,7 @@ export function withQueryValidation(schema, options = {}) {
             case 'number':
               coercedValue = Number(value);
               if (isNaN(coercedValue)) {
-                const _error = new Error(`Query parameter '${key}' must be a number`);
-                _error.status = 400;
-                throw _error;
+                throw httpError(`Query parameter '${key}' must be a number`, 400);
               }
               break;
             case 'boolean':
@@ -302,41 +385,28 @@ export function withQueryValidation(schema, options = {}) {
 
         // Validation
         if (rules.enum && !rules.enum.includes(coercedValue)) {
-          const _error = new Error(`Query parameter '${key}' must be one of: ${rules.enum.join(', ')}`);
-          _error.status = 400;
-          throw _error;
+          throw httpError(`Query parameter '${key}' must be one of: ${rules.enum.join(', ')}`, 400);
         }
 
         if (rules.min !== undefined && coercedValue < rules.min) {
-          const _error = new Error(`Query parameter '${key}' must be at least ${rules.min}`);
-          _error.status = 400;
-          throw _error;
+          throw httpError(`Query parameter '${key}' must be at least ${rules.min}`, 400);
         }
 
         if (rules.max !== undefined && coercedValue > rules.max) {
-          const _error = new Error(`Query parameter '${key}' must be at most ${rules.max}`);
-          _error.status = 400;
-          throw _error;
+          throw httpError(`Query parameter '${key}' must be at most ${rules.max}`, 400);
         }
 
         validatedQuery[key] = coercedValue;
       }
 
-      // Replace query with validated version
-      if (!config.stripUnknown) {
-        Object.assign(validatedQuery, req.query);
-      }
-      
-      req.query = validatedQuery;
-      await next();
-      
+      // Replace query with the validated (and coerced) version; keep unknown keys
+      // alongside it when asked, without overwriting the coerced values
+      req.query = config.stripUnknown ? validatedQuery : { ...req.query, ...validatedQuery };
     } catch (_error) {
-      if (typeof next === 'function') {
-        next(_error);
-      } else {
-        throw _error;
-      }
+      return fail(next, _error);
     }
+
+    await proceed(next);
   };
 }
 
@@ -360,15 +430,16 @@ export function withHealthCheck(db, options = {}) {
   };
 
   return async (req, res, next) => {
+    let timer;
     try {
       const startTime = Date.now();
-      
+
       // Test database connection
       await Promise.race([
         db.query('SELECT 1'),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Health check timeout')), config.timeout)
-        )
+        new Promise((_, reject) => {
+          timer = setTimeout(() => reject(new Error('Health check timeout')), config.timeout);
+        })
       ]);
       
       const responseTime = Date.now() - startTime;
@@ -382,18 +453,17 @@ export function withHealthCheck(db, options = {}) {
       if (config.includeStats) {
         req.dbHealth.stats = db.getStats();
       }
-
-      await next();
-      
     } catch (_error) {
       req.dbHealth = {
         status: 'unhealthy',
-        _error: _error.message,
+        error: _error.message,
         connected: db.isConnected
       };
-      
-      await next();
+    } finally {
+      clearTimeout(timer);
     }
+
+    await proceed(next);
   };
 }
 
@@ -416,7 +486,14 @@ export function withConnectionPool(db, options = {}) {
 
   return async (req, res, next) => {
     let connection = null;
-    
+    let released = false;
+    const release = () => {
+      if (connection && !released) {
+        released = true;
+        db.pool.release(connection);
+      }
+    };
+
     try {
       // Acquire connection from pool
       connection = await db.pool.acquire(config.acquireTimeout);
@@ -431,21 +508,13 @@ export function withConnectionPool(db, options = {}) {
 
       // Release connection when response finishes
       if (config.releaseOnResponse) {
-        res.on('finish', () => {
-          if (connection) {
-            db.pool.release(connection);
-          }
-        });
+        res.on('finish', release);
       }
 
-      await next();
-      
+      await proceed(next);
     } catch (_error) {
       // Release connection on _error
-      if (connection) {
-        db.pool.release(connection);
-      }
-      
+      release();
       throw _error;
     }
   };

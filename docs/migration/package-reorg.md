@@ -1,6 +1,6 @@
 # Package Reorganization Migration Guide
 
-> **For the 1.0 release**, see [`MIGRATION-1.0.md`](../../MIGRATION-1.0.md) at the repo root. The 1.0 consolidation is much larger than any single beta-to-beta move; that file is the authoritative reference with sed one-liners and `pnpm add`/`pnpm remove` commands for every package.
+> **Upgrading from 1.1?** See [Upgrading from 1.1](upgrading-from-1.1.md). **For the 1.0 release**, see [`MIGRATION-1.0.md`](../../MIGRATION-1.0.md) at the repo root. The 1.0 consolidation is much larger than any single beta-to-beta move; that file is the authoritative reference with sed one-liners and `pnpm add`/`pnpm remove` commands for every package.
 
 This page preserves the historical beta.1 → beta.2 reorganization notes.
 
@@ -18,12 +18,9 @@ See [`MIGRATION-1.0.md`](../../MIGRATION-1.0.md) for the full table with sed one
 
 The beta.1 → beta.2 release moved hydration, events, and routing out of `@coherent.js/core` into the new `@coherent.js/client` package. If you have very old code still importing those from core, the fix is mechanical:
 
-```js
-// beta.1 and older
-import { hydrate } from '@coherent.js/core';
-
-// beta.2+
-import { hydrate } from '@coherent.js/client';
+```diff
+- import { hydrate } from '@coherent.js/core';   // beta.1 and older
++ import { hydrate } from '@coherent.js/client'; // beta.2+
 ```
 
 Note: the legacy hydration APIs (`hydrateAll`, `hydrateBySelector`, `makeHydratable`, `autoHydrate`, etc.) that beta.2 introduced were ALL removed in 1.0 — see [`MIGRATION-1.0.md`](../../MIGRATION-1.0.md) for the modern `hydrate()` API.

@@ -253,15 +253,17 @@ const ContactForm = createForm({
 **After:**
 
 ```js
-import { createFormBuilder } from '@coherent.js/forms';
+import { createFormBuilder, validators } from '@coherent.js/forms';
 
 const ContactForm = createFormBuilder({
   fields: [
-    { name: 'email', type: 'email', validate: (v) => /\S+@\S+\.\S+/.test(v) },
+    { name: 'email', type: 'email', validators: [validators.email()] },
     { name: 'message', type: 'textarea' },
   ],
 });
 ```
+
+A validator returns an error message, or `null` when the value is valid; a custom `validate: (value, values) => message | null` works the same way. (A function returning `true` for a valid value marks the field invalid.)
 
 **Behavior bugfix:** `createFormBuilder({ fields: [...] })` used to silently ignore the `fields` array; you had to call `.field(...)` chained afterwards. Now the passed fields are actually registered. If your code worked despite this no-op (because it also called `.field(...)`), the behavior is a strict superset — no break. If your code relied on the no-op, it's a bugfix that may surprise you, but no such caller is known.
 

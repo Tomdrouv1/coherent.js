@@ -13,8 +13,9 @@ import { createHash, randomBytes } from 'node:crypto';
 
 import { withValidation } from './validation.js';
 import { withErrorHandling } from './errors.js';
-import { createServer } from 'node:http';
+import { createServer, STATUS_CODES } from 'node:http';
 import { parse as parseUrl } from 'node:url';
+import { env } from 'node:process';
 
 /**
  * HTTP methods supported by the object router
@@ -23,46 +24,112 @@ import { parse as parseUrl } from 'node:url';
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
 
 /**
- * Parse JSON request body with security limits
+ * Error for a request body that could not be read.
  * @private
+ */
+function bodyError(message, statusCode, code) {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  if (code) error.code = code;
+  return error;
+}
+
+/**
+ * Parse JSON request body with security limits
+ *
+ * Chunks are collected as Buffers and decoded once: decoding each chunk on
+ * its own corrupted any multibyte UTF-8 character split across two TCP
+ * chunks. The promise also settles when the client goes away mid-body
+ * ('aborted', or 'close' before 'end'); it used to wait for an 'end' that
+ * never came.
+ *
+ * @private
+ * @param {Object} req - Request stream
+ * @param {number} [maxSize=1048576] - Largest body accepted, in bytes
+ * @returns {Promise<Object>} Parsed body; rejects with `statusCode` 413/400,
+ *   or with `code: 'ECONNABORTED'` when the client aborted
  */
 function parseBody(req, maxSize = 1024 * 1024) { // 1MB limit
   return new Promise((resolve, reject) => {
-    if (req.method === 'GET' || req.method === 'DELETE') {
+    if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'DELETE') {
       resolve({});
       return;
     }
 
-    let body = '';
-    let size = 0;
+    const declared = Number(req.headers?.['content-length']);
+    if (Number.isFinite(declared) && declared > maxSize) {
+      reject(bodyError('Request body too large', 413));
+      return;
+    }
 
-    req.on('data', chunk => {
-      size += chunk.length;
+    const chunks = [];
+    let size = 0;
+    let settled = false;
+
+    const cleanup = () => {
+      req.off?.('data', onData);
+      req.off?.('end', onEnd);
+      req.off?.('aborted', onAborted);
+      req.off?.('close', onClose);
+      req.off?.('error', onError);
+    };
+    const settle = (fn, value) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      fn(value);
+    };
+
+    function onData(chunk) {
+      const buffer = typeof chunk === 'string' ? Buffer.from(chunk) : chunk;
+      size += buffer.length;
       if (size > maxSize) {
-        reject(new Error('Request body too large'));
+        chunks.length = 0;
+        settle(reject, bodyError('Request body too large', 413));
         return;
       }
-      body += chunk.toString();
-    });
+      chunks.push(buffer);
+    }
 
-    req.on('end', () => {
+    function onEnd() {
       try {
         const contentType = req.headers['content-type'] || '';
         if (contentType.includes('application/json')) {
+          const body = Buffer.concat(chunks, size).toString('utf8');
           const parsed = body ? JSON.parse(body) : {};
-          resolve(stripUnsafeKeys(parsed));
+          settle(resolve, stripUnsafeKeys(parsed));
         } else {
-          resolve({});
+          settle(resolve, {});
         }
       } catch {
-        reject(new Error('Invalid JSON body'));
+        settle(reject, bodyError('Invalid JSON body', 400));
       }
-    });
+    }
 
-    req.on('_error', reject);
+    function onAborted() {
+      settle(reject, bodyError('Request aborted', 400, 'ECONNABORTED'));
+    }
+
+    // 'close' after 'end' is normal; before it, the body will never arrive.
+    function onClose() {
+      onAborted();
+    }
+
+    function onError(error) {
+      if (error?.code === 'ECONNRESET' || error?.code === 'ECONNABORTED') {
+        onAborted();
+      } else {
+        settle(reject, error);
+      }
+    }
+
+    req.on('data', onData);
+    req.on('end', onEnd);
+    req.on('aborted', onAborted);
+    req.on('close', onClose);
+    req.on('error', onError);
   });
 }
-
 /**
  * Strip prototype-polluting keys from a parsed JSON body.
  *
@@ -94,42 +161,289 @@ function stripUnsafeKeys(value) {
 }
 
 /**
- * Rate limiting store
+ * Whether a response has already been started or finished.
+ *
+ * Middleware such as `withAuth` or `withRole` rejects a request by writing a
+ * 401/403 itself and returning nothing, so "did it return something" cannot
+ * tell the chain to stop. The response state can.
+ *
  * @private
+ * @param {Object} res - HTTP response object
+ * @returns {boolean} True once headers are sent or the response has ended
  */
-const rateLimitStore = new Map();
+function responseStarted(res) {
+  return Boolean(res && (res.headersSent || res.writableEnded));
+}
 
 /**
- * Rate limiting middleware for API endpoints
+ * HTTP status for a thrown error: its `statusCode` when that is a 4xx/5xx
+ * code, 500 otherwise.
  * @private
- * @param {string} ip - Client IP address
- * @param {number} [windowMs=60000] - Time window in milliseconds
- * @param {number} [maxRequests=100] - Maximum requests per window
- * @returns {boolean} True if request is allowed, false if rate limited
  */
-function checkRateLimit(ip, windowMs = 60000, maxRequests = 100) {
-  const now = Date.now();
-  const key = ip;
+function errorStatus(error) {
+  const status = error?.statusCode;
+  return Number.isInteger(status) && status >= 400 && status <= 599 ? status : 500;
+}
 
-  if (!rateLimitStore.has(key)) {
-    rateLimitStore.set(key, { count: 1, resetTime: now + windowMs });
-    return true;
+/**
+ * Whether 5xx responses may carry the real error message.
+ *
+ * An explicit `exposeErrors` option wins; otherwise only when NODE_ENV is
+ * 'development'.
+ *
+ * @private
+ * @param {boolean|undefined} exposeErrors - Router/handle option
+ */
+function shouldExposeErrors(exposeErrors) {
+  if (typeof exposeErrors === 'boolean') return exposeErrors;
+  return env.NODE_ENV === 'development';
+}
+
+/**
+ * Remove trailing slashes in linear time (/\/+$/ is quadratic on input
+ * like '////…x').
+ * @param {string} path
+ * @returns {string}
+ */
+function trimTrailingSlashes(path) {
+  let end = path.length;
+  while (end > 0 && path[end - 1] === '/') end--;
+  return path.slice(0, end);
+}
+
+/**
+ * Answer a request whose middleware or handler threw.
+ *
+ * Client errors (an `ApiError` with a 4xx `statusCode`, such as the
+ * `ValidationError` thrown by `withValidation`) keep their message and
+ * `details`, so a 400 says which field failed.
+ *
+ * Server errors are logged in full and answered with the generic status
+ * text: echoing the message sent strings such as `connect ECONNREFUSED
+ * 10.0.3.7:5432 (db-primary.internal)` to any client. `exposeErrors: true`
+ * (or NODE_ENV=development) sends the real message.
+ *
+ * @private
+ * @param {Object} req - HTTP request object
+ * @param {Object} res - HTTP response object
+ * @param {Error} error - What was thrown
+ * @param {boolean} [exposeErrors] - Send 5xx messages to the client
+ */
+function sendError(req, res, error, exposeErrors) {
+  const status = errorStatus(error);
+
+  if (status >= 500) {
+    // Request data goes in as arguments, never into the format string: a URL
+    // containing %s or %o consumed the error argument and garbled the log.
+    console.error(
+      '[coherent.js/api] %s %s failed with %d:',
+      req?.method ?? '',
+      req?.url ?? '',
+      status,
+      error?.cause ?? error
+    );
   }
 
-  const record = rateLimitStore.get(key);
+  if (responseStarted(res)) return;
 
-  if (now > record.resetTime) {
-    record.count = 1;
-    record.resetTime = now + windowMs;
-    return true;
+  let message;
+  if (status >= 500 && !shouldExposeErrors(exposeErrors)) {
+    message = STATUS_CODES[status] || 'Internal Server Error';
+  } else {
+    message = error?.message || STATUS_CODES[status] || 'Internal Server Error';
   }
 
-  if (record.count >= maxRequests) {
-    return false;
+  const body = { error: message };
+  const details = error?.details;
+  if (status < 500 && details && typeof details === 'object' && Object.keys(details).length > 0) {
+    body.details = details;
+  }
+  res.writeHead(status, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(body));
+}
+
+/**
+ * Whether the connection behind a response is gone.
+ * @private
+ */
+function responseClosed(res) {
+  return Boolean(res && (res.closed || res.destroyed || res.writableFinished));
+}
+
+/**
+ * Resolve once `nextSignal` settles or the response finishes or closes.
+ * @private
+ */
+function waitForNextOrResponse(res, nextSignal) {
+  if (responseClosed(res) || typeof res?.once !== 'function') return nextSignal;
+  return new Promise((resolve) => {
+    const done = () => {
+      res.off?.('finish', done);
+      res.off?.('close', done);
+      resolve();
+    };
+    res.once('finish', done);
+    res.once('close', done);
+    nextSignal.then(done);
+  });
+}
+
+/**
+ * Run one middleware under either calling convention.
+ *
+ * - Coherent style, `(req, res) => value`: the request continues when it
+ *   returns.
+ * - Express/Connect style, `(req, res, next)`: the request continues when
+ *   `next()` is called, even if that happens after the function returned
+ *   (an async token lookup, say). `next(err)` fails the request.
+ *
+ * Either way, a middleware that has sent a response has ended the request.
+ * A connection that closes before an Express-style middleware calls `next()`
+ * ends it too: continuing would run the handler without the middleware's
+ * approval.
+ *
+ * @private
+ * @param {Function} fn - Middleware
+ * @param {Object} req - Request
+ * @param {Object} res - Response
+ * @param {boolean} [expectsNext] - Wait for next(); defaults to `fn.length >= 3`
+ * @returns {Promise<{ result: *, proceed: boolean }>}
+ */
+async function runMiddleware(fn, req, res, expectsNext = fn.length >= 3) {
+  let nextCalled = false;
+  let nextError;
+  let wake;
+  const nextSignal = new Promise((resolve) => {
+    wake = resolve;
+  });
+  const next = (err) => {
+    if (nextCalled) return;
+    nextCalled = true;
+    nextError = err;
+    wake();
+  };
+
+  const result = await fn(req, res, next);
+
+  if (expectsNext && !nextCalled && result === undefined && !responseStarted(res)) {
+    await waitForNextOrResponse(res, nextSignal);
+    if (!nextCalled) return { result: undefined, proceed: false };
   }
 
-  record.count++;
-  return true;
+  if (nextError) {
+    throw nextError instanceof Error ? nextError : new Error(String(nextError));
+  }
+
+  return { result, proceed: !responseStarted(res) };
+}
+
+/**
+ * Most clients a rate limiter tracks at once. Expired windows are swept
+ * first; past this, the oldest window is dropped to bound memory.
+ * @private
+ */
+const RATE_LIMIT_MAX_KEYS = 100_000;
+
+/**
+ * Fixed-window request counter. Each router owns one, so two routers in one
+ * process no longer share (or exhaust) each other's counts.
+ *
+ * Expired windows are swept at most once per window, and the store is capped
+ * at RATE_LIMIT_MAX_KEYS. It used to be a module-global Map that was never
+ * pruned: 200k spoofed client keys held ~89 MB for the life of the process.
+ *
+ * @private
+ */
+class RateLimiter {
+  constructor(maxKeys = RATE_LIMIT_MAX_KEYS) {
+    this.records = new Map();
+    this.maxKeys = maxKeys;
+    this.nextSweep = 0;
+  }
+
+  /**
+   * Count one request for `key`.
+   * @param {string} key - Client key
+   * @param {number} [windowMs=60000] - Time window in milliseconds
+   * @param {number} [maxRequests=100] - Maximum requests per window
+   * @param {number} [now=Date.now()] - Current time
+   * @returns {{ allowed: boolean, resetTime: number }}
+   */
+  hit(key, windowMs = 60000, maxRequests = 100, now = Date.now()) {
+    this.sweep(now, windowMs);
+
+    const record = this.records.get(key);
+    if (!record || now >= record.resetTime) {
+      if (record) {
+        this.records.delete(key); // Re-insert: Map order tracks window start
+      } else if (this.records.size >= this.maxKeys) {
+        this.records.delete(this.records.keys().next().value);
+      }
+      const fresh = { count: 1, resetTime: now + windowMs };
+      this.records.set(key, fresh);
+      return { allowed: true, resetTime: fresh.resetTime };
+    }
+
+    if (record.count >= maxRequests) {
+      return { allowed: false, resetTime: record.resetTime };
+    }
+
+    record.count++;
+    return { allowed: true, resetTime: record.resetTime };
+  }
+
+  /** Drop every expired window, at most once per `windowMs`. */
+  sweep(now, windowMs) {
+    if (now < this.nextSweep) return;
+    for (const [key, record] of this.records) {
+      if (now >= record.resetTime) this.records.delete(key);
+    }
+    this.nextSweep = now + Math.max(1000, Math.min(windowMs, 60_000));
+  }
+
+  /** Number of clients currently tracked. */
+  get size() {
+    return this.records.size;
+  }
+}
+
+/**
+ * The address a request is rate limited under.
+ *
+ * By default this is the TCP peer address. `X-Forwarded-For` is only read
+ * when `trustProxy` says how many reverse proxies in front of the server
+ * append to it: the client is then the entry that many hops from the right.
+ * Reading the raw header let any client pick a fresh key per request and
+ * bypass the limit.
+ *
+ * @private
+ * @param {Object} req - Request
+ * @param {boolean|number} [trustProxy] - `true` = one proxy, or a hop count
+ * @returns {string} Client key
+ */
+function clientAddress(req, trustProxy) {
+  const socketAddress = req.socket?.remoteAddress ?? req.connection?.remoteAddress ?? 'unknown';
+  const hops = trustProxy === true ? 1 : Number.isInteger(trustProxy) && trustProxy > 0 ? trustProxy : 0;
+  const header = req.headers?.['x-forwarded-for'];
+
+  if (hops === 0) {
+    if (header) {
+      warnOnce(
+        'X-Forwarded-For is set but trustProxy is not, so rate limiting keys on the connecting address. ' +
+          'Behind a reverse proxy that means every client shares one limit: set trustProxy to the number of proxies.'
+      );
+    }
+    return socketAddress;
+  }
+
+  const forwarded = (Array.isArray(header) ? header.join(',') : header || '')
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const chain = [...forwarded, socketAddress];
+  // Skip the trusted proxies from the right; if the chain is shorter than
+  // that, the leftmost entry is the best information there is.
+  return chain[Math.max(0, chain.length - 1 - hops)];
 }
 
 /**
@@ -139,16 +453,16 @@ function checkRateLimit(ip, windowMs = 60000, maxRequests = 100) {
 const DEFAULT_CORS_ORIGIN = 'http://localhost:3000';
 
 /** Warnings already emitted, so a per-request policy cannot spam the log. */
-const warnedCorsMessages = new Set();
+const warnedMessages = new Set();
 
 /**
- * Warn about a CORS misconfiguration once per distinct message.
+ * Warn about a misconfiguration once per distinct message.
  * @private
  * @param {string} message - Warning text
  */
-function warnCorsOnce(message) {
-  if (warnedCorsMessages.has(message)) return;
-  warnedCorsMessages.add(message);
+function warnOnce(message) {
+  if (warnedMessages.has(message)) return;
+  warnedMessages.add(message);
   console.warn(`[coherent.js/api] ${message}`);
 }
 
@@ -176,7 +490,7 @@ function resolveCorsPolicy(corsOrigin) {
   const origins = Array.isArray(corsOrigin) ? corsOrigin : [corsOrigin];
 
   if (origins.length === 0 || origins.some(origin => typeof origin !== 'string' || origin === '')) {
-    warnCorsOnce(
+    warnOnce(
       'corsOrigin must be a non-empty string or an array of them. ' +
         `Ignoring ${JSON.stringify(corsOrigin)} and serving ${DEFAULT_CORS_ORIGIN} without credentials.`
     );
@@ -185,9 +499,9 @@ function resolveCorsPolicy(corsOrigin) {
 
   if (origins.includes('*')) {
     if (origins.length > 1) {
-      warnCorsOnce("corsOrigin '*' allows every origin; the others listed alongside it have no effect.");
+      warnOnce("corsOrigin '*' allows every origin; the others listed alongside it have no effect.");
     }
-    warnCorsOnce(
+    warnOnce(
       "corsOrigin '*' cannot carry credentials, so Access-Control-Allow-Credentials is not sent. " +
         'List the origins you trust to enable credentialed requests.'
     );
@@ -275,7 +589,124 @@ function addSecurityHeaders(res) {
 }
 
 /**
+ * Route pattern tokens: a parameter (`:name`, `:name(constraint)`,
+ * `:name?`), a multi-segment wildcard (`**`) or a single-segment one (`*`).
+ *
+ * Parameter names are identifiers, so `/:from-:to` and `/:file.:ext` hold
+ * two parameters each. The constraint may not contain parentheses; the
+ * `(?:[^()\\]|\\.)*` form is linear, so a pattern of many `:a(` cannot
+ * backtrack (CodeQL js/polynomial-redos).
+ *
+ * @private
+ */
+const ROUTE_TOKEN = /:([A-Za-z_$][\w$]*)(?:\(((?:[^()\\]|\\.)*)\))?(\?)?|\*\*|\*/g;
+
+/** @private */
+function escapeRegex(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Decode one captured parameter. A malformed escape is kept as sent rather
+ * than failing the request.
+ * @private
+ */
+function decodeParam(value) {
+  if (!value.includes('%')) return value;
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+/**
+ * Compile a route pattern into an anchored regex and its parameter names.
+ *
+ * Literal text is escaped piece by piece as it is read, so `.` in
+ * `/files/report.pdf` only matches a dot. The previous implementation
+ * substituted the parameter groups first and then tried to escape the whole
+ * string with a character class that was missing its `]`, so nothing was
+ * escaped: `/files/reportXpdf` matched `/files/report.pdf`. It also pushed
+ * the wildcard's name before any parameter's, so `/users/:id/*` answered
+ * `{ splat: '42', id: 'avatar' }`, and it read `:id?` as a parameter named
+ * `id?`, so optional parameters never matched their absence.
+ *
+ * @private
+ * @param {string} pattern - Route pattern
+ * @returns {{ regex: RegExp, paramNames: string[], pattern: string }}
+ */
+function compilePattern(pattern) {
+  const paramNames = [];
+  let source = '';
+  let last = 0;
+
+  for (const match of pattern.matchAll(ROUTE_TOKEN)) {
+    const [token, name, constraint, optional] = match;
+    let literal = pattern.slice(last, match.index);
+    let group;
+
+    if (token === '**') {
+      paramNames.push('splat');
+      group = '(.*)';
+    } else if (token === '*') {
+      paramNames.push('splat');
+      group = '([^/]+)';
+    } else {
+      paramNames.push(name);
+      const body = constraint === undefined || constraint === '' ? '[^/]+' : constraint;
+      if (optional && literal.endsWith('/')) {
+        // `/opt/:id?` matches `/opt` as well as `/opt/5`.
+        literal = literal.slice(0, -1);
+        group = `(?:/(${body}))?`;
+      } else if (optional) {
+        group = `(${body})?`;
+      } else {
+        group = `(${body})`;
+      }
+    }
+
+    source += escapeRegex(literal) + group;
+    last = match.index + token.length;
+  }
+  source += escapeRegex(pattern.slice(last));
+
+  return { regex: new RegExp(`^${source}$`), paramNames, pattern };
+}
+
+/**
+ * Match `path` against a compiled pattern.
+ *
+ * Parameters are URL-decoded (`/users/John%20Doe` gives `'John Doe'`), and
+ * every call returns a new object, so a handler changing `req.params` cannot
+ * leak into another request.
+ *
+ * @private
+ * @returns {Object|null} Parameters, or null when the path does not match
+ */
+function matchCompiled(compiled, path) {
+  const match = compiled.regex.exec(path);
+  if (!match) return null;
+
+  const params = {};
+  for (let i = 0; i < compiled.paramNames.length; i++) {
+    const value = match[i + 1];
+    if (value !== undefined) {
+      params[compiled.paramNames[i]] = decodeParam(value);
+    }
+  }
+  return params;
+}
+
+/** Patterns compiled for extractParams() when router compilation is off. @private */
+const extractCache = new Map();
+
+/**
  * Extract parameters from URL path with constraint support
+ *
+ * Used when `enableCompilation: false`; it shares compilePattern() so both
+ * modes match exactly the same paths.
+ *
  * @private
  * @param {string} pattern - URL pattern with parameters (e.g., '/users/:id(\\d+)')
  * @param {string} path - Actual URL path to match
@@ -285,59 +716,13 @@ function addSecurityHeaders(res) {
  * extractParams('/users/:id?', '/users') // {}
  */
 function extractParams(pattern, path) {
-  const patternParts = pattern.split('/');
-  const pathParts = path.split('/');
-  const params = {};
-
-  // Handle wildcard patterns that can match different lengths
-  const hasMultiWildcard = patternParts.includes('**');
-  const hasSingleWildcard = patternParts.includes('*');
-
-  if (!hasMultiWildcard && !hasSingleWildcard && patternParts.length !== pathParts.length) {
-    return null;
+  let compiled = extractCache.get(pattern);
+  if (!compiled) {
+    compiled = compilePattern(pattern);
+    if (extractCache.size >= 1000) extractCache.delete(extractCache.keys().next().value);
+    extractCache.set(pattern, compiled);
   }
-
-  for (let i = 0; i < patternParts.length; i++) {
-    const patternPart = patternParts[i];
-    const pathPart = pathParts[i];
-
-    if (patternPart.startsWith(':')) {
-      // Parse parameter with optional constraint: :name(regex) or :name?
-      const match = patternPart.match(/^:([^(]+)(\(([^)]+)\))?(\?)?$/);
-      if (match) {
-        const [, paramName, , constraint, optional] = match;
-
-        // Check if parameter is optional and path part is missing
-        if (optional && !pathPart) {
-          continue;
-        }
-
-        // Apply constraint if present
-        if (constraint) {
-          const regex = new RegExp(`^${constraint}$`);
-          if (!regex.test(pathPart)) {
-            return null; // Constraint failed
-          }
-        }
-
-        params[paramName] = pathPart;
-      } else {
-        // Fallback to simple parameter
-        params[patternPart.slice(1)] = pathPart;
-      }
-    } else if (patternPart === '*') {
-      // Single wildcard - matches one segment
-      params.splat = pathPart;
-    } else if (patternPart === '**') {
-      // Multi-segment wildcard - matches remaining path
-      params.splat = pathParts.slice(i).join('/');
-      return params; // ** consumes rest of path
-    } else if (patternPart !== pathPart) {
-      return null;
-    }
-  }
-
-  return params;
+  return matchCompiled(compiled, path);
 }
 
 
@@ -352,6 +737,13 @@ function processRoutes(routeObj, router, basePath = '') {
   if (!routeObj || typeof routeObj !== 'object') return;
 
   Object.entries(routeObj).forEach(([key, config]) => {
+    // `GET: (req) => ({...})` is shorthand for `GET: { handler }`. It used to
+    // be skipped silently, so the route was never registered.
+    if (typeof config === 'function' && HTTP_METHODS.includes(key.toUpperCase())) {
+      registerRoute(key.toUpperCase(), { handler: config }, router, basePath);
+      return;
+    }
+
     if (!config || typeof config !== 'object') return;
 
     // Check if this is a WebSocket route configuration
@@ -417,24 +809,31 @@ function registerRoute(method, config, router, path) {
     return;
   }
 
-  // Apply _error handling
-  if (errorHandling) {
-    chain.forEach((fn, i) => {
-      chain[i] = withErrorHandling(fn);
-    });
-  }
+  // Whether each step waits for next() is decided on the function the user
+  // wrote: withErrorHandling's wrapper always declares three parameters. The
+  // final handler never waits; it answers by returning or by writing.
+  const steps = chain.map((fn, i) => ({
+    fn: errorHandling ? withErrorHandling(fn) : fn,
+    expectsNext: i < chain.length - 1 && fn.length >= 3
+  }));
 
   // Register route with name option
   router.addRoute(method, routePath, async (req, res) => {
     try {
       // Execute middleware and handler chain
       let result = null;
-      for (const fn of chain) {
-        result = await fn(req, res);
+      for (const { fn, expectsNext } of steps) {
+        const outcome = await runMiddleware(fn, req, res, expectsNext);
+        result = outcome.result;
+        // A middleware that wrote its own response (401, 403, 400...) has
+        // rejected the request: nothing after it may run.
+        if (!outcome.proceed) return;
         if (result && typeof result === 'object') {
           break;
         }
       }
+
+      if (responseStarted(res)) return;
 
       if (result && typeof result === 'object') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -444,11 +843,96 @@ function registerRoute(method, config, router, path) {
         res.end();
       }
     } catch (_error) {
-      const statusCode = _error.statusCode || 500;
-      res.writeHead(statusCode, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ _error: _error.message }));
+      const expose = requestErrorExposure.has(req) ? requestErrorExposure.get(req) : router.exposeErrors;
+      sendError(req, res, _error, expose);
     }
   }, { name });
+}
+
+/**
+ * The `exposeErrors` setting in force for each request handle() is serving,
+ * so object routes honour a per-call override as addRoute routes do.
+ * @private
+ */
+const requestErrorExposure = new WeakMap();
+
+/**
+ * Largest WebSocket frame or reassembled message accepted by default.
+ * @private
+ */
+const WS_DEFAULT_MAX_PAYLOAD = 1024 * 1024;
+
+/**
+ * Encode one unmasked (server-to-client) WebSocket frame with FIN set.
+ * @private
+ * @param {number} opcode - Frame opcode
+ * @param {Buffer} payload - Frame payload
+ * @returns {Buffer} Frame bytes
+ */
+function encodeFrame(opcode, payload) {
+  const length = payload.length;
+  let header;
+  if (length < 126) {
+    header = Buffer.from([0x80 | opcode, length]);
+  } else if (length < 65536) {
+    header = Buffer.allocUnsafe(4);
+    header[0] = 0x80 | opcode;
+    header[1] = 126;
+    header.writeUInt16BE(length, 2);
+  } else {
+    header = Buffer.allocUnsafe(10);
+    header[0] = 0x80 | opcode;
+    header[1] = 127;
+    header.writeUInt32BE(Math.floor(length / 2 ** 32), 2);
+    header.writeUInt32BE(length >>> 0, 6);
+  }
+  return Buffer.concat([header, payload]);
+}
+
+/**
+ * Decode the first WebSocket frame in `buffer`.
+ *
+ * @private
+ * @param {Buffer} buffer - Bytes received so far
+ * @param {number} maxPayload - Largest payload accepted
+ * @returns {{ fin: boolean, opcode: number, payload: Buffer, size: number }|{ error: number }|null}
+ *   The frame and how many bytes it used; `{ error: 1009 }` when it is too
+ *   large; null when the frame is not complete yet
+ */
+function readFrame(buffer, maxPayload) {
+  if (buffer.length < 2) return null;
+
+  const fin = (buffer[0] & 0x80) !== 0;
+  const opcode = buffer[0] & 0x0f;
+  const masked = (buffer[1] & 0x80) !== 0;
+  let length = buffer[1] & 0x7f;
+  let offset = 2;
+
+  if (length === 126) {
+    if (buffer.length < 4) return null;
+    length = buffer.readUInt16BE(2);
+    offset = 4;
+  } else if (length === 127) {
+    if (buffer.length < 10) return null;
+    if (buffer.readUInt32BE(2) !== 0) return { error: 1009 };
+    length = buffer.readUInt32BE(6);
+    offset = 10;
+  }
+
+  if (length > maxPayload) return { error: 1009 };
+
+  const maskOffset = offset;
+  if (masked) offset += 4;
+  if (buffer.length < offset + length) return null;
+
+  const payload = Buffer.from(buffer.subarray(offset, offset + length));
+  if (masked) {
+    for (let i = 0; i < payload.length; i++) {
+      payload[i] ^= buffer[maskOffset + (i & 3)];
+    }
+  }
+
+  return { fin, opcode, payload, size: offset + length };
 }
 
 /**
@@ -523,6 +1007,10 @@ class SimpleRouter {
     this.enableWebSockets = options.enableWebSockets || false;
     this.wsRoutes = [];
     this.wsConnections = new Map(); // Track active WebSocket connections
+    // Browser origins allowed to open WebSockets (per-route allowedOrigins
+    // overrides it). Unset: same-origin handshakes only.
+    this.wsAllowedOrigins = options.wsAllowedOrigins;
+    this.wsMaxPayload = options.wsMaxPayload || WS_DEFAULT_MAX_PAYLOAD;
 
     // Performance metrics
     this.enableMetrics = options.enableMetrics || false;
@@ -554,6 +1042,31 @@ class SimpleRouter {
     this.enableSmartRouting = options.enableSmartRouting !== false; // Default true
     this.staticRoutes = new Map(); // O(1) lookup for exact routes
     this.enableRouteMetrics = options.enableRouteMetrics || false; // Track route type performance
+
+    // Rate limiting: one store per router. X-Forwarded-For is only trusted
+    // when trustProxy says how many proxies append to it.
+    this.rateLimiter = new RateLimiter();
+    this.trustProxy = options.trustProxy ?? false;
+
+    // 5xx responses carry a generic message unless this is true (or, when
+    // it is unset, NODE_ENV is 'development'). The real error is logged.
+    this.exposeErrors = options.exposeErrors;
+
+    // Default per-request options for handle() and createServer().
+    this.defaultOptions = options;
+
+    // `prefix` and `middleware` apply to every route registered afterwards,
+    // like an outermost group() and router.use(). Both were declared in the
+    // router's types but ignored, so a config-level auth middleware silently
+    // protected nothing.
+    if (typeof options.prefix === 'string' && options.prefix !== '' && options.prefix !== '/') {
+      const prefix = options.prefix.startsWith('/') ? options.prefix : `/${options.prefix}`;
+      this.routeGroups.push({ prefix: trimTrailingSlashes(prefix), middleware: [] });
+    }
+    if (options.middleware) {
+      const configured = Array.isArray(options.middleware) ? options.middleware : [options.middleware];
+      configured.forEach((middleware) => this.use(middleware));
+    }
   }
 
   /**
@@ -652,7 +1165,7 @@ class SimpleRouter {
       if (!handler) {
         res.writeHead(406, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
-          _error: 'Not Acceptable',
+          error: 'Not Acceptable',
           supportedTypes: Object.keys(handlers)
         }));
         return;
@@ -765,6 +1278,8 @@ class SimpleRouter {
    * @param {string} path - WebSocket path
    * @param {Function} handler - WebSocket handler function
    * @param {Object} options - Route options
+   * @param {string|string[]} [options.allowedOrigins] - Browser origins allowed to connect
+   *   (`'*'` for any); overrides the router's `wsAllowedOrigins`
    */
   addWebSocketRoute(path, handler, options = {}) {
     if (!this.enableWebSockets) {
@@ -779,6 +1294,7 @@ class SimpleRouter {
       handler,
       name: options.name,
       version: options.version || this.defaultVersion,
+      allowedOrigins: options.allowedOrigins,
       compiled: this.enableCompilation ? this.compileRoute(fullPath) : null
     };
 
@@ -786,6 +1302,37 @@ class SimpleRouter {
 
     if (options.name) {
       this.namedRoutes.set(options.name, { method: 'WS', path: fullPath, version: wsRoute.version });
+    }
+  }
+
+  /**
+   * Whether a WebSocket handshake's Origin may connect to `route`.
+   *
+   * Browsers attach cookies to cross-site WebSocket handshakes and send an
+   * Origin header; without a check, any page could open an authenticated
+   * socket (cross-site WebSocket hijacking). With no allowlist configured,
+   * only same-origin browser handshakes are accepted. Clients that send no
+   * Origin (non-browser clients) are not affected.
+   *
+   * @private
+   * @param {Object} request - Upgrade request
+   * @param {Object} route - Matched WebSocket route
+   * @returns {boolean}
+   */
+  isWebSocketOriginAllowed(request, route) {
+    const origin = request.headers?.origin;
+    if (!origin) return true;
+
+    const configured = route.allowedOrigins ?? this.wsAllowedOrigins;
+    if (configured !== undefined && configured !== null) {
+      const allowed = Array.isArray(configured) ? configured : [configured];
+      return allowed.includes('*') || allowed.includes(origin);
+    }
+
+    try {
+      return new URL(origin).host === request.headers.host;
+    } catch {
+      return false;
     }
   }
 
@@ -801,8 +1348,15 @@ class SimpleRouter {
       return;
     }
 
-    const url = new URL(request.url, `http://${request.headers.host}`);
-    const pathname = url.pathname;
+    // A fixed base: building it from the Host header threw on a malformed
+    // value, inside an 'upgrade' listener, which crashed the process.
+    let pathname;
+    try {
+      pathname = new URL(request.url, 'http://localhost').pathname;
+    } catch {
+      socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
+      return;
+    }
 
     // Find matching WebSocket route
     let matchedRoute = null;
@@ -823,6 +1377,11 @@ class SimpleRouter {
 
     if (!matchedRoute) {
       socket.end('HTTP/1.1 404 Not Found\r\n\r\n');
+      return;
+    }
+
+    if (!this.isWebSocketOriginAllowed(request, matchedRoute.route)) {
+      socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
       return;
     }
 
@@ -879,20 +1438,19 @@ class SimpleRouter {
 
     // Handle connection cleanup
     socket.on('close', () => {
+      ws.readyState = 3; // CLOSED
+
       // Call the route handler's close callback before cleanup
       if (matchedRoute.route.handler.onClose) {
         matchedRoute.route.handler.onClose(ws);
       }
-
-      // Store connection info before deletion for potential use in handlers
-      // const connectionInfo = { id: connectionId, path: ws.path };
 
       // Fire any custom close handlers set by the route handler
       if (ws.onclose) {
         try {
           ws.onclose();
         } catch (_error) {
-          console.error('WebSocket onclose handler _error:', _error);
+          console.error('WebSocket onclose handler error:', _error);
         }
       }
 
@@ -906,19 +1464,37 @@ class SimpleRouter {
     try {
       matchedRoute.route.handler(ws, request);
     } catch (err) {
-      console.error('WebSocket upgrade _error:', err);
+      console.error('WebSocket upgrade error:', err);
       socket.end('HTTP/1.1 500 Internal Server Error\r\n\r\n');
+      return;
     }
+
+    // Frames the client sent along with the handshake arrive in `head`;
+    // they used to be dropped.
+    if (head && head.length > 0) ws.receive(head);
   }
 
   /**
    * Create WebSocket wrapper with message handling
+   *
+   * Incoming bytes are buffered and split into frames, so a frame spread
+   * over several TCP chunks, or several frames in one chunk, are all
+   * delivered; each chunk used to be parsed as exactly one frame. Fragmented
+   * text messages are reassembled, pings are answered, a close frame is
+   * answered and closes the socket, and frames or messages larger than
+   * `wsMaxPayload` (1 MiB by default) close the connection with 1009.
+   *
    * @param {Object} socket - Raw socket
    * @param {Object} matchedRoute - Matched route info
    * @returns {Object} WebSocket wrapper
    * @private
    */
   createWebSocketWrapper(socket) {
+    const router = this;
+    const maxPayload = this.wsMaxPayload;
+    let pending = Buffer.alloc(0);
+    const state = { fragments: null }; // A fragmented message being assembled
+
     const ws = {
       socket,
       readyState: 1, // OPEN
@@ -953,48 +1529,39 @@ class SimpleRouter {
 
       createFrame(data) {
         const payload = Buffer.from(data, 'utf8');
-        const payloadLength = payload.length;
-
-        let frame;
-        if (payloadLength < 126) {
-          frame = Buffer.allocUnsafe(2 + payloadLength);
-          frame[0] = 0x81; // FIN + text frame
-          frame[1] = payloadLength;
-          payload.copy(frame, 2);
-        } else if (payloadLength < 65536) {
-          frame = Buffer.allocUnsafe(4 + payloadLength);
-          frame[0] = 0x81;
-          frame[1] = 126;
-          frame.writeUInt16BE(payloadLength, 2);
-          payload.copy(frame, 4);
-        } else {
-          frame = Buffer.allocUnsafe(10 + payloadLength);
-          frame[0] = 0x81;
-          frame[1] = 127;
-          frame.writeUInt32BE(0, 2);
-          frame.writeUInt32BE(payloadLength, 6);
-          payload.copy(frame, 10);
-        }
-
-        return frame;
+        return encodeFrame(0x1, payload);
       },
 
       createCloseFrame(code, reason) {
         const reasonBuffer = Buffer.from(reason, 'utf8');
-        const frame = Buffer.allocUnsafe(4 + reasonBuffer.length);
-        frame[0] = 0x88; // FIN + close frame
-        frame[1] = 2 + reasonBuffer.length;
-        frame.writeUInt16BE(code, 2);
-        reasonBuffer.copy(frame, 4);
-        return frame;
+        const payload = Buffer.allocUnsafe(2 + reasonBuffer.length);
+        payload.writeUInt16BE(code, 0);
+        reasonBuffer.copy(payload, 2);
+        return encodeFrame(0x8, payload);
       },
 
       createPingFrame(data) {
-        const frame = Buffer.allocUnsafe(2 + data.length);
-        frame[0] = 0x89; // FIN + ping frame
-        frame[1] = data.length;
-        data.copy(frame, 2);
-        return frame;
+        return encodeFrame(0x9, data);
+      },
+
+      /**
+       * Feed raw bytes from the socket.
+       * @param {Buffer} chunk - Bytes as received
+       */
+      receive(chunk) {
+        pending = pending.length > 0 ? Buffer.concat([pending, chunk]) : chunk;
+
+        while (this.readyState === 1) {
+          const frame = readFrame(pending, maxPayload);
+          if (!frame) break;
+          if (frame.error) {
+            pending = Buffer.alloc(0);
+            this.close(frame.error, 'Message too big');
+            return;
+          }
+          pending = pending.subarray(frame.size);
+          router.handleWebSocketFrame(ws, frame, state);
+        }
       }
     };
 
@@ -1003,76 +1570,103 @@ class SimpleRouter {
     // Handle incoming messages
     socket.on('data', (buffer) => {
       try {
-        const message = this.parseWebSocketFrame(buffer);
-        if (message && ws.onmessage) {
-          ws.onmessage({ data: message });
-        }
-      } catch {
+        ws.receive(buffer);
+      } catch (_error) {
+        console.error('WebSocket message handling error:', _error);
       }
     });
 
+    // The upgraded socket is half-open capable (node:http servers allow
+    // half-open connections), so a client that goes away without a close
+    // frame left it open forever; finish our side too.
+    socket.on('end', () => {
+      ws.readyState = 3; // CLOSED
+      socket.end();
+    });
+
     // Handle socket errors
-    socket.on('_error', (err) => {
-      console.error('WebSocket socket _error (connection likely closed):', err.code);
-      // Don't re-throw the _error, just log it
+    socket.on('error', (err) => {
+      console.error('WebSocket socket error (connection likely closed):', err.code);
+      // Don't re-throw the error, just log it
     });
 
     return ws;
   }
 
   /**
+   * Act on one complete incoming frame.
+   * @private
+   * @param {Object} ws - Connection wrapper
+   * @param {{ fin: boolean, opcode: number, payload: Buffer }} frame - Decoded frame
+   * @param {{ fragments: Object|null }} state - Fragmented message being assembled
+   */
+  handleWebSocketFrame(ws, frame, state) {
+    const { fin, opcode, payload } = frame;
+
+    switch (opcode) {
+      case 0x8: {
+        // Close: answer with the same status code, then close the socket.
+        const code = payload.length >= 2 ? payload.readUInt16BE(0) : 1000;
+        ws.close(code >= 1000 && code < 5000 ? code : 1000);
+        return;
+      }
+      case 0x9:
+        // Ping: answer with a pong carrying the same payload.
+        if (ws.readyState === 1) ws.socket.write(encodeFrame(0xa, payload));
+        return;
+      case 0xa:
+        return; // Pong
+      case 0x0: {
+        // Continuation of a fragmented message
+        const pendingMessage = state.fragments;
+        if (!pendingMessage) return;
+        pendingMessage.size += payload.length;
+        if (pendingMessage.size > this.wsMaxPayload) {
+          state.fragments = null;
+          ws.close(1009, 'Message too big');
+          return;
+        }
+        pendingMessage.parts.push(payload);
+        if (fin) {
+          state.fragments = null;
+          if (pendingMessage.opcode === 0x1) this.deliverWebSocketMessage(ws, Buffer.concat(pendingMessage.parts));
+        }
+        return;
+      }
+      case 0x1:
+      case 0x2:
+        if (!fin) {
+          state.fragments = { opcode, parts: [payload], size: payload.length };
+          return;
+        }
+        // Only text messages are delivered; binary frames are ignored.
+        if (opcode === 0x1) this.deliverWebSocketMessage(ws, payload);
+        return;
+      default:
+        return;
+    }
+  }
+
+  /** @private */
+  deliverWebSocketMessage(ws, payload) {
+    if (typeof ws.onmessage !== 'function') return;
+    try {
+      ws.onmessage({ data: payload.toString('utf8') });
+    } catch (_error) {
+      console.error('WebSocket onmessage handler error:', _error);
+    }
+  }
+
+  /**
    * Parse WebSocket frame
    * @param {Buffer} buffer - Raw frame data
-   * @returns {string|null} Parsed message
+   * @returns {string|null} The text of a single complete text frame, else null
    * @private
    */
   parseWebSocketFrame(buffer) {
-    if (buffer.length < 2) return null;
-
-    const firstByte = buffer[0];
-    const secondByte = buffer[1];
-
-    const opcode = firstByte & 0x0f;
-    const masked = (secondByte & 0x80) === 0x80;
-    let payloadLength = secondByte & 0x7f;
-
-    // Handle close frame (opcode 8)
-    if (opcode === 8) {
-      return null; // Close frame, don't process as message
-    }
-
-    // Only process text frames (opcode 1)
-    if (opcode !== 1) {
-      return null;
-    }
-
-    let offset = 2;
-
-    if (payloadLength === 126) {
-      if (buffer.length < offset + 2) return null;
-      payloadLength = buffer.readUInt16BE(offset);
-      offset += 2;
-    } else if (payloadLength === 127) {
-      if (buffer.length < offset + 8) return null;
-      payloadLength = buffer.readUInt32BE(offset + 4); // Ignore high 32 bits
-      offset += 8;
-    }
-
-    if (masked) {
-      if (buffer.length < offset + 4 + payloadLength) return null;
-      const maskKey = buffer.slice(offset, offset + 4);
-      offset += 4;
-
-      const payload = buffer.slice(offset, offset + payloadLength);
-      for (let i = 0; i < payload.length; i++) {
-        payload[i] ^= maskKey[i % 4];
-      }
-
-      return payload.toString('utf8');
-    }
-
-    if (buffer.length < offset + payloadLength) return null;
-    return buffer.slice(offset, offset + payloadLength).toString('utf8');
+    const frame = readFrame(buffer, this.wsMaxPayload);
+    if (!frame || frame.error || frame.opcode !== 0x1) return null;
+    return frame.payload.toString('utf8');
   }
 
   /**
@@ -1225,7 +1819,9 @@ class SimpleRouter {
   createConditionalMiddleware(config) {
     const { condition, middleware } = config;
 
-    return async (req, res) => {
+    // Declared with `next` so the chain waits on it: the wrapped middleware
+    // may itself be Express-style and continue asynchronously.
+    return async (req, res, next) => {
       // Evaluate condition
       let shouldExecute = false;
 
@@ -1238,11 +1834,14 @@ class SimpleRouter {
         shouldExecute = !!condition;
       }
 
-      if (shouldExecute) {
-        return await middleware(req, res);
+      if (!shouldExecute) {
+        next(); // Skip middleware
+        return undefined;
       }
 
-      return null; // Skip middleware
+      const { result, proceed } = await runMiddleware(middleware, req, res);
+      if (proceed) next();
+      return result;
     };
   }
 
@@ -1371,66 +1970,7 @@ class SimpleRouter {
       return compiled;
     }
 
-    const paramNames = [];
-    let regexPattern = pattern;
-
-    // Handle wildcards first
-    if (pattern.includes('**')) {
-      regexPattern = regexPattern.replace(/\/\*\*/g, '/(.*)');
-      paramNames.push('splat');
-    } else if (pattern.includes('*')) {
-      regexPattern = regexPattern.replace(/\/\*/g, '/([^/]+)');
-      paramNames.push('splat');
-    }
-
-    // Handle parameters with constraints and optional parameters
-    // The name class excludes ':' and the constraint class excludes '(' so
-    // neither can span the next parameter. With [^(/]+ and [^)]+ a pattern
-    // of many ":'(" re-split at every position: 16,000 took 301ms, 64,000
-    // took 4.7s. CodeQL js/polynomial-redos.
-    regexPattern = regexPattern.replace(/:([^(/:]+)(\([^()]*\))?(\?)?/g, (match, paramName, constraint, optional, offset, fullString) => {
-      paramNames.push(paramName);
-
-      // Check if there's already a slash before this parameter in the full string
-      const hasPrecedingSlash = offset > 0 && fullString[offset - 1] === '/';
-
-      // NEW_FIX_DEBUG: This is our fix for double slashes
-      if (hasPrecedingSlash) {
-        // When there's already a slash, don't add another one
-        if (constraint) {
-          const constraintPattern = constraint.slice(1, -1);
-          return optional ? `(?:/(?:${constraintPattern}))?` : `(${constraintPattern})`;
-        } else {
-          return optional ? `(?:([^/]+))?` : `([^/]+)`;
-        }
-      } else {
-        // When there's no preceding slash, add one
-        if (constraint) {
-          const constraintPattern = constraint.slice(1, -1);
-          return optional ? `(?:/(?:${constraintPattern}))?` : `/${constraintPattern}`;
-        } else {
-          return optional ? `(?:/([^/]+))?` : `/([^/]+)`;
-        }
-      }
-    });
-
-    // Escape special regex characters except those we want to keep
-    // Be careful not to break character classes like [^/]
-    // Strategy: Escape everything first, then fix character classes
-    regexPattern = regexPattern.replace(/([.+?^${}|\\[\]()]])/g, '\\$1');
-    // Now fix character classes - look for escaped character classes and unescape them
-    regexPattern = regexPattern.replace(/\\\[/g, '[')      // [ becomes [
-                           .replace(/\\\]/g, ']')       // ] becomes ]
-                           .replace(/\\\^/g, '^');      // ^ becomes ^ (only when inside [])
-
-    // Ensure exact match
-    regexPattern = `^${regexPattern}$`;
-
-    const compiled = {
-      regex: new RegExp(regexPattern),
-      paramNames,
-      pattern
-    };
+    const compiled = compilePattern(pattern);
 
     // Cache the compiled route with LRU eviction
     if (this.routeCompilationCache.size >= this.maxCompilationCacheSize) {
@@ -1447,23 +1987,11 @@ class SimpleRouter {
    * Match path using compiled route
    * @param {Object} compiledRoute - Compiled route object
    * @param {string} path - Path to match
-   * @returns {Object|null} Parameters object or null if no match
+   * @returns {Object|null} Parameters object (URL-decoded, new on every call) or null if no match
    * @private
    */
   matchCompiledRoute(compiledRoute, path) {
-    const match = compiledRoute.regex.exec(path);
-    if (!match) return null;
-
-    const params = {};
-    for (let i = 0; i < compiledRoute.paramNames.length; i++) {
-      const paramName = compiledRoute.paramNames[i];
-      const value = match[i + 1];
-      if (value !== undefined) {
-        params[paramName] = value;
-      }
-    }
-
-    return params;
+    return matchCompiled(compiledRoute, path);
   }
 
   /**
@@ -1638,6 +2166,78 @@ class SimpleRouter {
   }
 
   /**
+   * Find the route for a method and path.
+   *
+   * Matches are cached per method, path and (with versioning) API version:
+   * the cache used to ignore the version, so once a v1 request was cached a
+   * v2 request for the same path got the v1 handler. The cached parameters
+   * are copied for every request, since the cache used to hand out one
+   * shared object and a handler mutating `req.params` changed it for every
+   * later request.
+   *
+   * @private
+   * @param {string} method - HTTP method
+   * @param {string} pathname - Request path
+   * @param {string|null} requestVersion - API version, when versioning is on
+   * @returns {{ route: Object, params: Object }|null}
+   */
+  findRoute(method, pathname, requestVersion) {
+    const cacheKey = this.enableVersioning
+      ? `${method}:${requestVersion}:${pathname}`
+      : `${method}:${pathname}`;
+
+    const cached = this.routeCache.get(cacheKey);
+    if (cached) {
+      if (this.enableMetrics) this.metrics.cacheHits++;
+      return { route: cached.route, params: { ...cached.params } };
+    }
+
+    // Smart routing: check static routes first for O(1) lookup
+    if (this.enableSmartRouting) {
+      const staticRoute = this.staticRoutes.get(`${method}:${pathname}`);
+
+      // Skip route if versioning is enabled and versions don't match
+      if (staticRoute && (!this.enableVersioning || staticRoute.version === requestVersion)) {
+        // Track static route performance
+        if (this.enableRouteMetrics && this.enableMetrics) {
+          this.metrics.staticRouteMatches = (this.metrics.staticRouteMatches || 0) + 1;
+        }
+        return { route: staticRoute, params: {} }; // Static routes have no parameters
+      }
+    }
+
+    // Fallback to dynamic route matching if no static match found
+    const routesToSearch = this.enableVersioning && this.versionedRoutes.has(requestVersion)
+      ? this.versionedRoutes.get(requestVersion)
+      : this.routes;
+
+    for (const route of routesToSearch) {
+      if (route.method !== method) continue;
+      // Skip route if versioning is enabled and versions don't match
+      if (this.enableVersioning && route.version !== requestVersion) continue;
+
+      const params = this.enableCompilation && route.compiled
+        ? this.matchCompiledRoute(route.compiled, pathname)
+        : extractParams(route.path, pathname);
+
+      if (params !== null) {
+        // Track dynamic route performance
+        if (this.enableRouteMetrics && this.enableMetrics) {
+          this.metrics.dynamicRouteMatches = (this.metrics.dynamicRouteMatches || 0) + 1;
+        }
+
+        // Cache the match if under size limit
+        if (this.routeCache.size < this.maxCacheSize) {
+          this.routeCache.set(cacheKey, { route, params: { ...params } });
+        }
+        return { route, params };
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * Resolve the CORS policy for a request, honouring a per-call override.
    *
    * @private
@@ -1653,12 +2253,20 @@ class SimpleRouter {
   async handle(req, res, options = {}) {
     const startTime = Date.now();
 
+    // Router-level options (rateLimit, maxBodySize...) apply to direct
+    // handle() calls too, not only to createServer(); per-call options win.
+    options = { ...this.defaultOptions, ...options };
+
     // Metrics collection
     if (this.enableMetrics) {
       this.metrics.requests++;
     }
 
-    const { corsOrigin, rateLimit = { windowMs: 60000, maxRequests: 100 } } = options;
+    const {
+      corsOrigin,
+      rateLimit = { windowMs: 60000, maxRequests: 100 },
+      trustProxy = this.trustProxy
+    } = options;
 
     // Add security headers conditionally for performance optimization
     if (this.enableSecurityHeaders) {
@@ -1669,21 +2277,6 @@ class SimpleRouter {
       applyCorsHeaders(req, res, this.corsPolicyFor(corsOrigin));
     }
 
-    // Handle preflight requests
-    if (req.method === 'OPTIONS') {
-      res.writeHead(204);
-      res.end();
-      return;
-    }
-
-    // Rate limiting
-    const clientIP = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
-    if (!checkRateLimit(clientIP, rateLimit.windowMs, rateLimit.maxRequests)) {
-      res.writeHead(429, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ _error: 'Too Many Requests' }));
-      return;
-    }
-
     // Parse URL and query parameters
     const parsedUrl = parseUrl(req.url, true);
     const pathname = parsedUrl.pathname;
@@ -1691,105 +2284,63 @@ class SimpleRouter {
       req.query = parsedUrl.query || {};
     }
 
+    // Get request version if versioning is enabled
+    const requestVersion = this.enableVersioning ? this.getRequestVersion(req) : null;
+
+    // Answer CORS preflights with 204, unless the application registered an
+    // OPTIONS route for this path: router.options() handlers used to be
+    // unreachable.
+    if (req.method === 'OPTIONS' && !this.findRoute('OPTIONS', pathname, requestVersion)) {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
+    // Rate limiting (`rateLimit: false` turns it off)
+    if (rateLimit) {
+      const key = typeof rateLimit.keyGenerator === 'function'
+        ? String(rateLimit.keyGenerator(req))
+        : clientAddress(req, trustProxy);
+      const { allowed, resetTime } = this.rateLimiter.hit(key, rateLimit.windowMs, rateLimit.maxRequests);
+      if (!allowed) {
+        res.writeHead(429, {
+          'Content-Type': 'application/json',
+          'Retry-After': String(Math.max(1, Math.ceil((resetTime - Date.now()) / 1000)))
+        });
+        res.end(JSON.stringify({ error: 'Too Many Requests' }));
+        return;
+      }
+    }
+
     // Parse request body with size limits
     try {
       req.body = await parseBody(req, options.maxBodySize);
     } catch (_error) {
       if (this.enableMetrics) this.metrics.errors++;
-      const statusCode = _error.message.includes('too large') ? 413 : 400;
-      res.writeHead(statusCode, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ _error: _error.message }));
+      // The client went away mid-body: there is nobody to answer.
+      if (_error.code === 'ECONNABORTED' || responseStarted(res) || responseClosed(res)) return;
+      const statusCode = _error.statusCode === 413 ? 413 : 400;
+      const headers = { 'Content-Type': 'application/json' };
+      // Do not keep reading an oversized upload on this connection.
+      if (statusCode === 413) headers.Connection = 'close';
+      res.writeHead(statusCode, headers);
+      res.end(JSON.stringify({ error: _error.message }));
       return;
     }
 
-    // Check route cache first
-    const cacheKey = `${req.method}:${pathname}`;
-    let matchedRoute = this.routeCache.get(cacheKey);
-
-    if (matchedRoute && this.enableMetrics) {
-      this.metrics.cacheHits++;
+    // Track version requests in metrics
+    if (this.enableMetrics && requestVersion) {
+      this.metrics.versionRequests.set(requestVersion, (this.metrics.versionRequests.get(requestVersion) || 0) + 1);
     }
 
-    if (!matchedRoute) {
-      // Get request version if versioning is enabled
-      const requestVersion = this.enableVersioning ? this.getRequestVersion(req) : null;
-
-      // Track version requests in metrics
-      if (this.enableMetrics && requestVersion) {
-        this.metrics.versionRequests.set(requestVersion, (this.metrics.versionRequests.get(requestVersion) || 0) + 1);
-      }
-
-      // Find matching route using smart routing optimization
-      matchedRoute = null; // Reset matchedRoute for smart routing search
-
-      // Smart routing: check static routes first for O(1) lookup
-      if (this.enableSmartRouting) {
-        const staticKey = `${req.method}:${pathname}`;
-        const staticRoute = this.staticRoutes.get(staticKey);
-
-        if (staticRoute) {
-          // Skip route if versioning is enabled and versions don't match
-          if (!this.enableVersioning || staticRoute.version === requestVersion) {
-            matchedRoute = { route: staticRoute, params: {} }; // Static routes have no parameters
-
-            // Track static route performance
-            if (this.enableRouteMetrics && this.enableMetrics) {
-              if (!this.metrics.staticRouteMatches) {
-                this.metrics.staticRouteMatches = 0;
-              }
-              this.metrics.staticRouteMatches++;
-            }
-          }
-        }
-      }
-
-      // Fallback to dynamic route matching if no static match found
-      if (!matchedRoute) {
-        const routesToSearch = this.enableVersioning && this.versionedRoutes.has(requestVersion)
-          ? this.versionedRoutes.get(requestVersion)
-          : this.routes;
-
-        for (const route of routesToSearch) {
-          if (route.method === req.method) {
-            // Skip route if versioning is enabled and versions don't match
-            if (this.enableVersioning && route.version !== requestVersion) {
-              continue;
-            }
-
-            let params = null;
-
-            // Use compiled route if available
-            if (this.enableCompilation && route.compiled) {
-              params = this.matchCompiledRoute(route.compiled, pathname);
-            } else {
-              // Fallback to original parameter extraction
-              params = extractParams(route.path, pathname);
-            }
-
-            if (params !== null) {
-              matchedRoute = { route, params };
-
-              // Track dynamic route performance
-              if (this.enableRouteMetrics && this.enableMetrics) {
-                if (!this.metrics.dynamicRouteMatches) {
-                  this.metrics.dynamicRouteMatches = 0;
-                }
-                this.metrics.dynamicRouteMatches++;
-              }
-
-              // Cache the match if under size limit
-              if (this.routeCache.size < this.maxCacheSize) {
-                this.routeCache.set(cacheKey, matchedRoute);
-              }
-              break;
-            }
-          }
-        }
-      }
-    }
+    // HEAD falls back to the GET route; node:http drops the body of a HEAD
+    // response, so the headers (status, Content-Type) are the GET ones.
+    const matchedRoute = this.findRoute(req.method, pathname, requestVersion)
+      ?? (req.method === 'HEAD' ? this.findRoute('GET', pathname, requestVersion) : null);
 
     if (matchedRoute) {
       req.params = matchedRoute.params;
+      requestErrorExposure.set(req, options.exposeErrors ?? this.exposeErrors);
 
       // Record route match metrics
       if (this.enableMetrics) {
@@ -1798,17 +2349,33 @@ class SimpleRouter {
       }
 
       try {
-        // Execute middleware chain
-        if (matchedRoute.route.middleware && matchedRoute.route.middleware.length > 0) {
-          for (const middleware of matchedRoute.route.middleware) {
-            const result = await middleware(req, res);
-            if (result) break; // Middleware handled response
+        // Execute middleware chain. A middleware that has written a response
+        // (withAuth's 401, withRole's 403, withInputValidation's 400) has
+        // rejected the request, so the handler must not run after it.
+        const { route } = matchedRoute;
+        let result;
+        let handled = false;
+        if (route.middleware && route.middleware.length > 0) {
+          for (const middleware of route.middleware) {
+            const { result: outcome, proceed } = await runMiddleware(middleware, req, res);
+            if (!proceed) {
+              handled = true;
+              break;
+            }
+            if (outcome && (typeof outcome === 'object' || typeof outcome === 'string')) {
+              // Middleware returned the response body itself.
+              result = outcome;
+              handled = true;
+              break;
+            }
+            if (outcome) break; // Skip the remaining middleware
           }
         }
 
         // Execute handler
-        const { route } = matchedRoute;
-        const result = await route.handler(req, res);
+        if (!handled) {
+          result = await route.handler(req, res);
+        }
 
         // Only write response if handler returned data and response hasn't been sent
         if (result && !res.headersSent) {
@@ -1840,10 +2407,7 @@ class SimpleRouter {
         return;
       } catch (_error) {
         if (this.enableMetrics) this.metrics.errors++;
-        if (!res.headersSent) {
-          res.writeHead(500, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ _error: _error.message }));
-        }
+        sendError(req, res, _error, options.exposeErrors ?? this.exposeErrors);
         return;
       }
     }
@@ -1852,7 +2416,7 @@ class SimpleRouter {
     if (this.enableMetrics) this.metrics.errors++;
     if (!res.headersSent) {
       res.writeHead(404, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ _error: 'Not Found' }));
+      res.end(JSON.stringify({ error: 'Not Found' }));
     }
   }
 
@@ -1919,15 +2483,25 @@ class SimpleRouter {
       // Create Express-compatible handler that adapts the Coherent.js handler
       const expressHandler = async (req, res, next) => {
         try {
-          // Apply Coherent.js middleware
+          // Apply Coherent.js middleware. Both `(req, res) => value` and
+          // `(req, res, next)` styles are accepted; waiting on next() alone
+          // hung forever on the former.
+          let result;
+          let handled = false;
           for (const mw of middleware) {
-            await new Promise((resolve, reject) => {
-              mw(req, res, (err) => err ? reject(err) : resolve());
-            });
+            const outcome = await runMiddleware(mw, req, res);
+            if (!outcome.proceed) return;
+            if (outcome.result && (typeof outcome.result === 'object' || typeof outcome.result === 'string')) {
+              result = outcome.result;
+              handled = true;
+              break;
+            }
           }
 
           // Call the handler
-          const result = await handler(req, res);
+          if (!handled) {
+            result = await handler(req, res);
+          }
 
           // If result is returned and response not sent, send as JSON
           if (result !== undefined && !res.headersSent) {

@@ -9,6 +9,29 @@
  */
 
 /**
+ * A signal that aborts when either the tracker's controller or the caller's
+ * signal does, keeping the caller's abort reason.
+ *
+ * @param {AbortController} controller - Tracker-owned controller
+ * @param {AbortSignal} [callerSignal] - Signal the caller passed to fetch
+ * @returns {AbortSignal}
+ */
+function mergeSignals(controller, callerSignal) {
+  if (!callerSignal) {
+    return controller.signal;
+  }
+  if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.any === 'function') {
+    return AbortSignal.any([controller.signal, callerSignal]);
+  }
+  if (callerSignal.aborted) {
+    controller.abort(callerSignal.reason);
+  } else {
+    callerSignal.addEventListener('abort', () => controller.abort(callerSignal.reason), { once: true });
+  }
+  return controller.signal;
+}
+
+/**
  * Tracks module resources for cleanup during HMR
  */
 export class CleanupTracker {
@@ -123,13 +146,10 @@ export class CleanupTracker {
         const controller = new AbortController();
         resources.abortControllers.add(controller);
 
-        // Merge signals if one was provided
-        const mergedOptions = {
-          ...options,
-          signal: controller.signal,
-        };
+        // Abort on module disposal and when the caller's own signal aborts
+        const signal = mergeSignals(controller, options.signal);
 
-        return fetch(url, mergedOptions).finally(() => {
+        return fetch(url, { ...options, signal }).finally(() => {
           resources.abortControllers.delete(controller);
         });
       },

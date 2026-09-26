@@ -27,8 +27,10 @@ export class MetaBuilder {
    * Set page title
    */
   title(title, options = {}) {
-    const fullTitle = options.template 
-      ? options.template.replace('%s', title)
+    // A replacer function, so `$&`, `$'`, `` $` `` or `$$` in the title are
+    // inserted literally instead of being read as replacement patterns.
+    const fullTitle = options.template
+      ? options.template.replace('%s', () => title)
       : title;
 
     this.tags.push({ title: { text: fullTitle } });

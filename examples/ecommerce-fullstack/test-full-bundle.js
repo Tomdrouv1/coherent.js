@@ -30,7 +30,7 @@ import {
   handleEnhancedError
 } from '@coherent.js/devtools';
 
-import { createCoherent } from '@coherent.js/core';
+import { render } from '@coherent.js/core';
 import { createFormState, createListState } from '@coherent.js/state';
 
 // Use all DevTools features (forces bundler to include everything)
@@ -58,15 +58,15 @@ const allDevTools = {
 };
 
 // Application code
-const app = createCoherent({
-  components: {
-    TestApp: () => ({
-      div: {
-        text: 'Full Bundle Test - All DevTools Included'
-      }
-    })
+const TestApp = () => ({
+  div: {
+    text: 'Full Bundle Test - All DevTools Included'
   }
 });
+
+const app = {
+  render: () => render(TestApp())
+};
 
 // Use all imported features to ensure they're not tree-shaken
 console.log('DevTools features available:', Object.keys(allDevTools).length);

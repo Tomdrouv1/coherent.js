@@ -6,9 +6,43 @@
 import {
   render,
   performanceMonitor,
-  importPeerDependency,
   renderComponentFactory
 } from '@coherent.js/core';
+
+function missingPeer(packageName, integrationName, cause) {
+  const error = new Error(
+    `${integrationName} requires the '${packageName}' package to be installed.\n` +
+    `Please install it with: npm install ${packageName} (or pnpm add / yarn add)`
+  );
+  error.cause = cause;
+  return error;
+}
+
+/**
+ * The React module to build elements with.
+ *
+ * An injected `options.React` wins. Otherwise React is imported from *this*
+ * package: it declares `react` as an optional peer, so package managers link
+ * the app's copy next to it. (core's `importPeerDependency` imports relative
+ * to @coherent.js/core instead, which cannot see the app's `react` under
+ * pnpm's isolated layout.) The literal specifier keeps it bundler-friendly.
+ *
+ * @param {Object} [injected] - A React module or namespace supplied by the app
+ * @param {string} integrationName - Used in the error message
+ * @returns {Promise<Object>} Object exposing createElement / useState / useEffect
+ */
+async function loadReact(injected, integrationName) {
+  let mod = injected;
+  if (!mod) {
+    try {
+      mod = await import('react');
+    } catch (_error) {
+      throw missingPeer('react', integrationName, _error);
+    }
+  }
+  // Namespace imports of CommonJS React carry the API on `default`.
+  return typeof mod.createElement === 'function' ? mod : mod.default;
+}
 
 /**
  * Create a Next.js API route handler for Coherent.js components
@@ -33,8 +67,8 @@ export function createCoherentNextHandler(componentFactory, options = {}) {
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.status(200).send(finalHtml);
     } catch (_error) {
-      console.error('Coherent.js Next.js handler _error:', _error);
-      res.status(500).json({ _error: _error.message });
+      console.error('Coherent.js Next.js handler error:', _error);
+      res.status(500).json({ error: _error.message });
     }
   };
 }
@@ -42,17 +76,21 @@ export function createCoherentNextHandler(componentFactory, options = {}) {
 /**
  * Create a Next.js App Router route handler for Coherent.js components
  *
- * @param {Function} componentFactory - Function that returns a Coherent.js component
+ * The factory receives the same `(request, context)` pair Next.js passes to
+ * route handlers, so dynamic segments are available as `context.params`
+ * (a Promise since Next.js 15).
+ *
+ * @param {Function} componentFactory - `(request, context) => component`
  * @param {Object} options - Handler options
  * @returns {Function} Next.js App Router route handler
  */
 export function createCoherentAppRouterHandler(componentFactory, options = {}) {
-  return async function handler(request) {
+  return async function handler(request, context) {
     try {
       // Use shared rendering utility
       const finalHtml = await renderComponentFactory(
         componentFactory,
-        [request],
+        [request, context],
         options
       );
 
@@ -62,9 +100,9 @@ export function createCoherentAppRouterHandler(componentFactory, options = {}) {
         headers: { 'Content-Type': 'text/html; charset=utf-8' }
       });
     } catch (_error) {
-      console.error('Coherent.js Next.js App Router handler _error:', _error);
+      console.error('Coherent.js Next.js App Router handler error:', _error);
       return new Response(
-        JSON.stringify({ _error: _error.message }),
+        JSON.stringify({ error: _error.message }),
         {
           status: 500,
           headers: { 'Content-Type': 'application/json' }
@@ -79,22 +117,16 @@ export function createCoherentAppRouterHandler(componentFactory, options = {}) {
  *
  * @param {Function} componentFactory - Function that returns a Coherent.js component
  * @param {Object} options - Component options
- * @returns {Function} Next.js Server Component
+ * @param {boolean} [options.enablePerformanceMonitoring=false] - Enable performance monitoring
+ * @param {Object} [options.React] - React module to use instead of importing `react`
+ * @returns {Promise<Function>} Next.js Server Component
  */
 export async function createCoherentServerComponent(componentFactory, options = {}) {
   const {
     enablePerformanceMonitoring = false
   } = options;
 
-  // Import React using dependency utilities
-  let React;
-  try {
-    React = await importPeerDependency('react', 'React');
-  } catch (_error) {
-    throw new Error(
-      `Next.js Server Component integration requires React. ${  _error.message}`
-    );
-  }
+  const React = await loadReact(options.React, 'Next.js Server Component integration');
 
   return async function CoherentServerComponent(props) {
     try {
@@ -104,7 +136,7 @@ export async function createCoherentServerComponent(componentFactory, options = 
       );
 
       if (!component) {
-        return React.default.createElement('div', null, 'Error: Component factory returned null/undefined');
+        return React.createElement('div', null, 'Error: Component factory returned null/undefined');
       }
 
       // Render component
@@ -118,12 +150,12 @@ export async function createCoherentServerComponent(componentFactory, options = 
       }
 
       // Return dangerouslySetInnerHTML to render HTML
-      return React.default.createElement('div', {
+      return React.createElement('div', {
         dangerouslySetInnerHTML: { __html: html }
       });
     } catch (_error) {
-      console.error('Coherent.js Next.js Server Component _error:', _error);
-      return React.default.createElement('div', null, `Error: ${_error.message}`);
+      console.error('Coherent.js Next.js Server Component error:', _error);
+      return React.createElement('div', null, `Error: ${_error.message}`);
     }
   };
 }
@@ -133,22 +165,16 @@ export async function createCoherentServerComponent(componentFactory, options = 
  *
  * @param {Function} componentFactory - Function that returns a Coherent.js component
  * @param {Object} options - Component options
- * @returns {Function} Next.js Client Component
+ * @param {boolean} [options.enablePerformanceMonitoring=false] - Enable performance monitoring
+ * @param {Object} [options.React] - React module to use instead of importing `react`
+ * @returns {Promise<Function>} Next.js Client Component
  */
 export async function createCoherentClientComponent(componentFactory, options = {}) {
   const {
     enablePerformanceMonitoring = false
   } = options;
 
-  // Import React using dependency utilities
-  let React;
-  try {
-    React = await importPeerDependency('react', 'React');
-  } catch (_error) {
-    throw new Error(
-      `Next.js Client Component integration requires React. ${  _error.message}`
-    );
-  }
+  const React = await loadReact(options.React, 'Next.js Client Component integration');
 
   return function CoherentClientComponent(props) {
     const [html, setHtml] = React.useState('');
@@ -178,7 +204,7 @@ export async function createCoherentClientComponent(componentFactory, options = 
 
           setHtml(renderedHtml);
         } catch (_error) {
-          console.error('Coherent.js Next.js Client Component _error:', _error);
+          console.error('Coherent.js Next.js Client Component error:', _error);
           setHtml(`Error: ${_error.message}`);
         }
       }
@@ -201,9 +227,14 @@ export async function createCoherentClientComponent(componentFactory, options = 
  */
 export async function createNextIntegration(options = {}) {
   try {
-    // Verify Next.js and React are available
-    await importPeerDependency('next', 'Next.js');
-    await importPeerDependency('react', 'React');
+    // Verify Next.js and React are available, resolved from this package
+    // (see loadReact for why not core's importPeerDependency)
+    try {
+      await import('next');
+    } catch (_error) {
+      throw missingPeer('next', 'Next.js integration', _error);
+    }
+    await loadReact(options.React, 'Next.js integration');
 
     return {
       createCoherentNextHandler: (componentFactory, handlerOptions = {}) =>

@@ -2,7 +2,7 @@
  * Project scaffolding generator
  */
 
-import { writeFileSync, mkdirSync, copyFileSync, constants, readFileSync, appendFileSync } from 'node:fs';
+import { writeFileSync, mkdirSync, copyFileSync, constants, readFileSync, appendFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { execSync } from 'node:child_process';
 import { getCLIVersion, getDependencyRange } from '../utils/version.js';
@@ -16,6 +16,61 @@ import { generateTsConfig, generateJsConfig, getTypeScriptDependencies } from '.
 // Get current CLI version automatically
 const cliVersion = getCLIVersion();
 const cliRange = getDependencyRange(cliVersion);
+
+/**
+ * Values scaffoldProject() accepts; everything else is rejected up front.
+ * (Unknown templates are not listed: they fall back to the basic layout.)
+ */
+export const SCAFFOLD_CHOICES = {
+  runtime: ['built-in', 'express', 'fastify', 'koa'],
+  database: ['postgres', 'mysql', 'sqlite', 'mongodb'],
+  auth: ['jwt', 'session'],
+  language: ['javascript', 'typescript'],
+  packageManager: ['npm', 'yarn', 'pnpm'],
+  packages: ['api', 'client', 'i18n', 'forms', 'devtools', 'seo', 'testing']
+};
+
+/**
+ * Check scaffold options before anything is written, so a bad option
+ * cannot leave a half-created project behind.
+ *
+ * @param {Object} options - runtime, database, auth, packages, language, packageManager.
+ * @param {Object} [config]
+ * @param {boolean} [config.combinations=true] - Also reject option combinations
+ *   the generated code does not support (auth without a SQL database, session
+ *   auth outside express). `coherent create` checks them; scaffoldProject()
+ *   itself only rejects unknown values.
+ * @returns {string[]} Human-readable problems; empty when the options are valid.
+ */
+export function validateScaffoldOptions(options = {}, { combinations = true } = {}) {
+  const problems = [];
+  const check = (key, value) => {
+    if (value !== undefined && value !== null && !SCAFFOLD_CHOICES[key].includes(value)) {
+      problems.push(`Unknown ${key} "${value}". Choose one of: ${SCAFFOLD_CHOICES[key].join(', ')}`);
+    }
+  };
+  check('runtime', options.runtime);
+  check('database', options.database);
+  check('auth', options.auth);
+  check('language', options.language);
+  check('packageManager', options.packageManager);
+  for (const pkg of options.packages ?? []) {
+    check('packages', pkg);
+  }
+  if (!combinations) {
+    return problems;
+  }
+  if (options.auth && !options.database) {
+    problems.push('Auth scaffolding requires a database (it generates login against the User model). Add --database sqlite|postgres|mysql.');
+  }
+  if (options.auth && options.database === 'mongodb') {
+    problems.push('Auth scaffolding requires a SQL database (sqlite, postgres, mysql); MongoDB auth is not supported yet.');
+  }
+  if (options.auth === 'session' && options.runtime && options.runtime !== 'express') {
+    problems.push('Session auth scaffolding is only available for the express runtime. Use --auth jwt, or --runtime express.');
+  }
+  return problems;
+}
 
 /**
  * Scaffold a new Coherent.js project
@@ -34,6 +89,14 @@ export async function scaffoldProject(projectPath, options) {
     packageManager = 'npm',
     onProgress = () => {}
   } = options;
+
+  const problems = validateScaffoldOptions(
+    { runtime, database, auth, packages, language, packageManager },
+    { combinations: false }
+  );
+  if (problems.length > 0) {
+    throw new Error(problems.join('\n'));
+  }
 
   const isTypeScript = language === 'typescript';
   const fileExtension = isTypeScript ? '.ts' : '.js';
@@ -163,20 +226,16 @@ export async function scaffoldProject(projectPath, options) {
     // Write auth routes
     writeFileSync(join(projectPath, `src/api/auth${fileExtension}`), authScaffolding.routes);
 
-    // Append to .env.example
-    const envPath = join(projectPath, '.env.example');
-    const existingEnv = '';
-    writeFileSync(envPath, existingEnv + authScaffolding.env);
+    // .env.example (committed) gets the variable names with empty values;
+    // appended so the database settings written above are kept.
+    appendFileSync(join(projectPath, '.env.example'), authScaffolding.envExample);
 
-    // Update .env if it exists
-    try {
-      const envContent = readFileSync(join(projectPath, '.env'), 'utf8');
-      if (!envContent.includes('JWT_SECRET') && !envContent.includes('SESSION_SECRET')) {
-        appendFileSync(join(projectPath, '.env'), authScaffolding.env);
-      }
-    } catch {
-      // .env might not exist if database wasn't selected first, create it
-      writeFileSync(join(projectPath, '.env'), authScaffolding.env);
+    // .env (git-ignored) gets a freshly generated random secret, so the app
+    // never runs with a value that is known to anyone else.
+    const envPath = join(projectPath, '.env');
+    const envContent = existsSync(envPath) ? readFileSync(envPath, 'utf8') : '';
+    if (!/^(JWT_SECRET|SESSION_SECRET)=./m.test(envContent)) {
+      appendFileSync(envPath, authScaffolding.env);
     }
 
     onProgress('Set up authentication');
@@ -248,24 +307,31 @@ function generatePackageJson(name, options) {
     description: 'A Coherent.js application',
     type: 'module',
     main: isTypeScript ? 'dist/index.js' : `src/index${fileExt}`,
+    // --env-file-if-exists loads .env (secrets, DB credentials) without a
+    // dotenv dependency; `dev` restarts the server when a source file changes.
     scripts: isTypeScript ? {
-      dev: 'tsx watch src/index.ts',
+      dev: 'tsx watch --env-file-if-exists=.env src/index.ts',
       build: 'tsc',
-      start: 'node dist/index.js',
+      start: 'node --env-file-if-exists=.env dist/index.js',
       typecheck: 'tsc --noEmit',
       test: 'vitest run'
     } : {
-      dev: 'node src/index.js',
+      dev: 'node --watch --env-file-if-exists=.env src/index.js',
       build: 'coherent build',
-      start: 'node src/index.js',
+      start: 'node --env-file-if-exists=.env src/index.js',
       test: 'vitest run'
+    },
+    // --env-file-if-exists needs Node >= 22.9; match the CLI's own floor.
+    engines: {
+      node: '>=22.12.0'
     },
     dependencies: {
       '@coherent.js/core': cliRange
     },
     devDependencies: {
       '@coherent.js/cli': cliRange,
-      vitest: '^4.1.10'
+      // Same major as the monorepo's own vitest.
+      vitest: '^5.0.0'
     }
   };
 
@@ -503,7 +569,7 @@ MIT
 node_modules/
 npm-debug.log*
 yarn-debug.log*
-yarn-_error.log*
+yarn-error.log*
 
 # Production builds
 dist/

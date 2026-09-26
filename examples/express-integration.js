@@ -205,7 +205,7 @@ function ExpressUserPage(req) {
 
 // Routes
 app.get('/', (req, res) => {
-  res.send(ExpressHomePage({ name: 'Express Developer' }));
+  res.coherent(ExpressHomePage({ name: 'Express Developer' }));
 });
 
 app.get('/user/:username', createCoherentHandler((req) => {
@@ -309,7 +309,7 @@ setupCoherent(app, {
                           { h3: { text: 'Usage Example' } },
                           { p: { text: 'Create routes that return Coherent.js components:' } },
                           { pre: { text: `app.get('/', (req, res) => {
-  res.send(HomePage({ user: req.user }));
+  res.coherent(HomePage({ user: req.user }));
 });
 
 app.get('/user/:id', createCoherentHandler((req) => {

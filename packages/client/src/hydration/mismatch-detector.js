@@ -5,6 +5,16 @@
  * hydration mismatches in development mode.
  */
 
+import {
+  isElementVNode,
+  readElement,
+  getRenderedChildren,
+  getSignificantDOMChildren,
+  alignChildren,
+  resolveAttributeValue,
+  renderedAttributes,
+} from './vnode.js';
+
 /**
  * Format path segments into readable string
  * @param {Array} segments - Path segments
@@ -15,56 +25,114 @@ export function formatPath(segments) {
   return segments.join('.');
 }
 
+/** Attributes compared between the virtual node and the DOM. */
+const ATTRIBUTE_CHECKS = [
+  { virtual: 'className', dom: 'class' },
+  { virtual: 'id', dom: 'id' },
+  { virtual: 'type', dom: 'type' },
+  { virtual: 'value', dom: 'value' },
+  { virtual: 'checked', dom: 'checked' },
+  { virtual: 'disabled', dom: 'disabled' },
+  { virtual: 'href', dom: 'href' },
+  { virtual: 'src', dom: 'src' }
+];
+
+function textOf(node) {
+  return (node?.textContent ?? '').trim();
+}
+
 /**
- * Get children from virtual node
+ * Compare a list of rendered children (see getRenderedChildren) with the
+ * significant DOM children of `parent`.
  * @private
  */
-function getVNodeChildren(vNode) {
-  if (!vNode || typeof vNode !== 'object' || Array.isArray(vNode)) {
-    return [];
+function compareChildren(parent, vList, path, mismatches, childSegment) {
+  const dList = getSignificantDOMChildren(parent);
+  const { pairs, exact } = alignChildren(vList, dList);
+
+  if (exact && vList.length !== dList.length) {
+    mismatches.push({
+      path: formatPath([...path, 'children']),
+      type: 'children_count',
+      expected: vList.length,
+      actual: dList.length,
+      domPath: getDOMPath(parent)
+    });
   }
-  const tagName = Object.keys(vNode)[0];
-  const props = vNode[tagName];
-  if (!props || typeof props !== 'object') {
-    return [];
+
+  for (const [item, node, index] of pairs) {
+    const childPath = [...path, childSegment(index)];
+
+    if (item.type === 'element') {
+      mismatches.push(...detectMismatch(node, item.vNode, childPath));
+    } else if (item.type === 'text') {
+      const expected = item.text.trim();
+      if (node.nodeType !== 3) {
+        mismatches.push({
+          path: formatPath(childPath),
+          type: 'text',
+          expected,
+          actual: describeNode(node),
+          domPath: getDOMPath(parent)
+        });
+      } else if (textOf(node) !== expected) {
+        mismatches.push({
+          path: formatPath(childPath),
+          type: 'text',
+          expected,
+          actual: textOf(node),
+          domPath: getDOMPath(parent)
+        });
+      }
+    }
   }
-  if (props.children) {
-    return Array.isArray(props.children) ? props.children : [props.children];
+
+  if (!exact) return;
+
+  for (let i = dList.length; i < vList.length; i++) {
+    mismatches.push({
+      path: formatPath([...path, childSegment(i)]),
+      type: 'missing_dom_child',
+      expected: describeRendered(vList[i]),
+      actual: null,
+      domPath: getDOMPath(parent)
+    });
   }
-  if (props.text !== undefined) {
-    return [String(props.text)];
+  for (let i = vList.length; i < dList.length; i++) {
+    mismatches.push({
+      path: formatPath([...path, childSegment(i)]),
+      type: 'extra_dom_child',
+      expected: null,
+      actual: describeNode(dList[i]),
+      domPath: getDOMPath(parent)
+    });
   }
-  return [];
 }
 
 /**
  * Detect mismatches between DOM and virtual DOM
  *
+ * Children are compared as the server rendered them: null, undefined and
+ * booleans produce nothing, nested arrays are flattened, adjacent strings form
+ * one text node and whitespace-only text is ignored on both sides.
+ *
  * @param {Element} domElement - Real DOM element
- * @param {Object|string|number} virtualNode - Virtual DOM node
+ * @param {Object|string|number|Array} virtualNode - Virtual DOM node; an array
+ *   is compared against the children of `domElement`
  * @param {Array} path - Current path for error reporting
  * @returns {Array} - Array of mismatch objects
  */
 export function detectMismatch(domElement, virtualNode, path = []) {
   const mismatches = [];
 
-  // Handle null/undefined virtual node
-  if (virtualNode === null || virtualNode === undefined) {
+  if (virtualNode === null || virtualNode === undefined || typeof virtualNode === 'boolean') {
     return mismatches;
   }
 
   // Handle text nodes (string or number in virtual DOM)
   if (typeof virtualNode === 'string' || typeof virtualNode === 'number') {
     const expectedText = String(virtualNode).trim();
-
-    // DOM might be a text node or element containing text
-    let actualText;
-    if (domElement.nodeType === 3) { // Node.TEXT_NODE
-      actualText = domElement.textContent?.trim() || '';
-    } else {
-      // For element nodes, get direct text content
-      actualText = domElement.textContent?.trim() || '';
-    }
+    const actualText = textOf(domElement);
 
     if (actualText !== expectedText) {
       mismatches.push({
@@ -78,37 +146,18 @@ export function detectMismatch(domElement, virtualNode, path = []) {
     return mismatches;
   }
 
-  // Handle arrays
-  if (Array.isArray(virtualNode)) {
-    virtualNode.forEach((child, index) => {
-      const domChild = getDOMChildAtIndex(domElement, index);
-      if (domChild) {
-        const childMismatches = detectMismatch(
-          domChild,
-          child,
-          [...path, `[${index}]`]
-        );
-        mismatches.push(...childMismatches);
-      } else {
-        mismatches.push({
-          path: formatPath([...path, `[${index}]`]),
-          type: 'missing_element',
-          expected: describeVNode(child),
-          actual: null,
-          domPath: `${getDOMPath(domElement)} > child[${index}]`
-        });
-      }
-    });
+  // A fragment (array or function component): compare against the children
+  if (Array.isArray(virtualNode) || typeof virtualNode === 'function') {
+    const vList = getRenderedChildren('fragment', { children: virtualNode });
+    compareChildren(domElement, vList, path, mismatches, (i) => `[${i}]`);
     return mismatches;
   }
 
-  // Handle element nodes
-  if (typeof virtualNode !== 'object') {
+  if (!isElementVNode(virtualNode)) {
     return mismatches;
   }
 
-  const tagName = Object.keys(virtualNode)[0];
-  const props = virtualNode[tagName] || {};
+  const { tagName, props } = readElement(virtualNode);
 
   // Check tag name
   const domTagName = domElement.tagName?.toLowerCase();
@@ -124,40 +173,35 @@ export function detectMismatch(domElement, virtualNode, path = []) {
     return mismatches;
   }
 
-  // Check critical attributes
-  const attributeChecks = [
-    { virtual: 'className', dom: 'class' },
-    { virtual: 'id', dom: 'id' },
-    { virtual: 'type', dom: 'type' },
-    { virtual: 'value', dom: 'value' },
-    { virtual: 'checked', dom: 'checked' },
-    { virtual: 'disabled', dom: 'disabled' },
-    { virtual: 'href', dom: 'href' },
-    { virtual: 'src', dom: 'src' }
-  ];
+  // Check critical attributes, evaluated the way core renders them
+  const attributes = renderedAttributes(props);
+  for (const { virtual, dom } of ATTRIBUTE_CHECKS) {
+    const isClass = dom === 'class';
+    if (props[virtual] === undefined && !(isClass && props.class !== undefined)) continue;
 
-  attributeChecks.forEach(({ virtual, dom }) => {
-    const expectedValue = props[virtual];
-    if (expectedValue === undefined) return;
-
+    // class comes from className, class or both, arrays and objects joined
+    const expectedValue = isClass
+      ? attributes.get('class') ?? null
+      : resolveAttributeValue(props[virtual]);
     const actualValue = domElement.getAttribute(dom);
-    const expectedStr = String(expectedValue);
 
-    // Handle boolean attributes
-    if (typeof expectedValue === 'boolean') {
-      const actualBool = actualValue !== null;
-      if (expectedValue !== actualBool) {
+    // true renders a bare attribute; false and null render none
+    if (typeof expectedValue === 'boolean' || expectedValue === null || expectedValue === undefined) {
+      const expectedPresent = expectedValue === true;
+      const actualPresent = actualValue !== null && actualValue !== undefined;
+      if (expectedPresent !== actualPresent) {
         mismatches.push({
           path: formatPath([...path, `@${dom}`]),
           type: 'attribute',
-          expected: expectedValue,
-          actual: actualBool,
+          expected: expectedPresent,
+          actual: actualPresent,
           domPath: getDOMPath(domElement)
         });
       }
-      return;
+      continue;
     }
 
+    const expectedStr = String(expectedValue);
     if (expectedStr !== actualValue) {
       mismatches.push({
         path: formatPath([...path, `@${dom}`]),
@@ -167,54 +211,16 @@ export function detectMismatch(domElement, virtualNode, path = []) {
         domPath: getDOMPath(domElement)
       });
     }
-  });
+  }
 
   // Recursively check children
-  const vChildren = getVNodeChildren({ [tagName]: props });
-  const dChildren = getSignificantDOMChildren(domElement);
-
-  // Check for child count mismatch
-  if (vChildren.length !== dChildren.length) {
-    mismatches.push({
-      path: formatPath([...path, 'children']),
-      type: 'children_count',
-      expected: vChildren.length,
-      actual: dChildren.length,
-      domPath: getDOMPath(domElement)
-    });
-  }
-
-  // Compare each child
-  const maxChildren = Math.max(vChildren.length, dChildren.length);
-  for (let i = 0; i < maxChildren; i++) {
-    const vChild = vChildren[i];
-    const dChild = dChildren[i];
-
-    if (vChild && dChild) {
-      const childMismatches = detectMismatch(
-        dChild,
-        vChild,
-        [...path, `children[${i}]`]
-      );
-      mismatches.push(...childMismatches);
-    } else if (vChild && !dChild) {
-      mismatches.push({
-        path: formatPath([...path, `children[${i}]`]),
-        type: 'missing_dom_child',
-        expected: describeVNode(vChild),
-        actual: null,
-        domPath: getDOMPath(domElement)
-      });
-    } else if (!vChild && dChild) {
-      mismatches.push({
-        path: formatPath([...path, `children[${i}]`]),
-        type: 'extra_dom_child',
-        expected: null,
-        actual: describeNode(dChild),
-        domPath: getDOMPath(domElement)
-      });
-    }
-  }
+  compareChildren(
+    domElement,
+    getRenderedChildren(tagName, props),
+    path,
+    mismatches,
+    (i) => `children[${i}]`
+  );
 
   return mismatches;
 }
@@ -252,30 +258,6 @@ export function reportMismatches(mismatches, options = {}) {
   }
 }
 
-/**
- * Get significant DOM children (elements and non-empty text nodes)
- * @private
- */
-function getSignificantDOMChildren(element) {
-  if (!element || !element.childNodes) return [];
-
-  return Array.from(element.childNodes).filter(node => {
-    if (node.nodeType === 1) return true; // Element node
-    if (node.nodeType === 3) { // Text node
-      return node.textContent && node.textContent.trim().length > 0;
-    }
-    return false;
-  });
-}
-
-/**
- * Get DOM child at specific index (considering only significant children)
- * @private
- */
-function getDOMChildAtIndex(parent, index) {
-  const children = getSignificantDOMChildren(parent);
-  return children[index] || null;
-}
 
 /**
  * Get a readable DOM path for debugging
@@ -313,21 +295,17 @@ function getDOMPath(element) {
 }
 
 /**
- * Describe a virtual node for error messages
+ * Describe a rendered child (see getRenderedChildren) for error messages
  * @private
  */
-function describeVNode(vNode) {
-  if (typeof vNode === 'string' || typeof vNode === 'number') {
-    return `text: "${String(vNode).substring(0, 50)}"`;
+function describeRendered(item) {
+  if (item.type === 'text') {
+    return `text: "${item.text.trim().substring(0, 50)}"`;
   }
-  if (Array.isArray(vNode)) {
-    return `array[${vNode.length}]`;
+  if (item.type === 'element') {
+    return `<${Object.keys(item.vNode)[0]}>`;
   }
-  if (typeof vNode === 'object' && vNode !== null) {
-    const tagName = Object.keys(vNode)[0];
-    return `<${tagName}>`;
-  }
-  return String(vNode);
+  return 'raw content';
 }
 
 /**

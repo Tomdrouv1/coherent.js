@@ -176,6 +176,10 @@ export interface DevServerConfig {
   https?: boolean;
   open?: boolean;
   proxy?: Record<string, string>;
+  /** Extra directories files may be served from (besides the project root, its workspace root and node_modules entries). */
+  fsAllow?: string[];
+  /** Host names accepted besides localhost, IP addresses and `host`; `true` accepts any. */
+  allowedHosts?: string[] | true;
   watchFiles?: string[];
   ignore?: string[];
   hmr?: {

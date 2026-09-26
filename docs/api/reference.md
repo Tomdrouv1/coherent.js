@@ -1,635 +1,282 @@
 # Coherent.js API Reference
 
-This document provides a comprehensive reference for all public APIs available in Coherent.js.
-
-> **Pure Object Philosophy**: Coherent.js emphasizes **factory functions** over class instantiation. Throughout this API reference, we recommend using factory functions for a pure JavaScript object approach.
+A reference for the most used public APIs. Each package's README lists its full exports; the TypeScript declarations in `packages/*/types` are checked against the runtime exports in CI.
 
 ## Supported Imports
 
-Use only the package entrypoints:
+Use only the package entry points and their documented subpaths:
 
 ```javascript
 import { render } from '@coherent.js/core';
 import { hydrate } from '@coherent.js/client';
+import { createRouter } from '@coherent.js/api';
 ```
 
 ## Core Rendering
 
 ### `render(component, options?)`
 
-Renders a Coherent.js component to an HTML string.
+Renders a component tree to an HTML string. It is **synchronous**: await data and async components before calling it (a Promise anywhere in the tree throws `Cannot render a Promise at <path>`).
 
-**Parameters:**
-- `component` (CoherentNode): The component to render
-- `options` (Object, optional): Rendering options
-
-**Returns:** String - The rendered HTML
-
-**Example:**
 ```javascript
 import { render } from '@coherent.js/core';
 
-const component = {
+const html = render({
   div: {
     className: 'greeting',
-    children: [
-      { h1: { text: 'Hello, World!' } }
-    ]
+    children: [{ h1: { text: 'Hello, World!' } }]
   }
-};
-
-const html = render(component);
-// Output: <div class="greeting"><h1>Hello, World!</h1></div>
+});
+// <div class="greeting"><h1>Hello, World!</h1></div>
 ```
 
 **Options:**
-- `enableCache` (boolean): Enable caching (default: true)
-- `enableMonitoring` (boolean): Enable performance monitoring (default: false)
-- `minify` (boolean): Minify output HTML
-- `maxDepth` (number): Maximum tree depth
-- `cacheSize` (number): Cache size limit
-- `cacheTTL` (number): Cache TTL in ms
-- `scoped` (boolean): Enable CSS scoping (alias of `encapsulate`)
-- `encapsulate` (boolean): Enable CSS scoping
 
-**Returns:** string - The rendered HTML
+| Option | Default | |
+| --- | --- | --- |
+| `onError` | — | `(error, { path }) => replacement` — called when a function component throws; its return value is rendered instead (`null` omits the component). Without it the error propagates out of `render()` as a `RenderingError` with the component's path and the original error as `cause`. |
+| `enableCache` | `false` | Cache whole renders, keyed on the complete tree. Trees containing functions, class instances or Dates are never cached. |
+| `cache` | shared cache | A cache from `createCacheManager({ maxCacheSize, ttlMs })` to use instead of the shared one |
+| `cacheTTL` | 300000 | TTL in ms for entries this render adds |
+| `scoped` / `encapsulate` | `false` | Scope the component's `<style>` rules (see [Styling](../components/styling.md)) |
+| `minify` | `false` | Minify the output |
+| `maxDepth` | 100 | Maximum tree depth |
+| `enableMonitoring` | `false` | Record timings in `performanceMonitor` |
 
-**Example:**
+`cacheSize` is deprecated and ignored; pass `cache: createCacheManager({ maxCacheSize })` instead.
+
+**Rendering rules worth knowing:**
+
+- `text` and attribute values are HTML-escaped. Raw markup only goes through `html:` or `dangerouslySetInnerContent()`.
+- `null`, `undefined` and booleans in `children` render nothing, so `cond && { li: ... }` works. `text: false` prints `false`.
+- `className` (or `class`) accepts a string, an array (`['btn', active && 'btn--active']`) or an object (`{ active: isActive }`).
+- Function-valued `on*` props (`onClick: () => ...`) render nothing on the server; `hydrate()` attaches them in the browser. String handlers (`onclick: 'history.back()'`) are rendered as attributes.
+- An attribute name containing whitespace, quotes, `<`, `>`, `/`, `=` or control characters makes `render()` throw. `data-*`, `aria-*`, `x-on:click`, `@click`, `:class` and `xlink:href` are fine.
+- A multi-key object (`{ h1: ..., p: ... }`) renders each key as a sibling.
+
+### `renderToStream(component, options?)`
+
+An async generator of HTML chunks whose concatenation is exactly `render()`'s output. The event loop gets a turn after every chunk. Accepts `render()`'s options (except the cache ones and `minify`) plus `chunkSize` (default 8192 characters).
+
 ```javascript
-import { render } from '@coherent.js/core';
+import { Readable } from 'node:stream';
+import { renderToStream, streamingUtils } from '@coherent.js/core';
 
-const App = () => ({
-  html: {
-    children: [
-      {
-        head: {
-          children: [
-            { title: { text: 'My App' } },
-            { meta: { charset: 'utf-8' } }
-          ]
-        }
-      },
-      {
-        body: {
-          className: 'app',
-          children: [
-            { h1: { text: 'Welcome!' } }
-          ]
-        }
-      }
-    ]
-  }
-});
+Readable.from(renderToStream(Page())).pipe(res);
 
-const html = render(App(), {
-  enableCache: true,
-  enableMonitoring: false,
-  minify: true,
-  encapsulate: true
-});
+// or: writes with backpressure and aborts the response if rendering fails
+await streamingUtils.streamToResponse(renderToStream(Page()), res);
 ```
 
-### Streaming
+Errors reject the iteration (they are not written into the HTML).
 
-Streaming rendering is not currently part of the stable public API surface.
+### `renderWithTemplate(component, { template })`
 
-## Component Utilities
+Renders a component and inserts it into a template at `{{content}}`; used by the framework adapters.
 
-### `createComponent(renderFunction)`
+```javascript
+import { renderWithTemplate } from '@coherent.js/core';
 
-Creates a component from a render function.
+const page = renderWithTemplate(App(), { template: '<!DOCTYPE html>\n{{content}}' });
+```
 
-**Parameters:**
-- `renderFunction` (Function): A function that returns a CoherentNode
+## Components
 
-**Returns:** Function - A component function
+A component is a function returning a node. You call it with its props (`Card({ title })`); a function placed directly in a tree is called by the renderer with no arguments.
 
-**Example:**
+### `memo(component, keyFnOrOptions?)`
+
+Caches a component's output per props. Every memoized component has its own bounded LRU cache.
+
+```javascript
+import { memo } from '@coherent.js/core';
+
+const ProductCard = memo(
+  ({ product }) => ({ article: { text: product.name } }),
+  { keyFn: ({ product }) => `${product.id}:${product.updatedAt}`, maxSize: 500 }
+);
+
+// memo(fn, keyFn) works too
+const Row = memo(({ item }) => ({ li: { text: item.name } }), ({ item }) => item.id);
+```
+
+Options: `keyFn`, `maxSize` (default 100), `strategy` (`'lru'`, `'ttl'`, `'weak'`, `'simple'`), `ttl`, `stats`, `onHit`, `onMiss`, `onEvict`.
+
+### `createComponent(renderFunction | definition)`
+
+Wraps a render function (or a `{ name, render, state, methods, ... }` definition) in a callable component instance with `mount`, `update` and `destroy`:
+
 ```javascript
 import { createComponent } from '@coherent.js/core';
 
-const Greeting = createComponent(({ name }) => ({
+const Greeting = createComponent(({ name }) => ({ h1: { text: `Hello, ${name}!` } }));
+render(Greeting({ name: 'Ada' })); // <h1>Hello, Ada!</h1>
+```
+
+The instance and its state are shared by everyone who renders it. On the server, pass per-request data through props.
+
+### `withState(initialState, options?)`
+
+A higher-order component that injects `state` and `stateUtils` props:
+
+```javascript
+import { withState } from '@coherent.js/core';
+
+const Counter = withState({ count: 0 })(({ state, stateUtils }) => ({
   div: {
     children: [
-      { h1: { text: `Hello, ${name}!` } }
+      { p: { text: `Count: ${state.count}` } },
+      { button: { text: 'Increment', onclick: () => stateUtils.setState({ count: state.count + 1 }) } }
     ]
   }
 }));
 ```
 
-### `withState(initialState, options?)`
+- `stateUtils`: `setState`, `getState`, `resetState`, `updateState(fn)`, `batchUpdate`, `computed`, `subscribe`, `unsubscribe`.
+- Options include `debug`, `validator`, `middleware`, `reducer`, `actions`, `persistent` / `storageKey`, `onStateChange`, `onMount`.
+- The state container is created once per `withState(...)(Component)` call, so on the server it is shared by every request. Keep request data in props, and use `withState` for browser-side state.
 
-Adds reactive state management to a component with automatic re-rendering on state changes.
+### Error boundaries
 
-**Parameters:**
-- `initialState` (Object): The initial state object
-- `options` (Object, optional): State management options
-  - `debug` (Boolean): Enable debug logging for state changes
-  - `middleware` (Array): Array of middleware functions to apply to state changes
-  - `validator` (Function): Function to validate state changes
-
-**Returns:** Function - A higher-order component function that wraps the component with state
-
-**Example:**
 ```javascript
-import { withState } from '@coherent.js/core';
+import { createErrorBoundary } from '@coherent.js/core';
 
-// Basic state management
-const Counter = withState({ count: 0 })((props) => {
-  const { state, stateUtils } = props;
-  const { setState } = stateUtils;
-  
-  return {
-    div: {
-      'data-coherent-component': 'counter',
-      children: [
-        { p: { text: `Count: ${state.count}` } },
-        { 
-          button: { 
-            text: 'Increment', 
-            onclick: () => setState({ count: state.count + 1 })
-          }
-        },
-        { 
-          button: { 
-            text: 'Reset', 
-            onclick: () => setState({ count: 0 })
-          }
-        }
-      ]
-    }
-  };
+const boundary = createErrorBoundary({
+  fallback: { p: { text: 'This widget is unavailable.' } }
 });
-
-// With options and debugging
-const TodoApp = withState({
-  todos: [],
-  filter: 'all',
-  newTodo: ''
-}, {
-  debug: true, // Logs all state changes
-  validator: (newState) => {
-    if (newState.todos && !Array.isArray(newState.todos)) {
-      throw new Error('todos must be an array');
-    }
-    return true;
-  }
-})((props) => {
-  const { state, stateUtils } = props;
-  const { setState } = stateUtils;
-  
-  const addTodo = () => {
-    if (state.newTodo.trim()) {
-      setState({
-        todos: [...state.todos, {
-          id: Date.now(),
-          text: state.newTodo.trim(),
-          completed: false
-        }],
-        newTodo: ''
-      });
-    }
-  };
-  
-  return {
-    div: {
-      'data-coherent-component': 'todo-app',
-      children: [
-        {
-          input: {
-            type: 'text',
-            value: state.newTodo,
-            placeholder: 'Add new todo...',
-            oninput: (e) => setState({ newTodo: e.target.value })
-          }
-        },
-        {
-          button: {
-            text: 'Add Todo',
-            onclick: addTodo
-          }
-        },
-        {
-          ul: {
-            children: state.todos.map(todo => ({
-              li: { 
-                text: todo.text,
-                className: todo.completed ? 'completed' : ''
-              }
-            }))
-          }
-        }
-      ]
-    }
-  };
-});
+const SafeWidget = boundary(Widget);
 ```
 
-**State Management API:**
+`withErrorBoundary(options, { Header, Sidebar })` wraps several components at once and returns them under the same keys.
 
-The component receives the following props:
-- `state` (Object): Current state object
-- `stateUtils` (Object): State management utilities
-  - `setState(newState)`: Update state (triggers re-render)
-  - `getState()`: Get current state
-  - `resetState()`: Reset to initial state
-  - `subscribe(callback)`: Subscribe to state changes
-
-### `memo(component, keyFunction?)`
-
-Memoizes a component to prevent unnecessary re-renders.
-
-**Parameters:**
-- `component` (Function): The component to memoize
-- `keyFunction` (Function, optional): A function that returns a cache key based on props
-
-**Returns:** Function - A memoized component function
-
-**Example:**
-```javascript
-import { memo } from '@coherent.js/core';
-
-const ExpensiveComponent = memo(
-  (context) => {
-    // Expensive computation here
-    return { div: { text: computeResult(context.data) } };
-  },
-  (context) => context.data.id // Custom key function
-);
-```
-
-## Conditional Rendering
-
-Use standard JavaScript ternary operators for conditional rendering:
-
-**Example:**
-```javascript
-const UserProfile = (context) => ({
-  div: {
-    children: [
-      context.user
-        ? { p: { text: `Welcome, ${context.user.name}!` } }
-        : { p: { text: 'Please log in' } }
-    ]
-  }
-});
-```
-
-## List Rendering
-
-Use standard JavaScript `Array.map()` to render lists:
-
-**Example:**
-```javascript
-const TodoList = (context) => ({
-  ul: {
-    children: context.todos.map((todo) => ({
-      li: { 
-        text: todo.text,
-        className: todo.completed ? 'completed' : 'pending'
-      }
-    }))
-  }
-});
-```
+On the server a boundary starts from a clean state on every call. Function components nested inside the wrapped component are evaluated within the boundary. See [Error handling](../advanced/errors.md).
 
 ## Performance Monitoring
 
-### `performanceMonitor.start()`
+`performanceMonitor` records metrics from renders made with `enableMonitoring: true`:
 
-Starts performance monitoring.
+```javascript
+import { render, performanceMonitor } from '@coherent.js/core';
 
-**Returns:** String - A unique render ID
+render(Page(), { enableMonitoring: true });
 
-### `performanceMonitor.end(renderId)`
+const report = performanceMonitor.generateReport();
+console.log(report.metrics.renderTime.avg);
+```
 
-Ends performance monitoring for a specific render.
-
-**Parameters:**
-- `renderId` (String): The render ID returned by `start()`
-
-### `performanceMonitor.getStats()`
-
-Gets current performance statistics.
-
-**Returns:** Object - Performance metrics
-
-### `performanceMonitor.reset()`
-
-Resets performance statistics.
-
-### `performanceMonitor.getRecommendations()`
-
-Gets performance optimization recommendations.
-
-**Returns:** Array - Array of recommendation objects
+Other methods: `getStats()`, `reset()`, `measure(name, fn)`, `measureAsync(name, fn)`, `startRender()` / `endRender(id)`, `addMetric(name, config)`, `addAlertRule(rule)`, and `start()` / `stop()` for periodic resource sampling and reporting.
 
 ## Database Layer
 
-### Factory Functions (Recommended)
+See the [database guide](../database/index.md) for details.
 
-#### `createDatabaseManager(config)`
-
-**✅ Recommended**: Creates a database manager instance using factory function.
-
-**Parameters:**
-- `config` (Object): Database configuration
-
-**Returns:** DatabaseManager - A database manager instance
-
-**Example:**
 ```javascript
-import { createDatabaseManager } from '@coherent.js/database';
-
-// Recommended approach
-const db = createDatabaseManager({
-  type: 'sqlite',
-  database: ':memory:'
-});
-```
-
-#### `createQuery(config)`
-
-**✅ Recommended**: Creates a query builder instance using factory function.
-
-**Parameters:**
-- `config` (Object): Query configuration
-
-**Returns:** QueryBuilder - A query builder instance
-
-**Example:**
-```javascript
-import { createQuery } from '@coherent.js/database';
-
-// Pure object approach
-const query = createQuery({
-  table: 'users',
-  select: ['id', 'name'],
-  where: { active: true }
-});
-```
-
-#### `executeQuery(query, database?)`
-
-**✅ Recommended**: Executes a query created with factory functions.
-
-**Parameters:**
-- `query` (Object): Query object from createQuery
-- `database` (DatabaseManager, optional): Database instance
-
-**Returns:** Promise - Query results
-
-**Example:**
-```javascript
-import { createQuery, executeQuery, createDatabaseManager } from '@coherent.js/database';
+import { createDatabaseManager, executeQuery } from '@coherent.js/database';
 
 const db = createDatabaseManager({ type: 'sqlite', database: ':memory:' });
-const query = createQuery({ table: 'users', select: ['*'] });
-const results = await executeQuery(query, db);
+await db.connect();
+
+await db.query('CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, active INTEGER)');
+const { rows } = await executeQuery(db, {
+  table: 'users',
+  select: ['id', 'name'],
+  where: { active: 1 },
+  orderBy: { name: 'ASC' },
+  limit: 10
+});
 ```
 
-### Direct Class Access (Advanced Usage)
-
-> **Note**: While direct class access is available for advanced use cases, we recommend using factory functions for consistency with the pure object philosophy.
-
-#### `new DatabaseManager(config)`
-
-**Alternative**: Direct class instantiation for advanced usage.
-
-#### `new QueryBuilder(options)`
-
-**Alternative**: Direct class instantiation for advanced usage.
+- `createQuery(config)` returns a copy of the query object; `executeQuery(db, config)` validates it, builds the SQL and runs it.
+- Identifiers, operators, `orderBy` directions and `limit` / `offset` are validated, and UPDATE/DELETE without `where` throws unless `allowFullTable: true` is passed.
+- `DatabaseManager` is also available from `@coherent.js/database/connection`.
 
 ## Client-side Hydration
 
 ### `hydrate(component, container, options?)`
 
-Hydrates a DOM container with a Coherent component to enable client-side interactivity.
+Hydrates server-rendered HTML with the same component so its `on*` handlers work.
 
-**Parameters:**
-- `component` (Function): The Coherent component function
-- `container` (HTMLElement): The DOM element to hydrate
-- `options` (Object, optional): Hydration options
-  - `initialState` (Object): Initial state for stateful components (merged with `props`)
-  - `props` (Object): Additional props passed to the component
-  - `detectMismatch` (Boolean): Enable SSR/component mismatch detection (default: `true` in dev, `false` in prod)
-  - `strict` (Boolean): Throw on mismatch instead of warning (default: `false`)
-  - `onMismatch` (Function): Custom mismatch handler called with the list of detected mismatches
+**Options:**
+- `initialState` (Object): state to hydrate with; defaults to the container's `data-state` attribute
+- `props` (Object): extra props passed to the component
+- `detectMismatch` (Boolean): compare the DOM with the component's output. Defaults to on only when `process.env.NODE_ENV === 'development'`, or when `strict` / `onMismatch` is set
+- `strict` (Boolean): throw on mismatch instead of warning
+- `onMismatch` (Function): receives the detected mismatches
 
-**Returns:** `{ unmount, rerender, getState, setState }` — instance handle for lifecycle control.
+**Returns:** `{ unmount, rerender, getState, setState }`.
 
-**Example:**
 ```javascript
 import { hydrate } from '@coherent.js/client';
 import { Counter } from './components/Counter.js';
 
-// Basic hydration
 const container = document.getElementById('counter');
-const instance = hydrate(Counter, container, { initialState: { count: 5 } });
-
-// With state initialization and additional props
 const instance = hydrate(Counter, container, {
-  initialState: { count: 10, step: 2 },
-  props: { theme: 'dark' },
+  initialState: { count: 10 },
+  props: { theme: 'dark' }
 });
 
-// State-driven re-render
-instance.setState({ count: 11 });
+instance.setState({ count: 11 }); // patches the DOM
+instance.unmount();               // releases handlers; later setState() does nothing
+```
+
+Hydrating a container again replaces the previous hydration.
+
+### `extractState(element)` / `serializeState(state)`
+
+`serializeState(state)` returns the base64 string to put in a `data-state` attribute (or `null` when there is nothing serializable); `extractState(element)` reads it back.
+
+```javascript
+import { extractState } from '@coherent.js/client';
+
+const state = extractState(document.getElementById('counter')); // parsed data-state, or null
 ```
 
 ### Removed in 1.0
 
-The following client-side APIs were removed in 1.0.0 in favor of the unified `hydrate()` API documented above:
-
-- `legacyHydrate`, `hydrateAll`, `hydrateBySelector` — use `hydrate(component, container, options)` per root.
-- `makeHydratable` — any pure-object component is hydratable; no wrapper needed.
-- `autoHydrate(registry)` — call `hydrate()` explicitly for each root.
-- `enableClientEvents` — automatic; `hydrate()` initializes event delegation.
-- `registerEventHandler` — define handlers inline on the component (`onClick: () => {...}`).
-
-See [`MIGRATION-1.0.md`](../../MIGRATION-1.0.md) for before/after code samples.
-
-### `extractInitialState(element, options?)`
-
-Extracts initial state from DOM element data attributes.
-
-**Parameters:**
-- `element` (HTMLElement): The DOM element
-- `options` (Object, optional): Extraction options
-
-**Returns:** Object|null - The extracted state or null
-
-**Example:**
-```javascript
-import { extractInitialState } from '@coherent.js/client';
-
-const element = document.getElementById('counter');
-// <div id="counter" data-coherent-state='{"count": 5}'>
-const state = extractInitialState(element);
-// Returns: { count: 5 }
-```
+`legacyHydrate`, `hydrateAll`, `hydrateBySelector`, `makeHydratable`, `autoHydrate`, `enableClientEvents` and `registerEventHandler` were removed in 1.0 in favor of `hydrate()`. See [`MIGRATION-1.0.md`](../../MIGRATION-1.0.md).
 
 ## Framework Integrations
 
-### Express.js Integration
+All adapters live in `@coherent.js/integrations/<framework>` and render only what they are handed explicitly; plain objects stay JSON. See the [integrations guide](../deployment/integrations.md).
 
-#### `express.coherentMiddleware(options?)`
+### Express (`@coherent.js/integrations/express`)
 
-Express middleware for Coherent.js.
+- `setupCoherent(app, options?)` installs `coherentMiddleware`, which adds `res.coherent(component, { template? })`. Options: `template` (with a `{{content}}` placeholder), `enablePerformanceMonitoring`, `autoRender` (render component-shaped objects passed to `res.send`, off by default), `useEngine` / `engineName` (register the view engine, off by default).
+- `createCoherentHandler(componentFactory, options?)` — a route handler; the factory receives `(req, res, next)`.
 
-**Parameters:**
-- `options` (Object, optional): Configuration options
+### Fastify (`@coherent.js/integrations/fastify`)
 
-#### `express.createCoherentHandler(componentFactory, options?)`
+- `setupCoherent` / `coherentFastify` is a Fastify **plugin**: `await fastify.register(setupCoherent, { template })`. It adds `reply.coherent(component, { template? })`, which returns the reply; render errors go through Fastify's error handling. `autoRender: true` also renders component-shaped handler return values.
+- `createHandler(componentFactory, options?)` — the factory receives `(request, reply)`.
 
-Creates an Express route handler for Coherent.js components.
+### Koa (`@coherent.js/integrations/koa`)
 
-**Parameters:**
-- `componentFactory` (Function): Function that returns a Coherent component
-- `options` (Object, optional): Handler options
+- `setupCoherent(app, options?)` installs `coherentKoaMiddleware`, which adds `ctx.coherent(component, { template? })`. `autoRender: true` also renders a component-shaped `ctx.body`.
+- `createHandler(componentFactory, options?)`.
 
-#### `express.setupCoherent(app, options?)`
+### Next.js (`@coherent.js/integrations/nextjs`)
 
-Sets up Coherent.js with Express app.
-
-**Parameters:**
-- `app` (Express.Application): Express application instance
-- `options` (Object, optional): Configuration options
-
-### Fastify Integration
-
-#### `fastify.coherentFastify(fastify, options, done)`
-
-Fastify plugin for Coherent.js.
-
-**Parameters:**
-- `fastify` (FastifyInstance): Fastify instance
-- `options` (Object): Plugin options
-- `done` (Function): Callback to signal plugin registration completion
-
-#### `fastify.createHandler(componentFactory, options?)`
-
-Creates a Fastify route handler for Coherent.js components.
-
-**Parameters:**
-- `componentFactory` (Function): Function that returns a Coherent component
-- `options` (Object, optional): Handler options
-
-#### `fastify.setupCoherent(fastify, options?)`
-
-Sets up Coherent.js with Fastify instance.
-
-**Parameters:**
-- `fastify` (FastifyInstance): Fastify instance
-- `options` (Object, optional): Configuration options
-
-### Next.js Integration
-
-#### `nextjs.createCoherentNextHandler(componentFactory, options?)`
-
-Creates a Next.js API route handler for Coherent.js components.
-
-**Parameters:**
-- `componentFactory` (Function): Function that returns a Coherent component
-- `options` (Object, optional): Handler options
-
-#### `nextjs.createCoherentAppRouterHandler(componentFactory, options?)`
-
-Creates a Next.js App Router route handler for Coherent.js components.
-
-**Parameters:**
-- `componentFactory` (Function): Function that returns a Coherent component
-- `options` (Object, optional): Handler options
-
-#### `nextjs.createCoherentServerComponent(componentFactory, options?)`
-
-Creates a Next.js Server Component for Coherent.js.
-
-**Parameters:**
-- `componentFactory` (Function): Function that returns a Coherent component
-- `options` (Object, optional): Component options
-
-#### `nextjs.createCoherentClientComponent(componentFactory, options?)`
-
-Creates a Next.js Client Component for Coherent.js with hydration support.
-
-**Parameters:**
-- `componentFactory` (Function): Function that returns a Coherent component
-- `options` (Object, optional): Component options
+- `createCoherentAppRouterHandler(factory, options?)` — App Router route handler; the factory receives `(request, { params })` (`params` is a Promise from Next.js 15 on).
+- `createCoherentNextHandler(factory, options?)` — Pages Router API route handler.
+- `createCoherentServerComponent(factory, options?)` / `createCoherentClientComponent(factory, options?)` — **async**; they resolve to React components. Pass `{ React }` to supply the React module explicitly.
 
 ## Utilities
 
-### `escapeHtml(text)`
-
-Escapes HTML entities in a string.
-
-**Parameters:**
-- `text` (String): The text to escape
-
-**Returns:** String - The escaped text
-
-### `validateComponent(component)`
-
-Validates a Coherent.js component.
-
-**Parameters:**
-- `component` (any): The component to validate
-
-**Returns:** Boolean - Whether the component is valid
-
-### `extractProps(element)`
-
-Extracts props from a Coherent.js element.
-
-**Parameters:**
-- `element` (Object): The element to extract props from
-
-**Returns:** Object - The extracted props
+- `escapeHtml(text)` — escapes `&`, `<`, `>`, `"` and `'`.
+- `validateComponent(component)` — a quick structural check: throws when the value is not a component (e.g. `null` or a number) and returns `true` otherwise. `render()` performs the full validation.
+- `isValidAttributeName(name)` — whether `render()` accepts an attribute name.
+- `dangerouslySetInnerContent(html)` / `isTrustedContent(value)` — mark raw HTML as trusted. Markers carry a non-enumerable symbol brand; plain objects such as `{ __html, __trusted: true }` parsed from JSON are never trusted.
 
 ## Types
 
-### `CoherentNode`
+`@coherent.js/core` ships declarations for `CoherentNode`, `CoherentElement`, `CoherentComponent`, `RenderOptions`, `StreamOptions` and more:
 
-Represents a Coherent.js node, which can be:
-- A CoherentElement object
-- A string
-- A number
-- A boolean
-- null
-- undefined
-
-### `CoherentElement`
-
-Represents a Coherent.js element with the structure:
 ```typescript
-{
-  [tagName: string]: {
-    text?: string;
-    html?: string;
-    children?: CoherentNode[];
-    className?: string | (() => string);
-    [key: string]: any;
-  }
-}
+import type { CoherentNode, RenderOptions } from '@coherent.js/core';
+
+const Badge = ({ label }: { label: string }): CoherentNode => ({
+  span: { className: ['badge', label === 'new' && 'badge--new'], text: label }
+});
 ```
 
-### `ComponentFunction`
-
-Represents a Coherent.js component function:
-```typescript
-(props?: Record<string, any>) => CoherentNode;
-```
-
-### `HydratedComponentInstance`
-
-Represents a hydrated component instance:
-```typescript
-{
-  element: HTMLElement;
-  component: ComponentFunction;
-  props: Record<string, any>;
-  isHydrated: boolean;
-  update(newProps: Record<string, any>): void;
-  destroy(): void;
-}
-```
+A `CoherentNode` is an element object, a string, a number, a boolean, `null`, `undefined`, or an array of nodes.

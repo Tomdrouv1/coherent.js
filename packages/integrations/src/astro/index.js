@@ -30,7 +30,8 @@ export function createAstroIntegration(options = {}) {
       'astro:config:setup': ({ addRenderer, updateConfig }) => {
         addRenderer({
           name: '@coherent.js/integrations/astro',
-          serverEntrypoint: '@coherent.js/integrations/astro',
+          // Astro imports this module's default export as the SSR renderer.
+          serverEntrypoint: '@coherent.js/integrations/astro/server',
         });
 
         if (options.hydrate) {

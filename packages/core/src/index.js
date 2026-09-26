@@ -10,10 +10,13 @@
 // Performance monitoring
 import { readFileSync } from 'node:fs';
 import { performanceMonitor } from './performance/monitor.js';
-import { escapeHtml } from './core/html-utils.js';
+import { escapeHtml, createTrustedContent } from './core/html-utils.js';
 
 // Unified HTML renderer
-import { render as renderWithHtmlRenderer } from './rendering/html-renderer.js';
+import {
+  render as renderWithHtmlRenderer,
+  renderToStream as streamWithHtmlRenderer
+} from './rendering/html-renderer.js';
 
 // Component system imports
 import {
@@ -27,7 +30,8 @@ import {
   getRegisteredComponents,
   lazy,
   isLazy,
-  evaluateLazy
+  evaluateLazy,
+  memo as memoWithOptions
 } from './components/component-system.js';
 
 // Component lifecycle imports
@@ -65,34 +69,103 @@ import {
 } from './components/error-boundary.js';
 
 // CSS Scoping System (similar to Angular View Encapsulation)
-const scopeCounter = { value: 0 };
 
-function generateScopeId() {
-  return `coh-${scopeCounter.value++}`;
+/**
+ * Scope id derived from the component's CSS (FNV-1a), so the same component
+ * renders the same HTML every time. A global counter used to give it coh-0,
+ * then coh-1..., which broke HTML caching and hydration comparisons. Two
+ * components with identical CSS may share an id; their rules are the same.
+ */
+function generateScopeId(cssText) {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < cssText.length; i++) {
+    hash ^= cssText.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return `coh-${(hash >>> 0).toString(36)}`;
 }
 
+// At-rules whose blocks contain style rules; others (@keyframes,
+// @font-face, @page, @property...) contain declarations or keyframe
+// selectors and are left untouched.
+const GROUPING_AT_RULES = new Set(['media', 'supports', 'container', 'layer', 'document', 'scope']);
+
+function splitSelectorList(prelude) {
+  const parts = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < prelude.length; i++) {
+    const ch = prelude[i];
+    if (ch === '(' || ch === '[') depth++;
+    else if (ch === ')' || ch === ']') depth--;
+    else if (ch === ',' && depth === 0) {
+      parts.push(prelude.slice(start, i));
+      start = i + 1;
+    }
+  }
+  parts.push(prelude.slice(start));
+  return parts;
+}
+
+function scopeSelector(selector, scopeId) {
+  const trimmed = selector.trim();
+  if (!trimmed) return selector;
+
+  // Handle pseudo-selectors and complex selectors
+  if (trimmed.includes(':')) {
+    return trimmed.replace(/([^:]+)(:.*)?/, `$1[${scopeId}]$2`);
+  }
+
+  // Simple selector scoping
+  return `${trimmed}[${scopeId}]`;
+}
+
+/**
+ * Add the scope attribute to every selector in a stylesheet, recursing into
+ * grouping at-rules. The previous regex treated `@media (max-width: 600px)`
+ * and keyframe selectors (`from`, `50%`) as selectors and corrupted them.
+ */
 function scopeCSS(css, scopeId) {
   if (!css || typeof css !== 'string') return css;
 
-  // Add scope attribute to all selectors
-  return css
-    .replace(/([^{}]*)\s*{/g, (match, selector) => {
-      // Handle multiple selectors separated by commas
-      const selectors = selector.split(',').map(s => {
-        const trimmed = s.trim();
-        if (!trimmed) return s;
+  let result = '';
+  let i = 0;
+  while (i < css.length) {
+    const open = css.indexOf('{', i);
+    if (open === -1) {
+      result += css.slice(i);
+      break;
+    }
 
-        // Handle pseudo-selectors and complex selectors
-        if (trimmed.includes(':')) {
-          return trimmed.replace(/([^:]+)(:.*)?/, `$1[${scopeId}]$2`);
-        }
+    let depth = 1;
+    let j = open + 1;
+    while (j < css.length && depth > 0) {
+      if (css[j] === '{') depth++;
+      else if (css[j] === '}') depth--;
+      j++;
+    }
+    const body = css.slice(open + 1, depth === 0 ? j - 1 : j);
 
-        // Simple selector scoping
-        return `${trimmed}[${scopeId}]`;
-      });
+    // Statements before the rule (`@import ...;`) pass through verbatim.
+    const rawPrelude = css.slice(i, open);
+    const semicolon = rawPrelude.lastIndexOf(';');
+    const lead = semicolon === -1 ? '' : rawPrelude.slice(0, semicolon + 1);
+    const prelude = semicolon === -1 ? rawPrelude : rawPrelude.slice(semicolon + 1);
+    const trimmed = prelude.trim();
 
-      return `${selectors.join(', ')} {`;
-    });
+    if (trimmed.startsWith('@')) {
+      const name = trimmed.slice(1).split(/[\s({]/)[0].toLowerCase();
+      const inner = GROUPING_AT_RULES.has(name) ? scopeCSS(body, scopeId) : body;
+      result += `${lead}${prelude}{${inner}}`;
+    } else {
+      const leading = prelude.match(/^\s*/)[0];
+      const scoped = splitSelectorList(prelude).map((part) => scopeSelector(part, scopeId)).join(', ');
+      result += `${lead}${leading}${scoped} {${body}}`;
+    }
+
+    i = j;
+  }
+  return result;
 }
 
 function applyScopeToElement(element, scopeId) {
@@ -142,13 +215,10 @@ function applyScopeToElement(element, scopeId) {
  * @returns {Object} Marked safe content
  */
 export function dangerouslySetInnerContent(content) {
-  return {
-    __html: content,
-    __trusted: true
-  };
+  return createTrustedContent(content);
 }
 
-export { isTrustedContent } from './core/html-utils.js';
+export { isTrustedContent, isValidAttributeName } from './core/html-utils.js';
 
 // Hydration attribute injection
 function injectHydrationAttributes(component, options) {
@@ -196,17 +266,20 @@ export function Island(componentFn) {
   };
 }
 
-// Main rendering function
-export function render(obj, options = {}) {
+// Shared by render() and renderToStream(): top-level function, scoping and
+// hydration attributes, then the options the renderer itself takes.
+function prepareRender(obj, options) {
   const scoped = options.scoped ?? options.encapsulate ?? false;
 
   const { scoped: _scoped, encapsulate: _encapsulate, hydratable: _hydratable, island: _island, ...rendererOptions } = options;
 
-  let component = scoped ? renderScopedComponent(obj) : obj;
+  // Handle function components passed directly to render. Called before
+  // scoping: scoping a function was a no-op, so render(Fn, { scoped: true })
+  // came out unscoped.
+  let component = typeof obj === 'function' ? obj(options) : obj;
 
-  // Handle function components passed directly to render
-  if (typeof component === 'function') {
-    component = component(options);
+  if (scoped) {
+    component = renderScopedComponent(component);
   }
 
   // Inject hydration attributes if needed
@@ -214,12 +287,52 @@ export function render(obj, options = {}) {
     component = injectHydrationAttributes(component, { hydratable: _hydratable, island: _island });
   }
 
+  return { component, rendererOptions };
+}
+
+// Main rendering function
+export function render(obj, options = {}) {
+  const { component, rendererOptions } = prepareRender(obj, options);
   return renderWithHtmlRenderer(component, rendererOptions);
+}
+
+/**
+ * Stream a component as HTML chunks (an async generator of strings) with
+ * the same output as render(). The event loop gets a turn after each chunk.
+ *
+ * @example
+ * import { Readable } from 'node:stream';
+ * Readable.from(renderToStream(Page(), { chunkSize: 16384 })).pipe(res);
+ *
+ * @param {*} obj - Component to render
+ * @param {Object} [options] - render() options plus `chunkSize` (default 8192)
+ * @returns {AsyncGenerator<string>}
+ */
+export function renderToStream(obj, options = {}) {
+  const { component, rendererOptions } = prepareRender(obj, options);
+  return streamWithHtmlRenderer(component, rendererOptions);
+}
+
+export { streamingUtils } from './rendering/html-renderer.js';
+
+function collectStyleText(element, out = []) {
+  if (Array.isArray(element)) {
+    element.forEach((item) => collectStyleText(item, out));
+  } else if (element && typeof element === 'object') {
+    for (const [tagName, props] of Object.entries(element)) {
+      if (tagName === 'style' && props && typeof props === 'object' && typeof props.text === 'string') {
+        out.push(props.text);
+      } else if (props && typeof props === 'object' && props.children) {
+        collectStyleText(props.children, out);
+      }
+    }
+  }
+  return out;
 }
 
 // Internal: Scoped rendering with CSS encapsulation
 function renderScopedComponent(component) {
-  const scopeId = generateScopeId();
+  const scopeId = generateScopeId(collectStyleText(component).join('\n'));
 
   // Handle style elements specially
   function processScopedElement(element) {
@@ -356,26 +469,24 @@ export {
   HTMLNestingError
 } from './core/html-nesting-rules.js';
 
-// Simple memoization
-const memoCache = new Map();
-
-export function memo(component, keyGenerator) {
-  return function MemoizedComponent(props = {}) {
-    const key = keyGenerator ? keyGenerator(props) : JSON.stringify(props);
-    if (memoCache.has(key)) {
-      return memoCache.get(key);
-    }
-    const result = component(props);
-    memoCache.set(key, result);
-
-    // Simple cache cleanup - keep only last 100 items
-    if (memoCache.size > 100) {
-      const firstKey = memoCache.keys().next().value;
-      memoCache.delete(firstKey);
-    }
-
-    return result;
-  };
+/**
+ * Memoize a component (or any function). Each memoized function has its own
+ * cache: this used to be one module-level Map keyed only by props, so two
+ * components called with the same props returned each other's output.
+ *
+ * @param {Function} component - Component or function to memoize
+ * @param {Function|Object} [options] - Key function `(props) => key`, or
+ *   options `{ keyFn, maxSize, strategy, ttl, stats, onHit, onMiss, onEvict }`
+ * @returns {Function} Memoized function with `clear()`, `has()`, `size()`...
+ */
+export function memo(component, options = {}) {
+  // Components receive `{}` when called without props, as they always have.
+  const withDefaultProps = (props = {}, ...rest) => component(props, ...rest);
+  if (typeof options === 'function') {
+    const keyGenerator = options;
+    return memoWithOptions(withDefaultProps, { keyFn: (props = {}, ...rest) => keyGenerator(props, ...rest) });
+  }
+  return memoWithOptions(withDefaultProps, options);
 }
 
 export function validateComponent(obj) {
@@ -483,6 +594,7 @@ export const fp = {
 const coherent = {
   // Core rendering
   render,
+  renderToStream,
 
   // Shadow DOM (client-side only)
   shadowDOM,

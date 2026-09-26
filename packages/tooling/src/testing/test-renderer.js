@@ -9,6 +9,11 @@
 
 import { render } from '@coherent.js/core';
 
+/** Escape a string for literal use inside a RegExp. */
+function escapeRegExp(text) {
+  return String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 /**
  * Test renderer result
  * Provides methods to query and interact with rendered components
@@ -27,7 +32,9 @@ export class TestRendererResult {
    * @returns {Object|null} Element or null
    */
   getByTestId(testId) {
-    const regex = new RegExp(`data-testid="${testId}"[^>]*>([^<]*)<`, 'i');
+    // Capture from the start of the opening tag, so the match's `html`
+    // carries the element's tag name and all of its attributes.
+    const regex = new RegExp(`<[a-zA-Z][\\w:-]*(?:\\s[^>]*?)?\\sdata-testid="${escapeRegExp(testId)}"[^>]*>([^<]*)<`, 'i');
     const match = this.html.match(regex);
     
     if (!match) {
@@ -62,7 +69,7 @@ export class TestRendererResult {
    */
   getByText(text) {
     const regex = typeof text === 'string' 
-      ? new RegExp(`>([^<]*${text}[^<]*)<`, 'i')
+      ? new RegExp(`>([^<]*${escapeRegExp(text)}[^<]*)<`, 'i')
       : new RegExp(`>([^<]*)<`, 'i');
     
     const match = this.html.match(regex);
@@ -97,7 +104,9 @@ export class TestRendererResult {
    * @returns {Object} Element
    */
   getByClassName(className) {
-    const regex = new RegExp(`class="[^"]*${className}[^"]*"[^>]*>([^<]*)<`, 'i');
+    // Whole class tokens: 'btn' matches class="btn primary", not "btn-primary".
+    const token = escapeRegExp(className);
+    const regex = new RegExp(`<[a-zA-Z][\\w:-]*(?:\\s[^>]*?)?\\sclass="(?:[^"]*\\s)?${token}(?:\\s[^"]*)?"[^>]*>([^<]*)<`, 'i');
     const match = this.html.match(regex);
     
     if (!match) {
@@ -131,7 +140,8 @@ export class TestRendererResult {
    * @returns {Array<Object>} Array of elements
    */
   getAllByTagName(tagName) {
-    const regex = new RegExp(`<${tagName}[^>]*>([^<]*)</${tagName}>`, 'gi');
+    const tag = escapeRegExp(tagName);
+    const regex = new RegExp(`<${tag}(?=[\\s/>])[^>]*>([^<]*)</${tag}>`, 'gi');
     const matches = [...this.html.matchAll(regex)];
     
     return matches.map(match => ({

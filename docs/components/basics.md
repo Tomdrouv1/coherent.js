@@ -74,13 +74,14 @@ const myGreeting = Greeting({ name: 'Developer', mood: 'fantastic' });
 
 ### Conditional Rendering
 
+`null`, `undefined` and booleans in `children` render nothing, so plain JavaScript conditions work:
+
 ```javascript
 const UserStatus = ({ user, isLoggedIn }) => ({
   div: {
     className: 'user-status',
     children: [
-      // Conditional rendering with pure JS
-      isLoggedIn ? {
+      isLoggedIn && {
         div: {
           className: 'logged-in',
           children: [
@@ -88,16 +89,17 @@ const UserStatus = ({ user, isLoggedIn }) => ({
             { p: { text: 'You are logged in' } }
           ]
         }
-      } : {
+      },
+      !isLoggedIn && {
         div: {
           className: 'logged-out',
           children: [
             { h3: { text: 'Please log in' } },
-            { button: { text: 'Login', onclick: 'showLogin()' } }
+            { a: { href: '/login', text: 'Login' } }
           ]
         }
       }
-    ].filter(Boolean) // Remove null/undefined values
+    ]
   }
 });
 ```
@@ -125,13 +127,13 @@ const TodoList = ({ todos = [] }) => ({
         }))
       }},
       // Show message if no todos
-      todos.length === 0 ? {
-        p: { 
+      todos.length === 0 && {
+        p: {
           className: 'empty-message',
-          text: 'No todos yet. Add one!' 
+          text: 'No todos yet. Add one!'
         }
-      } : null
-    ].filter(Boolean)
+      }
+    ]
   }
 });
 ```
@@ -157,29 +159,31 @@ const LinkComponent = ({ href, text, target = '_self' }) => ({
 ```javascript
 const Button = ({ text, variant = 'primary', size = 'medium', disabled = false }) => ({
   button: {
-    className: [
-      'btn',
-      `btn--${variant}`,
-      `btn--${size}`,
-      disabled ? 'btn--disabled' : null
-    ].filter(Boolean).join(' '),
-    disabled: disabled,
-    text: text
+    // Arrays skip falsy entries; objects list the classes whose value is truthy
+    className: ['btn', `btn--${variant}`, `btn--${size}`, disabled && 'btn--disabled'],
+    disabled,       // true renders a bare attribute, false omits it
+    text
   }
 });
+
+render(Button({ text: 'Go', disabled: true }));
+// <button class="btn btn--primary btn--medium btn--disabled" disabled>Go</button>
 ```
+
+`className: { active: isActive, 'btn--wide': wide }` works too, and `class` and `className` on the same element are merged.
 
 ### Event Handlers
 
+Function-valued `on*` props render nothing on the server; `hydrate()` from `@coherent.js/client` attaches them in the browser (see [Hydration](../client/hydration.md)). String handlers are rendered as ordinary attributes:
+
 ```javascript
-const InteractiveCard = ({ title, onClick, onHover }) => ({
+const InteractiveCard = ({ title }) => ({
   div: {
     className: 'interactive-card',
-    onclick: onClick,
-    onmouseover: onHover,
+    onClick: (event) => event.setState({ open: !event.state.open }), // attached by hydrate()
     children: [
       { h3: { text: title } },
-      { p: { text: 'Click or hover me!' } }
+      { button: { text: 'Back', onclick: 'history.back()' } }         // rendered as onclick="history.back()"
     ]
   }
 });
@@ -195,8 +199,8 @@ const Header = ({ title, subtitle }) => ({
     className: 'page-header',
     children: [
       { h1: { text: title } },
-      subtitle ? { p: { className: 'subtitle', text: subtitle } } : null
-    ].filter(Boolean)
+      subtitle && { p: { className: 'subtitle', text: subtitle } }
+    ]
   }
 });
 
@@ -245,13 +249,9 @@ console.log(html);
 // Output: <div class="greeting greeting--excited">...</div>
 ```
 
-### Using the Factory Function
+`render()` is synchronous: load data first, then render. If a component throws, `render()` throws a `RenderingError` naming the component's path; pass `onError: (error, { path }) => fallback` to render a replacement instead.
 
-```javascript
-import { render } from '@coherent.js/core';
-
-const html = render(component);
-```
+For large pages, `renderToStream()` yields the same HTML in chunks (see [Server-Side Rendering](../server/ssr.md)).
 
 ## Best Practices
 
@@ -334,9 +334,9 @@ const ComponentWithDefaults = (props = {}) => {
     div: {
       className: `component component--${config.variant}`,
       children: [
-        config.showIcon ? { i: { className: 'icon' } } : null,
+        config.showIcon && { i: { className: 'icon' } },
         { h3: { text: config.title } }
-      ].filter(Boolean)
+      ]
     }
   };
 };
@@ -379,64 +379,29 @@ const LoadingComponent = withLoading(MyComponent, true);
 
 ## Event Handling
 
-Coherent.js supports a powerful pattern for handling events directly on elements using function-valued props. When you define a function as a prop value for event attributes (like `onclick`, `oninput`, etc.), Coherent.js automatically handles it:
-
-1. **Server-side (Node.js)**: Stores the function in a global registry available during hydration
-2. **Client-side (Browser)**: Serializes the event handler as an inline JavaScript call to a global handler
-3. **During Hydration**: The global handler looks up the original function and executes it with proper component context
-
-### Usage Example
+Event handlers are ordinary function props. They do nothing on the server — `render()` omits them — and become live when the same component is hydrated in the browser:
 
 ```javascript
-const CounterComponent = withState({ count: 0 })(({ state, setState }) => ({
+// Shared by server and client
+export const Counter = ({ count = 0 }) => ({
   div: {
-    class: 'counter-widget',
-    'data-coherent-component': 'counter',
+    className: 'counter',
     children: [
-      {
-        button: {
-          text: `Count: ${state.count}`,
-          class: 'btn btn-primary',
-          onclick: (event, state, setState) => {
-            setState({ count: state.count + 1 });
-          }
-        }
-      },
-      {
-        input: {
-          type: 'text',
-          value: state.text || '',
-          oninput: (event, state, setState) => {
-            setState({ text: event.target.value });
-          }
-        }
-      }
+      { span: { text: `Count: ${count}` } },
+      { button: { text: '+1', onClick: (event) => event.setState({ count: event.state.count + 1 }) } }
     ]
   }
-}));
+});
+
+// Server
+render(Counter({ count: 0 }));
+// <div class="counter"><span>Count: 0</span><button>+1</button></div>
+
+// Browser
+hydrate(Counter, document.querySelector('.counter'), { initialState: { count: 0 } });
 ```
 
-### Function Parameters
-
-Event handler functions receive three parameters:
-
-1. `event` - The DOM event object
-2. `state` - The current component state
-3. `setState` - Function to update the component state
-
-### How It Differs from data-action
-
-While Coherent.js still supports the `data-action`/`data-target` pattern, the function-on-element approach provides:
-
-- More direct and intuitive event handling
-- Automatic context binding
-- Cleaner component definitions
-- No need to define separate action handlers
-
-### Limitations
-
-- Event handlers must be serializable functions (no closures over external variables)
-- The pattern is designed for simple event handling; complex logic should use separate functions
+A handler receives one wrapped event with `originalEvent`, `target`, `preventDefault()`, `stopPropagation()`, and the component's `state`, `setState()` and `props`. See [Client-Side Hydration](../client/hydration.md) for the details.
 
 ## Next Steps
 

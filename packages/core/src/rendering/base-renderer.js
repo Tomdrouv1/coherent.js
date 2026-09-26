@@ -7,10 +7,10 @@
 import {
     validateComponent,
     isCoherentObject,
-    extractProps,
     hasChildren,
     normalizeChildren,
 } from '../core/object-utils.js';
+import { isTrustedContent } from '../core/html-utils.js';
 
 import { performanceMonitor } from '../performance/monitor.js';
 
@@ -26,7 +26,9 @@ export const DEFAULT_RENDERER_CONFIG = {
     validateInput: true,
 
     // HTML Renderer specific options
-    enableCache: true,
+    // Off by default: keying a render on its content costs a full walk of
+    // the tree, which only pays off when identical trees are re-rendered.
+    enableCache: false,
     minify: false,
     cacheSize: 1000,
     cacheTTL: 300000, // 5 minutes
@@ -121,7 +123,7 @@ export class BaseRenderer {
                 return {
                     ...baseConfig,
                     // HTML-specific defaults
-                    enableCache: baseConfig.enableCache !== false,
+                    enableCache: baseConfig.enableCache === true,
                     enableMonitoring: baseConfig.enableMonitoring !== false
                 };
                 
@@ -158,11 +160,16 @@ export class BaseRenderer {
     /**
      * Check if component is valid for rendering
      */
-    isValidComponent(component) {
+    isValidComponent(component, depth = 0) {
         if (component === null || component === undefined) return true;
         if (typeof component === 'string' || typeof component === 'number') return true;
         if (typeof component === 'function') return true;
-        if (Array.isArray(component)) return component.every(child => this.isValidComponent(child));
+        if (Array.isArray(component)) {
+            // Past maxDepth the renderer reports the depth error; recursing
+            // further overflowed the stack on deeply nested arrays first.
+            if (depth >= this.config.maxDepth) return true;
+            return component.every(child => this.isValidComponent(child, depth + 1));
+        }
         if (isCoherentObject(component)) return true;
         return false;
     }
@@ -190,8 +197,14 @@ export class BaseRenderer {
             return { type: 'text', value: component };
         }
 
-        // Number/Boolean
-        if (typeof component === 'number' || typeof component === 'boolean') {
+        // Booleans render nothing, so `cond && { li: ... }` can sit in a
+        // children array (it used to print "false").
+        if (typeof component === 'boolean') {
+            return { type: 'empty', value: '' };
+        }
+
+        // Number
+        if (typeof component === 'number') {
             return { type: 'text', value: String(component) };
         }
 
@@ -215,41 +228,30 @@ export class BaseRenderer {
     }
 
     /**
-     * Execute function components with _error handling
+     * Execute function components. Errors propagate: they used to be
+     * swallowed here (the component rendered as nothing, logged only when
+     * NODE_ENV=development), so a broken component produced a partial page
+     * with a 200 and error boundaries never saw nested failures.
      */
     executeFunctionComponent(func, depth = 0) {
         try {
-            // Check if this is a context provider by checking function arity or a marker
-            const isContextProvider = func.length > 0 || func.isContextProvider;
-            
-            let result;
-            if (isContextProvider) {
-                // Call with render function for context providers
-                result = func((children) => {
-                    return this.renderComponent(children, this.config, depth + 1);
-                });
-            } else {
-                // Regular function component
-                result = func();
-            }
-            
+            // Always called without arguments. Functions declaring a parameter
+            // used to receive a render callback returning an HTML string,
+            // which then got escaped (double-escaped context providers), and a
+            // `({ name }) => ...` child destructured its props from it.
+            const result = func();
+
             // Handle case where function returns another function
             if (typeof result === 'function') {
                 return this.executeFunctionComponent(result, depth);
             }
-            
+
             return result;
-        } catch (_error) {
+        } catch (error) {
             if (this.config.enableMonitoring) {
-                performanceMonitor.recordError('functionComponent', _error);
+                performanceMonitor.recordError('functionComponent', error);
             }
-            
-            // In development, provide detailed _error info
-            if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
-                console.warn('Coherent.js Function Component Error:', _error.message);
-            }
-            
-            return null;
+            throw error;
         }
     }
 
@@ -367,6 +369,66 @@ export class BaseRenderer {
     }
 }
 
+const UNCACHEABLE = Symbol('uncacheable');
+
+/**
+ * Serialize a component tree into a string that identifies its rendered
+ * output: two trees with the same key always render the same HTML.
+ *
+ * JSON.stringify can't be used for this. It drops functions and undefined,
+ * turns NaN into null and Dates into ISO strings, and ignores the brand on
+ * trusted content, so different trees (rendering different HTML) collided.
+ * Values whose output isn't a pure function of their content — functions,
+ * class instances, Dates — make the tree uncacheable instead.
+ *
+ * @param {*} value - Component tree
+ * @returns {string|null} Cache key, or null when the tree can't be cached
+ */
+export function serializeForCache(value) {
+    try {
+        return serialize(value, new Set());
+    } catch (error) {
+        if (error === UNCACHEABLE) return null;
+        throw error;
+    }
+}
+
+function serialize(value, ancestors) {
+    switch (typeof value) {
+        case 'string':
+            return JSON.stringify(value);
+        case 'number':
+            return `n${value}`;
+        case 'boolean':
+            return value ? 't' : 'f';
+        case 'undefined':
+            return 'u';
+        case 'object': {
+            if (value === null) return 'z';
+            if (isTrustedContent(value)) return `T${JSON.stringify(value.__html)}`;
+            if (ancestors.has(value)) throw UNCACHEABLE;
+
+            const isArray = Array.isArray(value);
+            if (!isArray) {
+                const proto = Object.getPrototypeOf(value);
+                if (proto !== Object.prototype && proto !== null) throw UNCACHEABLE;
+            }
+
+            ancestors.add(value);
+            const body = isArray
+                ? value.map((item) => serialize(item, ancestors)).join(',')
+                : Object.keys(value)
+                    .map((key) => `${JSON.stringify(key)}:${serialize(value[key], ancestors)}`)
+                    .join(',');
+            ancestors.delete(value);
+            return isArray ? `[${body}]` : `{${body}}`;
+        }
+        default:
+            // functions, symbols, bigints
+            throw UNCACHEABLE;
+    }
+}
+
 /**
  * Utility functions for renderer implementations
  */
@@ -441,24 +503,10 @@ export const RendererUtils = {
      * Generate cache key for element
      */
     generateCacheKey(tagName, element) {
-        try {
-            // Create a stable cache key for the element
-            const keyData = {
-                tag: tagName,
-                props: extractProps(element),
-                hasChildren: hasChildren(element),
-                childrenType: Array.isArray(element.children) ? 'array' : typeof element.children
-            };
-
-            return `element:${JSON.stringify(keyData)}`;
-        } catch (_error) {
-            // Log _error in development mode
-            if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
-                console.warn('Failed to generate cache key:', _error);
-            }
-            // Return null to indicate uncacheable element
-            return null;
-        }
+        // The whole element, not a summary of it: a key that leaves out any
+        // part of the content lets two different elements share an entry.
+        const serialized = serializeForCache(element);
+        return serialized === null ? null : `element:${JSON.stringify(tagName)}:${serialized}`;
     },
 
     /**

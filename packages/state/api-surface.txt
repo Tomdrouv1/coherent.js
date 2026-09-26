@@ -13,6 +13,7 @@ Observable
 ReactiveState
 RouterState
 StateError
+batch
 clearAllContexts
 computed
 createContextProvider
@@ -30,6 +31,7 @@ globalStateManager
 observable
 provideContext
 restoreContext
+runWithContext
 stateUtils
 useContext
 validators
@@ -44,6 +46,7 @@ createState
 globalStateManager
 provideContext
 restoreContext
+runWithContext
 useContext
 
 == ./persistence ==
@@ -57,6 +60,7 @@ withSessionStorage
 Observable
 ReactiveState
 StateError
+batch
 computed
 createReactiveState
 default

@@ -10,10 +10,14 @@ createAstroIntegration
 createRenderer
 renderComponent
 
+== ./astro/server ==
+default
+
 == ./express ==
 coherentMiddleware
 createCoherentHandler
 createExpressIntegration
+default
 enhancedExpressEngine
 expressEngine
 setupCoherent

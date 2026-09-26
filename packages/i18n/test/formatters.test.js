@@ -8,7 +8,7 @@
  * - Custom formatters
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { 
   NumberFormatter, 
   DateFormatter, 
@@ -379,5 +379,61 @@ describe('Formatters', () => {
       const result = formatters.number(0.000001, 'en-US');
       expect(result).toBeDefined();
     });
+  });
+});
+
+describe('DateFormatter#relative', () => {
+  const NOW = new Date('2026-03-15T12:00:00.000Z').getTime();
+  const SECOND = 1000;
+  const MINUTE = 60 * SECOND;
+  const HOUR = 60 * MINUTE;
+  const DAY = 24 * HOUR;
+  const en = new DateFormatter('en');
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('formats future dates with the largest fitting unit', () => {
+    expect(en.relative(NOW + DAY)).toBe('tomorrow');
+    expect(en.relative(new Date(NOW + 3 * DAY))).toBe('in 3 days');
+    expect(en.relative(NOW + 5 * HOUR)).toBe('in 5 hours');
+    expect(en.relative(NOW + 90 * SECOND)).toBe('in 1 minute');
+    expect(en.relative(NOW + 30 * SECOND)).toBe('in 30 seconds');
+    expect(en.relative(NOW + 14 * DAY)).toBe('in 2 weeks');
+    expect(en.relative(NOW + 60 * DAY)).toBe('in 2 months');
+    expect(en.relative(NOW + 800 * DAY)).toBe('in 2 years');
+  });
+
+  it('formats past dates with the largest fitting unit', () => {
+    expect(en.relative(NOW - DAY)).toBe('yesterday');
+    expect(en.relative(NOW - 36 * HOUR)).toBe('yesterday');
+    expect(en.relative(NOW - 2 * DAY)).toBe('2 days ago');
+    expect(en.relative(NOW - 3 * HOUR)).toBe('3 hours ago');
+    expect(en.relative(NOW - 10 * MINUTE)).toBe('10 minutes ago');
+    expect(en.relative(NOW - 7 * DAY)).toBe('last week');
+    expect(en.relative(NOW - 21 * DAY)).toBe('3 weeks ago');
+    expect(en.relative(NOW - 45 * DAY)).toBe('last month');
+    expect(en.relative(NOW - 400 * DAY)).toBe('last year');
+  });
+
+  it('says "now" for the current instant', () => {
+    expect(en.relative(NOW)).toBe('now');
+  });
+
+  it('does not let a few elapsed milliseconds turn tomorrow into hours', () => {
+    const tomorrow = NOW + DAY;
+    vi.setSystemTime(NOW + 5);
+    expect(en.relative(tomorrow)).toBe('tomorrow');
+  });
+
+  it('uses the formatter locale', () => {
+    expect(new DateFormatter('fr').relative(NOW + DAY)).toBe('demain');
+    expect(new DateFormatter('fr').relative(NOW + 3 * DAY)).toBe('dans 3 jours');
   });
 });

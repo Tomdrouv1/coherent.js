@@ -71,23 +71,54 @@ export function createSQLiteAdapter() {
   }
 
   /**
+   * Whether a statement produces rows (and must go through `db.all`) rather than a
+   * change count (`db.run`, which reports `lastID` / `changes`).
+   *
+   * @private
+   * @param {string} sql - SQL statement
+   * @returns {boolean}
+   */
+  function returnsRows(sql) {
+    return /^\s*(SELECT|PRAGMA|WITH|EXPLAIN|VALUES)\b/i.test(sql) || /\bRETURNING\b/i.test(sql);
+  }
+
+  /**
    * Execute a SQL query
-   * 
+   *
+   * Row-returning statements resolve to `{ rows, rowCount }`. Other statements resolve
+   * to `{ rows: [], rowCount, affectedRows, insertId }`, where `affectedRows` is the
+   * number of changed rows and `insertId` the rowid of an INSERT (null otherwise).
+   *
    * @param {string} sql - SQL query string
    * @param {Array} [params=[]] - Query parameters
-   * @returns {Promise<{rows: Array<Object>}>} Query result
+   * @returns {Promise<{rows: Array<Object>, rowCount: number, affectedRows?: number, insertId?: number|null}>} Query result
    */
   function query(sql, params = []) {
     return new Promise((resolve, reject) => {
       if (!db) {
         return reject(new Error('Database connection not established. Call connect() first.'));
       }
-      
-      db.all(sql, params, (err, rows) => {
+
+      if (returnsRows(sql)) {
+        db.all(sql, params, (err, rows) => {
+          if (err) {
+            return reject(new Error(`SQLite query error: ${err.message}`));
+          }
+          resolve({ rows, rowCount: rows.length });
+        });
+        return;
+      }
+
+      db.run(sql, params, function(err) {
         if (err) {
-          return reject(new Error(`SQLite query _error: ${err.message}`));
+          return reject(new Error(`SQLite query error: ${err.message}`));
         }
-        resolve({ rows });
+        resolve({
+          rows: [],
+          rowCount: this.changes,
+          affectedRows: this.changes,
+          insertId: /^\s*(INSERT|REPLACE)\b/i.test(sql) ? this.lastID : null
+        });
       });
     });
   }
@@ -107,7 +138,7 @@ export function createSQLiteAdapter() {
       
       db.run(sql, params, function(err) {
         if (err) {
-          return reject(new Error(`SQLite execute _error: ${err.message}`));
+          return reject(new Error(`SQLite execute error: ${err.message}`));
         }
         
         resolve({
@@ -176,6 +207,93 @@ export function createSQLiteAdapter() {
         resolve();
       });
     });
+  }
+
+  /**
+   * Start a transaction on the connection (the DatabaseManager transaction contract)
+   *
+   * SQLite has a single connection here: a second transaction started before the first
+   * one finishes fails with "cannot start a transaction within a transaction".
+   *
+   * @param {Object} [_pool] - Unused; the adapter instance is its own pool
+   * @param {Object} [options={}] - Transaction options
+   * @param {'DEFERRED'|'IMMEDIATE'|'EXCLUSIVE'} [options.mode] - SQLite locking mode
+   * @returns {Promise<Object>} Transaction with query, commit and rollback
+   */
+  async function transaction(_pool, options = {}) {
+    const modes = ['DEFERRED', 'IMMEDIATE', 'EXCLUSIVE'];
+    const mode = options.mode === undefined ? null : String(options.mode).toUpperCase();
+    if (mode !== null && !modes.includes(mode)) {
+      throw new Error(`Invalid SQLite transaction mode: ${options.mode}. Use one of ${modes.join(', ')}`);
+    }
+
+    await run(mode ? `BEGIN ${mode} TRANSACTION` : 'BEGIN TRANSACTION', 'begin transaction');
+
+    const tx = {
+      isCommitted: false,
+      isRolledBack: false,
+
+      async query(sql, params) {
+        if (tx.isCommitted || tx.isRolledBack) {
+          throw new Error('Cannot execute query on completed transaction');
+        }
+        return query(sql, params);
+      },
+
+      async commit() {
+        if (tx.isCommitted || tx.isRolledBack) {
+          throw new Error('Transaction already completed');
+        }
+        try {
+          await run('COMMIT', 'commit transaction');
+          tx.isCommitted = true;
+        } catch (commitError) {
+          // Leave the connection usable: a failed COMMIT keeps the transaction open.
+          await run('ROLLBACK', 'rollback transaction').catch(() => {});
+          tx.isRolledBack = true;
+          throw commitError;
+        }
+      },
+
+      async rollback() {
+        if (tx.isCommitted || tx.isRolledBack) {
+          throw new Error('Transaction already completed');
+        }
+        tx.isRolledBack = true;
+        await run('ROLLBACK', 'rollback transaction');
+      }
+    };
+
+    return tx;
+  }
+
+  /**
+   * Run a control statement (BEGIN / COMMIT / ROLLBACK)
+   *
+   * @private
+   */
+  function run(sql, action) {
+    return new Promise((resolve, reject) => {
+      if (!db) {
+        return reject(new Error('Database connection not established. Call connect() first.'));
+      }
+      db.run(sql, (err) => {
+        if (err) {
+          return reject(new Error(`Failed to ${action}: ${err.message}`));
+        }
+        resolve();
+      });
+    });
+  }
+
+  /**
+   * Connection statistics (the DatabaseManager getStats contract)
+   *
+   * @returns {{total: number, available: number, acquired: number, waiting: number}}
+   */
+  function getPoolStats() {
+    const open = db ? 1 : 0;
+    return { total: open, available: open, acquired: 0, waiting: 0 };
   }
 
   /**
@@ -256,6 +374,8 @@ export function createSQLiteAdapter() {
     beginTransaction,
     commit,
     rollback,
+    transaction,
+    getPoolStats,
     disconnect,
     getConnection,
     ping,

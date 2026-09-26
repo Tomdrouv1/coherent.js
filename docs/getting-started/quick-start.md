@@ -26,12 +26,12 @@ const component = {
 ### 1. Installation
 
 ```bash
-npm install @coherent.js/core@rc
+pnpm add @coherent.js/core
 # or
-pnpm add @coherent.js/core@rc
+npm install @coherent.js/core
 ```
 
-> **Note**: Coherent.js 1.0 is currently in release-candidate. Install with `pnpm add @coherent.js/core@rc`. The stable release follows after a 1-2 week soak.
+> **Note**: Coherent.js is ESM-only and requires Node.js 22.12 or later.
  
 
 ### 2. Your First Component
@@ -66,14 +66,14 @@ const Greeting = ({ name = 'World', mood = 'happy' }) => ({
     children: [
       { h2: { text: `Hello, ${name}!` } },
       { p: { text: `You seem ${mood} today` } },
-      // Conditional rendering with pure JS
-      mood === 'fantastic' ? {
+      // Conditional rendering with pure JS: false and null render nothing
+      mood === 'fantastic' && {
         div: {
           className: 'celebration',
           text: '🎉 Amazing! 🎉'
         }
-      } : null
-    ].filter(Boolean) // Remove null values
+      }
+    ]
   }
 });
 
@@ -114,8 +114,8 @@ Build complex UIs by composing simple components:
 ```javascript
 const Button = ({ text, onClick, variant = 'primary' }) => ({
   button: {
-    className: `btn btn--${variant}`,
-    onclick: onClick,
+    className: ['btn', `btn--${variant}`],
+    onclick: onClick, // a string is rendered as an attribute; a function is attached by hydrate() in the browser
     text: text
   }
 });
@@ -130,13 +130,13 @@ const Card = ({ title, content, actions = [] }) => ({
       { div: { className: 'card-body', children: [
         { p: { text: content } }
       ]}},
-      actions.length > 0 ? {
+      actions.length > 0 && {
         div: {
           className: 'card-actions',
           children: actions.map(action => Button(action))
         }
-      } : null
-    ].filter(Boolean)
+      }
+    ]
   }
 });
 
@@ -155,9 +155,9 @@ const MyCard = Card({
 
 ### 🎨 Components & Rendering
 - Pure JavaScript object components
-- Server-side rendering (SSR)
+- Server-side rendering (SSR), synchronous or streamed
 - Client-side hydration
-- Component memoization
+- Opt-in memoization, render caching and scoped CSS
 
 ### 💾 Database Integration
 - Object-based query builder
@@ -170,10 +170,9 @@ const MyCard = Card({
 - WebSocket routing support
 
 ### ⚡ Performance
-- Intelligent caching
+- Opt-in caching (`memo()`, `enableCache`)
 - Performance monitoring
-- Static optimization
-- Streaming responses
+- Streaming responses (`renderToStream()`)
 
 ## Next Steps
 
@@ -214,11 +213,12 @@ Check out our [enhanced example browser](../../examples/) with categorized examp
 
 ## Development Server
 
-Start the enhanced development server to explore examples:
+To run the documentation website and its examples from a clone of the repository:
 
 ```bash
-npm run dev
-# Visit http://localhost:3000 for categorized examples
+pnpm install && pnpm build
+pnpm dev
+# Visit http://localhost:3000
 ```
 
 ## Getting Help

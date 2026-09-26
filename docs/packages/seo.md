@@ -48,11 +48,20 @@ const meta = createMetaBuilder()
 ```javascript
 import { generateSitemap } from '@coherent.js/seo';
 
-const xml = generateSitemap([
-  { url: '/', priority: 1.0, changefreq: 'daily' },
-  { url: '/about', priority: 0.8, changefreq: 'weekly' }
-]);
+const xml = generateSitemap(
+  [
+    { url: '/', priority: 1.0, changefreq: 'daily' },
+    { url: '/about', priority: 0.8, changefreq: 'weekly' }
+  ],
+  { hostname: 'https://example.com' } // relative URLs are resolved against it
+);
 ```
+
+Every value is XML-escaped and each `loc` is percent-encoded. A `changefreq`
+outside `always | hourly | daily | weekly | monthly | yearly | never` or a
+`priority` outside 0.0–1.0 throws a `RangeError`, and an absolute URL that is
+not `http:` or `https:` throws a `TypeError`. Pass `null` for `lastmod`,
+`changefreq` or `priority` to leave the element out.
 
 Serve it from your framework of choice, e.g. with Fastify:
 
@@ -70,14 +79,25 @@ JSON-LD structured data via `generateStructuredData` /
 ```javascript
 import { generateStructuredData } from '@coherent.js/seo';
 
-// Returns a { script: { type: 'application/ld+json', ... } } component node
+// Returns a { script: { type: 'application/ld+json', text } } component node
 // ready to drop into your head element alongside the meta tags.
-const jsonLd = generateStructuredData({
-  '@type': 'Organization',
+const jsonLd = generateStructuredData('organization', {
   name: 'My App',
   url: 'https://example.com'
 });
+
+// Any other type name adds the object as-is
+const event = generateStructuredData('custom', {
+  '@context': 'https://schema.org',
+  '@type': 'Event',
+  name: 'Launch day'
+});
 ```
+
+The JSON is written with `<`, `>`, `&`, U+2028 and U+2029 escaped, so no value
+can close the `<script>` element; it parses to the same data. Titles are
+inserted into `titleTemplate` literally (`$&` or `$'` in a title stay as
+written).
 
 ## See also
 

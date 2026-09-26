@@ -33,7 +33,7 @@ describe('Component.handleError', () => {
     const component = throwing('Solo');
 
     expect(component.render({})).toEqual({
-      div: { className: 'component-_error', text: 'Error in Solo' }
+      div: { className: 'component-error', text: 'Error in Solo' }
     });
   });
 
@@ -70,7 +70,7 @@ describe('Component.handleError', () => {
     });
 
     expect(component.render({})).toEqual({
-      div: { className: 'component-_error', text: 'Error in Bad' }
+      div: { className: 'component-error', text: 'Error in Bad' }
     });
   });
 

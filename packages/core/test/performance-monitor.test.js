@@ -515,18 +515,22 @@ describe('Enhanced Performance Monitor', () => {
     });
 
     it('should measure async function execution', async () => {
+      const outerStart = performance.now();
       const result = await monitor.measureAsync('asyncFunction', async () => {
         await new Promise(resolve => setTimeout(resolve, 10));
         return 'done';
       });
+      const outerElapsed = performance.now() - outerStart;
 
       expect(result).toBe('done');
 
       const report = monitor.generateReport();
       expect(report.metrics.renderTime.count).toBe(1);
-      // setTimeout is not precise - allow ±2ms variance
+      // setTimeout is not precise (allow 2ms early), and a loaded machine can
+      // fire it arbitrarily late: bound the measurement by the time that
+      // actually elapsed around the call rather than by a fixed ceiling.
       expect(report.metrics.renderTime.avg).toBeGreaterThanOrEqual(8);
-      expect(report.metrics.renderTime.avg).toBeLessThan(20);
+      expect(report.metrics.renderTime.avg).toBeLessThanOrEqual(outerElapsed + 1);
     });
 
     it('should record errors during measurement', () => {

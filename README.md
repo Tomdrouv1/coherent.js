@@ -5,13 +5,14 @@
 [![npm version](https://badge.fury.io/js/%40coherent.js%2Fcore.svg)](https://badge.fury.io/js/%40coherent.js%2Fcore)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## ⚡ **Production-Ready Performance**
+## ⚡ **Performance**
 
-Coherent.js delivers exceptional performance with validated production metrics:
+Measured, not claimed — run `pnpm perf:render` to reproduce on your machine:
 
-- **📦 Per-package bundle size gated by CI** (see `packages/*/bundle-size.json`)
-- **🚀 247 renders/sec** with LRU caching  
-- **🔧 100% tree-shaking ready** across all 12 packages
+- **~0.2 ms** to render a ~300-node page, **~5 ms** for a 1,000 × 5 table (Node 22, median, fresh data every render)
+- about **4–5× the cost of a hand-written template string** producing the same HTML — the price of the object model and escaping
+- **Streaming** with `renderToStream()`: the first bytes of a 10,000-row page leave after ~20 ms instead of ~80–100 ms
+- **Per-package bundle size gated by CI** (see `packages/*/bundle-size.json`), and a rendering budget gate (`pnpm perf:gate`)
 
 ## 🎯 **Why Coherent.js?**
 
@@ -23,7 +24,7 @@ Coherent.js delivers exceptional performance with validated production metrics:
 ### **Production-Optimized**
 - **Tree Shaking**: `sideEffects: false` across all packages
 - **Modular Exports**: Conditional exports for optimal bundle sizes
-- **LRU Caching**: Component-level caching with configurable LRU eviction
+- **Opt-in caching**: `memo()` per component, and `render(c, { enableCache: true })` for whole renders of identical trees
 - **Bundle Analysis**: Real production validation and optimization
 
 ### **Developer Experience**
@@ -84,33 +85,38 @@ import * as coherent from '@coherent.js/core';
 
 ## 📊 **Performance Benchmarks**
 
-| Metric | Coherent.js | Traditional Frameworks |
-|--------|-------------|------------------------|
-| Rendering Speed | **247 renders/sec** | 89 renders/sec |
-| Memory Usage | **50MB average** | 60MB+ |
+`benchmarks/render-bench.js` renders realistic trees with warm-up and several timed rounds, and checks the output byte-for-byte against a hand-written template-string baseline. Typical results (Node 22, median ms per render):
+
+| Case | `render()` | Template-string baseline | Overhead |
+|------|-----------:|-------------------------:|---------:|
+| Page, ~300 nodes | 0.22 | 0.05 | ~4.5× |
+| Table, 1,000 × 5 | 4.9 | 1.1 | ~4.5× |
+| Tree, 90 levels deep | 0.06 | 0.001 | ~45× |
+
+Numbers vary with hardware; compare runs on the same machine.
 
 ## 🏗️ **Architecture Overview**
 
 ```
-📦 Core Framework (382.4KB source)
+📦 Core Framework
 ├── Components (pure FP objects)
 ├── Rendering (SSR + streaming)
-├── Performance (LRU caching)
+├── Performance (memo, opt-in render cache)
 └── Utils (tree-shakable)
 
-🧩 State Management (71.0KB source)
+🧩 State Management
 ├── Reactive State (core)
 ├── Enhanced Patterns (FormState, ListState)
 ├── Persistence & Validation
 └── Tree-shakable modules
 
-🌐 API Framework (88.7KB source)
+🌐 API Framework
 ├── Smart Routing (LRU cached)
 ├── Middleware & Security
 ├── Validation & Serialization
 └── Modular exports
 
-🔧 DevTools (130.8KB source)
+🔧 DevTools
 ├── Component Visualizer
 ├── Performance Dashboard
 ├── Enhanced Error Context
@@ -122,6 +128,7 @@ import * as coherent from '@coherent.js/core';
 - **[Getting Started](docs/getting-started/quick-start.md)** - 5-minute setup
 - **[Deployment Guide](docs/deployment/index.md)** - Production deployment
 - **[Migration Guide](docs/migration/guide.md)** - From React/Vue/Express
+- **[Upgrading from 1.1](docs/migration/upgrading-from-1.1.md)** - Behavior changes and how to adapt
 - **[API Reference](docs/api/reference.md)** - Complete documentation
 - **[Examples](examples/)** - Full-stack applications
 
@@ -184,15 +191,15 @@ export default {
 ## 📦 **Packages**
 
 ### **Core**
-- `@coherent.js/core` - Framework core (382.4KB source)
-- `@coherent.js/state` - State management (71.0KB source)
-- `@coherent.js/api` - API framework (88.7KB source)
-- `@coherent.js/client` - Client utilities (83.4KB source)
+- `@coherent.js/core` - Framework core
+- `@coherent.js/state` - State management
+- `@coherent.js/api` - API framework
+- `@coherent.js/client` - Client utilities
 
 ### **Features**
-- `@coherent.js/database` - Database adapters (121.8KB source)
-- `@coherent.js/forms` - Form utilities (72.1KB source)
-- `@coherent.js/devtools` - Development tools (130.8KB source)
+- `@coherent.js/database` - Database adapters
+- `@coherent.js/forms` - Form utilities
+- `@coherent.js/devtools` - Development tools
 
 ### **Integrations**
 - `@coherent.js/integrations` - Framework integration adapters via subpath exports (`/express`, `/fastify`, `/koa`, `/nextjs`, `/astro`, `/remix`, `/sveltekit`)
@@ -207,19 +214,19 @@ Coherent.js provides first-class IDE support for an excellent developer experien
 
 ### VS Code Extension
 
-Install the **Coherent.js Language Support** extension from the VS Code Marketplace for:
+The **Coherent.js Language Support** extension provides:
 
 - **IntelliSense** - Autocomplete for HTML attributes and event handlers
 - **Validation** - Real-time warnings for invalid attributes and HTML nesting
 - **Snippets** - Quick patterns like `cel`, `ccomp`, `cinput`, and more
 - **Hover Info** - Type information and documentation on hover
 
-```bash
-# Install from command line
-code --install-extension coherentjs.coherent-language-support
-```
+CI builds it as a VSIX (the `coherent-vscode-extension` artifact); you can also build it locally and install the file:
 
-Or search "Coherent.js Language Support" in the VS Code Extensions panel.
+```bash
+pnpm --filter coherent-language-support run package
+code --install-extension packages/vscode-extension/coherent-language-support-*.vsix
+```
 
 ### Language Server (for other editors)
 
@@ -235,13 +242,9 @@ coherent-language-server --stdio
 
 Configure your editor's LSP client to use `coherent-language-server` for JavaScript and TypeScript files.
 
-## 🎯 **Production Validation**
+## 🎯 **Quality Gates**
 
-All performance claims validated with real measurements:
-
-- ✅ **Bundle Analysis**: Real file sizes, not mock data
-- ✅ **Performance**: 247 renders/sec with LRU caching
-- ✅ **Optimization**: 100% tree-shaking ready across all packages
+Every push runs lint, type checks, the test suite with coverage, API- and type-surface checks (declared types must match runtime exports), publint, bundle-size budgets, the rendering performance budget, and Playwright end-to-end tests.
 
 ## 🆘 **Getting Help**
 

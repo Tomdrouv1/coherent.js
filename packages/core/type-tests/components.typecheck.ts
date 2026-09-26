@@ -294,7 +294,6 @@ const memoOptions: MemoOptions = {
   maxSize: 100,
   ttl: 60000,
   keyFn: (...args) => JSON.stringify(args),
-  shallow: true,
   stats: true,
   debug: false,
   onHit: (key, value, args) => console.log('Hit:', key),
@@ -303,6 +302,13 @@ const memoOptions: MemoOptions = {
 };
 
 const memoizedWithOptions = memo(expensiveFn, memoOptions);
+
+// memo(fn, keyFn): the original signature
+const memoizedByKey = memo((props: { id: number }) => ({ div: { text: String(props.id) } }), (props) => String(props.id));
+expectTypeOf(memoizedByKey).toBeCallableWith({ id: 1 });
+
+// @ts-expect-error - comparison options were never implemented
+memo(expensiveFn, { shallow: true });
 expectTypeOf(memoizedWithOptions).toBeCallableWith(5);
 
 // MemoizedFunction type properties
@@ -449,6 +455,7 @@ void metadata;
 void CounterBase;
 void memoized;
 void memoizedWithOptions;
+void memoizedByKey;
 void MemoizedComponent;
 void MemoizedWithCompare;
 void lazyValue;

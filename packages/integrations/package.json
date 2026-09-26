@@ -13,6 +13,7 @@
       "default": "./src/fastify/index.js"
     },
     "./koa": {
+      "types": "./types/koa/index.d.ts",
       "default": "./src/koa/index.js"
     },
     "./nextjs": {
@@ -20,12 +21,19 @@
       "default": "./src/nextjs/index.js"
     },
     "./astro": {
+      "types": "./types/astro/index.d.ts",
       "default": "./src/astro/index.js"
     },
+    "./astro/server": {
+      "types": "./types/astro/server.d.ts",
+      "default": "./src/astro/server.js"
+    },
     "./remix": {
+      "types": "./types/remix/index.d.ts",
       "default": "./src/remix/index.js"
     },
     "./sveltekit": {
+      "types": "./types/sveltekit/index.d.ts",
       "default": "./src/sveltekit/index.js"
     }
   },
@@ -59,7 +67,6 @@
   },
   "peerDependencies": {
     "@coherent.js/core": "workspace:^",
-    "@remix-run/server-runtime": ">=2.0.0",
     "@sveltejs/kit": ">=2.0.0",
     "astro": ">=4.0.0",
     "express": ">=4.18.0 < 6.0.0",
@@ -69,9 +76,6 @@
     "react": ">=18.0.0"
   },
   "peerDependenciesMeta": {
-    "@remix-run/server-runtime": {
-      "optional": true
-    },
     "@sveltejs/kit": {
       "optional": true
     },

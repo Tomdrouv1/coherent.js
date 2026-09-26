@@ -45,6 +45,17 @@ export interface TranslatorOptions {
   fallbackLocale?: string;
   /** Called instead of returning the key when a translation is missing */
   missingKeyHandler?: ((key: string, locale: string) => string) | null;
+  /**
+   * HTML-escape interpolated params (`&`, `<`, `>`, `"`, `'`) on every call;
+   * the translation template itself is never escaped. Defaults to `false`.
+   * Turn it on when translations are rendered through core's `html:`;
+   * `text:` is escaped by core and is the safe default sink.
+   */
+  escape?: boolean;
+  /**
+   * Placeholder delimiters, matched literally (not as regex). Merged with the
+   * defaults, so overriding one keeps the other.
+   */
   interpolation?: {
     /** Defaults to `'{{'` */
     prefix?: string;
@@ -52,6 +63,34 @@ export interface TranslatorOptions {
     suffix?: string;
   };
   [option: string]: unknown;
+}
+
+/** Per-call options for {@link Translator.t}. */
+export interface TranslateOptions {
+  /** Locale for this call only; defaults to the current locale */
+  locale?: string | null;
+  /** HTML-escape the interpolated params; defaults to the translator's `escape` option */
+  escape?: boolean;
+}
+
+/**
+ * A translator bound to one locale, returned by {@link Translator.forLocale}.
+ * Safe to use concurrently: it never reads or writes the shared
+ * `currentLocale`.
+ */
+export interface LocaleTranslator {
+  /** The resolved locale this translator is bound to */
+  readonly locale: string;
+  /** Like {@link Translator.t}, defaulting to the bound locale */
+  t(
+    key: TranslationKey,
+    params?: TranslationParams | null,
+    localeOrOptions?: string | null | TranslateOptions
+  ): string;
+  /** Like {@link Translator.has}, defaulting to the bound locale */
+  has(key: TranslationKey, locale?: string | null): boolean;
+  /** The bound locale */
+  getLocale(): string;
 }
 
 /**
@@ -78,19 +117,52 @@ export class Translator {
   /** Recursively merge `source` into `target` */
   deepMerge(target: TranslationMessages, source: TranslationMessages): TranslationMessages;
 
-  /** Switch the active locale */
+  /**
+   * Loaded locales that can serve `locale`, most specific first: the locale,
+   * then its parents with trailing subtags dropped (`zh-Hant-TW` → `zh-Hant`
+   * → `zh`). Case-insensitive; `_` is accepted for `-`.
+   */
+  localeCandidates(locale: string): string[];
+
+  /** The closest loaded locale (`fr-FR` → `fr`), or `null` */
+  resolveLocale(locale: string): string | null;
+
+  /**
+   * Switch the active locale to the closest loaded one (`fr-FR` → `fr`),
+   * or to the fallback locale when neither it nor a parent is loaded.
+   */
   setLocale(locale: string): void;
 
   /** The active locale */
   getLocale(): string;
 
   /**
-   * Resolve a key. Falls back to the fallback locale, then to
-   * `missingKeyHandler`, then to the key itself.
+   * A translator bound to `locale` (resolved like `setLocale()`, falling back
+   * silently to the fallback locale) that leaves `currentLocale` untouched.
+   * Use one per request on the server; `setLocale()` mutates state that every
+   * concurrent request shares. `options.escape` sets the escape default for
+   * its calls.
    */
-  t(key: TranslationKey, params?: TranslationParams, locale?: string | null): string;
+  forLocale(locale: string, options?: { escape?: boolean }): LocaleTranslator;
 
-  /** Look a key up in one locale without fallback; `null` if absent */
+  /**
+   * Resolve a key in the target locale, then its parent locales (`fr-CA` →
+   * `fr`), then the fallback locale, then `missingKeyHandler`, then the key
+   * itself. Plural forms are chosen with the plural rules of the language the
+   * message was found in.
+   *
+   * The third argument is a locale override, or `{ locale, escape }`.
+   */
+  t(
+    key: TranslationKey,
+    params?: TranslationParams | null,
+    localeOrOptions?: string | null | TranslateOptions
+  ): string;
+
+  /**
+   * Look a key up in one locale without fallback; `null` if absent. Only own
+   * properties match, so `'constructor'` or `'a.toString'` are absent.
+   */
   getTranslation(
     key: TranslationKey,
     locale: string
@@ -99,10 +171,19 @@ export class Translator {
   /** Pick the plural form matching `count` */
   selectPlural(pluralObject: PluralForms, count: number, locale: string): string;
 
-  /** Substitute `{{param}}` placeholders */
-  interpolate(str: string, params: TranslationParams): string;
+  /**
+   * Substitute `{{param}}` placeholders in one pass. Values are inserted
+   * literally (`$&` stays `$&`) and are not themselves interpolated;
+   * placeholders without a matching param are left as they are.
+   * `escape` HTML-escapes the values (never `str`); it defaults to the
+   * translator's `escape` option.
+   */
+  interpolate(str: string, params: TranslationParams, options?: { escape?: boolean }): string;
 
-  /** Whether a key resolves in the given (or current) locale */
+  /**
+   * Whether a key resolves in the given (or current) locale or one of its
+   * parents; the fallback locale is not consulted
+   */
   has(key: TranslationKey, locale?: string | null): boolean;
 
   /** All messages for a locale, or `{}` */
@@ -128,7 +209,11 @@ export function createScopedTranslator(
   translator: Translator,
   namespace: string
 ): {
-  t(key: TranslationKey, params?: TranslationParams, locale?: string | null): string;
+  t(
+    key: TranslationKey,
+    params?: TranslationParams | null,
+    localeOrOptions?: string | null | TranslateOptions
+  ): string;
   has(key: TranslationKey, locale?: string | null): boolean;
   getLocale(): string;
   setLocale(locale: string): void;
@@ -165,7 +250,11 @@ export class DateFormatter {
   /** Date and time together */
   dateTime(date: Date | number | string, options?: Intl.DateTimeFormatOptions): string;
 
-  /** Relative to now (e.g. `2 hours ago`) */
+  /**
+   * Relative to now, past or future (e.g. `2 hours ago`, `tomorrow`,
+   * `in 3 weeks`), in the largest unit that fits: seconds, minutes, hours,
+   * days, weeks (from 7 days), months (from 30 days) or years (from 365 days).
+   */
   relative(date: Date | number | string): string;
 }
 

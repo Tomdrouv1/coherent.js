@@ -29,7 +29,7 @@ Pull requests are the best way to propose changes to the codebase. We actively w
 
 ## Getting Started
 
-1. Ensure you have [Node.js](https://nodejs.org/) (version 20 or higher) and [pnpm](https://pnpm.io/) installed
+1. Ensure you have [Node.js](https://nodejs.org/) (version 22.12 or higher) and [pnpm](https://pnpm.io/) installed
 2. Fork the repository
 3. Clone your fork: `git clone https://github.com/your-username/coherent.js.git`
 4. Create a branch: `git checkout -b my-branch-name`
@@ -115,11 +115,12 @@ pnpm test:watch
 # Run tests with coverage
 pnpm test:coverage
 
-# Run tests for a specific package
-pnpm --filter @coherent.js/core run test
+# Run the tests of one package (from the repo root, which aliases
+# @coherent.js/* to package sources)
+pnpm vitest run packages/core
 
 # Run a specific test file
-pnpm --filter @coherent.js/core run test -- test/some-file.test.js
+pnpm vitest run packages/core/test/some-file.test.js
 ```
 
 ### Writing Tests
@@ -129,7 +130,7 @@ pnpm --filter @coherent.js/core run test -- test/some-file.test.js
 - Test one thing per test when possible
 - Include both positive and negative test cases
 
-For more details on testing, see our [guidelines](.junie/guidelines.md).
+For more details on the test setup, see [AGENTS.md](AGENTS.md#testing-workflow-vitest-5) and `vitest.config.js`.
 
 ## Documentation
 

@@ -13,23 +13,29 @@ import { Counter } from './components/Counter.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// State the counter is rendered with on the server and hydrated with in the
+// browser: both sides must start from the same value.
+const INITIAL_STATE = { count: 0 };
+
 const hydrationBuildResult = await build({
   bundle: true,
   format: 'esm',
   platform: 'browser',
   write: false,
   target: ['es2020'],
+  define: { 'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production') },
   stdin: {
     sourcefile: 'hydration-entry.js',
     resolveDir: __dirname,
-    contents: `import { autoHydrate, makeHydratable } from '@coherent.js/client';
+    contents: `import { hydrate } from '@coherent.js/client';
 import { Counter } from './components/Counter.js';
 
-window.componentRegistry = {
-  counter: makeHydratable(Counter, { componentName: 'counter' })
-};
-
-autoHydrate(window.componentRegistry);
+// hydrate(component, container, options): binds the onClick handlers to the
+// server-rendered markup; event.setState() then re-renders and patches it.
+const element = document.querySelector('[data-coherent-component="counter"]');
+if (element) {
+  hydrate(Counter, element, { initialState: ${JSON.stringify(INITIAL_STATE)} });
+}
 `,
   },
 });
@@ -174,7 +180,7 @@ const createPage = () => ({
                   { p: { text: 'A simple full-stack example with SSR and hydration', className: 'subtitle' } },
 
                   // Counter component
-                  Counter(),
+                  Counter(INITIAL_STATE),
 
                   // Info section
                   {
@@ -254,7 +260,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log('');
   console.log('🚀 Coherent.js Starter App');
-  console.log(`📍 Server running at: http://localhost:${PORT}`);
+  console.log(`📍 Server running at: http://localhost:${server.address().port}`);
   console.log('');
   console.log('✨ Features:');
   console.log('   • Server-Side Rendering (SSR)');

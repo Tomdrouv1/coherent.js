@@ -92,7 +92,7 @@ test('Hot reload functionality', () => {
   }
 });
 
-test('HMR _error handling', () => {
+test('HMR error handling', () => {
   // Mock hot reload function with _error handling
   const hotReload = (moduleName, module) => {
     if (!moduleName || typeof moduleName !== 'string') {

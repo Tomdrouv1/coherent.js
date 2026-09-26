@@ -47,114 +47,6 @@ describe('Database Integration E2E Tests', () => {
   });
 
   describe('Complete Database Workflow', () => {
-    it('should handle full CRUD workflow with models', async () => {
-      // Define User model
-      class User extends Model {
-        static tableName = 'users';
-        static attributes = {
-          name: { type: 'string', required: true },
-          email: { type: 'string', required: true },
-          age: { type: 'number', min: 0 },
-          active: { type: 'boolean', default: true }
-        };
-        
-        static validationRules = {
-          email: [(value) => value.includes('@'), 'Must be valid email']
-        };
-      }
-      
-      User.setDatabase(dbManager);
-
-      // Create user
-      const userData = { name: 'John Doe', email: 'john@example.com', age: 30 };
-      const user = await User.create(userData);
-      
-      expect(user.get('name')).toBe('John Doe');
-      expect(user.get('email')).toBe('john@example.com');
-      expect(user.get('age')).toBe(30);
-      expect(user.get('active')).toBe(true);
-      expect(user.isNew).toBe(false);
-
-      // Update user
-      user.set('age', 31);
-      await user.save();
-      
-      expect(user.get('age')).toBe(31);
-
-      // Find user
-      const foundUser = await User.find(user.get('id'));
-      expect(foundUser.get('name')).toBe('John Doe');
-
-      // Query users
-      const activeUsers = await User.where({ active: true });
-      expect(activeUsers).toHaveLength(1);
-      expect(activeUsers[0].get('name')).toBe('John Doe');
-
-      // Delete user
-      await user.delete();
-      expect(user.isDeleted).toBe(true);
-    });
-
-    it('should handle relationships between models', async () => {
-      // Define models with relationships
-      class User extends Model {
-        static tableName = 'users';
-        static attributes = {
-          name: { type: 'string', required: true },
-          email: { type: 'string', required: true }
-        };
-        
-        static relationships = {
-          posts: { type: 'hasMany', model: 'Post', foreignKey: 'user_id' }
-        };
-      }
-
-      class Post extends Model {
-        static tableName = 'posts';
-        static attributes = {
-          title: { type: 'string', required: true },
-          content: { type: 'string' },
-          user_id: { type: 'number', required: true }
-        };
-        
-        static relationships = {
-          user: { type: 'belongsTo', model: 'User', foreignKey: 'user_id' }
-        };
-      }
-
-      // Make models globally available for relationship lookup
-      global.User = User;
-      global.Post = Post;
-
-      User.setDatabase(dbManager);
-      Post.setDatabase(dbManager);
-
-      // Create user and posts
-      const user = await User.create({ name: 'John Doe', email: 'john@example.com' });
-      const post1 = await Post.create({ 
-        title: 'First Post', 
-        content: 'Hello World', 
-        user_id: user.get('id') 
-      });
-      await Post.create({ 
-        title: 'Second Post', 
-        content: 'Another post', 
-        user_id: user.get('id') 
-      });
-
-      // Test relationships
-      const userPosts = await user.posts();
-      expect(userPosts).toHaveLength(2);
-      expect(userPosts[0].get('title')).toBe('First Post');
-
-      const postUser = await post1.user();
-      expect(postUser.get('name')).toBe('John Doe');
-      
-      // Clean up global references
-      delete global.User;
-      delete global.Post;
-    });
-
     it('should handle complex queries with query builder', async () => {
       // Complex SELECT query using object configuration
       const result = await executeQuery(dbManager, {
@@ -171,52 +63,13 @@ describe('Database Integration E2E Tests', () => {
       });
       
       expect(result.rows).toBeDefined();
-      
+
       const lastQuery = testHelper.getLastQuery();
-      expect(lastQuery.sql).toContain('SELECT');
-      expect(lastQuery.sql).toContain('JOIN');
-      expect(lastQuery.sql).toContain('WHERE');
-      expect(lastQuery.sql).toContain('ORDER BY');
-      expect(lastQuery.sql).toContain('LIMIT');
-    });
-
-    it('should handle transactions with rollback', async () => {
-      class User extends Model {
-        static tableName = 'users';
-        static attributes = {
-          name: { type: 'string', required: true },
-          email: { type: 'string', required: true }
-        };
-      }
-      
-      User.setDatabase(dbManager);
-
-      let transaction;
-      let rollbackOccurred = false;
-
-      try {
-        transaction = await dbManager.transaction();
-        
-        // Create user in transaction
-        const user = await User.create({ 
-          name: 'John Doe', 
-          email: 'john@example.com' 
-        }, { transaction });
-        
-        expect(user.get('name')).toBe('John Doe');
-        
-        // Simulate _error
-        throw new Error('Simulated _error');
-        
-      } catch {
-        if (transaction && !transaction.isRolledBack) {
-          await transaction.rollback();
-          rollbackOccurred = true;
-        }
-      }
-
-      expect(rollbackOccurred).toBe(true);
-      expect(transaction.isRolledBack).toBe(true);
+      expect(lastQuery.sql).toBe(
+        'SELECT u.name, u.email, p.title FROM users u INNER JOIN posts p ON u.id = p.user_id ' +
+        'WHERE u.active = ? AND p.published_at > ? ORDER BY u.name ASC, p.created_at DESC LIMIT 10'
+      );
+      expect(lastQuery.params).toEqual([true, '2023-01-01']);
     });
 
     it('should handle migrations', async () => {
@@ -263,9 +116,11 @@ describe('Database Integration E2E Tests', () => {
       // Run migrations
       const results = await migration.run();
       
-      expect(results).toHaveLength(2);
-      expect(results[0].name).toBe('001_create_users.js');
-      expect(results[1].name).toBe('002_create_posts.js');
+      expect(results).toEqual(['001_create_users.js', '002_create_posts.js']);
+      expect(testHelper.getQueries().map(q => q.sql)).toContain('SELECT migration FROM coherent_migrations ORDER BY id');
+
+      // A second run applies nothing: the migrations are recorded as applied
+      expect(await migration.run()).toEqual([]);
 
       // Check migration status
       const status = await migration.status();
@@ -332,7 +187,7 @@ describe('Database Integration E2E Tests', () => {
     it('should handle transaction middleware', async () => {
       const req = createMockRequest();
       const res = createMockResponse();
-      const next = createMockNext();
+      const next = vi.fn().mockResolvedValue();
 
       const txMiddleware = withTransaction(dbManager);
       await txMiddleware(req, res, next);
@@ -344,32 +199,6 @@ describe('Database Integration E2E Tests', () => {
   });
 
   describe('Performance and Concurrency', () => {
-    it('should handle concurrent database operations', async () => {
-      class User extends Model {
-        static tableName = 'users';
-        static attributes = {
-          name: { type: 'string', required: true },
-          email: { type: 'string', required: true }
-        };
-      }
-      
-      User.setDatabase(dbManager);
-
-      // Create multiple users concurrently
-      const userPromises = Array.from({ length: 10 }, (_, i) => 
-        User.create({ 
-          name: `User ${i}`, 
-          email: `user${i}@example.com` 
-        })
-      );
-
-      const users = await Promise.all(userPromises);
-      
-      expect(users).toHaveLength(10);
-      expect(users.every(user => user instanceof User)).toBe(true);
-      expect(testHelper.getQueries()).toHaveLength(10);
-    });
-
     it('should handle connection pooling under load', async () => {
       // Execute multiple queries concurrently
       const queryPromises = Array.from({ length: 20 }, (_, i) =>
@@ -415,45 +244,20 @@ describe('Database Integration E2E Tests', () => {
         adapter: adapter,
         store: { filename: ':memory:' }
       });
+      failingManager.retryDelay = 0;
 
       await expect(failingManager.connect()).rejects.toThrow('Connection failed');
     });
 
-    it('should handle query failures with proper _error messages', async () => {
-      adapter.errors.query = 'SQL syntax _error';
+    it('should handle query failures with proper error messages', async () => {
+      adapter.errors.query = 'SQL syntax error';
 
       await expect(
         executeQuery(dbManager, {
           select: '*',
           from: 'invalid_table'
         })
-      ).rejects.toThrow('SQL syntax _error');
-    });
-
-    it('should handle model validation errors', async () => {
-      class User extends Model {
-        static tableName = 'users';
-        static attributes = {
-          name: { type: 'string', required: true },
-          email: { type: 'string', required: true }
-        };
-        
-        static validationRules = {
-          email: [(value) => value.includes('@'), 'Must be valid email']
-        };
-      }
-      
-      User.setDatabase(dbManager);
-
-      // Test required field validation
-      await expect(
-        User.create({ name: 'John Doe' }) // missing email
-      ).rejects.toThrow();
-
-      // Test custom validation
-      await expect(
-        User.create({ name: 'John Doe', email: 'invalid-email' })
-      ).rejects.toThrow('Must be valid email');
+      ).rejects.toThrow('SQL syntax error');
     });
 
     it('should handle transaction failures and cleanup', async () => {
@@ -463,68 +267,178 @@ describe('Database Integration E2E Tests', () => {
     });
   });
 
-  describe('Data Integrity and Consistency', () => {
-    it('should maintain data consistency across operations', async () => {
-      class User extends Model {
-        static tableName = 'users';
-        static attributes = {
-          name: { type: 'string', required: true },
-          email: { type: 'string', required: true },
-          version: { type: 'number', default: 1 }
-        };
-      }
-      
-      User.setDatabase(dbManager);
+});
 
-      const user = await User.create({ 
-        name: 'John Doe', 
-        email: 'john@example.com' 
-      });
+describe('Model workflow on SQLite', () => {
+  let db;
 
-      // Simulate concurrent updates
-      const update1 = user.set('name', 'John Smith').save();
-      const update2 = user.set('email', 'john.smith@example.com').save();
+  class User extends Model {
+    static tableName = 'users';
+    static attributes = {
+      name: { type: 'string', required: true },
+      email: { type: 'string', required: true },
+      age: { type: 'number', min: 0 },
+      active: { type: 'boolean', default: true }
+    };
+    static validationRules = {
+      email: [(value) => typeof value === 'string' && value.includes('@'), 'Must be valid email']
+    };
+    static relationships = {
+      posts: { type: 'hasMany', model: 'Post', foreignKey: 'user_id' }
+    };
+  }
 
-      await Promise.all([update1, update2]);
+  class Post extends Model {
+    static tableName = 'posts';
+    static relationships = {
+      user: { type: 'belongsTo', model: User, foreignKey: 'user_id' }
+    };
+  }
 
-      // Verify final state
-      expect(user.get('name')).toBe('John Smith');
-      expect(user.get('email')).toBe('john.smith@example.com');
-    });
+  beforeEach(async () => {
+    db = new DatabaseManager({ type: 'sqlite', database: ':memory:' });
+    await db.connect();
+    await db.query(`CREATE TABLE users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT, age INTEGER,
+      active BOOLEAN, created_at TEXT, updated_at TEXT
+    )`);
+    await db.query(`CREATE TABLE posts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, content TEXT, user_id INTEGER,
+      created_at TEXT, updated_at TEXT
+    )`);
+    User.setDatabase(db);
+    Post.setDatabase(db);
+    global.Post = Post;
+  });
 
-    it('should handle cascading operations correctly', async () => {
-      class User extends Model {
-        static tableName = 'users';
-        static relationships = {
-          posts: { type: 'hasMany', model: 'Post', foreignKey: 'user_id' }
-        };
-      }
+  afterEach(async () => {
+    delete global.Post;
+    await db.close();
+  });
 
-      class Post extends Model {
-        static tableName = 'posts';
-        static relationships = {
-          user: { type: 'belongsTo', model: 'User', foreignKey: 'user_id' }
-        };
-      }
+  it('should handle full CRUD workflow with models', async () => {
+    const user = await User.create({ name: 'John Doe', email: 'john@example.com', age: 30 });
 
-      User.setDatabase(dbManager);
-      Post.setDatabase(dbManager);
+    expect(user.get('id')).toBe(1);
+    expect(user.get('active')).toBe(true);
+    expect(user.isNew).toBe(false);
 
-      const user = await User.create({ 
-        name: 'John Doe', 
-        email: 'john@example.com' 
-      });
+    user.set('age', 31);
+    await user.save();
 
-      await Post.create({ 
-        title: 'Test Post', 
-        content: 'Content', 
-        user_id: user.get('id') 
-      });
+    const found = await User.find(user.get('id'));
+    expect(found.get('name')).toBe('John Doe');
+    expect(found.get('age')).toBe(31);
 
-      // Delete user (should handle cascade)
-      await user.delete();
-      
-      expect(user.isDeleted).toBe(true);
-    });
+    expect((await User.where({ active: true })).map(u => u.get('email'))).toEqual(['john@example.com']);
+    expect(await User.where({ active: false })).toEqual([]);
+
+    await user.delete();
+    expect(user.isDeleted).toBe(true);
+    expect(await User.find(1)).toBe(null);
+  });
+
+  it('should give every created row its own id', async () => {
+    const alice = await User.create({ name: 'alice', email: 'alice@example.com' });
+    const bob = await User.create({ name: 'bob', email: 'bob@example.com' });
+
+    expect([alice.get('id'), bob.get('id')]).toEqual([1, 2]);
+
+    bob.set('name', 'bob-renamed');
+    await bob.save();
+
+    const { rows } = await db.query('SELECT id, name FROM users ORDER BY id');
+    expect(rows).toEqual([{ id: 1, name: 'alice' }, { id: 2, name: 'bob-renamed' }]);
+  });
+
+  it('should return null from find() for a missing row', async () => {
+    expect(await User.find(424242)).toBe(null);
+    await expect(User.findOrFail(424242)).rejects.toThrow('User with id 424242 not found');
+  });
+
+  it('should report the real number of affected rows', async () => {
+    await User.create({ name: 'a', email: 'a@example.com' });
+    await User.create({ name: 'b', email: 'b@example.com' });
+
+    expect(await User.updateWhere({ id: 999 }, { name: 'x' })).toBe(0);
+    expect(await User.updateWhere({ active: true }, { age: 40 })).toBe(2);
+    expect(await User.deleteWhere({ id: 999 })).toBe(0);
+    expect(await User.deleteWhere({ name: 'a' })).toBe(1);
+    expect((await User.all()).map(u => u.get('name'))).toEqual(['b']);
+  });
+
+  it('should handle relationships between models', async () => {
+    const user = await User.create({ name: 'John Doe', email: 'john@example.com' });
+    const post1 = await Post.create({ title: 'First Post', content: 'Hello World', user_id: user.get('id') });
+    await Post.create({ title: 'Second Post', content: 'Another post', user_id: user.get('id') });
+    await Post.create({ title: 'Someone else', content: '...', user_id: 99 });
+
+    const userPosts = await user.posts();
+    expect(userPosts.map(post => post.get('title'))).toEqual(['First Post', 'Second Post']);
+
+    const postUser = await post1.user();
+    expect(postUser.get('name')).toBe('John Doe');
+
+    const orphan = new Post({ id: 50, user_id: 12345 });
+    expect(await orphan.user()).toBe(null);
+  });
+
+  it('should handle transactions with rollback', async () => {
+    const transaction = await db.transaction();
+
+    const user = await User.create({ name: 'John Doe', email: 'john@example.com' }, { transaction });
+    expect(user.get('id')).toBe(1);
+
+    await transaction.rollback();
+
+    expect(transaction.isRolledBack).toBe(true);
+    expect(await User.all()).toEqual([]);
+  });
+
+  it('should handle concurrent database operations', async () => {
+    const users = await Promise.all(
+      Array.from({ length: 10 }, (_, i) => User.create({ name: `User ${i}`, email: `user${i}@example.com` }))
+    );
+
+    expect(users.every(user => user instanceof User)).toBe(true);
+    expect(new Set(users.map(user => user.get('id'))).size).toBe(10);
+    expect((await User.all())).toHaveLength(10);
+  });
+
+  it('should maintain data consistency across operations', async () => {
+    const user = await User.create({ name: 'John Doe', email: 'john@example.com' });
+
+    await user.set('name', 'John Smith').save();
+    await user.set('email', 'john.smith@example.com').save();
+
+    const stored = await User.find(user.get('id'));
+    expect(stored.get('name')).toBe('John Smith');
+    expect(stored.get('email')).toBe('john.smith@example.com');
+  });
+
+  it('should delete only the targeted row', async () => {
+    const user = await User.create({ name: 'John Doe', email: 'john@example.com' });
+    const other = await User.create({ name: 'Jane', email: 'jane@example.com' });
+    await Post.create({ title: 'Test Post', content: 'Content', user_id: user.get('id') });
+
+    await user.delete();
+
+    expect(user.isDeleted).toBe(true);
+    expect((await User.all()).map(u => u.get('id'))).toEqual([other.get('id')]);
+  });
+
+  it('should reject model validation errors before writing', async () => {
+    await expect(User.create({ name: 'John Doe', email: 'invalid-email' })).rejects.toThrow('Must be valid email');
+    expect(await User.all()).toEqual([]);
+  });
+
+  it('should 404 through withModel when the row does not exist', async () => {
+    const req = createMockRequest({ params: { id: '31337' } });
+    const next = vi.fn();
+
+    await withModel(User)(req, createMockResponse(), next);
+
+    expect(req.user).toBeUndefined();
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 404, message: 'User not found' }));
   });
 });

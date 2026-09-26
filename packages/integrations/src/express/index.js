@@ -8,7 +8,7 @@
 // compatibility with consumers that imported it from the legacy
 // @coherent.js/express package.
 
-import { render } from '@coherent.js/core';
+import { enhancedExpressEngine } from './coherent-express.js';
 
 export {
   coherentMiddleware,
@@ -18,19 +18,14 @@ export {
   createExpressIntegration
 } from './coherent-express.js';
 
+export { default } from './coherent-express.js';
+
 /**
- * Factory returning a classic Express view engine that renders a Coherent.js
- * component tree passed via the `options` argument.
+ * Factory returning a classic Express view engine for Coherent.js views
+ * (see `enhancedExpressEngine`): `app.engine('js', expressEngine())`.
  *
  * @returns {(filePath: string, options: unknown, callback: (err: Error | null, html?: string) => void) => void}
  */
 export function expressEngine() {
-  return (filePath, options, callback) => {
-    try {
-      const html = render(options);
-      callback(null, html);
-    } catch (_error) {
-      callback(_error);
-    }
-  };
+  return enhancedExpressEngine;
 }

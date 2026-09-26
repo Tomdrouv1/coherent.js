@@ -88,7 +88,7 @@ export function createMongoDBAdapter() {
       
       return cursor.toArray();
     } catch (_error) {
-      throw new Error(`MongoDB query _error: ${_error.message}`);
+      throw new Error(`MongoDB query error: ${_error.message}`);
     }
   }
 
@@ -106,7 +106,7 @@ export function createMongoDBAdapter() {
     try {
       return await db.command(command);
     } catch (_error) {
-      throw new Error(`MongoDB command _error: ${_error.message}`);
+      throw new Error(`MongoDB command error: ${_error.message}`);
     }
   }
 
@@ -159,6 +159,78 @@ export function createMongoDBAdapter() {
     } finally {
       await session.endSession();
     }
+  }
+
+  /**
+   * Start a transaction (the DatabaseManager contract)
+   *
+   * `tx.query(collection, filter, options)` runs inside the transaction. For driver
+   * operations on `tx.collection(name)`, pass `{ session: tx.session }` yourself.
+   *
+   * @param {Object} [_pool] - Unused; the adapter instance is its own pool
+   * @param {Object} [options={}] - Driver transaction options (readConcern, writeConcern, ...)
+   * @returns {Promise<Object>} Transaction with session, query, collection, commit and rollback
+   */
+  async function transaction(_pool, options = {}) {
+    if (!client) {
+      throw new Error('Database connection not established. Call connect() first.');
+    }
+
+    const session = client.startSession();
+    try {
+      session.startTransaction(options);
+    } catch (_error) {
+      await session.endSession();
+      throw _error;
+    }
+
+    const assertActive = () => {
+      if (tx.isCommitted || tx.isRolledBack) {
+        throw new Error('Transaction already completed');
+      }
+    };
+
+    const tx = {
+      session,
+      isCommitted: false,
+      isRolledBack: false,
+
+      async query(collectionName, filter = {}, queryOptions = {}) {
+        assertActive();
+        return query(collectionName, filter, { ...queryOptions, session });
+      },
+
+      collection(name) {
+        assertActive();
+        return collection(name);
+      },
+
+      async commit() {
+        assertActive();
+        try {
+          await session.commitTransaction();
+          tx.isCommitted = true;
+        } catch (_error) {
+          tx.isRolledBack = true;
+          await session.abortTransaction().catch(() => {});
+          throw _error;
+        } finally {
+          await session.endSession();
+        }
+      },
+
+      async rollback() {
+        assertActive();
+        tx.isRolledBack = true;
+        try {
+          await session.abortTransaction();
+        } finally {
+          await session.endSession();
+        }
+      }
+    };
+
+    return tx;
   }
 
   /**
@@ -243,6 +315,7 @@ export function createMongoDBAdapter() {
     beginTransaction,
     commit,
     rollback,
+    transaction,
     disconnect,
     closePool,
     getConnection,

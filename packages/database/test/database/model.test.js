@@ -5,23 +5,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Model } from '../../src/model.js';
 
-// Mock QueryBuilder
-vi.mock('../../src/database/query-builder.js', () => ({
-  QueryBuilder: vi.fn().mockImplementation((db, tableName) => ({
-    db,
-    tableName,
-    where: vi.fn().mockReturnThis(),
-    select: vi.fn().mockReturnThis(),
-    insert: vi.fn().mockReturnThis(),
-    update: vi.fn().mockReturnThis(),
-    delete: vi.fn().mockReturnThis(),
-    limit: vi.fn().mockReturnThis(),
-    first: vi.fn(),
-    execute: vi.fn(),
-    exists: vi.fn()
-  }))
-}));
-
 describe('Model', () => {
   let mockDb;
   let TestModel;
@@ -363,7 +346,7 @@ describe('Model', () => {
       expect(mockDb.query).not.toHaveBeenCalled();
     });
 
-    it('should fail validation and throw _error', async () => {
+    it('should fail validation and throw error', async () => {
       const model = new TestModel({ email: 'invalid-email' });
       
       await expect(model.save()).rejects.toThrow('Validation failed');
@@ -415,7 +398,7 @@ describe('Model', () => {
       expect(result).toBe(true);
     });
 
-    it('should throw _error if no primary key', async () => {
+    it('should throw error if no primary key', async () => {
       const model = new TestModel({ name: 'John' });
       
       await expect(model.delete()).rejects.toThrow('Cannot delete model without primary key');
@@ -425,132 +408,320 @@ describe('Model', () => {
   describe('static methods', () => {
     describe('find', () => {
       it('should find model by primary key', async () => {
-        const mockResult = { id: 1, name: 'John' };
-        mockDb.query.mockResolvedValue(mockResult);
-        
+        mockDb.query.mockResolvedValue({ rows: [{ id: 1, name: 'John' }] });
+
         const model = await TestModel.find(1);
-        
+
+        expect(mockDb.query).toHaveBeenCalledWith('SELECT * FROM users WHERE id = ? LIMIT 1', [1]);
         expect(model).toBeInstanceOf(TestModel);
         expect(model.getAttribute('id')).toBe(1);
         expect(model.getAttribute('name')).toBe('John');
         expect(model.isNew).toBe(false);
       });
 
-      it('should return null if not found', async () => {
+      it('should return null when no row matches, whatever the id', async () => {
+        mockDb.query.mockResolvedValue({ rows: [] });
+
+        expect(await TestModel.find(424242)).toBe(null);
+        expect(await TestModel.find(999)).toBe(null);
+      });
+
+      it('should return null for a null driver result', async () => {
         mockDb.query.mockResolvedValue(null);
-        
-        const model = await TestModel.find(999);
-        
-        expect(model).toBe(null);
+
+        expect(await TestModel.find(1)).toBe(null);
       });
     });
 
     describe('findOrFail', () => {
       it('should find model by primary key', async () => {
-        const mockResult = { id: 1, name: 'John' };
-        mockDb.query.mockResolvedValue(mockResult);
-        
+        mockDb.query.mockResolvedValue({ rows: [{ id: 1, name: 'John' }] });
+
         const model = await TestModel.findOrFail(1);
-        
+
         expect(model).toBeInstanceOf(TestModel);
+        expect(model.getAttribute('name')).toBe('John');
       });
 
-      it('should throw _error if not found', async () => {
-        mockDb.query.mockResolvedValue(null);
-        
+      it('should throw error if not found', async () => {
+        mockDb.query.mockResolvedValue({ rows: [] });
+
         await expect(TestModel.findOrFail(999)).rejects.toThrow('TestUser with id 999 not found');
       });
     });
 
     describe('all', () => {
       it('should return all models', async () => {
-        const mockResult = { 
+        const mockResult = {
           rows: [
             { id: 1, name: 'John' },
             { id: 2, name: 'Jane' }
           ]
         };
         mockDb.query.mockResolvedValue(mockResult);
-        
+
         const models = await TestModel.all();
-        
-        expect(models).toHaveLength(2);
+
+        expect(mockDb.query).toHaveBeenCalledWith('SELECT * FROM users', []);
+        expect(models.map(model => model.toObject())).toEqual(mockResult.rows);
         expect(models[0]).toBeInstanceOf(TestModel);
-        expect(models[1]).toBeInstanceOf(TestModel);
       });
 
       it('should return empty array if no results', async () => {
         mockDb.query.mockResolvedValue({ rows: [] });
-        
+
         const models = await TestModel.all();
-        
+
         expect(models).toEqual([]);
+      });
+    });
+
+    describe('where', () => {
+      it('should bind every condition as a parameter', async () => {
+        mockDb.query.mockResolvedValue({ rows: [{ id: 3, name: 'Ann', active: true }] });
+
+        const models = await TestModel.where({ active: true, deleted_at: null });
+
+        expect(mockDb.query).toHaveBeenCalledWith('SELECT * FROM users WHERE active = ? AND deleted_at IS NULL', [true]);
+        expect(models.map(model => model.toObject())).toEqual([{ id: 3, name: 'Ann', active: true }]);
+      });
+
+      it('should reject keys that are not identifiers', async () => {
+        await expect(TestModel.where({ '1=1 OR id': 5 })).rejects.toThrow('Invalid SQL identifier');
+        expect(mockDb.query).not.toHaveBeenCalled();
+      });
+
+      it('should reject operator objects, e.g. from a request body', async () => {
+        await expect(TestModel.where({ id: { '>': 0 } })).rejects.toThrow('must be a single value');
+        expect(mockDb.query).not.toHaveBeenCalled();
       });
     });
 
     describe('create', () => {
       it('should create and save new model', async () => {
-        mockDb.query.mockResolvedValue({ insertId: 1 });
-        
+        mockDb.query.mockResolvedValue({ rows: [], insertId: 7 });
+
         const model = await TestModel.create({ name: 'John', email: 'john@example.com' });
-        
+
         expect(model).toBeInstanceOf(TestModel);
-        expect(model.getAttribute('id')).toBe(1);
+        expect(model.getAttribute('id')).toBe(7);
         expect(model.isNew).toBe(false);
+      });
+
+      // Regression: create() passed its attributes to the constructor, which
+      // ignores fillable/guarded, so User.create(req.body) wrote whatever
+      // columns the client sent.
+      it('should apply fillable to the attributes it inserts', async () => {
+        mockDb.query.mockResolvedValue({ rows: [], insertId: 3 });
+
+        const model = await TestModel.create({ name: 'Eve', email: 'eve@example.com', role: 'admin', is_admin: true });
+
+        const [sql, params] = mockDb.query.mock.calls.at(-1);
+        expect(sql).toMatch(/^INSERT INTO users \(name, email, created_at, updated_at\)/);
+        expect(params).not.toContain('admin');
+        expect(model.getAttribute('role')).toBeUndefined();
+      });
+
+      it('should apply guarded to the attributes it inserts', async () => {
+        class Guarded extends Model {
+          static tableName = 'accounts';
+          static guarded = ['balance'];
+          static timestamps = false;
+        }
+        Guarded.setDatabase(mockDb);
+        mockDb.query.mockResolvedValue({ rows: [], insertId: 1 });
+
+        await Guarded.create({ owner: 'ann', balance: 1_000_000 });
+
+        expect(mockDb.query.mock.calls.at(-1)[0]).toBe('INSERT INTO accounts (owner) VALUES (?)');
+      });
+
+      // Regression: a model built with its primary key counted as already
+      // saved, so create({ id, ... }) ran no query and returned a record that
+      // was never written.
+      it('should insert when given a primary key', async () => {
+        class WithId extends Model {
+          static tableName = 'items';
+          static timestamps = false;
+        }
+        WithId.setDatabase(mockDb);
+        mockDb.query.mockResolvedValue({ rows: [], affectedRows: 1 });
+
+        const item = await WithId.create({ id: 5, name: 'kept' });
+
+        expect(mockDb.query).toHaveBeenCalledTimes(1);
+        expect(mockDb.query.mock.calls[0][0]).toBe('INSERT INTO items (id, name) VALUES (?, ?)');
+        expect(item.isNew).toBe(false);
+      });
+
+      // Regression: fill() stores a non-fillable key it drops (a form body's
+      // `id`) as undefined, and save() only took the driver's insertId when
+      // the key was exactly null. The saved model had no id, and its next
+      // save() threw "Cannot update ... without a primary key".
+      it('should take the generated id when the key was dropped by fill()', async () => {
+        mockDb.query.mockResolvedValue({ rows: [], insertId: 42 });
+
+        const model = new TestModel();
+        model.fill({ id: '7', name: 'John', email: 'john@example.com' });
+        await model.save();
+
+        expect(model.getAttribute('id')).toBe(42);
+
+        mockDb.query.mockResolvedValue({ affectedRows: 1 });
+        model.setAttribute('name', 'Jane');
+        await expect(model.save()).resolves.toBeDefined();
+        expect(mockDb.query).toHaveBeenLastCalledWith(expect.stringContaining('UPDATE users'), expect.arrayContaining([42]));
+      });
+
+      it('should not invent a primary key when the driver reports none', async () => {
+        mockDb.query.mockResolvedValue({ rows: [] });
+
+        const model = await TestModel.create({ name: 'John', email: 'john@example.com' });
+
+        expect(model.getAttribute('id')).toBe(null);
       });
     });
 
     describe('updateWhere', () => {
-      it('should update models matching conditions', async () => {
+      it('should return the affected row count reported by the driver', async () => {
         mockDb.query.mockResolvedValue({ affectedRows: 3 });
-        
+
         const count = await TestModel.updateWhere(
           { active: false },
           { status: 'inactive' }
         );
-        
+
+        expect(mockDb.query).toHaveBeenCalledWith('UPDATE users SET status = ? WHERE active = ?', ['inactive', false]);
         expect(count).toBe(3);
+      });
+
+      it('should return 0 when no row changed', async () => {
+        mockDb.query.mockResolvedValue({ affectedRows: 0 });
+
+        expect(await TestModel.updateWhere({ id: 1 }, { name: 'x' })).toBe(0);
+      });
+
+      it('should refuse to update without conditions or with unsafe keys', async () => {
+        await expect(TestModel.updateWhere({}, { name: 'x' })).rejects.toThrow('requires at least one condition');
+        await expect(TestModel.updateWhere({ id: 1 }, { 'name = 1, role': 'admin' })).rejects.toThrow('Invalid SQL identifier');
+        expect(mockDb.query).not.toHaveBeenCalled();
       });
     });
 
     describe('deleteWhere', () => {
-      it('should delete models matching conditions', async () => {
+      it('should return the deleted row count reported by the driver', async () => {
         mockDb.query.mockResolvedValue({ affectedRows: 2 });
-        
+
         const count = await TestModel.deleteWhere({ active: false });
-        
+
+        expect(mockDb.query).toHaveBeenCalledWith('DELETE FROM users WHERE active = ?', [false]);
         expect(count).toBe(2);
+      });
+
+      it('should return 0 when no row matched', async () => {
+        mockDb.query.mockResolvedValue({ affectedRows: 0 });
+
+        expect(await TestModel.deleteWhere({ id: 1 })).toBe(0);
+      });
+
+      it('should refuse to delete without conditions', async () => {
+        await expect(TestModel.deleteWhere({})).rejects.toThrow('requires at least one condition');
+        await expect(TestModel.deleteWhere({ id: undefined })).rejects.toThrow('undefined');
+        expect(mockDb.query).not.toHaveBeenCalled();
       });
     });
   });
 
+  describe('without a database', () => {
+    class Detached extends Model {
+      static tableName = 'detached';
+    }
+
+    it('should throw instead of returning invented records', async () => {
+      await expect(Detached.find(1)).rejects.toThrow('Detached has no database connection');
+      await expect(Detached.all()).rejects.toThrow('has no database connection');
+      await expect(Detached.where({ id: 1 })).rejects.toThrow('has no database connection');
+      await expect(Detached.updateWhere({ id: 1 }, { a: 1 })).rejects.toThrow('has no database connection');
+      await expect(Detached.deleteWhere({ id: 1 })).rejects.toThrow('has no database connection');
+    });
+
+    it('should throw instead of pretending to save or delete', async () => {
+      const model = new Detached({ title: 't' });
+      await expect(model.save()).rejects.toThrow('Detached has no database connection');
+      expect(model.getAttribute('id')).toBe(null);
+      expect(model.isNew).toBe(true);
+
+      await expect(new Detached({ id: 5 }).delete()).rejects.toThrow('has no database connection');
+    });
+  });
+
+  describe('set', () => {
+    it('should mark the model dirty so save() persists the change', async () => {
+      const model = new TestModel({ id: 1, name: 'John', email: 'john@example.com' });
+      mockDb.query.mockResolvedValue({ affectedRows: 1 });
+
+      model.set('name', 'Jane');
+      expect(model.isDirty).toBe(true);
+      await model.save();
+
+      const [sql, params] = mockDb.query.mock.calls[0];
+      expect(sql).toBe('UPDATE users SET name = ?, email = ?, updated_at = ? WHERE id = ?');
+      expect(params.slice(0, 2)).toEqual(['Jane', 'john@example.com']);
+      expect(params[3]).toBe(1);
+    });
+  });
+
   describe('relationships', () => {
-    it('should get hasMany relationship', async () => {
-      const model = new TestModel({ id: 1, name: 'John' });
-      
-      // Mock Post model
-      const mockPosts = { 
+    it('should load hasMany and belongsTo relationships through the related model', async () => {
+      class Post extends Model {
+        static tableName = 'posts';
+        static db = mockDb;
+        static relationships = { author: { type: 'belongsTo', model: 'TestUser', foreignKey: 'user_id' } };
+      }
+      class Author extends Model {
+        static tableName = 'users';
+        static db = mockDb;
+        static relationships = { posts: { type: 'hasMany', model: Post, foreignKey: 'user_id' } };
+      }
+
+      mockDb.query.mockResolvedValueOnce({
         rows: [
           { id: 1, title: 'Post 1', user_id: 1 },
           { id: 2, title: 'Post 2', user_id: 1 }
         ]
-      };
-      
-      // Mock the Post model class
-      global.Post = class Post extends Model {
-        static db = mockDb;
-        static where = vi.fn().mockReturnThis();
-        static execute = vi.fn().mockResolvedValue(mockPosts);
-      };
-      
-      const posts = await model.getRelation('posts');
-      
-      expect(posts).toHaveLength(2);
+      });
+
+      const posts = await new Author({ id: 1, name: 'John' }).posts();
+
+      expect(mockDb.query).toHaveBeenLastCalledWith('SELECT * FROM posts WHERE user_id = ?', [1]);
+      expect(posts.map(post => post.get('title'))).toEqual(['Post 1', 'Post 2']);
+      expect(posts[0]).toBeInstanceOf(Post);
+
+      mockDb.query.mockResolvedValueOnce({ rows: [] });
+      expect(await new Author({ id: 2 }).getRelation('posts')).toEqual([]);
+
+      global.TestUser = TestModel;
+      try {
+        mockDb.query.mockResolvedValueOnce({ rows: [{ id: 1, name: 'John' }] });
+        const author = await posts[0].author();
+        expect(mockDb.query).toHaveBeenLastCalledWith('SELECT * FROM users WHERE id = ?', [1]);
+        expect(author.get('name')).toBe('John');
+      } finally {
+        delete global.TestUser;
+      }
     });
 
-    it('should throw _error for undefined relationship', async () => {
+    it('should not invent related records', async () => {
+      const model = new TestModel({ id: 1, name: 'John' });
+
+      // TestModel declares posts -> 'Post', which is not registered anywhere
+      await expect(model.getRelation('posts')).rejects.toThrow('Related model Post');
+      expect(Model.prototype.user).toBeUndefined();
+    });
+
+    it('should throw error for undefined relationship', async () => {
       const model = new TestModel({ id: 1 });
-      
+
       await expect(model.getRelation('undefined_relation')).rejects.toThrow(
         "Relationship 'undefined_relation' not defined on TestUser"
       );

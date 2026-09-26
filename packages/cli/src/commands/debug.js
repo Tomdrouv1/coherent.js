@@ -7,8 +7,8 @@ import prompts from 'prompts';
 import ora from 'ora';
 import picocolors from 'picocolors';
 import process, { env } from 'node:process';
-import { existsSync, readFileSync } from 'fs';
-import { resolve } from 'path';
+import { existsSync, readFileSync, readdirSync, statSync } from 'fs';
+import { resolve, join, relative } from 'path';
 import { analyzeComponent } from '../analyzers/component-analyzer.js';
 import { analyzePerformance } from '../analyzers/performance-analyzer.js';
 import { analyzeHydration } from '../analyzers/hydration-analyzer.js';
@@ -20,6 +20,7 @@ export const debugCommand = new Command('debug')
   .option('-f, --file <file>', 'specific file to analyze')
   .option('-c, --component <name>', 'specific component name')
   .option('--deep', 'perform deep analysis')
+  .option('-u, --url <url>', 'URL of the running app (performance, hydration)', 'http://localhost:3000')
   .option('--output <format>', 'output format (console|json|html)', 'console')
   .action(async (target, options) => {
     console.log();
@@ -37,8 +38,8 @@ export const debugCommand = new Command('debug')
         message: 'What would you like to debug?',
         choices: [
           { title: '🧩 Component Analysis', value: 'component', description: 'Analyze component structure and performance' },
-          { title: '⚡ Performance Profiling', value: 'performance', description: 'Profile rendering performance and identify bottlenecks' },
-          { title: '💧 Hydration Analysis', value: 'hydration', description: 'Debug server-client hydration mismatches' },
+          { title: '⚡ Performance Profiling', value: 'performance', description: 'Time requests to the running app' },
+          { title: '💧 Hydration Analysis', value: 'hydration', description: 'Inspect hydration markers in the server HTML' },
           { title: '📋 Project Validation', value: 'project', description: 'Validate entire project structure and configuration' },
           { title: '🚀 Bundle Analysis', value: 'bundle', description: 'Analyze bundle size and dependencies' },
           { title: '🔧 Configuration Check', value: 'config', description: 'Validate and optimize configuration' }
@@ -94,7 +95,11 @@ export const debugCommand = new Command('debug')
           throw new Error(`Unknown debug target: ${debugTarget}`);
       }
 
-      spinner.succeed(`Analysis complete!`);
+      if (result?.summary?.status === 'error') {
+        spinner.fail('Analysis failed');
+      } else {
+        spinner.succeed('Analysis complete!');
+      }
 
       // Output results
       await outputResults(result, options.output);
@@ -135,13 +140,15 @@ debugCommand
 
 debugCommand
   .command('performance [component]')
-  .description('Profile rendering performance')
-  .option('-t, --time <seconds>', 'profiling duration in seconds', '10')
-  .option('--samples <count>', 'number of render samples', '100')
-  .option('--memory', 'include memory profiling')
-  .action(async (component, options) => {
+  .description('Time requests to a running app (component and memory profiling are not implemented yet)')
+  .option('-u, --url <url>', 'URL of the running app (default: http://localhost:3000)')
+  .option('-t, --time <seconds>', 'stop after this many seconds', '10')
+  .option('--samples <count>', 'maximum number of requests', '100')
+  .option('--memory', 'memory profiling (not implemented yet)')
+  .action(async (component, _options, command) => {
+    // optsWithGlobals: `--url` may have been parsed by the parent `debug` command
     const result = await analyzePerformance({
-      ...options,
+      ...command.optsWithGlobals(),
       component
     });
     await outputResults(result, 'console');
@@ -149,12 +156,12 @@ debugCommand
 
 debugCommand
   .command('hydration')
-  .description('Debug hydration mismatches')
-  .option('-u, --url <url>', 'test URL for hydration', 'http://localhost:3000')
-  .option('--compare', 'compare server and client output')
-  .option('--components <components>', 'specific components to check')
-  .action(async (options) => {
-    const result = await analyzeHydration(options);
+  .description('Inspect the hydration markers in a page\'s server-rendered HTML')
+  .option('-u, --url <url>', 'URL of the running app (default: http://localhost:3000)')
+  .option('--compare', 'compare server and client output (not implemented yet)')
+  .option('--components <components>', 'comma-separated component names to look for')
+  .action(async (_options, command) => {
+    const result = await analyzeHydration(command.optsWithGlobals());
     await outputResults(result, 'console');
   });
 
@@ -168,7 +175,20 @@ debugCommand
     await outputResults(result, 'console');
   });
 
-// Bundle size analysis
+/** Every file under `dir` with its size, skipping symlinks. */
+function listFiles(dir) {
+  const files = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) files.push(...listFiles(path));
+    else if (entry.isFile()) files.push({ path, bytes: statSync(path).size });
+  }
+  return files;
+}
+
+const formatBytes = (bytes) => (bytes < 1024 ? `${bytes}B` : `${(bytes / 1024).toFixed(1)}KB`);
+
+// Bundle size analysis: measured from the files in the build directory.
 async function analyzeBundleSize(_options = {}) {
   const analysis = {
     timestamp: new Date().toISOString(),
@@ -188,27 +208,31 @@ async function analyzeBundleSize(_options = {}) {
     return analysis;
   }
 
-  // Analyze bundle sizes (simplified for demo)
+  const root = resolve(foundBuildDir);
+  const files = listFiles(root);
+  const scripts = files.filter((f) => /\.(m|c)?js$/.test(f.path));
+  const totalBytes = files.reduce((sum, f) => sum + f.bytes, 0);
+  const largest = [...scripts].sort((a, b) => b.bytes - a.bytes).slice(0, 5);
+
   analysis.summary = {
     status: 'success',
     buildDir: foundBuildDir,
-    totalSize: '245KB (estimated)',
-    components: 12,
-    chunks: 3
+    files: files.length,
+    scriptFiles: scripts.length,
+    totalSize: formatBytes(totalBytes),
+    scriptSize: formatBytes(scripts.reduce((sum, f) => sum + f.bytes, 0))
   };
+  analysis.details.largestScripts = Object.fromEntries(
+    largest.map((f) => [relative(root, f.path), formatBytes(f.bytes)])
+  );
 
-  analysis.recommendations = [
-    {
+  for (const file of scripts.filter((f) => f.bytes > 50 * 1024)) {
+    analysis.recommendations.push({
       type: 'optimization',
       priority: 'medium',
-      message: 'Consider code splitting for components larger than 50KB'
-    },
-    {
-      type: 'dependencies',
-      priority: 'low',
-      message: 'Some dependencies could be tree-shaken for smaller bundle size'
-    }
-  ];
+      message: `${relative(root, file.path)} is ${formatBytes(file.bytes)}; consider code splitting it.`
+    });
+  }
 
   return analysis;
 }
@@ -266,15 +290,19 @@ async function analyzeConfiguration(_options = {}) {
     analysis.recommendations.push({
       type: 'setup',
       priority: 'high',
-      message: 'Some configuration issues detected. Run coherent init to fix.'
+      message: `Configuration issues: ${analysis.summary.issues.join('; ')}.`
     });
   }
 
   return analysis;
 }
 
-// Output results in different formats
+// Output results in different formats. An 'error' result exits non-zero,
+// so scripts and CI don't mistake a failed analysis for a clean one.
 async function outputResults(result, format = 'console') {
+  if (result?.summary?.status === 'error') {
+    process.exitCode = 1;
+  }
   switch (format) {
     case 'json':
       console.log(JSON.stringify(result, null, 2));

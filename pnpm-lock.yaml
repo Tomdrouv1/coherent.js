@@ -345,6 +345,10 @@ importers:
         version: 8.21.3
 
   packages/client:
+    dependencies:
+      '@coherent.js/core':
+        specifier: workspace:^
+        version: link:../core
     devDependencies:
       expect-type:
         specifier: 1.4.0
@@ -354,11 +358,17 @@ importers:
 
   packages/database:
     dependencies:
-      '@coherent.js/core':
-        specifier: workspace:^
-        version: link:../core
+      mongodb:
+        specifier: '>=5.0.0 <7.0.0'
+        version: 6.21.0(socks@2.8.7)
+      mysql2:
+        specifier: '>=3.23.1 <4.0.0'
+        version: 3.24.4(@types/node@26.6.1)
+      pg:
+        specifier: '>=8.8.0 <9.0.0'
+        version: 8.20.0
       sqlite3:
-        specifier: '>=5.0.0'
+        specifier: '>=5.1.0 <6.0.0'
         version: 5.1.7(supports-color@8.1.1)
 
   packages/devtools:
@@ -372,24 +382,14 @@ importers:
       '@coherent.js/core':
         specifier: workspace:^
         version: link:../core
-      '@coherent.js/state':
-        specifier: workspace:^
-        version: link:../state
 
-  packages/i18n:
-    dependencies:
-      '@coherent.js/core':
-        specifier: workspace:^
-        version: link:../core
+  packages/i18n: {}
 
   packages/integrations:
     dependencies:
       '@coherent.js/core':
         specifier: workspace:^
         version: link:../core
-      '@remix-run/server-runtime':
-        specifier: ^2.17.5
-        version: 2.17.5(typescript@5.9.3)
       '@sveltejs/kit':
         specifier: '>=2.70.2 <2.70.3'
         version: 2.70.2(@sveltejs/vite-plugin-svelte@7.1.2(svelte@5.55.7)(vite@7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)))(svelte@5.55.7)(typescript@5.9.3)(vite@7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0))
@@ -421,11 +421,7 @@ importers:
         specifier: workspace:^
         version: link:../core
 
-  packages/state:
-    dependencies:
-      '@coherent.js/core':
-        specifier: workspace:^
-        version: link:../core
+  packages/state: {}
 
   packages/tooling:
     dependencies:
@@ -1498,19 +1494,6 @@ packages:
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
 
-  '@remix-run/router@1.23.3':
-    resolution: {integrity: sha512-4An71tdz9X8+3sI4Qqqd2LWd9vS39J7sqd9EU4Scw7TJE/qB10Flv/UuqbPVgfQV9XoK8Np6jNquZitnZq5i+Q==}
-    engines: {node: '>=14.0.0'}
-
-  '@remix-run/server-runtime@2.17.5':
-    resolution: {integrity: sha512-SyJ5n2pQyo4ERGvjjLvL2PpRWBzlC2qzO5KkkOE2ygOiNcgOu9WQnnom9GI8KgsTRCO8JnIeLHFRcmxZnVBjfw==}
-    engines: {node: '>=18.0.0'}
-    peerDependencies:
-      typescript: ^5.1.0
-    peerDependenciesMeta:
-      typescript:
-        optional: true
-
   '@rolldown/binding-android-arm64@1.1.5':
     resolution: {integrity: sha512-lZg8fqIv2v7FF237bwMgzGZEJvGL79/s5knJ/i6FmsGF4XXlzccZ4jb+TrFIxtSSxFtIpdsgrPZeMk1I9AFcyQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -2193,9 +2176,6 @@ packages:
     resolution: {integrity: sha512-XSxMosEEDO6vLxELAHVkwmhC0qe0ijZni2jB9Rcs8kQsW4lhTDQ/wMzmwFs/buotAWSnpmUp/dRWD2ufG3UYKA==}
     engines: {node: '>= 20'}
     hasBin: true
-
-  '@web3-storage/multipart-parser@1.0.0':
-    resolution: {integrity: sha512-BEO6al7BYqcnfX15W2cnGR+Q566ACXAT9UQykORCWW80lmkpWsnEob6zJS1ZVBKsSJC8+7vJkHwlp+lXG1UCdw==}
 
   '@webassemblyjs/ast@1.14.1':
     resolution: {integrity: sha512-nuBEDgQfm1ccRp/8bCQrx1frohyufl4JlbMMZ4P1wpeOfDhF6FQkxZJ1b/e+PLwr6X1Nhw6OLme5usuBWYBvuQ==}
@@ -4789,10 +4769,6 @@ packages:
     resolution: {integrity: sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==}
     engines: {node: '>=0.10.0'}
 
-  source-map@0.7.6:
-    resolution: {integrity: sha512-i5uvt8C3ikiWeNZSVZNWcfZPItFQOsYTUAOkcUPGd8DqDy1uOUikjt5dG+uRlwyvR108Fb9DOd4GvXfT0N2/uQ==}
-    engines: {node: '>= 12'}
-
   space-separated-tokens@2.0.2:
     resolution: {integrity: sha512-PEGlAwrG8yXGXRjW32fGbg66JAlOAwbObuqVoJpv/mRgoWDQfgH1wDPvtzWyUSNAXBGSk8h755YDbbcEy3SH2Q==}
 
@@ -5032,9 +5008,6 @@ packages:
   tunnel@0.0.6:
     resolution: {integrity: sha512-1h/Lnq9yajKY2PEbBadPXj3VxsDDu844OnaAo52UVmIzIvwwtBPIuNvkjuzBlTWpfJyUbG3ez0KSBibQkj4ojg==}
     engines: {node: '>=0.6.11 <=0.7.0 || >=0.7.3'}
-
-  turbo-stream@3.2.0:
-    resolution: {integrity: sha512-EK+bZ9UVrVh7JLslVFOV0GEMsociOqVOvEMTAd4ixMyffN5YNIEdLZWXUx5PJqDbTxSIBWw04HS9gCY4frYQDQ==}
 
   type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
@@ -6557,20 +6530,6 @@ snapshots:
 
   '@polka/url@1.0.0-next.29': {}
 
-  '@remix-run/router@1.23.3': {}
-
-  '@remix-run/server-runtime@2.17.5(typescript@5.9.3)':
-    dependencies:
-      '@remix-run/router': 1.23.3
-      '@types/cookie': 0.6.0
-      '@web3-storage/multipart-parser': 1.0.0
-      cookie: 0.7.2
-      set-cookie-parser: 2.7.2
-      source-map: 0.7.6
-      turbo-stream: 3.2.0
-    optionalDependencies:
-      typescript: 5.9.3
-
   '@rolldown/binding-android-arm64@1.1.5': {}
 
   '@rolldown/binding-darwin-arm64@1.1.5': {}
@@ -7158,8 +7117,6 @@ snapshots:
       keytar: 7.9.0
     transitivePeerDependencies:
       - supports-color
-
-  '@web3-storage/multipart-parser@1.0.0': {}
 
   '@webassemblyjs/ast@1.14.1':
     dependencies:
@@ -10038,8 +9995,6 @@ snapshots:
   source-map@0.6.1:
     optional: true
 
-  source-map@0.7.6: {}
-
   space-separated-tokens@2.0.2: {}
 
   sparse-bitfield@3.0.3:
@@ -10297,8 +10252,6 @@ snapshots:
     optional: true
 
   tunnel@0.0.6: {}
-
-  turbo-stream@3.2.0: {}
 
   type-check@0.4.0:
     dependencies:

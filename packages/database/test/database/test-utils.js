@@ -573,23 +573,23 @@ export function createMockSchemaBuilder() {
  */
 export function expectValidationError(_error, field, message) {
   if (!(_error instanceof Error)) {
-    throw new Error('Expected _error to be instance of Error');
+    throw new Error('Expected error to be instance of Error');
   }
   if (!_error.message.includes(field)) {
-    throw new Error(`Expected _error message to contain '${field}'`);
+    throw new Error(`Expected error message to contain '${field}'`);
   }
   if (message && !_error.message.includes(message)) {
-    throw new Error(`Expected _error message to contain '${message}'`);
+    throw new Error(`Expected error message to contain '${message}'`);
   }
 }
 
 export function expectDatabaseError(_error, type = 'DatabaseError') {
   if (!(_error instanceof Error)) {
-    throw new Error('Expected _error to be instance of Error');
+    throw new Error('Expected error to be instance of Error');
   }
   const errorType = _error.name || _error.constructor.name;
   if (errorType !== type) {
-    throw new Error(`Expected _error type '${type}', got '${errorType}'`);
+    throw new Error(`Expected error type '${type}', got '${errorType}'`);
   }
 }
 

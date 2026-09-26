@@ -114,12 +114,10 @@ describe('Streaming Rendering', () => {
     expect(chunks.join('')).toBe('<div></div>');
   });
 
-  it('handles empty objects in stream', async () => {
-    const component = {};
-    const chunks = [];
-    for await (const chunk of renderToStream(component)) {
-      chunks.push(chunk);
-    }
-    expect(chunks.join('')).toBe('');
+  it('rejects empty objects in stream, like render()', async () => {
+    const consume = async () => {
+      for await (const _chunk of renderToStream({})) { /* drain */ }
+    };
+    await expect(consume()).rejects.toThrow('Invalid component structure');
   });
 });

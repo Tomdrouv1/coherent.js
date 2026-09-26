@@ -202,6 +202,7 @@ function entryPoints(pkgJson) {
     const types = typeof entry === 'object' ? entry.types : null;
     const runtime = runtimeTarget(entry);
     if (types && runtime) found.push({ subpath, types, runtime });
+    else if (runtime && !subpath.endsWith('.json')) untyped.push(`${pkgJson.name} (${subpath})`);
   }
 
   if (!found.some((e) => e.subpath === '.')) {
@@ -232,6 +233,10 @@ const packages = readdirSync(PACKAGES_DIR)
 
 const findings = [];
 const skipped = [];
+const untyped = [];
+
+// `export default ...` or `export { x as default }` in a declaration file.
+const DEFAULT_EXPORT = /^export\s+(?:declare\s+)?default\b|^export\s*\{[^}]*\bas\s+default\b[^}]*\}/m;
 
 let checked = 0;
 
@@ -261,7 +266,11 @@ for (const name of packages) {
     try {
       mod = await import(pathToFileURL(runtimePath).href);
     } catch (error) {
-      skipped.push(`${label}: import failed (${error.code ?? error.name})`);
+      // An exported entry point that throws on import is broken for every
+      // consumer; it used to be reported as "skipped" and the gate passed.
+      if (!allowed(label, 'importFailed', 'import')) {
+        findings.push({ pkg: label, kind: 'importFailed', symbol: `${error.name}: ${error.message.split('\n')[0]}` });
+      }
       continue;
     }
 
@@ -269,6 +278,12 @@ for (const name of packages) {
     const source = readFileSync(typesPath, 'utf8');
     const declared = declaredValueExports(typesPath);
     const runtime = new Set(Object.keys(mod));
+
+    // A declared default export that doesn't exist is a SyntaxError for
+    // every `import x from` consumer.
+    if (DEFAULT_EXPORT.test(source) && !runtime.has('default') && !allowed(label, 'missingAtRuntime', 'default')) {
+      findings.push({ pkg: label, kind: 'missingAtRuntime', symbol: 'default' });
+    }
 
     for (const symbol of declared) {
       if (!runtime.has(symbol) && !allowed(label, 'missingAtRuntime', symbol)) {
@@ -308,12 +323,16 @@ for (const name of packages) {
 const nothingChecked = checked === 0;
 
 if (process.argv.includes('--json')) {
-  console.log(JSON.stringify({ checked, findings, skipped }, null, 2));
+  console.log(JSON.stringify({ checked, findings, skipped, untyped }, null, 2));
   process.exit(findings.length || nothingChecked ? 1 : 0);
 }
 
 console.log(`🔒 Comparing declared types against runtime exports (${checked} entry points)...`);
 for (const note of skipped) console.log(`   skipped ${note}`);
+if (untyped.length) {
+  console.log(`   ⚠ ${untyped.length} exported subpaths ship no types (TS7016 under NodeNext/Bundler resolution):`);
+  for (const entry of untyped) console.log(`     - ${entry}`);
+}
 
 if (nothingChecked) {
   console.error('\n❌ No entry point could be checked. Run `pnpm build` first.');
@@ -329,10 +348,11 @@ const LABEL = {
   missingAtRuntime: 'declared in .d.ts but missing at runtime',
   undeclared: 'exported at runtime but not declared',
   missingMethod: 'declared on the class but absent from its prototype',
+  importFailed: 'exported entry point throws when imported',
 };
 
 console.error('\n❌ Type surface drift:\n');
-for (const kind of ['missingAtRuntime', 'missingMethod', 'undeclared']) {
+for (const kind of ['importFailed', 'missingAtRuntime', 'missingMethod', 'undeclared']) {
   const group = findings.filter((f) => f.kind === kind);
   if (!group.length) continue;
 

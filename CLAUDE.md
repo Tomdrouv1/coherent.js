@@ -36,11 +36,13 @@ integrations and utilities.
 
 ### Examples
 - `pnpm example:basic` - Run basic usage example
-- `pnpm example:components` - Run component system examples
-- `pnpm example:performance` - Run performance testing examples
-- `pnpm example:advanced` - Run advanced features demo
+- `pnpm example:components` - Run component composition example
 - `pnpm example:streaming` - Run streaming renderer demo
 - `pnpm example:hydration` - Run client-side hydration demo
+- `pnpm example:state` - Run state management demo
+- `pnpm example:express` - Start the Express integration example
+- `pnpm examples:check` - Run every example (CI does; needs `pnpm build` first)
+- `pnpm perf:render` - Rendering benchmark against a template-string baseline
 
 ## Architecture
 
@@ -119,16 +121,16 @@ The framework includes built-in performance monitoring and optimization:
 
 ### Code Style
 - Use ESM imports/exports exclusively
-- Target Node.js 20+ features
+- Target Node.js 22.12+ features (the `engines` floor)
 - Prefer `const` over `let`
 - Use strict equality (`===` and `!==`)
 - Avoid `eval()` and `new Function()`
 
 ### Testing Practices
 - Place tests in `packages/*/test/` directories
-- Use package-scoped test runs for reliability:
+- Run focused tests from the repo root, which aliases `@coherent.js/*` to package sources:
   ```bash
-  pnpm --filter @coherent.js/core run test -- test/example-render.test.js
+  pnpm vitest run packages/core/test/example-render.test.js
   ```
 - For browser-like tests, create shims:
   ```js

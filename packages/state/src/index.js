@@ -14,6 +14,7 @@ export {
     createReactiveState,
     observable,
     computed,
+    batch,
     stateUtils
 } from './reactive-state.js';
 
@@ -22,6 +23,7 @@ import {
     createReactiveState,
     observable,
     computed,
+    batch,
     stateUtils
 } from './reactive-state.js';
 
@@ -32,7 +34,8 @@ import {
     createContextProvider,
     restoreContext,
     clearAllContexts,
-    useContext
+    useContext,
+    runWithContext
 } from './state-manager.js';
 
 import {
@@ -63,7 +66,8 @@ export {
     createContextProvider,
     restoreContext,
     clearAllContexts,
-    useContext
+    useContext,
+    runWithContext
 } from './state-manager.js';
 
 // Re-export everything from state-persistence
@@ -98,6 +102,7 @@ export default {
     createReactiveState,
     observable,
     computed,
+    batch,
 
     // SSR-compatible state management
     createState,
@@ -107,6 +112,7 @@ export default {
     restoreContext,
     clearAllContexts,
     useContext,
+    runWithContext,
 
     // Persistence utilities
     createPersistentState,

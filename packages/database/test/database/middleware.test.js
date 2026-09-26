@@ -140,7 +140,7 @@ describe('Database Middleware', () => {
         expect(result).toBe('result');
       });
 
-      it('should rollback transaction on _error', async () => {
+      it('should rollback transaction on error', async () => {
         const mockTx = {
           commit: vi.fn(),
           rollback: vi.fn().mockResolvedValue()
@@ -168,6 +168,8 @@ describe('Database Middleware', () => {
         isRolledBack: false
       };
       mockDb.transaction.mockResolvedValue(mockTx);
+      // An async next(): the transaction is committed once it resolves
+      mockNext.mockResolvedValue();
       
       const middleware = withTransaction(mockDb);
       
@@ -194,7 +196,7 @@ describe('Database Middleware', () => {
       expect(mockTx.commit).not.toHaveBeenCalled();
     });
 
-    it('should rollback on _error', async () => {
+    it('should rollback on error', async () => {
       const mockTx = {
         commit: vi.fn(),
         rollback: vi.fn().mockResolvedValue(),
@@ -322,7 +324,7 @@ describe('Database Middleware', () => {
     });
 
     it('should handle database errors', async () => {
-      const _error = new Error('Database _error');
+      const _error = new Error('Database error');
       MockModel.find.mockRejectedValue(_error);
       mockReq.params.id = '1';
       
@@ -552,21 +554,22 @@ describe('Database Middleware', () => {
       
       expect(mockReq.dbHealth).toMatchObject({
         status: 'unhealthy',
-        _error: 'Connection failed',
+        error: 'Connection failed',
         connected: true
       });
       expect(mockNext).toHaveBeenCalled();
     });
 
     it('should timeout health check', async () => {
-      mockDb.query.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)));
+      // A query that never settles: only the timeout can end the check, so this cannot race
+      mockDb.query.mockImplementation(() => new Promise(() => {}));
       
       const middleware = withHealthCheck(mockDb, { timeout: 50 });
       
       await middleware(mockReq, mockRes, mockNext);
       
       expect(mockReq.dbHealth.status).toBe('unhealthy');
-      expect(mockReq.dbHealth._error).toBe('Health check timeout');
+      expect(mockReq.dbHealth.error).toBe('Health check timeout');
     });
 
     it('should exclude stats when configured', async () => {
@@ -645,7 +648,7 @@ describe('Database Middleware', () => {
       expect(mockRes.on).not.toHaveBeenCalled();
     });
 
-    it('should release connection on _error', async () => {
+    it('should release connection on error', async () => {
       mockNext.mockRejectedValue(new Error('Handler failed'));
       
       const middleware = withConnectionPool(mockDb);
@@ -654,13 +657,65 @@ describe('Database Middleware', () => {
       expect(mockPool.release).toHaveBeenCalledWith(mockConnection);
     });
 
-    it('should handle acquire _error', async () => {
+    it('should handle acquire error', async () => {
       const _error = new Error('Pool exhausted');
       mockPool.acquire.mockRejectedValue(_error);
       
       const middleware = withConnectionPool(mockDb);
       
       await expect(middleware(mockReq, mockRes, mockNext)).rejects.toThrow('Pool exhausted');
+    });
+  });
+
+  describe('next() handling', () => {
+    let MockUser;
+
+    beforeEach(() => {
+      MockUser = { name: 'User', find: vi.fn() };
+    });
+
+    const handlerError = () => vi.fn(async () => { throw new Error('handler failed'); });
+
+    it('does not call next() a second time when a later handler fails', async () => {
+      mockDb.query.mockResolvedValue({ rows: [] });
+      MockUser.find.mockResolvedValue({ id: 1 });
+      mockReq.params.id = '1';
+      const cases = [
+        withDatabase(mockDb),
+        withModel(MockUser),
+        withQueryValidation({}),
+        withHealthCheck(mockDb, { includeStats: false })
+      ];
+
+      for (const middleware of cases) {
+        const next = handlerError();
+        await expect(middleware(mockReq, mockRes, next)).rejects.toThrow('handler failed');
+        expect(next).toHaveBeenCalledTimes(1);
+        expect(next).toHaveBeenCalledWith();
+      }
+    });
+
+    it('works with routers that call middleware without next', async () => {
+      mockDb.query.mockResolvedValue({ rows: [] });
+      MockUser.find.mockResolvedValue({ id: 1 });
+      mockReq.params.id = '1';
+      mockReq.query = { page: '2' };
+
+      await expect(withDatabase(mockDb)(mockReq, mockRes)).resolves.toBeUndefined();
+      await expect(withModel(MockUser)(mockReq, mockRes)).resolves.toBeUndefined();
+      await expect(withPagination()(mockReq, mockRes)).resolves.toBeUndefined();
+
+      expect(mockReq.db).toBe(mockDb);
+      expect(mockReq.user).toEqual({ id: 1 });
+      expect(mockReq.pagination.page).toBe(2);
+    });
+
+    it('keeps coerced values when stripUnknown is false', async () => {
+      mockReq.query = { age: '42', extra: 'x' };
+
+      await withQueryValidation({ age: { type: 'number', max: 100 } }, { stripUnknown: false })(mockReq, mockRes, mockNext);
+
+      expect(mockReq.query).toEqual({ age: 42, extra: 'x' });
     });
   });
 });

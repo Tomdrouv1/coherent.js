@@ -4,6 +4,96 @@
  * @fileoverview PostgreSQL adapter implementation with connection pooling and advanced features.
  */
 
+import { normalizeIsolationLevel } from './isolation-level.js';
+
+/**
+ * Convert `?` placeholders to PostgreSQL's numbered `$1, $2, ...` parameters.
+ *
+ * Left untouched: `?` inside single-quoted strings (including `E'...'` escape strings),
+ * double-quoted identifiers, dollar-quoted strings and comments, and the JSONB operators
+ * `?|` and `?&`. The JSONB key-exists operator `?` cannot be told apart from a
+ * placeholder: write it as `??` (sent as a single `?`) or use `jsonb_exists()`.
+ *
+ * @param {string} sql - SQL with `?` placeholders
+ * @returns {string} SQL with numbered parameters
+ */
+function convertPlaceholders(sql) {
+  let output = '';
+  let index = 1;
+  let i = 0;
+
+  const copyUntil = (end) => {
+    output += sql.slice(i, end);
+    i = end;
+  };
+
+  while (i < sql.length) {
+    const char = sql[i];
+    const next = sql[i + 1];
+
+    if (char === '\'' || char === '"') {
+      // E'...' strings treat backslash as an escape character
+      const escapes = char === '\'' && /[Ee]/.test(sql[i - 1] || '') && !/[A-Za-z0-9_]/.test(sql[i - 2] || '');
+      let j = i + 1;
+      while (j < sql.length) {
+        if (escapes && sql[j] === '\\') {
+          j += 2;
+        } else if (sql[j] === char && sql[j + 1] === char) {
+          j += 2;
+        } else if (sql[j] === char) {
+          break;
+        } else {
+          j++;
+        }
+      }
+      copyUntil(Math.min(j + 1, sql.length));
+      continue;
+    }
+
+    if (char === '-' && next === '-') {
+      const end = sql.indexOf('\n', i);
+      copyUntil(end === -1 ? sql.length : end);
+      continue;
+    }
+
+    if (char === '/' && next === '*') {
+      const end = sql.indexOf('*/', i + 2);
+      copyUntil(end === -1 ? sql.length : end + 2);
+      continue;
+    }
+
+    if (char === '$') {
+      const tag = /^\$(?:[A-Za-z_][A-Za-z0-9_]*)?\$/.exec(sql.slice(i));
+      if (tag) {
+        const end = sql.indexOf(tag[0], i + tag[0].length);
+        copyUntil(end === -1 ? sql.length : end + tag[0].length);
+        continue;
+      }
+    }
+
+    if (char === '?') {
+      if (next === '?') {
+        output += '?';
+        i += 2;
+        continue;
+      }
+      if ((next === '|' && sql[i + 2] !== '|') || next === '&') {
+        output += `?${next}`;
+        i += 2;
+        continue;
+      }
+      output += `$${index++}`;
+      i++;
+      continue;
+    }
+
+    output += char;
+    i++;
+  }
+
+  return output;
+}
+
 /**
  * Create PostgreSQL adapter instance
  * 
@@ -21,11 +111,6 @@ export function createPostgreSQLAdapter() {
         throw new Error('pg package is required for PostgreSQL adapter. Install with: npm install pg');
       }
     }
-  }
-
-  function convertPlaceholders(sql) {
-    let index = 1;
-    return sql.replace(/\?/g, () => `$${index++}`);
   }
 
   function extractInsertId(result) {
@@ -62,8 +147,8 @@ export function createPostgreSQLAdapter() {
 
       const pool = new pg.Pool(poolConfig);
 
-      pool.on('_error', (err) => {
-        console.error('PostgreSQL pool _error:', err);
+      pool.on('error', (err) => {
+        console.error('PostgreSQL pool error:', err);
       });
 
       return pool;
@@ -110,19 +195,47 @@ export function createPostgreSQLAdapter() {
 
     /**
      * Start database transaction
+     *
+     * @param {Object} pool - pg Pool
+     * @param {Object} [options={}]
+     * @param {string} [options.isolationLevel] - READ UNCOMMITTED, READ COMMITTED, REPEATABLE READ or SERIALIZABLE
+     * @param {boolean} [options.readOnly] - Start a READ ONLY transaction
      */
     async transaction(pool, options = {}) {
-      const client = await pool.connect();
-      
+      // Validate before taking a client, so a bad option cannot leak one
+      const isolationLevel = normalizeIsolationLevel(options.isolationLevel);
+
       let beginSql = 'BEGIN';
-      if (options.isolationLevel) {
-        beginSql += ` ISOLATION LEVEL ${options.isolationLevel}`;
+      if (isolationLevel) {
+        beginSql += ` ISOLATION LEVEL ${isolationLevel}`;
       }
       if (options.readOnly) {
         beginSql += ' READ ONLY';
       }
-      
-      await client.query(beginSql);
+
+      const client = await pool.connect();
+
+      let released = false;
+      const release = (error) => {
+        if (!released) {
+          released = true;
+          // A truthy argument makes pg discard the client instead of reusing it
+          client.release(error);
+        }
+      };
+
+      try {
+        await client.query(beginSql);
+      } catch (_error) {
+        release(_error);
+        throw _error;
+      }
+
+      const assertActive = () => {
+        if (transaction.isCommitted || transaction.isRolledBack) {
+          throw new Error('Transaction already completed');
+        }
+      };
 
       const transaction = {
         client,
@@ -134,14 +247,14 @@ export function createPostgreSQLAdapter() {
           if (transaction.isCommitted || transaction.isRolledBack) {
             throw new Error('Cannot execute query on completed transaction');
           }
-          
+
           const pgSql = convertPlaceholders(sql);
           const result = await client.query(pgSql, params);
-          
+
           if (queryOptions && queryOptions.single) {
             return result.rows[0] || null;
           }
-          
+
           return {
             rows: result.rows,
             rowCount: result.rowCount,
@@ -151,28 +264,30 @@ export function createPostgreSQLAdapter() {
         },
 
         commit: async () => {
-          if (transaction.isCommitted || transaction.isRolledBack) {
-            throw new Error('Transaction already completed');
-          }
+          assertActive();
 
           try {
             await client.query('COMMIT');
             transaction.isCommitted = true;
-          } finally {
-            client.release();
+            release();
+          } catch (_error) {
+            // PostgreSQL ends the transaction when COMMIT fails
+            transaction.isRolledBack = true;
+            release(_error);
+            throw _error;
           }
         },
 
         rollback: async () => {
-          if (transaction.isCommitted || transaction.isRolledBack) {
-            throw new Error('Transaction already completed');
-          }
+          assertActive();
+          transaction.isRolledBack = true;
 
           try {
             await client.query('ROLLBACK');
-            transaction.isRolledBack = true;
-          } finally {
-            client.release();
+            release();
+          } catch (_error) {
+            release(_error);
+            throw _error;
           }
         }
       };

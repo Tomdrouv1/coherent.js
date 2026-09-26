@@ -5,6 +5,7 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { escapeHtml } from '../core/html-utils.js';
 
 /**
  * CSS Manager Class
@@ -96,8 +97,11 @@ export class CSSManager {
      */
     generateInlineStyles(cssContent) {
         if (!cssContent) return '';
-        
-        return `<style type="text/css">\n${cssContent}\n</style>`;
+
+        // `</style` inside the CSS would close the element early and let the
+        // rest be parsed as HTML.
+        const safeCss = String(cssContent).replace(/<\/(style)/gi, '<\\/$1');
+        return `<style type="text/css">\n${safeCss}\n</style>`;
     }
     
     /**
@@ -117,8 +121,9 @@ export class CSSManager {
      * Escape HTML entities
      */
     escapeHtml(text) {
-        const div = { textContent: text };
-        return div.innerHTML || text;
+        // This used to read `{ textContent }.innerHTML`, which is always
+        // undefined, so it returned the text unescaped.
+        return escapeHtml(String(text));
     }
     
     /**

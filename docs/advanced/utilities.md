@@ -60,7 +60,9 @@ When enabled, this function:
 3. Records render time and metrics
 4. Returns the HTML
 
-Access metrics via `performanceMonitor.getStats()`.
+Read the metrics with `performanceMonitor.generateReport().metrics.renderTime` (`count`, `avg`, `p95`...).
+
+A component that throws makes these functions throw (a `RenderingError` with the component's path and the original error as `cause`), exactly like `render()`.
 
 ---
 
@@ -101,7 +103,7 @@ const customHtml = renderWithTemplate(component, {
 ```
 
 **Template Placeholders:**
-- `{{content}}` - Required placeholder for component HTML
+- `{{content}}` - Required placeholder for component HTML. The rendered HTML is inserted literally, so `$` sequences in page text (`Pay $$10`) are kept as written.
 
 ---
 
@@ -187,11 +189,7 @@ console.log(isCoherentComponent(null)); // false
 console.log(isCoherentComponent('string')); // false
 ```
 
-**Validation Rules:**
-A valid Coherent.js component is:
-- A plain object (not null, not an array)
-- Has at least one property
-- Typically has a single key representing an HTML tag
+**What it checks:** a non-array object with exactly one own key (the tag name). It is a *shape* heuristic, not a type test: ordinary JSON with one key — `{ ok: true }`, `{ users: [...] }`, `{ error: 'Invalid credentials' }` — also returns `true`. The framework adapters therefore only use it when `autoRender: true` is set; do not use it to decide how to serialize data you do not control.
 
 ---
 
@@ -226,6 +224,8 @@ try {
   res.status(500).json(errorResponse);
 }
 ```
+
+> `message` is the raw error message. For 5xx responses sent to clients, replace it with a generic text (or log it and send only `error`), so internal details such as host names do not leak.
 
 **Response Format:**
 ```typescript
@@ -330,19 +330,7 @@ export default async function handler(req, res) {
 
 ### Monitoring Overhead
 
-Performance monitoring adds minimal overhead (~1-2ms per render):
-
-```javascript
-// Without monitoring
-const html1 = renderWithMonitoring(component);
-// ~10ms
-
-// With monitoring
-const html2 = renderWithMonitoring(component, {
-  enablePerformanceMonitoring: true
-});
-// ~11-12ms
-```
+With `enablePerformanceMonitoring: true`, each call reads the clock twice and records one histogram sample; the cost is small next to rendering, but measure it for your pages (`pnpm perf:render` in the repository benchmarks `render()` itself).
 
 ### Template Caching
 
@@ -380,9 +368,8 @@ const html = renderWithTemplate(component, { template });
 // ✅ Good: Component factory
 const html = await renderComponentFactory(factory, args, options);
 
-// ❌ Bad: Mixing concerns
-const html = render(component);
-// Then manually adding template...
+// ❌ Avoid: hand-rolled templating with a string replacement pattern
+const html = template.replace('{{content}}', render(component)); // `$&`, `$'`... in the page are expanded
 ```
 
 ### 2. Enable Monitoring in Development
@@ -416,8 +403,8 @@ try {
   const html = await renderComponentFactory(factory, args);
   res.send(html);
 } catch (error) {
-  const errorResponse = createErrorResponse(error, 'user-profile');
-  res.status(500).json(errorResponse);
+  console.error(createErrorResponse(error, 'user-profile')); // full details in the logs
+  res.status(500).json({ error: 'Internal Server Error' });   // nothing internal to the client
 }
 ```
 
@@ -427,7 +414,7 @@ try {
 
 ### From Direct render
 
-**Before (v1.0.x):**
+**Before:**
 ```javascript
 import { render } from '@coherent.js/core';
 import { performanceMonitor } from '@coherent.js/core';
@@ -445,7 +432,7 @@ const finalHtml = template.replace('{{content}}', html);
 res.send(finalHtml);
 ```
 
-**After (v1.1.0+):**
+**After:**
 ```javascript
 import { renderWithTemplate } from '@coherent.js/core';
 
@@ -458,10 +445,8 @@ res.send(html);
 ```
 
 **Benefits:**
-- 15 lines → 7 lines
 - No duplicate code
-- Consistent behavior
-- Easier to maintain
+- Consistent behavior, including `$` sequences in page text
 
 ---
 
@@ -469,16 +454,9 @@ res.send(html);
 
 ### Component Not Rendering
 
-**Problem:** Component returns empty string
+**Problem:** Part of the page is missing
 
-**Solution:** Check if component is valid
-```javascript
-import { isCoherentComponent } from '@coherent.js/core';
-
-if (!isCoherentComponent(component)) {
-  console.error('Invalid component:', component);
-}
-```
+**Solution:** `false`, `null` and `undefined` children render nothing, which is usually what you want for `cond && { ... }`. Check the condition, and check that a function in the tree returns an element rather than `undefined`. If a component throws, `render()` throws a `RenderingError` naming the path; if you pass `onError`, whatever it returns (possibly `null`) is rendered in the component's place.
 
 ### Template Not Applied
 
@@ -505,8 +483,8 @@ renderWithMonitoring(component, {
   enablePerformanceMonitoring: true
 });
 
-const stats = performanceMonitor.getStats();
-console.log('Render time:', stats.averageRenderTime);
+const { renderTime } = performanceMonitor.generateReport().metrics;
+console.log('Render time:', renderTime.avg, 'ms over', renderTime.count, 'renders');
 ```
 
 ---
@@ -520,5 +498,4 @@ console.log('Render time:', stats.averageRenderTime);
 
 ---
 
-**Version:** 1.1.0+  
-**Last Updated:** October 18, 2025
+**Version:** 1.1.0+

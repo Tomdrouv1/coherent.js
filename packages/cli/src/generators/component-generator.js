@@ -2,49 +2,31 @@
  * Component generator
  */
 
-import { writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import { writeGeneratedFiles } from '../utils/files.js';
 
 /**
  * Generate a new component
  */
 export async function generateComponent(name, options = {}) {
-  const { path = 'src/components', template = 'basic', skipTest = false, skipStory = false } = options;
+  const { path = 'src/components', template = 'basic', skipTest = false, skipStory = false, force = false } = options;
 
   // Ensure component name is PascalCase
   const componentName = toPascalCase(name);
   const fileName = componentName;
 
-  // Create output directory
   const outputDir = join(process.cwd(), path);
-  if (!existsSync(outputDir)) {
-    mkdirSync(outputDir, { recursive: true });
-  }
-
-  const files = [];
   const nextSteps = [];
 
-  // Generate component file
-  const componentPath = join(outputDir, `${fileName}.js`);
-  const componentContent = generateComponentContent(componentName, template);
-  writeFileSync(componentPath, componentContent);
-  files.push(componentPath);
-
-  // Generate test file
+  // Component, test, and story (for Storybook) files
+  const toWrite = [{ path: join(outputDir, `${fileName}.js`), content: generateComponentContent(componentName, template) }];
   if (!skipTest) {
-    const testPath = join(outputDir, `${fileName}.test.js`);
-    const testContent = generateTestContent(componentName);
-    writeFileSync(testPath, testContent);
-    files.push(testPath);
+    toWrite.push({ path: join(outputDir, `${fileName}.test.js`), content: generateTestContent(componentName) });
   }
-
-  // Generate story file (for Storybook)
   if (!skipStory) {
-    const storyPath = join(outputDir, `${fileName}.stories.js`);
-    const storyContent = generateStoryContent(componentName);
-    writeFileSync(storyPath, storyContent);
-    files.push(storyPath);
+    toWrite.push({ path: join(outputDir, `${fileName}.stories.js`), content: generateStoryContent(componentName) });
   }
+  const files = writeGeneratedFiles(toWrite, { force });
 
   // Add next steps
   nextSteps.push(`Import the component: import { ${componentName} } from '${path}/${fileName}.js'`);

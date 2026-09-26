@@ -59,8 +59,7 @@ coherent.js/
 │   │   │   ├── components/                 # Component system
 │   │   │   │   ├── component-system.js     # Advanced component features
 │   │   │   │   ├── lifecycle.js            # Component lifecycle hooks
-│   │   │   │   ├── error-boundary.js       # Error handling
-│   │   │   │   └── lazy-loading.js         # Code splitting support
+│   │   │   │   └── error-boundary.js       # Error handling
 │   │   │   ├── rendering/                  # Rendering engines
 │   │   │   │   ├── html-renderer.js        # Main HTML + streaming renderer
 │   │   │   │   ├── base-renderer.js        # Shared renderer base class
@@ -106,42 +105,45 @@ coherent.js/
 There are multiple rendering entry points depending on your use case:
 
 ```javascript
-// Standard rendering (with CSS scoping by default)
+// Standard rendering: synchronous, returns a string
 import { render } from '@coherent.js/core';
 const html = render(component);
 
-// Full HTML document with DOCTYPE
-import { render } from '@coherent.js/core';
-const html = await render(component, {
-  cssFiles: ['styles.css'],
-  cssInline: 'body { margin: 0; }'
-});
+// With scoped CSS (opt-in)
+const scopedHtml = render(component, { scoped: true });
 
-// Streaming for large documents
+// Streaming for large documents: an async generator of HTML chunks with the
+// same output as render(); the event loop gets a turn after every chunk
+import { Readable } from 'node:stream';
 import { renderToStream } from '@coherent.js/core';
-const stream = renderToStream(component);
+Readable.from(renderToStream(component)).pipe(res);
 ```
+
+`render()` is synchronous: await data and async components before calling it (a Promise in the tree throws). A function component that throws makes `render()` throw with the component's path; pass `onError: (error, { path }) => fallback` to render a replacement instead.
 
 ### 2. **Rendering Flow**
 
 ```
 Component Object
     ↓
-render() / render()
+render() / renderToStream()
+    ↓
+- CSS scoping (optional, `scoped: true`)
+- Hydration attributes (optional)
     ↓
 HTMLRenderer (html-renderer.js)
     ↓
 - Validation
-- CSS Scoping (optional)
-- Performance Monitoring (optional)
-- Caching (optional)
+- Whole-render cache lookup (optional, `enableCache: true`)
+- elementParts(): tags, escaped attributes and text (shared by both paths)
+- Performance monitoring (optional, `enableMonitoring: true`)
     ↓
-HTML String Output
+HTML string, or chunks
 ```
 
 ### 3. **CSS Scoping**
 
-By default, Coherent.js applies CSS scoping similar to Angular's View Encapsulation:
+With `render(component, { scoped: true })` (alias `encapsulate`), Coherent.js scopes a component's `<style>` rules, similar to Angular's View Encapsulation. The scope id is derived from the component's CSS, so the output is deterministic; rules inside `@media`, `@supports`, `@container` and `@layer` are scoped, while `@keyframes` and `@font-face` are left as they are:
 
 ```javascript
 // Input component with styles
@@ -154,17 +156,14 @@ By default, Coherent.js applies CSS scoping similar to Angular's View Encapsulat
   }
 }
 
-// Output with scoped CSS
-<div coh-0="">
-  <style>.button[coh-0] { color: blue; }</style>
-  <button class="button" coh-0="">Click me</button>
+// Output with scoped CSS (the id is a hash of the CSS)
+<div coh-1x2y3z="">
+  <style coh-1x2y3z="">.button[coh-1x2y3z] { color: blue; }</style>
+  <button class="button" coh-1x2y3z="">Click me</button>
 </div>
 ```
 
-To disable scoping:
-```javascript
-render(component, { encapsulate: false });
-```
+Scoping is off by default.
 
 ## State Management
 
@@ -291,33 +290,17 @@ All framework integrations use **shared rendering utilities** to eliminate code 
 
 ### Integration Pattern
 
-All integrations follow this pattern:
+Adapters render only what they are explicitly handed: `res.coherent(component)` (Express), `reply.coherent(component)` (Fastify), `ctx.coherent(component)` (Koa), or a handler factory. Guessing from the payload's shape (any single-key object looks like a component) turned JSON API responses such as `{ users: [...] }` into HTML, so it is opt-in with `autoRender: true`.
 
 ```javascript
-// packages/integrations/src/express/coherent-express.js
-import { 
-  renderWithTemplate, 
-  renderComponentFactory,
-  isCoherentComponent 
-} from '../../core/src/utils/render-utils.js';
+import express from 'express';
+import { setupCoherent } from '@coherent.js/integrations/express';
 
-export function createCoherentHandler(componentFactory, options = {}) {
-  return async (req, res, next) => {
-    try {
-      const finalHtml = await renderComponentFactory(
-        componentFactory,
-        [req, res, next],
-        options
-      );
-      
-      res.set('Content-Type', 'text/html');
-      res.send(finalHtml);
-    } catch (error) {
-      console.error('Coherent.js handler error:', error);
-      next(error);
-    }
-  };
-}
+const app = express();
+setupCoherent(app);
+
+app.get('/', (req, res) => res.coherent(HomePage({ user: req.user })));
+app.get('/api/users', (req, res) => res.json({ users })); // stays JSON
 ```
 
 ### Available Integrations
@@ -465,35 +448,41 @@ The API is backward compatible, so existing code will continue to work!
 
 ### 1. **Caching Strategy**
 
+Caching is opt-in. `memo()` caches a component's output per props (each memoized component has its own LRU). `enableCache: true` caches whole renders keyed on the complete component tree, which only pays off when identical trees are re-rendered; trees containing functions are never cached.
+
 ```javascript
-// Enable caching for production
-const html = render(component, {
-  enableCache: true,
-  cacheSize: 1000,  // Max cached items
-  cacheTTL: 3600000 // 1 hour in ms
+import { render, memo, createCacheManager } from '@coherent.js/core';
+
+const ProductCard = memo(({ product }) => ({ article: { text: product.name } }), {
+  keyFn: ({ product }) => `${product.id}:${product.updatedAt}`,
+  maxSize: 500
 });
+
+const pageCache = createCacheManager({ maxCacheSize: 1000, ttlMs: 60 * 60 * 1000 });
+const html = render(StaticPage(), { enableCache: true, cache: pageCache });
 ```
 
 ### 2. **Streaming for Large Documents**
 
 ```javascript
 // Use streaming for large component trees
-import { renderToStream } from '@coherent.js/core';
+import { renderToStream, streamingUtils } from '@coherent.js/core';
 
-const stream = renderToStream(largeComponent);
-stream.pipe(response);
+// Writes with backpressure and aborts the response if rendering fails
+await streamingUtils.streamToResponse(renderToStream(largeComponent), res);
 ```
+
+Streaming trades total render time for time-to-first-byte: the event loop gets a turn after every chunk.
 
 ### 3. **Performance Monitoring**
 
 ```javascript
-import { performanceMonitor } from '@coherent.js/core';
+import { render, performanceMonitor } from '@coherent.js/core';
 
-performanceMonitor.start();
-// ... render components
-const stats = performanceMonitor.getStats();
-console.log('Render time:', stats.averageRenderTime);
-console.log('Cache hit rate:', stats.cacheHitRate);
+render(component, { enableMonitoring: true });
+const report = performanceMonitor.generateReport();
+console.log('Render time (avg ms):', report.metrics.renderTime.avg);
+console.log('Elements rendered:', report.metrics.componentCount.value);
 ```
 
 ## Debugging
@@ -507,10 +496,7 @@ const Component = withState(initialState, {
 })(MyComponent);
 
 // For rendering
-const html = render(component, {
-  enableMonitoring: true,
-  enableDevTools: true
-});
+const html = render(component, { enableMonitoring: true });
 ```
 
 ### Common Issues

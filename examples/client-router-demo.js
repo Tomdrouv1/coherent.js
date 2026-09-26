@@ -122,298 +122,85 @@ function NotFoundPage() {
   };
 }
 
-function LoadingPage() {
-  return {
-    div: {
-      className: 'page loading-page',
-      children: [
-        { div: { className: 'spinner' } },
-        { p: { text: 'Loading...' } }
-      ]
-    }
-  };
-}
-
 // =============================================================================
 // Router Configuration
 // =============================================================================
 
 console.log('📦 Creating Router...\n');
 
-const router = createRouter({
-  // Router mode
-  mode: 'history', // or 'hash' for hash-based routing
+// In a browser, call router.start() to follow popstate/hashchange and
+// intercept same-origin link clicks; push()/replace() then update the URL.
+// This demo runs in Node, so it drives the router directly.
+const router = createRouter({ mode: 'history', base: '/' });
 
-  // Base path
-  base: '/',
+let loggedIn = true;
 
-  // Route prefetching
-  prefetch: {
-    enabled: true,
-    strategy: 'hover', // Prefetch on hover
-    delay: 100,        // 100ms delay
-    maxConcurrent: 3,  // Max 3 concurrent prefetches
-    priority: {
-      critical: 100,
-      high: 50,
-      normal: 0,
-      low: -50
-    }
-  },
-
-  // Page transitions
-  transitions: {
-    enabled: true,
-    default: {
-      enter: 'fade-in',
-      leave: 'fade-out',
-      duration: 300
-    },
-    routes: {
-      '/products': {
-        enter: 'slide-left',
-        leave: 'slide-right',
-        duration: 400
-      }
-    }
-  },
-
-  // Code splitting
-  codeSplitting: {
-    enabled: true,
-    chunkStrategy: 'route',
-    preload: ['/', '/about'],
-    loadingComponent: LoadingPage
-  },
-
-  // Scroll behavior
-  scrollBehavior: {
-    behavior: 'smooth',
-    top: 0,
-    preserveScroll: false,
-    scrollToHash: true
-  },
-
-  // Routes
-  routes: {
-    '/': {
-      component: HomePage,
-      prefetch: 'eager' // Prefetch immediately
-    },
-    '/about': {
-      component: AboutPage,
-      prefetch: 'high'
-    },
-    '/products': {
-      component: ProductsPage,
-      prefetch: 'normal'
-    },
-    '/products/:id': {
-      component: ProductDetailPage,
-      prefetch: 'low'
-    },
-    '/users/:id': {
-      component: UserProfilePage,
-      beforeEnter: (to, from, next) => {
-        console.log(`🔒 Checking access to user ${to.params.id}...`);
-        // Simulate auth check
-        const isAuthenticated = true; // Change to false to test guard
-        if (isAuthenticated) {
-          console.log('✓ Access granted');
-          next();
-        } else {
-          console.log('✗ Access denied, redirecting to home');
-          next('/');
-        }
-      }
-    },
-    '*': {
-      component: NotFoundPage
-    }
+// `component` is a loader, called once on first navigation: return the
+// component, or use `() => import('./pages/About.js')` to code-split.
+router.addRoute('/', { component: () => HomePage });
+router.addRoute('/about', { component: () => AboutPage, meta: { title: 'About Us' } });
+router.addRoute('/products', { component: () => ProductsPage });
+router.addRoute('/products/:id', { component: () => ProductDetailPage });
+router.addRoute('/users/:id', {
+  component: () => UserProfilePage,
+  // Guards may be async; returning false cancels the navigation.
+  beforeEnter: (to) => {
+    console.log(`🔒 Checking access to user ${to.params.id}: ${loggedIn ? 'granted' : 'denied'}`);
+    return loggedIn;
   }
 });
-
-// =============================================================================
-// Global Navigation Guards
-// =============================================================================
-
-console.log('🔐 Setting up navigation guards...\n');
-
-// Before navigation
-router.beforeEach((to, from, next) => {
-  console.log(`📍 Navigating from ${from?.path || '(initial)'} to ${to.path}`);
-
-  // Log navigation
-  console.log(`   Params: ${JSON.stringify(to.params)}`);
-  console.log(`   Query: ${JSON.stringify(to.query)}`);
-
-  // Simulate analytics
-  trackPageView(to.path);
-
-  // Continue navigation
-  next();
-});
-
-// After navigation
-router.afterEach((to, from) => {
-  console.log(`✓ Navigation complete to ${to.path}\n`);
-
-  // Update page title
-  const pageTitles = {
-    '/': 'Home',
-    '/about': 'About Us',
-    '/products': 'Products',
-    '/users/:id': 'User Profile'
-  };
-
-  const title = pageTitles[to.path] || 'Page';
-  console.log(`📄 Page title: ${title}`);
-});
-
-// =============================================================================
-// Router Events
-// =============================================================================
-
-console.log('📢 Setting up router events...\n');
-
-router.on('navigate', (to, from) => {
-  console.log(`🚀 Navigate event: ${from?.path} → ${to.path}`);
-});
-
-router.on('error', (error) => {
-  console.error('❌ Router error:', error);
-});
-
-router.on('prefetch:start', (path) => {
-  console.log(`⏳ Prefetching started: ${path}`);
-});
-
-router.on('prefetch:complete', (path) => {
-  console.log(`✓ Prefetching complete: ${path}`);
-});
-
-// =============================================================================
-// Helper Functions
-// =============================================================================
-
-function trackPageView(path) {
-  console.log(`📊 Analytics: Page view tracked for ${path}`);
-}
+router.addRoute('*', { component: () => NotFoundPage });
 
 // =============================================================================
 // Navigation Examples
 // =============================================================================
 
-console.log('=' .repeat(80));
-console.log('🧭 Router Navigation Examples');
-console.log('='.repeat(80));
-console.log('');
+function describe(result) {
+  const route = router.getCurrentRoute();
+  const html = route?.component ? render(route.component({ params: route.params, query: route.query })) : '';
+  console.log(`   navigated: ${result} → ${route?.fullPath}`);
+  console.log(`   params: ${JSON.stringify(route?.params)} query: ${JSON.stringify(route?.query)}`);
+  console.log(`   html: ${html.slice(0, 80)}${html.length > 80 ? '…' : ''}`);
+}
 
-// Example 1: Basic navigation
-console.log('Example 1: Basic Navigation\n');
-router.push('/about');
+async function main() {
+  console.log('='.repeat(80));
+  console.log('🧭 Router Navigation Examples');
+  console.log('='.repeat(80));
 
-setTimeout(() => {
-  // Example 2: Navigation with dynamic route
-  console.log('\nExample 2: Dynamic Route Navigation\n');
-  router.push('/users/456');
+  console.log('\nExample 1: Basic navigation');
+  describe(await router.push('/about'));
 
-  setTimeout(() => {
-    // Example 3: Navigation with query parameters
-    console.log('\nExample 3: Query Parameters\n');
-    router.push({ path: '/products', query: { category: 'electronics', sort: 'price' } });
+  console.log('\nExample 2: Dynamic route parameters');
+  describe(await router.push('/users/456'));
 
-    setTimeout(() => {
-      // Example 4: Navigation with hash
-      console.log('\nExample 4: Hash Navigation\n');
-      router.push({ path: '/about', hash: '#team' });
+  console.log('\nExample 3: Query parameters and hash');
+  describe(await router.push('/products?category=electronics&sort=price#top'));
 
-      setTimeout(() => {
-        // Example 5: Back navigation
-        console.log('\nExample 5: Back Navigation\n');
-        router.back();
+  console.log('\nExample 4: A guard cancelling a navigation');
+  loggedIn = false;
+  console.log(`   navigated: ${await router.push('/users/789')} (still on ${router.getCurrentRoute().fullPath})`);
+  loggedIn = true;
 
-        setTimeout(() => {
-          // Example 6: Forward navigation
-          console.log('\nExample 6: Forward Navigation\n');
-          router.forward();
+  console.log('\nExample 5: Back and forward');
+  router.back(); // in a browser after start(), the popstate event drives this
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  describe('back');
+  router.forward();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  describe('forward');
 
-          setTimeout(() => {
-            // Example 7: Replace current route
-            console.log('\nExample 7: Replace Route\n');
-            router.replace('/products/123');
+  console.log('\nExample 6: Replace the current entry');
+  describe(await router.replace('/products/123'));
 
-            setTimeout(() => {
-              // Example 8: Check active route
-              console.log('\nExample 8: Check Active Route\n');
-              console.log('Is /products/123 active?', router.isActive('/products/123'));
-              console.log('Is /about active?', router.isActive('/about'));
+  console.log('\nExample 7: Unknown paths fall back to the "*" route');
+  describe(await router.push('/does/not/exist'));
 
-              setTimeout(() => {
-                // Example 9: Get current route
-                console.log('\nExample 9: Current Route Info\n');
-                const current = router.currentRoute;
-                console.log('Current path:', current.path);
-                console.log('Current params:', current.params);
-                console.log('Current query:', current.query);
+  console.log('\nExample 8: The last navigation wins');
+  const [slow, fast] = await Promise.all([router.push('/about'), router.push('/')]);
+  console.log(`   /about → ${slow}, / → ${fast}, current: ${router.getCurrentRoute().fullPath}`);
 
-                setTimeout(() => {
-                  // Example 10: Manual prefetch
-                  console.log('\nExample 10: Manual Prefetch\n');
-                  router.prefetch('/users/789');
-                  router.prefetch(['/about', '/products']);
+  console.log('\n📊 Stats:', JSON.stringify(router.getStats()));
+}
 
-                  setTimeout(() => {
-                    // Final summary
-                    console.log('\n' + '='.repeat(80));
-                    console.log('📝 Router Demo Complete!');
-                    console.log('='.repeat(80));
-                    console.log('');
-                    console.log('Features demonstrated:');
-                    console.log('✓ Basic navigation (push, back, forward, replace)');
-                    console.log('✓ Dynamic routes with parameters');
-                    console.log('✓ Query parameters and hash');
-                    console.log('✓ Navigation guards (beforeEach, afterEach, beforeEnter)');
-                    console.log('✓ Route prefetching (automatic and manual)');
-                    console.log('✓ Page transitions');
-                    console.log('✓ Router events');
-                    console.log('✓ Active route checking');
-                    console.log('');
-                    console.log('🚀 Ready to use in your application!');
-                    console.log('='.repeat(80));
-                  }, 1000);
-                }, 1000);
-              }, 1000);
-            }, 1000);
-          }, 1000);
-        }, 1000);
-      }, 1000);
-    }, 1000);
-  }, 1000);
-}, 1000);
-
-// =============================================================================
-// Usage in HTML
-// =============================================================================
-
-/*
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Coherent.js Router Demo</title>
-  <style>
-    .page { padding: 20px; }
-    .nav-link { margin-right: 10px; }
-    .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3;
-                border-top: 4px solid #3498db; border-radius: 50%;
-                animation: spin 1s linear infinite; }
-    @keyframes spin { 0% { transform: rotate(0deg); }
-                      100% { transform: rotate(360deg); } }
-  </style>
-</head>
-<body>
-  <div id="app"></div>
-  <script type="module" src="./client-router-demo.js"></script>
-</body>
-</html>
-*/
+await main();

@@ -179,17 +179,12 @@ describe('HTML Utils', () => {
       expect(result).toContain('title="Test &quot;quote&quot;"');
     });
 
-    it('should handle event handlers', () => {
-      const handleClick = () => {};
-      const props = { onClick: handleClick };
+    it('should render nothing for function event handlers', () => {
+      const props = { id: 'go', onClick: () => {} };
 
-      // Mock global for server-side testing
-      global.__coherentActionRegistry = {};
-
-      const result = formatAttributes(props);
-
-      expect(result).toContain('data-action=');
-      expect(global.__coherentActionRegistry).toBeDefined();
+      // hydrate() attaches handlers on the client; the server emits none.
+      expect(formatAttributes(props)).toBe('id="go"');
+      expect(global.__coherentActionRegistry).toBeUndefined();
     });
 
     it('should handle empty props object', () => {
@@ -249,14 +244,14 @@ describe('HTML Utils', () => {
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('Error executing function for attribute'),
         expect.objectContaining({
-          _error: 'Function execution failed',
+          error: 'Function execution failed',
           attributeKey: 'value'
         })
       );
       consoleSpy.mockRestore();
     });
 
-    it('should handle all event handler types', () => {
+    it('should render no attribute for any function event handler', () => {
       const handlers = {
         onClick: vi.fn(),
         onChange: vi.fn(),
@@ -266,14 +261,7 @@ describe('HTML Utils', () => {
         onBlur: vi.fn()
       };
 
-      const result = formatAttributes(handlers);
-
-      expect(result).toContain('data-event="Click"');
-      expect(result).toContain('data-event="Change"');
-      expect(result).toContain('data-event="Submit"');
-      expect(result).toContain('data-event="MouseOver"');
-      expect(result).toContain('data-event="Focus"');
-      expect(result).toContain('data-event="Blur"');
+      expect(formatAttributes(handlers)).toBe('');
     });
 
     it('should handle complex objects in attributes', () => {
@@ -299,67 +287,6 @@ describe('HTML Utils', () => {
       expect(result).toContain('count="0"');
     });
 
-    it('should log debug information for action registry when debug is enabled', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
-      // Mock debug environment
-      const originalProcess = process?.env;
-      if (typeof process !== 'undefined') {
-        process.env = { ...process.env, COHERENT_DEBUG: '1' };
-      }
-
-      const handleClick = vi.fn();
-      const props = { onClick: handleClick };
-
-      const _result = formatAttributes(props);
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Initialized global action registry')
-      );
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Added action')
-      );
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Global registry keys')
-      );
-
-      // Restore
-      if (originalProcess) {
-        process.env = originalProcess;
-      }
-      consoleSpy.mockRestore();
-    });
-
-    it('should maintain action registry log when debug is enabled', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
-      // Mock debug environment
-      const originalProcess = process?.env;
-      if (typeof process !== 'undefined') {
-        process.env = { ...process.env, COHERENT_DEBUG: '1' };
-      }
-
-      const handleClick = vi.fn();
-      const props = { onClick: handleClick };
-
-      const _result = formatAttributes(props);
-
-      expect(global.__coherentActionRegistryLog).toBeDefined();
-      expect(Array.isArray(global.__coherentActionRegistryLog)).toBe(true);
-      expect(global.__coherentActionRegistryLog.length).toBe(1);
-      expect(global.__coherentActionRegistryLog[0]).toMatchObject({
-        action: 'add',
-        actionId: expect.stringContaining('__coherent_action_'),
-        timestamp: expect.any(Number),
-        registrySize: 1
-      });
-
-      // Restore
-      if (originalProcess) {
-        process.env = originalProcess;
-      }
-      consoleSpy.mockRestore();
-    });
   });
 
   describe('minifyHtml', () => {
@@ -476,17 +403,9 @@ describe('HTML Utils', () => {
         title: 'Test "title" with & symbols'
       };
 
-      // Mock global registry
-      global.__coherentActionRegistry = {};
-
-      const result = formatAttributes(props);
-
-      expect(result).toContain('id="test-element"');
-      expect(result).toContain('class="container active"');
-      expect(result).toContain('disabled');
-      expect(result).toContain('data-count="5"');
-      expect(result).toContain('data-action=');
-      expect(result).toContain('title="Test &quot;title&quot; with &amp; symbols"');
+      expect(formatAttributes(props)).toBe(
+        'id="test-element" class="container active" disabled data-count="5" title="Test &quot;title&quot; with &amp; symbols"'
+      );
     });
 
     it('should round-trip HTML escaping and unescaping', () => {

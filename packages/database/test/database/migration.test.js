@@ -5,6 +5,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Migration, SchemaBuilder, TableBuilder } from '../../src/migration.js';
 import * as fs from 'fs/promises';
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 // Mock fs operations
 vi.mock('fs/promises', () => ({
@@ -98,26 +101,32 @@ describe('Migration', () => {
 
   describe('loadMigrationFiles', () => {
     it('should load migration files from directory', async () => {
-      const mockFiles = [
-        '20231201000001_create_users.js',
-        '20231201000002_create_posts.js',
-        'not_a_migration.txt'
-      ];
-      
-      fs.readdir.mockResolvedValue(mockFiles);
-      
-      // Mock dynamic imports
-      const mockMigration1 = { up: vi.fn(), down: vi.fn() };
-      const mockMigration2 = { up: vi.fn(), down: vi.fn() };
-      
-      vi.doMock('./test-migrations/20231201000001_create_users.js', () => mockMigration1);
-      vi.doMock('./test-migrations/20231201000002_create_posts.js', () => mockMigration2);
-      
-      await migration.loadMigrationFiles();
-      
-      expect(migration.migrations).toHaveLength(2);
-      expect(migration.migrations[0].name).toBe('20231201000001_create_users');
-      expect(migration.migrations[1].name).toBe('20231201000002_create_posts');
+      // Real files: readdir is mocked in this file, but the modules are really imported
+      const dir = mkdtempSync(join(tmpdir(), 'coherent-migrations-'));
+      try {
+        writeFileSync(join(dir, '20231201000001_create_users.js'), "export async function up() { return 'users-up'; }\nexport async function down() {}\n");
+        writeFileSync(join(dir, '20231201000002_create_posts.js'), "export default { up: async () => 'posts-up', down: async () => {} };\n");
+        fs.readdir.mockResolvedValue([
+          '20231201000002_create_posts.js',
+          '20231201000001_create_users.js',
+          'not_a_migration.txt'
+        ]);
+
+        const fromDir = new Migration(mockDb, { directory: dir });
+        await fromDir.loadMigrationFiles();
+
+        expect(fromDir.migrations.map(m => m.name)).toEqual(['20231201000001_create_users', '20231201000002_create_posts']);
+        expect(await fromDir.migrations[0].up()).toBe('users-up');
+        expect(await fromDir.migrations[1].up()).toBe('posts-up');
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+
+    it('should throw when a migration file cannot be imported', async () => {
+      fs.readdir.mockResolvedValue(['20231201000001_missing.js']);
+
+      await expect(migration.loadMigrationFiles()).rejects.toThrow('Failed to load migration 20231201000001_missing.js');
     });
 
     it('should handle missing directory', async () => {
@@ -209,7 +218,7 @@ describe('Migration', () => {
     //   expect(mockTx.rollback).toHaveBeenCalled();
     // });
 
-    it('should continue on _error when configured', async () => {
+    it('should continue on error when configured', async () => {
       const mockUp1 = vi.fn().mockRejectedValue(new Error('Migration 1 failed'));
       const mockUp2 = vi.fn().mockResolvedValue();
       const mockTx = {
@@ -217,17 +226,43 @@ describe('Migration', () => {
         commit: vi.fn().mockResolvedValue(),
         rollback: vi.fn().mockResolvedValue()
       };
-      
+
       migration.migrations = [
         { name: 'migration1', up: mockUp1, applied: false },
         { name: 'migration2', up: mockUp2, applied: false }
       ];
-      
+
       mockDb.transaction.mockResolvedValue(mockTx);
-      
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
       const applied = await migration.run({ continueOnError: true });
-      
-      expect(applied).toEqual([]);
+
+      expect(applied).toEqual(['migration2']);
+      expect(mockUp2).toHaveBeenCalledWith(expect.any(SchemaBuilder));
+      expect(mockTx.rollback).toHaveBeenCalledTimes(1);
+      expect(mockTx.commit).toHaveBeenCalledTimes(1);
+      expect(mockTx.query).toHaveBeenCalledWith('INSERT INTO test_migrations (migration, batch) VALUES (?, ?)', ['migration2', 1]);
+      consoleSpy.mockRestore();
+    });
+
+    it('should stop at the first failure by default', async () => {
+      const mockTx = {
+        query: vi.fn().mockResolvedValue(),
+        commit: vi.fn().mockResolvedValue(),
+        rollback: vi.fn().mockResolvedValue()
+      };
+      const mockUp2 = vi.fn();
+      migration.migrations = [
+        { name: 'migration1', up: vi.fn().mockRejectedValue(new Error('Migration 1 failed')), applied: false },
+        { name: 'migration2', up: mockUp2, applied: false }
+      ];
+      mockDb.transaction.mockResolvedValue(mockTx);
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      await expect(migration.run()).rejects.toThrow('Migration 1 failed');
+      expect(mockTx.rollback).toHaveBeenCalledTimes(1);
+      expect(mockUp2).not.toHaveBeenCalled();
+      consoleSpy.mockRestore();
     });
   });
 

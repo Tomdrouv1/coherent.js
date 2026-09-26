@@ -213,7 +213,13 @@ export function createMock(implementation) {
     implementation = () => Promise.reject(error);
     return mockFn;
   };
-  
+
+  // Mark it the way Vitest and Jest recognise mocks, so their built-in
+  // toHaveBeenCalled / toHaveBeenCalledWith / toHaveBeenCalledTimes
+  // (deep-equality argument matching) work on it.
+  Object.defineProperty(mockFn, '_isMockFunction', { value: true });
+  mockFn.getMockName = () => 'createMock()';
+
   return mockFn;
 }
 

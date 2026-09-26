@@ -7,20 +7,73 @@
  */
 
 /**
+ * Escape a string for literal use inside a regular expression.
+ * @param {string} value
+ * @returns {string}
+ */
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+const HTML_ESCAPES = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;'
+};
+
+/**
+ * Escape a value for HTML text or a quoted attribute.
+ * @param {unknown} value
+ * @returns {string}
+ */
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (char) => HTML_ESCAPES[char]);
+}
+
+/**
+ * The primary language subtag of a locale (`pt-BR` → `pt`).
+ * @param {unknown} locale
+ * @returns {string}
+ */
+function primaryLanguage(locale) {
+  return String(locale).split(/[-_]/)[0].toLowerCase();
+}
+
+/**
+ * `t()`'s third argument is either a locale string (the original signature)
+ * or an options object `{ locale, escape }`.
+ * @param {unknown} localeOrOptions
+ * @returns {{ locale?: string | null, escape?: boolean }}
+ */
+function normalizeCallOptions(localeOrOptions) {
+  if (localeOrOptions !== null && typeof localeOrOptions === 'object') {
+    return localeOrOptions;
+  }
+  return { locale: localeOrOptions };
+}
+
+/**
  * Translator
  * Manages translations and locale switching
  */
 export class Translator {
   constructor(options = {}) {
+    const { interpolation, ...rest } = options;
     this.options = {
       defaultLocale: 'en',
       fallbackLocale: 'en',
       missingKeyHandler: null,
+      // HTML-escape interpolated params (never the translation itself).
+      escape: false,
+      ...rest,
+      // Merged, so overriding only `prefix` keeps the default `suffix`.
       interpolation: {
         prefix: '{{',
-        suffix: '}}'
-      },
-      ...options
+        suffix: '}}',
+        ...interpolation
+      }
     };
     
     this.translations = new Map();
@@ -62,16 +115,59 @@ export class Translator {
   }
 
   /**
+   * Loaded locales that can serve `locale`, most specific first: the locale
+   * itself, then its parents with trailing subtags dropped (`zh-Hant-TW` →
+   * `zh-Hant` → `zh`). Matching ignores case and accepts `_` for `-`.
+   *
+   * @param {string} locale
+   * @returns {string[]}
+   */
+  localeCandidates(locale) {
+    if (typeof locale !== 'string' || locale === '') return [];
+
+    const byLowerCase = new Map();
+    for (const loaded of this.loadedLocales) {
+      byLowerCase.set(String(loaded).toLowerCase(), loaded);
+    }
+
+    const candidates = [];
+    const parts = locale.replace(/_/g, '-').toLowerCase().split('-');
+    while (parts.length > 0) {
+      const match = byLowerCase.get(parts.join('-'));
+      if (match !== undefined && !candidates.includes(match)) {
+        candidates.push(match);
+      }
+      parts.pop();
+    }
+    return candidates;
+  }
+
+  /**
+   * Resolve a requested locale to a loaded one (`fr-FR` → `fr` when only
+   * `fr` is loaded), or `null` when neither it nor a parent is loaded.
+   *
+   * @param {string} locale
+   * @returns {string|null}
+   */
+  resolveLocale(locale) {
+    return this.localeCandidates(locale)[0] ?? null;
+  }
+
+  /**
    * Set current locale
-   * 
+   *
+   * Resolves to the closest loaded locale (`fr-FR` → `fr`); if neither it nor
+   * a parent is loaded, the fallback locale is used.
+   *
    * @param {string} locale - Locale code
    */
   setLocale(locale) {
-    if (!this.loadedLocales.has(locale)) {
+    const resolved = this.resolveLocale(locale);
+    if (resolved === null) {
       console.warn(`Locale ${locale} not loaded, using fallback`);
       this.currentLocale = this.options.fallbackLocale;
     } else {
-      this.currentLocale = locale;
+      this.currentLocale = resolved;
     }
   }
 
@@ -85,24 +181,72 @@ export class Translator {
   }
 
   /**
+   * Get a translator bound to one locale, without touching the shared
+   * instance's current locale.
+   *
+   * Use this on the server: `setLocale()` mutates `currentLocale`, which every
+   * concurrent request rendering with the same instance shares, so one
+   * request's locale leaks into another's output. A bound translator always
+   * passes its own locale. It reads the shared translations live, so
+   * translations added later are visible.
+   *
+   * The locale resolves like `setLocale()` (`fr-FR` → `fr`), falling back to
+   * the fallback locale — silently, since request locales are untrusted input.
+   *
+   * @param {string} locale - Requested locale (e.g. from Accept-Language)
+   * @param {{escape?: boolean}} [options] - `escape` default for this
+   *   translator's calls (defaults to the shared instance's `escape`)
+   * @returns {{ locale: string, t: Function, has: Function, getLocale: () => string }}
+   */
+  forLocale(locale, options = {}) {
+    const boundLocale = this.resolveLocale(locale) ?? this.options.fallbackLocale;
+
+    return {
+      locale: boundLocale,
+      t: (key, params = {}, localeOrOptions = null) => {
+        const callOptions = normalizeCallOptions(localeOrOptions);
+        return this.t(key, params, {
+          locale: callOptions.locale || boundLocale,
+          escape: callOptions.escape ?? options.escape ?? this.options.escape
+        });
+      },
+      has: (key, override = null) => this.has(key, override || boundLocale),
+      getLocale: () => boundLocale
+    };
+  }
+
+  /**
    * Translate a key
-   * 
+   *
    * @param {string} key - Translation key (supports dot notation)
    * @param {Object} [params] - Interpolation parameters
-   * @param {string} [locale] - Override locale
+   * @param {string|{locale?: string|null, escape?: boolean}|null} [localeOrOptions]
+   *   Override locale, or `{ locale, escape }`. `escape: true` HTML-escapes the
+   *   interpolated params (defaults to the translator's `escape` option).
    * @returns {string} Translated string
    */
-  t(key, params = {}, locale = null) {
-    const targetLocale = locale || this.currentLocale;
-    
-    // Get translation
-    let translation = this.getTranslation(key, targetLocale);
-    
-    // Fallback to default locale
-    if (translation === null && targetLocale !== this.options.fallbackLocale) {
-      translation = this.getTranslation(key, this.options.fallbackLocale);
+  t(key, params = {}, localeOrOptions = null) {
+    const callOptions = normalizeCallOptions(localeOrOptions);
+    const targetLocale = callOptions.locale || this.currentLocale;
+    const escape = callOptions.escape ?? this.options.escape;
+    params = params || {};
+
+    // Look the key up in the target locale, its parents (fr-FR → fr), then
+    // the fallback locale and its parents.
+    const chain = [
+      ...this.localeCandidates(targetLocale),
+      ...this.localeCandidates(this.options.fallbackLocale)
+    ];
+    let translation = null;
+    let messageLocale = targetLocale;
+    for (const candidate of chain) {
+      translation = this.getTranslation(key, candidate);
+      if (translation !== null) {
+        messageLocale = candidate;
+        break;
+      }
     }
-    
+
     // Handle missing translation
     if (translation === null) {
       if (this.options.missingKeyHandler) {
@@ -110,15 +254,19 @@ export class Translator {
       }
       return key;
     }
-    
-    // Handle pluralization
+
+    // Handle pluralization with the rules of the language the message is
+    // written in: English fallback text must not use Russian plural rules.
     if (typeof translation === 'object' && params.count !== undefined) {
-      translation = this.selectPlural(translation, params.count, targetLocale);
+      const pluralLocale = primaryLanguage(messageLocale) === primaryLanguage(targetLocale)
+        ? targetLocale
+        : messageLocale;
+      translation = this.selectPlural(translation, params.count, pluralLocale);
     }
     
     // Interpolate parameters
     if (typeof translation === 'string') {
-      return this.interpolate(translation, params);
+      return this.interpolate(translation, params, { escape });
     }
     
     return String(translation);
@@ -131,11 +279,13 @@ export class Translator {
     const translations = this.translations.get(locale);
     if (!translations) return null;
     
-    const keys = key.split('.');
+    const keys = String(key).split('.');
     let value = translations;
-    
+
     for (const k of keys) {
-      if (value && typeof value === 'object' && k in value) {
+      // Own properties only: `constructor`, `toString`, `__proto__` … are
+      // inherited from Object.prototype and are not translations.
+      if (value && typeof value === 'object' && Object.hasOwn(value, k)) {
         value = value[k];
       } else {
         return null;
@@ -156,10 +306,14 @@ export class Translator {
     
     // Use Intl.PluralRules for locale-specific pluralization
     if (typeof Intl !== 'undefined' && Intl.PluralRules) {
-      const rules = new Intl.PluralRules(locale);
-      const rule = rules.select(count);
-      
-      if (pluralObject[rule]) {
+      let rule;
+      try {
+        rule = new Intl.PluralRules(locale).select(count);
+      } catch {
+        // Not a valid BCP 47 tag (e.g. `en_US`): use the simple rules below.
+      }
+
+      if (rule !== undefined && pluralObject[rule]) {
         return pluralObject[rule];
       }
     }
@@ -176,17 +330,33 @@ export class Translator {
 
   /**
    * Interpolate parameters into string
+   *
+   * @param {string} str - Translation template (trusted; never escaped)
+   * @param {Object} params - Values for the placeholders
+   * @param {{escape?: boolean}} [options] - `escape: true` HTML-escapes each
+   *   value; defaults to the translator's `escape` option
    */
-  interpolate(str, params) {
+  interpolate(str, params, options = {}) {
+    if (!params || typeof params !== 'object') return str;
+
+    const escape = options.escape ?? this.options.escape;
+    const format = escape ? escapeHtml : String;
+
+    const names = Object.keys(params);
+    if (names.length === 0) return str;
+
     const { prefix, suffix } = this.options.interpolation;
-    let result = str;
-    
-    for (const [key, value] of Object.entries(params)) {
-      const placeholder = `${prefix}${key}${suffix}`;
-      result = result.replace(new RegExp(placeholder, 'g'), String(value));
-    }
-    
-    return result;
+    // Longest names first, so `{{ab}}` is never read as `{{a}}` + `b}}`.
+    const alternatives = names
+      .sort((a, b) => b.length - a.length)
+      .map(escapeRegExp)
+      .join('|');
+    const pattern = new RegExp(`${escapeRegExp(prefix)}(${alternatives})${escapeRegExp(suffix)}`, 'g');
+
+    // One pass with a replacer function: `$&`, `$'` or `$$` in a value are
+    // inserted literally, and a value that itself contains a placeholder is
+    // not interpolated a second time.
+    return str.replace(pattern, (_match, name) => format(params[name]));
   }
 
   /**
@@ -198,7 +368,9 @@ export class Translator {
    */
   has(key, locale = null) {
     const targetLocale = locale || this.currentLocale;
-    return this.getTranslation(key, targetLocale) !== null;
+    // The locale and its parents (fr-FR → fr), but not the fallback locale.
+    return this.localeCandidates(targetLocale)
+      .some(candidate => this.getTranslation(key, candidate) !== null);
   }
 
   /**

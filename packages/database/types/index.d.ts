@@ -104,13 +104,32 @@ export type DatabaseSpecificConfig =
   | MongoDBConfig
   | MemoryConfig;
 
+/** A custom adapter object passed as `config.adapter` instead of a `type`. */
+export interface CustomAdapter {
+  createPool(config: DatabaseConfig): Promise<unknown>;
+  testConnection?(pool: unknown): Promise<unknown>;
+  ping?(): Promise<unknown>;
+  query?(pool: unknown, sql: string, params?: any[], options?: Record<string, unknown>): Promise<any>;
+  transaction?(pool: unknown, options?: TransactionOptions): Promise<Transaction>;
+  getPoolStats?(pool: unknown): PoolStats;
+  closePool?(pool: unknown): Promise<void>;
+  disconnect?(): Promise<void>;
+  [key: string]: any;
+}
+
 /** Database configuration options */
 export interface DatabaseConfig {
-  type: DatabaseType;
+  /** Built-in adapter to use; required unless `adapter` is given. */
+  type?: DatabaseType;
+  /** Custom adapter used instead of `type`. */
+  adapter?: CustomAdapter;
+  /** Store options for a custom adapter (a string is the store name). */
+  store?: string | { name?: string; [key: string]: unknown };
   host?: string;
   port?: number;
   username?: string;
   password?: string;
+  /** Database name (file path for SQLite); required for every type but `memory`. */
   database?: string;
   synchronize?: boolean;
   logging?: boolean | ((sql: string, parameters?: any[]) => void);
@@ -120,6 +139,10 @@ export interface DatabaseConfig {
   ssl?: boolean | object;
   extra?: object;
   autoConnect?: boolean;
+  /** Log every query. */
+  debug?: boolean;
+  /** Open SQLite read-only. */
+  readonly?: boolean;
   /** Connection URL (MongoDB) */
   url?: string;
   /** Driver client options (MongoDB) */
@@ -130,19 +153,36 @@ export interface DatabaseConfig {
   timezone?: string;
   charset?: string;
   pool?: PoolConfig;
+  /** Run a periodic connection test after connect() (default true); emits `healthCheck` events. */
+  healthCheck?: boolean;
+  /** Milliseconds between health checks (default 30000). */
+  healthCheckInterval?: number;
 }
 
 /** Database connection pool configuration */
 export interface PoolConfig {
   min?: number;
   max?: number;
-  acquire?: number;
-  idle?: number;
-  evict?: number;
-  handleDisconnects?: boolean;
+  acquireTimeoutMillis?: number;
+  createTimeoutMillis?: number;
+  destroyTimeoutMillis?: number;
+  idleTimeoutMillis?: number;
+  reapIntervalMillis?: number;
+  createRetryIntervalMillis?: number;
 }
 
-/** Database connection interface */
+/** Pool statistics reported by an adapter. */
+export interface PoolStats {
+  total: number;
+  available: number;
+  acquired: number;
+  waiting: number;
+}
+
+/**
+ * @deprecated Describes an API that does not exist at runtime. `createConnection()`
+ * resolves to a connected {@link DatabaseManager}.
+ */
 export interface DatabaseConnection {
   readonly isConnected: boolean;
   readonly config: DatabaseConfig;
@@ -156,25 +196,29 @@ export interface DatabaseConnection {
   ping(): Promise<boolean>;
 }
 
-/**
- * Database transaction interface.
- * Supports nested transactions via savepoints.
- */
-export interface Transaction {
-  query<T = any>(sql: string, parameters?: any[]): Promise<T>;
-  commit(): Promise<void>;
-  rollback(): Promise<void>;
-  /** Create a savepoint for nested transaction */
-  savepoint(name: string): Promise<void>;
-  /** Release a savepoint */
-  release(name: string): Promise<void>;
-  /** Rollback to a savepoint */
-  rollbackTo(name: string): Promise<void>;
-  /** Whether transaction is still active */
-  readonly isActive: boolean;
+/** Transaction isolation levels */
+export type TransactionIsolation =
+  | 'READ UNCOMMITTED'
+  | 'READ COMMITTED'
+  | 'REPEATABLE READ'
+  | 'SERIALIZABLE';
+
+/** Options for `db.transaction()` and `withTransaction()`. */
+export interface TransactionOptions {
+  /** One of the four standard levels (any case); anything else throws. */
+  isolationLevel?: TransactionIsolation | Lowercase<TransactionIsolation> | null;
+  readOnly?: boolean;
 }
 
-/** Database manager interface */
+/** A database transaction, as returned by `db.transaction()`. */
+export interface Transaction {
+  query<T = any>(sql: string, parameters?: any[]): Promise<QueryResult<T>>;
+  commit(): Promise<void>;
+  rollback(): Promise<void>;
+  readonly isCommitted: boolean;
+  readonly isRolledBack: boolean;
+}
+
 /** Minimal surface of a document-store collection (the MongoDB driver Collection). */
 export interface DocumentCollection {
   insertOne(doc: Record<string, unknown>): Promise<{ insertedId: unknown }>;
@@ -184,50 +228,82 @@ export interface DocumentCollection {
   createIndex(spec: Record<string, unknown>, options?: Record<string, unknown>): Promise<string>;
 }
 
-export interface DatabaseManager {
-  readonly connections: Map<string, DatabaseConnection>;
-  readonly config: DatabaseConfig;
-  initialized: boolean;
+/** Statistics from `db.getStats()`. */
+export interface DatabaseStats {
+  totalConnections: number;
+  activeConnections: number;
+  failedConnections: number;
+  queriesExecuted: number;
+  averageQueryTime: number;
+  lastHealthCheck: Date | null;
+  isConnected: boolean;
+  poolStats: PoolStats | null;
+}
 
-  connect(): Promise<void>;
+/**
+ * Database manager (an EventEmitter): emits `query`, `queryError`, `connect:test`,
+ * `healthCheck`, `disconnected`, and `error` when a listener is attached.
+ */
+export interface DatabaseManager {
+  readonly config: DatabaseConfig;
+  readonly isConnected: boolean;
+  /** Delay between connection attempts, in milliseconds (default 2000). */
+  retryDelay: number;
+  maxRetries: number;
+
+  /** Connect, retrying up to `maxRetries` times. */
+  connect(): Promise<DatabaseManager | void>;
+  /** Run a query: SQL with `?` placeholders (or an operation name for the memory adapter). */
+  query<T = any>(sql: string, params?: any[] | Record<string, unknown>): Promise<QueryResult<T>>;
+  /** Start a transaction. */
+  transaction(options?: TransactionOptions): Promise<Transaction>;
+  /** Run a callback in a transaction: committed when it resolves, rolled back when it throws. */
+  transaction<R>(callback: (trx: Transaction) => Promise<R>, options?: TransactionOptions): Promise<R>;
   /** Document-store collection access (MongoDB adapter only; throws otherwise). */
   collection(name: string): DocumentCollection;
+  testConnection(): Promise<void>;
+  getStats(): DatabaseStats;
   close(): Promise<void>;
-  disconnect(): Promise<void>;
-  getConnection(name?: string): DatabaseConnection;
-  addConnection(name: string, connection: DatabaseConnection): void;
-  removeConnection(name: string): Promise<void>;
-  transaction<T>(callback: (trx: Transaction) => Promise<T>, connectionName?: string): Promise<T>;
-  destroy(): Promise<void>;
+
+  on(event: string, listener: (...args: any[]) => void): this;
+  once(event: string, listener: (...args: any[]) => void): this;
+  off(event: string, listener: (...args: any[]) => void): this;
+  emit(event: string, ...args: any[]): boolean;
 }
 
 // ============================================================================
 // Query Builder Types
 // ============================================================================
 
-/** SQL operators for where conditions */
-export type SqlOperator =
+/** Operators accepted in WHERE operator objects (matched case-insensitively). */
+type BaseSqlOperator =
   | '=' | '!=' | '<>' | '>' | '>=' | '<' | '<='
   | 'LIKE' | 'NOT LIKE' | 'ILIKE' | 'NOT ILIKE'
-  | 'IN' | 'NOT IN' | 'BETWEEN' | 'NOT BETWEEN'
-  | 'IS NULL' | 'IS NOT NULL'
-  | 'EXISTS' | 'NOT EXISTS'
-  | 'REGEXP' | 'NOT REGEXP';
+  | 'IN' | 'NOT IN' | 'BETWEEN' | 'NOT BETWEEN';
 
-/** Where condition value */
-export type WhereValue =
-  | string | number | boolean | Date | null
-  | any[]
-  | { [K in SqlOperator]?: any }
-  | QueryConfig;
+/** SQL operators for where conditions */
+export type SqlOperator = BaseSqlOperator | Lowercase<BaseSqlOperator>;
 
-/** Where conditions object */
-export interface WhereConditions {
-  [column: string]: WhereValue | WhereConditions;
-  AND?: WhereConditions | WhereConditions[];
-  OR?: WhereConditions | WhereConditions[];
-  NOT?: WhereConditions;
-}
+/** A single value compared with `=` (or `IS NULL` for null). */
+export type WhereScalar = string | number | bigint | boolean | Date | Uint8Array | null;
+
+/**
+ * Operator object: `{ '>': 18 }`, `{ in: [1, 2] }`, `{ between: [1, 10] }`.
+ * Unknown operators and undefined operands throw.
+ */
+export type WhereOperators = { [K in SqlOperator]?: WhereScalar | WhereScalar[] };
+
+/** Where condition value. `undefined` throws; arrays must go through `{ in: [...] }`. */
+export type WhereValue = WhereScalar | WhereOperators;
+
+/** Where conditions object: columns are ANDed together. */
+export type WhereConditions = {
+  [column: string]: WhereValue | WhereConditions | WhereConditions[];
+} & {
+  $or?: WhereConditions[];
+  $and?: WhereConditions[];
+  $not?: WhereConditions;
+};
 
 /** Order by direction */
 export type OrderDirection = 'ASC' | 'DESC' | 'asc' | 'desc';
@@ -237,77 +313,89 @@ export interface OrderByConfig {
   [column: string]: OrderDirection;
 }
 
+type BaseJoinType = 'INNER' | 'LEFT' | 'RIGHT' | 'FULL' | 'CROSS' | 'LEFT OUTER' | 'RIGHT OUTER' | 'FULL OUTER';
+
 /** Join types */
-export type JoinType = 'INNER' | 'LEFT' | 'RIGHT' | 'FULL' | 'CROSS';
+export type JoinType = BaseJoinType | Lowercase<BaseJoinType>;
 
 /** Join configuration */
 export interface JoinConfig {
   type?: JoinType;
   table: string;
-  on: string | WhereConditions;
+  alias?: string;
+  /** Column comparisons joined with AND, e.g. `'users.id = posts.user_id'`. Not used for CROSS joins. */
+  condition?: string;
+  /** Alias of `condition`. */
+  on?: string;
+}
+
+/** @deprecated Not supported by the query builder; `groupBy` throws. */
+export type GroupByConfig = string | string[];
+
+/** @deprecated Not supported by the query builder; `having` throws. */
+export type HavingConditions = WhereConditions;
+
+/** A table with an optional alias (aliases are only allowed in SELECT queries). */
+export interface TableReference {
+  table: string;
   alias?: string;
 }
 
-/** Group by configuration */
-export type GroupByConfig = string | string[];
-
-/** Having conditions */
-export interface HavingConditions extends WhereConditions {}
-
-/** Query configuration object */
+/**
+ * Query configuration object.
+ *
+ * Identifiers must be `name` or `table.name`; unknown options throw.
+ * UPDATE and DELETE require a non-empty `where` unless `allowFullTable` is true.
+ */
 export interface QueryConfig {
-  table?: string;
+  table?: string | TableReference;
+  /** Alias of `table`. */
+  from?: string | TableReference;
+  /** Alias for `table` in SELECT queries. */
   alias?: string;
+  /** Columns, `*`, `table.*`, or `COUNT|SUM|AVG|MIN|MAX(column)`, each optionally `AS alias`. */
   select?: string | string[] | SelectConfig;
-  distinct?: boolean;
+  joins?: JoinConfig[];
   where?: WhereConditions;
-  join?: JoinConfig | JoinConfig[];
-  leftJoin?: JoinConfig | JoinConfig[];
-  rightJoin?: JoinConfig | JoinConfig[];
-  innerJoin?: JoinConfig | JoinConfig[];
-  fullJoin?: JoinConfig | JoinConfig[];
-  groupBy?: GroupByConfig;
-  having?: HavingConditions;
-  orderBy?: string | string[] | OrderByConfig;
+  orderBy?: string | Array<string | OrderByConfig> | OrderByConfig;
+  /** Non-negative integer; 0 means no limit. */
   limit?: number;
+  /** Non-negative integer. */
   offset?: number;
   insert?: Record<string, any> | Record<string, any>[];
   update?: Record<string, any>;
-  upsert?: Record<string, any>;
   delete?: boolean;
+  /** Columns for a RETURNING clause on insert, update or delete. */
   returning?: string | string[];
-  with?: WithConfig | WithConfig[];
-  union?: QueryConfig[];
-  unionAll?: QueryConfig[];
-  forUpdate?: boolean;
-  forShare?: boolean;
-  skipLocked?: boolean;
-  noWait?: boolean;
+  /** Allow an UPDATE or DELETE without a WHERE clause (affects every row). */
+  allowFullTable?: boolean;
 }
 
-/** Select configuration with column aliasing */
+/** Select configuration with column aliasing: `{ alias: 'column' }` → `column AS alias`. */
 export interface SelectConfig {
   [alias: string]: string;
 }
 
-/** WITH clause configuration for CTEs */
+/** @deprecated Not supported by the query builder. */
 export interface WithConfig {
   name: string;
   query: QueryConfig;
   recursive?: boolean;
 }
 
-/** SQL query result */
+/** Anything with a `query(sql, params)` method, such as a DatabaseManager or a transaction. */
+export interface QueryExecutor {
+  query(sql: string, params?: any[]): Promise<any>;
+}
+
+/** SQL query result, as returned by the SQL adapters. */
 export interface QueryResult<T = any> {
-  sql: string;
-  params: any[];
-  result?: T;
-  rows?: T[];
+  rows: T[];
   rowCount?: number;
-  fields?: FieldInfo[];
-  insertId?: number | string;
+  /** Rows changed by an INSERT, UPDATE or DELETE. */
   affectedRows?: number;
-  changedRows?: number;
+  /** Generated key of an INSERT, when the driver reports one. */
+  insertId?: number | string | null;
 }
 
 /** Field information */
@@ -325,12 +413,80 @@ export interface FieldInfo {
 // Model Types
 // ============================================================================
 
+/** Attribute options of a `createModel` definition. */
+export interface ModelAttributeDefinition {
+  type?: string;
+  required?: boolean;
+  default?: unknown;
+  primaryKey?: boolean;
+  autoIncrement?: boolean;
+  [option: string]: unknown;
+}
+
+/** Model definition passed to `registerModel()`. */
+export interface ModelDefinition<T extends Record<string, any> = Record<string, any>> {
+  tableName: string;
+  primaryKey?: string;
+  attributes: Record<string, ModelAttributeDefinition>;
+  /** Instance methods, bound to each record. */
+  methods?: Record<string, (this: ModelRecord<T>, ...args: any[]) => any>;
+  /** Static methods, bound to the registered model. */
+  statics?: Record<string, (this: RegisteredModel<T>, ...args: any[]) => any>;
+  [option: string]: unknown;
+}
+
+/** A record returned by a registered model: its columns plus save(), delete() and the definition's methods. */
+export type ModelRecord<T extends Record<string, any> = Record<string, any>> = T & {
+  /** Insert the record, or update it when it has a primary key. */
+  save(): Promise<ModelRecord<T>>;
+  /** Delete the record; resolves to the number of rows deleted. */
+  delete(): Promise<number>;
+  [member: string]: any;
+};
+
+/** A model registered with `createModel(db).registerModel()`. */
+export interface RegisteredModel<T extends Record<string, any> = Record<string, any>> {
+  readonly name: string;
+  readonly tableName: string;
+  readonly primaryKey?: string;
+  readonly db: QueryExecutor;
+
+  /** Run a query on the model's table; queries with `select` resolve to records, others to the driver result. */
+  query(config: QueryConfig): Promise<any>;
+  find(id: unknown): Promise<ModelRecord<T> | null>;
+  all(): Promise<ModelRecord<T>[]>;
+  where(config: QueryConfig): Promise<any>;
+  create(attributes: Partial<T>): Promise<ModelRecord<T>>;
+  /** Resolves to the number of rows the driver reports as changed. */
+  updateWhere(conditions: WhereConditions, updates: Partial<T>): Promise<number>;
+  /** Resolves to the number of rows the driver reports as deleted. */
+  deleteWhere(conditions: WhereConditions): Promise<number>;
+
+  /** Static methods from the definition. */
+  [staticMethod: string]: any;
+}
+
+/** Model registry returned by `createModel(db)`. */
+export interface ModelRegistry {
+  registerModel<T extends Record<string, any> = Record<string, any>>(
+    name: string,
+    definition: ModelDefinition<T>
+  ): RegisteredModel<T>;
+  /** Run one query per registered model: `{ User: { select: '*' }, Post: { ... } }`. */
+  execute(queries: Record<string, QueryConfig>): Promise<Record<string, any>>;
+  getModel<T extends Record<string, any> = Record<string, any>>(name: string): RegisteredModel<T> | undefined;
+}
+
 /**
  * Field type definitions for model schema.
+ * @deprecated Part of the declared-but-unimplemented `Model` API.
  */
 export type FieldType = 'string' | 'number' | 'boolean' | 'date' | 'json' | 'array' | 'object' | 'uuid' | 'bigint' | 'decimal';
 
-/** Model field definition */
+/**
+ * Model field definition
+ * @deprecated Part of the declared-but-unimplemented `Model` API; see {@link ModelDefinition}.
+ */
 export interface FieldDefinition {
   type: FieldType;
   required?: boolean;
@@ -352,15 +508,24 @@ export interface FieldDefinition {
   references?: { table: string; column: string };
 }
 
-/** Model schema definition */
+/**
+ * Model schema definition
+ * @deprecated Part of the declared-but-unimplemented `Model` API.
+ */
 export interface ModelSchema {
   [field: string]: FieldDefinition;
 }
 
-/** Relation types */
+/**
+ * Relation types
+ * @deprecated Part of the declared-but-unimplemented `Model` API.
+ */
 export type RelationType = 'hasOne' | 'hasMany' | 'belongsTo' | 'belongsToMany';
 
-/** Relation definition */
+/**
+ * Relation definition
+ * @deprecated Part of the declared-but-unimplemented `Model` API.
+ */
 export interface RelationDefinition {
   type: RelationType;
   model: string;
@@ -373,7 +538,10 @@ export interface RelationDefinition {
   as?: string;
 }
 
-/** Model configuration */
+/**
+ * Model configuration
+ * @deprecated Describes an API that does not exist at runtime; see {@link ModelDefinition}.
+ */
 export interface ModelConfig<T extends Record<string, any> = Record<string, any>> {
   table: string;
   schema: ModelSchema;
@@ -390,7 +558,10 @@ export interface ModelConfig<T extends Record<string, any> = Record<string, any>
   validators?: Record<string, (value: any, instance: ModelInstance<T>) => boolean | string>;
 }
 
-/** Model lifecycle hooks */
+/**
+ * Model lifecycle hooks
+ * @deprecated Part of the declared-but-unimplemented `Model` API.
+ */
 export interface ModelHooks<T extends Record<string, any> = Record<string, any>> {
   beforeSave?: (instance: ModelInstance<T>) => void | Promise<void>;
   afterSave?: (instance: ModelInstance<T>) => void | Promise<void>;
@@ -406,6 +577,7 @@ export interface ModelHooks<T extends Record<string, any> = Record<string, any>>
 
 /**
  * Model instance interface with generic type support.
+ * @deprecated Describes an API that does not exist at runtime; see {@link ModelRecord}.
  * Type parameter T represents the model's attribute shape.
  */
 export interface ModelInstance<T extends Record<string, any> = Record<string, any>> {
@@ -448,6 +620,7 @@ export interface ModelInstance<T extends Record<string, any> = Record<string, an
 
 /**
  * Model query builder interface with full generic chaining.
+ * @deprecated Describes an API that does not exist at runtime; use {@link executeQuery}.
  * Type parameter T flows through all query methods to the results.
  *
  * @example
@@ -535,6 +708,7 @@ export interface ModelQuery<T extends Record<string, any> = Record<string, any>>
 
 /**
  * Model class interface with generic type support.
+ * @deprecated Describes an API that does not exist at runtime; see {@link RegisteredModel}.
  *
  * @example
  * ```typescript
@@ -591,7 +765,10 @@ export interface Model<T extends Record<string, any> = Record<string, any>> {
   emit(event: string, ...args: any[]): boolean;
 }
 
-/** Pagination result with typed data */
+/**
+ * Pagination result with typed data
+ * @deprecated Part of the declared-but-unimplemented `Model` API.
+ */
 export interface PaginationResult<T extends Record<string, any> = Record<string, any>> {
   data: ModelInstance<T>[];
   total: number;
@@ -604,7 +781,10 @@ export interface PaginationResult<T extends Record<string, any> = Record<string,
   hasPrevPage: boolean;
 }
 
-/** Simple pagination result with typed data */
+/**
+ * Simple pagination result with typed data
+ * @deprecated Part of the declared-but-unimplemented `Model` API.
+ */
 export interface SimplePaginationResult<T extends Record<string, any> = Record<string, any>> {
   data: ModelInstance<T>[];
   perPage: number;
@@ -617,7 +797,90 @@ export interface SimplePaginationResult<T extends Record<string, any> = Record<s
 // Migration Types
 // ============================================================================
 
-/** Migration configuration */
+/** DDL dialect used by migrations. */
+export type MigrationDialect = 'postgresql' | 'mysql' | 'sqlite';
+
+/** A migration: the `up` / `down` exports of a migration file, or an entry of `migrations`. */
+export interface MigrationDefinition {
+  name: string;
+  up?: (schema: SchemaBuilder) => Promise<unknown> | unknown;
+  down?: (schema: SchemaBuilder) => Promise<unknown> | unknown;
+}
+
+/** Options for `createMigration()` and `runMigrations()`. */
+export interface MigrationOptions {
+  /** Directory of migration files, relative to the working directory (default './migrations'). */
+  directory?: string;
+  /** Tracking table (default 'coherent_migrations'). */
+  tableName?: string;
+  /** DDL dialect; defaults to the manager's `config.type`, else SQLite. */
+  dialect?: MigrationDialect;
+  /** Run each migration in a transaction (default true). */
+  transactional?: boolean;
+}
+
+/** Entry of `createMigration(db).status()`. */
+export interface MigrationFileStatus {
+  name: string;
+  applied: boolean;
+  file: string;
+}
+
+/** Migration runner returned by `createMigration()`. */
+export interface MigrationRunner {
+  /** Create the tracking table and load applied and available migrations. */
+  initialize(): Promise<void>;
+  /** Apply pending migrations in one batch; resolves to their names. */
+  run(options?: { continueOnError?: boolean }): Promise<string[]>;
+  /** Roll back the last `steps` batches (default 1); resolves to the names rolled back. */
+  rollback(steps?: number): Promise<string[]>;
+  status(): Promise<MigrationFileStatus[]>;
+  /** Write a new migration file; resolves to its path. */
+  create(name: string, options?: { table?: string }): Promise<string>;
+}
+
+/** Schema builder passed to a migration's `up` / `down`. */
+export interface SchemaBuilder {
+  createTable(name: string, callback: (table: TableBuilder) => void): Promise<unknown>;
+  alterTable(name: string, callback: (table: TableBuilder) => void): Promise<unknown>;
+  dropTable(name: string): Promise<unknown>;
+  raw(sql: string, params?: any[]): Promise<any>;
+}
+
+/** Table builder used in `createTable` / `alterTable` callbacks. */
+export interface TableBuilder {
+  /** Auto-incrementing integer primary key (default name 'id'). */
+  id(name?: string): TableBuilder;
+  string(name: string, length?: number): ColumnBuilder;
+  text(name: string): ColumnBuilder;
+  integer(name: string): ColumnBuilder;
+  boolean(name: string): ColumnBuilder;
+  datetime(name: string): ColumnBuilder;
+  /** created_at and updated_at datetime columns. */
+  timestamps(): TableBuilder;
+  addColumn(name: string, type: string): TableBuilder;
+  dropColumn(name: string): TableBuilder;
+  toCreateSQL(): string;
+  toAlterSQL(): string[];
+}
+
+/** Column modifiers. */
+export interface ColumnBuilder {
+  notNull(): ColumnBuilder;
+  unique(): ColumnBuilder;
+  /** Literal default; strings are quoted and escaped. */
+  default(value: string | number | bigint | boolean | Date | null): ColumnBuilder;
+  /** SQL expression default, e.g. `defaultRaw('CURRENT_TIMESTAMP')`; not escaped. */
+  defaultRaw(expression: string): ColumnBuilder;
+  /** Foreign key to `'table.column'`. */
+  references(foreignKey: string): ColumnBuilder;
+}
+
+/**
+ * Migration configuration
+ * @deprecated Describes an API that does not exist at runtime; see {@link MigrationDefinition}
+ * and {@link MigrationOptions}.
+ */
 export interface MigrationConfig {
   name: string;
   version: string;
@@ -627,82 +890,7 @@ export interface MigrationConfig {
   dependencies?: string[];
 }
 
-/** Schema builder for migrations */
-export interface SchemaBuilder {
-  createTable(name: string, callback: (table: TableBuilder) => void): void;
-  alterTable(name: string, callback: (table: TableBuilder) => void): void;
-  dropTable(name: string): void;
-  dropTableIfExists(name: string): void;
-  renameTable(oldName: string, newName: string): void;
-  hasTable(name: string): Promise<boolean>;
-  createIndex(table: string, columns: string | string[], options?: IndexOptions): void;
-  dropIndex(table: string, indexName: string): void;
-  raw(sql: string): void;
-}
-
-/** Table builder for schema modifications */
-export interface TableBuilder {
-  increments(name?: string): ColumnBuilder;
-  bigIncrements(name?: string): ColumnBuilder;
-  string(name: string, length?: number): ColumnBuilder;
-  text(name: string): ColumnBuilder;
-  mediumText(name: string): ColumnBuilder;
-  longText(name: string): ColumnBuilder;
-  integer(name: string): ColumnBuilder;
-  smallInteger(name: string): ColumnBuilder;
-  tinyInteger(name: string): ColumnBuilder;
-  bigInteger(name: string): ColumnBuilder;
-  float(name: string, precision?: number, scale?: number): ColumnBuilder;
-  double(name: string, precision?: number, scale?: number): ColumnBuilder;
-  decimal(name: string, precision?: number, scale?: number): ColumnBuilder;
-  boolean(name: string): ColumnBuilder;
-  date(name: string): ColumnBuilder;
-  datetime(name: string): ColumnBuilder;
-  timestamp(name: string): ColumnBuilder;
-  timestamps(useTimestamps?: boolean, defaultToNow?: boolean): void;
-  softDeletes(columnName?: string): ColumnBuilder;
-  json(name: string): ColumnBuilder;
-  jsonb(name: string): ColumnBuilder;
-  uuid(name: string): ColumnBuilder;
-  binary(name: string, length?: number): ColumnBuilder;
-  enum(name: string, values: string[]): ColumnBuilder;
-
-  primary(columns: string | string[]): void;
-  index(columns: string | string[], options?: IndexOptions): void;
-  unique(columns: string | string[], options?: IndexOptions): void;
-  foreign(columns: string | string[]): ForeignKeyBuilder;
-
-  dropColumn(name: string): void;
-  dropColumns(...names: string[]): void;
-  renameColumn(oldName: string, newName: string): void;
-  dropPrimary(): void;
-  dropIndex(indexName: string): void;
-  dropUnique(indexName: string): void;
-  dropForeign(keyName: string): void;
-
-  comment(text: string): void;
-  engine(engine: string): void;
-  charset(charset: string): void;
-  collate(collation: string): void;
-}
-
-/** Column builder for schema modifications */
-export interface ColumnBuilder {
-  nullable(isNullable?: boolean): ColumnBuilder;
-  notNullable(): ColumnBuilder;
-  defaultTo(value: any): ColumnBuilder;
-  unsigned(): ColumnBuilder;
-  primary(): ColumnBuilder;
-  unique(indexName?: string): ColumnBuilder;
-  index(indexName?: string): ColumnBuilder;
-  references(column: string): ForeignKeyBuilder;
-  comment(text: string): ColumnBuilder;
-  alter(): ColumnBuilder;
-  after(columnName: string): ColumnBuilder;
-  first(): ColumnBuilder;
-}
-
-/** Foreign key builder */
+/** @deprecated Not supported by the table builder. */
 export interface ForeignKeyBuilder {
   references(column: string): ForeignKeyBuilder;
   inTable(table: string): ForeignKeyBuilder;
@@ -711,10 +899,10 @@ export interface ForeignKeyBuilder {
   deferrable(type?: 'not deferrable' | 'immediate' | 'deferred'): ForeignKeyBuilder;
 }
 
-/** Foreign key actions */
+/** @deprecated Not supported by the table builder. */
 export type ForeignKeyAction = 'CASCADE' | 'SET NULL' | 'SET DEFAULT' | 'RESTRICT' | 'NO ACTION';
 
-/** Index options */
+/** @deprecated Not supported by the table builder. */
 export interface IndexOptions {
   indexName?: string;
   indexType?: 'btree' | 'hash' | 'gist' | 'gin' | 'spgist' | 'brin';
@@ -723,7 +911,10 @@ export interface IndexOptions {
   where?: string;
 }
 
-/** Migration interface */
+/**
+ * Migration interface
+ * @deprecated Describes an API that does not exist at runtime; see {@link MigrationRunner}.
+ */
 export interface Migration {
   readonly name: string;
   readonly version: string;
@@ -740,7 +931,59 @@ export interface Migration {
 // Database Adapter Types
 // ============================================================================
 
-/** Database adapter interface */
+/** Adapter created by `PostgreSQLAdapter()` / `MySQLAdapter()`. */
+export interface PooledSQLAdapter {
+  createPool(config: DatabaseConfig): Promise<unknown>;
+  testConnection(pool: unknown): Promise<void>;
+  query<T = any>(pool: unknown, sql: string, params?: any[], options?: { single?: boolean }): Promise<QueryResult<T>>;
+  transaction(pool: unknown, options?: TransactionOptions): Promise<Transaction>;
+  getPoolStats(pool: unknown): PoolStats;
+  closePool(pool: unknown): Promise<void>;
+}
+
+/** Adapter created by `SQLiteAdapter()`. */
+export interface SQLiteAdapterInstance {
+  connect(config: DatabaseConfig): Promise<SQLiteAdapterInstance>;
+  query<T = any>(sql: string, params?: any[]): Promise<QueryResult<T>>;
+  execute(sql: string, params?: any[]): Promise<{ affectedRows: number; insertId: number }>;
+  transaction(pool?: unknown, options?: { mode?: 'DEFERRED' | 'IMMEDIATE' | 'EXCLUSIVE' }): Promise<Transaction>;
+  getPoolStats(): PoolStats;
+  disconnect(): Promise<void>;
+  ping(): Promise<boolean>;
+  escape(value: unknown): string;
+  [method: string]: any;
+}
+
+/** Transaction returned by the MongoDB adapter. */
+export interface MongoDBTransaction {
+  readonly session: unknown;
+  readonly isCommitted: boolean;
+  readonly isRolledBack: boolean;
+  /** Runs `find` inside the transaction. */
+  query<T = any>(collection: string, filter?: Record<string, unknown>, options?: Record<string, unknown>): Promise<T[]>;
+  /** Raw collection: pass `{ session: tx.session }` to its operations. */
+  collection(name: string): DocumentCollection;
+  commit(): Promise<void>;
+  rollback(): Promise<void>;
+}
+
+/** Adapter created by `MongoDBAdapter()`. */
+export interface MongoDBAdapterInstance {
+  connect(config: DatabaseConfig): Promise<MongoDBAdapterInstance>;
+  query<T = any>(collection: string, filter?: Record<string, unknown>, options?: Record<string, unknown>): Promise<T[]>;
+  collection(name: string): DocumentCollection;
+  transaction(pool?: unknown, options?: Record<string, unknown>): Promise<MongoDBTransaction>;
+  disconnect(): Promise<void>;
+  closePool(): Promise<void>;
+  ping(): Promise<boolean>;
+  [method: string]: any;
+}
+
+/**
+ * Database adapter interface
+ * @deprecated Describes an API that does not exist at runtime; see {@link PooledSQLAdapter},
+ * {@link SQLiteAdapterInstance} and {@link MongoDBAdapterInstance}.
+ */
 export interface DatabaseAdapter {
   readonly type: string;
   readonly connection: DatabaseConnection;
@@ -756,7 +999,7 @@ export interface DatabaseAdapter {
   supportsFeature(feature: DatabaseFeature): boolean;
 }
 
-/** Database features */
+/** @deprecated Part of the deprecated {@link DatabaseAdapter} interface. */
 export type DatabaseFeature =
   | 'transactions'
   | 'savepoints'
@@ -773,49 +1016,70 @@ export type DatabaseFeature =
 // Middleware Types
 // ============================================================================
 
-/** Database middleware options */
+/**
+ * Middleware returned by the `with*` helpers. `next` is optional: routers that run
+ * middleware without it (such as the Coherent.js API router) continue on their own.
+ */
+export type DatabaseMiddleware = (req: any, res: any, next?: (error?: unknown) => unknown) => Promise<unknown>;
+
+/** Options for `withDatabase()`. */
 export interface DatabaseMiddlewareOptions {
-  connection?: string;
-  transaction?: boolean;
-  readonly?: boolean;
-  timeout?: number;
+  /** Connect on the first request if needed (default true). */
+  autoConnect?: boolean;
+  /** Attach `db.models` as `req.models` when present (default true). */
+  attachModels?: boolean;
 }
 
-/** Transaction middleware options */
-export interface TransactionMiddlewareOptions {
-  connection?: string;
-  isolation?: TransactionIsolation;
-  readonly?: boolean;
-  deferrable?: boolean;
-}
+/** Options for `withTransaction()`. */
+export type TransactionMiddlewareOptions = TransactionOptions;
 
-/** Transaction isolation levels */
-export type TransactionIsolation =
-  | 'READ UNCOMMITTED'
-  | 'READ COMMITTED'
-  | 'REPEATABLE READ'
-  | 'SERIALIZABLE';
-
-/** Model middleware options */
+/**
+ * @deprecated `withModel(ModelClass, paramName?, requestKey?)` takes positional arguments.
+ */
 export interface ModelMiddlewareOptions<T extends Record<string, any> = Record<string, any>> {
   model: string | Model<T>;
   connection?: string;
   as?: string;
 }
 
-/** Pagination middleware options */
+/** Options for `withPagination()`. */
 export interface PaginationMiddlewareOptions {
-  defaultPerPage?: number;
-  maxPerPage?: number;
-  pageKey?: string;
-  perPageKey?: string;
+  /** Default page size (default 20). */
+  defaultLimit?: number;
+  /** Largest page size accepted (default 100). */
+  maxLimit?: number;
+  /** Query parameter holding the page number (default 'page'). */
+  pageParam?: string;
+  /** Query parameter holding the page size (default 'limit'). */
+  limitParam?: string;
+}
+
+/** `req.pagination` set by `withPagination()`. */
+export interface PaginationInfo {
+  page: number;
+  limit: number;
+  offset: number;
+  hasNext: boolean | null;
+  hasPrev: boolean;
+  totalPages: number | null;
+  totalCount: number | null;
+}
+
+/** A model that `withModel()` can load: anything with a static `find(id)`. */
+export interface FindableModel {
+  readonly name?: string;
+  readonly tableName?: string;
+  find(id: string): Promise<unknown>;
 }
 
 // ============================================================================
 // Utility Types
 // ============================================================================
 
-/** Connection string parser result */
+/**
+ * Connection string parser result
+ * @deprecated Not used by any runtime API.
+ */
 export interface ConnectionInfo {
   type: string;
   host?: string;
@@ -826,7 +1090,10 @@ export interface ConnectionInfo {
   options?: Record<string, any>;
 }
 
-/** Migration status */
+/**
+ * Migration status
+ * @deprecated See {@link MigrationFileStatus}.
+ */
 export interface MigrationStatus {
   name: string;
   version: string;
@@ -838,6 +1105,7 @@ export interface MigrationStatus {
 
 /**
  * Helper type to infer model attributes from schema definition.
+ * @deprecated Part of the declared-but-unimplemented `Model` API.
  */
 export type InferModelAttributes<S extends ModelSchema> = {
   [K in keyof S]: S[K]['type'] extends 'string' ? string
@@ -858,11 +1126,15 @@ export type InferModelAttributes<S extends ModelSchema> = {
 /** Create a query configuration object */
 export function createQuery(config: QueryConfig): QueryConfig;
 
-/** Execute a query using the provided configuration */
-export function executeQuery<T = any>(db: DatabaseConnection, query: QueryConfig): Promise<QueryResult<T>>;
+/**
+ * Build and execute a query configuration.
+ * Throws before querying on unsafe identifiers, unknown operators or options, undefined
+ * WHERE values, invalid LIMIT/OFFSET, or UPDATE/DELETE without WHERE (see `allowFullTable`).
+ */
+export function executeQuery<T = any>(db: QueryExecutor, query: QueryConfig): Promise<QueryResult<T>>;
 
 /**
- * Create a typed model.
+ * Create a model registry bound to a database.
  *
  * @example
  * ```typescript
@@ -872,45 +1144,57 @@ export function executeQuery<T = any>(db: DatabaseConnection, query: QueryConfig
  *   name: string;
  * }
  *
- * const User = createModel<User>({
- *   table: 'users',
- *   schema: {
+ * const models = createModel(db);
+ * const User = models.registerModel<User>('User', {
+ *   tableName: 'users',
+ *   attributes: {
  *     id: { type: 'number', primaryKey: true },
- *     email: { type: 'string', unique: true },
+ *     email: { type: 'string', required: true },
  *     name: { type: 'string' }
  *   }
  * });
  *
- * // Type-safe: user is ModelInstance<User>
  * const user = await User.create({ email: 'test@example.com', name: 'Test' });
- * console.log(user.email); // Type-safe access
+ * console.log(user.email);
  * ```
  */
-export function createModel<T extends Record<string, any> = Record<string, any>>(
-  config: ModelConfig<T>
-): Model<T>;
+export function createModel(db: QueryExecutor): ModelRegistry;
 
-/** Create a migration */
-export function createMigration(config: MigrationConfig): Migration;
+/** Create a migration runner. */
+export function createMigration(db: QueryExecutor | null, config?: MigrationOptions): MigrationRunner;
 
 /** Create a database manager */
 export function createDatabaseManager(config: DatabaseConfig): DatabaseManager;
 
-/** Create a connection */
-export function createConnection(config: DatabaseConfig): Promise<DatabaseConnection>;
+/** Create a database manager and connect it. */
+export function createConnection(config: DatabaseConfig): Promise<DatabaseManager>;
 
-/** Run migrations */
-export function runMigrations(
-  connection: DatabaseConnection,
-  migrations: Migration[],
-  options?: { target?: string }
-): Promise<MigrationStatus[]>;
+/** Run pending migrations; resolves to the names applied. */
+export function runMigrations(db: QueryExecutor, config?: MigrationOptions): Promise<string[]>;
 
-/** Middleware functions */
-export function withDatabase(options?: DatabaseMiddlewareOptions): any;
-export function withTransaction(options?: TransactionMiddlewareOptions): any;
-export function withModel<T extends Record<string, any>>(options: ModelMiddlewareOptions<T>): any;
-export function withPagination(options?: PaginationMiddlewareOptions): any;
+/** Attach `req.db`, `req.dbQuery()` and `req.transaction(callback)`, connecting first if needed. */
+export function withDatabase(db: DatabaseManager, options?: DatabaseMiddlewareOptions): DatabaseMiddleware;
+
+/**
+ * Run the request in a transaction exposed as `req.tx`. Committed after an async `next()`
+ * resolves or, with Express-style / next-less routers, when the response finishes with a
+ * status below 400; rolled back otherwise.
+ */
+export function withTransaction(
+  db: Pick<DatabaseManager, 'transaction'>,
+  options?: TransactionMiddlewareOptions
+): DatabaseMiddleware;
+
+/**
+ * Load `ModelClass.find(req.params[paramName])` into `req[requestKey]` (default: the lower-cased
+ * model name). When it resolves to null (or the parameter is missing) it passes an error
+ * whose `status` and `statusCode` are 404 (400) to `next` — or throws it when called
+ * without `next` — so Express and the `@coherent.js/api` router both answer 404 (400).
+ */
+export function withModel(model: FindableModel, paramName?: string, requestKey?: string | null): DatabaseMiddleware;
+
+/** Parse `page` / `limit` query parameters into `req.pagination`. */
+export function withPagination(options?: PaginationMiddlewareOptions): DatabaseMiddleware;
 
 /** Setup database with default configuration */
 export function setupDatabase(config?: Partial<DatabaseConfig>): DatabaseManager;
@@ -922,34 +1206,7 @@ export const DEFAULT_DB_CONFIG: DatabaseConfig;
 // Adapter Exports
 // ============================================================================
 
-export const PostgreSQLAdapter: typeof createPostgreSQLAdapter;
-export const MySQLAdapter: typeof createMySQLAdapter;
-export const SQLiteAdapter: typeof createSQLiteAdapter;
-export const MongoDBAdapter: typeof createMongoDBAdapter;
-
-// ============================================================================
-// Default Export
-// ============================================================================
-
-declare const coherentDatabase: {
-  createQuery: typeof createQuery;
-  executeQuery: typeof executeQuery;
-  createModel: typeof createModel;
-  createMigration: typeof createMigration;
-  createDatabaseManager: typeof createDatabaseManager;
-  withDatabase: typeof withDatabase;
-  withTransaction: typeof withTransaction;
-  withModel: typeof withModel;
-  withPagination: typeof withPagination;
-  PostgreSQLAdapter: typeof PostgreSQLAdapter;
-  MySQLAdapter: typeof MySQLAdapter;
-  SQLiteAdapter: typeof SQLiteAdapter;
-  MongoDBAdapter: typeof MongoDBAdapter;
-  createConnection: typeof createConnection;
-  createTypedConnection: typeof createTypedConnection;
-  runMigrations: typeof runMigrations;
-  setupDatabase: typeof setupDatabase;
-  DEFAULT_DB_CONFIG: typeof DEFAULT_DB_CONFIG;
-};
-
-export default coherentDatabase;
+export const PostgreSQLAdapter: () => PooledSQLAdapter;
+export const MySQLAdapter: () => PooledSQLAdapter;
+export const SQLiteAdapter: () => SQLiteAdapterInstance;
+export const MongoDBAdapter: () => MongoDBAdapterInstance;
