@@ -1,5 +1,176 @@
 # @coherent.js/state
 
+## 2.0.0-rc.0
+
+### Major Changes
+
+- Coherent.js 2.0: the fixes from a full audit of the framework, several of which change behavior callers rely on.
+  
+  The most likely to need changes in an application:
+  
+  - Component errors propagate out of `render()` (pass `onError` to replace a failing component).
+  - On Node, `provideContext()` throws outside `runWithContext()`: a value provided outside it leaked into the next request on the same connection.
+  - Framework adapters no longer render every response as HTML: use `res.coherent()` / `reply.coherent()` / `ctx.coherent()`, or `autoRender: true`.
+  - The api requires a JWT secret, and rate limiting keys on the socket address unless `trustProxy` is set.
+  - `Model.create()` applies `fillable` / `guarded`.
+  - The render cache is opt-in (`enableCache: true`).
+  
+  `docs/migration/upgrading-from-1.1.md` lists every behavior change with what to do about it; each package's CHANGELOG has the full list of fixes.
+
+### Minor Changes
+
+- 96a2713: Isolate the SSR context API per request and make context providers render.
+  
+  **Context no longer leaks between concurrent requests.** `provideContext()` and
+  `useContext()` shared one module-level `Map`, so a request that provided a user
+  and then awaited could read back another request's user. On Node, context now
+  lives in `AsyncLocalStorage`: a value provided in one async execution is not
+  visible to a concurrent one, including across `await`s. The new
+  `runWithContext(fn, values?)` runs `fn` in a fresh scope that ends when it
+  returns — use it per request, and always around a streaming render. Browsers,
+  which have no `AsyncLocalStorage`, keep the synchronous behaviour.
+  
+  **`createContextProvider()` output is markup again.** Core's renderer handed the
+  provider a render callback, got back an HTML string and escaped it, so
+  `render({ div: { children: [createContextProvider('theme', 'dark', Button)] } })`
+  produced `&lt;button ...`. The provider is now an ordinary zero-argument
+  component that returns its children between context enter/leave markers, so the
+  children are rendered once, by the renderer. Its render-callback form keeps the
+  context for an async callback instead of restoring it before the callback
+  resumes.
+  
+  **Behavior change:** `provideContext()` no longer writes into
+  `globalStateManager`, and `clearAllContexts()` / `restoreContext()` only affect
+  the current execution. `useContext()` still falls back to `globalStateManager`
+  when no context was provided. The same element object can no longer appear
+  twice inside a provider's children, since they are now rendered by core, which
+  rejects a repeated object instance as a circular reference.
+- 31df2c3: Stop SSR context values from leaking between requests.
+  
+  - **Fixed:** outside `runWithContext()`, `provideContext()` attached the value to the caller's async context with `AsyncLocalStorage#enterWith()`. Node handles every request of a keep-alive connection in the same async context, so a value provided for one user's request (say, the logged-in user) was read by the next request on that socket.
+  - **Fixed:** `createContextProvider()` entered its value with one marker component and left it with another rendered after its children. A child that threw skipped the second marker, so the value stayed set for the rest of the request (or, outside `runWithContext()`, for the next request on the connection). The provider now evaluates its subtree's function components and function-valued props (never `on*` event handlers) with the value set and restores the outer value in all cases.
+  - **Behavior change:** on Node, `provideContext()` throws outside `runWithContext()` (as do `restoreContext()` / `clearAllContexts()` when there is something to remove). Wrap each request in `runWithContext(() => ...)`, or use `createContextProvider()` / `runWithContext(fn, { key: value })`. Browsers are unaffected.
+  - **Behavior change:** a context value read after a provider has been rendered (in an event handler, for instance) no longer sees the provider's value; read it while rendering and close over it.
+- 73654ac: Make persistent state safe to use.
+  
+  - **The restore on creation no longer overwrites your first updates.** Stored
+    state was restored asynchronously and merged over everything, so
+    `setState({ qty: 5 })` right after creation ended as the stored `qty: 1` —
+    and that was persisted. Keys set before the restore finishes now keep their
+    new value, and the new `ready` promise resolves (to whether anything was
+    restored) once it is done.
+  - **Failed writes are reported.** A throwing `setItem` (e.g.
+    `QuotaExceededError`) was logged and then `onSave` fired anyway. It now goes
+    to `onError`, `onSave` does not fire, and `save()` / `persist()` resolve to
+    `false`.
+  - **`encrypt` is honest obfuscation.** It XORed the payload with the public
+    default key `'default-key'` when none was given, and threw
+    `InvalidCharacterError` for any character outside Latin-1 (`'日本'`). It now
+    works on UTF-8 bytes, so any text round-trips, and is documented as
+    obfuscation, not encryption.
+  - **`crossTab` syncs only the same store.** Every store shared one
+    `BroadcastChannel`, so a cart update was merged into the user store, and a
+    store applied its own broadcasts. The channel is now named after the storage
+    key, messages carry a sender id, and the new `destroy()` closes it (and
+    flushes a pending debounced save).
+  - **No shared storage on the server.** With Web Storage available in Node, a
+    request restored the previous request's state. Browser backends are now
+    inert when there is no `window`, and cross-tab sync is off; pass the new
+    `adapter` option to persist on the server.
+  
+  **Behavior change:** `encrypt: true` without an `encryptionKey` throws a
+  `TypeError`. Data stored with `encrypt` by an earlier version that contains
+  non-ASCII characters cannot be read back and is reported through `onError`.
+  On the server, `localStorage` / `sessionStorage` / `indexedDB` state is no
+  longer persisted or restored. Storage errors are passed to `onError` when it
+  is set, and only logged otherwise.
+- 3ae0e1c: Rebuild the reactive core of `observable` / `computed` / `createReactiveState`.
+  
+  - **Watching an expression works.** `state.watch(() => state.get('a') * 2, cb)`
+    fired once with `undefined` and never again, and a watched `computed()` only
+    noticed a change when something read it. Watched computeds are now kept up
+    to date and notify their watchers when their value changes.
+  - **No leaks.** Every computed stayed registered on its sources forever
+    (10 000 create-and-unwatch cycles left 10 000 entries). A computed now
+    subscribes to its sources only while it is watched; an unwatched one
+    validates its dependencies on read.
+  - **`delete()` / `clear()` update computeds** that read the key, including when
+    the key is set again later.
+  - **`batch()` batches.** Watchers run once, after the outermost batch, with the
+    final values; a key changed and changed back does not notify. A standalone
+    `batch(fn)` is exported for plain observables.
+  - **Update loops are bounded.** Watchers no longer run inside the setter, so a
+    watcher that writes cannot overflow the stack; a loop that never settles is
+    stopped after 100 rounds and reported as a `StateError` (`type:
+    'update-depth'`) instead of being swallowed.
+  - **Errors are isolated and reported.** A throwing watcher no longer stops the
+    other watchers or leaves a computed stuck; errors go to the new `onError`
+    option, or `globalErrorHandler`. A cycle between computed properties throws a
+    `StateError` instead of silently producing `NaN`.
+  - **Dot paths.** `set('user.name', 'John')` writes a copy of `user` and
+    notifies watchers of `user` and of `user.name`; `get`, `has`, `watch` and
+    `delete` accept paths, as `docs/components/state.md` already documented.
+  - `toObject()` keeps a `"__proto__"` key as data; `Observable#peek()` reads
+    without tracking; `ReactiveState#computed()` is typed to return the computed.
+  
+  **Behavior change:** watchers run after the write completes rather than
+  synchronously inside it (still before `set()` / the assignment returns, unless
+  inside a `batch()`). Assigning an identical primitive no longer notifies
+  (`deep` now only means "re-assigning the same object notifies"). A key
+  containing a dot is treated as a path, not a flat key. Reading a computed whose
+  getter throws rethrows the error instead of returning the stale value. The
+  internal `_computedDependents` / `_invalidate` / `Observable._currentComputed`
+  members are gone.
+
+### Patch Changes
+
+- 5a150b5: Declare the peer dependencies packages actually use.
+  
+  - `@coherent.js/client`'s type declarations import `@coherent.js/core`; it is now a peer dependency.
+  - Drop peers nothing imports: `@coherent.js/core` from database, i18n and state, `@coherent.js/state` from forms, and `@remix-run/server-runtime` from integrations (the Remix adapter only needs React).
+- 16a6e7b: Revert an `error` → `_error` identifier rename that leaked into strings and object keys.
+  
+  - Error events are listened for again: `pool.on('error')` (pg), the API router's `req`/`socket` `'error'` handlers, the CLI dev server's child-process `'error'`, and devtools' `window` `'error'`. Before, an idle PostgreSQL client error or a WebSocket client reset was an uncaught exception.
+  - `DatabaseManager` emits `'error'` only when a listener is attached; the failure still surfaces through the rejected `connect()` promise.
+  - JSON error responses from `@coherent.js/api`, the framework adapters, and the scaffolded API/JSON-RPC code use `error` instead of `_error` (JSON-RPC requires `error`). **Behavior change:** clients that read `body._error` must read `body.error`.
+  - Messages, CSS classes (`component-error`, `error-message`), log levels, event types and the generated `.gitignore` (`yarn-error.log*`) are spelled correctly again; the CLI's load-failure fallback no longer crashes on `console._error`.
+  
+  `withLoading`'s documented `_loading` / `_error` state keys are unchanged. An ESLint rule now rejects `_error` inside strings, template text and object keys in `packages/*/src` and `packages/*/bin`.
+- aa4cca3: Honour `dbName` and `storeName` in `withIndexedDB` and
+  `createPersistentState({ storage: 'indexedDB' })`.
+  
+  The IndexedDB adapter takes a database and an object store name, but it was
+  always built without them, so `withIndexedDB(state, key, { dbName: 'shop',
+  storeName: 'carts' })` wrote to the `state` store of `coherent-db` like every
+  other store. Both options now reach the adapter (defaults unchanged:
+  `'coherent-db'` and `'state'`) and are part of the typed options.
+  
+  A `storeName` that does not exist yet in an existing database (created by
+  another store sharing its `dbName`) is added in a version upgrade instead of
+  failing with `NotFoundError`; open connections give way to the upgrade and
+  reopen on their next access. The database is now opened at its current version
+  rather than always at version 1.
+- 94433bd: Fix schema validation edge cases and a stuck `ModalState` promise.
+  
+  - A `null` value for a property typed `object` passed the type check
+    (`typeof null === 'object'`) and then threw a `TypeError` inside the
+    validator; with `coerce: true` the same happened for any type that cannot be
+    coerced. Both are now ordinary `type` validation errors.
+  - `additionalProperties: false` was ignored unless `allowUnknown: false` was
+    also passed. It is now enforced on its own, and `allowUnknown: false` rejects
+    keys missing from any object schema's `properties`.
+  - Coercion turned `"false"` into `true` (`Boolean("false")`), `""` into `0` and
+    objects into `"[object Object]"`. Only unambiguous conversions remain:
+    numeric strings to numbers, `"true"`/`"false"`/`"1"`/`"0"` to booleans,
+    numbers and booleans to strings.
+  - `NaN` is no longer accepted as a `number`.
+  - Opening a `ModalState` while it was open left the first `open()` promise
+    pending forever; it now resolves with `null`.
+  - The `demoEnhancedPatterns` example no longer ships in the package source.
+  
+  **Behavior change:** arrays no longer satisfy `type: 'object'`, `NaN` fails
+  `type: 'number'`, and coercions listed above as removed are now type errors.
+
 ## 1.1.2
 
 ### Patch Changes

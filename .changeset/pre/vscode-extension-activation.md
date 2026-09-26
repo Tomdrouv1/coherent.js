@@ -1,5 +1,4 @@
 ---
-"coherent-language-support": patch
 "@coherent.js/tooling": patch
 ---
 

@@ -1,5 +1,121 @@
 # @coherent.js/tooling
 
+## 2.0.0-rc.0
+
+### Major Changes
+
+- Coherent.js 2.0: the fixes from a full audit of the framework, several of which change behavior callers rely on.
+  
+  The most likely to need changes in an application:
+  
+  - Component errors propagate out of `render()` (pass `onError` to replace a failing component).
+  - On Node, `provideContext()` throws outside `runWithContext()`: a value provided outside it leaked into the next request on the same connection.
+  - Framework adapters no longer render every response as HTML: use `res.coherent()` / `reply.coherent()` / `ctx.coherent()`, or `autoRender: true`.
+  - The api requires a JWT secret, and rate limiting keys on the socket address unless `trustProxy` is set.
+  - `Model.create()` applies `fillable` / `guarded`.
+  - The render cache is opt-in (`enableCache: true`).
+  
+  `docs/migration/upgrading-from-1.1.md` lists every behavior change with what to do about it; each package's CHANGELOG has the full list of fixes.
+
+### Minor Changes
+
+- 424bd0f: `@coherent.js/tooling/lsp` can be imported as a library.
+  
+  The module created a connection and started listening at import time, so
+  importing it anywhere but a language-server process threw "Connection input
+  stream is not set" — while the package declares `sideEffects: false`.
+  
+  **Behavior change:** `@coherent.js/tooling/lsp` now exports
+  `startServer(connection?)`, which registers the handlers on the given
+  connection (default: the transport named on the command line) and starts
+  listening; importing the module does nothing else. The module-level
+  `connection` and `documents` exports are gone — `startServer()` returns them.
+  The `coherent-language-server` binary is now `dist/lsp/bin.js` and behaves as
+  before (`--stdio`, `--node-ipc`, `--socket=<port>`).
+- cf9940c: `extendExpect(expect)` no longer replaces Vitest/Jest built-in matchers, and the
+  custom matchers work on `renderComponent()` output.
+  
+  **Behavior change:**
+  
+  - `toMatchSnapshot`, `toHaveBeenCalled`, `toHaveBeenCalledWith` and
+    `toHaveBeenCalledTimes` are no longer registered. The overrides replaced the
+    built-ins for the whole test run: `toMatchSnapshot` always passed and never
+    wrote a snapshot (snapshot testing was silently off), and
+    `toHaveBeenCalledWith` compared arguments with `===`. Snapshot with
+    `expect(result.toSnapshot()).toMatchSnapshot()`. `createMock()` / `createSpy()`
+    mocks now carry the `_isMockFunction` marker, so the built-in
+    `toHaveBeenCalled*` matchers (with deep equality) accept them.
+  - `toHaveText` / `toContainText` / `toBeVisible` / `toBeEmpty` read the text
+    content of a `renderComponent()` result (they used to see `null`), with HTML
+    entities decoded.
+  - `toHaveClass` matches whole class tokens (`'btn'` no longer matches
+    `btn-primary`) and reads the element's `class` attribute; `getByClassName`
+    and `assertions.assertHasClass` match whole tokens too.
+  - `toHaveAttribute` and `toHaveTagName` look at the element itself (the first
+    element of the HTML) instead of any substring match anywhere in the markup:
+    `toHaveAttribute('id')` no longer matches `data-id`, `toHaveTagName('b')` no
+    longer matches `<br>`, and boolean attributes such as `disabled` are found.
+  - `toBeValidHTML` checks tag nesting with a stack and accepts void elements
+    (`<input>`, `<br>`, `<img>`, …), comments, doctypes and raw-text content.
+  - `getByTestId`/`getByClassName` matches carry the element's whole opening tag
+    in `html`, and query strings are escaped before being used in a RegExp.
+  - The matcher type declarations now describe the matchers that exist
+    (`toHaveTag`, `toBeDisabled`, `toHaveState`, … were declared but never
+    implemented), and `renderComponent()` is typed as returning
+    `TestRendererResult`.
+
+### Patch Changes
+
+- 6bf0d21: Fix inputs that made parsing take seconds, a log format string built from the request, and a case-sensitive `<script>` match (found by CodeQL).
+  
+  - **Fixed (database):** a select column such as `'a'` followed by 50,000 spaces took about two seconds to validate (the `AS alias` pattern backtracked quadratically), so one request that passes column names through could hold the event loop. Parsing is now linear.
+  - **Fixed (api):** the 5xx log line put the request URL inside `console.error`'s format string, so a `%s` or `%o` in the URL consumed the error argument. The URL is now an argument. The router's `prefix` is trimmed of trailing slashes in linear time.
+  - **Fixed (client):** the router's `base` is trimmed of trailing slashes in linear time.
+  - **Fixed (tooling):** `toHaveText` / `toContainText` strip tags in linear time (`'<'` repeated 50,000 times took about two seconds).
+  - **Fixed (integrations):** the SvelteKit preprocessor now finds an instance script written `<SCRIPT>`; it used to add a second one.
+- 1314832: Make the VS Code extension start, and its language server load.
+  
+  - `activationEvents` was empty and the extension contributes no languages or
+    commands, so VS Code never activated it. It now activates on JavaScript,
+    TypeScript, JSX and TSX files.
+  - `server/` was a plain copy of `@coherent.js/tooling`'s build, but the
+    `.vsix` ships without `node_modules`, so the server died with
+    `ERR_MODULE_NOT_FOUND 'vscode-languageserver'`. The build now bundles the
+    server from tooling's source into one self-contained `server/server.js`
+    (dependencies and the extracted element data inlined). It no longer depends
+    on tooling being built first, which also removes the race where the element
+    data JSON could be missing. `server/` is build output and no longer
+    committed.
+  - `coherent.trace.server` now takes effect (the client id did not match the
+    setting's prefix).
+  - `scripts/check-vsix.mjs` now also checks the activation events and spawns the
+    packaged server alone with `--stdio`, requiring an answer to `initialize`.
+  - tooling: the element data loader lives in its own module
+    (`lsp/data/generated-data`) so bundlers can inline it, and
+    `scripts/extract-attributes.ts` accepts `--out <file>`.
+- Updated dependencies [85898bd]
+- Updated dependencies [7da1e24]
+- Updated dependencies [ccff8e7]
+- Updated dependencies [0b8c6e2]
+- Updated dependencies [b21610a]
+- Updated dependencies [1b4a351]
+- Updated dependencies [cd2cb30]
+- Updated dependencies [e69a230]
+- Updated dependencies [606bb86]
+- Updated dependencies [e250e32]
+- Updated dependencies [e011f27]
+- Updated dependencies [5a3a6c2]
+- Updated dependencies [14af368]
+- Updated dependencies [11c154f]
+- Updated dependencies [b89b3c6]
+- Updated dependencies [b3666cd]
+- Updated dependencies [6829455]
+- Updated dependencies [7abfb53]
+- Updated dependencies
+- Updated dependencies [35376a7]
+- Updated dependencies [16a6e7b]
+  - @coherent.js/core@2.0.0-rc.0
+
 ## 1.1.2
 
 ### Patch Changes

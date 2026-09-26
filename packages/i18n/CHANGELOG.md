@@ -1,5 +1,89 @@
 # @coherent.js/i18n
 
+## 2.0.0-rc.0
+
+### Minor Changes
+
+- bbcd3cc: Add an `escape` option that HTML-escapes interpolated params.
+  
+  A translation with user-supplied params rendered through core's `html:` was an
+  XSS sink, and there was no way to escape just the params. `createTranslator({
+  escape: true })` now escapes `&`, `<`, `>`, `"` and `'` in every interpolated
+  value, and `t(key, params, { escape: true })` does it for one call (`{ escape:
+  false }` opts a call back out). The translation template itself is never
+  escaped, so markup in your own messages keeps working. The third argument of
+  `t()` accepts `{ locale, escape }` as well as the locale string it took before.
+  
+  The default stays `false`, so existing output is unchanged. `text:` remains
+  the safe sink: core escapes it already.
+- e0b864a: Add `Translator#forLocale()` for request-scoped translation on the server.
+  
+  `currentLocale` lives on the translator instance, so concurrent SSR requests
+  sharing one translator raced: a `setLocale()` in one request changed the
+  language of another request's output. `i18n.forLocale(locale, { escape })`
+  returns `{ locale, t, has, getLocale }` bound to that locale; it never reads or
+  writes `currentLocale` and sees translations added to the shared instance
+  later. The locale resolves like `setLocale()` (`fr-FR` → `fr`) and falls back
+  to the fallback locale without a console warning. `setLocale()` is unchanged
+  and remains the API for client-side use.
+
+### Patch Changes
+
+- 5a150b5: Declare the peer dependencies packages actually use.
+  
+  - `@coherent.js/client`'s type declarations import `@coherent.js/core`; it is now a peer dependency.
+  - Drop peers nothing imports: `@coherent.js/core` from database, i18n and state, `@coherent.js/state` from forms, and `@remix-run/server-runtime` from integrations (the Remix adapter only needs React).
+- 3484aea: Interpolate translation params literally and ignore inherited keys.
+  
+  - A param containing `$'`, `$&`, `` $` `` or `$$` corrupted the output
+    (`t('hi', { name: "$'" })` gave `"Hello !!"`), because each value was passed
+    to `String#replace` as a replacement string. Values are now inserted as
+    written.
+  - A custom `interpolation.prefix` / `suffix` such as `%(` / `)s` was compiled as
+    a raw regular expression and never matched (or threw). Delimiters and param
+    names are now matched literally, and the `interpolation` option is merged
+    with the defaults, so overriding only `prefix` keeps the `}}` suffix.
+  - `t('constructor')` returned `"function Object() { [native code] }"` because
+    lookups used `in`. Only own properties of the translation objects are
+    resolved now, including through nested dot keys.
+  
+  **Behavior change:** interpolation is a single pass, so a param value that
+  itself contains a placeholder (`{ a: '{{b}}', b: 'B' }`) is no longer expanded
+  a second time; keys such as `constructor`, `toString` or `a.valueOf` now go
+  through the missing-key path (returning the key, or calling
+  `missingKeyHandler`) unless the translations define them.
+- 42b9bf3: Resolve regional locales to their language and pluralize fallback text with
+  the right rules.
+  
+  - `setLocale('fr-FR')` fell back to `en` even when `fr` was loaded. Locales
+    now resolve to the closest loaded one, dropping trailing subtags
+    (`zh-Hant-TW` → `zh-Hant` → `zh`), case-insensitively and with `_` accepted
+    for `-`. `t()` with a locale override and `has()` resolve the same way, and a
+    key missing from `fr-CA` is looked up in `fr` before the fallback locale.
+  - When a message came from the fallback locale, its plural form was picked with
+    the target locale's rules: in Russian, English fallback text for 21 items
+    read `"21 item"`. The plural category now comes from the language the message
+    is written in (keeping the regional rules, e.g. `pt-PT`, when the message is
+    from the same language).
+  - A locale tag that `Intl.PluralRules` rejects (such as `en_US`) no longer
+    throws; the simple one/other rule is used.
+  
+  **Behavior change:** after `setLocale('fr-FR')` with only `fr` loaded,
+  `getLocale()` returns `'fr'` (it returned the fallback, `'en'`, before) and
+  translations come from `fr`.
+- 7d69b77: Format future dates in `DateFormatter#relative()` with a sensible unit.
+  
+  Every unit check assumed a past date, so any future date fell through to
+  seconds: tomorrow read `"in 86,400 seconds"`. `relative()` now picks the largest
+  unit that fits in either direction — seconds, minutes, hours, days, weeks (from
+  7 days), months (from 30 days) or years (from 365 days) — and rounds the
+  difference to the second first, so the milliseconds since the caller built the
+  date do not turn "tomorrow" into "in 23 hours".
+  
+  **Behavior change:** past dates of a week or more are now expressed in weeks,
+  months or years (`"last week"`, `"3 weeks ago"`, `"last month"`) instead of
+  days (`"7 days ago"`, `"21 days ago"`).
+
 ## 1.1.2
 
 ### Patch Changes
