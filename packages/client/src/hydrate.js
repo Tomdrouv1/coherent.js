@@ -10,9 +10,20 @@
 import { eventDelegation, handlerRegistry } from './events/index.js';
 import { extractState, detectMismatch, reportMismatches } from './hydration/index.js';
 import { isElementVNode, readElement, pairElementChildren } from './hydration/vnode.js';
+import { patchRoot } from './hydration/patch.js';
+
+/**
+ * Live hydrations by container, so hydrating a container again replaces the
+ * previous hydration instead of stacking a second set of handlers on it.
+ * @type {WeakMap<Element, {unmount: Function}>}
+ */
+const hydratedContainers = new WeakMap();
 
 /**
  * Hydrate a server-rendered component
+ *
+ * Hydrating a container that is already hydrated unmounts the previous
+ * hydration first.
  *
  * @param {Function} component - Component function that returns virtual DOM
  * @param {HTMLElement} container - DOM element containing server-rendered HTML
@@ -40,6 +51,9 @@ export function hydrate(component, container, options = {}) {
     );
   }
 
+  // One hydration per container: drop the previous one's handlers
+  hydratedContainers.get(container)?.unmount();
+
   // Initialize event delegation (idempotent)
   eventDelegation.initialize();
 
@@ -55,17 +69,29 @@ export function hydrate(component, container, options = {}) {
 
   // Extract state from DOM data-state attribute, or use provided initial state
   let state = providedState ?? extractState(container) ?? {};
+  let mounted = true;
+  let root = container;
 
-  // Store event listeners for cleanup
-  const eventListeners = [];
+  // Handler ids and the attributes pointing at them, from the latest render
+  let registeredHandlerIds = new Set();
+  let boundAttributes = [];
 
-  // Track registered handler IDs for cleanup
-  const registeredHandlerIds = new Set();
+  const currentProps = () => ({ ...additionalProps, ...state });
 
-  // Create component reference for handler registry
+  // Component reference handed to event handlers (event.state, event.setState, ...)
   const componentRef = {
+    component,
+    get state() {
+      return state;
+    },
+    get props() {
+      return currentProps();
+    },
     getState: () => state,
     setState: (newState) => {
+      if (!mounted) {
+        return;
+      }
       if (typeof newState === 'function') {
         state = { ...state, ...newState(state) };
       } else {
@@ -77,8 +103,7 @@ export function hydrate(component, container, options = {}) {
   };
 
   // Generate virtual DOM from component
-  const componentProps = { ...additionalProps, ...state };
-  let virtualDOM = component(componentProps);
+  let virtualDOM = renderComponent(component, currentProps());
 
   // Detect mismatches if enabled
   if (shouldDetectMismatch) {
@@ -97,42 +122,57 @@ export function hydrate(component, container, options = {}) {
   }
 
   // Walk virtual DOM and register event handlers
-  registerEventHandlers(container, virtualDOM, componentRef, registeredHandlerIds);
+  registerEventHandlers(root, virtualDOM, componentRef, registeredHandlerIds, boundAttributes);
 
   /**
    * Re-render the component with current state
    */
   function doRerender() {
-    const newProps = { ...additionalProps, ...state };
-    virtualDOM = component(newProps);
+    if (!mounted) {
+      return;
+    }
 
-    // Update DOM with new virtual DOM
-    // For now, we do a simple patch - just update text content and attributes
-    // Full reconciliation would be in a separate module
-    patchDOM(container, virtualDOM);
+    const previousVirtualDOM = virtualDOM;
+    virtualDOM = renderComponent(component, currentProps());
 
-    // Re-register event handlers after DOM update
-    registerEventHandlers(container, virtualDOM, componentRef, registeredHandlerIds);
+    // Update the DOM to match the new virtual DOM
+    const previousRoot = root;
+    root = patchRoot(root, previousVirtualDOM, virtualDOM);
+    if (root !== previousRoot) {
+      hydratedContainers.delete(previousRoot);
+      hydratedContainers.set(root, controller);
+      root.setAttribute('data-coherent-hydrated', 'true');
+    }
+
+    // Swap handlers: register the new render's, then drop the previous ones
+    const previousIds = registeredHandlerIds;
+    const previousAttributes = boundAttributes;
+    registeredHandlerIds = new Set();
+    boundAttributes = [];
+    registerEventHandlers(root, virtualDOM, componentRef, registeredHandlerIds, boundAttributes);
+    releaseHandlers(previousIds, previousAttributes);
   }
 
   /**
-   * Unmount the component and clean up
+   * Unmount the component and clean up. Terminal: later setState() and
+   * rerender() calls do nothing.
    */
   function unmount() {
-    // Remove registered event handlers
-    for (const handlerId of registeredHandlerIds) {
-      handlerRegistry.unregister(handlerId);
+    if (!mounted) {
+      return;
     }
-    registeredHandlerIds.clear();
+    mounted = false;
 
-    // Remove direct event listeners
-    for (const { element, event, handler, options } of eventListeners) {
-      element.removeEventListener(event, handler, options);
+    releaseHandlers(registeredHandlerIds, boundAttributes);
+    registeredHandlerIds = new Set();
+    boundAttributes = [];
+
+    if (hydratedContainers.get(root) === controller) {
+      hydratedContainers.delete(root);
     }
-    eventListeners.length = 0;
 
     // Clear container's hydration marker
-    container.removeAttribute('data-coherent-hydrated');
+    root.removeAttribute('data-coherent-hydrated');
   }
 
   /**
@@ -140,6 +180,9 @@ export function hydrate(component, container, options = {}) {
    * @param {Object} [newProps] - New props to merge
    */
   function rerender(newProps) {
+    if (!mounted) {
+      return;
+    }
     if (newProps) {
       Object.assign(additionalProps, newProps);
     }
@@ -162,16 +205,47 @@ export function hydrate(component, container, options = {}) {
     componentRef.setState(newState);
   }
 
-  // Mark container as hydrated
-  container.setAttribute('data-coherent-hydrated', 'true');
-
   // Return control object
-  return {
+  const controller = {
     unmount,
     rerender,
     getState,
     setState,
   };
+
+  // Mark container as hydrated
+  container.setAttribute('data-coherent-hydrated', 'true');
+  hydratedContainers.set(container, controller);
+
+  return controller;
+}
+
+/**
+ * Call a component and resolve returned function components, as core does
+ * @private
+ */
+function renderComponent(component, props) {
+  let vNode = component(props);
+  for (let guard = 0; typeof vNode === 'function' && vNode.length === 0 && guard < 100; guard++) {
+    vNode = vNode();
+  }
+  return vNode;
+}
+
+/**
+ * Unregister handler ids and remove the data-coherent-* attributes that still
+ * point at them
+ * @private
+ */
+function releaseHandlers(handlerIds, attributes) {
+  for (const handlerId of handlerIds) {
+    handlerRegistry.unregister(handlerId);
+  }
+  for (const { element, name, handlerId } of attributes) {
+    if (element.getAttribute(name) === handlerId) {
+      element.removeAttribute(name);
+    }
+  }
 }
 
 /** Prop names whose lower-cased suffix is not the DOM event type. */
@@ -192,7 +266,7 @@ function toEventType(propName) {
  * Walk virtual DOM tree and register event handlers
  * @private
  */
-function registerEventHandlers(domElement, vNode, componentRef, handlerIds) {
+function registerEventHandlers(domElement, vNode, componentRef, handlerIds, boundAttributes) {
   if (!domElement || !isElementVNode(vNode)) {
     return;
   }
@@ -222,114 +296,15 @@ function registerEventHandlers(domElement, vNode, componentRef, handlerIds) {
     const attrName = `data-coherent-${eventType}`;
     if (domElement.setAttribute) {
       domElement.setAttribute(attrName, handlerId);
+      boundAttributes.push({ element: domElement, name: attrName, handlerId });
     }
   }
 
   // Pair element children the way the server rendered them: null, booleans,
   // nested arrays and text never shift which element a child binds to.
   for (const [childVNode, childElement] of pairElementChildren(tagName, props, domElement)) {
-    registerEventHandlers(childElement, childVNode, componentRef, handlerIds);
+    registerEventHandlers(childElement, childVNode, componentRef, handlerIds, boundAttributes);
   }
-}
-
-/**
- * Simple DOM patching for re-renders
- * @private
- */
-function patchDOM(domElement, vNode) {
-  if (!vNode || !domElement) {
-    return;
-  }
-
-  // Handle text/number
-  if (typeof vNode === 'string' || typeof vNode === 'number') {
-    if (domElement.textContent !== String(vNode)) {
-      domElement.textContent = String(vNode);
-    }
-    return;
-  }
-
-  // Handle arrays
-  if (Array.isArray(vNode)) {
-    return; // Array patching would need reconciliation
-  }
-
-  if (typeof vNode !== 'object') {
-    return;
-  }
-
-  const tagName = Object.keys(vNode)[0];
-  const props = vNode[tagName] || {};
-
-  // Update attributes
-  const attributeMap = {
-    className: 'class',
-    htmlFor: 'for',
-  };
-
-  for (const [key, value] of Object.entries(props)) {
-    if (key === 'children' || key === 'text' || key.startsWith('on')) {
-      continue;
-    }
-
-    const attrName = attributeMap[key] || key;
-
-    if (value === true) {
-      domElement.setAttribute(attrName, '');
-    } else if (value === false || value === null || value === undefined) {
-      domElement.removeAttribute(attrName);
-    } else if (domElement.getAttribute(attrName) !== String(value)) {
-      domElement.setAttribute(attrName, String(value));
-    }
-  }
-
-  // Handle text content
-  if (props.text !== undefined) {
-    const textContent = String(props.text);
-    if (domElement.textContent !== textContent) {
-      domElement.textContent = textContent;
-    }
-    return;
-  }
-
-  // Recursively patch children
-  const children = getVNodeChildren(props);
-  const domChildren = getSignificantDOMChildren(domElement);
-
-  children.forEach((child, index) => {
-    if (domChildren[index]) {
-      patchDOM(domChildren[index], child);
-    }
-  });
-}
-
-/**
- * Get children from virtual node props
- * @private
- */
-function getVNodeChildren(props) {
-  if (!props) return [];
-  if (props.children) {
-    return Array.isArray(props.children) ? props.children : [props.children];
-  }
-  return [];
-}
-
-/**
- * Get significant DOM children (elements and non-whitespace text)
- * @private
- */
-function getSignificantDOMChildren(element) {
-  if (!element || !element.childNodes) return [];
-
-  return Array.from(element.childNodes).filter((node) => {
-    if (node.nodeType === 1) return true; // Element
-    if (node.nodeType === 3) {
-      // Text node
-      return node.textContent && node.textContent.trim().length > 0;
-    }
-    return false;
-  });
 }
 
 export default hydrate;

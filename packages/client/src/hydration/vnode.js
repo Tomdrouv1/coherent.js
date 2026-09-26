@@ -108,7 +108,7 @@ function flatten(node, out) {
     return;
   }
   if (isTrustedContent(node)) {
-    out.push({ type: 'opaque' });
+    out.push({ type: 'opaque', html: node.__html });
     return;
   }
   if (isElementVNode(node)) {
@@ -141,14 +141,20 @@ export function resolveAttributeValue(value) {
  *
  * @param {string} tagName
  * @param {Object} props
- * @returns {Array<{type: 'element', vNode: Object}|{type: 'text', text: string}|{type: 'opaque'}>}
+ * @returns {Array<{type: 'element', vNode: Object}|{type: 'text', text: string}|{type: 'opaque', html?: string}>}
+ *   an opaque region carries its `html` when it is raw HTML rather than a
+ *   component this module cannot run
  */
 export function getRenderedChildren(tagName, props) {
   if (!props || VOID_ELEMENTS.has(String(tagName).toLowerCase())) {
     return [];
   }
-  if (props.html !== undefined || isTrustedContent(props.text)) {
-    return [{ type: 'opaque' }];
+  if (props.html !== undefined) {
+    const html = resolveAttributeValue(props.html);
+    return [{ type: 'opaque', html: isTrustedContent(html) ? html.__html : String(html) }];
+  }
+  if (isTrustedContent(props.text)) {
+    return [{ type: 'opaque', html: props.text.__html }];
   }
 
   const raw = [];
