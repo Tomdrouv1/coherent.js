@@ -9,6 +9,10 @@
       "types": "./types/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./csrf": {
+      "types": "./types/csrf.d.ts",
+      "default": "./dist/csrf.js"
+    },
     "./form-builder": "./dist/form-builder.js",
     "./hydration": "./dist/form-hydration.js",
     "./validation": "./dist/validation.js",

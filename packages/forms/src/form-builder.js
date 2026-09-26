@@ -64,6 +64,12 @@ function safeAttributes(attributes) {
   return safe;
 }
 
+/**
+ * Hidden field that carries `options.csrfToken`. Mirrors CSRF_FIELD_NAME in
+ * csrf.js, which is server-only (node:crypto) and so cannot be imported here.
+ */
+const DEFAULT_CSRF_FIELD_NAME = '_csrf';
+
 /** Join class names, dropping empties so no element carries `class=""`. */
 function joinClasses(...names) {
   return names.filter(Boolean).join(' ');
@@ -629,7 +635,9 @@ export class FormBuilder {
    *
    * `options.values`, `options.errors` and `options.touched` render
    * per-request state without touching the builder's own (see
-   * resolveRenderState).
+   * resolveRenderState). `options.csrfToken` adds a hidden `_csrf` input (the
+   * name is `options.csrfFieldName`); create the token with
+   * `@coherent.js/forms/csrf`.
    */
   buildForm(options = {}) {
     const { values: _values, errors: _errors, touched: _touched, ...formOptions } = options;
@@ -637,6 +645,16 @@ export class FormBuilder {
     const classNames = this.resolveClassNames(options.classNames);
     const state = this.resolveRenderState(options);
     const fields = [];
+
+    if (settings.csrfToken !== undefined && settings.csrfToken !== null && settings.csrfToken !== '') {
+      fields.push({
+        input: {
+          type: 'hidden',
+          name: settings.csrfFieldName || DEFAULT_CSRF_FIELD_NAME,
+          value: String(settings.csrfToken)
+        }
+      });
+    }
 
     for (const [name] of this.fields) {
       // validate() has always skipped fields hidden by showWhen/showIf; render

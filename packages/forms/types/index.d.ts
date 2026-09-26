@@ -184,6 +184,14 @@ export interface FormConfig {
   validateOnChange?: boolean;
   /** Validate a field when it loses focus; defaults to `true` */
   validateOnBlur?: boolean;
+  /**
+   * Render a hidden input carrying this CSRF token, first in the form. Create
+   * it per session with `createCsrfToken` from `@coherent.js/forms/csrf` and
+   * pass it per render: `buildForm({ csrfToken })`.
+   */
+  csrfToken?: string;
+  /** Name of the hidden CSRF input; defaults to `'_csrf'` */
+  csrfFieldName?: string;
   [option: string]: unknown;
 }
 
