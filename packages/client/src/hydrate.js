@@ -29,7 +29,9 @@ const hydratedContainers = new WeakMap();
  * @param {HTMLElement} container - DOM element containing server-rendered HTML
  * @param {Object} [options] - Hydration options
  * @param {Object} [options.initialState] - Initial state to override extracted state
- * @param {boolean} [options.detectMismatch=true] - Enable mismatch detection (dev mode)
+ * @param {boolean} [options.detectMismatch] - Compare the server DOM with the
+ *   component's output. Defaults to on when `strict` or `onMismatch` is given
+ *   or `process.env.NODE_ENV` is `'development'`, off otherwise
  * @param {boolean} [options.strict=false] - Throw on mismatch instead of warning
  * @param {Function} [options.onMismatch] - Custom mismatch handler
  * @param {Object} [options.props] - Additional props to pass to component
@@ -60,12 +62,15 @@ export function hydrate(component, container, options = {}) {
   // Extract options with defaults
   const {
     initialState: providedState,
-    // eslint-disable-next-line no-restricted-globals -- statically replaced by esbuild `define` at build time
-    detectMismatch: shouldDetectMismatch = process.env.NODE_ENV !== 'production',
     strict = false,
     onMismatch,
     props: additionalProps = {},
   } = options;
+
+  // Mismatch detection walks the whole DOM: only when asked for, implied by
+  // `strict` or `onMismatch`, or in development
+  const shouldDetectMismatch = options.detectMismatch ??
+    (strict || typeof onMismatch === 'function' || isDevelopment());
 
   // Extract state from DOM data-state attribute, or use provided initial state
   let state = providedState ?? extractState(container) ?? {};
@@ -218,6 +223,21 @@ export function hydrate(component, container, options = {}) {
   hydratedContainers.set(container, controller);
 
   return controller;
+}
+
+/**
+ * Whether the app runs in development. `process.env.NODE_ENV` is read at
+ * runtime — this package's build leaves it for the app's bundler to replace —
+ * and counts as production when there is no `process` at all.
+ * @private
+ */
+function isDevelopment() {
+  try {
+    // eslint-disable-next-line no-restricted-globals -- replaced by the app's bundler; guarded for browsers without one
+    return process.env.NODE_ENV === 'development';
+  } catch {
+    return false;
+  }
 }
 
 /**

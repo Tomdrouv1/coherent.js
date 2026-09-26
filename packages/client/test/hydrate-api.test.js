@@ -272,14 +272,14 @@ describe('hydrate() API', () => {
   });
 
   describe('Mismatch detection options', () => {
-    it('detects mismatches by default in non-production', () => {
+    it('detects mismatches when enabled', () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       // Create a mismatch: container is div but vdom is span
       const component = () => ({ span: { text: 'Hello' } });
       const container = createMockElement('div', { textContent: 'Hello' });
 
-      hydrate(component, container);
+      hydrate(component, container, { detectMismatch: true });
 
       // Should have called console.warn for mismatch
       expect(consoleSpy).toHaveBeenCalled();

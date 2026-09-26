@@ -22,7 +22,11 @@ const result = await build({
   minify: env.NODE_ENV === 'production',
   metafile: true,
   define: {
-    'process.env.NODE_ENV': JSON.stringify(env.NODE_ENV || 'development'),
+    // Keep `process.env.NODE_ENV` as written, for the app's bundler to
+    // replace. Baking in the build machine's value (unset, so 'development';
+    // esbuild's browser platform does the same on its own) made every
+    // production hydrate() walk the DOM for mismatches.
+    'process.env.NODE_ENV': 'process.env.NODE_ENV',
   },
 });
 
