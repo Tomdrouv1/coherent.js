@@ -217,13 +217,16 @@ export class BaseRenderer {
     }
 
     /**
-     * Execute function components with _error handling
+     * Execute function components. Errors propagate: they used to be
+     * swallowed here (the component rendered as nothing, logged only when
+     * NODE_ENV=development), so a broken component produced a partial page
+     * with a 200 and error boundaries never saw nested failures.
      */
     executeFunctionComponent(func, depth = 0) {
         try {
             // Check if this is a context provider by checking function arity or a marker
             const isContextProvider = func.length > 0 || func.isContextProvider;
-            
+
             let result;
             if (isContextProvider) {
                 // Call with render function for context providers
@@ -234,24 +237,18 @@ export class BaseRenderer {
                 // Regular function component
                 result = func();
             }
-            
+
             // Handle case where function returns another function
             if (typeof result === 'function') {
                 return this.executeFunctionComponent(result, depth);
             }
-            
+
             return result;
-        } catch (_error) {
+        } catch (error) {
             if (this.config.enableMonitoring) {
-                performanceMonitor.recordError('functionComponent', _error);
+                performanceMonitor.recordError('functionComponent', error);
             }
-            
-            // In development, provide detailed _error info
-            if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
-                console.warn('Coherent.js Function Component Error:', _error.message);
-            }
-            
-            return null;
+            throw error;
         }
     }
 

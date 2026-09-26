@@ -7,6 +7,61 @@
  * @module components/error-boundary
  */
 
+import { isTrustedContent } from '../core/html-utils.js';
+
+/**
+ * Whether error state may persist between calls. In a browser a boundary
+ * wraps one live UI, so "stay on the fallback until reset" makes sense. On
+ * the server every call is a different request: shared state switched every
+ * later request to the fallback after one failure, and kept that request's
+ * props (possibly personal data) in memory.
+ */
+function isBrowser() {
+  return typeof window !== 'undefined' && typeof document !== 'undefined';
+}
+
+/**
+ * Evaluate zero-argument function components nested in a tree, so that
+ * errors they throw happen inside the boundary's try block. Otherwise the
+ * renderer calls them after the boundary has returned and nested errors
+ * escape it. Functions taking arguments (context providers) need the
+ * renderer and are left as they are.
+ */
+function resolveNestedComponents(node, depth = 0) {
+  if (depth > 1000) return node;
+
+  if (typeof node === 'function') {
+    if (node.length > 0 || node.isContextProvider) return node;
+    return resolveNestedComponents(node(), depth + 1);
+  }
+
+  if (Array.isArray(node)) {
+    let changed = false;
+    const resolved = node.map((child) => {
+      const result = resolveNestedComponents(child, depth + 1);
+      if (result !== child) changed = true;
+      return result;
+    });
+    return changed ? resolved : node;
+  }
+
+  if (node && typeof node === 'object' && !isTrustedContent(node)) {
+    const keys = Object.keys(node);
+    if (keys.length !== 1) return node;
+
+    const tag = keys[0];
+    const props = node[tag];
+    if (props && typeof props === 'object' && !Array.isArray(props) && props.children !== undefined) {
+      const children = resolveNestedComponents(props.children, depth + 1);
+      if (children !== props.children) {
+        return { [tag]: { ...props, children } };
+      }
+    }
+  }
+
+  return node;
+}
+
 /**
  * Error boundary state
  */
@@ -67,7 +122,7 @@ export function createErrorBoundary(options = {}) {
     resetTimeout = null
   } = options;
 
-  const state = new ErrorBoundaryState();
+  const sharedState = new ErrorBoundaryState();
   let previousProps = {};
   let resetTimer = null;
 
@@ -76,16 +131,21 @@ export function createErrorBoundary(options = {}) {
    */
   return function errorBoundaryWrapper(component) {
     return function wrappedComponent(props = {}) {
+      const persistent = isBrowser();
+      const state = persistent ? sharedState : new ErrorBoundaryState();
+
       try {
         // Check if we should reset based on props
-        if (resetOnPropsChange && shouldReset(props, previousProps, resetKeys)) {
+        if (persistent && resetOnPropsChange && shouldReset(props, previousProps, resetKeys)) {
           state.reset();
           if (onReset) {
             onReset();
           }
         }
 
-        previousProps = { ...props };
+        if (persistent) {
+          previousProps = { ...props };
+        }
 
         // If we have an error and haven't exceeded max errors
         if (state.hasError) {
@@ -112,12 +172,12 @@ export function createErrorBoundary(options = {}) {
           return fallbackComponent;
         }
 
-        // Try to render the component
+        // Try to render the component, nested function components included
         const result = typeof component === 'function'
           ? component(props)
           : component;
 
-        return result;
+        return resolveNestedComponents(result);
 
       } catch (error) {
         // Capture error
@@ -139,7 +199,7 @@ export function createErrorBoundary(options = {}) {
         }
 
         // Set auto-reset timer if configured
-        if (resetTimeout && !resetTimer) {
+        if (persistent && resetTimeout && !resetTimer) {
           resetTimer = setTimeout(() => {
             state.reset();
             resetTimer = null;
@@ -301,10 +361,12 @@ export function createAsyncErrorBoundary(options = {}) {
 
   return function asyncBoundaryWrapper(asyncComponent) {
     return async function wrappedAsyncComponent(props = {}) {
+      let timer;
       try {
-        // Set timeout
+        // Set timeout (cleared below: a pending timer per call kept the
+        // process alive for `timeout` ms after every render)
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Component load timeout')), timeout);
+          timer = setTimeout(() => reject(new Error('Component load timeout')), timeout);
         });
 
         // Race between component load and timeout
@@ -324,6 +386,8 @@ export function createAsyncErrorBoundary(options = {}) {
         return typeof errorFallback === 'function'
           ? errorFallback(error, { props })
           : errorFallback;
+      } finally {
+        clearTimeout(timer);
       }
     };
   };

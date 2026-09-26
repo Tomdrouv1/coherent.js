@@ -533,6 +533,12 @@ export interface RenderOptions {
   cacheSize?: number;
   /** Time-to-live in milliseconds for cache entries this render adds. */
   cacheTTL?: number;
+  /**
+   * Called when a function component throws. Its return value is rendered in
+   * place of the component (`null` omits it). Without it, the error
+   * propagates out of render().
+   */
+  onError?: (error: unknown, info: { path: string }) => CoherentNode;
   scoped?: boolean;
   encapsulate?: boolean;
 }

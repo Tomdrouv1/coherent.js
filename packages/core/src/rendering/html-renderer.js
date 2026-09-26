@@ -63,6 +63,9 @@ function formatRenderPath(path) {
  * @param {boolean} [options.streaming=false] - Enable streaming mode
  * @param {number} [options.maxDepth=100] - Maximum rendering depth
  * @param {number} [options.cacheTTL=300000] - Cache TTL in milliseconds for entries this render adds
+ * @param {Function} [options.onError] - `(error, { path }) => replacement` called when a
+ *   function component throws; its return value is rendered in place of the component
+ *   (return null to omit it). Without it the error propagates out of render().
  *
  * @example
  * const renderer = new HTMLRenderer({
@@ -224,7 +227,7 @@ class HTMLRenderer extends BaseRenderer {
                     return escapeHtml(value);
                 case 'function':
                     {
-                        const result = this.executeFunctionComponent(value, depth);
+                        const result = this.runFunctionComponent(value, options, depth, path);
                         return this.renderComponent(result, options, depth + 1, [...path, '()']);
                     }
                 case 'array':
@@ -276,9 +279,26 @@ class HTMLRenderer extends BaseRenderer {
                 throw _error;
             }
 
-            throw new RenderingError(_error.message, undefined, { path: renderPath, renderer: 'html' });
+            const wrapped = new RenderingError(_error.message, undefined, { path: renderPath, renderer: 'html' });
+            wrapped.cause = _error;
+            throw wrapped;
         } finally {
             if (tracked) options.seenObjects.delete(tracked);
+        }
+    }
+
+    /**
+     * Run a function component, giving `options.onError` the chance to
+     * replace a component that throws.
+     */
+    runFunctionComponent(func, options, depth, path) {
+        try {
+            return this.executeFunctionComponent(func, depth);
+        } catch (error) {
+            if (typeof options.onError === 'function') {
+                return options.onError(error, { path: formatRenderPath(path) });
+            }
+            throw error;
         }
     }
 
@@ -324,7 +344,7 @@ class HTMLRenderer extends BaseRenderer {
 
         // Handle function elements
         if (typeof element === 'function') {
-            const result = this.executeFunctionComponent(element, depth);
+            const result = this.runFunctionComponent(element, options, depth, path);
             return this.renderElement(tagName, result, options, depth, [...path, '()']);
         }
 
