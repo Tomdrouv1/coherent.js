@@ -37,7 +37,7 @@ export class StateCapturer {
    *
    * Uses multiple factors to identify inputs across HMR updates:
    * 1. ID (most stable)
-   * 2. Name + type
+   * 2. Name + type (+ value for radios and checkboxes)
    * 3. Form context
    * 4. DOM path (fallback)
    *
@@ -60,6 +60,12 @@ export class StateCapturer {
 
     if (input.type) {
       parts.push(`[type="${input.type}"]`);
+    }
+
+    // Radios (and checkbox groups) share a name: tell them apart by value,
+    // or every button of a group collapses onto one key
+    if (input.name && (input.type === 'radio' || input.type === 'checkbox')) {
+      parts.push(`[value="${input.value}"]`);
     }
 
     // Form context if available
@@ -226,7 +232,9 @@ export class StateCapturer {
         selector += `[type="${type}"]`;
       }
 
-      return Array.from(document.querySelectorAll(selector));
+      const inputs = Array.from(document.querySelectorAll(selector));
+      const valueMatch = key.match(/\[value="([^"]*)"\]/);
+      return valueMatch ? inputs.filter((input) => input.value === valueMatch[1]) : inputs;
     }
 
     // Path-based key - try to query directly

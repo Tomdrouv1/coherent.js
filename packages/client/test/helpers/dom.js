@@ -641,6 +641,23 @@ export class ShimElement extends ShimNode {
   getBoundingClientRect() {
     return { top: 0, left: 0, width: 0, height: 0, right: 0, bottom: 0 };
   }
+
+  /** A shadow root stand-in: a detached element that owns its own subtree. */
+  attachShadow() {
+    this.shadowRoot = new ShimElement('#shadow-root', this.ownerDocument);
+    return this.shadowRoot;
+  }
+
+  get dataset() {
+    const element = this;
+    return new Proxy({}, {
+      get(_target, prop) {
+        if (typeof prop !== 'string') return undefined;
+        const value = element.getAttribute(`data-${prop.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)}`);
+        return value === null ? undefined : value;
+      },
+    });
+  }
 }
 
 // ---------------------------------------------------------------------------

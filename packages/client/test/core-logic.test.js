@@ -6,9 +6,14 @@
 import { describe, it, expect } from 'vitest';
 
 describe('HMR Core Logic', () => {
-  it('throws an informative migration error when legacy hmr.js is imported directly', async () => {
-    await expect(import('../src/hmr.js')).rejects.toThrow(/Coherent\.js 1\.0/);
-    await expect(import('../src/hmr.js')).rejects.toThrow(/coherentjs\.dev\/docs\/migration\/1\.0/);
+  // The ./hmr subpath used to throw a 1.0 migration error on import, which
+  // made the published entry point unusable. It now exports the HMR API; what
+  // 1.0 removed — connecting as an import side effect — stays removed.
+  it('exposes the HMR API from the hmr entry point without connecting', async () => {
+    const hmr = await import('../src/hmr.js');
+
+    expect(hmr.hmrClient.initialized).toBe(false);
+    expect(hmr.hmrClient.socket).toBeNull();
   });
 
   it('should test HMR message processing logic', () => {

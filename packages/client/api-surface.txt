@@ -41,7 +41,21 @@ handlerRegistry
 wrapEvent
 
 == ./hmr ==
-# import failed (Error)
+CleanupTracker
+ConnectionIndicator
+ErrorOverlay
+HMRClient
+ModuleTracker
+StateCapturer
+cleanupTracker
+connectionIndicator
+createHotContext
+errorOverlay
+escapeHtml
+formatCodeFrame
+hmrClient
+moduleTracker
+stateCapturer
 
 == ./router ==
 createRouter

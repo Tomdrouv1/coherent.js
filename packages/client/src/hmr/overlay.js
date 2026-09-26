@@ -325,11 +325,13 @@ export class ErrorOverlay {
       this.openInEditor(file, line);
     });
 
-    // Escape key handler
-    this.escapeHandler = (e) => {
-      if (e.key === 'Escape') this.hide();
-    };
-    document.addEventListener('keydown', this.escapeHandler);
+    // Escape key handler: one per visible overlay, however often show() runs
+    if (!this.escapeHandler) {
+      this.escapeHandler = (e) => {
+        if (e.key === 'Escape') this.hide();
+      };
+      document.addEventListener('keydown', this.escapeHandler);
+    }
 
     // Add to DOM if not already
     if (!host.parentNode) {
