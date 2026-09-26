@@ -192,8 +192,14 @@ export class BaseRenderer {
             return { type: 'text', value: component };
         }
 
-        // Number/Boolean
-        if (typeof component === 'number' || typeof component === 'boolean') {
+        // Booleans render nothing, so `cond && { li: ... }` can sit in a
+        // children array (it used to print "false").
+        if (typeof component === 'boolean') {
+            return { type: 'empty', value: '' };
+        }
+
+        // Number
+        if (typeof component === 'number') {
             return { type: 'text', value: String(component) };
         }
 

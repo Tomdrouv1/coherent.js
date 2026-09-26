@@ -141,9 +141,10 @@ describe('BaseRenderer', () => {
       expect(renderer.processComponentType(-1)).toEqual({ type: 'text', value: '-1' });
     });
 
-    it('should process boolean components', () => {
-      expect(renderer.processComponentType(true)).toEqual({ type: 'text', value: 'true' });
-      expect(renderer.processComponentType(false)).toEqual({ type: 'text', value: 'false' });
+    it('should treat boolean components as empty', () => {
+      // so `cond && { li: ... }` can sit in a children array
+      expect(renderer.processComponentType(true)).toEqual({ type: 'empty', value: '' });
+      expect(renderer.processComponentType(false)).toEqual({ type: 'empty', value: '' });
     });
 
     it('should process function components', () => {

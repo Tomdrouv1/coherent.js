@@ -65,11 +65,13 @@ export class ComponentCache {
             invalidations: 0
         };
 
-        // Start periodic cleanup
+        // Start periodic cleanup. unref(): a cache must not keep the process
+        // alive — a script that called memoize() never exited.
         if (this.options.cleanupInterval > 0) {
             this.cleanupTimer = setInterval(() => {
                 this.cleanup();
             }, this.options.cleanupInterval);
+            this.cleanupTimer.unref?.();
         }
     }
 

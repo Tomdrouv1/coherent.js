@@ -407,9 +407,9 @@ class HTMLRenderer extends BaseRenderer {
             return `${openingTag}${text.__html}</${tagName}>`;
         }
 
-        // Handle text content
+        // Handle text content (null means "no text", not the string "null")
         let textContent = '';
-        if (text !== undefined) {
+        if (text !== undefined && text !== null) {
             const isScript = tagName === 'script';
             const isStyle = tagName === 'style';
             const isRawTag = isScript || isStyle;

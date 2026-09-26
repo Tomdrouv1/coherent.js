@@ -652,14 +652,36 @@ export function createPerformanceMonitor(options = {}) {
     if (startTime !== undefined) {
       const duration = performance.now() - startTime;
       _renderTimers.delete(id);
-      recordMetric('render', duration);
+      recordMetric('renderTime', duration);
       return duration;
     }
     return 0;
   }
 
+  /**
+   * Record a render reported by the renderer (`enableMonitoring: true`).
+   * Whole renders feed the renderTime histogram; per-element reports only
+   * count components.
+   */
+  function recordRender(operation, duration, fromCache = false, metadata = {}) {
+    if (operation === 'render') {
+      recordMetric('renderTime', duration, { fromCache, ...metadata });
+    } else {
+      recordMetric('componentCount', 1, { operation, fromCache });
+    }
+  }
+
+  /**
+   * Record an error reported by the renderer.
+   */
+  function recordError(operation, error, metadata = {}) {
+    recordMetric('errorCount', 1, { operation, error: error?.message, ...metadata });
+  }
+
   return {
     recordMetric,
+    recordRender,
+    recordError,
     measure,
     measureAsync,
     addMetric,

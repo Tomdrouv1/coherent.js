@@ -732,6 +732,10 @@ export interface PerformanceMonitor {
   startRender(componentName?: string): string;
   endRender(renderId: string): number;
   recordMetric(name: string, value: number, tags?: Record<string, any>): void;
+  /** Called by the renderer when `enableMonitoring` is on. */
+  recordRender(operation: string, duration: number, fromCache?: boolean, metadata?: Record<string, any>): void;
+  /** Called by the renderer when `enableMonitoring` is on. */
+  recordError(operation: string, error: unknown, metadata?: Record<string, any>): void;
   addMetric(name: string, value: number, tags?: Record<string, any>): void;
   measure<T>(name: string, fn: () => T): T;
   measureAsync<T>(name: string, fn: () => Promise<T>): Promise<T>;

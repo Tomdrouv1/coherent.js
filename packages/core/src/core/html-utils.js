@@ -103,7 +103,34 @@ export function isVoidElement(tagName) {
   return voidElements.has(tagName.toLowerCase());
 }
 
+/**
+ * Enumerated attributes whose "false" is meaningful and must be written out
+ * (a bare or missing attribute means something else).
+ */
+const ENUMERATED_BOOLEAN_ATTRIBUTES = new Set(['spellcheck', 'draggable', 'contenteditable']);
+
+/**
+ * Normalize a class value: strings as-is, arrays flattened with falsy
+ * entries dropped, objects as the keys whose values are truthy (clsx-style).
+ */
+function normalizeClassValue(value) {
+  if (Array.isArray(value)) {
+    return value.map(normalizeClassValue).filter(Boolean).join(' ');
+  }
+  if (value && typeof value === 'object') {
+    return Object.keys(value).filter((name) => value[name]).join(' ');
+  }
+  if (value === null || value === undefined || value === false) return '';
+  return String(value);
+}
+
 export function formatAttributes(props) {
+  // `class` and `className` together used to produce two class attributes.
+  if (props && props.class !== undefined && props.className !== undefined) {
+    const { className, ...rest } = props;
+    props = { ...rest, class: [normalizeClassValue(props.class), normalizeClassValue(className)].filter(Boolean).join(' ') };
+  }
+
   let formatted = '';
   for (const key in props) {
     if (props.hasOwnProperty(key)) {
@@ -141,6 +168,16 @@ export function formatAttributes(props) {
             value = '';
           }
         }
+      }
+
+      if (attributeName === 'class' && typeof value === 'object' && value !== null) {
+        // ['a', cond && 'b'] or { a: true, b: false } — was "a,b" / "[object Object]"
+        value = normalizeClassValue(value);
+      }
+
+      if (typeof value === 'boolean' && (attributeName.startsWith('aria-') || ENUMERATED_BOOLEAN_ATTRIBUTES.has(attributeName.toLowerCase()))) {
+        // aria-hidden="false", spellcheck="false": false is a value here, not absence
+        value = String(value);
       }
 
       // Handle style objects by converting to CSS string

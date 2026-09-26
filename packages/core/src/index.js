@@ -66,34 +66,103 @@ import {
 } from './components/error-boundary.js';
 
 // CSS Scoping System (similar to Angular View Encapsulation)
-const scopeCounter = { value: 0 };
 
-function generateScopeId() {
-  return `coh-${scopeCounter.value++}`;
+/**
+ * Scope id derived from the component's CSS (FNV-1a), so the same component
+ * renders the same HTML every time. A global counter used to give it coh-0,
+ * then coh-1..., which broke HTML caching and hydration comparisons. Two
+ * components with identical CSS may share an id; their rules are the same.
+ */
+function generateScopeId(cssText) {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < cssText.length; i++) {
+    hash ^= cssText.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return `coh-${(hash >>> 0).toString(36)}`;
 }
 
+// At-rules whose blocks contain style rules; others (@keyframes,
+// @font-face, @page, @property...) contain declarations or keyframe
+// selectors and are left untouched.
+const GROUPING_AT_RULES = new Set(['media', 'supports', 'container', 'layer', 'document', 'scope']);
+
+function splitSelectorList(prelude) {
+  const parts = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < prelude.length; i++) {
+    const ch = prelude[i];
+    if (ch === '(' || ch === '[') depth++;
+    else if (ch === ')' || ch === ']') depth--;
+    else if (ch === ',' && depth === 0) {
+      parts.push(prelude.slice(start, i));
+      start = i + 1;
+    }
+  }
+  parts.push(prelude.slice(start));
+  return parts;
+}
+
+function scopeSelector(selector, scopeId) {
+  const trimmed = selector.trim();
+  if (!trimmed) return selector;
+
+  // Handle pseudo-selectors and complex selectors
+  if (trimmed.includes(':')) {
+    return trimmed.replace(/([^:]+)(:.*)?/, `$1[${scopeId}]$2`);
+  }
+
+  // Simple selector scoping
+  return `${trimmed}[${scopeId}]`;
+}
+
+/**
+ * Add the scope attribute to every selector in a stylesheet, recursing into
+ * grouping at-rules. The previous regex treated `@media (max-width: 600px)`
+ * and keyframe selectors (`from`, `50%`) as selectors and corrupted them.
+ */
 function scopeCSS(css, scopeId) {
   if (!css || typeof css !== 'string') return css;
 
-  // Add scope attribute to all selectors
-  return css
-    .replace(/([^{}]*)\s*{/g, (match, selector) => {
-      // Handle multiple selectors separated by commas
-      const selectors = selector.split(',').map(s => {
-        const trimmed = s.trim();
-        if (!trimmed) return s;
+  let result = '';
+  let i = 0;
+  while (i < css.length) {
+    const open = css.indexOf('{', i);
+    if (open === -1) {
+      result += css.slice(i);
+      break;
+    }
 
-        // Handle pseudo-selectors and complex selectors
-        if (trimmed.includes(':')) {
-          return trimmed.replace(/([^:]+)(:.*)?/, `$1[${scopeId}]$2`);
-        }
+    let depth = 1;
+    let j = open + 1;
+    while (j < css.length && depth > 0) {
+      if (css[j] === '{') depth++;
+      else if (css[j] === '}') depth--;
+      j++;
+    }
+    const body = css.slice(open + 1, depth === 0 ? j - 1 : j);
 
-        // Simple selector scoping
-        return `${trimmed}[${scopeId}]`;
-      });
+    // Statements before the rule (`@import ...;`) pass through verbatim.
+    const rawPrelude = css.slice(i, open);
+    const semicolon = rawPrelude.lastIndexOf(';');
+    const lead = semicolon === -1 ? '' : rawPrelude.slice(0, semicolon + 1);
+    const prelude = semicolon === -1 ? rawPrelude : rawPrelude.slice(semicolon + 1);
+    const trimmed = prelude.trim();
 
-      return `${selectors.join(', ')} {`;
-    });
+    if (trimmed.startsWith('@')) {
+      const name = trimmed.slice(1).split(/[\s({]/)[0].toLowerCase();
+      const inner = GROUPING_AT_RULES.has(name) ? scopeCSS(body, scopeId) : body;
+      result += `${lead}${prelude}{${inner}}`;
+    } else {
+      const leading = prelude.match(/^\s*/)[0];
+      const scoped = splitSelectorList(prelude).map((part) => scopeSelector(part, scopeId)).join(', ');
+      result += `${lead}${leading}${scoped} {${body}}`;
+    }
+
+    i = j;
+  }
+  return result;
 }
 
 function applyScopeToElement(element, scopeId) {
@@ -200,11 +269,13 @@ export function render(obj, options = {}) {
 
   const { scoped: _scoped, encapsulate: _encapsulate, hydratable: _hydratable, island: _island, ...rendererOptions } = options;
 
-  let component = scoped ? renderScopedComponent(obj) : obj;
+  // Handle function components passed directly to render. Called before
+  // scoping: scoping a function was a no-op, so render(Fn, { scoped: true })
+  // came out unscoped.
+  let component = typeof obj === 'function' ? obj(options) : obj;
 
-  // Handle function components passed directly to render
-  if (typeof component === 'function') {
-    component = component(options);
+  if (scoped) {
+    component = renderScopedComponent(component);
   }
 
   // Inject hydration attributes if needed
@@ -215,9 +286,24 @@ export function render(obj, options = {}) {
   return renderWithHtmlRenderer(component, rendererOptions);
 }
 
+function collectStyleText(element, out = []) {
+  if (Array.isArray(element)) {
+    element.forEach((item) => collectStyleText(item, out));
+  } else if (element && typeof element === 'object') {
+    for (const [tagName, props] of Object.entries(element)) {
+      if (tagName === 'style' && props && typeof props === 'object' && typeof props.text === 'string') {
+        out.push(props.text);
+      } else if (props && typeof props === 'object' && props.children) {
+        collectStyleText(props.children, out);
+      }
+    }
+  }
+  return out;
+}
+
 // Internal: Scoped rendering with CSS encapsulation
 function renderScopedComponent(component) {
-  const scopeId = generateScopeId();
+  const scopeId = generateScopeId(collectStyleText(component).join('\n'));
 
   // Handle style elements specially
   function processScopedElement(element) {
