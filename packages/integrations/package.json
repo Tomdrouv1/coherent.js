@@ -22,6 +22,9 @@
     "./astro": {
       "default": "./src/astro/index.js"
     },
+    "./astro/server": {
+      "default": "./src/astro/server.js"
+    },
     "./remix": {
       "default": "./src/remix/index.js"
     },
