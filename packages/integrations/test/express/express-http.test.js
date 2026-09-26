@@ -6,9 +6,12 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest';
+import { fileURLToPath } from 'node:url';
 import express from 'express';
 import {
   coherentMiddleware,
+  createCoherentHandler,
+  expressEngine,
   setupCoherent
 } from '../../src/express/index.js';
 import { listen, hit } from '../helpers/listen.js';
@@ -118,5 +121,111 @@ describe('Express: autoRender: true keeps the legacy res.send behavior', () => {
 
     const text = await hit(server.url, '/text');
     expect(text.body).toBe('plain');
+  });
+});
+
+const viewsDir = fileURLToPath(new URL('./fixtures/views', import.meta.url));
+
+describe('Express: view engine', () => {
+  it('is not registered by default and never replaces an existing view engine', () => {
+    const plain = express();
+    setupCoherent(plain);
+    expect(plain.get('view engine')).toBeUndefined();
+
+    const pug = express();
+    pug.set('view engine', 'pug');
+    setupCoherent(pug, { useEngine: true });
+    expect(pug.get('view engine')).toBe('pug');
+  });
+
+  it('renders a view module default export with the locals, without Express internals', async () => {
+    const app = express();
+    app.set('views', viewsDir);
+    app.locals.siteName = 'site';
+    setupCoherent(app, { useEngine: true, engineName: 'js' });
+    app.get('/', (_req, res) => res.render('greeting', { name: 'Bob' }));
+    app.use(errorHandler);
+    server = await listen(app);
+
+    const result = await hit(server.url, '/');
+    expect(result.status).toBe(200);
+    expect(result.type).toMatch(/^text\/html/);
+    expect(result.body).toBe('<h1 data-leaked="no">Hello Bob</h1>');
+  });
+
+  it('renders the locals as the component for a non-module view file', async () => {
+    const app = express();
+    app.set('views', viewsDir);
+    setupCoherent(app, { useEngine: true });
+    app.get('/', (_req, res) => res.render('marker', { div: { text: 'engine' } }));
+    app.use(errorHandler);
+    server = await listen(app);
+
+    const result = await hit(server.url, '/');
+    expect(result.status).toBe(200);
+    expect(result.body).toBe('<div>engine</div>');
+  });
+
+  it('expressEngine() returns the same working engine', async () => {
+    const app = express();
+    app.set('views', viewsDir);
+    app.engine('js', expressEngine());
+    app.get('/', (_req, res) => res.render('greeting.js', { name: 'Ann' }));
+    app.use(errorHandler);
+    server = await listen(app);
+
+    expect((await hit(server.url, '/')).body).toBe('<h1 data-leaked="no">Hello Ann</h1>');
+  });
+});
+
+describe('Express: createCoherentHandler', () => {
+  it('does not send again when the factory already responded', async () => {
+    const errors = [];
+    const app = express();
+    app.get('/redirect', createCoherentHandler((_req, res) => {
+      res.redirect('/elsewhere');
+      return { div: { text: 'unused' } };
+    }));
+    app.get('/redirect-only', createCoherentHandler((_req, res) => {
+      res.redirect('/login');
+    }));
+    app.use((err, _req, _res, next) => {
+      errors.push(err);
+      next(err);
+    });
+    server = await listen(app);
+
+    const redirected = await hit(server.url, '/redirect');
+    expect(redirected.status).toBe(302);
+    expect(redirected.headers.get('location')).toBe('/elsewhere');
+
+    const redirectOnly = await hit(server.url, '/redirect-only');
+    expect(redirectOnly.status).toBe(302);
+    expect(redirectOnly.headers.get('location')).toBe('/login');
+
+    expect(errors).toEqual([]);
+  });
+
+  it('still renders the returned component', async () => {
+    const app = express();
+    app.get('/', createCoherentHandler((req) => ({ p: { text: req.query.q } })));
+    server = await listen(app);
+
+    const result = await hit(server.url, '/?q=%3Cb%3E');
+    expect(result.type).toMatch(/^text\/html/);
+    expect(result.body).toBe('<!DOCTYPE html>\n<p>&lt;b&gt;</p>');
+  });
+});
+
+describe('Express: module shape', () => {
+  it('has the default export its type declarations promise', async () => {
+    const mod = await import('../../src/express/index.js');
+    expect(Object.keys(mod.default ?? {}).sort()).toEqual([
+      'coherentMiddleware',
+      'createCoherentHandler',
+      'createExpressIntegration',
+      'enhancedExpressEngine',
+      'setupCoherent'
+    ]);
   });
 });

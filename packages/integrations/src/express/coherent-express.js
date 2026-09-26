@@ -3,11 +3,11 @@
  * Provides middleware and utilities for using Coherent.js with Express
  */
 
+import { pathToFileURL } from 'node:url';
 import {
   render,
   importPeerDependency,
   renderWithTemplate,
-  renderComponentFactory,
   isCoherentComponent
 } from '@coherent.js/core';
 
@@ -94,6 +94,9 @@ export function coherentMiddleware(options = {}) {
 /**
  * Create an Express route handler for Coherent.js components
  *
+ * The factory receives `(req, res, next)`. If it answers the request itself
+ * (`res.redirect()`, `res.json()`, ...) nothing further is sent.
+ *
  * @param {Function} componentFactory - Function that returns a Coherent.js component
  * @param {Object} options - Handler options
  * @returns {Function} Express route handler
@@ -101,12 +104,17 @@ export function coherentMiddleware(options = {}) {
 export function createCoherentHandler(componentFactory, options = {}) {
   return async (req, res, next) => {
     try {
-      // Use shared rendering utility
-      const finalHtml = await renderComponentFactory(
-        componentFactory,
-        [req, res, next],
-        options
-      );
+      const component = await componentFactory(req, res, next);
+
+      // The factory already responded: sending again would throw
+      // ERR_HTTP_HEADERS_SENT.
+      if (res.headersSent) return;
+
+      if (!component) {
+        throw new Error('Component factory returned null/undefined');
+      }
+
+      const finalHtml = renderWithTemplate(component, options);
 
       // Send HTML response
       res.set('Content-Type', 'text/html');
@@ -118,34 +126,82 @@ export function createCoherentHandler(componentFactory, options = {}) {
   };
 }
 
+/** Keys Express merges into the view-engine options besides the locals. */
+const EXPRESS_VIEW_OPTION_KEYS = new Set(['settings', '_locals', 'cache']);
+
+/** View files that are loaded as ES modules rather than used as markers. */
+const VIEW_MODULE_EXTENSION = /\.(?:js|mjs|cjs)$/;
+
 /**
- * Enhanced Express engine for Coherent.js views
+ * Resolve the component for a view.
  *
- * @param {string} filePath - Path to view file (not used in Coherent.js)
- * @param {Object} options - View options containing Coherent.js component
+ * A JavaScript view module's default export is the component: a function is
+ * called with the render locals, anything else is used as-is. Any other view
+ * file (e.g. an empty `home.coherent`) only satisfies Express's lookup, and
+ * the locals themselves are the component: `res.render('home', { div: ... })`.
+ */
+async function resolveViewComponent(filePath, locals) {
+  if (!VIEW_MODULE_EXTENSION.test(filePath)) {
+    return locals;
+  }
+
+  const viewModule = await import(pathToFileURL(filePath).href);
+  if (!('default' in viewModule)) {
+    throw new Error(`Coherent.js view "${filePath}" has no default export`);
+  }
+
+  const view = viewModule.default;
+  return typeof view === 'function' ? view(locals) : view;
+}
+
+/**
+ * Express view engine for Coherent.js views.
+ *
+ * Register it with `setupCoherent(app, { useEngine: true })`, or directly with
+ * `app.engine('js', enhancedExpressEngine)` to render view modules
+ * (`views/home.js` exporting a component or `(locals) => component` as
+ * default). Express's own `settings`, `_locals` and `cache` keys are removed
+ * before the locals reach the component.
+ *
+ * @param {string} filePath - Absolute path of the view file Express resolved
+ * @param {Object} options - Render locals merged by Express
  * @param {Function} callback - Callback function
  */
 export function enhancedExpressEngine(filePath, options, callback) {
-  try {
-    // Render Coherent.js component from options
-    const html = render(options);
-    callback(null, html);
-  } catch (_error) {
-    callback(_error);
+  const locals = {};
+  for (const [key, value] of Object.entries(options ?? {})) {
+    if (!EXPRESS_VIEW_OPTION_KEYS.has(key)) locals[key] = value;
   }
+
+  resolveViewComponent(filePath, locals).then(
+    (component) => {
+      let html;
+      try {
+        html = render(component);
+      } catch (_error) {
+        callback(_error);
+        return;
+      }
+      callback(null, html);
+    },
+    (_error) => callback(_error)
+  );
 }
 
 /**
  * Setup Coherent.js with Express app
  *
  * Installs {@link coherentMiddleware} (so routes can call `res.coherent()`)
- * and optionally registers the view engine.
+ * and, when asked to, registers {@link enhancedExpressEngine} as a view
+ * engine. The engine is opt-in so it does not take over an app's existing
+ * `view engine`; it only becomes the default engine when none is set.
  *
  * @param {Object} app - Express app instance
  * @param {Object} options - Setup options
  * @param {boolean} [options.useMiddleware=true] - Install coherentMiddleware
- * @param {boolean} [options.useEngine=true] - Register the view engine
+ * @param {boolean} [options.useEngine=false] - Register the view engine
  * @param {string} [options.engineName='coherent'] - View engine name / file extension
+ *   (use 'js' to render `views/*.js` modules)
  * @param {boolean} [options.enablePerformanceMonitoring=false] - Enable performance monitoring
  * @param {string} [options.template] - HTML template with {{content}} placeholder
  * @param {boolean} [options.autoRender=false] - Render component-shaped objects passed to `res.send`
@@ -154,17 +210,19 @@ export function enhancedExpressEngine(filePath, options, callback) {
 export function setupCoherent(app, options = {}) {
   const {
     useMiddleware = true,
-    useEngine = true,
+    useEngine = false,
     engineName = 'coherent',
     enablePerformanceMonitoring = false,
     template,
     autoRender = false
   } = options;
 
-  // Register enhanced engine
+  // Register the view engine (opt-in); never override an existing default engine
   if (useEngine) {
     app.engine(engineName, enhancedExpressEngine);
-    app.set('view engine', engineName);
+    if (!app.get('view engine')) {
+      app.set('view engine', engineName);
+    }
   }
 
   // Install the middleware (res.coherent, plus res.send auto-rendering when opted in)

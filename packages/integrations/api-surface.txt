@@ -14,6 +14,7 @@ renderComponent
 coherentMiddleware
 createCoherentHandler
 createExpressIntegration
+default
 enhancedExpressEngine
 expressEngine
 setupCoherent

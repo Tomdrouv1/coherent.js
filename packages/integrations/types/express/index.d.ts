@@ -71,13 +71,15 @@ export interface SetupCoherentExpressOptions {
   useMiddleware?: boolean;
   
   /**
-   * Use Coherent.js view engine
-   * @default true
+   * Register {@link enhancedExpressEngine} as a view engine. It becomes the
+   * app's default `view engine` only if none is set yet.
+   * @default false
    */
   useEngine?: boolean;
-  
+
   /**
-   * Name of the view engine
+   * Name of the view engine, i.e. the view file extension. Use `'js'` to
+   * render `views/*.js` modules whose default export is the component.
    * @default 'coherent'
    */
   engineName?: string;
@@ -136,19 +138,29 @@ export function coherentMiddleware(options?: CoherentMiddlewareOptions): (
 
 /**
  * Create an Express route handler for Coherent.js components
- * @param componentFactory Function that returns a Coherent component
+ * @param componentFactory Function that returns a Coherent component. If it
+ *   responds itself (e.g. `res.redirect()`), its return value is ignored.
  * @param options Configuration options
  * @returns Express route handler
  */
 export function createCoherentHandler(
-  componentFactory: (req: Request, res: Response, next: NextFunction) => CoherentNode | Promise<CoherentNode>,
+  componentFactory: (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => CoherentNode | void | Promise<CoherentNode | void>,
   options?: CoherentHandlerOptions
-): (req: Request, res: Response, next: NextFunction) => void;
+): (req: Request, res: Response, next: NextFunction) => Promise<void>;
 
 /**
- * Enhanced Express engine for Coherent.js views
+ * Express view engine for Coherent.js views.
+ *
+ * A `.js`/`.mjs`/`.cjs` view module's default export is the component (a
+ * function is called with the render locals). For any other view file the
+ * locals themselves are rendered as the component. Express's `settings`,
+ * `_locals` and `cache` keys are stripped from the locals first.
  * @param filePath Path to the view file
- * @param options Rendering options
+ * @param options Render locals
  * @param callback Callback function
  */
 export function enhancedExpressEngine(
@@ -159,7 +171,7 @@ export function enhancedExpressEngine(
 
 /**
  * Setup Coherent.js with Express app
- * Configures middleware, view engine, and static files
+ * Installs {@link coherentMiddleware} and, with `useEngine`, the view engine
  * @param app Express application instance
  * @param options Configuration options
  */
@@ -182,8 +194,7 @@ export function createExpressIntegration(
 ): Promise<(app: Application) => Application>;
 
 /**
- * A classic Express view engine that renders the component passed as the
- * `options` argument.
+ * Returns {@link enhancedExpressEngine}, for `app.engine('js', expressEngine())`.
  *
  * Kept for consumers migrating from the standalone `@coherent.js/express`
  * package; new code should prefer {@link setupCoherent}.
