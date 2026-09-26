@@ -61,10 +61,38 @@ export function createSvelteKitAdapter(_options = {}) {
   };
 }
 
+/** Local name the preprocessor imports Coherent.js's `render` under. */
+const RENDER_IDENTIFIER = '__coherentRender';
+const RENDER_IMPORT = `import { render as ${RENDER_IDENTIFIER} } from '@coherent.js/core';`;
+
+/** `<script context="module">` (Svelte 4) or `<script module>` (Svelte 5). */
+function isModuleScript(attributes) {
+  return /\bcontext\s*=\s*["']?module\b/.test(attributes) || /(?:^|\s)module(?:\s|=|$)/.test(attributes);
+}
+
+/**
+ * Make `RENDER_IDENTIFIER` available to the markup: add the import to the
+ * instance `<script>`, or add an instance script if there is none. Inserted
+ * without newlines so the component's line numbers do not move.
+ */
+function injectRenderImport(code) {
+  for (const match of code.matchAll(/<script\b([^>]*)>/g)) {
+    if (!isModuleScript(match[1])) {
+      const at = match.index + match[0].length;
+      return `${code.slice(0, at)}${RENDER_IMPORT}${code.slice(at)}`;
+    }
+  }
+  return `<script>${RENDER_IMPORT}</script>${code}`;
+}
+
 /**
  * Create a Svelte preprocessor for Coherent.js templates
  *
- * Transforms inline Coherent.js object syntax within Svelte components.
+ * Replaces each `<coherent>{ ...object literal... }</coherent>` block with
+ * `{@html ...}` of the rendered component, and imports `render` from
+ * `@coherent.js/core` into the component's instance script so the generated
+ * expression resolves. The renderer escapes text content, so `{@html}` only
+ * emits markup the component itself describes.
  *
  * @param {Object} [options] - Preprocessor options
  * @param {string} [options.tag] - Custom tag to process (default: 'coherent')
@@ -76,24 +104,18 @@ export function createPreprocessor(options = {}) {
   return {
     name: 'coherent-preprocessor',
     markup({ content, filename: _filename }) {
-      // Find <coherent> blocks and render them to HTML
+      // Find <coherent> blocks; their content is a JS expression (usually an object literal)
       const regex = new RegExp(`<${tag}>(.*?)</${tag}>`, 'gs');
-      let transformed = content;
-      let match;
+      let found = false;
 
-      while ((match = regex.exec(content)) !== null) {
-        try {
-          // The content inside <coherent> tags should be a JS object literal
-          // This is a basic transform — production use should handle more cases
-          const objectStr = match[1].trim();
-          transformed = transformed.replace(match[0], `{@html coherentRender(${objectStr})}`);
-        } catch {
-          // Leave unchanged if parsing fails
-        }
-      }
+      // Replacer function, so `$&`-style sequences in the block stay literal
+      const transformed = content.replace(regex, (_block, expression) => {
+        found = true;
+        return `{@html ${RENDER_IDENTIFIER}(${expression.trim()})}`;
+      });
 
       return {
-        code: transformed,
+        code: found ? injectRenderImport(transformed) : content,
         map: null
       };
     }
