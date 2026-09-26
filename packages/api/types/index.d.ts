@@ -1106,12 +1106,14 @@ export interface InputValidationRule {
 export function withInputValidation(rules: Record<string, InputValidationRule>): Middleware;
 
 /**
- * Hash a password with PBKDF2-SHA512 and a random salt. Synchronous; returns
- * `"<salt>:<hash>"` in hex.
+ * Hash a password with PBKDF2-SHA512 (10,000 iterations) and a random salt.
+ * Synchronous: it blocks the event loop while deriving. Returns
+ * `"<salt>:<hash>"` in hex. The iteration count is below current OWASP
+ * guidance; for new systems prefer argon2, bcrypt or scrypt with an async API.
  */
 export function hashPassword(password: string): string;
 
-/** Check a password against a `hashPassword()` result. Synchronous. */
+/** Check a password against a `hashPassword()` result, in constant time. Synchronous. */
 export function verifyPassword(password: string, hash: string): boolean;
 
 /**

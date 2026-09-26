@@ -3,7 +3,7 @@
  * @fileoverview Provides authentication, authorization, and security utilities
  */
 
-import { createHmac, randomBytes, pbkdf2Sync } from 'crypto';
+import { createHmac, randomBytes, pbkdf2Sync, timingSafeEqual } from 'crypto';
 import { Buffer } from 'buffer';
 
 /**
@@ -143,7 +143,7 @@ export function verifyToken(token, secret) {
     const data = `${encodedHeader}.${encodedPayload}`;
     const expectedSignature = createSignature(data, secret);
     
-    if (signature !== expectedSignature) {
+    if (!safeEqual(signature, expectedSignature)) {
       return null;
     }
 
@@ -246,18 +246,58 @@ export function withRole(roles) {
 }
 
 /**
+ * PBKDF2 parameters of the `"<salt>:<hash>"` format. Changing them would
+ * make every stored hash fail to verify, so they stay as they are.
+ * @private
+ */
+const PBKDF2_ITERATIONS = 10000;
+const PBKDF2_KEY_LENGTH = 64;
+const PBKDF2_DIGEST = 'sha512';
+
+/**
+ * Compare two strings in time that depends only on their length.
+ *
+ * `===` stops at the first differing character, which lets an attacker who
+ * can time responses recover a valid HMAC signature byte by byte.
+ *
+ * @private
+ * @param {string} a - Received value
+ * @param {string} b - Expected value
+ * @returns {boolean} True when equal
+ */
+function safeEqual(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  const left = Buffer.from(a);
+  const right = Buffer.from(b);
+  // timingSafeEqual needs equal lengths; the expected length is public.
+  if (left.length !== right.length) return false;
+  return timingSafeEqual(left, right);
+}
+
+/**
  * Password hashing utility
+ *
+ * PBKDF2-HMAC-SHA512, 10,000 iterations, 16-byte random salt, stored as
+ * `"<salt hex>:<hash hex>"`. It is synchronous and blocks the event loop for
+ * the duration of the derivation (a few milliseconds); that iteration count
+ * is well below current OWASP guidance (210,000 for PBKDF2-SHA512), so for
+ * new systems prefer a dedicated password hashing library (argon2, bcrypt,
+ * or `crypto.scrypt`) with its async API.
+ *
  * @param {string} password - Plain text password
  * @returns {string} Hashed password
  */
 export function hashPassword(password) {
   const salt = randomBytes(16).toString('hex');
-  const hash = pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
+  const hash = pbkdf2Sync(password, salt, PBKDF2_ITERATIONS, PBKDF2_KEY_LENGTH, PBKDF2_DIGEST).toString('hex');
   return `${salt}:${hash}`;
 }
 
 /**
  * Password verification utility
+ *
+ * Compares in constant time. Synchronous, like `hashPassword()`.
+ *
  * @param {string} password - Plain text password
  * @param {string} hashedPassword - Hashed password from database
  * @returns {boolean} True if password matches
@@ -265,8 +305,9 @@ export function hashPassword(password) {
 export function verifyPassword(password, hashedPassword) {
   try {
     const [salt, hash] = hashedPassword.split(':');
-    const verifyHash = pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
-    return hash === verifyHash;
+    if (!salt || !hash) return false;
+    const verifyHash = pbkdf2Sync(password, salt, PBKDF2_ITERATIONS, PBKDF2_KEY_LENGTH, PBKDF2_DIGEST).toString('hex');
+    return safeEqual(hash, verifyHash);
   } catch {
     return false;
   }
