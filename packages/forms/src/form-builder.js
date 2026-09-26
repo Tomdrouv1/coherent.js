@@ -426,15 +426,63 @@ export class FormBuilder {
   }
 
   /**
+   * A copy of this form's definition — fields, groups, options and handlers —
+   * with fresh values, errors and touched state.
+   *
+   * A FormBuilder holds the state of one submission. On a server, keep the
+   * shared definition at module scope and fork it per request, so one user's
+   * submitted values and errors never render into another user's page.
+   */
+  fork() {
+    const copy = new FormBuilder({ ...this.options });
+
+    for (const [name, config] of this.fields) {
+      copy.fields.set(name, config);
+    }
+    for (const [name, group] of this.groups) {
+      copy.groups.set(name, group);
+    }
+    copy.values = { ...this.initialValues };
+    copy.initialValues = { ...this.initialValues };
+    copy.submitHandler = this.submitHandler;
+    copy.errorHandler = this.errorHandler;
+
+    return copy;
+  }
+
+  /**
+   * The values, errors and touched state a render uses.
+   *
+   * Passing any of `values`, `errors` or `touched` to buildForm renders from
+   * those alone — the instance's own state is neither read nor changed — so a
+   * shared builder can render per-request state. Values are merged over the
+   * fields' default values, and fields with an error count as touched unless
+   * `touched` is given.
+   */
+  resolveRenderState(options = {}) {
+    const { values, errors, touched } = options;
+    if (values === undefined && errors === undefined && touched === undefined) {
+      return { values: this.values, errors: this.errors, touched: this.touched };
+    }
+
+    const renderErrors = errors || {};
+    return {
+      values: { ...this.initialValues, ...values },
+      errors: renderErrors,
+      touched: touched || Object.fromEntries(Object.keys(renderErrors).map(name => [name, true]))
+    };
+  }
+
+  /**
    * Build input component with validation metadata for hydration
    */
-  buildInput(name, classNames = this.resolveClassNames()) {
+  buildInput(name, classNames = this.resolveClassNames(), state = this.resolveRenderState()) {
     const field = this.fields.get(name);
     if (!field) return null;
 
-    const value = this.values[name] || '';
-    const error = this.errors[name];
-    const isTouched = this.touched[name];
+    const value = state.values[name] || '';
+    const error = state.errors[name];
+    const isTouched = state.touched[name];
 
     // Describe the validators for hydrateForm, as a JSON array of
     // `{ name, args }` (`[{"name":"minLength","args":[8]}]`), so the client
@@ -532,9 +580,9 @@ export class FormBuilder {
   /**
    * Build error component
    */
-  buildError(name, classNames = this.resolveClassNames()) {
-    const error = this.errors[name];
-    const isTouched = this.touched[name];
+  buildError(name, classNames = this.resolveClassNames(), state = this.resolveRenderState()) {
+    const error = state.errors[name];
+    const isTouched = state.touched[name];
 
     if (!error || !isTouched) return null;
 
@@ -554,16 +602,16 @@ export class FormBuilder {
   /**
    * Build complete field component
    */
-  buildField(name, classNames = this.resolveClassNames()) {
+  buildField(name, classNames = this.resolveClassNames(), state = this.resolveRenderState()) {
     const field = this.fields.get(name);
     if (!field) return null;
 
     const children = [
       this.buildLabel(name, classNames),
-      this.buildInput(name, classNames)
+      this.buildInput(name, classNames, state)
     ];
 
-    const error = this.buildError(name, classNames);
+    const error = this.buildError(name, classNames, state);
     if (error) {
       children.push(error);
     }
@@ -578,17 +626,23 @@ export class FormBuilder {
 
   /**
    * Build entire form
+   *
+   * `options.values`, `options.errors` and `options.touched` render
+   * per-request state without touching the builder's own (see
+   * resolveRenderState).
    */
   buildForm(options = {}) {
-    const settings = { ...this.options, ...options };
+    const { values: _values, errors: _errors, touched: _touched, ...formOptions } = options;
+    const settings = { ...this.options, ...formOptions };
     const classNames = this.resolveClassNames(options.classNames);
+    const state = this.resolveRenderState(options);
     const fields = [];
 
     for (const [name] of this.fields) {
       // validate() has always skipped fields hidden by showWhen/showIf; render
       // agreed with it only by accident, because nothing was ever hidden.
-      if (!this.isFieldVisible(name)) continue;
-      fields.push(this.buildField(name, classNames));
+      if (!this.isFieldVisible(name, state.values)) continue;
+      fields.push(this.buildField(name, classNames, state));
     }
 
     if (settings.submitButton !== false) {
@@ -670,7 +724,7 @@ export class FormBuilder {
   /**
    * Check if a field is visible
    */
-  isFieldVisible(name) {
+  isFieldVisible(name, values = this.values) {
     const field = this.fields.get(name);
     if (!field) return false;
 
@@ -681,7 +735,7 @@ export class FormBuilder {
     // Support both showWhen and showIf
     const showCondition = field.showWhen || field.showIf;
     if (showCondition) {
-      return showCondition(this.values);
+      return showCondition(values);
     }
 
     return true;

@@ -188,10 +188,32 @@ export interface FormConfig {
 }
 
 /**
+ * Per-render state for `buildForm()`. Passing any of these renders from them
+ * alone: the builder's own values, errors and touched state are neither read
+ * nor changed, so one shared builder can render every request's state.
+ */
+export interface FormRenderState {
+  /** Values to render, merged over the fields' default values */
+  values?: Record<string, unknown>;
+  /** Errors to render, keyed by field name */
+  errors?: Record<string, string>;
+  /** Fields whose error is shown; defaults to every field in `errors` */
+  touched?: Record<string, boolean>;
+}
+
+/** Options for `buildForm()`: form configuration plus per-render state. */
+export type BuildFormOptions = FormConfig & FormRenderState;
+
+/**
  * Accumulates fields and renders them as a Coherent component.
  *
  * Every mutator is chainable, and `build()`, `render()` and `buildForm()` all
  * return the same node — `toHTML()` is that node rendered to a string.
+ *
+ * A builder holds the values, errors and touched state of one submission. On
+ * a server, keep the definition at module scope and call `fork()` per request
+ * (or render with `buildForm({ values, errors })`), so one user's submission
+ * never renders into another user's page.
  *
  * ```ts
  * const form = new FormBuilder({ name: 'signup' })
@@ -258,31 +280,40 @@ export class FormBuilder<T extends Record<string, unknown> = Record<string, unkn
   setAction(action: string): this;
   setMethod(method: 'get' | 'post' | (string & {})): this;
 
-  /** Build the form component */
-  buildForm(options?: FormConfig): CoherentNode;
+  /**
+   * A copy of the definition (fields, groups, options, handlers) with fresh
+   * values, errors and touched state — one per request on a server.
+   */
+  fork(): FormBuilder<T>;
+
+  /** Build the form component; see {@link FormRenderState} for per-render state */
+  buildForm(options?: BuildFormOptions): CoherentNode;
   /** Alias of {@link FormBuilder.buildForm} */
-  build(options?: FormConfig): CoherentNode;
+  build(options?: BuildFormOptions): CoherentNode;
   /** Alias of {@link FormBuilder.buildForm} */
-  render(options?: FormConfig): CoherentNode;
+  render(options?: BuildFormOptions): CoherentNode;
   /** The built form, rendered to an HTML string */
-  toHTML(options?: FormConfig): string;
+  toHTML(options?: BuildFormOptions): string;
 
   /** Merge configured class names over {@link DEFAULT_CLASS_NAMES} */
   resolveClassNames(overrides?: Partial<FormClassNames>): FormClassNames;
 
+  /** The state a render uses: the per-render state given, else the builder's own */
+  resolveRenderState(options?: FormRenderState): Required<FormRenderState>;
+
   /** Build the node for one field, including its label and error */
-  buildField(name: keyof T & string, classNames?: FormClassNames): CoherentNode;
+  buildField(name: keyof T & string, classNames?: FormClassNames, state?: Required<FormRenderState>): CoherentNode;
   /** Build one field's control */
-  buildInput(name: keyof T & string, classNames?: FormClassNames): CoherentNode | null;
+  buildInput(name: keyof T & string, classNames?: FormClassNames, state?: Required<FormRenderState>): CoherentNode | null;
   /** Build one field's label */
   buildLabel(name: keyof T & string, classNames?: FormClassNames): CoherentNode | null;
   /** Build one field's error message, or `null` when it has none to show */
-  buildError(name: keyof T & string, classNames?: FormClassNames): CoherentNode | null;
+  buildError(name: keyof T & string, classNames?: FormClassNames, state?: Required<FormRenderState>): CoherentNode | null;
 
   /** Copy of the current values */
   serialize(): Partial<T>;
-  /** Whether a field's `showWhen`/`showIf` condition currently holds */
-  isFieldVisible(name: keyof T & string): boolean;
+  /** Whether a field's `showWhen`/`showIf` condition holds for `values` (default: the current values) */
+  isFieldVisible(name: keyof T & string, values?: Record<string, unknown>): boolean;
   /** Restore default values and clear errors and touched state */
   reset(): this;
 }
