@@ -162,7 +162,7 @@ importers:
         version: 6.21.0(socks@2.8.7)
       mysql2:
         specifier: ^3.23.1
-        version: 3.24.4(@types/node@26.6.1)
+        version: 3.24.4(@types/node@26.6.2)
       pg:
         specifier: '>=8.8.0 < 9.0.0'
         version: 8.20.0
@@ -177,17 +177,17 @@ importers:
         specifier: 2.0.1
         version: 2.0.1
       '@commitlint/cli':
-        specifier: 21.2.2
-        version: 21.2.2(@types/node@26.6.1)(conventional-commits-parser@7.1.2)(typescript@7.0.2)
+        specifier: 21.2.3
+        version: 21.2.3(@types/node@26.6.2)(conventional-commits-parser@7.1.2)(typescript@7.0.2)
       '@commitlint/config-conventional':
-        specifier: 21.2.2
-        version: 21.2.2
+        specifier: 21.2.3
+        version: 21.2.3
       '@playwright/test':
         specifier: 1.63.0
         version: 1.63.0
       '@types/node':
-        specifier: 26.6.1
-        version: 26.6.1
+        specifier: 26.6.2
+        version: 26.6.2
       '@vitest/coverage-v8':
         specifier: 5.0.1
         version: 5.0.1(vitest@5.0.0)
@@ -198,17 +198,17 @@ importers:
         specifier: 0.28.2
         version: 0.28.2
       eslint:
-        specifier: 10.10.0
-        version: 10.10.0(jiti@2.6.1)(supports-color@8.1.1)
+        specifier: 10.11.0
+        version: 10.11.0(jiti@2.6.1)(supports-color@8.1.1)
       husky:
         specifier: 9.1.7
         version: 9.1.7
       marked:
-        specifier: 18.0.13
-        version: 18.0.13
+        specifier: 18.0.14
+        version: 18.0.14
       prettier:
-        specifier: 3.9.7
-        version: 3.9.7
+        specifier: 3.9.9
+        version: 3.9.9
       shiki:
         specifier: 4.4.3
         version: 4.4.3
@@ -217,7 +217,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 5.0.0
-        version: 5.0.0(@types/node@26.6.1)(@vitest/coverage-v8@5.0.1)(vite@7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0))
+        version: 5.0.0(@types/node@26.6.2)(@vitest/coverage-v8@5.0.1)(vite@7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.15)(yaml@2.9.0))
       ws:
         specifier: 8.21.3
         version: 8.21.3
@@ -284,10 +284,10 @@ importers:
         version: link:../../packages/devtools
       vite:
         specifier: ^7.3.2
-        version: 7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)
+        version: 7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@types/node@26.6.1)(@vitest/coverage-v8@4.1.11)(vite@7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0))
+        version: 4.1.11(@types/node@26.6.2)(@vitest/coverage-v8@4.1.11)(vite@7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0))
 
   examples/ecommerce-starter:
     dependencies:
@@ -336,7 +336,7 @@ importers:
         version: 4.63.1
       vite:
         specifier: ^7.3.2
-        version: 7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)
+        version: 7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)
       webpack:
         specifier: ^5.104.1
         version: 5.108.4(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.25)
@@ -363,7 +363,7 @@ importers:
         version: 6.21.0(socks@2.8.7)
       mysql2:
         specifier: '>=3.23.1 <4.0.0'
-        version: 3.24.4(@types/node@26.6.1)
+        version: 3.24.4(@types/node@26.6.2)
       pg:
         specifier: '>=8.8.0 <9.0.0'
         version: 8.20.0
@@ -392,10 +392,10 @@ importers:
         version: link:../core
       '@sveltejs/kit':
         specifier: '>=2.70.2 <2.70.3'
-        version: 2.70.2(@sveltejs/vite-plugin-svelte@7.1.2(svelte@5.55.7)(vite@7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)))(svelte@5.55.7)(typescript@5.9.3)(vite@7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0))
+        version: 2.70.2(@sveltejs/vite-plugin-svelte@7.1.2(svelte@5.55.7)(vite@7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)))(svelte@5.55.7)(typescript@5.9.3)(vite@7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0))
       astro:
         specifier: ^7.2.8
-        version: 7.3.1(@azure/identity@4.13.1(supports-color@8.1.1))(@emnapi/core@2.0.0-alpha.3)(@emnapi/runtime@2.0.0-alpha.3)(@types/node@26.6.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)
+        version: 7.3.1(@azure/identity@4.13.1(supports-color@8.1.1))(@emnapi/core@2.0.0-alpha.3)(@emnapi/runtime@2.0.0-alpha.3)(@types/node@26.6.2)(jiti@2.6.1)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)
       express:
         specifier: '>=4.18.0 < 6.0.0'
         version: 5.2.1(supports-color@8.1.1)
@@ -410,7 +410,7 @@ importers:
         version: 3.2.0
       next:
         specifier: ^16.3.3
-        version: 16.3.4(@playwright/test@1.63.0)(@types/node@26.6.1)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+        version: 16.3.4(@playwright/test@1.63.0)(@types/node@26.6.2)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       react:
         specifier: '>=18.0.0'
         version: 19.2.6
@@ -439,14 +439,14 @@ importers:
         version: 1.0.14
     devDependencies:
       '@types/node':
-        specifier: 26.6.1
-        version: 26.6.1
+        specifier: 26.6.2
+        version: 26.6.2
       tsx:
-        specifier: 4.23.13
-        version: 4.23.13
+        specifier: 4.23.15
+        version: 4.23.15
       vitest:
         specifier: 5.0.0
-        version: 5.0.0(@types/node@26.6.1)(@vitest/coverage-v8@5.0.1)(vite@7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0))
+        version: 5.0.0(@types/node@26.6.2)(@vitest/coverage-v8@5.0.1)(vite@7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.15)(yaml@2.9.0))
 
   packages/vscode-extension:
     dependencies:
@@ -465,7 +465,7 @@ importers:
         version: 0.28.2
       sharp:
         specifier: 0.35.4
-        version: 0.35.4(@types/node@26.6.1)
+        version: 0.35.4(@types/node@26.6.2)
       typescript:
         specifier: 5.9.3
         version: 5.9.3
@@ -800,61 +800,61 @@ packages:
     peerDependencies:
       vite: 4.x || 5.x || 6.x
 
-  '@commitlint/cli@21.2.2':
-    resolution: {integrity: sha512-a+6hQxIxnpdvSvS2apvttPNbEliYsVC3PqFYDiiB2kjbwIsQsj1urvQ4Tkf70pKYozPalKAuRQmm/GHwndduqA==}
+  '@commitlint/cli@21.2.3':
+    resolution: {integrity: sha512-5yOX6IRjcrIReCxpyAd04hgI/yhUMpVBJ/ouwFV0wk9yx5+fYRDWZWJ5h55Tbedgfol+5m2mU5nqzbB8g3v0vQ==}
     engines: {node: '>=22.12.0'}
     hasBin: true
 
-  '@commitlint/config-conventional@21.2.2':
-    resolution: {integrity: sha512-NxA37SZviusFUEYOQZ5hNnZ1h7O/KiemPkxjOlpzKJNnWxThiwc6/SaZhaPa8fyLvfRBAywhQhJJk8XESHWlpQ==}
+  '@commitlint/config-conventional@21.2.3':
+    resolution: {integrity: sha512-EP2n5DN2GwRWNVrLX0Jx3mpQlW5PfFi9HnD9OJ8hN/H0xFqpCFyHeGDhg+0P8/21iMMcdkcQgbNqmVklebqYsQ==}
     engines: {node: '>=22.12.0'}
 
-  '@commitlint/config-validator@21.2.0':
-    resolution: {integrity: sha512-t7AzNHAKeIdo/3NRGwzpufKHsKkPHmFs/56N2Fnsh0/r0rGtnQzTxk6vnFgjaGr4hdSQKNB50/KAhR9Yk4LJKA==}
+  '@commitlint/config-validator@21.2.3':
+    resolution: {integrity: sha512-JQ13v0GafSM4fBYX8UowSy++07Was20auq0NcTdnzSEq6/05Cq5GBUMIfKkqjzyBwC9sJFmPpKWgLLhH7cygkw==}
     engines: {node: '>=22.12.0'}
 
-  '@commitlint/ensure@21.2.0':
-    resolution: {integrity: sha512-76IF9vDNS13lAzEEik9eKwzt8f9hYhWiwVXZ2AnyLCz5/f511FsEQ3pw1X3/zSQpdRLQU7i5qDMVKyXi1GWjSg==}
+  '@commitlint/ensure@21.2.3':
+    resolution: {integrity: sha512-gEjNKgRocbODI5/sMx2Qc9XOf2/zFTNV2aEK1QZ4gKDKxDC/VR7us3QtIX1C5d5xxHxx0I/tEbYbdSP1Am2LwA==}
     engines: {node: '>=22.12.0'}
 
   '@commitlint/execute-rule@21.0.1':
     resolution: {integrity: sha512-RifH+FmImozKBE6mozhF4K3r2RRKP7SMi/Q/zLCmExtp5e05lhHOUYqGBlFBAGNHaZxU/WYw1XuugYK9jQzqnA==}
     engines: {node: '>=22.12.0'}
 
-  '@commitlint/format@21.2.2':
-    resolution: {integrity: sha512-v6fvxZSc/AvVMROlr3H34+1766bZSYApRUSCAMjWamStPjKMvZ8GdvVA5YW/VQNgbFTmcMz6OYmSTJEvIjPrfA==}
+  '@commitlint/format@21.2.3':
+    resolution: {integrity: sha512-KKwCjXYqA8r295uhLnulDXL9yekdXmj2yp2Q0XsBPhxQ2iPuvRE8F43j7g7yexo69wTdmUQmFz15jpderluzUQ==}
     engines: {node: '>=22.12.0'}
 
-  '@commitlint/is-ignored@21.2.2':
-    resolution: {integrity: sha512-9UoKNgfFE3LU7FrzierCvk3CdDfMDeVGC86qZiT/n0TIjfq/dmZ9MHuXd45OTNRa26ZanmJRxEtmiXk/lEJihg==}
+  '@commitlint/is-ignored@21.2.3':
+    resolution: {integrity: sha512-Ng4nRj/LBAOvc+GQu7bsFW4/fL89LvZ14OOC/ERLbUpnG6QBwWRzY/1oXGwPs3C8YHWjJObin4kLYo2YeEn70w==}
     engines: {node: '>=22.12.0'}
 
-  '@commitlint/lint@21.2.2':
-    resolution: {integrity: sha512-Fy8JxEBzdmsYWFude/61GxXu5O+wEymwiRK2z9GL9R8mCsXphCoGxAFc5iHn5mjlfcSrhiiONE+ksf4KOjnaPg==}
+  '@commitlint/lint@21.2.3':
+    resolution: {integrity: sha512-lUZcSuVLLEDkhge9ERk8Rp+FXQtrUhCK+h328BFnzKXrTuXGdqiYMEpTlNWdZaOrjyMhMJaz354ZaWEGJxcLeg==}
     engines: {node: '>=22.12.0'}
 
-  '@commitlint/load@21.2.2':
-    resolution: {integrity: sha512-0Tt6wDPX167cjKC5D4zhm0+20wJJG+TN/TKovMOspfSe78rOnKX+MNzlVNiu6HyQPZChPJ8QBH31MVt6Bb8fCg==}
+  '@commitlint/load@21.2.3':
+    resolution: {integrity: sha512-cDrL8lOo23Lk7knGzQdjbFcq7z2JgvjwV6PhbESVvEc+Fe21MeLjPKBJi8nKjg7j+jh79CVbVSUbZc104thXRw==}
     engines: {node: '>=22.12.0'}
 
   '@commitlint/message@21.2.0':
     resolution: {integrity: sha512-YxGoiXD/HXNXLJPrQwE5poXa+XH0CBEm+mdvbHQP0g6MV/dmJyUFCzPNzZbxL93GvZ70TmtTK0Z0/IBpAqHv8g==}
     engines: {node: '>=22.12.0'}
 
-  '@commitlint/parse@21.2.2':
-    resolution: {integrity: sha512-MEkobPfvRp+z06Wro8HMG1BDGHzZmj82A1LH1nWeG3ipHpg/x4m6v3wEDvMBIKjRFUnfR3nBeFs3MVCr7UdAmg==}
+  '@commitlint/parse@21.2.3':
+    resolution: {integrity: sha512-Jt61QpF1xA88damCELe8I0FlDZPSpXNc8IhN7z5kZ0EcDYPjdZ+ZHPvsSXl69r2MIlLnNKeHhOn2cmVpziFE9w==}
     engines: {node: '>=22.12.0'}
 
-  '@commitlint/read@21.2.1':
-    resolution: {integrity: sha512-hUW7EJQnNTL0vPOmVMNK4CrnrNBN0nN+JJHReFkdHO5y4iyHeEmTBwuC15OCqUTjxWo7idnH1LftfpWVIaPWIA==}
+  '@commitlint/read@21.2.3':
+    resolution: {integrity: sha512-szAepuLA1vTTr7fuudEg7jYyVHudf+FH+vptU91bhxE1WnE8TKrfTAi44HVllz8XpI8Pvp4GjR/iP5Nshgh+og==}
     engines: {node: '>=22.12.0'}
 
-  '@commitlint/resolve-extends@21.2.2':
-    resolution: {integrity: sha512-RPkJ/IFi7sMUUVbZLqwWFtWw/zRDcfFsmrPSiTMrt5wb7AdxOr86EGQFvmGzef5QKV5IPBWWCujqVTw1RWX44A==}
+  '@commitlint/resolve-extends@21.2.3':
+    resolution: {integrity: sha512-bqJdmAtXgAQel+l02uIsF7rHgKgx1AGZdGBjam7uK4XW54ZAQtB6XAIUXezYprQiCcRMpBh4fHs5JodXK4mVZA==}
     engines: {node: '>=22.12.0'}
 
-  '@commitlint/rules@21.2.2':
-    resolution: {integrity: sha512-eplQzyYkBjYB1HyyRj8hkcK11Y9DU9nuBz7uOKEd6NpE9NGDytLFCAnlRE+OoiK/5sHEJsaz2RGhuWBvYzIbNA==}
+  '@commitlint/rules@21.2.3':
+    resolution: {integrity: sha512-5+YnI/LuTx3JDl9GjqfP2z9x96M8KKDrd+4jOel/T0L1BB3oAmBlSN8xppf63QsudiVEgR8C0gRoAMrPVrms6g==}
     engines: {node: '>=22.12.0'}
 
   '@commitlint/to-lines@21.0.1':
@@ -865,8 +865,8 @@ packages:
     resolution: {integrity: sha512-Y5gmQ+KxzqCrBFJfLvFEPvvwD3LDiNZoTT2yeFBm96M8qhmqSzQc5DvX3rheAaAMjyIvMXOCLS/mWfdpONsjyQ==}
     engines: {node: '>=22.12.0'}
 
-  '@commitlint/types@21.2.0':
-    resolution: {integrity: sha512-7zVFCDB2reMvJH5dmbKnOQPjZEvjdJTH8jc0U/PIPU1r3/+vf5pD1HlfitV2MWsWXrvu7u39iY1lyLUPOaN0Gw==}
+  '@commitlint/types@21.2.3':
+    resolution: {integrity: sha512-sGEA473TlCvhCGNoTBY9OXZVWdscIXdGt0dm8EpB+2MRfmt8LNh/X56P/T3nCtEB+eH5qGEa3odphSAoUxSfSQ==}
     engines: {node: '>=22.12.0'}
 
   '@conventional-changelog/git-client@3.1.2':
@@ -1904,8 +1904,8 @@ packages:
   '@types/nlcst@2.0.3':
     resolution: {integrity: sha512-vSYNSDe6Ix3q+6Z7ri9lyWqgGhJTmzRjZRqyq15N0Z/1/UnVsno9G/N40NBijoYx2seFDIl0+B2mgAb9mezUCA==}
 
-  '@types/node@26.6.1':
-    resolution: {integrity: sha512-VqGJBMCtdhqkBUCcBLvywI0NJ+KLuVzgNnlBUNFOQjqVxzo2lxLUNg1DSey8+u2u6ktswSAxg+s68QLzWHNOuA==}
+  '@types/node@26.6.2':
+    resolution: {integrity: sha512-X1P21scMv4zGKLYqjdGjaKa7COa0RKVYYZZN/NfvLQ1JegxFhdhpZG/Lyn8AXx6CDUavKAd11v6BvfpkDByK8g==}
 
   '@types/normalize-package-data@2.4.4':
     resolution: {integrity: sha512-37i+OaWTh9qeK4LSHPsyRC7NahnGotNuZvjLSgcPzblpHB3rrCJxAOgI5gCdKm7coonsaX1Of0ILiTcnZjbfxA==}
@@ -2966,8 +2966,8 @@ packages:
     resolution: {integrity: sha512-tD40eHxA35h0PEIZNeIjkHoDR4YjjJp34biM0mDvplBe//mB+IHCqHDGV7pxF+7MklTvighcCPPZC7ynWyjdTA==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
 
-  eslint@10.10.0:
-    resolution: {integrity: sha512-NPXn6r5zl4uET1DAVPaOwzX3rut4c0wcmw3dWJAfOsTM5+TogXo0DDjz8pwm/hL8cyVNpHqeK4JpN0NjnyFFNw==}
+  eslint@10.11.0:
+    resolution: {integrity: sha512-P7a6UEEqb9G95MYAtqkmsTbVXIYyzIfl6NGOIJk162PaahFxFyeGcrlXYFSiagECg4sEm8IseJdZBKR3rx6MsQ==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
     hasBin: true
     peerDependencies:
@@ -3781,8 +3781,8 @@ packages:
     resolution: {integrity: sha512-1TGiQiJVRQ3NPmZH6sx5Cfnmg6GQm9jvC1ch4TK511NjSJvjzKLzn5pPfZRNZkRPZP0HqCioSndqH8v2nRaWVQ==}
     hasBin: true
 
-  marked@18.0.13:
-    resolution: {integrity: sha512-xTxVzZsBFwunP6HDmtBkabUQEYArnP7/rMDGmPj9SlrKlQ4i8MdYVow+nJL0eOqwpUqhzBoTBRADGN6uYwPyOw==}
+  marked@18.0.14:
+    resolution: {integrity: sha512-mBHK6FBHuBAlhgRe88w9F0O1AbwwXJUcQibUbC/QcdTbVGAD7aWza+xt3N6oT/jCZx3/OMeS+8rnuiHZcQ9s7A==}
     engines: {node: '>= 20'}
     hasBin: true
 
@@ -4392,8 +4392,8 @@ packages:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
     engines: {node: '>= 0.8.0'}
 
-  prettier@3.9.7:
-    resolution: {integrity: sha512-T3mF5P7HFzZVLDQuCUNtJj6WK1pcpLMweMNUVwGb01bLNkH9AkKxtZvmInw8K6bnn2O3d6/5RHl6zSHiBAD0Og==}
+  prettier@3.9.9:
+    resolution: {integrity: sha512-Z/CJHIkdujO/OtN7nXUii0Rf3VT5SRuhjBA82Xvu2XhBUgX3nhP67T0LHceBdQLex7OOFGTox+Q5Yg8Jk2Qivg==}
     engines: {node: '>=14'}
     hasBin: true
 
@@ -4999,6 +4999,11 @@ packages:
 
   tsx@4.23.13:
     resolution: {integrity: sha512-BL5MGkRln6aDYhb0xbQlEAGw743BaZYWdbWtdJOBriYJboKgUUYCadFp2/FpBBZquBC/ezNBn7wMMPx7FDZUDw==}
+    engines: {node: '>=18.0.0'}
+    hasBin: true
+
+  tsx@4.23.15:
+    resolution: {integrity: sha512-Yiex1Ovn8z2xPpOWckIiysV1SSyRMY9BkLF++q0yKiDxCqRhosKfMg3janKkiLBwZ5c/YryloKwGZcrEmtwxKw==}
     engines: {node: '>=18.0.0'}
     hasBin: true
 
@@ -5946,15 +5951,15 @@ snapshots:
       '@codecov/bundler-plugin-core': 2.0.1
       unplugin: 1.16.1
 
-  '@commitlint/cli@21.2.2(@types/node@26.6.1)(conventional-commits-parser@7.1.2)(typescript@7.0.2)':
+  '@commitlint/cli@21.2.3(@types/node@26.6.2)(conventional-commits-parser@7.1.2)(typescript@7.0.2)':
     dependencies:
-      '@commitlint/config-conventional': 21.2.2
-      '@commitlint/format': 21.2.2
-      '@commitlint/lint': 21.2.2
-      '@commitlint/load': 21.2.2(@types/node@26.6.1)(typescript@7.0.2)
-      '@commitlint/read': 21.2.1(conventional-commits-parser@7.1.2)
-      '@commitlint/types': 21.2.0
-      tinyexec: 1.3.0
+      '@commitlint/config-conventional': 21.2.3
+      '@commitlint/format': 21.2.3
+      '@commitlint/lint': 21.2.3
+      '@commitlint/load': 21.2.3(@types/node@26.6.2)(typescript@7.0.2)
+      '@commitlint/read': 21.2.3(conventional-commits-parser@7.1.2)
+      '@commitlint/types': 21.2.3
+      tinyexec: 1.3.1
       yargs: 18.1.0
     transitivePeerDependencies:
       - '@types/node'
@@ -5962,48 +5967,48 @@ snapshots:
       - conventional-commits-parser
       - typescript
 
-  '@commitlint/config-conventional@21.2.2':
+  '@commitlint/config-conventional@21.2.3':
     dependencies:
-      '@commitlint/types': 21.2.0
+      '@commitlint/types': 21.2.3
       conventional-changelog-conventionalcommits: 10.3.0
 
-  '@commitlint/config-validator@21.2.0':
+  '@commitlint/config-validator@21.2.3':
     dependencies:
-      '@commitlint/types': 21.2.0
+      '@commitlint/types': 21.2.3
       ajv: 8.20.0
 
-  '@commitlint/ensure@21.2.0':
+  '@commitlint/ensure@21.2.3':
     dependencies:
-      '@commitlint/types': 21.2.0
+      '@commitlint/types': 21.2.3
       es-toolkit: 1.50.0
 
   '@commitlint/execute-rule@21.0.1': {}
 
-  '@commitlint/format@21.2.2':
+  '@commitlint/format@21.2.3':
     dependencies:
-      '@commitlint/types': 21.2.0
+      '@commitlint/types': 21.2.3
       picocolors: 1.1.1
 
-  '@commitlint/is-ignored@21.2.2':
+  '@commitlint/is-ignored@21.2.3':
     dependencies:
-      '@commitlint/types': 21.2.0
+      '@commitlint/types': 21.2.3
       semver: 7.8.5
 
-  '@commitlint/lint@21.2.2':
+  '@commitlint/lint@21.2.3':
     dependencies:
-      '@commitlint/is-ignored': 21.2.2
-      '@commitlint/parse': 21.2.2
-      '@commitlint/rules': 21.2.2
-      '@commitlint/types': 21.2.0
+      '@commitlint/is-ignored': 21.2.3
+      '@commitlint/parse': 21.2.3
+      '@commitlint/rules': 21.2.3
+      '@commitlint/types': 21.2.3
 
-  '@commitlint/load@21.2.2(@types/node@26.6.1)(typescript@7.0.2)':
+  '@commitlint/load@21.2.3(@types/node@26.6.2)(typescript@7.0.2)':
     dependencies:
-      '@commitlint/config-validator': 21.2.0
+      '@commitlint/config-validator': 21.2.3
       '@commitlint/execute-rule': 21.0.1
-      '@commitlint/resolve-extends': 21.2.2
-      '@commitlint/types': 21.2.0
+      '@commitlint/resolve-extends': 21.2.3
+      '@commitlint/types': 21.2.3
       cosmiconfig: 9.0.2(typescript@7.0.2)
-      cosmiconfig-typescript-loader: 6.3.0(@types/node@26.6.1)(cosmiconfig@9.0.2(typescript@7.0.2))(typescript@7.0.2)
+      cosmiconfig-typescript-loader: 6.3.0(@types/node@26.6.2)(cosmiconfig@9.0.2(typescript@7.0.2))(typescript@7.0.2)
       es-toolkit: 1.50.0
       is-plain-obj: 4.1.0
       picocolors: 1.1.1
@@ -6013,36 +6018,36 @@ snapshots:
 
   '@commitlint/message@21.2.0': {}
 
-  '@commitlint/parse@21.2.2':
+  '@commitlint/parse@21.2.3':
     dependencies:
-      '@commitlint/types': 21.2.0
+      '@commitlint/types': 21.2.3
       conventional-changelog-angular: 9.3.0
       conventional-commits-parser: 7.1.2
 
-  '@commitlint/read@21.2.1(conventional-commits-parser@7.1.2)':
+  '@commitlint/read@21.2.3(conventional-commits-parser@7.1.2)':
     dependencies:
       '@commitlint/top-level': 21.2.0
-      '@commitlint/types': 21.2.0
+      '@commitlint/types': 21.2.3
       '@conventional-changelog/git-client': 3.1.2(conventional-commits-parser@7.1.2)
-      tinyexec: 1.3.0
+      tinyexec: 1.3.1
     transitivePeerDependencies:
       - conventional-commits-filter
       - conventional-commits-parser
 
-  '@commitlint/resolve-extends@21.2.2':
+  '@commitlint/resolve-extends@21.2.3':
     dependencies:
-      '@commitlint/config-validator': 21.2.0
-      '@commitlint/types': 21.2.0
+      '@commitlint/config-validator': 21.2.3
+      '@commitlint/types': 21.2.3
       es-toolkit: 1.50.0
       global-directory: 5.0.0
       resolve-from: 5.0.0
 
-  '@commitlint/rules@21.2.2':
+  '@commitlint/rules@21.2.3':
     dependencies:
-      '@commitlint/ensure': 21.2.0
+      '@commitlint/ensure': 21.2.3
       '@commitlint/message': 21.2.0
       '@commitlint/to-lines': 21.0.1
-      '@commitlint/types': 21.2.0
+      '@commitlint/types': 21.2.3
 
   '@commitlint/to-lines@21.0.1': {}
 
@@ -6050,7 +6055,7 @@ snapshots:
     dependencies:
       escalade: 3.2.0
 
-  '@commitlint/types@21.2.0':
+  '@commitlint/types@21.2.3':
     dependencies:
       conventional-commits-parser: 7.1.2
       picocolors: 1.1.1
@@ -6174,9 +6179,9 @@ snapshots:
   '@esbuild/win32-x64@0.28.2':
     optional: true
 
-  '@eslint-community/eslint-utils@4.10.1(eslint@10.10.0(jiti@2.6.1)(supports-color@8.1.1))':
+  '@eslint-community/eslint-utils@4.10.1(eslint@10.11.0(jiti@2.6.1)(supports-color@8.1.1))':
     dependencies:
-      eslint: 10.10.0(jiti@2.6.1)(supports-color@8.1.1)
+      eslint: 10.11.0(jiti@2.6.1)(supports-color@8.1.1)
       eslint-visitor-keys: 3.4.3
 
   '@eslint-community/regexpp@4.12.2': {}
@@ -6769,11 +6774,11 @@ snapshots:
     dependencies:
       acorn: 8.18.0
 
-  '@sveltejs/kit@2.70.2(@sveltejs/vite-plugin-svelte@7.1.2(svelte@5.55.7)(vite@7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)))(svelte@5.55.7)(typescript@5.9.3)(vite@7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0))':
+  '@sveltejs/kit@2.70.2(@sveltejs/vite-plugin-svelte@7.1.2(svelte@5.55.7)(vite@7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)))(svelte@5.55.7)(typescript@5.9.3)(vite@7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0))':
     dependencies:
       '@standard-schema/spec': 1.1.0
       '@sveltejs/acorn-typescript': 1.0.11(acorn@8.18.0)
-      '@sveltejs/vite-plugin-svelte': 7.1.2(svelte@5.55.7)(vite@7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0))
+      '@sveltejs/vite-plugin-svelte': 7.1.2(svelte@5.55.7)(vite@7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0))
       '@types/cookie': 0.6.0
       acorn: 8.18.0
       cookie: 0.7.2
@@ -6785,18 +6790,18 @@ snapshots:
       set-cookie-parser: 3.1.0
       sirv: 3.0.2
       svelte: 5.55.7
-      vite: 7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)
+      vite: 7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)
     optionalDependencies:
       typescript: 5.9.3
 
-  '@sveltejs/vite-plugin-svelte@7.1.2(svelte@5.55.7)(vite@7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0))':
+  '@sveltejs/vite-plugin-svelte@7.1.2(svelte@5.55.7)(vite@7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0))':
     dependencies:
       deepmerge: 4.3.1
       magic-string: 0.30.21
       obug: 2.1.4
       svelte: 5.55.7
-      vite: 7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)
-      vitefu: 1.1.3(vite@7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0))
+      vite: 7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)
+      vitefu: 1.1.3(vite@7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0))
 
   '@swc/helpers@0.5.23':
     dependencies:
@@ -6868,7 +6873,7 @@ snapshots:
     dependencies:
       '@types/unist': 3.0.3
 
-  '@types/node@26.6.1':
+  '@types/node@26.6.2':
     dependencies:
       undici-types: 8.9.0
 
@@ -6970,7 +6975,7 @@ snapshots:
       obug: 2.1.4
       std-env: 4.2.0
       tinyrainbow: 3.1.1
-      vitest: 4.1.11(@types/node@26.6.1)(@vitest/coverage-v8@4.1.11)(vite@7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0))
+      vitest: 4.1.11(@types/node@26.6.2)(@vitest/coverage-v8@4.1.11)(vite@7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0))
     optional: true
 
   '@vitest/coverage-v8@5.0.1(vitest@5.0.0)':
@@ -6983,7 +6988,7 @@ snapshots:
       obug: 2.1.4
       std-env: 4.2.0
       tinyrainbow: 3.1.1
-      vitest: 5.0.0(@types/node@26.6.1)(@vitest/coverage-v8@5.0.1)(vite@7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0))
+      vitest: 5.0.0(@types/node@26.6.2)(@vitest/coverage-v8@5.0.1)(vite@7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.15)(yaml@2.9.0))
 
   '@vitest/expect@4.1.11':
     dependencies:
@@ -7000,22 +7005,22 @@ snapshots:
     dependencies:
       '@vitest/istanbul-lib-coverage': 1.0.1
 
-  '@vitest/mocker@4.1.11(vite@7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0))':
+  '@vitest/mocker@4.1.11(vite@7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0))':
     dependencies:
       '@vitest/spy': 4.1.11
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)
+      vite: 7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)
 
-  '@vitest/mocker@5.0.0(vite@7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0))':
+  '@vitest/mocker@5.0.0(vite@7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.15)(yaml@2.9.0))':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       '@vitest/spy': 5.0.0
       estree-walker: 3.0.3
       magic-string: 1.2.3
     optionalDependencies:
-      vite: 7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)
+      vite: 7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.15)(yaml@2.9.0)
 
   '@vitest/pretty-format@4.1.11':
     dependencies:
@@ -7318,7 +7323,7 @@ snapshots:
 
   astral-regex@2.0.0: {}
 
-  astro@7.3.1(@azure/identity@4.13.1(supports-color@8.1.1))(@emnapi/core@2.0.0-alpha.3)(@emnapi/runtime@2.0.0-alpha.3)(@types/node@26.6.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0):
+  astro@7.3.1(@azure/identity@4.13.1(supports-color@8.1.1))(@emnapi/core@2.0.0-alpha.3)(@emnapi/runtime@2.0.0-alpha.3)(@types/node@26.6.2)(jiti@2.6.1)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0):
     dependencies:
       '@astrojs/compiler-rs': 0.4.0(@emnapi/core@2.0.0-alpha.3)(@emnapi/runtime@2.0.0-alpha.3)
       '@astrojs/internal-helpers': 0.11.0
@@ -7368,13 +7373,13 @@ snapshots:
       ultrahtml: 1.6.0
       unifont: 0.7.5
       unstorage: 1.17.5(@azure/identity@4.13.1(supports-color@8.1.1))
-      vite: 8.1.5(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.6.1)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)
-      vitefu: 1.1.3(vite@8.1.5(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.6.1)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0))
+      vite: 8.1.5(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.6.1)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)
+      vitefu: 1.1.3(vite@8.1.5(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.6.1)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0))
       xxhash-wasm: 1.1.0
       yargs-parser: 22.0.0
       zod: 4.5.4
     optionalDependencies:
-      sharp: 0.35.4(@types/node@26.6.1)
+      sharp: 0.35.4(@types/node@26.6.2)
     transitivePeerDependencies:
       - '@azure/app-configuration'
       - '@azure/cosmos'
@@ -7716,9 +7721,9 @@ snapshots:
       depd: 2.0.0
       keygrip: 1.1.0
 
-  cosmiconfig-typescript-loader@6.3.0(@types/node@26.6.1)(cosmiconfig@9.0.2(typescript@7.0.2))(typescript@7.0.2):
+  cosmiconfig-typescript-loader@6.3.0(@types/node@26.6.2)(cosmiconfig@9.0.2(typescript@7.0.2))(typescript@7.0.2):
     dependencies:
-      '@types/node': 26.6.1
+      '@types/node': 26.6.2
       cosmiconfig: 9.0.2(typescript@7.0.2)
       jiti: 2.6.1
       typescript: 7.0.2
@@ -7988,9 +7993,9 @@ snapshots:
 
   eslint-visitor-keys@5.0.1: {}
 
-  eslint@10.10.0(jiti@2.6.1)(supports-color@8.1.1):
+  eslint@10.11.0(jiti@2.6.1)(supports-color@8.1.1):
     dependencies:
-      '@eslint-community/eslint-utils': 4.10.1(eslint@10.10.0(jiti@2.6.1)(supports-color@8.1.1))
+      '@eslint-community/eslint-utils': 4.10.1(eslint@10.11.0(jiti@2.6.1)(supports-color@8.1.1))
       '@eslint-community/regexpp': 4.12.2
       '@eslint/config-array': 0.23.5(supports-color@8.1.1)
       '@eslint/config-helpers': 0.7.0
@@ -8669,7 +8674,7 @@ snapshots:
 
   jest-worker@27.5.1:
     dependencies:
-      '@types/node': 26.6.1
+      '@types/node': 26.6.2
       merge-stream: 2.0.0
       supports-color: 8.1.1
 
@@ -8941,7 +8946,7 @@ snapshots:
       punycode.js: 2.3.1
       uc.micro: 2.1.0
 
-  marked@18.0.13: {}
+  marked@18.0.14: {}
 
   math-intrinsics@1.1.0: {}
 
@@ -9113,9 +9118,9 @@ snapshots:
 
   mute-stream@0.0.8: {}
 
-  mysql2@3.24.4(@types/node@26.6.1):
+  mysql2@3.24.4(@types/node@26.6.2):
     dependencies:
-      '@types/node': 26.6.1
+      '@types/node': 26.6.2
       aws-ssl-profiles: 1.1.2
       generate-function: 2.3.1
       iconv-lite: 0.7.3
@@ -9145,7 +9150,7 @@ snapshots:
 
   neotraverse@1.0.1: {}
 
-  next@16.3.4(@playwright/test@1.63.0)(@types/node@26.6.1)(react-dom@19.2.6(react@19.2.6))(react@19.2.6):
+  next@16.3.4(@playwright/test@1.63.0)(@types/node@26.6.2)(react-dom@19.2.6(react@19.2.6))(react@19.2.6):
     dependencies:
       '@next/env': 16.3.4
       '@swc/helpers': 0.5.23
@@ -9165,7 +9170,7 @@ snapshots:
       '@next/swc-win32-arm64-msvc': 16.3.4
       '@next/swc-win32-x64-msvc': 16.3.4
       '@playwright/test': 1.63.0
-      sharp: 0.35.4(@types/node@26.6.1)
+      sharp: 0.35.4(@types/node@26.6.2)
     transitivePeerDependencies:
       - '@babel/core'
       - '@types/node'
@@ -9502,7 +9507,7 @@ snapshots:
 
   prelude-ls@1.2.1: {}
 
-  prettier@3.9.7: {}
+  prettier@3.9.9: {}
 
   prismjs@1.30.0: {}
 
@@ -9851,7 +9856,7 @@ snapshots:
 
   setprototypeof@1.2.0: {}
 
-  sharp@0.35.4(@types/node@26.6.1):
+  sharp@0.35.4(@types/node@26.6.2):
     dependencies:
       '@img/colour': 1.1.0
       detect-libc: 2.1.2
@@ -9882,7 +9887,7 @@ snapshots:
       '@img/sharp-win32-arm64': 0.35.4
       '@img/sharp-win32-ia32': 0.35.4
       '@img/sharp-win32-x64': 0.35.4
-      '@types/node': 26.6.1
+      '@types/node': 26.6.2
 
   shebang-command@2.0.0:
     dependencies:
@@ -10245,6 +10250,13 @@ snapshots:
       esbuild: 0.28.2
     optionalDependencies:
       fsevents: 2.3.3
+    optional: true
+
+  tsx@4.23.15:
+    dependencies:
+      esbuild: 0.28.2
+    optionalDependencies:
+      fsevents: 2.3.3
 
   tunnel-agent@0.6.0:
     dependencies:
@@ -10436,7 +10448,7 @@ snapshots:
       '@types/unist': 3.0.3
       vfile-message: 4.0.3
 
-  vite@7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0):
+  vite@7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0):
     dependencies:
       esbuild: 0.28.2
       fdir: 6.5.0(picomatch@4.0.7)
@@ -10445,7 +10457,7 @@ snapshots:
       rollup: 4.63.1
       tinyglobby: 0.2.17
     optionalDependencies:
-      '@types/node': 26.6.1
+      '@types/node': 26.6.2
       fsevents: 2.3.3
       jiti: 2.6.1
       lightningcss: 1.33.0
@@ -10453,7 +10465,24 @@ snapshots:
       tsx: 4.23.13
       yaml: 2.9.0
 
-  vite@8.1.5(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.6.1)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0):
+  vite@7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.15)(yaml@2.9.0):
+    dependencies:
+      esbuild: 0.28.2
+      fdir: 6.5.0(picomatch@4.0.7)
+      picomatch: 4.0.7
+      postcss: 8.5.26
+      rollup: 4.63.1
+      tinyglobby: 0.2.17
+    optionalDependencies:
+      '@types/node': 26.6.2
+      fsevents: 2.3.3
+      jiti: 2.6.1
+      lightningcss: 1.33.0
+      terser: 5.46.1
+      tsx: 4.23.15
+      yaml: 2.9.0
+
+  vite@8.1.5(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.6.1)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.7
@@ -10461,7 +10490,7 @@ snapshots:
       rolldown: 1.1.5
       tinyglobby: 0.2.17
     optionalDependencies:
-      '@types/node': 26.6.1
+      '@types/node': 26.6.2
       esbuild: 0.28.2
       fsevents: 2.3.3
       jiti: 2.6.1
@@ -10469,18 +10498,18 @@ snapshots:
       tsx: 4.23.13
       yaml: 2.9.0
 
-  vitefu@1.1.3(vite@7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)):
+  vitefu@1.1.3(vite@7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)):
     optionalDependencies:
-      vite: 7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)
+      vite: 7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)
 
-  vitefu@1.1.3(vite@8.1.5(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.6.1)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)):
+  vitefu@1.1.3(vite@8.1.5(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.6.1)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)):
     optionalDependencies:
-      vite: 8.1.5(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.6.1)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)
+      vite: 8.1.5(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.6.1)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)
 
-  vitest@4.1.11(@types/node@26.6.1)(@vitest/coverage-v8@4.1.11)(vite@7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)):
+  vitest@4.1.11(@types/node@26.6.2)(@vitest/coverage-v8@4.1.11)(vite@7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)):
     dependencies:
       '@vitest/expect': 4.1.11
-      '@vitest/mocker': 4.1.11(vite@7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0))
+      '@vitest/mocker': 4.1.11(vite@7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0))
       '@vitest/pretty-format': 4.1.11
       '@vitest/runner': 4.1.11
       '@vitest/snapshot': 4.1.11
@@ -10497,18 +10526,18 @@ snapshots:
       tinyexec: 1.3.0
       tinyglobby: 0.2.17
       tinyrainbow: 3.1.1
-      vite: 7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)
+      vite: 7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
-      '@types/node': 26.6.1
+      '@types/node': 26.6.2
       '@vitest/coverage-v8': 4.1.11(vitest@4.1.11)
     transitivePeerDependencies:
       - msw
 
-  vitest@5.0.0(@types/node@26.6.1)(@vitest/coverage-v8@5.0.1)(vite@7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)):
+  vitest@5.0.0(@types/node@26.6.2)(@vitest/coverage-v8@5.0.1)(vite@7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.15)(yaml@2.9.0)):
     dependencies:
       '@types/chai': 5.2.3
-      '@vitest/mocker': 5.0.0(vite@7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0))
+      '@vitest/mocker': 5.0.0(vite@7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.15)(yaml@2.9.0))
       chai: 6.2.2
       es-module-lexer: 2.3.2
       expect-type: 1.4.0
@@ -10519,10 +10548,10 @@ snapshots:
       tinybench: 6.1.4
       tinyexec: 1.3.0
       tinyglobby: 0.2.17
-      vite: 7.3.6(@types/node@26.6.1)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.13)(yaml@2.9.0)
+      vite: 7.3.6(@types/node@26.6.2)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.1)(tsx@4.23.15)(yaml@2.9.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
-      '@types/node': 26.6.1
+      '@types/node': 26.6.2
       '@vitest/coverage-v8': 5.0.1(vitest@5.0.0)
     transitivePeerDependencies:
       - msw
