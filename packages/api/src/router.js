@@ -14,7 +14,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { withValidation } from './validation.js';
 import { withErrorHandling } from './errors.js';
 import { createServer, STATUS_CODES } from 'node:http';
-import { parse as parseUrl } from 'node:url';
+import { parseRequestTarget } from './request-target.js';
 import { env } from 'node:process';
 
 /**
@@ -2278,10 +2278,9 @@ class SimpleRouter {
     }
 
     // Parse URL and query parameters
-    const parsedUrl = parseUrl(req.url, true);
-    const pathname = parsedUrl.pathname;
+    const { pathname, query } = parseRequestTarget(req.url);
     if (!req.query) {
-      req.query = parsedUrl.query || {};
+      req.query = query;
     }
 
     // Get request version if versioning is enabled
