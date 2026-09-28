@@ -1,0 +1,33 @@
+examples/component-composition.js
+  s_11f4e93e71007b::t_cfcf8f004fde0b 7-8,383-392
+examples/streaming.js
+  s_11f4e93e71007b::t_cfcf8f004fde0b 7-8,342-352
+eslint.config.js
+  s_11f4e93e71007b::t_cfcf8f004fde0b 2-6
+examples/basic-usage.js
+  s_11f4e93e71007b::t_cfcf8f004fde0b 6-8,84-93
+examples/ecommerce-fullstack/vite.config.js
+  s_11f4e93e71007b::t_cfcf8f004fde0b 8-12,17,19,22,24,26,60-66,103
+examples/express-integration.js
+  s_11f4e93e71007b::t_cfcf8f004fde0b 224-227
+website/src/index.js
+  s_11f4e93e71007b::t_cfcf8f004fde0b 535-540,542-549,555
+examples/hydration-demo.js
+  s_11f4e93e71007b::t_cfcf8f004fde0b 8-9,875-884
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "db65dbbfc7e4e32a537630fec16515a46e86c84d",
+  "prompts": {},
+  "sessions": {
+    "s_11f4e93e71007b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "65e50fed-d412-46ba-80c5-2c77e218f551",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Thomas Drouvin <thomas.drouvin@gmail.com>"
+    }
+  }
+}
