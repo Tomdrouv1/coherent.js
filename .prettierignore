@@ -7,6 +7,9 @@ dist/
 build/
 packages/*/dist/
 website/dist/
+# The extension's bundled language server. Its own packages/vscode-extension/
+# .gitignore excludes it, but prettier reads only the root .gitignore.
+packages/vscode-extension/server/
 
 # Generated files
 *.d.ts
