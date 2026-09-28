@@ -347,8 +347,9 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     standardHeaders: 'draft-7',
     legacyHeaders: false,
   });
-  // A regex route: `/docs/{*slug}` is Express 5 syntax, and the website runs
-  // Express 4, where it matched nothing and every doc page was a 404.
+  // A regex route, so the slug arrives as one string in req.params[0]. The
+  // Express 5 wildcard `/docs/*slug` would hand it over split into an array of
+  // path segments instead.
   app.get(/^\/docs\/(.+)$/, docsLimiter, (req, res) => {
     const slug = req.params[0];
     if (!slug) { res.redirect('/docs'); return; }

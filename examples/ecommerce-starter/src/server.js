@@ -34,7 +34,7 @@ app.get('/product/:id', (req, res) => {
 
 // Add to cart
 app.post('/cart/add', (req, res) => {
-  const { productId } = req.body;
+  const { productId } = req.body ?? {};
   const existing = cart.find((i) => i.productId === productId);
   if (existing) existing.qty += 1;
   else cart.push({ productId, qty: 1 });

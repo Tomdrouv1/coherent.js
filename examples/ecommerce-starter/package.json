@@ -11,6 +11,6 @@
   "dependencies": {
     "@coherent.js/core": "workspace:*",
     "@coherent.js/seo": "workspace:*",
-    "express": "^4.22.3"
+    "express": "5.2.1"
   }
 }
