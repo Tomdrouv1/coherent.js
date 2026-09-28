@@ -119,10 +119,4 @@ overrides:
   'next@>=16.0.0 <16.3.3': '^16.3.3'
   # SvelteKit prototype pollution and remote form payload DoS — fixed in 2.69.1,
   # then O(n^2) ReDoS in Accept-header content negotiation — fixed in 2.70.2.
-  # Capped below 2.70.3, which is newer than the minimumReleaseAge cutoff.
-  '@sveltejs/kit@<2.70.2': '>=2.70.2 <2.70.3'
-
-# Upper bounds only, to keep resolution inside minimumReleaseAge — not security
-# pins. Drop each one once its latest release has aged past the cutoff.
-  'vite@>=8.0.0': '>=8.1.5 <8.2.0'
-  '@napi-rs/wasm-runtime': '>=1.2.0 <1.2.1'
+  '@sveltejs/kit@<2.70.2': '^2.70.2'

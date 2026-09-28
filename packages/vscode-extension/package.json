@@ -72,13 +72,13 @@
     }
   },
   "dependencies": {
-    "vscode-languageclient": "10.1.1"
+    "vscode-languageclient": "10.1.2"
   },
   "devDependencies": {
     "@types/vscode": "1.125.0",
-    "@vscode/vsce": "3.9.2",
+    "@vscode/vsce": "4.0.0",
     "esbuild": "0.28.2",
-    "sharp": "0.35.4",
+    "sharp": "0.35.5",
     "typescript": "5.9.3"
   },
   "scripts": {
