@@ -1,0 +1,25 @@
+.husky/pre-commit
+  s_11f4e93e71007b::t_bcca626b010d24 2
+package.json
+  s_11f4e93e71007b::t_bcca626b010d24 46-47
+.git-blame-ignore-revs
+  s_11f4e93e71007b::t_bcca626b010d24 1-6
+.github/workflows/ci.yml
+  s_11f4e93e71007b::t_bcca626b010d24 102-104
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8cf2b00494ca8765113bb656f8f5c5a63c186b5d",
+  "prompts": {},
+  "sessions": {
+    "s_11f4e93e71007b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "65e50fed-d412-46ba-80c5-2c77e218f551",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Thomas Drouvin <thomas.drouvin@gmail.com>"
+    }
+  }
+}
