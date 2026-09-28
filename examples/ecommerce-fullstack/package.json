@@ -8,6 +8,7 @@
     "dev": "NODE_ENV=development node --watch app.js",
     "build": "coherent build",
     "start": "node app.js",
+    "preview": "node dist/production-bundle.js",
     "analyze": "node ../../scripts/analyze-bundle-size.js",
     "test": "vitest run --passWithNoTests",
     "validate": "node scripts/validate-production.js"
