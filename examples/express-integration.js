@@ -221,8 +221,10 @@ app.get('/api/status', (req, res) => {
   });
 });
 
-// Error handling
-app.use((err, req, res) => {
+// Error handling. Express only treats middleware as an error handler when it
+// declares four parameters; with three, this ran on every unmatched request
+// and failed on `res.status` (res was really `next`), turning 404s into 500s.
+app.use((err, req, res, _next) => {
   res.status(500).send({
     error: 'Internal Server Error',
     message: err.message

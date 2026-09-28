@@ -4,7 +4,8 @@
  * @description HOCs, state management, and advanced component patterns.
  */
 
-import { withState } from '@coherent.js/core';
+import { fileURLToPath } from 'node:url';
+import { withState, render } from '@coherent.js/core';
 import { hydrate } from '@coherent.js/client';
 
 // Example 1: Basic component composition
@@ -379,3 +380,13 @@ if (typeof window !== 'undefined') {
 
 // Export the demo page as default for live preview
 export default demoPage;
+
+// Print the page when this file is the program being run — `node examples/component-composition.js`,
+// or the playground runner, which feeds the file on stdin — but not when it is
+// imported. `import.meta.main` says so exactly from Node 22.18; before that,
+// compare against argv[1], which is empty when the program came on stdin.
+const isProgram = import.meta.main
+  ?? (!process.argv[1] || fileURLToPath(import.meta.url) === process.argv[1]);
+if (isProgram) {
+  console.log(render(demoPage));
+}

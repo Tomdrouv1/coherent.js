@@ -1,4 +1,9 @@
 export default [
+    // Build output is generated and gitignored, so never lint it. This has to
+    // be an ignores-only object to apply globally: an `ignores` next to other
+    // keys only narrows that one config. examples/*/dist holds minified bundles
+    // once an example is built, and `examples/**/*.js` would otherwise reach it.
+    { ignores: ['**/dist/**'] },
     {
         files: [
             'src/**/*.js', 

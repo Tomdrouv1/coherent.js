@@ -4,7 +4,8 @@
  * @description Stream HTML responses for faster time-to-first-byte.
  */
 
-import { render } from '@coherent.js/core';
+import { fileURLToPath } from 'node:url';
+import { renderToStream } from '@coherent.js/core';
 
 // Note: Streaming renderer is a separate feature - using render for now
 // For true streaming, use the streaming-renderer package when available
@@ -338,3 +339,14 @@ app.get('/data', async (req, res) => {
 
 export default StreamingDemo;
 export { StreamingList, StreamingDataTable, ProgressiveContent, StreamingFeed, generateStreamingData, createStreamingDemo };
+
+// Stream the page to stdout when this file is the program being run — `node examples/streaming.js`,
+// or the playground runner, which feeds the file on stdin — but not when it is
+// imported. `import.meta.main` says so exactly from Node 22.18; before that,
+// compare against argv[1], which is empty when the program came on stdin.
+const isProgram = import.meta.main
+  ?? (!process.argv[1] || fileURLToPath(import.meta.url) === process.argv[1]);
+if (isProgram) {
+  for await (const chunk of renderToStream(StreamingDemo())) process.stdout.write(chunk);
+  process.stdout.write('\n');
+}

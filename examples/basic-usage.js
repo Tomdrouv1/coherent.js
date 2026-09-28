@@ -3,6 +3,9 @@
  * @category Getting Started
  * @description Greeting components with conditional rendering and user cards.
  */
+import { fileURLToPath } from 'node:url';
+import { render } from '@coherent.js/core';
+
 export const Greeting = ({ name = 'World', mood = 'happy' }) => ({
     div: {
         className: `greeting greeting--${mood}`,
@@ -78,3 +81,13 @@ const Demo = () => ({
 
 // Export for playground preview
 export default Demo();
+
+// Print the page when this file is the program being run — `node examples/basic-usage.js`,
+// or the playground runner, which feeds the file on stdin — but not when it is
+// imported. `import.meta.main` says so exactly from Node 22.18; before that,
+// compare against argv[1], which is empty when the program came on stdin.
+const isProgram = import.meta.main
+    ?? (!process.argv[1] || fileURLToPath(import.meta.url) === process.argv[1]);
+if (isProgram) {
+    console.log(render(Demo()));
+}

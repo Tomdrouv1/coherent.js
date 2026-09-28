@@ -5,19 +5,25 @@ import { resolve } from 'path';
  * Vite Configuration for Coherent.js Production Validation
  *
  * Tests real-world tree shaking and bundle optimization
+ *
+ * Every entry is server code (app.js is a node:http server, and core, api and
+ * the devtools import Node built-ins), so this is an SSR build: it targets Node
+ * and leaves the built-ins as real imports. A browser build replaced them with
+ * empty stubs and failed to link.
  */
 
 export default defineConfig({
   build: {
+    ssr: true,
     // Generate multiple bundles to test tree shaking
-    rollupOptions: {
+    rolldownOptions: {
       input: {
         // Full bundle with all devtools (for comparison)
-        'full-bundle': resolve(__dirname, 'test-full-bundle.js'),
+        'full-bundle': resolve(import.meta.dirname, 'test-full-bundle.js'),
         // Selective bundle with tree shaking
-        'selective-bundle': resolve(__dirname, 'test-selective-bundle.js'),
+        'selective-bundle': resolve(import.meta.dirname, 'test-selective-bundle.js'),
         // Production bundle (optimal)
-        'production-bundle': resolve(__dirname, 'app.js')
+        'production-bundle': resolve(import.meta.dirname, 'app.js')
       },
       output: {
         dir: 'dist',
@@ -49,6 +55,13 @@ export default defineConfig({
     // Enable CSS and asset optimization
     cssCodeSplit: true,
     assetsInlineLimit: 4096
+  },
+
+  // An SSR build externalizes dependencies by default; bundle them instead, so
+  // the size comparison measures what each entry actually pulls in. Node
+  // built-ins stay external regardless.
+  ssr: {
+    noExternal: true
   },
 
   // Development server configuration
@@ -87,7 +100,7 @@ export default defineConfig({
       ['devtools/performance', 'devtools/src/performance/index.js']
     ].map(([name, file]) => ({
       find: new RegExp(`^@coherent\\.js/${name}$`),
-      replacement: resolve(__dirname, '../../packages', file)
+      replacement: resolve(import.meta.dirname, '../../packages', file)
     }))
   }
 });

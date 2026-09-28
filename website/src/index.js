@@ -532,15 +532,27 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
       if (code.includes(blocked)) return res.status(400).json({ code: 1, stderr: `Use of '${blocked}' is not allowed.` });
     }
 
-    const wrappedCode = `(async () => {\n${code}\n})().catch(console.error);`;
+    // Snippets may end in a top-level `return` (the default one returns App()),
+    // which only parses inside a function, so they run wrapped. Example files
+    // use static import/export, which only parse at module top level, so they
+    // run as written; `--input-type=module` already allows top-level await.
+    const isModule = /^\s*(?:import(?!\s*\()|export)\b/m.test(code);
+    const program = isModule ? code : `(async () => {\n${code}\n})().catch(console.error);`;
     import('child_process').then(({ spawn }) => {
-      const child = spawn('node', ['--input-type=module'], { timeout: 5000, env: { NODE_ENV: 'sandbox', PATH: process.env.PATH } });
+      // Code on stdin resolves bare imports from the working directory. Run it
+      // from examples/, which depends on every @coherent.js package, rather
+      // than wherever the server was started (the repo root links none).
+      const child = spawn('node', ['--input-type=module'], {
+        cwd: join(repoRoot, 'examples'),
+        timeout: 5000,
+        env: { NODE_ENV: 'sandbox', PATH: process.env.PATH },
+      });
       let stdout = '', stderr = '';
       child.stdout.on('data', (d) => { stdout += d.toString(); });
       child.stderr.on('data', (d) => { stderr += d.toString(); });
       child.on('close', (exitCode) => { res.json({ code: exitCode || 0, stdout, stderr }); });
       child.on('error', (error) => { if (!res.headersSent) res.status(500).json({ code: 1, stdout: '', stderr: error.message }); });
-      child.stdin.write(wrappedCode);
+      child.stdin.write(program);
       child.stdin.end();
     });
   });

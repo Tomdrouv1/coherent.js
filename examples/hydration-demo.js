@@ -5,7 +5,8 @@
  */
 
 import { hydrate } from '@coherent.js/client';
-import { withState } from '@coherent.js/core';
+import { fileURLToPath } from 'node:url';
+import { withState, render } from '@coherent.js/core';
 
 // Interactive counter with hydration support
 // Create a simple counter component that works with hydration
@@ -871,3 +872,13 @@ if (typeof window !== 'undefined') {
 
 // Export the demo page as default for live preview
 export default HydrationDemoPage;
+
+// Print the page when this file is the program being run — `node examples/hydration-demo.js`,
+// or the playground runner, which feeds the file on stdin — but not when it is
+// imported. `import.meta.main` says so exactly from Node 22.18; before that,
+// compare against argv[1], which is empty when the program came on stdin.
+const isProgram = import.meta.main
+  ?? (!process.argv[1] || fileURLToPath(import.meta.url) === process.argv[1]);
+if (isProgram) {
+  console.log(render(HydrationDemoPage()));
+}
