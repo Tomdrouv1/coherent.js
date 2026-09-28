@@ -1,0 +1,26 @@
+.changeset/api-request-target-parsing.md
+  s_11f4e93e71007b::t_12ca51afc0b9cf 1-8
+packages/api/test/request-target.test.js
+  s_11f4e93e71007b::t_5c5a0d8858afc2 1-116
+packages/api/src/request-target.js
+  s_11f4e93e71007b::t_c17bad57eecedc 1-39
+packages/api/src/router.js
+  s_11f4e93e71007b::t_b7516a5417ccfc 2281,2283
+  s_11f4e93e71007b::t_14aa2f76ecfcff 17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cc049bec0552254dab059e8436565750a8919d10",
+  "prompts": {},
+  "sessions": {
+    "s_11f4e93e71007b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "65e50fed-d412-46ba-80c5-2c77e218f551",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Thomas Drouvin <thomas.drouvin@gmail.com>"
+    }
+  }
+}
