@@ -1,0 +1,19 @@
+.planning/codebase/STRUCTURE.md
+  s_11f4e93e71007b::t_29b5e6d0a919da 119-120
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "84201166e0bd4ac99663a483bdc8201137db7034",
+  "prompts": {},
+  "sessions": {
+    "s_11f4e93e71007b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "65e50fed-d412-46ba-80c5-2c77e218f551",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Thomas Drouvin <thomas.drouvin@gmail.com>"
+    }
+  }
+}
