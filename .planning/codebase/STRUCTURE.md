@@ -116,8 +116,8 @@ coherent.js/
 
 **scripts:**
 - Purpose: Build and development automation
-- Contains: Build system, website generation, testing utilities
-- Key files: `shared-build.mjs`, `build-website.js`, `dev-website.js`
+- Contains: Build system, testing utilities
+- Key files: `shared-build.mjs` (the website is built by `website/build.js`)
 
 ## Key File Locations
 
