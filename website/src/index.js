@@ -391,14 +391,19 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     }
 
     // `doc.slug` (from the listing) and `h.text` (from the document) both
-    // land in markup here — h.text in element content, the slug inside a
-    // quoted href. h.id is safe unescaped in either position, and in the inline
-    // handler, because slugify() reduces it to [a-z0-9-].
+    // land in markup here, so every interpolated value is escaped for the
+    // attribute or element it lands in. slugify() already reduces h.id to
+    // [a-z0-9-], making its escaping a no-op in practice — it is there so the
+    // safety holds at each sink rather than depending on how the id was built.
+    // Smooth scrolling lives in toc-active.js, which reads data-toc-target;
+    // an inline handler would put the id inside a JS string, where HTML
+    // escaping does not help because the attribute is decoded before it runs.
     const currentDocPath = escapeHtml(`docs/${doc.slug}`);
     const tocHtml = headings.length > 0
-      ? `<div class="toc-box"><div class="toc-title">On this page</div><ul class="toc-list">${headings.map(h =>
-          `<li class="${h.level}"><a href="${currentDocPath}#${h.id}" data-toc-target="${h.id}" onclick="event.preventDefault(); document.getElementById('${h.id}')?.scrollIntoView({behavior: 'smooth', block: 'start'});">${escapeHtml(h.text)}</a></li>`
-        ).join('')}</ul></div>`
+      ? `<div class="toc-box"><div class="toc-title">On this page</div><ul class="toc-list">${headings.map(h => {
+          const id = escapeHtml(h.id);
+          return `<li class="${h.level}"><a href="${currentDocPath}#${id}" data-toc-target="${id}">${escapeHtml(h.text)}</a></li>`;
+        }).join('')}</ul></div>`
       : '';
 
     // Inject IDs into the heading tags in the rendered HTML
@@ -406,7 +411,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     for (const h of headings) {
       contentHtml = contentHtml.replace(
         h.original,
-        `<${h.level} id="${h.id}">${h.original.slice(h.level.length + 2, -(h.level.length + 3))}</${h.level}>`
+        `<${h.level} id="${escapeHtml(h.id)}">${h.original.slice(h.level.length + 2, -(h.level.length + 3))}</${h.level}>`
       );
     }
 

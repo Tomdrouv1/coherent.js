@@ -73,7 +73,18 @@
   
   // Make function globally available for onclick handlers
   window.updateTocActive = updateTocActive;
-  
+
+  // Smooth-scroll to a heading from its TOC link. Delegated so it works however
+  // late the TOC is rendered, and reads the id from data-toc-target so the
+  // server never has to write it into an inline JS string.
+  document.addEventListener('click', (event) => {
+    const link = event.target.closest && event.target.closest('.toc-list a[data-toc-target]');
+    if (!link) return;
+    event.preventDefault();
+    document.getElementById(link.getAttribute('data-toc-target'))
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
   // Initialize when DOM is ready
   function initTocActiveStates() {
     // Find all TOC links and map them
