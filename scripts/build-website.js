@@ -103,8 +103,14 @@ function enhanceHeadings(html){
     
     // Generate simple IDs for function names
     let id;
-    if (attrs && attrs.match(/id="([^"]+)"/i)) {
-      id = RegExp.$1; // Use existing ID if present
+    const existingId = attrs && attrs.match(/id="([^"]+)"/i);
+    if (existingId) {
+      // Reuse the document's own id, but reduce it the same way the generated
+      // ones are. `[^"]+` only rules out the double quote, so a raw id can
+      // still carry an apostrophe — and buildToc drops the id into three
+      // single-quoted JS strings in the ToC onclick, where one apostrophe ends
+      // the literal and the rest is executed.
+      id = slugifySegment(existingId[1]);
     } else {
       // For function signatures like "render(component, context?)", extract just the function name
       const functionMatch = text.match(/^(\w+)\(/);
