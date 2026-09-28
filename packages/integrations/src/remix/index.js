@@ -29,7 +29,8 @@ export function createRemixAdapter(_options = {}) {
      * Render a Coherent.js component to HTML
      */
     renderComponent(component, props = {}) {
-      const def = typeof component === 'function' ? component(props) : component;
+      const def =
+        typeof component === 'function' ? component(props) : component;
       return render(def);
     },
 
@@ -42,11 +43,12 @@ export function createRemixAdapter(_options = {}) {
           ? await getProps({ request, params, context })
           : { request, params };
 
-        const def = typeof component === 'function' ? component(props) : component;
+        const def =
+          typeof component === 'function' ? component(props) : component;
         const html = render(def);
 
         return new Response(html, {
-          headers: { 'Content-Type': 'text/html; charset=utf-8' }
+          headers: { 'Content-Type': 'text/html; charset=utf-8' },
         });
       };
     },
@@ -63,14 +65,15 @@ export function createRemixAdapter(_options = {}) {
 
         if (result instanceof Response) return result;
 
-        const def = typeof component === 'function' ? component(result) : component;
+        const def =
+          typeof component === 'function' ? component(result) : component;
         const html = render(def);
 
         return new Response(html, {
-          headers: { 'Content-Type': 'text/html; charset=utf-8' }
+          headers: { 'Content-Type': 'text/html; charset=utf-8' },
         });
       };
-    }
+    },
   };
 }
 
@@ -93,6 +96,8 @@ export function withCoherent(Component, options = {}) {
 
   return function CoherentRemixComponent(props) {
     const def = typeof Component === 'function' ? Component(props) : Component;
-    return createElement(as, { dangerouslySetInnerHTML: { __html: render(def) } });
+    return createElement(as, {
+      dangerouslySetInnerHTML: { __html: render(def) },
+    });
   };
 }

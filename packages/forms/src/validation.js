@@ -1,8 +1,8 @@
 /**
  * Coherent.js Form Validation
- * 
+ *
  * Comprehensive validation utilities for forms
- * 
+ *
  * @module forms/validation
  */
 
@@ -31,12 +31,14 @@ export class FormValidator {
    */
   validateField(name, value, formData = {}) {
     const fieldValidators = this.schema[name];
-    
+
     if (!fieldValidators) {
       return null;
     }
 
-    const validatorArray = Array.isArray(fieldValidators) ? fieldValidators : [fieldValidators];
+    const validatorArray = Array.isArray(fieldValidators)
+      ? fieldValidators
+      : [fieldValidators];
 
     for (const entry of validatorArray) {
       // Accepts `validators.required` as well as `validators.required()`.
@@ -162,5 +164,5 @@ export default {
   validators,
   FormValidator,
   createValidator,
-  validate
+  validate,
 };

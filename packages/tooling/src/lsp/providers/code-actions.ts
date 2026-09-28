@@ -39,7 +39,11 @@ export function registerCodeActionProvider(
         continue;
       }
 
-      const codeActions = getCodeActionsForDiagnostic(diagnostic, document, params);
+      const codeActions = getCodeActionsForDiagnostic(
+        diagnostic,
+        document,
+        params
+      );
       actions.push(...codeActions);
     }
 
@@ -61,7 +65,8 @@ function getCodeActionsForDiagnostic(
   switch (diagnostic.code) {
     case 'typo-attribute': {
       // Get suggestion from diagnostic data
-      const suggestion = (diagnostic.data as { suggestion?: string })?.suggestion;
+      const suggestion = (diagnostic.data as { suggestion?: string })
+        ?.suggestion;
       if (suggestion) {
         actions.push({
           title: `Change to '${suggestion}'`,
@@ -70,9 +75,7 @@ function getCodeActionsForDiagnostic(
           isPreferred: true,
           edit: {
             changes: {
-              [uri]: [
-                TextEdit.replace(diagnostic.range, suggestion),
-              ],
+              [uri]: [TextEdit.replace(diagnostic.range, suggestion)],
             },
           },
         });
@@ -180,9 +183,15 @@ function createRemovePropertyAction(
  * This ensures clean removal without leaving orphan commas or whitespace.
  */
 function expandRangeToFullProperty(
-  range: { start: { line: number; character: number }; end: { line: number; character: number } },
+  range: {
+    start: { line: number; character: number };
+    end: { line: number; character: number };
+  },
   document: TextDocument
-): { start: { line: number; character: number }; end: { line: number; character: number } } {
+): {
+  start: { line: number; character: number };
+  end: { line: number; character: number };
+} {
   const text = document.getText();
   const startOffset = document.offsetAt(range.start);
   const endOffset = document.offsetAt(range.end);
@@ -233,7 +242,10 @@ function expandRangeToFullProperty(
   }
 
   // Skip trailing whitespace and newline
-  while (newEnd < text.length && (text[newEnd] === ' ' || text[newEnd] === '\t')) {
+  while (
+    newEnd < text.length &&
+    (text[newEnd] === ' ' || text[newEnd] === '\t')
+  ) {
     newEnd++;
   }
   if (newEnd < text.length && text[newEnd] === '\n') {

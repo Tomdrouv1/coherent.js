@@ -5,7 +5,7 @@ const entries = [
   'src/reactive-state.js',
   'src/state-persistence.js',
   'src/state-validation.js',
-  'src/state-manager.js'
+  'src/state-manager.js',
 ];
 
 for (const entry of entries) {
@@ -19,7 +19,7 @@ for (const entry of entries) {
     outfile,
     external: ['@coherent.js/core'],
     minify: false,
-    sourcemap: true
+    sourcemap: true,
   });
 }
 

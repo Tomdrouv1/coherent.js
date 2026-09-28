@@ -1,12 +1,12 @@
 /**
  * SQLite Database Adapter for Coherent.js
- * 
+ *
  * @fileoverview SQLite adapter implementation with connection pooling and transaction support.
  */
 
 /**
  * Create a new SQLite adapter instance
- * 
+ *
  * @returns {Object} SQLite adapter instance with database operations
  */
 export function createSQLiteAdapter() {
@@ -15,7 +15,7 @@ export function createSQLiteAdapter() {
 
   /**
    * Initialize SQLite module
-   * 
+   *
    * @private
    * @returns {Promise<void>}
    */
@@ -26,14 +26,16 @@ export function createSQLiteAdapter() {
         const sqlite3Module = await import('sqlite3');
         sqlite3 = sqlite3Module.default || sqlite3Module;
       } catch {
-        throw new Error('Failed to load sqlite3 module. Make sure to install it: npm install sqlite3');
+        throw new Error(
+          'Failed to load sqlite3 module. Make sure to install it: npm install sqlite3'
+        );
       }
     }
   }
 
   /**
    * Connect to the database
-   * 
+   *
    * @param {Object} config - Database configuration
    * @param {string} config.database - Path to the SQLite database file
    * @param {boolean} [config.readonly=false] - Open the database in read-only mode
@@ -41,31 +43,39 @@ export function createSQLiteAdapter() {
    */
   async function connect(config) {
     await initializeSQLite();
-    
+
     return new Promise((resolve, reject) => {
       try {
         db = new sqlite3.Database(
           config.database,
-          config.readonly ? sqlite3.OPEN_READONLY : sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE,
+          config.readonly
+            ? sqlite3.OPEN_READONLY
+            : sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE,
           (err) => {
             if (err) {
-              return reject(new Error(`Failed to connect to SQLite database: ${err.message}`));
+              return reject(
+                new Error(
+                  `Failed to connect to SQLite database: ${err.message}`
+                )
+              );
             }
-            
+
             // Enable foreign keys by default
             db.run('PRAGMA foreign_keys = ON');
-            
+
             // Enable WAL mode for better concurrency
             db.run('PRAGMA journal_mode = WAL');
-            
+
             // Set busy timeout to handle concurrent write operations
             db.run('PRAGMA busy_timeout = 5000');
-            
+
             resolve(instance);
           }
         );
       } catch (_error) {
-        reject(new Error(`Failed to connect to SQLite database: ${_error.message}`));
+        reject(
+          new Error(`Failed to connect to SQLite database: ${_error.message}`)
+        );
       }
     });
   }
@@ -79,7 +89,10 @@ export function createSQLiteAdapter() {
    * @returns {boolean}
    */
   function returnsRows(sql) {
-    return /^\s*(SELECT|PRAGMA|WITH|EXPLAIN|VALUES)\b/i.test(sql) || /\bRETURNING\b/i.test(sql);
+    return (
+      /^\s*(SELECT|PRAGMA|WITH|EXPLAIN|VALUES)\b/i.test(sql) ||
+      /\bRETURNING\b/i.test(sql)
+    );
   }
 
   /**
@@ -96,7 +109,11 @@ export function createSQLiteAdapter() {
   function query(sql, params = []) {
     return new Promise((resolve, reject) => {
       if (!db) {
-        return reject(new Error('Database connection not established. Call connect() first.'));
+        return reject(
+          new Error(
+            'Database connection not established. Call connect() first.'
+          )
+        );
       }
 
       if (returnsRows(sql)) {
@@ -109,7 +126,7 @@ export function createSQLiteAdapter() {
         return;
       }
 
-      db.run(sql, params, function(err) {
+      db.run(sql, params, function (err) {
         if (err) {
           return reject(new Error(`SQLite query error: ${err.message}`));
         }
@@ -117,7 +134,7 @@ export function createSQLiteAdapter() {
           rows: [],
           rowCount: this.changes,
           affectedRows: this.changes,
-          insertId: /^\s*(INSERT|REPLACE)\b/i.test(sql) ? this.lastID : null
+          insertId: /^\s*(INSERT|REPLACE)\b/i.test(sql) ? this.lastID : null,
         });
       });
     });
@@ -125,7 +142,7 @@ export function createSQLiteAdapter() {
 
   /**
    * Execute a SQL statement
-   * 
+   *
    * @param {string} sql - SQL statement
    * @param {Array} [params=[]] - Statement parameters
    * @returns {Promise<{affectedRows: number, insertId: number}>} Execution result
@@ -133,17 +150,21 @@ export function createSQLiteAdapter() {
   function execute(sql, params = []) {
     return new Promise((resolve, reject) => {
       if (!db) {
-        return reject(new Error('Database connection not established. Call connect() first.'));
+        return reject(
+          new Error(
+            'Database connection not established. Call connect() first.'
+          )
+        );
       }
-      
-      db.run(sql, params, function(err) {
+
+      db.run(sql, params, function (err) {
         if (err) {
           return reject(new Error(`SQLite execute error: ${err.message}`));
         }
-        
+
         resolve({
           affectedRows: this.changes,
-          insertId: this.lastID
+          insertId: this.lastID,
         });
       });
     });
@@ -151,18 +172,24 @@ export function createSQLiteAdapter() {
 
   /**
    * Begin a transaction
-   * 
+   *
    * @returns {Promise<void>}
    */
   function beginTransaction() {
     return new Promise((resolve, reject) => {
       if (!db) {
-        return reject(new Error('Database connection not established. Call connect() first.'));
+        return reject(
+          new Error(
+            'Database connection not established. Call connect() first.'
+          )
+        );
       }
-      
+
       db.run('BEGIN TRANSACTION', (err) => {
         if (err) {
-          return reject(new Error(`Failed to begin transaction: ${err.message}`));
+          return reject(
+            new Error(`Failed to begin transaction: ${err.message}`)
+          );
         }
         resolve();
       });
@@ -171,18 +198,24 @@ export function createSQLiteAdapter() {
 
   /**
    * Commit a transaction
-   * 
+   *
    * @returns {Promise<void>}
    */
   function commit() {
     return new Promise((resolve, reject) => {
       if (!db) {
-        return reject(new Error('Database connection not established. Call connect() first.'));
+        return reject(
+          new Error(
+            'Database connection not established. Call connect() first.'
+          )
+        );
       }
-      
+
       db.run('COMMIT', (err) => {
         if (err) {
-          return reject(new Error(`Failed to commit transaction: ${err.message}`));
+          return reject(
+            new Error(`Failed to commit transaction: ${err.message}`)
+          );
         }
         resolve();
       });
@@ -191,18 +224,24 @@ export function createSQLiteAdapter() {
 
   /**
    * Rollback a transaction
-   * 
+   *
    * @returns {Promise<void>}
    */
   function rollback() {
     return new Promise((resolve, reject) => {
       if (!db) {
-        return reject(new Error('Database connection not established. Call connect() first.'));
+        return reject(
+          new Error(
+            'Database connection not established. Call connect() first.'
+          )
+        );
       }
-      
+
       db.run('ROLLBACK', (err) => {
         if (err) {
-          return reject(new Error(`Failed to rollback transaction: ${err.message}`));
+          return reject(
+            new Error(`Failed to rollback transaction: ${err.message}`)
+          );
         }
         resolve();
       });
@@ -222,12 +261,18 @@ export function createSQLiteAdapter() {
    */
   async function transaction(_pool, options = {}) {
     const modes = ['DEFERRED', 'IMMEDIATE', 'EXCLUSIVE'];
-    const mode = options.mode === undefined ? null : String(options.mode).toUpperCase();
+    const mode =
+      options.mode === undefined ? null : String(options.mode).toUpperCase();
     if (mode !== null && !modes.includes(mode)) {
-      throw new Error(`Invalid SQLite transaction mode: ${options.mode}. Use one of ${modes.join(', ')}`);
+      throw new Error(
+        `Invalid SQLite transaction mode: ${options.mode}. Use one of ${modes.join(', ')}`
+      );
     }
 
-    await run(mode ? `BEGIN ${mode} TRANSACTION` : 'BEGIN TRANSACTION', 'begin transaction');
+    await run(
+      mode ? `BEGIN ${mode} TRANSACTION` : 'BEGIN TRANSACTION',
+      'begin transaction'
+    );
 
     const tx = {
       isCommitted: false,
@@ -261,7 +306,7 @@ export function createSQLiteAdapter() {
         }
         tx.isRolledBack = true;
         await run('ROLLBACK', 'rollback transaction');
-      }
+      },
     };
 
     return tx;
@@ -275,7 +320,11 @@ export function createSQLiteAdapter() {
   function run(sql, action) {
     return new Promise((resolve, reject) => {
       if (!db) {
-        return reject(new Error('Database connection not established. Call connect() first.'));
+        return reject(
+          new Error(
+            'Database connection not established. Call connect() first.'
+          )
+        );
       }
       db.run(sql, (err) => {
         if (err) {
@@ -298,7 +347,7 @@ export function createSQLiteAdapter() {
 
   /**
    * Disconnect from the database
-   * 
+   *
    * @returns {Promise<void>}
    */
   function disconnect() {
@@ -306,10 +355,12 @@ export function createSQLiteAdapter() {
       if (!db) {
         return resolve();
       }
-      
+
       db.close((err) => {
         if (err) {
-          return reject(new Error(`Failed to close database connection: ${err.message}`));
+          return reject(
+            new Error(`Failed to close database connection: ${err.message}`)
+          );
         }
         db = null;
         resolve();
@@ -319,19 +370,21 @@ export function createSQLiteAdapter() {
 
   /**
    * Get the underlying database connection
-   * 
+   *
    * @returns {Object} The database connection
    */
   function getConnection() {
     if (!db) {
-      throw new Error('Database connection not established. Call connect() first.');
+      throw new Error(
+        'Database connection not established. Call connect() first.'
+      );
     }
     return db;
   }
 
   /**
    * Ping the database to check if connection is alive
-   * 
+   *
    * @returns {Promise<boolean>} True if connection is alive
    */
   async function ping() {
@@ -345,7 +398,7 @@ export function createSQLiteAdapter() {
 
   /**
    * Escape a value for SQL queries
-   * 
+   *
    * @param {*} value - Value to escape
    * @returns {string} Escaped value
    */
@@ -353,15 +406,15 @@ export function createSQLiteAdapter() {
     if (value === null || value === undefined) {
       return 'NULL';
     }
-    
+
     if (typeof value === 'boolean') {
       return value ? '1' : '0';
     }
-    
+
     if (typeof value === 'number') {
       return String(value);
     }
-    
+
     // Escape single quotes by doubling them
     return `'${String(value).replace(/'/g, "''")}'`;
   }
@@ -379,7 +432,7 @@ export function createSQLiteAdapter() {
     disconnect,
     getConnection,
     ping,
-    escape
+    escape,
   };
 
   return instance;

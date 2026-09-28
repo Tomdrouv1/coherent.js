@@ -8,7 +8,12 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createDatabaseManager } from '../../src/connection-manager.js';
-import { Migration, createMigration, createTableBuilder, TableBuilder } from '../../src/migration.js';
+import {
+  Migration,
+  createMigration,
+  createTableBuilder,
+  TableBuilder,
+} from '../../src/migration.js';
 
 function writeMigration(dir, name, body) {
   writeFileSync(join(dir, `${name}.js`), body);
@@ -24,8 +29,10 @@ export async function down(schema) {
 `;
 
 async function tableNames(db) {
-  const { rows } = await db.query("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name");
-  return rows.map(row => row.name);
+  const { rows } = await db.query(
+    "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+  );
+  return rows.map((row) => row.name);
 }
 
 describe('migration runners on SQLite', () => {
@@ -47,7 +54,11 @@ describe('migration runners on SQLite', () => {
 
   it('really runs migrations when NODE_ENV is "test"', async () => {
     expect(process.env.NODE_ENV).toBe('test');
-    writeMigration(dir, '20240101000000_create_widgets', createTable('widgets'));
+    writeMigration(
+      dir,
+      '20240101000000_create_widgets',
+      createTable('widgets')
+    );
 
     const applied = await new Migration(db, { directory: dir }).run();
 
@@ -57,12 +68,18 @@ describe('migration runners on SQLite', () => {
 
   it('resolves a relative directory against the working directory', async () => {
     mkdirSync(join(dir, 'db', 'migrations'), { recursive: true });
-    writeMigration(join(dir, 'db', 'migrations'), '20240101000000_create_widgets', createTable('widgets'));
+    writeMigration(
+      join(dir, 'db', 'migrations'),
+      '20240101000000_create_widgets',
+      createTable('widgets')
+    );
 
     const cwd = process.cwd();
     process.chdir(dir);
     try {
-      expect(await createMigration(db, { directory: 'db/migrations' }).run()).toEqual(['20240101000000_create_widgets']);
+      expect(
+        await createMigration(db, { directory: 'db/migrations' }).run()
+      ).toEqual(['20240101000000_create_widgets']);
     } finally {
       process.chdir(cwd);
     }
@@ -71,15 +88,21 @@ describe('migration runners on SQLite', () => {
 
   it('uses ./migrations under the working directory by default', async () => {
     mkdirSync(join(dir, 'migrations'));
-    writeMigration(join(dir, 'migrations'), '20240101000000_create_widgets', createTable('widgets'));
+    writeMigration(
+      join(dir, 'migrations'),
+      '20240101000000_create_widgets',
+      createTable('widgets')
+    );
 
     const cwd = process.cwd();
     process.chdir(dir);
     try {
-      expect(await createMigration(db).run()).toEqual(['20240101000000_create_widgets']);
+      expect(await createMigration(db).run()).toEqual([
+        '20240101000000_create_widgets',
+      ]);
       expect(await new Migration(db).status()).toMatchObject({
         pending: [],
-        completed: [{ name: '20240101000000_create_widgets' }]
+        completed: [{ name: '20240101000000_create_widgets' }],
       });
     } finally {
       process.chdir(cwd);
@@ -87,16 +110,24 @@ describe('migration runners on SQLite', () => {
   });
 
   it('runs up() once when status() is called before run()', async () => {
-    writeMigration(dir, '20240101000000_count', `
+    writeMigration(
+      dir,
+      '20240101000000_count',
+      `
 export async function up(schema) {
   await schema.raw('CREATE TABLE IF NOT EXISTS ups (n INTEGER)');
   await schema.raw('INSERT INTO ups (n) VALUES (1)');
 }
-`);
+`
+    );
     const migration = createMigration(db, { directory: dir });
 
     expect(await migration.status()).toEqual([
-      { name: '20240101000000_count', applied: false, file: join(dir, '20240101000000_count.js') }
+      {
+        name: '20240101000000_count',
+        applied: false,
+        file: join(dir, '20240101000000_count.js'),
+      },
     ]);
     expect(await migration.run()).toEqual(['20240101000000_count']);
     expect(await migration.run()).toEqual([]);
@@ -111,7 +142,10 @@ export async function up(schema) {
     writeMigration(dir, '20240103000000_create_c', createTable('c'));
     await migration.run();
 
-    expect(await migration.rollback(1)).toEqual(['20240103000000_create_c', '20240102000000_create_b']);
+    expect(await migration.rollback(1)).toEqual([
+      '20240103000000_create_c',
+      '20240102000000_create_b',
+    ]);
     expect(await tableNames(db)).toEqual(['a', 'coherent_migrations']);
 
     const klass = new Migration(db, { directory: dir });
@@ -122,8 +156,12 @@ export async function up(schema) {
   it('fails loudly when a migration file cannot be imported', async () => {
     writeMigration(dir, '20240101000000_broken', 'export async function up( {');
 
-    await expect(createMigration(db, { directory: dir }).run()).rejects.toThrow('Failed to load migration 20240101000000_broken.js');
-    await expect(new Migration(db, { directory: dir }).run()).rejects.toThrow('Failed to load migration 20240101000000_broken.js');
+    await expect(createMigration(db, { directory: dir }).run()).rejects.toThrow(
+      'Failed to load migration 20240101000000_broken.js'
+    );
+    await expect(new Migration(db, { directory: dir }).run()).rejects.toThrow(
+      'Failed to load migration 20240101000000_broken.js'
+    );
   });
 
   it('escapes string defaults and keeps timestamp defaults as expressions', async () => {
@@ -145,12 +183,16 @@ export async function up(schema) {
   });
 
   it('creates foreign keys declared with references()', async () => {
-    writeMigration(dir, '20240101000000_create_posts', `
+    writeMigration(
+      dir,
+      '20240101000000_create_posts',
+      `
 export async function up(schema) {
   await schema.createTable('users', (t) => { t.id(); });
   await schema.createTable('posts', (t) => { t.id(); t.integer('user_id').references('users.id'); });
 }
-`);
+`
+    );
     await new Migration(db, { directory: dir }).run();
 
     const { rows } = await db.query('PRAGMA foreign_key_list(posts)');
@@ -166,22 +208,30 @@ describe('migration DDL per dialect', () => {
       config: { type },
       async query(sql) {
         statements.push(sql);
-        if (sql.startsWith('SELECT 1 FROM')) throw new Error('relation does not exist');
-        if (sql.startsWith('SELECT MAX')) return { rows: [{ max_batch: null }] };
+        if (sql.startsWith('SELECT 1 FROM'))
+          throw new Error('relation does not exist');
+        if (sql.startsWith('SELECT MAX'))
+          return { rows: [{ max_batch: null }] };
         return { rows: [] };
       },
       async transaction() {
-        return { query: this.query.bind(this), commit: async () => {}, rollback: async () => {} };
-      }
+        return {
+          query: this.query.bind(this),
+          commit: async () => {},
+          rollback: async () => {},
+        };
+      },
     };
   }
 
   const run = async (db) => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
-    const migration = createMigration(db, { directory: join(tmpdir(), 'coherent-no-such-dir') });
+    const migration = createMigration(db, {
+      directory: join(tmpdir(), 'coherent-no-such-dir'),
+    });
     await migration.run();
     vi.restoreAllMocks();
-    return db.statements.find(sql => sql.startsWith('CREATE TABLE'));
+    return db.statements.find((sql) => sql.startsWith('CREATE TABLE'));
   };
 
   it('creates the tracking table with PostgreSQL types', async () => {
@@ -199,24 +249,37 @@ describe('migration DDL per dialect', () => {
   });
 
   it('keeps SQLite types for SQLite and unknown adapters', async () => {
-    expect(await run(recordingDb('sqlite'))).toContain('id INTEGER PRIMARY KEY AUTOINCREMENT');
-    expect(await run(recordingDb(undefined))).toContain('executed_at DATETIME DEFAULT CURRENT_TIMESTAMP');
+    expect(await run(recordingDb('sqlite'))).toContain(
+      'id INTEGER PRIMARY KEY AUTOINCREMENT'
+    );
+    expect(await run(recordingDb(undefined))).toContain(
+      'executed_at DATETIME DEFAULT CURRENT_TIMESTAMP'
+    );
   });
 
   it('renders table builder columns for the dialect', () => {
     const pg = createTableBuilder('events', { dialect: 'postgresql' });
     pg.id();
     pg.datetime('at');
-    expect(pg.toCreateSQL()).toBe('CREATE TABLE events (\n  id SERIAL PRIMARY KEY NOT NULL,\n  at TIMESTAMP\n)');
+    expect(pg.toCreateSQL()).toBe(
+      'CREATE TABLE events (\n  id SERIAL PRIMARY KEY NOT NULL,\n  at TIMESTAMP\n)'
+    );
 
     const mysql = new TableBuilder('events', { dialect: 'mysql' });
     mysql.id();
-    expect(mysql.toCreateSQL()).toContain('id INTEGER PRIMARY KEY AUTO_INCREMENT');
+    expect(mysql.toCreateSQL()).toContain(
+      'id INTEGER PRIMARY KEY AUTO_INCREMENT'
+    );
   });
 
   it('refuses document databases', () => {
-    expect(() => new Migration({ config: { type: 'mongodb' }, query: async () => ({}) }).dialect)
-      .toThrow("SQL migrations are not supported for the 'mongodb' database type");
+    expect(
+      () =>
+        new Migration({ config: { type: 'mongodb' }, query: async () => ({}) })
+          .dialect
+    ).toThrow(
+      "SQL migrations are not supported for the 'mongodb' database type"
+    );
   });
 });
 
@@ -229,23 +292,29 @@ describe('migrations without transaction support', () => {
         if (sql.startsWith('SELECT migration')) return { rows: [] };
         if (sql.startsWith('SELECT MAX')) return { rows: [{ max_batch: 0 }] };
         return { rows: [] };
-      }
+      },
     };
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     const migration = new Migration(db, {
       migrations: [
         { name: 'one', up: async (schema) => schema.raw('SELECT 1') },
-        { name: 'two', up: async (schema) => schema.raw('SELECT 2') }
-      ]
+        { name: 'two', up: async (schema) => schema.raw('SELECT 2') },
+      ],
     });
 
     expect(await migration.run()).toEqual(['one', 'two']);
     expect(warn).toHaveBeenCalledTimes(1);
     expect(warn.mock.calls[0][0]).toContain('without a transaction');
     expect(statements.filter(([sql]) => sql.startsWith('INSERT'))).toEqual([
-      ['INSERT INTO coherent_migrations (migration, batch) VALUES (?, ?)', ['one', 1]],
-      ['INSERT INTO coherent_migrations (migration, batch) VALUES (?, ?)', ['two', 1]]
+      [
+        'INSERT INTO coherent_migrations (migration, batch) VALUES (?, ?)',
+        ['one', 1],
+      ],
+      [
+        'INSERT INTO coherent_migrations (migration, batch) VALUES (?, ?)',
+        ['two', 1],
+      ],
     ]);
     warn.mockRestore();
   });
@@ -254,7 +323,10 @@ describe('migrations without transaction support', () => {
     const db = { query: async () => ({ rows: [] }) };
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    await new Migration(db, { transactional: false, migrations: [{ name: 'one', up: async () => {} }] }).run();
+    await new Migration(db, {
+      transactional: false,
+      migrations: [{ name: 'one', up: async () => {} }],
+    }).run();
 
     expect(warn).not.toHaveBeenCalled();
     warn.mockRestore();

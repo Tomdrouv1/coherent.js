@@ -5,7 +5,10 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { CleanupTracker, cleanupTracker } from '../../src/hmr/cleanup-tracker.js';
+import {
+  CleanupTracker,
+  cleanupTracker,
+} from '../../src/hmr/cleanup-tracker.js';
 
 describe('CleanupTracker', () => {
   let tracker;
@@ -159,11 +162,9 @@ describe('CleanupTracker', () => {
 
       ctx.addEventListener(target, 'click', handler, { capture: true });
 
-      expect(target.addEventListener).toHaveBeenCalledWith(
-        'click',
-        handler,
-        { capture: true }
-      );
+      expect(target.addEventListener).toHaveBeenCalledWith('click', handler, {
+        capture: true,
+      });
       expect(tracker.getResourceCounts('test-module').listeners).toBe(1);
     });
 
@@ -195,9 +196,7 @@ describe('CleanupTracker', () => {
 
     beforeEach(() => {
       originalFetch = global.fetch;
-      global.fetch = vi.fn(() =>
-        Promise.resolve({ ok: true })
-      );
+      global.fetch = vi.fn(() => Promise.resolve({ ok: true }));
     });
 
     afterEach(() => {

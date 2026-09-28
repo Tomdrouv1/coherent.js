@@ -1,5 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createEventBus, eventSystem, withEventBus, render } from '../src/index.js';
+import {
+  createEventBus,
+  eventSystem,
+  withEventBus,
+  render,
+} from '../src/index.js';
 
 describe('EventBus.createScope', () => {
   it('prefixes event names and shares listeners with the bus', () => {
@@ -38,7 +43,9 @@ describe('EventBus.createScope', () => {
   });
 
   it('lets withEventBus({ scope }) components render', () => {
-    const Todo = withEventBus({ scope: 'todos', events: { added: () => {} } })(() => ({ ul: { children: [{ li: 'x' }] } }));
+    const Todo = withEventBus({ scope: 'todos', events: { added: () => {} } })(
+      () => ({ ul: { children: [{ li: 'x' }] } })
+    );
     expect(render(Todo())).toBe('<ul><li>x</li></ul>');
   });
 });
@@ -47,7 +54,9 @@ describe('withEventBus on the server', () => {
   it('does not accumulate listeners across renders', async () => {
     const { globalEventBus } = await import('../src/index.js');
     const before = globalEventBus.getEventListeners('ssr-added').length;
-    const List = withEventBus({ events: { 'ssr-added': () => {} } })(() => ({ ul: { children: [{ li: 'x' }] } }));
+    const List = withEventBus({ events: { 'ssr-added': () => {} } })(() => ({
+      ul: { children: [{ li: 'x' }] },
+    }));
 
     for (let i = 0; i < 200; i++) render(List());
 

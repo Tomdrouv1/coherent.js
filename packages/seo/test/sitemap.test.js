@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { SitemapGenerator, createSitemapGenerator, generateSitemap } from '../src/sitemap.js';
+import {
+  SitemapGenerator,
+  createSitemapGenerator,
+  generateSitemap,
+} from '../src/sitemap.js';
 
 describe('SitemapGenerator', () => {
   let generator;
@@ -13,7 +17,9 @@ describe('SitemapGenerator', () => {
     const xml = generator.generate();
 
     expect(xml).toContain('<?xml version="1.0" encoding="UTF-8"?>');
-    expect(xml).toContain('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">');
+    expect(xml).toContain(
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+    );
     expect(xml).toContain('<loc>https://example.com/about</loc>');
     expect(xml).toContain('<priority>0.8</priority>');
   });
@@ -40,7 +46,7 @@ describe('SitemapGenerator', () => {
     generator.add('/', {
       lastmod: '2024-01-15',
       changefreq: 'daily',
-      priority: 1.0
+      priority: 1.0,
     });
     const xml = generator.generate();
     expect(xml).toContain('<lastmod>2024-01-15</lastmod>');
@@ -49,10 +55,7 @@ describe('SitemapGenerator', () => {
   });
 
   it('addMultiple handles string and object URLs', () => {
-    generator.addMultiple([
-      '/page1',
-      { url: '/page2', priority: 0.9 }
-    ]);
+    generator.addMultiple(['/page1', { url: '/page2', priority: 0.9 }]);
     expect(generator.count()).toBe(2);
   });
 
@@ -91,14 +94,14 @@ describe('SitemapGenerator output safety', () => {
 
     expect(g.generate()).toBe(
       '<?xml version="1.0" encoding="UTF-8"?>\n' +
-      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
-      '  <url>\n' +
-      '    <loc>https://example.com/a</loc>\n' +
-      '    <lastmod>&lt;/lastmod&gt;&lt;/url&gt;&lt;url&gt;&lt;loc&gt;https://evil.example/&lt;/loc&gt;</lastmod>\n' +
-      '    <changefreq>daily</changefreq>\n' +
-      '    <priority>0.5</priority>\n' +
-      '  </url>\n' +
-      '</urlset>'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+        '  <url>\n' +
+        '    <loc>https://example.com/a</loc>\n' +
+        '    <lastmod>&lt;/lastmod&gt;&lt;/url&gt;&lt;url&gt;&lt;loc&gt;https://evil.example/&lt;/loc&gt;</lastmod>\n' +
+        '    <changefreq>daily</changefreq>\n' +
+        '    <priority>0.5</priority>\n' +
+        '  </url>\n' +
+        '</urlset>'
     );
     expect(g.generate().match(/<url>/g)).toHaveLength(1);
   });
@@ -114,7 +117,15 @@ describe('SitemapGenerator output safety', () => {
 
   it('accepts every changefreq value the protocol defines', () => {
     const g = new SitemapGenerator({ hostname: 'https://example.com' });
-    for (const changefreq of ['always', 'hourly', 'daily', 'weekly', 'monthly', 'yearly', 'never']) {
+    for (const changefreq of [
+      'always',
+      'hourly',
+      'daily',
+      'weekly',
+      'monthly',
+      'yearly',
+      'never',
+    ]) {
       g.add('/a', { changefreq });
     }
     expect(g.count()).toBe(7);
@@ -133,21 +144,27 @@ describe('SitemapGenerator output safety', () => {
 
   it('accepts priority bounds and numeric strings', () => {
     const g = new SitemapGenerator({ hostname: 'https://example.com' });
-    g.add('/a', { priority: 0 }).add('/b', { priority: 1 }).add('/c', { priority: '0.3' });
-    expect(g.urls.map(u => u.priority)).toEqual([0, 1, 0.3]);
+    g.add('/a', { priority: 0 })
+      .add('/b', { priority: 1 })
+      .add('/c', { priority: '0.3' });
+    expect(g.urls.map((u) => u.priority)).toEqual([0, 1, 0.3]);
     expect(g.generate()).toContain('<priority>0</priority>');
   });
 
   it('omits an element whose option is null', () => {
     const g = new SitemapGenerator({ hostname: 'https://example.com' });
     g.add('/a', { lastmod: null, changefreq: null, priority: null });
-    expect(g.generate()).toContain('  <url>\n    <loc>https://example.com/a</loc>\n  </url>');
+    expect(g.generate()).toContain(
+      '  <url>\n    <loc>https://example.com/a</loc>\n  </url>'
+    );
   });
 
   it('percent-encodes loc', () => {
     const g = new SitemapGenerator({ hostname: 'https://example.com' });
     g.add('/café menu?q=a b');
-    expect(g.generate()).toContain('<loc>https://example.com/caf%C3%A9%20menu?q=a%20b</loc>');
+    expect(g.generate()).toContain(
+      '<loc>https://example.com/caf%C3%A9%20menu?q=a%20b</loc>'
+    );
   });
 
   it('percent-encodes a relative loc when no hostname is configured', () => {
@@ -159,7 +176,9 @@ describe('SitemapGenerator output safety', () => {
   it('escapes the XML-special characters left in an encoded loc', () => {
     const g = new SitemapGenerator({ hostname: 'https://example.com' });
     g.add("/it's?a=1&b=2");
-    expect(g.generate()).toContain('<loc>https://example.com/it&apos;s?a=1&amp;b=2</loc>');
+    expect(g.generate()).toContain(
+      '<loc>https://example.com/it&apos;s?a=1&amp;b=2</loc>'
+    );
   });
 
   it('rejects non-http(s) absolute URLs', () => {
@@ -197,10 +216,9 @@ describe('createSitemapGenerator', () => {
 
 describe('generateSitemap', () => {
   it('generates sitemap from URL array', () => {
-    const xml = generateSitemap(
-      ['/home', '/about', '/contact'],
-      { hostname: 'https://example.com' }
-    );
+    const xml = generateSitemap(['/home', '/about', '/contact'], {
+      hostname: 'https://example.com',
+    });
     expect(xml).toContain('<loc>https://example.com/home</loc>');
     expect(xml).toContain('<loc>https://example.com/about</loc>');
     expect(xml).toContain('<loc>https://example.com/contact</loc>');

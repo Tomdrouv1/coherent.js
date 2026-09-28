@@ -18,20 +18,24 @@ describe('DatabaseManager', () => {
       query: vi.fn(),
       transaction: vi.fn(),
       getPoolStats: vi.fn(),
-      closePool: vi.fn()
+      closePool: vi.fn(),
     };
 
     // Mock pool
     mockPool = {
       acquire: vi.fn(),
       release: vi.fn(),
-      destroy: vi.fn()
+      destroy: vi.fn(),
     };
 
     // Setup mock adapter to return mock pool and pass connection tests
     mockAdapter.createPool.mockResolvedValue(mockPool);
     mockAdapter.testConnection.mockResolvedValue(true);
-    mockAdapter.getPoolStats.mockReturnValue({ total: 1, used: 0, available: 1 });
+    mockAdapter.getPoolStats.mockReturnValue({
+      total: 1,
+      used: 0,
+      available: 1,
+    });
   });
 
   afterEach(() => {
@@ -46,7 +50,7 @@ describe('DatabaseManager', () => {
     it('should create instance with valid config', () => {
       const config = {
         type: 'sqlite',
-        database: 'test.db'
+        database: 'test.db',
       };
 
       db = new DatabaseManager(config);
@@ -57,21 +61,27 @@ describe('DatabaseManager', () => {
     });
 
     it('should throw error for missing config', () => {
-      expect(() => new DatabaseManager()).toThrow('Database configuration is required');
+      expect(() => new DatabaseManager()).toThrow(
+        'Database configuration is required'
+      );
     });
 
     it('should throw error for missing type', () => {
-      expect(() => new DatabaseManager({})).toThrow('Either database type or adapter is required');
+      expect(() => new DatabaseManager({})).toThrow(
+        'Either database type or adapter is required'
+      );
     });
 
     it('should throw error for unsupported type', () => {
-      expect(() => new DatabaseManager({ type: 'unsupported', database: 'test' }))
-        .toThrow('Unsupported database type: unsupported');
+      expect(
+        () => new DatabaseManager({ type: 'unsupported', database: 'test' })
+      ).toThrow('Unsupported database type: unsupported');
     });
 
     it('should throw error for missing database name', () => {
-      expect(() => new DatabaseManager({ type: 'sqlite' }))
-        .toThrow('Database name is required');
+      expect(() => new DatabaseManager({ type: 'sqlite' })).toThrow(
+        'Database name is required'
+      );
     });
 
     it('should set default port based on database type', () => {
@@ -79,7 +89,7 @@ describe('DatabaseManager', () => {
         { type: 'postgresql', database: 'test', expectedPort: 5432 },
         { type: 'mysql', database: 'test', expectedPort: 3306 },
         { type: 'mongodb', database: 'test', expectedPort: 27017 },
-        { type: 'sqlite', database: 'test.db', expectedPort: null }
+        { type: 'sqlite', database: 'test.db', expectedPort: null },
       ];
 
       configs.forEach(({ type, database, expectedPort }) => {
@@ -92,7 +102,7 @@ describe('DatabaseManager', () => {
       const config = {
         type: 'sqlite',
         database: 'test.db',
-        pool: { min: 5 }
+        pool: { min: 5 },
       };
 
       db = new DatabaseManager(config);
@@ -106,7 +116,7 @@ describe('DatabaseManager', () => {
     beforeEach(() => {
       db = new DatabaseManager({
         adapter: mockAdapter,
-        store: { name: 'test.db' }
+        store: { name: 'test.db' },
       });
       db.retryDelay = 0;
     });
@@ -169,7 +179,7 @@ describe('DatabaseManager', () => {
     beforeEach(async () => {
       db = new DatabaseManager({
         adapter: mockAdapter,
-        store: { name: 'test.db' }
+        store: { name: 'test.db' },
       });
 
       mockAdapter.createPool.mockResolvedValue(mockPool);
@@ -183,14 +193,20 @@ describe('DatabaseManager', () => {
 
       const result = await db.query('SELECT * FROM users', []);
 
-      expect(mockAdapter.query).toHaveBeenCalledWith(mockPool, 'SELECT * FROM users', []);
+      expect(mockAdapter.query).toHaveBeenCalledWith(
+        mockPool,
+        'SELECT * FROM users',
+        []
+      );
       expect(result).toEqual(mockResult);
     });
 
     it('should throw error if not connected', async () => {
       db.isConnected = false;
 
-      await expect(db.query('SELECT 1')).rejects.toThrow('Database not connected');
+      await expect(db.query('SELECT 1')).rejects.toThrow(
+        'Database not connected'
+      );
     });
 
     it('should emit query event', async () => {
@@ -205,7 +221,7 @@ describe('DatabaseManager', () => {
       expect(querySpy).toHaveBeenCalledWith({
         operation: 'SELECT * FROM users',
         params: ['param'],
-        duration: expect.any(Number)
+        duration: expect.any(Number),
       });
     });
 
@@ -220,7 +236,7 @@ describe('DatabaseManager', () => {
         operation: 'INVALID SQL',
         params: {},
         duration: expect.any(Number),
-        error: 'Query failed'
+        error: 'Query failed',
       });
     });
 
@@ -243,7 +259,7 @@ describe('DatabaseManager', () => {
     beforeEach(async () => {
       db = new DatabaseManager({
         adapter: mockAdapter,
-        store: { name: 'test.db' }
+        store: { name: 'test.db' },
       });
 
       mockAdapter.createPool.mockResolvedValue(mockPool);
@@ -272,7 +288,7 @@ describe('DatabaseManager', () => {
     beforeEach(() => {
       db = new DatabaseManager({
         adapter: mockAdapter,
-        store: { name: 'test.db' }
+        store: { name: 'test.db' },
       });
     });
 
@@ -287,7 +303,7 @@ describe('DatabaseManager', () => {
         averageQueryTime: 0,
         lastHealthCheck: null,
         isConnected: false,
-        poolStats: null
+        poolStats: null,
       });
     });
 
@@ -309,7 +325,7 @@ describe('DatabaseManager', () => {
     beforeEach(async () => {
       db = new DatabaseManager({
         adapter: mockAdapter,
-        store: { name: 'test.db' }
+        store: { name: 'test.db' },
       });
 
       mockAdapter.createPool.mockResolvedValue(mockPool);
@@ -333,10 +349,10 @@ describe('DatabaseManager', () => {
 
     it('should not error if already disconnected', async () => {
       await db.close();
-      
+
       // Should not throw
       await db.close();
-      
+
       expect(mockAdapter.closePool).toHaveBeenCalledTimes(1);
     });
 
@@ -350,7 +366,7 @@ describe('DatabaseManager', () => {
     beforeEach(async () => {
       db = new DatabaseManager({
         adapter: mockAdapter,
-        store: { name: 'test.db' }
+        store: { name: 'test.db' },
       });
 
       mockAdapter.createPool.mockResolvedValue(mockPool);
@@ -364,7 +380,9 @@ describe('DatabaseManager', () => {
     });
 
     it('should throw error on failed connection test', async () => {
-      mockAdapter.testConnection.mockRejectedValue(new Error('Health check failed'));
+      mockAdapter.testConnection.mockRejectedValue(
+        new Error('Health check failed')
+      );
       await expect(db.testConnection()).rejects.toThrow('Health check failed');
     });
   });
@@ -373,7 +391,10 @@ describe('DatabaseManager', () => {
     it('should delegate to the pool for document adapters', async () => {
       const fakeCollection = { insertOne: vi.fn(), findOne: vi.fn() };
       mockPool.collection = vi.fn(() => fakeCollection);
-      db = new DatabaseManager({ adapter: mockAdapter, store: { name: 'docs' } });
+      db = new DatabaseManager({
+        adapter: mockAdapter,
+        store: { name: 'docs' },
+      });
       await db.connect();
 
       expect(db.collection('users')).toBe(fakeCollection);
@@ -381,14 +402,22 @@ describe('DatabaseManager', () => {
     });
 
     it('should throw when not connected', () => {
-      db = new DatabaseManager({ adapter: mockAdapter, store: { name: 'docs' } });
+      db = new DatabaseManager({
+        adapter: mockAdapter,
+        store: { name: 'docs' },
+      });
       expect(() => db.collection('users')).toThrow('Database not connected');
     });
 
     it('should throw a clear error for non-document adapters', async () => {
-      db = new DatabaseManager({ adapter: mockAdapter, store: { name: 'sql' } });
+      db = new DatabaseManager({
+        adapter: mockAdapter,
+        store: { name: 'sql' },
+      });
       await db.connect();
-      expect(() => db.collection('users')).toThrow('only available for document databases');
+      expect(() => db.collection('users')).toThrow(
+        'only available for document databases'
+      );
     });
   });
 
@@ -398,7 +427,7 @@ describe('DatabaseManager', () => {
       const adapter = {
         createPool: vi.fn().mockResolvedValue(mockPool),
         testConnection: vi.fn().mockResolvedValue(true),
-        disconnect
+        disconnect,
       };
       db = new DatabaseManager({ adapter, store: { name: 'doc' } });
       await db.connect();

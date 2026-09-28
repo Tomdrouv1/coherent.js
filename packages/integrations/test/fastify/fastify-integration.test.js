@@ -10,7 +10,7 @@ import { describe, it, expect } from 'vitest';
 import {
   coherentFastify,
   createHandler,
-  setupCoherent
+  setupCoherent,
 } from '../../src/fastify/coherent-fastify.js';
 import { render } from '@coherent.js/core';
 
@@ -24,14 +24,18 @@ describe('Fastify Integration', () => {
     const mockFastify = {
       decorateReply: () => {},
       addHook: () => {},
-      register: () => {}
+      register: () => {},
     };
 
     expect(() => {
-      coherentFastify(mockFastify, {
-        enablePerformanceMonitoring: true,
-        template: '<html><body>{{content}}</body></html>'
-      }, () => {});
+      coherentFastify(
+        mockFastify,
+        {
+          enablePerformanceMonitoring: true,
+          template: '<html><body>{{content}}</body></html>',
+        },
+        () => {}
+      );
     }).not.toThrow();
   });
 
@@ -48,7 +52,7 @@ describe('Fastify Integration', () => {
     const mockFastify = {
       register: () => {},
       decorateReply: () => {},
-      addHook: () => {}
+      addHook: () => {},
     };
 
     expect(() => {
@@ -60,8 +64,8 @@ describe('Fastify Integration', () => {
     const testComponent = {
       div: {
         className: 'test',
-        text: 'Hello Coherent.js!'
-      }
+        text: 'Hello Coherent.js!',
+      },
     };
 
     const html = render(testComponent);
@@ -73,7 +77,7 @@ describe('Fastify Integration', () => {
     const mockFastify = {
       decorateReply: () => {},
       addHook: () => {},
-      register: () => {}
+      register: () => {},
     };
 
     expect(() => {

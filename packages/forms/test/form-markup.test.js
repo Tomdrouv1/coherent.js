@@ -18,7 +18,11 @@
 
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render } from '@coherent.js/core';
-import { buildForm, createFormBuilder, DEFAULT_CLASS_NAMES } from '../src/index.js';
+import {
+  buildForm,
+  createFormBuilder,
+  DEFAULT_CLASS_NAMES,
+} from '../src/index.js';
 
 const CONTACT = {
   action: '/contact',
@@ -28,7 +32,7 @@ const CONTACT = {
     field: 'contact-form__field',
     control: 'contact-form__input',
     submit: 'clk-btn clk-btn-primary',
-    error: 'contact-form__error'
+    error: 'contact-form__error',
   },
   fields: [
     {
@@ -36,9 +40,9 @@ const CONTACT = {
       type: 'email',
       label: 'Email',
       required: true,
-      attributes: { autocomplete: 'email', maxlength: 120 }
-    }
-  ]
+      attributes: { autocomplete: 'email', maxlength: 120 },
+    },
+  ],
 };
 
 afterEach(() => {
@@ -65,18 +69,24 @@ describe('no-JS submission', () => {
   });
 
   it('emits novalidate only when asked', () => {
-    expect(render(buildForm({ ...CONTACT, novalidate: true }))).toContain('novalidate');
-    expect(render(buildForm({ ...CONTACT, novalidate: false }))).not.toContain('novalidate');
+    expect(render(buildForm({ ...CONTACT, novalidate: true }))).toContain(
+      'novalidate'
+    );
+    expect(render(buildForm({ ...CONTACT, novalidate: false }))).not.toContain(
+      'novalidate'
+    );
   });
 
   it('emits the inline handler only when enhancement is opted into', () => {
-    expect(render(buildForm({ ...CONTACT, enhance: true })))
-      .toContain('onsubmit="handleSubmit(event)"');
+    expect(render(buildForm({ ...CONTACT, enhance: true }))).toContain(
+      'onsubmit="handleSubmit(event)"'
+    );
   });
 
   it('uses a custom enhancement handler verbatim', () => {
-    expect(render(buildForm({ ...CONTACT, enhance: 'contactSubmit(event)' })))
-      .toContain('onsubmit="contactSubmit(event)"');
+    expect(
+      render(buildForm({ ...CONTACT, enhance: 'contactSubmit(event)' }))
+    ).toContain('onsubmit="contactSubmit(event)"');
   });
 });
 
@@ -89,25 +99,31 @@ describe('field attributes', () => {
   });
 
   it('honors disabled and readonly', () => {
-    const html = render(buildForm({
-      fields: [
-        { name: 'a', type: 'text', disabled: true },
-        { name: 'b', type: 'text', readonly: true }
-      ]
-    }));
+    const html = render(
+      buildForm({
+        fields: [
+          { name: 'a', type: 'text', disabled: true },
+          { name: 'b', type: 'text', readonly: true },
+        ],
+      })
+    );
 
     expect(html).toContain('disabled');
     expect(html).toContain('readonly');
   });
 
   it('cannot override the attributes the builder owns', () => {
-    const html = render(buildForm({
-      fields: [{
-        name: 'email',
-        type: 'email',
-        attributes: { name: 'hijacked', id: 'hijacked', type: 'hidden' }
-      }]
-    }));
+    const html = render(
+      buildForm({
+        fields: [
+          {
+            name: 'email',
+            type: 'email',
+            attributes: { name: 'hijacked', id: 'hijacked', type: 'hidden' },
+          },
+        ],
+      })
+    );
 
     expect(html).toContain('name="email"');
     expect(html).toContain('id="email"');
@@ -117,25 +133,40 @@ describe('field attributes', () => {
 
   // Emitting these would reintroduce, per field, exactly the inline script
   // this release stopped putting on the form element.
-  it.each(['onclick', 'onsubmit', 'ONERROR'])('refuses the inline handler %s', name => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it.each(['onclick', 'onsubmit', 'ONERROR'])(
+    'refuses the inline handler %s',
+    (name) => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    const html = render(buildForm({
-      fields: [{ name: 'q', type: 'text', attributes: { [name]: 'alert(1)' } }]
-    }));
+      const html = render(
+        buildForm({
+          fields: [
+            { name: 'q', type: 'text', attributes: { [name]: 'alert(1)' } },
+          ],
+        })
+      );
 
-    expect(html).not.toContain('alert(1)');
-    expect(html.toLowerCase()).not.toContain(name.toLowerCase());
-    expect(warn).toHaveBeenCalled();
-  });
+      expect(html).not.toContain('alert(1)');
+      expect(html.toLowerCase()).not.toContain(name.toLowerCase());
+      expect(warn).toHaveBeenCalled();
+    }
+  );
 
   // formatAttributes escapes attribute values but interpolates names raw.
   it('drops attribute names that are not valid HTML names', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    const html = render(buildForm({
-      fields: [{ name: 'q', type: 'text', attributes: { 'x onclick=alert(1)': 'y' } }]
-    }));
+    const html = render(
+      buildForm({
+        fields: [
+          {
+            name: 'q',
+            type: 'text',
+            attributes: { 'x onclick=alert(1)': 'y' },
+          },
+        ],
+      })
+    );
 
     expect(html).not.toContain('onclick');
     expect(warn).toHaveBeenCalled();
@@ -154,10 +185,12 @@ describe('class names', () => {
   });
 
   it('appends a per-field class to the control class', () => {
-    const html = render(buildForm({
-      classNames: { control: 'base' },
-      fields: [{ name: 'q', type: 'text', className: 'extra' }]
-    }));
+    const html = render(
+      buildForm({
+        classNames: { control: 'base' },
+        fields: [{ name: 'q', type: 'text', className: 'extra' }],
+      })
+    );
 
     expect(html).toContain('class="base extra"');
   });
@@ -183,12 +216,14 @@ describe('class names', () => {
 
 describe('field visibility', () => {
   it('omits a field marked not visible', () => {
-    const html = render(buildForm({
-      fields: [
-        { name: 'shown', type: 'text' },
-        { name: 'hidden', type: 'text', visible: false }
-      ]
-    }));
+    const html = render(
+      buildForm({
+        fields: [
+          { name: 'shown', type: 'text' },
+          { name: 'hidden', type: 'text', visible: false },
+        ],
+      })
+    );
 
     expect(html).toContain('name="shown"');
     expect(html).not.toContain('name="hidden"');
@@ -196,7 +231,9 @@ describe('field visibility', () => {
 
   it('does not validate a field it did not render', () => {
     const builder = createFormBuilder({
-      fields: [{ name: 'hidden', type: 'text', required: true, visible: false }]
+      fields: [
+        { name: 'hidden', type: 'text', required: true, visible: false },
+      ],
     });
 
     expect(render(builder.buildForm())).not.toContain('name="hidden"');
@@ -205,7 +242,9 @@ describe('field visibility', () => {
 
   it('treats visible:false as final, even against a true showWhen', () => {
     const builder = createFormBuilder({
-      fields: [{ name: 'q', type: 'text', visible: false, showWhen: () => true }]
+      fields: [
+        { name: 'q', type: 'text', visible: false, showWhen: () => true },
+      ],
     });
 
     expect(builder.isFieldVisible('q')).toBe(false);
@@ -216,8 +255,13 @@ describe('field visibility', () => {
     const builder = createFormBuilder({
       fields: [
         { name: 'always', type: 'text', required: true },
-        { name: 'conditional', type: 'text', required: true, showWhen: () => false }
-      ]
+        {
+          name: 'conditional',
+          type: 'text',
+          required: true,
+          showWhen: () => false,
+        },
+      ],
     });
 
     const html = render(builder.buildForm());
@@ -233,14 +277,14 @@ describe('honeypot', () => {
   const builder = createFormBuilder({
     action: '/contact',
     method: 'post',
-    classNames: { control: 'contact-form__input' }
+    classNames: { control: 'contact-form__input' },
   });
   builder.field('email', { type: 'email', label: 'Email', required: true });
   builder.field('website', {
     type: 'text',
     label: 'Website',
     className: 'contact-form__trap',
-    attributes: { tabindex: '-1', autocomplete: 'off' }
+    attributes: { tabindex: '-1', autocomplete: 'off' },
   });
 
   const html = render(builder.buildForm());

@@ -23,7 +23,11 @@ async function startServer(handler) {
 
 async function fetchText(url) {
   const res = await fetch(url);
-  return { status: res.status, contentType: res.headers.get('content-type'), text: await res.text() };
+  return {
+    status: res.status,
+    contentType: res.headers.get('content-type'),
+    text: await res.text(),
+  };
 }
 
 describe('createStaticHandler', () => {
@@ -43,25 +47,37 @@ describe('createStaticHandler', () => {
     writeFileSync(join(root, 'app.js'), 'export const x = 1;');
     server = await startServer(createStaticHandler({ root }));
 
-    const { status, contentType, text } = await fetchText(`${server.base}/app.js`);
+    const { status, contentType, text } = await fetchText(
+      `${server.base}/app.js`
+    );
     expect(status).toBe(200);
     expect(contentType).toMatch(/text\/javascript|application\/javascript/);
     expect(text).toContain('export const x = 1');
   });
 
   test('serves an HTML file with the HMR client bootstrap script injected before </body>', async () => {
-    writeFileSync(join(root, 'index.html'), '<!doctype html><html><body><h1>hi</h1></body></html>');
+    writeFileSync(
+      join(root, 'index.html'),
+      '<!doctype html><html><body><h1>hi</h1></body></html>'
+    );
     server = await startServer(createStaticHandler({ root }));
 
-    const { status, contentType, text } = await fetchText(`${server.base}/index.html`);
+    const { status, contentType, text } = await fetchText(
+      `${server.base}/index.html`
+    );
     expect(status).toBe(200);
     expect(contentType).toMatch(/text\/html/);
-    expect(text).toMatch(/<script[^>]+src="\/__coherent_hmr_client\.js"[^>]*><\/script>/);
-    expect(text.indexOf('__coherent_hmr_client')).toBeLessThan(text.indexOf('</body>'));
+    expect(text).toMatch(
+      /<script[^>]+src="\/__coherent_hmr_client\.js"[^>]*><\/script>/
+    );
+    expect(text.indexOf('__coherent_hmr_client')).toBeLessThan(
+      text.indexOf('</body>')
+    );
   });
 
   test('does not inject the bootstrap twice if already present', async () => {
-    const html = '<!doctype html><html><body><script src="/__coherent_hmr_client.js"></script></body></html>';
+    const html =
+      '<!doctype html><html><body><script src="/__coherent_hmr_client.js"></script></body></html>';
     writeFileSync(join(root, 'index.html'), html);
     server = await startServer(createStaticHandler({ root }));
 
@@ -73,7 +89,9 @@ describe('createStaticHandler', () => {
   test('serves /__coherent_hmr_client.js with a tiny bootstrap that imports the client HMR module', async () => {
     server = await startServer(createStaticHandler({ root }));
 
-    const { status, contentType, text } = await fetchText(`${server.base}/__coherent_hmr_client.js`);
+    const { status, contentType, text } = await fetchText(
+      `${server.base}/__coherent_hmr_client.js`
+    );
     expect(status).toBe(200);
     expect(contentType).toMatch(/text\/javascript|application\/javascript/);
     expect(text).toContain('@coherent.js/client');
@@ -82,7 +100,10 @@ describe('createStaticHandler', () => {
   });
 
   test('serves / as /index.html when an index.html exists in the root', async () => {
-    writeFileSync(join(root, 'index.html'), '<!doctype html><html><body>root</body></html>');
+    writeFileSync(
+      join(root, 'index.html'),
+      '<!doctype html><html><body>root</body></html>'
+    );
     server = await startServer(createStaticHandler({ root }));
 
     const { status, text } = await fetchText(`${server.base}/`);
@@ -104,7 +125,9 @@ describe('createStaticHandler', () => {
     writeFileSync(sibling, 'secret');
     try {
       server = await startServer(createStaticHandler({ root }));
-      const { status } = await fetchText(`${server.base}/../coherent-sh-sibling-${sibling.split('coherent-sh-sibling-')[1]}`);
+      const { status } = await fetchText(
+        `${server.base}/../coherent-sh-sibling-${sibling.split('coherent-sh-sibling-')[1]}`
+      );
       expect(status).toBe(404);
     } finally {
       rmSync(sibling, { force: true });

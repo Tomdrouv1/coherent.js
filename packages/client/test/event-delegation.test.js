@@ -279,9 +279,17 @@ describe('EventDelegation', () => {
     const calls = mockRoot.addEventListener.mock.calls;
 
     expect(calls.map((call) => [call[0], call[2].passive])).toEqual(
-      ['click', 'change', 'input', 'submit', 'focus', 'blur', 'keydown', 'keyup', 'keypress'].map(
-        (type) => [type, false]
-      )
+      [
+        'click',
+        'change',
+        'input',
+        'submit',
+        'focus',
+        'blur',
+        'keydown',
+        'keyup',
+        'keypress',
+      ].map((type) => [type, false])
     );
   });
 

@@ -15,7 +15,7 @@ export {
   createCoherentHandler,
   enhancedExpressEngine,
   setupCoherent,
-  createExpressIntegration
+  createExpressIntegration,
 } from './coherent-express.js';
 
 export { default } from './coherent-express.js';

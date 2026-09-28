@@ -11,38 +11,38 @@ const globalState = new Map();
  * @returns {Object} State container
  */
 export function createState(initialState = {}) {
-    const state = new Map(Object.entries(initialState));
+  const state = new Map(Object.entries(initialState));
 
-    return {
-        get(key) {
-            return state.get(key);
-        },
+  return {
+    get(key) {
+      return state.get(key);
+    },
 
-        set(key, value) {
-            state.set(key, value);
-            return this;
-        },
+    set(key, value) {
+      state.set(key, value);
+      return this;
+    },
 
-        has(key) {
-            return state.has(key);
-        },
+    has(key) {
+      return state.has(key);
+    },
 
-        delete(key) {
-            return state.delete(key);
-        },
+    delete(key) {
+      return state.delete(key);
+    },
 
-        clear() {
-            state.clear();
-            return this;
-        },
+    clear() {
+      state.clear();
+      return this;
+    },
 
-        toObject() {
-            return Object.fromEntries(state);
-        },
+    toObject() {
+      return Object.fromEntries(state);
+    },
 
-        // For debugging
-        _internal: state
-    };
+    // For debugging
+    _internal: state,
+  };
 }
 
 /**
@@ -53,26 +53,26 @@ export function createState(initialState = {}) {
  * application-wide defaults, never request data.
  */
 export const globalStateManager = {
-    set(key, value) {
-        globalState.set(key, value);
-    },
+  set(key, value) {
+    globalState.set(key, value);
+  },
 
-    get(key) {
-        return globalState.get(key);
-    },
+  get(key) {
+    return globalState.get(key);
+  },
 
-    has(key) {
-        return globalState.has(key);
-    },
+  has(key) {
+    return globalState.has(key);
+  },
 
-    clear() {
-        globalState.clear();
-    },
+  clear() {
+    globalState.clear();
+  },
 
-    // Create isolated state for each request
-    createRequestState() {
-        return createState();
-    }
+  // Create isolated state for each request
+  createRequestState() {
+    return createState();
+  },
 };
 
 // ============================================================================
@@ -100,14 +100,17 @@ export const globalStateManager = {
 const EMPTY_SCOPE = new Map();
 
 function createAsyncStorage() {
-    try {
-        // Never a static import: this module also runs in browsers.
-        const asyncHooks = globalThis.process?.getBuiltinModule?.('node:async_hooks');
-        const AsyncLocalStorage = asyncHooks?.AsyncLocalStorage;
-        return typeof AsyncLocalStorage === 'function' ? new AsyncLocalStorage() : null;
-    } catch {
-        return null;
-    }
+  try {
+    // Never a static import: this module also runs in browsers.
+    const asyncHooks =
+      globalThis.process?.getBuiltinModule?.('node:async_hooks');
+    const AsyncLocalStorage = asyncHooks?.AsyncLocalStorage;
+    return typeof AsyncLocalStorage === 'function'
+      ? new AsyncLocalStorage()
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 const asyncStorage = createAsyncStorage();
@@ -116,11 +119,11 @@ const asyncStorage = createAsyncStorage();
 const syncHolder = { scope: EMPTY_SCOPE, owned: true };
 
 function currentHolder() {
-    return asyncStorage ? asyncStorage.getStore() : syncHolder;
+  return asyncStorage ? asyncStorage.getStore() : syncHolder;
 }
 
 function currentScope() {
-    return currentHolder()?.scope ?? EMPTY_SCOPE;
+  return currentHolder()?.scope ?? EMPTY_SCOPE;
 }
 
 /**
@@ -134,13 +137,13 @@ function currentScope() {
  * a module-level store would leak to every request).
  */
 function setScope(scope, holder = currentHolder()) {
-    if (!holder?.owned) {
-        throw new Error(
-            'Context can only be provided inside runWithContext() on the server: outside it the value ' +
-            'would leak into other requests. Wrap each request or render: runWithContext(() => ...).'
-        );
-    }
-    holder.scope = scope;
+  if (!holder?.owned) {
+    throw new Error(
+      'Context can only be provided inside runWithContext() on the server: outside it the value ' +
+        'would leak into other requests. Wrap each request or render: runWithContext(() => ...).'
+    );
+  }
+  holder.scope = scope;
 }
 
 /**
@@ -148,23 +151,23 @@ function setScope(scope, holder = currentHolder()) {
  * previous scope afterwards.
  */
 function runInScope(scope, fn, args) {
-    if (asyncStorage) {
-        return asyncStorage.run({ scope, owned: true }, fn, ...args);
-    }
+  if (asyncStorage) {
+    return asyncStorage.run({ scope, owned: true }, fn, ...args);
+  }
 
-    const previous = syncHolder.scope;
-    syncHolder.scope = scope;
-    try {
-        return fn(...args);
-    } finally {
-        syncHolder.scope = previous;
-    }
+  const previous = syncHolder.scope;
+  syncHolder.scope = scope;
+  try {
+    return fn(...args);
+  } finally {
+    syncHolder.scope = previous;
+  }
 }
 
 function withValue(scope, key, value) {
-    const next = new Map(scope);
-    next.set(key, { value, previous: scope.get(key) });
-    return next;
+  const next = new Map(scope);
+  next.set(key, { value, previous: scope.get(key) });
+  return next;
 }
 
 /**
@@ -180,18 +183,20 @@ function withValue(scope, key, value) {
  * @returns {T} Whatever `fn` returns (a promise for an async `fn`)
  */
 export function runWithContext(fn, values) {
-    if (typeof fn !== 'function') {
-        throw new TypeError(`runWithContext() requires a function, received: ${typeof fn}`);
-    }
+  if (typeof fn !== 'function') {
+    throw new TypeError(
+      `runWithContext() requires a function, received: ${typeof fn}`
+    );
+  }
 
-    let scope = EMPTY_SCOPE;
-    if (values && typeof values === 'object') {
-        for (const [key, value] of Object.entries(values)) {
-            scope = withValue(scope, key, value);
-        }
+  let scope = EMPTY_SCOPE;
+  if (values && typeof values === 'object') {
+    for (const [key, value] of Object.entries(values)) {
+      scope = withValue(scope, key, value);
     }
+  }
 
-    return runInScope(scope, fn, []);
+  return runInScope(scope, fn, []);
 }
 
 /**
@@ -208,7 +213,7 @@ export function runWithContext(fn, values) {
  * @param {*} value - Context value
  */
 export function provideContext(key, value) {
-    setScope(withValue(currentScope(), key, value));
+  setScope(withValue(currentScope(), key, value));
 }
 
 /**
@@ -231,25 +236,25 @@ export function provideContext(key, value) {
  * @returns {Function} Context provider component
  */
 export function createContextProvider(key, value, children) {
-    // Rest parameters keep `length` at 0, so a renderer calls this as an
-    // ordinary function component.
-    function contextProvider(...args) {
-        const renderFunction = args[0];
-        const scope = withValue(currentScope(), key, value);
+  // Rest parameters keep `length` at 0, so a renderer calls this as an
+  // ordinary function component.
+  function contextProvider(...args) {
+    const renderFunction = args[0];
+    const scope = withValue(currentScope(), key, value);
 
-        if (typeof renderFunction === 'function') {
-            return runInScope(scope, renderFunction, [children]);
-        }
-
-        // Evaluate the function components below the provider inside its
-        // scope, and hand the renderer the resulting plain tree. The scope
-        // is restored even when a child throws; enter/leave marker
-        // components used to leave the value set for the next request when
-        // a child threw before the "leave" marker ran.
-        return runInScope(scope, resolveComponents, [children]);
+    if (typeof renderFunction === 'function') {
+      return runInScope(scope, renderFunction, [children]);
     }
 
-    return contextProvider;
+    // Evaluate the function components below the provider inside its
+    // scope, and hand the renderer the resulting plain tree. The scope
+    // is restored even when a child throws; enter/leave marker
+    // components used to leave the value set for the next request when
+    // a child threw before the "leave" marker ran.
+    return runInScope(scope, resolveComponents, [children]);
+  }
+
+  return contextProvider;
 }
 
 const TAG_NAME = /^[a-zA-Z][a-zA-Z0-9-]*$/;
@@ -261,47 +266,53 @@ const TAG_NAME = /^[a-zA-Z][a-zA-Z0-9-]*$/;
  * their brand); event handlers are props and are never called.
  */
 function resolveComponents(node, depth = 0) {
-    if (depth > 1000) return node;
+  if (depth > 1000) return node;
 
-    if (typeof node === 'function') {
-        return resolveComponents(node(), depth + 1);
-    }
-    if (Array.isArray(node)) {
-        let changed = false;
-        const resolved = node.map((child) => {
-            const next = resolveComponents(child, depth + 1);
-            if (next !== child) changed = true;
-            return next;
-        });
-        return changed ? resolved : node;
-    }
-    if (!node || typeof node !== 'object') return node;
-
-    if (node.__isLazy === true && typeof node.evaluate === 'function') {
-        return resolveComponents(node.evaluate(), depth + 1);
-    }
-
-    const tags = Object.keys(node);
-    if (tags.length === 0 || !tags.every((tag) => TAG_NAME.test(tag))) return node;
-
+  if (typeof node === 'function') {
+    return resolveComponents(node(), depth + 1);
+  }
+  if (Array.isArray(node)) {
     let changed = false;
-    const resolved = {};
-    for (const tag of tags) {
-        let content = node[tag];
-        if (typeof content === 'function') {
-            content = resolveComponents(content(), depth + 1);
-        }
-        if (content && typeof content === 'object' && !Array.isArray(content) && !isTrusted(content)) {
-            content = resolveProps(content, depth);
-        }
-        if (content !== node[tag]) changed = true;
-        resolved[tag] = content;
-    }
+    const resolved = node.map((child) => {
+      const next = resolveComponents(child, depth + 1);
+      if (next !== child) changed = true;
+      return next;
+    });
     return changed ? resolved : node;
+  }
+  if (!node || typeof node !== 'object') return node;
+
+  if (node.__isLazy === true && typeof node.evaluate === 'function') {
+    return resolveComponents(node.evaluate(), depth + 1);
+  }
+
+  const tags = Object.keys(node);
+  if (tags.length === 0 || !tags.every((tag) => TAG_NAME.test(tag)))
+    return node;
+
+  let changed = false;
+  const resolved = {};
+  for (const tag of tags) {
+    let content = node[tag];
+    if (typeof content === 'function') {
+      content = resolveComponents(content(), depth + 1);
+    }
+    if (
+      content &&
+      typeof content === 'object' &&
+      !Array.isArray(content) &&
+      !isTrusted(content)
+    ) {
+      content = resolveProps(content, depth);
+    }
+    if (content !== node[tag]) changed = true;
+    resolved[tag] = content;
+  }
+  return changed ? resolved : node;
 }
 
 function isTrusted(value) {
-    return value[Symbol.for('coherent.js.trustedContent')] === true;
+  return value[Symbol.for('coherent.js.trustedContent')] === true;
 }
 
 /**
@@ -311,32 +322,32 @@ function isTrusted(value) {
  * reports it and renders an empty value.
  */
 function resolveProps(props, depth) {
-    let next = props;
-    const set = (key, value) => {
-        if (next === props) next = { ...props };
-        next[key] = value;
-    };
+  let next = props;
+  const set = (key, value) => {
+    if (next === props) next = { ...props };
+    next[key] = value;
+  };
 
-    for (const key of Object.keys(props)) {
-        const value = props[key];
-        if (key === 'children') {
-            if (value !== undefined && value !== null) {
-                const children = resolveComponents(value, depth + 1);
-                if (children !== value) set(key, children);
-            }
-        } else if (typeof value === 'function' && key !== 'key') {
-            if (key === 'text' || key === 'html') {
-                set(key, value());
-            } else if (!key.startsWith('on')) {
-                try {
-                    set(key, value());
-                } catch {
-                    // left in place for the renderer
-                }
-            }
+  for (const key of Object.keys(props)) {
+    const value = props[key];
+    if (key === 'children') {
+      if (value !== undefined && value !== null) {
+        const children = resolveComponents(value, depth + 1);
+        if (children !== value) set(key, children);
+      }
+    } else if (typeof value === 'function' && key !== 'key') {
+      if (key === 'text' || key === 'html') {
+        set(key, value());
+      } else if (!key.startsWith('on')) {
+        try {
+          set(key, value());
+        } catch {
+          // left in place for the renderer
         }
+      }
     }
-    return next;
+  }
+  return next;
 }
 
 /**
@@ -344,17 +355,17 @@ function resolveProps(props, depth) {
  * @param {string} key - Context key
  */
 export function restoreContext(key) {
-    const scope = currentScope();
-    const entry = scope.get(key);
-    if (!entry) return;
+  const scope = currentScope();
+  const entry = scope.get(key);
+  if (!entry) return;
 
-    const next = new Map(scope);
-    if (entry.previous) {
-        next.set(key, entry.previous);
-    } else {
-        next.delete(key);
-    }
-    setScope(next);
+  const next = new Map(scope);
+  if (entry.previous) {
+    next.set(key, entry.previous);
+  } else {
+    next.delete(key);
+  }
+  setScope(next);
 }
 
 /**
@@ -364,9 +375,9 @@ export function restoreContext(key) {
  * alone; useContext() falls back to them again.
  */
 export function clearAllContexts() {
-    if (currentScope().size > 0) {
-        setScope(EMPTY_SCOPE);
-    }
+  if (currentScope().size > 0) {
+    setScope(EMPTY_SCOPE);
+  }
 }
 
 /**
@@ -379,6 +390,6 @@ export function clearAllContexts() {
  * @returns {*} Context value
  */
 export function useContext(key) {
-    const entry = currentScope().get(key);
-    return entry ? entry.value : globalState.get(key);
+  const entry = currentScope().get(key);
+  return entry ? entry.value : globalState.get(key);
 }

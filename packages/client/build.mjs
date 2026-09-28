@@ -8,7 +8,7 @@ const result = await build({
     'src/index.js',
     'src/events/index.js',
     'src/router.js',
-    'src/hmr.js'
+    'src/hmr.js',
   ],
   bundle: true,
   splitting: true,
@@ -32,7 +32,7 @@ const result = await build({
 
 for (const [path, output] of Object.entries(result.metafile.outputs)) {
   if (output.entryPoint) {
-    const sizeKB = Math.round(output.bytes / 1024 * 100) / 100;
+    const sizeKB = Math.round((output.bytes / 1024) * 100) / 100;
     console.log(`  📏 ${path}: ${sizeKB}KB`);
   }
 }

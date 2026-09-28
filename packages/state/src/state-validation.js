@@ -37,7 +37,6 @@ function isEmailShaped(value) {
   );
 }
 
-
 /**
  * @typedef {Object} ValidationOptions
  * @property {Object} [schema] - JSON Schema for validation
@@ -79,7 +78,9 @@ function matchesType(value, type) {
     case 'null':
       return value === null;
     case 'object':
-      return value !== null && typeof value === 'object' && !Array.isArray(value);
+      return (
+        value !== null && typeof value === 'object' && !Array.isArray(value)
+      );
     case 'integer':
       return typeof value === 'number' && Number.isInteger(value);
     case 'number':
@@ -107,7 +108,11 @@ function describeValue(value) {
 function coerceTo(value, type) {
   switch (type) {
     case 'string':
-      if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+      if (
+        typeof value === 'number' ||
+        typeof value === 'boolean' ||
+        typeof value === 'bigint'
+      ) {
         return { ok: !Number.isNaN(value), value: String(value) };
       }
       return { ok: false };
@@ -121,14 +126,17 @@ function coerceTo(value, type) {
       } else {
         return { ok: false };
       }
-      const valid = type === 'integer' ? Number.isInteger(number) : !Number.isNaN(number);
+      const valid =
+        type === 'integer' ? Number.isInteger(number) : !Number.isNaN(number);
       return valid ? { ok: true, value: number } : { ok: false };
     }
     case 'boolean':
       if (typeof value === 'string') {
         const normalized = value.trim().toLowerCase();
-        if (normalized === 'true' || normalized === '1') return { ok: true, value: true };
-        if (normalized === 'false' || normalized === '0' || normalized === '') return { ok: true, value: false };
+        if (normalized === 'true' || normalized === '1')
+          return { ok: true, value: true };
+        if (normalized === 'false' || normalized === '0' || normalized === '')
+          return { ok: true, value: false };
         return { ok: false };
       }
       if (value === 1 || value === 0) return { ok: true, value: value === 1 };
@@ -147,7 +155,7 @@ class SchemaValidator {
     this.options = {
       coerce: false,
       allowUnknown: true,
-      ...options
+      ...options,
     };
   }
 
@@ -220,9 +228,12 @@ class SchemaValidator {
       if (customResult !== true) {
         errors.push({
           path,
-          message: typeof customResult === 'string' ? customResult : 'Custom validation failed',
+          message:
+            typeof customResult === 'string'
+              ? customResult
+              : 'Custom validation failed',
           type: 'custom',
-          value: coercedValue
+          value: coercedValue,
         });
       }
     }
@@ -230,7 +241,7 @@ class SchemaValidator {
     return {
       valid: errors.length === 0,
       errors,
-      value: coercedValue
+      value: coercedValue,
     };
   }
 
@@ -242,7 +253,7 @@ class SchemaValidator {
     // Support array of types
     const types = Array.isArray(type) ? type : [type];
 
-    const isValid = types.some(t => matchesType(value, t));
+    const isValid = types.some((t) => matchesType(value, t));
 
     if (!isValid) {
       if (this.options.coerce) {
@@ -257,7 +268,7 @@ class SchemaValidator {
             message: `Cannot coerce ${describeValue(value)} to ${primaryType}`,
             type: 'type',
             value,
-            expected: primaryType
+            expected: primaryType,
           });
         }
       } else {
@@ -266,7 +277,7 @@ class SchemaValidator {
           message: `Expected type ${types.join(' or ')}, got ${actualType}`,
           type: 'type',
           value,
-          expected: type
+          expected: type,
         });
       }
     }
@@ -274,7 +285,7 @@ class SchemaValidator {
     return {
       valid: errors.length === 0,
       errors,
-      value: coercedValue
+      value: coercedValue,
     };
   }
 
@@ -286,7 +297,7 @@ class SchemaValidator {
         message: `Value must be one of: ${enumValues.join(', ')}`,
         type: 'enum',
         value,
-        expected: enumValues
+        expected: enumValues,
       });
     }
     return { valid: errors.length === 0, errors };
@@ -300,7 +311,7 @@ class SchemaValidator {
         path,
         message: `String length must be >= ${schema.minLength}`,
         type: 'minLength',
-        value
+        value,
       });
     }
 
@@ -309,7 +320,7 @@ class SchemaValidator {
         path,
         message: `String length must be <= ${schema.maxLength}`,
         type: 'maxLength',
-        value
+        value,
       });
     }
 
@@ -320,7 +331,7 @@ class SchemaValidator {
           path,
           message: `String does not match pattern: ${schema.pattern}`,
           type: 'pattern',
-          value
+          value,
         });
       }
     }
@@ -342,7 +353,7 @@ class SchemaValidator {
       url: /^https?:\/\/.+/,
       uuid: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
       date: /^\d{4}-\d{2}-\d{2}$/,
-      'date-time': /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/
+      'date-time': /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/,
     };
 
     if (formats[format] && !formats[format].test(value)) {
@@ -351,7 +362,7 @@ class SchemaValidator {
         message: `String does not match format: ${format}`,
         type: 'format',
         value,
-        expected: format
+        expected: format,
       });
     }
 
@@ -366,7 +377,7 @@ class SchemaValidator {
         path,
         message: `Number must be >= ${schema.minimum}`,
         type: 'minimum',
-        value
+        value,
       });
     }
 
@@ -375,25 +386,31 @@ class SchemaValidator {
         path,
         message: `Number must be <= ${schema.maximum}`,
         type: 'maximum',
-        value
+        value,
       });
     }
 
-    if (schema.exclusiveMinimum !== undefined && value <= schema.exclusiveMinimum) {
+    if (
+      schema.exclusiveMinimum !== undefined &&
+      value <= schema.exclusiveMinimum
+    ) {
       errors.push({
         path,
         message: `Number must be > ${schema.exclusiveMinimum}`,
         type: 'exclusiveMinimum',
-        value
+        value,
       });
     }
 
-    if (schema.exclusiveMaximum !== undefined && value >= schema.exclusiveMaximum) {
+    if (
+      schema.exclusiveMaximum !== undefined &&
+      value >= schema.exclusiveMaximum
+    ) {
       errors.push({
         path,
         message: `Number must be < ${schema.exclusiveMaximum}`,
         type: 'exclusiveMaximum',
-        value
+        value,
       });
     }
 
@@ -402,7 +419,7 @@ class SchemaValidator {
         path,
         message: `Number must be multiple of ${schema.multipleOf}`,
         type: 'multipleOf',
-        value
+        value,
       });
     }
 
@@ -418,7 +435,7 @@ class SchemaValidator {
         path,
         message: `Array must have at least ${schema.minItems} items`,
         type: 'minItems',
-        value
+        value,
       });
     }
 
@@ -427,7 +444,7 @@ class SchemaValidator {
         path,
         message: `Array must have at most ${schema.maxItems} items`,
         type: 'maxItems',
-        value
+        value,
       });
     }
 
@@ -446,7 +463,7 @@ class SchemaValidator {
           path,
           message: 'Array items must be unique',
           type: 'uniqueItems',
-          value
+          value,
         });
       }
     }
@@ -468,7 +485,7 @@ class SchemaValidator {
     return {
       valid: errors.length === 0,
       errors,
-      value: coercedValue
+      value: coercedValue,
     };
   }
 
@@ -478,13 +495,13 @@ class SchemaValidator {
 
     // Required properties
     if (schema.required) {
-      schema.required.forEach(prop => {
+      schema.required.forEach((prop) => {
         if (!(prop in value)) {
           errors.push({
             path: path ? `${path}.${prop}` : prop,
             message: `Required property "${prop}" is missing`,
             type: 'required',
-            value: undefined
+            value: undefined,
           });
         }
       });
@@ -509,15 +526,18 @@ class SchemaValidator {
     // Additional properties: rejected by the schema's own
     // `additionalProperties: false`, or for any object schema that lists its
     // properties when the validator runs with `allowUnknown: false`
-    if (schema.additionalProperties === false || (!this.options.allowUnknown && schema.properties)) {
+    if (
+      schema.additionalProperties === false ||
+      (!this.options.allowUnknown && schema.properties)
+    ) {
       const allowedProps = new Set(Object.keys(schema.properties || {}));
-      Object.keys(value).forEach(prop => {
+      Object.keys(value).forEach((prop) => {
         if (!allowedProps.has(prop)) {
           errors.push({
             path: path ? `${path}.${prop}` : prop,
             message: `Unknown property "${prop}"`,
             type: 'additionalProperties',
-            value: value[prop]
+            value: value[prop],
           });
         }
       });
@@ -525,28 +545,34 @@ class SchemaValidator {
 
     // Min/max properties
     const propCount = Object.keys(value).length;
-    if (schema.minProperties !== undefined && propCount < schema.minProperties) {
+    if (
+      schema.minProperties !== undefined &&
+      propCount < schema.minProperties
+    ) {
       errors.push({
         path,
         message: `Object must have at least ${schema.minProperties} properties`,
         type: 'minProperties',
-        value
+        value,
       });
     }
 
-    if (schema.maxProperties !== undefined && propCount > schema.maxProperties) {
+    if (
+      schema.maxProperties !== undefined &&
+      propCount > schema.maxProperties
+    ) {
       errors.push({
         path,
         message: `Object must have at most ${schema.maxProperties} properties`,
         type: 'maxProperties',
-        value
+        value,
       });
     }
 
     return {
       valid: errors.length === 0,
       errors,
-      value: coercedValue
+      value: coercedValue,
     };
   }
 }
@@ -568,13 +594,15 @@ export function createValidatedState(initialState = {}, options = {}) {
     validateOnGet: false,
     required: [],
     allowUnknown: true,
-    ...options
+    ...options,
   };
 
-  const schemaValidator = opts.schema ? new SchemaValidator(opts.schema, {
-    coerce: opts.coerce,
-    allowUnknown: opts.allowUnknown
-  }) : null;
+  const schemaValidator = opts.schema
+    ? new SchemaValidator(opts.schema, {
+        coerce: opts.coerce,
+        allowUnknown: opts.allowUnknown,
+      })
+    : null;
 
   let state = { ...initialState };
   const listeners = new Set();
@@ -592,9 +620,10 @@ export function createValidatedState(initialState = {}, options = {}) {
 
     // JSON Schema validation
     if (schemaValidator) {
-      const schema = key && opts.schema.properties
-        ? opts.schema.properties[key]
-        : opts.schema;
+      const schema =
+        key && opts.schema.properties
+          ? opts.schema.properties[key]
+          : opts.schema;
 
       const result = schemaValidator.validate(value, schema, key || '');
       if (!result.valid) {
@@ -612,7 +641,7 @@ export function createValidatedState(initialState = {}, options = {}) {
           path: key,
           message: typeof result === 'string' ? result : 'Validation failed',
           type: 'custom',
-          value
+          value,
         });
       }
     } else if (!key) {
@@ -623,9 +652,10 @@ export function createValidatedState(initialState = {}, options = {}) {
           if (result !== true) {
             errors.push({
               path: fieldKey,
-              message: typeof result === 'string' ? result : 'Validation failed',
+              message:
+                typeof result === 'string' ? result : 'Validation failed',
               type: 'custom',
-              value: value[fieldKey]
+              value: value[fieldKey],
             });
           }
         }
@@ -634,13 +664,13 @@ export function createValidatedState(initialState = {}, options = {}) {
 
     // Required fields
     if (opts.required.length > 0 && !key) {
-      opts.required.forEach(field => {
+      opts.required.forEach((field) => {
         if (!(field in value)) {
           errors.push({
             path: field,
             message: `Required field "${field}" is missing`,
             type: 'required',
-            value: undefined
+            value: undefined,
           });
         }
       });
@@ -649,7 +679,7 @@ export function createValidatedState(initialState = {}, options = {}) {
     return {
       valid: errors.length === 0,
       errors,
-      value: validatedValue
+      value: validatedValue,
     };
   }
 
@@ -714,7 +744,7 @@ export function createValidatedState(initialState = {}, options = {}) {
       if (opts.coerce) {
         const updatedKeys = Object.keys(updates);
         const newUpdates = {};
-        updatedKeys.forEach(key => {
+        updatedKeys.forEach((key) => {
           if (result.value[key] !== state[key]) {
             newUpdates[key] = result.value[key];
           }
@@ -729,7 +759,7 @@ export function createValidatedState(initialState = {}, options = {}) {
     state = { ...state, ...updates };
 
     // Notify listeners
-    listeners.forEach(listener => {
+    listeners.forEach((listener) => {
       try {
         listener(state, oldState);
       } catch (error) {
@@ -786,7 +816,7 @@ export function createValidatedState(initialState = {}, options = {}) {
     getErrors,
     isValid,
     validateField,
-    validate: () => validateState(state)
+    validate: () => validateState(state),
   };
 }
 
@@ -828,7 +858,8 @@ export const validators = {
    */
   range: (min, max) => (value) => {
     if (typeof value !== 'number') return 'Value must be a number';
-    if (value < min || value > max) return `Value must be between ${min} and ${max}`;
+    if (value < min || value > max)
+      return `Value must be between ${min} and ${max}`;
     return true;
   },
 
@@ -868,11 +899,11 @@ export const validators = {
       return 'Value is required';
     }
     return true;
-  }
+  },
 };
 
 export default {
   createValidatedState,
   validators,
-  SchemaValidator
+  SchemaValidator,
 };

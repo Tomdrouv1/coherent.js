@@ -19,7 +19,7 @@ export class EnhancedErrorHandler {
       includeStackTrace: options.includeStackTrace !== false,
       showSuggestions: options.showSuggestions !== false,
       colorOutput: options.colorOutput !== false,
-      ...options
+      ...options,
     };
 
     this.errorHistory = [];
@@ -39,12 +39,15 @@ export class EnhancedErrorHandler {
       context,
       suggestions: [],
       severity: this.determineSeverity(error),
-      category: this.categorizeError(error)
+      category: this.categorizeError(error),
     };
 
     // Add component context
     if (component) {
-      enhancedError.componentContext = this.getComponentContext(component, context.path || []);
+      enhancedError.componentContext = this.getComponentContext(
+        component,
+        context.path || []
+      );
       enhancedError.propValidation = this.validateProps(component);
     }
 
@@ -71,7 +74,7 @@ export class EnhancedErrorHandler {
       isValid: this.isValidComponent(component),
       complexity: this.assessComplexity(component),
       hasDynamicContent: this.hasDynamicContent(component),
-      estimatedSize: this.estimateSize(component)
+      estimatedSize: this.estimateSize(component),
     };
 
     if (isCoherentObject(component)) {
@@ -96,19 +99,27 @@ export class EnhancedErrorHandler {
       path: path.join('.'),
       depth: path.length,
       component: this.summarizeComponent(component),
-      children: []
+      children: [],
     };
 
-    if (isCoherentObject(component) && context.depth < this.options.maxContextDepth) {
+    if (
+      isCoherentObject(component) &&
+      context.depth < this.options.maxContextDepth
+    ) {
       const entries = Object.entries(component);
       if (entries.length === 1) {
         const [tagName, props] = entries;
 
         if (hasChildren(props)) {
-          const children = Array.isArray(props.children) ? props.children : [props.children];
+          const children = Array.isArray(props.children)
+            ? props.children
+            : [props.children];
           children.forEach((child, index) => {
             if (child && typeof child === 'object') {
-              const childContext = this.getComponentContext(child, [...path, `${tagName}[${index}]`]);
+              const childContext = this.getComponentContext(child, [
+                ...path,
+                `${tagName}[${index}]`,
+              ]);
               context.children.push(childContext);
             }
           });
@@ -126,7 +137,11 @@ export class EnhancedErrorHandler {
     if (!isCoherentObject(component)) return { valid: true, issues: [] };
 
     const entries = Object.entries(component);
-    if (entries.length !== 1) return { valid: false, issues: ['Component must have exactly one root element'] };
+    if (entries.length !== 1)
+      return {
+        valid: false,
+        issues: ['Component must have exactly one root element'],
+      };
 
     const [tagName, props] = entries;
     const issues = [];
@@ -146,14 +161,18 @@ export class EnhancedErrorHandler {
 
       // Check for event handlers
       if (typeof value === 'function' && !/^on[A-Z]/.test(key)) {
-        warnings.push(`Function prop '${key}' doesn't follow event handler naming convention (onXxx)`);
+        warnings.push(
+          `Function prop '${key}' doesn't follow event handler naming convention (onXxx)`
+        );
       }
 
       // Check for potentially large objects
       if (typeof value === 'object' && value !== null) {
         const size = JSON.stringify(value).length;
         if (size > 10000) {
-          warnings.push(`Prop '${key}' is large (${size} bytes) - consider optimizing`);
+          warnings.push(
+            `Prop '${key}' is large (${size} bytes) - consider optimizing`
+          );
         }
       }
     });
@@ -171,7 +190,7 @@ export class EnhancedErrorHandler {
       valid: issues.length === 0,
       issues,
       warnings,
-      propCount: Object.keys(props).length
+      propCount: Object.keys(props).length,
     };
   }
 
@@ -188,39 +207,52 @@ export class EnhancedErrorHandler {
         suggestions.push({
           type: 'optimization',
           message: 'Consider making this component static for better caching',
-          code: 'Remove functions from props to enable static optimization'
+          code: 'Remove functions from props to enable static optimization',
         });
       }
 
       if (component.complexity > 10) {
         suggestions.push({
           type: 'structure',
-          message: 'Component is complex - consider breaking it into smaller components',
-          code: 'Split complex components into reusable functional components'
+          message:
+            'Component is complex - consider breaking it into smaller components',
+          code: 'Split complex components into reusable functional components',
         });
       }
     }
 
     // Error-specific suggestions
-    if (originalError && originalError.message && originalError.message.includes('undefined')) {
+    if (
+      originalError &&
+      originalError.message &&
+      originalError.message.includes('undefined')
+    ) {
       suggestions.push({
         type: 'fix',
         message: 'Check for undefined props or missing data',
-        code: 'Add prop validation: if (!props.required) return null;'
+        code: 'Add prop validation: if (!props.required) return null;',
       });
     }
 
-    if (originalError && originalError.message && originalError.message.includes('Maximum render depth')) {
+    if (
+      originalError &&
+      originalError.message &&
+      originalError.message.includes('Maximum render depth')
+    ) {
       suggestions.push({
         type: 'fix',
         message: 'Possible infinite recursion detected',
-        code: 'Check for circular references in component props'
+        code: 'Check for circular references in component props',
       });
     }
 
     // Pattern-based suggestions
-    this.commonPatterns.forEach(pattern => {
-      if (originalError && originalError.message && pattern.matcher.test(originalError.message)) {
+    this.commonPatterns.forEach((pattern) => {
+      if (
+        originalError &&
+        originalError.message &&
+        pattern.matcher.test(originalError.message)
+      ) {
         suggestions.push(pattern.suggestion);
       }
     });
@@ -245,8 +277,12 @@ export class EnhancedErrorHandler {
 
     // Error message
     lines.push(`Message: ${enhancedError.message}`);
-    lines.push(`Category: ${enhancedError.category} (${enhancedError.severity})`);
-    lines.push(`Time: ${new Date(enhancedError.timestamp).toLocaleTimeString()}`);
+    lines.push(
+      `Category: ${enhancedError.category} (${enhancedError.severity})`
+    );
+    lines.push(
+      `Time: ${new Date(enhancedError.timestamp).toLocaleTimeString()}`
+    );
     lines.push('');
 
     // Component context
@@ -274,14 +310,14 @@ export class EnhancedErrorHandler {
 
       if (validation.issues.length > 0) {
         lines.push('Issues:');
-        validation.issues.forEach(issue => {
+        validation.issues.forEach((issue) => {
           lines.push(`  ❌ ${issue}`);
         });
       }
 
       if (validation.warnings.length > 0) {
         lines.push('Warnings:');
-        validation.warnings.forEach(warning => {
+        validation.warnings.forEach((warning) => {
           lines.push(`  ⚠️  ${warning}`);
         });
       }
@@ -294,9 +330,14 @@ export class EnhancedErrorHandler {
       lines.push('💡 Suggestions');
       lines.push('─'.repeat(13));
       enhancedError.suggestions.forEach((suggestion, index) => {
-        const icon = suggestion.type === 'fix' ? '🔧' :
-                    suggestion.type === 'optimization' ? '⚡' :
-                    suggestion.type === 'structure' ? '🏗️' : '💡';
+        const icon =
+          suggestion.type === 'fix'
+            ? '🔧'
+            : suggestion.type === 'optimization'
+              ? '⚡'
+              : suggestion.type === 'structure'
+                ? '🏗️'
+                : '💡';
         lines.push(`${index + 1}. ${icon} ${suggestion.message}`);
         if (suggestion.code) {
           lines.push(`   Code: ${suggestion.code}`);
@@ -339,9 +380,11 @@ export class EnhancedErrorHandler {
     try {
       // Basic validation
       if (component === null || component === undefined) return true;
-      if (typeof component === 'string' || typeof component === 'number') return true;
+      if (typeof component === 'string' || typeof component === 'number')
+        return true;
       if (typeof component === 'function') return true;
-      if (Array.isArray(component)) return component.every(child => this.isValidComponent(child));
+      if (Array.isArray(component))
+        return component.every((child) => this.isValidComponent(child));
       if (isCoherentObject(component)) {
         const entries = Object.entries(component);
         return entries.length === 1;
@@ -366,8 +409,10 @@ export class EnhancedErrorHandler {
           complexity += Object.keys(props).length;
 
           if (hasChildren(props)) {
-            const children = Array.isArray(props.children) ? props.children : [props.children];
-            children.forEach(child => {
+            const children = Array.isArray(props.children)
+              ? props.children
+              : [props.children];
+            children.forEach((child) => {
               complexity += this.assessComplexity(child);
             });
           }
@@ -388,7 +433,8 @@ export class EnhancedErrorHandler {
     if (typeof component === 'object' && component !== null) {
       for (const value of Object.values(component)) {
         if (typeof value === 'function') return true;
-        if (typeof value === 'object' && this.hasDynamicContent(value)) return true;
+        if (typeof value === 'object' && this.hasDynamicContent(value))
+          return true;
       }
     }
     return false;
@@ -437,14 +483,15 @@ export class EnhancedErrorHandler {
    * Extract event handlers from props
    */
   extractEventHandlers(props) {
-    return Object.keys(props).filter(key => /^on[A-Z]/.test(key));
+    return Object.keys(props).filter((key) => /^on[A-Z]/.test(key));
   }
 
   /**
    * Determine error severity
    */
   determineSeverity(error) {
-    if (error.name === 'TypeError' || error.name === 'ReferenceError') return 'critical';
+    if (error.name === 'TypeError' || error.name === 'ReferenceError')
+      return 'critical';
     if (error.message.includes('Maximum render depth')) return 'critical';
     if (error.message.includes('undefined')) return 'high';
     if (error.message.includes('performance')) return 'medium';
@@ -455,10 +502,17 @@ export class EnhancedErrorHandler {
    * Categorize error
    */
   categorizeError(error) {
-    if (error.message.includes('render') || error.message.includes('component')) return 'rendering';
-    if (error.message.includes('props') || error.message.includes('prop')) return 'props';
-    if (error.message.includes('cache') || error.message.includes('performance')) return 'performance';
-    if (error.message.includes('route') || error.message.includes('router')) return 'routing';
+    if (error.message.includes('render') || error.message.includes('component'))
+      return 'rendering';
+    if (error.message.includes('props') || error.message.includes('prop'))
+      return 'props';
+    if (
+      error.message.includes('cache') ||
+      error.message.includes('performance')
+    )
+      return 'performance';
+    if (error.message.includes('route') || error.message.includes('router'))
+      return 'routing';
     return 'general';
   }
 
@@ -472,33 +526,33 @@ export class EnhancedErrorHandler {
         suggestion: {
           type: 'fix',
           message: 'Check for undefined properties in component props',
-          code: 'Add default props: const { required = "default" } = props;'
-        }
+          code: 'Add default props: const { required = "default" } = props;',
+        },
       },
       {
         matcher: /maximum.*depth/gi,
         suggestion: {
           type: 'fix',
           message: 'Infinite recursion detected in component tree',
-          code: 'Check for circular references in component children'
-        }
+          code: 'Check for circular references in component children',
+        },
       },
       {
         matcher: /cannot.*read.*property/gi,
         suggestion: {
           type: 'fix',
           message: 'Property access error - check object structure',
-          code: 'Use optional chaining: obj?.prop?.nested'
-        }
+          code: 'Use optional chaining: obj?.prop?.nested',
+        },
       },
       {
         matcher: /performance/gi,
         suggestion: {
           type: 'optimization',
           message: 'Consider optimizing component for better performance',
-          code: 'Use memoization or static components where possible'
-        }
-      }
+          code: 'Use memoization or static components where possible',
+        },
+      },
     ];
   }
 
@@ -517,7 +571,7 @@ export class EnhancedErrorHandler {
       magenta: '\x1b[35m',
       cyan: '\x1b[36m',
       white: '\x1b[37m',
-      gray: '\x1b[90m'
+      gray: '\x1b[90m',
     };
 
     const reset = '\x1b[0m';
@@ -532,12 +586,14 @@ export class EnhancedErrorHandler {
       total: this.errorHistory.length,
       byCategory: {},
       bySeverity: {},
-      recent: this.errorHistory.slice(-10)
+      recent: this.errorHistory.slice(-10),
     };
 
-    this.errorHistory.forEach(error => {
-      stats.byCategory[error.category] = (stats.byCategory[error.category] || 0) + 1;
-      stats.bySeverity[error.severity] = (stats.bySeverity[error.severity] || 0) + 1;
+    this.errorHistory.forEach((error) => {
+      stats.byCategory[error.category] =
+        (stats.byCategory[error.category] || 0) + 1;
+      stats.bySeverity[error.severity] =
+        (stats.bySeverity[error.severity] || 0) + 1;
     });
 
     return stats;
@@ -564,5 +620,5 @@ export function handleEnhancedError(error, component = null, context = {}) {
 export default {
   EnhancedErrorHandler,
   createEnhancedErrorHandler,
-  handleEnhancedError
+  handleEnhancedError,
 };

@@ -68,7 +68,13 @@ export async function startDevServer(options) {
     allowedHosts = [],
   } = options;
 
-  const handler = createStaticHandler({ root, hmr, fsAllow, host, allowedHosts });
+  const handler = createStaticHandler({
+    root,
+    hmr,
+    fsAllow,
+    host,
+    allowedHosts,
+  });
   const httpServer = createServer(handler);
 
   await new Promise((resolve, reject) => {
@@ -97,7 +103,11 @@ export async function startDevServer(options) {
           updateType: change.updateType,
         });
         if (log) {
-          console.log(picocolors.cyan('[hmr]'), change.updateType, change.webPath);
+          console.log(
+            picocolors.cyan('[hmr]'),
+            change.updateType,
+            change.webPath
+          );
         }
       },
       onError: (err) => {
@@ -133,7 +143,11 @@ export async function startDevServer(options) {
     } catch {
       // 'open' is optional (not a dependency of the CLI)
       if (log) {
-        console.log(picocolors.yellow('⚠️  Could not open a browser (install the optional "open" package).'));
+        console.log(
+          picocolors.yellow(
+            '⚠️  Could not open a browser (install the optional "open" package).'
+          )
+        );
       }
     }
   }

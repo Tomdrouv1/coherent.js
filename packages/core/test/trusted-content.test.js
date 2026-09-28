@@ -8,7 +8,11 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { render, dangerouslySetInnerContent, isTrustedContent } from '../src/index.js';
+import {
+  render,
+  dangerouslySetInnerContent,
+  isTrustedContent,
+} from '../src/index.js';
 import { renderToStream } from '../src/rendering/html-renderer.js';
 
 const RAW = '<em>bold</em>';
@@ -32,12 +36,16 @@ describe('dangerouslySetInnerContent', () => {
   it('cannot be forged from JSON', () => {
     // Request bodies are JSON: a plain-keyed marker would let a client
     // supply its own raw HTML wherever that data reaches text or children.
-    const forged = JSON.parse('{"__trusted":true,"__html":"<img src=x onerror=alert(1)>"}');
+    const forged = JSON.parse(
+      '{"__trusted":true,"__html":"<img src=x onerror=alert(1)>"}'
+    );
 
     expect(isTrustedContent(forged)).toBe(false);
     expect(render({ p: { text: forged } })).not.toContain('<img');
     expect(render({ p: { children: [forged] } })).not.toContain('<img');
-    expect(render({ p: { text: { ...dangerouslySetInnerContent('<img>') } } })).not.toContain('<img');
+    expect(
+      render({ p: { text: { ...dangerouslySetInnerContent('<img>') } } })
+    ).not.toContain('<img');
   });
 
   it('is immutable once created', () => {
@@ -49,23 +57,28 @@ describe('dangerouslySetInnerContent', () => {
   });
 
   it('renders verbatim through the text key', () => {
-    expect(render({ div: { text: dangerouslySetInnerContent(RAW) } }))
-      .toBe(`<div>${RAW}</div>`);
+    expect(render({ div: { text: dangerouslySetInnerContent(RAW) } })).toBe(
+      `<div>${RAW}</div>`
+    );
   });
 
   it('renders verbatim through the html key', () => {
-    expect(render({ div: { html: dangerouslySetInnerContent(RAW) } }))
-      .toBe(`<div>${RAW}</div>`);
+    expect(render({ div: { html: dangerouslySetInnerContent(RAW) } })).toBe(
+      `<div>${RAW}</div>`
+    );
   });
 
   it('renders verbatim as a child', () => {
-    expect(render({ div: { children: [dangerouslySetInnerContent(RAW)] } }))
-      .toBe(`<div>${RAW}</div>`);
+    expect(
+      render({ div: { children: [dangerouslySetInnerContent(RAW)] } })
+    ).toBe(`<div>${RAW}</div>`);
   });
 
   it('renders verbatim alongside sibling children', () => {
     const html = render({
-      div: { children: [{ p: { text: 'a' } }, dangerouslySetInnerContent(RAW)] }
+      div: {
+        children: [{ p: { text: 'a' } }, dangerouslySetInnerContent(RAW)],
+      },
     });
 
     expect(html).toBe(`<div><p>a</p>${RAW}</div>`);
@@ -73,11 +86,14 @@ describe('dangerouslySetInnerContent', () => {
 
   it('never emits [object Object]', () => {
     for (const key of ['text', 'html', 'children']) {
-      const value = key === 'children'
-        ? [dangerouslySetInnerContent(RAW)]
-        : dangerouslySetInnerContent(RAW);
+      const value =
+        key === 'children'
+          ? [dangerouslySetInnerContent(RAW)]
+          : dangerouslySetInnerContent(RAW);
 
-      expect(render({ div: { [key]: value } })).not.toContain('[object Object]');
+      expect(render({ div: { [key]: value } })).not.toContain(
+        '[object Object]'
+      );
     }
   });
 
@@ -85,8 +101,9 @@ describe('dangerouslySetInnerContent', () => {
   it('renders the same marker more than once', () => {
     const marker = dangerouslySetInnerContent(RAW);
 
-    expect(render({ div: { children: [marker, marker] } }))
-      .toBe(`<div>${RAW}${RAW}</div>`);
+    expect(render({ div: { children: [marker, marker] } })).toBe(
+      `<div>${RAW}${RAW}</div>`
+    );
   });
 
   it('still detects genuine circular references', () => {
@@ -97,17 +114,21 @@ describe('dangerouslySetInnerContent', () => {
   });
 
   it('still escapes untrusted strings', () => {
-    expect(render({ div: { text: RAW } })).toBe('<div>&lt;em&gt;bold&lt;/em&gt;</div>');
+    expect(render({ div: { text: RAW } })).toBe(
+      '<div>&lt;em&gt;bold&lt;/em&gt;</div>'
+    );
   });
 
   it('supports inline scripts', () => {
-    expect(render({ script: { text: dangerouslySetInnerContent('var a=1<2;') } }))
-      .toBe('<script>var a=1<2;</script>');
+    expect(
+      render({ script: { text: dangerouslySetInnerContent('var a=1<2;') } })
+    ).toBe('<script>var a=1<2;</script>');
   });
 
   it('renders verbatim when streaming', async () => {
-    expect(await streamToString({ div: { text: dangerouslySetInnerContent(RAW) } }))
-      .toBe(`<div>${RAW}</div>`);
+    expect(
+      await streamToString({ div: { text: dangerouslySetInnerContent(RAW) } })
+    ).toBe(`<div>${RAW}</div>`);
   });
 
   // The streaming renderer destructured only `children` and `text`, so a raw

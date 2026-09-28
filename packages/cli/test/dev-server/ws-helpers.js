@@ -33,7 +33,11 @@ export function bufferMessages(ws) {
 
   ws.on('message', (buf) => {
     let data;
-    try { data = JSON.parse(buf.toString()); } catch { return; }
+    try {
+      data = JSON.parse(buf.toString());
+    } catch {
+      return;
+    }
     seenTypes.push(data?.type ?? '(untyped)');
 
     for (let i = waiters.length - 1; i >= 0; i--) {
@@ -60,10 +64,12 @@ export function bufferMessages(ws) {
         const timer = setTimeout(() => {
           const i = waiters.indexOf(entry);
           if (i >= 0) waiters.splice(i, 1);
-          reject(new Error(
-            `timeout waiting for message after ${timeoutMs}ms ` +
-            `(received: ${seenTypes.length ? seenTypes.join(', ') : 'nothing'})`
-          ));
+          reject(
+            new Error(
+              `timeout waiting for message after ${timeoutMs}ms ` +
+                `(received: ${seenTypes.length ? seenTypes.join(', ') : 'nothing'})`
+            )
+          );
         }, timeoutMs);
         const entry = { predicate, resolve, timer };
         waiters.push(entry);

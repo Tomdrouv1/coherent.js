@@ -14,7 +14,7 @@ import { warnExperimental } from './experimental.js';
 export function createVitePlugin(options = {}) {
   warnExperimental('createVitePlugin', options);
   return {
-    name: 'coherent'
+    name: 'coherent',
   };
 }
 
@@ -25,6 +25,6 @@ export function createVitePlugin(options = {}) {
 export function createSSRPlugin(options = {}) {
   warnExperimental('createSSRPlugin', options);
   return {
-    name: 'coherent-ssr'
+    name: 'coherent-ssr',
   };
 }

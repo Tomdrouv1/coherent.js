@@ -132,11 +132,15 @@ import jwt from 'jsonwebtoken';
 ${CRYPTO_IMPORTS}
 ${ts ? "import type { Request, Response, NextFunction } from 'express';\n" : ''}
 ${jwtConstants}
-${tokenPayload}${ts ? `
+${tokenPayload}${
+      ts
+        ? `
 export interface AuthenticatedRequest extends Request {
   user?: TokenPayload;
 }
-` : ''}${helpers}${tokenFns}
+`
+        : ''
+    }${helpers}${tokenFns}
 export function authMiddleware(req${ts ? ': AuthenticatedRequest' : ''}, res${ts ? ': Response' : ''}, next${ts ? ': NextFunction' : ''})${ts ? ': void' : ''} {
   const authHeader = req.headers.authorization;
 
@@ -176,7 +180,9 @@ import jwt from 'jsonwebtoken';
 ${CRYPTO_IMPORTS}
 ${ts ? "import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';\n" : ''}
 ${jwtConstants}
-${tokenPayload}${ts ? `
+${tokenPayload}${
+      ts
+        ? `
 declare module 'fastify' {
   interface FastifyRequest {
     user?: TokenPayload;
@@ -186,7 +192,9 @@ declare module 'fastify' {
     optionalAuth: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
   }
 }
-` : ''}${helpers}${tokenFns}${fastifyJsonHelper(ts)}
+`
+        : ''
+    }${helpers}${tokenFns}${fastifyJsonHelper(ts)}
 export async function authPlugin(fastify${ts ? ': FastifyInstance' : ''}, _options${ts ? ': unknown' : ''})${ts ? ': Promise<void>' : ''} {
   fastify.decorate('authenticate', async function(request${ts ? ': FastifyRequest' : ''}, reply${ts ? ': FastifyReply' : ''}) {
     const authHeader = request.headers.authorization;
@@ -276,7 +284,7 @@ export function authenticateRequest(req${ts ? ': IncomingMessage' : ''})${ts ? '
   const token = authHeader.substring(7);
   return verifyToken(token);
 }
-`
+`,
   };
 
   return middlewares[runtime] || middlewares['built-in'];
@@ -293,13 +301,17 @@ export function generateSessionAuth(runtime, language = 'javascript') {
     express: `
 import session from 'express-session';
 ${CRYPTO_IMPORTS}
-${ts ? "import type { Express, Request, Response, NextFunction } from 'express';\n" : ''}${ts ? `
+${ts ? "import type { Express, Request, Response, NextFunction } from 'express';\n" : ''}${
+      ts
+        ? `
 declare module 'express-session' {
   interface SessionData {
     user?: { id: number; email: string };
   }
 }
-` : ''}${requireSecretHelper(ts)}
+`
+        : ''
+    }${requireSecretHelper(ts)}
 export const sessionConfig = {
   secret: requireSecret('SESSION_SECRET'),
   resave: false,
@@ -389,7 +401,7 @@ export async function optionalAuth(ctx, next) {
   // Session is always available, just proceed
   await next();
 }
-`
+`,
   };
 
   return middlewares[runtime] || '';
@@ -400,7 +412,9 @@ export async function optionalAuth(ctx, next) {
  */
 export function generateAuthRoutes(runtime, authType, language = 'javascript') {
   const ts = language === 'typescript';
-  const credentialsCast = ts ? ' as { email?: string; name?: string; password?: string }' : '';
+  const credentialsCast = ts
+    ? ' as { email?: string; name?: string; password?: string }'
+    : '';
   const loginCast = ts ? ' as { email?: string; password?: string }' : '';
   // SQL models return snake_case rows; the Mongo model returns the document as-is.
   const storedHash = 'user.password_hash ?? user.passwordHash';
@@ -804,7 +818,7 @@ router.get('/me', authMiddleware, async (ctx) => {
 });
 
 export default router;
-`
+`,
   };
 
   const sessionRoutes = {
@@ -898,7 +912,7 @@ router.get('/me', authMiddleware, async (req${ts ? ': Request' : ''}, res${ts ? 
 });
 
 export default router;
-`
+`,
   };
 
   if (authType === 'jwt') {
@@ -914,20 +928,20 @@ export default router;
 export function getAuthDependencies(authType, runtime) {
   if (authType === 'jwt') {
     return {
-      jsonwebtoken: '^9.0.2'
+      jsonwebtoken: '^9.0.2',
     };
   } else if (authType === 'session') {
     const deps = {
       express: {
-        'express-session': '^1.18.0'
+        'express-session': '^1.18.0',
       },
       fastify: {
         '@fastify/session': '^10.9.0',
-        '@fastify/cookie': '^10.0.1'
+        '@fastify/cookie': '^10.0.1',
       },
       koa: {
-        'koa-session': '^6.4.0'
-      }
+        'koa-session': '^6.4.0',
+      },
     };
     return deps[runtime] || {};
   }
@@ -988,14 +1002,20 @@ SESSION_SECRET=
 /**
  * Generate complete auth scaffolding
  */
-export function generateAuthScaffolding(authType, runtime, language = 'javascript') {
+export function generateAuthScaffolding(
+  authType,
+  runtime,
+  language = 'javascript'
+) {
   const isJWT = authType === 'jwt';
 
   return {
-    middleware: isJWT ? generateJWTAuth(runtime, language) : generateSessionAuth(runtime, language),
+    middleware: isJWT
+      ? generateJWTAuth(runtime, language)
+      : generateSessionAuth(runtime, language),
     routes: generateAuthRoutes(runtime, authType, language),
     dependencies: getAuthDependencies(authType, runtime),
     env: generateAuthEnv(authType),
-    envExample: generateAuthEnvExample(authType)
+    envExample: generateAuthEnvExample(authType),
   };
 }

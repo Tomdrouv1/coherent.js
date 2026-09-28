@@ -19,7 +19,9 @@ import { generateComponent } from '../src/generators/component-generator.js';
 
 const TEMPLATES = ['basic', 'functional', 'interactive', 'layout'];
 
-const CORE_SRC = fileURLToPath(new URL('../../core/src/index.js', import.meta.url));
+const CORE_SRC = fileURLToPath(
+  new URL('../../core/src/index.js', import.meta.url)
+);
 
 const tempDirs = [];
 
@@ -58,14 +60,17 @@ afterEach(async () => {
 });
 
 describe('generated component output', () => {
-  it.each(TEMPLATES)('emits parseable files for the %s template', async template => {
-    const { files } = await generateInto('Eyebrow', template);
+  it.each(TEMPLATES)(
+    'emits parseable files for the %s template',
+    async (template) => {
+      const { files } = await generateInto('Eyebrow', template);
 
-    expect(files.length).toBe(3);
-    for (const file of files) {
-      expect(parseError(file), `${file} failed to parse`).toBeNull();
+      expect(files.length).toBe(3);
+      for (const file of files) {
+        expect(parseError(file), `${file} failed to parse`).toBeNull();
+      }
     }
-  });
+  );
 
   it('emits a test file whose describe block is balanced', async () => {
     const { dir } = await generateInto('Eyebrow', 'basic');
@@ -85,8 +90,10 @@ describe('generated component output', () => {
     const componentFile = join(dir, 'src/Eyebrow.mjs');
     writeFileSync(
       componentFile,
-      readFileSync(join(dir, 'src/Eyebrow.js'), 'utf-8')
-        .replace("'@coherent.js/core'", JSON.stringify(CORE_SRC))
+      readFileSync(join(dir, 'src/Eyebrow.js'), 'utf-8').replace(
+        "'@coherent.js/core'",
+        JSON.stringify(CORE_SRC)
+      )
     );
 
     const { Eyebrow } = await import(componentFile);
@@ -94,10 +101,12 @@ describe('generated component output', () => {
 
     expect(typeof Eyebrow).toBe('function');
 
-    const html = render(Eyebrow({
-      className: 'lead',
-      children: [{ span: { text: 'hi' } }]
-    }));
+    const html = render(
+      Eyebrow({
+        className: 'lead',
+        children: [{ span: { text: 'hi' } }],
+      })
+    );
 
     expect(html).toBe('<div class="eyebrow lead"><span>hi</span></div>');
     expect(html).not.toContain('<definition');

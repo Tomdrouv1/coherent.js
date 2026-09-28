@@ -20,19 +20,32 @@ function installBrowser(startUrl) {
   const current = () => entries[index];
 
   win.location = {
-    get href() { return current().href; },
-    get origin() { return current().origin; },
-    get pathname() { return current().pathname; },
-    get search() { return current().search; },
-    get hash() { return current().hash; },
+    get href() {
+      return current().href;
+    },
+    get origin() {
+      return current().origin;
+    },
+    get pathname() {
+      return current().pathname;
+    },
+    get search() {
+      return current().search;
+    },
+    get hash() {
+      return current().hash;
+    },
   };
   const go = (delta) => {
     const next = index + delta;
     if (next < 0 || next >= entries.length) return;
-    const hashOnly = entries[next].pathname === current().pathname && entries[next].search === current().search;
+    const hashOnly =
+      entries[next].pathname === current().pathname &&
+      entries[next].search === current().search;
     index = next;
     win.dispatchEvent(new ShimEvent('popstate', { bubbles: false }));
-    if (hashOnly) win.dispatchEvent(new ShimEvent('hashchange', { bubbles: false }));
+    if (hashOnly)
+      win.dispatchEvent(new ShimEvent('hashchange', { bubbles: false }));
   };
   win.history = {
     pushState: vi.fn((_state, _title, url) => {
@@ -52,7 +65,10 @@ function installBrowser(startUrl) {
 const settle = () => new Promise((resolve) => setTimeout(resolve, 5));
 
 function makeRouter(options) {
-  const router = createRouter({ scrollBehavior: { enabled: false }, ...options });
+  const router = createRouter({
+    scrollBehavior: { enabled: false },
+    ...options,
+  });
   for (const path of ['/', '/a', '/b', '/c', '/users/:id', '/files/*']) {
     router.addRoute(path, { component: { div: { text: path } } });
   }
@@ -83,7 +99,9 @@ describe('route patterns', () => {
     });
 
     await router.push('/files/docs/a%20b.txt');
-    expect(router.getCurrentRoute().params).toEqual({ pathMatch: 'docs/a b.txt' });
+    expect(router.getCurrentRoute().params).toEqual({
+      pathMatch: 'docs/a b.txt',
+    });
 
     expect(await router.push('/nowhere')).toBe(false);
     expect(router.getCurrentRoute().path).toBe('/files/docs/a%20b.txt');
@@ -100,7 +118,11 @@ describe('history API', () => {
 
     expect(window.history.pushState).toHaveBeenCalledTimes(2);
     expect(window.history.replaceState).toHaveBeenCalledTimes(1);
-    expect(browser.entries.map((u) => u.pathname + u.search)).toEqual(['/app/', '/app/a', '/app/b']);
+    expect(browser.entries.map((u) => u.pathname + u.search)).toEqual([
+      '/app/',
+      '/app/a',
+      '/app/b',
+    ]);
   });
 
   // /\/+$/ trimmed the base in quadratic time on input like '////…x'.
@@ -127,7 +149,11 @@ describe('history API', () => {
     const router = makeRouter({ base: '/app' });
 
     await router.start({ interceptLinks: false });
-    expect(router.getCurrentRoute()).toMatchObject({ path: '/users/7', params: { id: '7' }, query: { tab: 'posts' } });
+    expect(router.getCurrentRoute()).toMatchObject({
+      path: '/users/7',
+      params: { id: '7' },
+      query: { tab: 'posts' },
+    });
 
     await router.push('/a');
     await router.push('/b');
@@ -170,14 +196,21 @@ describe('history API', () => {
         <a id="blank" href="/app/a" target="_blank">New tab</a>
       </nav>`);
 
-    const userClick = dom.fire(root.querySelector('#user span'), 'click', { button: 0 });
+    const userClick = dom.fire(root.querySelector('#user span'), 'click', {
+      button: 0,
+    });
     await settle();
-    const others = ['server', 'external', 'blank'].map((id) =>
-      dom.fire(root.querySelector(`#${id}`), 'click', { button: 0 }).defaultPrevented
+    const others = ['server', 'external', 'blank'].map(
+      (id) =>
+        dom.fire(root.querySelector(`#${id}`), 'click', { button: 0 })
+          .defaultPrevented
     );
 
     expect(userClick.defaultPrevented).toBe(true);
-    expect(router.getCurrentRoute()).toMatchObject({ path: '/users/9', params: { id: '9' } });
+    expect(router.getCurrentRoute()).toMatchObject({
+      path: '/users/9',
+      params: { id: '9' },
+    });
     expect(browser.url()).toBe('https://example.test/app/users/9');
     expect(others).toEqual([false, false, false]);
     router.stop();
@@ -217,10 +250,16 @@ describe('concurrent navigations', () => {
   it('lets the last navigation win over a slower earlier one', async () => {
     const router = makeRouter();
     router.addRoute('/slow', {
-      component: () => new Promise((resolve) => setTimeout(() => resolve({ div: { text: 'slow' } }), 20)),
+      component: () =>
+        new Promise((resolve) =>
+          setTimeout(() => resolve({ div: { text: 'slow' } }), 20)
+        ),
     });
 
-    const [slow, fast] = await Promise.all([router.push('/slow'), router.push('/a')]);
+    const [slow, fast] = await Promise.all([
+      router.push('/slow'),
+      router.push('/a'),
+    ]);
 
     expect([slow, fast]).toEqual([false, true]);
     expect(router.getCurrentRoute().path).toBe('/a');
@@ -229,7 +268,10 @@ describe('concurrent navigations', () => {
 
   it('cancels a navigation whose beforeEnter guard returns false', async () => {
     const router = makeRouter();
-    router.addRoute('/admin', { component: { div: {} }, beforeEnter: () => false });
+    router.addRoute('/admin', {
+      component: { div: {} },
+      beforeEnter: () => false,
+    });
     await router.push('/a');
 
     expect(await router.push('/admin')).toBe(false);

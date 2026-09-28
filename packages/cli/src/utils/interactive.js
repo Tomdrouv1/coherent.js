@@ -36,7 +36,9 @@ export function isInteractive() {
 export function requireInteractive(what, usage) {
   if (isInteractive()) return;
 
-  console.error(picocolors.red(`❌ Cannot prompt for ${what}: no interactive terminal.`));
+  console.error(
+    picocolors.red(`❌ Cannot prompt for ${what}: no interactive terminal.`)
+  );
   console.error(picocolors.gray(`   Provide it directly: ${usage}`));
   process.exit(1);
 }

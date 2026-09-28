@@ -19,7 +19,7 @@ import {
   ESBUILD_FALLBACK_COMMAND,
   hasCoherentDependency,
   detectPackageManager,
-  isSelfReferential
+  isSelfReferential,
 } from '../src/commands/build.js';
 
 const tempDirs = [];
@@ -31,7 +31,10 @@ async function makeTree(files) {
   for (const [relative, contents] of Object.entries(files)) {
     const target = join(root, relative);
     mkdirSync(join(target, '..'), { recursive: true });
-    writeFileSync(target, typeof contents === 'string' ? contents : JSON.stringify(contents));
+    writeFileSync(
+      target,
+      typeof contents === 'string' ? contents : JSON.stringify(contents)
+    );
   }
 
   return root;
@@ -46,7 +49,7 @@ afterEach(async () => {
 describe('hasCoherentDependency', () => {
   it('finds a direct dependency', async () => {
     const root = await makeTree({
-      'package.json': { dependencies: { '@coherent.js/core': '1.0.0' } }
+      'package.json': { dependencies: { '@coherent.js/core': '1.0.0' } },
     });
 
     expect(hasCoherentDependency(root)).toBe(true);
@@ -54,7 +57,7 @@ describe('hasCoherentDependency', () => {
 
   it('finds a devDependency', async () => {
     const root = await makeTree({
-      'package.json': { devDependencies: { '@coherent.js/core': '1.0.0' } }
+      'package.json': { devDependencies: { '@coherent.js/core': '1.0.0' } },
     });
 
     expect(hasCoherentDependency(root)).toBe(true);
@@ -64,9 +67,9 @@ describe('hasCoherentDependency', () => {
     const root = await makeTree({
       'package.json': {
         workspaces: ['packages/*'],
-        dependencies: { '@coherent.js/core': '1.0.0' }
+        dependencies: { '@coherent.js/core': '1.0.0' },
       },
-      'packages/site/package.json': { name: 'site' }
+      'packages/site/package.json': { name: 'site' },
     });
 
     expect(hasCoherentDependency(join(root, 'packages/site'))).toBe(true);
@@ -75,8 +78,10 @@ describe('hasCoherentDependency', () => {
   it('accepts an installed copy under an ancestor node_modules', async () => {
     const root = await makeTree({
       'package.json': { name: 'root' },
-      'node_modules/@coherent.js/core/package.json': { name: '@coherent.js/core' },
-      'packages/site/package.json': { name: 'site' }
+      'node_modules/@coherent.js/core/package.json': {
+        name: '@coherent.js/core',
+      },
+      'packages/site/package.json': { name: 'site' },
     });
 
     expect(hasCoherentDependency(join(root, 'packages/site'))).toBe(true);
@@ -84,7 +89,7 @@ describe('hasCoherentDependency', () => {
 
   it('still rejects an unrelated project', async () => {
     const root = await makeTree({
-      'package.json': { dependencies: { express: '4.0.0' } }
+      'package.json': { dependencies: { express: '4.0.0' } },
     });
 
     expect(hasCoherentDependency(root)).toBe(false);
@@ -96,9 +101,12 @@ describe('detectPackageManager', () => {
     ['pnpm-lock.yaml', 'pnpm'],
     ['yarn.lock', 'yarn'],
     ['bun.lockb', 'bun'],
-    ['package-lock.json', 'npm']
+    ['package-lock.json', 'npm'],
   ])('detects %s as %s', async (lockfile, expected) => {
-    const root = await makeTree({ 'package.json': { name: 'app' }, [lockfile]: '' });
+    const root = await makeTree({
+      'package.json': { name: 'app' },
+      [lockfile]: '',
+    });
 
     expect(detectPackageManager(root)).toBe(expected);
   });
@@ -106,7 +114,7 @@ describe('detectPackageManager', () => {
   it('prefers the packageManager field', async () => {
     const root = await makeTree({
       'package.json': { name: 'app', packageManager: 'yarn@4.1.0' },
-      'package-lock.json': ''
+      'package-lock.json': '',
     });
 
     expect(detectPackageManager(root)).toBe('yarn');
@@ -116,7 +124,7 @@ describe('detectPackageManager', () => {
     const root = await makeTree({
       'package.json': { name: 'root' },
       'pnpm-lock.yaml': '',
-      'packages/site/package.json': { name: 'site' }
+      'packages/site/package.json': { name: 'site' },
     });
 
     expect(detectPackageManager(join(root, 'packages/site'))).toBe('pnpm');
@@ -137,11 +145,11 @@ describe('detectPackageManager', () => {
     'npm$(id)@1',
     '`id`@1',
     'npm|tee /tmp/x@1',
-    '../../../bin/sh@1'
-  ])('refuses to return an injected packageManager (%j)', async declared => {
+    '../../../bin/sh@1',
+  ])('refuses to return an injected packageManager (%j)', async (declared) => {
     const root = await makeTree({
       'package.json': { name: 'app', packageManager: declared },
-      'yarn.lock': ''
+      'yarn.lock': '',
     });
 
     const detected = detectPackageManager(root);
@@ -153,7 +161,7 @@ describe('detectPackageManager', () => {
   it('ignores an unknown-but-harmless packageManager', async () => {
     const root = await makeTree({
       'package.json': { name: 'app', packageManager: 'deno@2.0.0' },
-      'pnpm-lock.yaml': ''
+      'pnpm-lock.yaml': '',
     });
 
     expect(detectPackageManager(root)).toBe('pnpm');
@@ -161,7 +169,7 @@ describe('detectPackageManager', () => {
 
   it('accepts the supported managers case-insensitively', async () => {
     const root = await makeTree({
-      'package.json': { name: 'app', packageManager: 'PNPM@9.0.0' }
+      'package.json': { name: 'app', packageManager: 'PNPM@9.0.0' },
     });
 
     expect(detectPackageManager(root)).toBe('pnpm');
@@ -173,8 +181,8 @@ describe('isSelfReferential', () => {
     'coherent build',
     'coherent build --analyze',
     'rimraf dist && coherent build',
-    'npm run clean; coherent build'
-  ])('detects %s', script => {
+    'npm run clean; coherent build',
+  ])('detects %s', (script) => {
     expect(isSelfReferential(script)).toBe(true);
   });
 
@@ -182,8 +190,8 @@ describe('isSelfReferential', () => {
     'vite build',
     'tsc -p tsconfig.json',
     'echo coherent-builder',
-    'node scripts/build-coherent.js'
-  ])('leaves %s alone', script => {
+    'node scripts/build-coherent.js',
+  ])('leaves %s alone', (script) => {
     expect(isSelfReferential(script)).toBe(false);
   });
 

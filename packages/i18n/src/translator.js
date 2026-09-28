@@ -1,8 +1,8 @@
 /**
  * Coherent.js Translator
- * 
+ *
  * Handles translation of strings with interpolation and pluralization
- * 
+ *
  * @module i18n/translator
  */
 
@@ -20,7 +20,7 @@ const HTML_ESCAPES = {
   '<': '&lt;',
   '>': '&gt;',
   '"': '&quot;',
-  "'": '&#39;'
+  "'": '&#39;',
 };
 
 /**
@@ -72,10 +72,10 @@ export class Translator {
       interpolation: {
         prefix: '{{',
         suffix: '}}',
-        ...interpolation
-      }
+        ...interpolation,
+      },
     };
-    
+
     this.translations = new Map();
     this.currentLocale = this.options.defaultLocale;
     this.loadedLocales = new Set();
@@ -83,7 +83,7 @@ export class Translator {
 
   /**
    * Add translations for a locale
-   * 
+   *
    * @param {string} locale - Locale code (e.g., 'en', 'fr', 'es')
    * @param {Object} translations - Translation object
    */
@@ -91,7 +91,7 @@ export class Translator {
     if (!this.translations.has(locale)) {
       this.translations.set(locale, {});
     }
-    
+
     const existing = this.translations.get(locale);
     this.translations.set(locale, this.deepMerge(existing, translations));
     this.loadedLocales.add(locale);
@@ -102,7 +102,7 @@ export class Translator {
    */
   deepMerge(target, source) {
     const result = { ...target };
-    
+
     for (const [key, value] of Object.entries(source)) {
       if (value && typeof value === 'object' && !Array.isArray(value)) {
         result[key] = this.deepMerge(result[key] || {}, value);
@@ -110,7 +110,7 @@ export class Translator {
         result[key] = value;
       }
     }
-    
+
     return result;
   }
 
@@ -173,7 +173,7 @@ export class Translator {
 
   /**
    * Get current locale
-   * 
+   *
    * @returns {string} Current locale code
    */
   getLocale() {
@@ -199,7 +199,8 @@ export class Translator {
    * @returns {{ locale: string, t: Function, has: Function, getLocale: () => string }}
    */
   forLocale(locale, options = {}) {
-    const boundLocale = this.resolveLocale(locale) ?? this.options.fallbackLocale;
+    const boundLocale =
+      this.resolveLocale(locale) ?? this.options.fallbackLocale;
 
     return {
       locale: boundLocale,
@@ -207,11 +208,11 @@ export class Translator {
         const callOptions = normalizeCallOptions(localeOrOptions);
         return this.t(key, params, {
           locale: callOptions.locale || boundLocale,
-          escape: callOptions.escape ?? options.escape ?? this.options.escape
+          escape: callOptions.escape ?? options.escape ?? this.options.escape,
         });
       },
       has: (key, override = null) => this.has(key, override || boundLocale),
-      getLocale: () => boundLocale
+      getLocale: () => boundLocale,
     };
   }
 
@@ -235,7 +236,7 @@ export class Translator {
     // the fallback locale and its parents.
     const chain = [
       ...this.localeCandidates(targetLocale),
-      ...this.localeCandidates(this.options.fallbackLocale)
+      ...this.localeCandidates(this.options.fallbackLocale),
     ];
     let translation = null;
     let messageLocale = targetLocale;
@@ -258,17 +259,18 @@ export class Translator {
     // Handle pluralization with the rules of the language the message is
     // written in: English fallback text must not use Russian plural rules.
     if (typeof translation === 'object' && params.count !== undefined) {
-      const pluralLocale = primaryLanguage(messageLocale) === primaryLanguage(targetLocale)
-        ? targetLocale
-        : messageLocale;
+      const pluralLocale =
+        primaryLanguage(messageLocale) === primaryLanguage(targetLocale)
+          ? targetLocale
+          : messageLocale;
       translation = this.selectPlural(translation, params.count, pluralLocale);
     }
-    
+
     // Interpolate parameters
     if (typeof translation === 'string') {
       return this.interpolate(translation, params, { escape });
     }
-    
+
     return String(translation);
   }
 
@@ -278,7 +280,7 @@ export class Translator {
   getTranslation(key, locale) {
     const translations = this.translations.get(locale);
     if (!translations) return null;
-    
+
     const keys = String(key).split('.');
     let value = translations;
 
@@ -291,7 +293,7 @@ export class Translator {
         return null;
       }
     }
-    
+
     return value;
   }
 
@@ -303,7 +305,7 @@ export class Translator {
     if (count === 0 && pluralObject.zero) {
       return pluralObject.zero;
     }
-    
+
     // Use Intl.PluralRules for locale-specific pluralization
     if (typeof Intl !== 'undefined' && Intl.PluralRules) {
       let rule;
@@ -317,14 +319,14 @@ export class Translator {
         return pluralObject[rule];
       }
     }
-    
+
     // Fallback to simple rules
     if (count === 1 && pluralObject.one) {
       return pluralObject.one;
     } else if (pluralObject.other) {
       return pluralObject.other;
     }
-    
+
     return pluralObject.one || pluralObject.other || '';
   }
 
@@ -351,7 +353,10 @@ export class Translator {
       .sort((a, b) => b.length - a.length)
       .map(escapeRegExp)
       .join('|');
-    const pattern = new RegExp(`${escapeRegExp(prefix)}(${alternatives})${escapeRegExp(suffix)}`, 'g');
+    const pattern = new RegExp(
+      `${escapeRegExp(prefix)}(${alternatives})${escapeRegExp(suffix)}`,
+      'g'
+    );
 
     // One pass with a replacer function: `$&`, `$'` or `$$` in a value are
     // inserted literally, and a value that itself contains a placeholder is
@@ -361,7 +366,7 @@ export class Translator {
 
   /**
    * Check if translation exists
-   * 
+   *
    * @param {string} key - Translation key
    * @param {string} [locale] - Locale to check
    * @returns {boolean} True if translation exists
@@ -369,13 +374,14 @@ export class Translator {
   has(key, locale = null) {
     const targetLocale = locale || this.currentLocale;
     // The locale and its parents (fr-FR → fr), but not the fallback locale.
-    return this.localeCandidates(targetLocale)
-      .some(candidate => this.getTranslation(key, candidate) !== null);
+    return this.localeCandidates(targetLocale).some(
+      (candidate) => this.getTranslation(key, candidate) !== null
+    );
   }
 
   /**
    * Get all translations for current locale
-   * 
+   *
    * @returns {Object} All translations
    */
   getTranslations(locale = null) {
@@ -385,7 +391,7 @@ export class Translator {
 
   /**
    * Get all loaded locales
-   * 
+   *
    * @returns {Array<string>} Array of locale codes
    */
   getLoadedLocales() {
@@ -394,13 +400,13 @@ export class Translator {
 
   /**
    * Remove translations for a locale
-   * 
+   *
    * @param {string} locale - Locale code
    */
   removeLocale(locale) {
     this.translations.delete(locale);
     this.loadedLocales.delete(locale);
-    
+
     if (this.currentLocale === locale) {
       this.currentLocale = this.options.defaultLocale;
     }
@@ -418,7 +424,7 @@ export class Translator {
 
 /**
  * Create a translator instance
- * 
+ *
  * @param {Object} [options] - Translator options
  * @returns {Translator} Translator instance
  */
@@ -429,7 +435,7 @@ export function createTranslator(options = {}) {
 /**
  * Create a scoped translator
  * Automatically prefixes all keys with a namespace
- * 
+ *
  * @param {Translator} translator - Base translator
  * @param {string} namespace - Namespace prefix
  * @returns {Object} Scoped translator
@@ -443,12 +449,12 @@ export function createScopedTranslator(translator, namespace) {
       return translator.has(`${namespace}.${key}`, locale);
     },
     getLocale: () => translator.getLocale(),
-    setLocale: (locale) => translator.setLocale(locale)
+    setLocale: (locale) => translator.setLocale(locale),
   };
 }
 
 export default {
   Translator,
   createTranslator,
-  createScopedTranslator
+  createScopedTranslator,
 };

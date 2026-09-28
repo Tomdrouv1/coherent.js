@@ -26,13 +26,13 @@ function calculateActualPackageSizes() {
     { name: 'Core', path: 'packages/core/src' },
     { name: 'State', path: 'packages/state/src' },
     { name: 'API', path: 'packages/api/src' },
-    { name: 'DevTools', path: 'packages/devtools/src' }
+    { name: 'DevTools', path: 'packages/devtools/src' },
   ];
 
   const results = {};
   let totalSize = 0;
 
-  packages.forEach(pkg => {
+  packages.forEach((pkg) => {
     const pkgPath = path.join(rootDir, pkg.path);
     const size = calculateDirectorySize(pkgPath);
     const sizeKB = (size / 1024).toFixed(1);
@@ -40,11 +40,13 @@ function calculateActualPackageSizes() {
     results[pkg.name.toLowerCase()] = {
       rawSize: size,
       sizeKB: parseFloat(sizeKB),
-      fileCount: countFiles(pkgPath)
+      fileCount: countFiles(pkgPath),
     };
 
     totalSize += size;
-    console.log(`📦 ${pkg.name}: ${sizeKB}KB (${results[pkg.name.toLowerCase()].fileCount} files)`);
+    console.log(
+      `📦 ${pkg.name}: ${sizeKB}KB (${results[pkg.name.toLowerCase()].fileCount} files)`
+    );
   });
 
   console.log(`🎯 Total Framework: ${(totalSize / 1024).toFixed(1)}KB`);
@@ -125,21 +127,21 @@ function analyzeDevToolsTreeShaking() {
     { name: 'Inspector', file: 'inspector.js' },
     { name: 'Profiler', file: 'profiler.js' },
     { name: 'Logger', file: 'logger.js' },
-    { name: 'Dev Tools', file: 'dev-tools.js' }
+    { name: 'Dev Tools', file: 'dev-tools.js' },
   ];
 
   const fileSizes = {};
   let totalDevToolsSize = 0;
 
   console.log('📊 Individual DevTools Modules:');
-  devtoolsFiles.forEach(module => {
+  devtoolsFiles.forEach((module) => {
     const filePath = path.join(devtoolsPath, module.file);
     try {
       const stat = fs.statSync(filePath);
       const sizeKB = (stat.size / 1024).toFixed(1);
       fileSizes[module.name] = {
         size: stat.size,
-        sizeKB: parseFloat(sizeKB)
+        sizeKB: parseFloat(sizeKB),
       };
       totalDevToolsSize += stat.size;
       console.log(`   • ${module.name}: ${sizeKB}KB`);
@@ -156,16 +158,21 @@ function analyzeDevToolsTreeShaking() {
     return sum + (fileSizes[name]?.size || 0);
   }, 0);
 
-  const reduction = ((totalDevToolsSize - selectiveSize) / totalDevToolsSize * 100).toFixed(1);
+  const reduction = (
+    ((totalDevToolsSize - selectiveSize) / totalDevToolsSize) *
+    100
+  ).toFixed(1);
 
-  console.log(`📦 Selective Import (${selectiveImport.join(' + ')}): ${(selectiveSize / 1024).toFixed(1)}KB`);
+  console.log(
+    `📦 Selective Import (${selectiveImport.join(' + ')}): ${(selectiveSize / 1024).toFixed(1)}KB`
+  );
   console.log(`🎯 Tree Shaking Reduction: ${reduction}%`);
 
   return {
     fullSize: totalDevToolsSize,
     selectiveSize,
     reduction: parseFloat(reduction),
-    fileSizes
+    fileSizes,
   };
 }
 
@@ -179,8 +186,8 @@ function validateMinificationPotential() {
   // Typical minification ratios for JavaScript
   const minificationRatios = {
     'Source Code': 1.0,
-    'Minified': 0.35,    // 65% reduction
-    'Gzipped': 0.12      // 88% reduction from source
+    Minified: 0.35, // 65% reduction
+    Gzipped: 0.12, // 88% reduction from source
   };
 
   const { results } = calculateActualPackageSizes();
@@ -196,16 +203,21 @@ function validateMinificationPotential() {
     console.log(`   Gzipped: ${(gzipped / 1024).toFixed(1)}KB`);
   });
 
-  const totalSource = Object.values(results).reduce((sum, data) => sum + data.rawSize, 0);
+  const totalSource = Object.values(results).reduce(
+    (sum, data) => sum + data.rawSize,
+    0
+  );
   const totalMinified = totalSource * minificationRatios.Minified;
   const totalGzipped = totalSource * minificationRatios.Gzipped;
 
-  console.log(`\n🎯 Total Production Bundle (gzipped): ${(totalGzipped / 1024).toFixed(1)}KB`);
+  console.log(
+    `\n🎯 Total Production Bundle (gzipped): ${(totalGzipped / 1024).toFixed(1)}KB`
+  );
 
   return {
     sourceSize: totalSource,
     minifiedSize: totalMinified,
-    gzippedSize: totalGzipped
+    gzippedSize: totalGzipped,
   };
 }
 
@@ -227,14 +239,22 @@ function generateRealValidationReport() {
   // Tree shaking claim: 79.5% reduction
   const treeShakingTarget = 79.5;
   const treeShakingResult = treeShaking.reduction;
-  console.log(`🌳 Tree Shaking: ${treeShakingResult}% (Target: ${treeShakingTarget}%)`);
-  console.log(`   ${treeShakingResult >= treeShakingTarget ? '✅ PASSED' : '❌ FAILED'}`);
+  console.log(
+    `🌳 Tree Shaking: ${treeShakingResult}% (Target: ${treeShakingTarget}%)`
+  );
+  console.log(
+    `   ${treeShakingResult >= treeShakingTarget ? '✅ PASSED' : '❌ FAILED'}`
+  );
 
   // Bundle size claim: <400KB production
   const bundleSizeTarget = 400 * 1024; // 400KB
   const actualBundleSize = minification.gzippedSize;
-  console.log(`📦 Bundle Size: ${(actualBundleSize / 1024).toFixed(1)}KB (Target: <400KB)`);
-  console.log(`   ${actualBundleSize <= bundleSizeTarget ? '✅ PASSED' : '❌ FAILED'}`);
+  console.log(
+    `📦 Bundle Size: ${(actualBundleSize / 1024).toFixed(1)}KB (Target: <400KB)`
+  );
+  console.log(
+    `   ${actualBundleSize <= bundleSizeTarget ? '✅ PASSED' : '❌ FAILED'}`
+  );
 
   // Performance claim: 247 renders/sec (from benchmarks)
   console.log(`🚀 Performance: 247 renders/sec (Target: 200+)`);
@@ -248,7 +268,9 @@ function generateRealValidationReport() {
     treeShakingResult >= treeShakingTarget &&
     actualBundleSize <= bundleSizeTarget;
 
-  console.log(`\n🎯 Overall Production Validation: ${allClaimsValid ? '✅ PASSED' : '❌ FAILED'}`);
+  console.log(
+    `\n🎯 Overall Production Validation: ${allClaimsValid ? '✅ PASSED' : '❌ FAILED'}`
+  );
 
   if (allClaimsValid) {
     console.log('\n🎉 Coherent.js Production Claims VALIDATED!');
@@ -269,9 +291,9 @@ function generateRealValidationReport() {
     validation: {
       treeShakingPassed: treeShakingResult >= treeShakingTarget,
       bundleSizePassed: actualBundleSize <= bundleSizeTarget,
-      allClaimsValid
+      allClaimsValid,
     },
-    environment: 'real-measurements'
+    environment: 'real-measurements',
   };
 
   try {
@@ -279,7 +301,9 @@ function generateRealValidationReport() {
       path.join(__dirname, '../real-validation-report.json'),
       JSON.stringify(reportData, null, 2)
     );
-    console.log('\n📄 Real validation report saved to real-validation-report.json');
+    console.log(
+      '\n📄 Real validation report saved to real-validation-report.json'
+    );
   } catch (error) {
     console.log('\n⚠️ Could not save validation report:', error.message);
   }

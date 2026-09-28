@@ -25,9 +25,15 @@ beforeEach(async () => {
   base = await mkdtemp(join(tmpdir(), 'coherent-dev-fs-allow-'));
   project = join(base, 'app');
   await mkdir(project);
-  await writeFile(join(project, 'package.json'), JSON.stringify({ name: 'app' }));
+  await writeFile(
+    join(project, 'package.json'),
+    JSON.stringify({ name: 'app' })
+  );
   entry = join(base, 'entry.mjs');
-  await writeFile(entry, `import { createCLI } from ${JSON.stringify(CLI_SRC)};\nawait createCLI();\n`);
+  await writeFile(
+    entry,
+    `import { createCLI } from ${JSON.stringify(CLI_SRC)};\nawait createCLI();\n`
+  );
 });
 
 afterEach(async () => {
@@ -48,12 +54,23 @@ async function linkedOutside(name) {
 function startDev(args) {
   const child = spawn(
     process.execPath,
-    [entry, 'dev', '--coherent', '--no-hmr', '--host', '127.0.0.1', '--port', '0', ...args],
+    [
+      entry,
+      'dev',
+      '--coherent',
+      '--no-hmr',
+      '--host',
+      '127.0.0.1',
+      '--port',
+      '0',
+      ...args,
+    ],
     { cwd: project }
   );
   const exited = new Promise((resolve) => child.once('exit', resolve));
   const stop = async () => {
-    if (child.exitCode === null && child.signalCode === null) child.kill('SIGTERM');
+    if (child.exitCode === null && child.signalCode === null)
+      child.kill('SIGTERM');
     await exited;
   };
   running.push(stop);
@@ -67,7 +84,9 @@ function startDev(args) {
     };
     child.stdout.on('data', onData);
     child.stderr.on('data', onData);
-    exited.then((code) => reject(new Error(`coherent dev exited with ${code}:\n${output}`)));
+    exited.then((code) =>
+      reject(new Error(`coherent dev exited with ${code}:\n${output}`))
+    );
   });
 }
 
@@ -96,8 +115,10 @@ describe('coherent dev --fs-allow', () => {
     await linkedOutside('d');
 
     const { port } = await startDev([
-      '--fs-allow', '../a-outside, ../b-outside',
-      '--fs-allow', join(base, 'c-outside')
+      '--fs-allow',
+      '../a-outside, ../b-outside',
+      '--fs-allow',
+      join(base, 'c-outside'),
     ]);
     expect(await status(port, '/a/lib.js')).toBe(200);
     expect(await status(port, '/b/lib.js')).toBe(200);
@@ -106,9 +127,13 @@ describe('coherent dev --fs-allow', () => {
   });
 
   it('is listed in `coherent dev --help`', async () => {
-    const child = spawn(process.execPath, [entry, 'dev', '--help'], { cwd: project });
+    const child = spawn(process.execPath, [entry, 'dev', '--help'], {
+      cwd: project,
+    });
     let stdout = '';
-    child.stdout.on('data', (chunk) => { stdout += chunk; });
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk;
+    });
     const code = await new Promise((resolve) => child.once('exit', resolve));
     expect(code).toBe(0);
     expect(stdout).toContain('--fs-allow <dirs>');

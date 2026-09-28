@@ -2,11 +2,11 @@ export {
   serializeState,
   deserializeState,
   extractState,
-  serializeStateWithWarning
+  serializeStateWithWarning,
 } from './state-serializer.js';
 
 export {
   detectMismatch,
   reportMismatches,
-  formatPath
+  formatPath,
 } from './mismatch-detector.js';

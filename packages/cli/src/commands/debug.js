@@ -16,11 +16,18 @@ import { validateProject } from '../validators/project-validator.js';
 
 export const debugCommand = new Command('debug')
   .description('Debug and analyze Coherent.js applications')
-  .argument('[target]', 'what to debug (component|performance|hydration|project)')
+  .argument(
+    '[target]',
+    'what to debug (component|performance|hydration|project)'
+  )
   .option('-f, --file <file>', 'specific file to analyze')
   .option('-c, --component <name>', 'specific component name')
   .option('--deep', 'perform deep analysis')
-  .option('-u, --url <url>', 'URL of the running app (performance, hydration)', 'http://localhost:3000')
+  .option(
+    '-u, --url <url>',
+    'URL of the running app (performance, hydration)',
+    'http://localhost:3000'
+  )
   .option('--output <format>', 'output format (console|json|html)', 'console')
   .action(async (target, options) => {
     console.log();
@@ -37,14 +44,38 @@ export const debugCommand = new Command('debug')
         name: 'target',
         message: 'What would you like to debug?',
         choices: [
-          { title: '🧩 Component Analysis', value: 'component', description: 'Analyze component structure and performance' },
-          { title: '⚡ Performance Profiling', value: 'performance', description: 'Time requests to the running app' },
-          { title: '💧 Hydration Analysis', value: 'hydration', description: 'Inspect hydration markers in the server HTML' },
-          { title: '📋 Project Validation', value: 'project', description: 'Validate entire project structure and configuration' },
-          { title: '🚀 Bundle Analysis', value: 'bundle', description: 'Analyze bundle size and dependencies' },
-          { title: '🔧 Configuration Check', value: 'config', description: 'Validate and optimize configuration' }
+          {
+            title: '🧩 Component Analysis',
+            value: 'component',
+            description: 'Analyze component structure and performance',
+          },
+          {
+            title: '⚡ Performance Profiling',
+            value: 'performance',
+            description: 'Time requests to the running app',
+          },
+          {
+            title: '💧 Hydration Analysis',
+            value: 'hydration',
+            description: 'Inspect hydration markers in the server HTML',
+          },
+          {
+            title: '📋 Project Validation',
+            value: 'project',
+            description: 'Validate entire project structure and configuration',
+          },
+          {
+            title: '🚀 Bundle Analysis',
+            value: 'bundle',
+            description: 'Analyze bundle size and dependencies',
+          },
+          {
+            title: '🔧 Configuration Check',
+            value: 'config',
+            description: 'Validate and optimize configuration',
+          },
         ],
-        initial: 0
+        initial: 0,
       });
 
       if (!response.target) {
@@ -103,20 +134,21 @@ export const debugCommand = new Command('debug')
 
       // Output results
       await outputResults(result, options.output);
-
     } catch (error) {
       spinner.fail(`Analysis failed: ${error.message}`);
 
       console.log();
       console.log(picocolors.red('❌ Debug Error:'));
-      console.log(picocolors.gray(`  ${  error.message}`));
+      console.log(picocolors.gray(`  ${error.message}`));
 
       if (env.DEBUG) {
         console.log();
         console.log(picocolors.gray('Stack trace:'));
         console.log(picocolors.gray(error.stack));
       } else {
-        console.log(picocolors.gray('  Run with DEBUG=1 for detailed error information'));
+        console.log(
+          picocolors.gray('  Run with DEBUG=1 for detailed error information')
+        );
       }
 
       process.exit(1);
@@ -133,15 +165,20 @@ debugCommand
   .action(async (name, options) => {
     const result = await analyzeComponent({
       ...options,
-      componentName: name
+      componentName: name,
     });
     await outputResults(result, 'console');
   });
 
 debugCommand
   .command('performance [component]')
-  .description('Time requests to a running app (component and memory profiling are not implemented yet)')
-  .option('-u, --url <url>', 'URL of the running app (default: http://localhost:3000)')
+  .description(
+    'Time requests to a running app (component and memory profiling are not implemented yet)'
+  )
+  .option(
+    '-u, --url <url>',
+    'URL of the running app (default: http://localhost:3000)'
+  )
   .option('-t, --time <seconds>', 'stop after this many seconds', '10')
   .option('--samples <count>', 'maximum number of requests', '100')
   .option('--memory', 'memory profiling (not implemented yet)')
@@ -149,17 +186,23 @@ debugCommand
     // optsWithGlobals: `--url` may have been parsed by the parent `debug` command
     const result = await analyzePerformance({
       ...command.optsWithGlobals(),
-      component
+      component,
     });
     await outputResults(result, 'console');
   });
 
 debugCommand
   .command('hydration')
-  .description('Inspect the hydration markers in a page\'s server-rendered HTML')
-  .option('-u, --url <url>', 'URL of the running app (default: http://localhost:3000)')
+  .description("Inspect the hydration markers in a page's server-rendered HTML")
+  .option(
+    '-u, --url <url>',
+    'URL of the running app (default: http://localhost:3000)'
+  )
   .option('--compare', 'compare server and client output (not implemented yet)')
-  .option('--components <components>', 'comma-separated component names to look for')
+  .option(
+    '--components <components>',
+    'comma-separated component names to look for'
+  )
   .action(async (_options, command) => {
     const result = await analyzeHydration(command.optsWithGlobals());
     await outputResults(result, 'console');
@@ -186,7 +229,8 @@ function listFiles(dir) {
   return files;
 }
 
-const formatBytes = (bytes) => (bytes < 1024 ? `${bytes}B` : `${(bytes / 1024).toFixed(1)}KB`);
+const formatBytes = (bytes) =>
+  bytes < 1024 ? `${bytes}B` : `${(bytes / 1024).toFixed(1)}KB`;
 
 // Bundle size analysis: measured from the files in the build directory.
 async function analyzeBundleSize(_options = {}) {
@@ -195,12 +239,12 @@ async function analyzeBundleSize(_options = {}) {
     type: 'bundle-analysis',
     summary: {},
     details: {},
-    recommendations: []
+    recommendations: [],
   };
 
   // Check if build files exist
   const buildDirs = ['dist', 'build', '.next', 'out'];
-  const foundBuildDir = buildDirs.find(dir => existsSync(resolve(dir)));
+  const foundBuildDir = buildDirs.find((dir) => existsSync(resolve(dir)));
 
   if (!foundBuildDir) {
     analysis.summary.status = 'error';
@@ -220,7 +264,7 @@ async function analyzeBundleSize(_options = {}) {
     files: files.length,
     scriptFiles: scripts.length,
     totalSize: formatBytes(totalBytes),
-    scriptSize: formatBytes(scripts.reduce((sum, f) => sum + f.bytes, 0))
+    scriptSize: formatBytes(scripts.reduce((sum, f) => sum + f.bytes, 0)),
   };
   analysis.details.largestScripts = Object.fromEntries(
     largest.map((f) => [relative(root, f.path), formatBytes(f.bytes)])
@@ -230,7 +274,7 @@ async function analyzeBundleSize(_options = {}) {
     analysis.recommendations.push({
       type: 'optimization',
       priority: 'medium',
-      message: `${relative(root, file.path)} is ${formatBytes(file.bytes)}; consider code splitting it.`
+      message: `${relative(root, file.path)} is ${formatBytes(file.bytes)}; consider code splitting it.`,
     });
   }
 
@@ -244,25 +288,26 @@ async function analyzeConfiguration(_options = {}) {
     type: 'configuration-analysis',
     summary: {},
     details: {},
-    recommendations: []
+    recommendations: [],
   };
 
   const configFiles = ['coherent.config.js', 'package.json', 'tsconfig.json'];
-  const foundConfigs = configFiles.filter(file => existsSync(resolve(file)));
+  const foundConfigs = configFiles.filter((file) => existsSync(resolve(file)));
 
   analysis.summary = {
     status: 'success',
     foundConfigs,
     validConfigs: foundConfigs.length,
-    issues: []
+    issues: [],
   };
 
   // Check package.json for Coherent.js setup
   if (existsSync('package.json')) {
     try {
       const packageJson = JSON.parse(readFileSync('package.json', 'utf-8'));
-      const hasCoherentDeps = Object.keys(packageJson.dependencies || {})
-        .some(dep => dep.startsWith('@coherent.js/'));
+      const hasCoherentDeps = Object.keys(packageJson.dependencies || {}).some(
+        (dep) => dep.startsWith('@coherent.js/')
+      );
 
       if (!hasCoherentDeps) {
         analysis.summary.issues.push('No Coherent.js dependencies found');
@@ -272,7 +317,7 @@ async function analyzeConfiguration(_options = {}) {
         name: packageJson.name,
         version: packageJson.version,
         scripts: Object.keys(packageJson.scripts || {}),
-        dependencies: Object.keys(packageJson.dependencies || {}).length
+        dependencies: Object.keys(packageJson.dependencies || {}).length,
       };
     } catch {
       analysis.summary.issues.push('Invalid package.json format');
@@ -284,13 +329,14 @@ async function analyzeConfiguration(_options = {}) {
     analysis.recommendations.push({
       type: 'configuration',
       priority: 'low',
-      message: 'Configuration looks good! Consider adding performance monitoring.'
+      message:
+        'Configuration looks good! Consider adding performance monitoring.',
     });
   } else {
     analysis.recommendations.push({
       type: 'setup',
       priority: 'high',
-      message: `Configuration issues: ${analysis.summary.issues.join('; ')}.`
+      message: `Configuration issues: ${analysis.summary.issues.join('; ')}.`,
     });
   }
 
@@ -332,7 +378,8 @@ function printConsoleReport(result) {
 
     Object.entries(result.summary).forEach(([key, value]) => {
       if (key === 'status') {
-        const statusIcon = value === 'success' ? '✅' : value === 'warning' ? '⚠️' : '❌';
+        const statusIcon =
+          value === 'success' ? '✅' : value === 'warning' ? '⚠️' : '❌';
         console.log(`  ${statusIcon} Status: ${value}`);
       } else if (Array.isArray(value)) {
         console.log(`  • ${key}: ${value.length} items`);
@@ -359,7 +406,12 @@ function printConsoleReport(result) {
     console.log();
     console.log(picocolors.blue('💡 Recommendations:'));
     result.recommendations.forEach((rec) => {
-      const priorityIcon = rec.priority === 'high' ? '🔴' : rec.priority === 'medium' ? '🟡' : '🟢';
+      const priorityIcon =
+        rec.priority === 'high'
+          ? '🔴'
+          : rec.priority === 'medium'
+            ? '🟡'
+            : '🟢';
       console.log(`  ${priorityIcon} ${rec.message}`);
     });
   }
@@ -369,7 +421,10 @@ function printConsoleReport(result) {
     console.log();
     console.log(picocolors.gray('📋 Details:'));
     Object.entries(result.details).forEach(([key, value]) => {
-      console.log(`  ${key}:`, typeof value === 'object' ? JSON.stringify(value, null, 2) : value);
+      console.log(
+        `  ${key}:`,
+        typeof value === 'object' ? JSON.stringify(value, null, 2) : value
+      );
     });
   }
 
@@ -403,23 +458,39 @@ async function generateHTMLReport(result) {
         <pre>${JSON.stringify(result.summary, null, 2)}</pre>
       </div>
 
-      ${result.issues ? `
+      ${
+        result.issues
+          ? `
       <div class="section">
         <h2>Issues</h2>
-        ${result.issues.map(issue => `
+        ${result.issues
+          .map(
+            (issue) => `
           <div class="issue">⚠️ ${issue.message || issue}</div>
-        `).join('')}
+        `
+          )
+          .join('')}
       </div>
-      ` : ''}
+      `
+          : ''
+      }
 
-      ${result.recommendations ? `
+      ${
+        result.recommendations
+          ? `
       <div class="section">
         <h2>Recommendations</h2>
-        ${result.recommendations.map(rec => `
+        ${result.recommendations
+          .map(
+            (rec) => `
           <div class="recommendation">💡 ${rec.message}</div>
-        `).join('')}
+        `
+          )
+          .join('')}
       </div>
-      ` : ''}
+      `
+          : ''
+      }
     </body>
     </html>
   `;

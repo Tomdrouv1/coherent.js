@@ -234,7 +234,9 @@ export class StateCapturer {
 
       const inputs = Array.from(document.querySelectorAll(selector));
       const valueMatch = key.match(/\[value="([^"]*)"\]/);
-      return valueMatch ? inputs.filter((input) => input.value === valueMatch[1]) : inputs;
+      return valueMatch
+        ? inputs.filter((input) => input.value === valueMatch[1])
+        : inputs;
     }
 
     // Path-based key - try to query directly

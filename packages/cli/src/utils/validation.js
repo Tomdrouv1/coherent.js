@@ -38,11 +38,37 @@ export function validateProjectName(name) {
 
   // Cannot be reserved words
   const reserved = [
-    'node_modules', 'favicon.ico', '.git', '.gitignore', '.env',
-    'package.json', 'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml',
-    'con', 'prn', 'aux', 'nul', 'com1', 'com2', 'com3', 'com4', 'com5', 
-    'com6', 'com7', 'com8', 'com9', 'lpt1', 'lpt2', 'lpt3', 'lpt4', 
-    'lpt5', 'lpt6', 'lpt7', 'lpt8', 'lpt9'
+    'node_modules',
+    'favicon.ico',
+    '.git',
+    '.gitignore',
+    '.env',
+    'package.json',
+    'package-lock.json',
+    'yarn.lock',
+    'pnpm-lock.yaml',
+    'con',
+    'prn',
+    'aux',
+    'nul',
+    'com1',
+    'com2',
+    'com3',
+    'com4',
+    'com5',
+    'com6',
+    'com7',
+    'com8',
+    'com9',
+    'lpt1',
+    'lpt2',
+    'lpt3',
+    'lpt4',
+    'lpt5',
+    'lpt6',
+    'lpt7',
+    'lpt8',
+    'lpt9',
   ];
 
   if (reserved.includes(trimmed.toLowerCase())) {
@@ -129,7 +155,7 @@ export function validatePath(path) {
 
   // Cannot start with /
   if (trimmed.startsWith('/')) {
-    return 'Path should be relative (don\'t start with /)';
+    return "Path should be relative (don't start with /)";
   }
 
   return true;
@@ -141,11 +167,11 @@ export function validatePath(path) {
 export function validateTemplate(template) {
   const validTemplates = [
     'basic',
-    'fullstack', 
+    'fullstack',
     'express',
     'fastify',
     'components',
-    'nextjs'
+    'nextjs',
   ];
 
   if (!validTemplates.includes(template)) {

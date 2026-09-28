@@ -4,7 +4,14 @@
  * @description Graceful error handling with fallback components.
  */
 
-import { render, createErrorBoundary, createErrorFallback, withErrorBoundary, createAsyncErrorBoundary, createGlobalErrorHandler } from '@coherent.js/core';
+import {
+  render,
+  createErrorBoundary,
+  createErrorFallback,
+  withErrorBoundary,
+  createAsyncErrorBoundary,
+  createGlobalErrorHandler,
+} from '@coherent.js/core';
 
 console.log('\n=== Coherent.js Error Boundary Demo ===\n');
 
@@ -16,16 +23,16 @@ const BuggyComponent = () => {
 };
 
 const basicBoundary = createErrorBoundary({
-  fallback: { 
-    div: { 
+  fallback: {
+    div: {
       className: 'error',
-      text: 'An error occurred. Please try again.' 
-    } 
+      text: 'An error occurred. Please try again.',
+    },
   },
   onError: (error, errorInfo) => {
     console.log('Error caught:', error.message);
     console.log('Error info:', errorInfo);
-  }
+  },
 });
 
 const SafeBuggyComponent = basicBoundary(BuggyComponent);
@@ -45,12 +52,12 @@ const customFallback = createErrorFallback({
   showError: true,
   showStack: false,
   showReset: true,
-  className: 'custom-error'
+  className: 'custom-error',
 });
 
 const customBoundary = createErrorBoundary({
   fallback: customFallback,
-  onError: (error) => console.log('Custom boundary caught:', error.message)
+  onError: (error) => console.log('Custom boundary caught:', error.message),
 });
 
 const AnotherBuggyComponent = () => {
@@ -78,20 +85,20 @@ const resetBoundary = createErrorBoundary({
     div: {
       children: [
         { p: { text: `Error: ${error.message}` } },
-        { 
-          button: { 
+        {
+          button: {
             text: 'Reset and Try Again',
             onclick: () => {
               console.log('Resetting error boundary...');
               shouldFail = false;
               context.reset();
-            }
-          } 
-        }
-      ]
-    }
+            },
+          },
+        },
+      ],
+    },
   }),
-  onReset: () => console.log('Error boundary reset!')
+  onReset: () => console.log('Error boundary reset!'),
 });
 
 const SafeSometimesBuggyComponent = resetBoundary(SometimesBuggyComponent);
@@ -119,7 +126,7 @@ const userBoundary = createErrorBoundary({
   fallback: { div: { text: 'Failed to load user' } },
   resetKeys: ['userId'],
   resetOnPropsChange: true,
-  onReset: () => console.log('User changed, resetting error boundary')
+  onReset: () => console.log('User changed, resetting error boundary'),
 });
 
 const SafeUserComponent = userBoundary(UserComponent);
@@ -145,21 +152,21 @@ const AlwaysBuggyComponent = () => {
 const maxErrorsBoundary = createErrorBoundary({
   fallback: (error, errorInfo, context) => {
     if (context.permanent) {
-      return { 
-        div: { 
+      return {
+        div: {
           className: 'permanent-error',
-          text: 'Too many errors. Component disabled.' 
-        } 
+          text: 'Too many errors. Component disabled.',
+        },
       };
     }
-    return { 
-      div: { 
-        text: `Error ${context.errorCount}/3: ${error.message}` 
-      } 
+    return {
+      div: {
+        text: `Error ${context.errorCount}/3: ${error.message}`,
+      },
     };
   },
   maxErrors: 3,
-  onError: (error) => console.log('Error caught:', error.message)
+  onError: (error) => console.log('Error caught:', error.message),
 });
 
 const SafeAlwaysBuggyComponent = maxErrorsBoundary(AlwaysBuggyComponent);
@@ -183,24 +190,26 @@ const timeoutBoundary = createErrorBoundary({
   fallback: { div: { text: 'Error! Will auto-reset in 2 seconds...' } },
   resetTimeout: 2000,
   onReset: () => console.log('Auto-reset triggered!'),
-  onError: (error) => console.log('Error caught, timer started')
+  onError: (error) => console.log('Error caught, timer started'),
 });
 
 // Example 7: Wrapping Multiple Components
 console.log('\n--- Example 7: Wrapping Multiple Components ---\n');
 
 const Header = () => ({ header: { text: 'Header' } });
-const Content = () => { throw new Error('Content failed'); };
+const Content = () => {
+  throw new Error('Content failed');
+};
 const Footer = () => ({ footer: { text: 'Footer' } });
 
 const safeComponents = withErrorBoundary(
   {
-    fallback: (error) => ({ 
-      div: { 
+    fallback: (error) => ({
+      div: {
         className: 'component-error',
-        text: `Component error: ${error.message}` 
-      } 
-    })
+        text: `Component error: ${error.message}`,
+      },
+    }),
   },
   { Header, Content, Footer }
 );
@@ -213,12 +222,12 @@ console.log('Safe Footer:', render(safeComponents.Footer()));
 console.log('\n--- Example 8: Async Error Boundary ---\n');
 
 const AsyncComponent = async () => {
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await new Promise((resolve) => setTimeout(resolve, 100));
   return { div: { text: 'Async content loaded!' } };
 };
 
 const FailingAsyncComponent = async () => {
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await new Promise((resolve) => setTimeout(resolve, 100));
   throw new Error('Async load failed!');
 };
 
@@ -226,19 +235,19 @@ const asyncBoundary = createAsyncErrorBoundary({
   fallback: { div: { text: 'Loading...' } },
   errorFallback: { div: { text: 'Failed to load async content' } },
   timeout: 5000,
-  onError: (error) => console.log('Async error:', error.message)
+  onError: (error) => console.log('Async error:', error.message),
 });
 
 const SafeAsyncComponent = asyncBoundary(AsyncComponent);
 const SafeFailingAsyncComponent = asyncBoundary(FailingAsyncComponent);
 
 console.log('Loading async component...');
-SafeAsyncComponent().then(result => {
+SafeAsyncComponent().then((result) => {
   console.log('Success:', render(result));
 });
 
 console.log('Loading failing async component...');
-SafeFailingAsyncComponent().then(result => {
+SafeFailingAsyncComponent().then((result) => {
   console.log('Fallback:', render(result));
 });
 
@@ -250,7 +259,7 @@ const globalHandler = createGlobalErrorHandler({
   onError: (error, context) => {
     console.log(`Global handler caught: ${error.message}`);
     console.log(`Context:`, context);
-  }
+  },
 });
 
 // Simulate some errors
@@ -270,24 +279,21 @@ const InnerBuggyComponent = () => {
 
 const OuterComponent = () => {
   const innerBoundary = createErrorBoundary({
-    fallback: { div: { className: 'inner-error', text: 'Inner error caught' } }
+    fallback: { div: { className: 'inner-error', text: 'Inner error caught' } },
   });
-  
+
   const SafeInner = innerBoundary(InnerBuggyComponent);
-  
+
   return {
     div: {
       className: 'outer',
-      children: [
-        { h2: { text: 'Outer Component' } },
-        SafeInner()
-      ]
-    }
+      children: [{ h2: { text: 'Outer Component' } }, SafeInner()],
+    },
   };
 };
 
 const outerBoundary = createErrorBoundary({
-  fallback: { div: { text: 'Outer error caught' } }
+  fallback: { div: { text: 'Outer error caught' } },
 });
 
 const SafeOuterComponent = outerBoundary(OuterComponent);
@@ -303,10 +309,8 @@ const Page = () => ({
     children: [
       {
         head: {
-          children: [
-            { title: { text: 'Error Boundary Demo' } }
-          ]
-        }
+          children: [{ title: { text: 'Error Boundary Demo' } }],
+        },
       },
       {
         body: {
@@ -314,20 +318,20 @@ const Page = () => ({
             { h1: { text: 'My Application' } },
             (() => {
               throw new Error('Body content failed');
-            })()
-          ]
-        }
-      }
-    ]
-  }
+            })(),
+          ],
+        },
+      },
+    ],
+  },
 });
 
 const pageBoundary = createErrorBoundary({
   fallback: createErrorFallback({
     title: 'Page Error',
     showError: true,
-    showReset: true
-  })
+    showReset: true,
+  }),
 });
 
 const SafePage = pageBoundary(Page);
@@ -337,5 +341,9 @@ const pageResult = SafePage();
 console.log(render(pageResult).substring(0, 200) + '...');
 
 console.log('\n=== Demo Complete ===\n');
-console.log('Error boundaries provide robust error handling for your components!');
-console.log('Use them to prevent entire application crashes from single component failures.');
+console.log(
+  'Error boundaries provide robust error handling for your components!'
+);
+console.log(
+  'Use them to prevent entire application crashes from single component failures.'
+);

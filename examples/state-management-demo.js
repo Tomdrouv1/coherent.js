@@ -14,7 +14,7 @@ import {
   validators,
   provideContext,
   useContext,
-  runWithContext
+  runWithContext,
 } from '@coherent.js/state';
 
 // =============================================================================
@@ -32,7 +32,7 @@ count.watch((newValue, oldValue) => {
   console.log(`Doubled is now: ${doubled.value}`);
 });
 
-count.value = 5;  // Logs: "Count changed from 0 to 5", "Doubled is now: 10"
+count.value = 5; // Logs: "Count changed from 0 to 5", "Doubled is now: 10"
 count.value = 10; // Logs: "Count changed from 5 to 10", "Doubled is now: 20"
 
 // =============================================================================
@@ -44,7 +44,7 @@ console.log('\n📦 Example 2: Reactive State Object');
 const appState = createReactiveState({
   user: { name: 'Guest', isLoggedIn: false },
   theme: 'dark',
-  notifications: []
+  notifications: [],
 });
 
 // Watch specific paths
@@ -105,14 +105,18 @@ const userForm = createValidatedState(
     validators: {
       email: validators.email,
       age: validators.range(18, 120),
-      username: validators.length(3, 30)
-    }
+      username: validators.length(3, 30),
+    },
   }
 );
 
 // Valid updates
 try {
-  userForm.setState({ email: 'user@example.com', age: 25, username: 'johndoe' });
+  userForm.setState({
+    email: 'user@example.com',
+    age: 25,
+    username: 'johndoe',
+  });
   console.log('✓ All validations passed!');
   console.log('Form data:', userForm.getState());
 } catch (error) {
@@ -123,7 +127,10 @@ try {
 try {
   userForm.setState({ email: 'invalid-email' });
 } catch (error) {
-  console.log('✗ Rejected:', error.validationErrors.map((e) => `${e.path}: ${e.message}`).join(', '));
+  console.log(
+    '✗ Rejected:',
+    error.validationErrors.map((e) => `${e.path}: ${e.message}`).join(', ')
+  );
   console.log('  email is still:', userForm.getState('email'));
 }
 
@@ -139,7 +146,7 @@ function handleRequest(userId) {
     const requestState = {
       userId,
       timestamp: new Date().toISOString(),
-      theme: 'dark'
+      theme: 'dark',
     };
 
     // Provide context for this request (visible to nothing outside it)
@@ -162,16 +169,16 @@ function UserDashboard() {
       className: `dashboard theme-${requestState.theme}`,
       children: [
         {
-          h1: { text: 'User Dashboard' }
+          h1: { text: 'User Dashboard' },
         },
         {
-          p: { text: `User ID: ${requestState.userId}` }
+          p: { text: `User ID: ${requestState.userId}` },
         },
         {
-          p: { text: `Request time: ${requestState.timestamp}` }
-        }
-      ]
-    }
+          p: { text: `Request time: ${requestState.timestamp}` },
+        },
+      ],
+    },
   };
 }
 
@@ -190,9 +197,12 @@ console.log('\n📦 Example 6: Complete Application State');
 const shopState = createReactiveState({
   user: { id: null, name: '', email: '' },
   settings: { theme: 'dark', notifications: true },
-  cart: []
+  cart: [],
 });
-const savedSettings = withLocalStorage(shopState.get('settings'), 'app-settings');
+const savedSettings = withLocalStorage(
+  shopState.get('settings'),
+  'app-settings'
+);
 
 // Watch whole keys or nested paths
 shopState.watch('user', (newUser) => {
@@ -215,7 +225,7 @@ try {
   shopState.set('settings.theme', 'light');
   shopState.set('cart', [
     { id: 1, name: 'Product A', price: 29.99 },
-    { id: 2, name: 'Product B', price: 39.99 }
+    { id: 2, name: 'Product B', price: 39.99 },
   ]);
 
   console.log('\n✓ All state updated successfully!');
@@ -241,10 +251,10 @@ function CounterComponent() {
       className: 'counter',
       children: [
         {
-          h2: { text: 'Counter Example' }
+          h2: { text: 'Counter Example' },
         },
         {
-          p: { text: `Count: ${counter.value}` }
+          p: { text: `Count: ${counter.value}` },
         },
         {
           button: {
@@ -252,11 +262,11 @@ function CounterComponent() {
             onclick: () => {
               counter.value++;
               console.log(`Counter incremented to: ${counter.value}`);
-            }
-          }
-        }
-      ]
-    }
+            },
+          },
+        },
+      ],
+    },
   };
 }
 

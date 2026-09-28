@@ -19,7 +19,7 @@ import {
   createListState,
   createModalState,
   createRouterState,
-  observable
+  observable,
 } from '../src/index.js';
 
 describe('state pattern classes', () => {
@@ -27,7 +27,7 @@ describe('state pattern classes', () => {
     ['FormState', FormState],
     ['ListState', ListState],
     ['ModalState', ModalState],
-    ['RouterState', RouterState]
+    ['RouterState', RouterState],
   ])('exports %s', (_name, Klass) => {
     expect(typeof Klass).toBe('function');
   });
@@ -36,7 +36,7 @@ describe('state pattern classes', () => {
     ['createFormState', createFormState, FormState],
     ['createListState', createListState, ListState],
     ['createModalState', createModalState, ModalState],
-    ['createRouterState', createRouterState, RouterState]
+    ['createRouterState', createRouterState, RouterState],
   ])('%s builds an instance of the exported class', (_name, factory, Klass) => {
     expect(factory()).toBeInstanceOf(Klass);
   });

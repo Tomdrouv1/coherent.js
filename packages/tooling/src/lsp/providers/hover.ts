@@ -54,7 +54,10 @@ export function registerHoverProvider(
 
         case 'attribute-name':
           if (context.element && context.attribute) {
-            return createAttributeHover(context.element.tagName, context.attribute.name);
+            return createAttributeHover(
+              context.element.tagName,
+              context.attribute.name
+            );
           }
           break;
 
@@ -103,13 +106,27 @@ function createElementHover(tagName: string): Hover {
   markdown += '```\n\n';
 
   // Common attributes
-  const elementSpecificAttrs = attrs.filter(a =>
-    !['id', 'className', 'class', 'style', 'title', 'hidden', 'tabIndex',
-      'text', 'html', 'children', 'key'].includes(a.name) &&
-    !a.name.startsWith('on') &&
-    !a.name.startsWith('aria-') &&
-    !a.name.startsWith('data-')
-  ).slice(0, 8);
+  const elementSpecificAttrs = attrs
+    .filter(
+      (a) =>
+        ![
+          'id',
+          'className',
+          'class',
+          'style',
+          'title',
+          'hidden',
+          'tabIndex',
+          'text',
+          'html',
+          'children',
+          'key',
+        ].includes(a.name) &&
+        !a.name.startsWith('on') &&
+        !a.name.startsWith('aria-') &&
+        !a.name.startsWith('data-')
+    )
+    .slice(0, 8);
 
   if (elementSpecificAttrs.length > 0) {
     markdown += `### Element-Specific Attributes\n\n`;
@@ -156,7 +173,10 @@ function createAttributeHover(tagName: string, attributeName: string): Hover {
   }
 
   // Event handler information
-  if (attributeName.startsWith('on') && attributeName[2] === attributeName[2].toUpperCase()) {
+  if (
+    attributeName.startsWith('on') &&
+    attributeName[2] === attributeName[2].toUpperCase()
+  ) {
     const eventType = getEventType(attributeName);
     if (eventType) {
       markdown += `\n**Event type:** \`${eventType}\`\n`;
@@ -174,15 +194,20 @@ function createAttributeHover(tagName: string, attributeName: string): Hover {
 /**
  * Get example usage for common attributes.
  */
-function getAttributeExamples(attributeName: string, type?: string): string | null {
+function getAttributeExamples(
+  attributeName: string,
+  type?: string
+): string | null {
   const examples: Record<string, string> = {
     className: "className: 'my-class another-class'",
     id: "id: 'unique-id'",
     style: "style: { color: 'red', fontSize: '16px' }",
     onClick: "onClick: (event) => {\n  console.log('Clicked!', event);\n}",
-    onChange: "onChange: (event) => {\n  const value = event.target.value;\n}",
-    onSubmit: "onSubmit: (event) => {\n  event.preventDefault();\n  // Handle form submission\n}",
-    children: "children: [\n  { span: { text: 'Child 1' } },\n  { span: { text: 'Child 2' } }\n]",
+    onChange: 'onChange: (event) => {\n  const value = event.target.value;\n}',
+    onSubmit:
+      'onSubmit: (event) => {\n  event.preventDefault();\n  // Handle form submission\n}',
+    children:
+      "children: [\n  { span: { text: 'Child 1' } },\n  { span: { text: 'Child 2' } }\n]",
     text: "text: 'Text content (escaped)'",
     html: "html: '<strong>Raw HTML</strong>'  // Use with caution!",
     key: "key: 'unique-item-key'",
@@ -192,9 +217,9 @@ function getAttributeExamples(attributeName: string, type?: string): string | nu
     type: "type: 'submit'  // or 'button', 'text', etc.",
     value: "value: 'input value'",
     placeholder: "placeholder: 'Enter text...'",
-    disabled: "disabled: true",
-    checked: "checked: true",
-    required: "required: true",
+    disabled: 'disabled: true',
+    checked: 'checked: true',
+    required: 'required: true',
     name: "name: 'field-name'",
   };
 

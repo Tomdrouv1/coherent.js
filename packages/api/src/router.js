@@ -49,9 +49,14 @@ function bodyError(message, statusCode, code) {
  * @returns {Promise<Object>} Parsed body; rejects with `statusCode` 413/400,
  *   or with `code: 'ECONNABORTED'` when the client aborted
  */
-function parseBody(req, maxSize = 1024 * 1024) { // 1MB limit
+function parseBody(req, maxSize = 1024 * 1024) {
+  // 1MB limit
   return new Promise((resolve, reject) => {
-    if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'DELETE') {
+    if (
+      req.method === 'GET' ||
+      req.method === 'HEAD' ||
+      req.method === 'DELETE'
+    ) {
       resolve({});
       return;
     }
@@ -154,7 +159,8 @@ function stripUnsafeKeys(value) {
     // Assigning `__proto__` on an object literal reassigns its prototype;
     // `constructor` and `prototype` are dropped so that a downstream deep
     // merge cannot be walked into Object.prototype either.
-    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype')
+      continue;
     cleaned[key] = stripUnsafeKeys(child);
   }
   return cleaned;
@@ -182,7 +188,9 @@ function responseStarted(res) {
  */
 function errorStatus(error) {
   const status = error?.statusCode;
-  return Number.isInteger(status) && status >= 400 && status <= 599 ? status : 500;
+  return Number.isInteger(status) && status >= 400 && status <= 599
+    ? status
+    : 500;
 }
 
 /**
@@ -255,7 +263,12 @@ function sendError(req, res, error, exposeErrors) {
 
   const body = { error: message };
   const details = error?.details;
-  if (status < 500 && details && typeof details === 'object' && Object.keys(details).length > 0) {
+  if (
+    status < 500 &&
+    details &&
+    typeof details === 'object' &&
+    Object.keys(details).length > 0
+  ) {
     body.details = details;
   }
   res.writeHead(status, { 'Content-Type': 'application/json' });
@@ -325,7 +338,12 @@ async function runMiddleware(fn, req, res, expectsNext = fn.length >= 3) {
 
   const result = await fn(req, res, next);
 
-  if (expectsNext && !nextCalled && result === undefined && !responseStarted(res)) {
+  if (
+    expectsNext &&
+    !nextCalled &&
+    result === undefined &&
+    !responseStarted(res)
+  ) {
     await waitForNextOrResponse(res, nextSignal);
     if (!nextCalled) return { result: undefined, proceed: false };
   }
@@ -422,8 +440,14 @@ class RateLimiter {
  * @returns {string} Client key
  */
 function clientAddress(req, trustProxy) {
-  const socketAddress = req.socket?.remoteAddress ?? req.connection?.remoteAddress ?? 'unknown';
-  const hops = trustProxy === true ? 1 : Number.isInteger(trustProxy) && trustProxy > 0 ? trustProxy : 0;
+  const socketAddress =
+    req.socket?.remoteAddress ?? req.connection?.remoteAddress ?? 'unknown';
+  const hops =
+    trustProxy === true
+      ? 1
+      : Number.isInteger(trustProxy) && trustProxy > 0
+        ? trustProxy
+        : 0;
   const header = req.headers?.['x-forwarded-for'];
 
   if (hops === 0) {
@@ -484,12 +508,19 @@ function warnOnce(message) {
  * @returns {{origins: string[], allowCredentials: boolean, explicit: boolean}}
  */
 function resolveCorsPolicy(corsOrigin) {
-  const fallback = { origins: [DEFAULT_CORS_ORIGIN], allowCredentials: false, explicit: false };
+  const fallback = {
+    origins: [DEFAULT_CORS_ORIGIN],
+    allowCredentials: false,
+    explicit: false,
+  };
   if (corsOrigin === undefined || corsOrigin === null) return fallback;
 
   const origins = Array.isArray(corsOrigin) ? corsOrigin : [corsOrigin];
 
-  if (origins.length === 0 || origins.some(origin => typeof origin !== 'string' || origin === '')) {
+  if (
+    origins.length === 0 ||
+    origins.some((origin) => typeof origin !== 'string' || origin === '')
+  ) {
     warnOnce(
       'corsOrigin must be a non-empty string or an array of them. ' +
         `Ignoring ${JSON.stringify(corsOrigin)} and serving ${DEFAULT_CORS_ORIGIN} without credentials.`
@@ -499,7 +530,9 @@ function resolveCorsPolicy(corsOrigin) {
 
   if (origins.includes('*')) {
     if (origins.length > 1) {
-      warnOnce("corsOrigin '*' allows every origin; the others listed alongside it have no effect.");
+      warnOnce(
+        "corsOrigin '*' allows every origin; the others listed alongside it have no effect."
+      );
     }
     warnOnce(
       "corsOrigin '*' cannot carry credentials, so Access-Control-Allow-Credentials is not sent. " +
@@ -525,9 +558,11 @@ function addVary(res, field) {
   }
   const fields = String(current)
     .split(',')
-    .map(part => part.trim())
+    .map((part) => part.trim())
     .filter(Boolean);
-  if (!fields.some(existing => existing.toLowerCase() === field.toLowerCase())) {
+  if (
+    !fields.some((existing) => existing.toLowerCase() === field.toLowerCase())
+  ) {
     res.setHeader('Vary', [...fields, field].join(', '));
   }
 }
@@ -566,7 +601,10 @@ function applyCorsHeaders(req, res, policy) {
   }
 
   res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.setHeader(
+    'Access-Control-Allow-Methods',
+    'GET, POST, PUT, DELETE, PATCH, OPTIONS'
+  );
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (allowCredentials) {
     res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -583,8 +621,14 @@ function addSecurityHeaders(res) {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'");
+  res.setHeader(
+    'Strict-Transport-Security',
+    'max-age=31536000; includeSubDomains'
+  );
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+  );
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 }
 
@@ -599,7 +643,8 @@ function addSecurityHeaders(res) {
  *
  * @private
  */
-const ROUTE_TOKEN = /:([A-Za-z_$][\w$]*)(?:\(((?:[^()\\]|\\.)*)\))?(\?)?|\*\*|\*/g;
+const ROUTE_TOKEN =
+  /:([A-Za-z_$][\w$]*)(?:\(((?:[^()\\]|\\.)*)\))?(\?)?|\*\*|\*/g;
 
 /** @private */
 function escapeRegex(text) {
@@ -654,7 +699,8 @@ function compilePattern(pattern) {
       group = '([^/]+)';
     } else {
       paramNames.push(name);
-      const body = constraint === undefined || constraint === '' ? '[^/]+' : constraint;
+      const body =
+        constraint === undefined || constraint === '' ? '[^/]+' : constraint;
       if (optional && literal.endsWith('/')) {
         // `/opt/:id?` matches `/opt` as well as `/opt/5`.
         literal = literal.slice(0, -1);
@@ -719,12 +765,12 @@ function extractParams(pattern, path) {
   let compiled = extractCache.get(pattern);
   if (!compiled) {
     compiled = compilePattern(pattern);
-    if (extractCache.size >= 1000) extractCache.delete(extractCache.keys().next().value);
+    if (extractCache.size >= 1000)
+      extractCache.delete(extractCache.keys().next().value);
     extractCache.set(pattern, compiled);
   }
   return matchCompiled(compiled, path);
 }
-
 
 /**
  * Transforms nested route objects into registered API routes
@@ -739,7 +785,10 @@ function processRoutes(routeObj, router, basePath = '') {
   Object.entries(routeObj).forEach(([key, config]) => {
     // `GET: (req) => ({...})` is shorthand for `GET: { handler }`. It used to
     // be skipped silently, so the route was never registered.
-    if (typeof config === 'function' && HTTP_METHODS.includes(key.toUpperCase())) {
+    if (
+      typeof config === 'function' &&
+      HTTP_METHODS.includes(key.toUpperCase())
+    ) {
       registerRoute(key.toUpperCase(), { handler: config }, router, basePath);
       return;
     }
@@ -783,7 +832,7 @@ function registerRoute(method, config, router, path) {
     middleware,
     errorHandling = true,
     path: customPath,
-    name
+    name,
   } = config;
 
   const routePath = customPath || path || '/';
@@ -814,39 +863,46 @@ function registerRoute(method, config, router, path) {
   // final handler never waits; it answers by returning or by writing.
   const steps = chain.map((fn, i) => ({
     fn: errorHandling ? withErrorHandling(fn) : fn,
-    expectsNext: i < chain.length - 1 && fn.length >= 3
+    expectsNext: i < chain.length - 1 && fn.length >= 3,
   }));
 
   // Register route with name option
-  router.addRoute(method, routePath, async (req, res) => {
-    try {
-      // Execute middleware and handler chain
-      let result = null;
-      for (const { fn, expectsNext } of steps) {
-        const outcome = await runMiddleware(fn, req, res, expectsNext);
-        result = outcome.result;
-        // A middleware that wrote its own response (401, 403, 400...) has
-        // rejected the request: nothing after it may run.
-        if (!outcome.proceed) return;
-        if (result && typeof result === 'object') {
-          break;
+  router.addRoute(
+    method,
+    routePath,
+    async (req, res) => {
+      try {
+        // Execute middleware and handler chain
+        let result = null;
+        for (const { fn, expectsNext } of steps) {
+          const outcome = await runMiddleware(fn, req, res, expectsNext);
+          result = outcome.result;
+          // A middleware that wrote its own response (401, 403, 400...) has
+          // rejected the request: nothing after it may run.
+          if (!outcome.proceed) return;
+          if (result && typeof result === 'object') {
+            break;
+          }
         }
-      }
 
-      if (responseStarted(res)) return;
+        if (responseStarted(res)) return;
 
-      if (result && typeof result === 'object') {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(result));
-      } else {
-        res.writeHead(204);
-        res.end();
+        if (result && typeof result === 'object') {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(result));
+        } else {
+          res.writeHead(204);
+          res.end();
+        }
+      } catch (_error) {
+        const expose = requestErrorExposure.has(req)
+          ? requestErrorExposure.get(req)
+          : router.exposeErrors;
+        sendError(req, res, _error, expose);
       }
-    } catch (_error) {
-      const expose = requestErrorExposure.has(req) ? requestErrorExposure.get(req) : router.exposeErrors;
-      sendError(req, res, _error, expose);
-    }
-  }, { name });
+    },
+    { name }
+  );
 }
 
 /**
@@ -947,10 +1003,12 @@ function isStaticRoute(pattern) {
   // - Wildcards (* or **)
   // - Regex groups (parentheses)
   // - Optional parameters (?)
-  return !pattern.includes(':') &&
-         !pattern.includes('*') &&
-         !pattern.includes('(') &&
-         !pattern.includes('?');
+  return (
+    !pattern.includes(':') &&
+    !pattern.includes('*') &&
+    !pattern.includes('(') &&
+    !pattern.includes('?')
+  );
 }
 
 /**
@@ -1025,7 +1083,7 @@ class SimpleRouter {
         versionRequests: new Map(), // Track requests per version
         contentTypeRequests: new Map(), // Track requests per content type
         wsConnections: 0, // Track WebSocket connections
-        wsMessages: 0 // Track WebSocket messages
+        wsMessages: 0, // Track WebSocket messages
       };
     }
 
@@ -1059,12 +1117,23 @@ class SimpleRouter {
     // like an outermost group() and router.use(). Both were declared in the
     // router's types but ignored, so a config-level auth middleware silently
     // protected nothing.
-    if (typeof options.prefix === 'string' && options.prefix !== '' && options.prefix !== '/') {
-      const prefix = options.prefix.startsWith('/') ? options.prefix : `/${options.prefix}`;
-      this.routeGroups.push({ prefix: trimTrailingSlashes(prefix), middleware: [] });
+    if (
+      typeof options.prefix === 'string' &&
+      options.prefix !== '' &&
+      options.prefix !== '/'
+    ) {
+      const prefix = options.prefix.startsWith('/')
+        ? options.prefix
+        : `/${options.prefix}`;
+      this.routeGroups.push({
+        prefix: trimTrailingSlashes(prefix),
+        middleware: [],
+      });
     }
     if (options.middleware) {
-      const configured = Array.isArray(options.middleware) ? options.middleware : [options.middleware];
+      const configured = Array.isArray(options.middleware)
+        ? options.middleware
+        : [options.middleware];
       configured.forEach((middleware) => this.use(middleware));
     }
   }
@@ -1093,7 +1162,11 @@ class SimpleRouter {
     // Combine group middleware with route middleware
     const groupMiddleware = this.getCurrentGroupMiddleware();
     const routeMiddleware = options.middleware || [];
-    const allMiddleware = [...this.globalMiddleware, ...groupMiddleware, ...routeMiddleware];
+    const allMiddleware = [
+      ...this.globalMiddleware,
+      ...groupMiddleware,
+      ...routeMiddleware,
+    ];
 
     const route = {
       method: method.toUpperCase(),
@@ -1101,7 +1174,7 @@ class SimpleRouter {
       handler,
       middleware: allMiddleware,
       name: options.name,
-      version: options.version || this.defaultVersion
+      version: options.version || this.defaultVersion,
     };
 
     // Compile route pattern if compilation is enabled
@@ -1130,7 +1203,11 @@ class SimpleRouter {
 
     // Store named route for URL generation
     if (options.name) {
-      this.namedRoutes.set(options.name, { method: route.method, path: fullPath, version: route.version });
+      this.namedRoutes.set(options.name, {
+        method: route.method,
+        path: fullPath,
+        version: route.version,
+      });
     }
   }
 
@@ -1155,19 +1232,27 @@ class SimpleRouter {
    */
   addContentNegotiatedRoute(method, path, handlers, options = {}) {
     const negotiationHandler = async (req, res) => {
-      const acceptedType = this.negotiateContentType(req, Object.keys(handlers));
+      const acceptedType = this.negotiateContentType(
+        req,
+        Object.keys(handlers)
+      );
 
       if (this.enableMetrics) {
-        this.metrics.contentTypeRequests.set(acceptedType, (this.metrics.contentTypeRequests.get(acceptedType) || 0) + 1);
+        this.metrics.contentTypeRequests.set(
+          acceptedType,
+          (this.metrics.contentTypeRequests.get(acceptedType) || 0) + 1
+        );
       }
 
       const handler = handlers[acceptedType];
       if (!handler) {
         res.writeHead(406, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
-          error: 'Not Acceptable',
-          supportedTypes: Object.keys(handlers)
-        }));
+        res.end(
+          JSON.stringify({
+            error: 'Not Acceptable',
+            supportedTypes: Object.keys(handlers),
+          })
+        );
         return;
       }
 
@@ -1178,10 +1263,17 @@ class SimpleRouter {
 
         if (acceptedType === 'application/json') {
           res.end(JSON.stringify(result));
-        } else if (acceptedType === 'text/xml' || acceptedType === 'application/xml') {
+        } else if (
+          acceptedType === 'text/xml' ||
+          acceptedType === 'application/xml'
+        ) {
           res.end(this.objectToXml(result));
         } else if (acceptedType === 'text/html') {
-          res.end(typeof result === 'string' ? result : `<pre>${JSON.stringify(result, null, 2)}</pre>`);
+          res.end(
+            typeof result === 'string'
+              ? result
+              : `<pre>${JSON.stringify(result, null, 2)}</pre>`
+          );
         } else if (acceptedType === 'text/plain') {
           res.end(typeof result === 'string' ? result : JSON.stringify(result));
         } else {
@@ -1206,9 +1298,9 @@ class SimpleRouter {
     // Parse Accept header and find best match
     const acceptedTypes = acceptHeader
       .split(',')
-      .map(type => {
+      .map((type) => {
         const [mediaType, ...params] = type.trim().split(';');
-        const qValue = params.find(p => p.trim().startsWith('q='));
+        const qValue = params.find((p) => p.trim().startsWith('q='));
         const quality = qValue ? parseFloat(qValue.split('=')[1]) : 1.0;
         return { type: mediaType.trim(), quality };
       })
@@ -1224,9 +1316,11 @@ class SimpleRouter {
       for (const supported of supportedTypes) {
         const [supportedMain, supportedSub] = supported.split('/');
 
-        if (accepted.type === supported ||
-            (mainType === supportedMain && subType === '*') ||
-            (mainType === '*' && subType === supportedSub)) {
+        if (
+          accepted.type === supported ||
+          (mainType === supportedMain && subType === '*') ||
+          (mainType === '*' && subType === supportedSub)
+        ) {
           return supported;
         }
       }
@@ -1243,12 +1337,13 @@ class SimpleRouter {
    * @private
    */
   objectToXml(obj, rootName = 'root') {
-    const xmlEscape = (str) => String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
+    const xmlEscape = (str) =>
+      String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 
     const toXml = (obj, name) => {
       if (obj === null || obj === undefined) {
@@ -1260,7 +1355,7 @@ class SimpleRouter {
       }
 
       if (Array.isArray(obj)) {
-        return obj.map(item => toXml(item, 'item')).join('');
+        return obj.map((item) => toXml(item, 'item')).join('');
       }
 
       const content = Object.entries(obj)
@@ -1283,7 +1378,9 @@ class SimpleRouter {
    */
   addWebSocketRoute(path, handler, options = {}) {
     if (!this.enableWebSockets) {
-      throw new Error('WebSocket routing is disabled. Enable with { enableWebSockets: true }');
+      throw new Error(
+        'WebSocket routing is disabled. Enable with { enableWebSockets: true }'
+      );
     }
 
     const prefix = this.getCurrentPrefix();
@@ -1295,13 +1392,17 @@ class SimpleRouter {
       name: options.name,
       version: options.version || this.defaultVersion,
       allowedOrigins: options.allowedOrigins,
-      compiled: this.enableCompilation ? this.compileRoute(fullPath) : null
+      compiled: this.enableCompilation ? this.compileRoute(fullPath) : null,
     };
 
     this.wsRoutes.push(wsRoute);
 
     if (options.name) {
-      this.namedRoutes.set(options.name, { method: 'WS', path: fullPath, version: wsRoute.version });
+      this.namedRoutes.set(options.name, {
+        method: 'WS',
+        path: fullPath,
+        version: wsRoute.version,
+      });
     }
   }
 
@@ -1398,7 +1499,6 @@ class SimpleRouter {
    * @private
    */
   createWebSocketConnection(request, socket, head, matchedRoute) {
-
     // WebSocket handshake
     const key = request.headers['sec-websocket-key'];
     if (!key) {
@@ -1407,7 +1507,7 @@ class SimpleRouter {
     }
 
     const acceptKey = createHash('sha1')
-      .update(`${key  }258EAFA5-E914-47DA-95CA-C5AB0DC85B11`)
+      .update(`${key}258EAFA5-E914-47DA-95CA-C5AB0DC85B11`)
       .digest('base64');
 
     const responseHeaders = [
@@ -1415,7 +1515,8 @@ class SimpleRouter {
       'Upgrade: websocket',
       'Connection: Upgrade',
       `Sec-WebSocket-Accept: ${acceptKey}`,
-      '', ''
+      '',
+      '',
     ].join('\r\n');
 
     socket.write(responseHeaders);
@@ -1562,7 +1663,7 @@ class SimpleRouter {
           pending = pending.subarray(frame.size);
           router.handleWebSocketFrame(ws, frame, state);
         }
-      }
+      },
     };
 
     ws.router = this;
@@ -1586,7 +1687,10 @@ class SimpleRouter {
 
     // Handle socket errors
     socket.on('error', (err) => {
-      console.error('WebSocket socket error (connection likely closed):', err.code);
+      console.error(
+        'WebSocket socket error (connection likely closed):',
+        err.code
+      );
       // Don't re-throw the error, just log it
     });
 
@@ -1629,7 +1733,11 @@ class SimpleRouter {
         pendingMessage.parts.push(payload);
         if (fin) {
           state.fragments = null;
-          if (pendingMessage.opcode === 0x1) this.deliverWebSocketMessage(ws, Buffer.concat(pendingMessage.parts));
+          if (pendingMessage.opcode === 0x1)
+            this.deliverWebSocketMessage(
+              ws,
+              Buffer.concat(pendingMessage.parts)
+            );
         }
         return;
       }
@@ -1697,7 +1805,7 @@ class SimpleRouter {
       id,
       path: ws.path,
       params: ws.params,
-      readyState: ws.readyState
+      readyState: ws.readyState,
     }));
   }
 
@@ -1865,7 +1973,8 @@ class SimpleRouter {
     // Header condition
     if (header) {
       for (const [key, value] of Object.entries(header)) {
-        if (!this.matchCondition(req.headers[key.toLowerCase()], value)) return false;
+        if (!this.matchCondition(req.headers[key.toLowerCase()], value))
+          return false;
       }
     }
 
@@ -1925,7 +2034,7 @@ class SimpleRouter {
   group(prefix, middleware, callback) {
     const group = {
       prefix: prefix.startsWith('/') ? prefix : `/${prefix}`,
-      middleware: Array.isArray(middleware) ? middleware : [middleware]
+      middleware: Array.isArray(middleware) ? middleware : [middleware],
     };
 
     this.routeGroups.push(group);
@@ -1940,7 +2049,7 @@ class SimpleRouter {
    * @private
    */
   getCurrentPrefix() {
-    return this.routeGroups.map(g => g.prefix).join('');
+    return this.routeGroups.map((g) => g.prefix).join('');
   }
 
   /**
@@ -1948,7 +2057,7 @@ class SimpleRouter {
    * @private
    */
   getCurrentGroupMiddleware() {
-    return this.routeGroups.flatMap(g => g.middleware);
+    return this.routeGroups.flatMap((g) => g.middleware);
   }
 
   /**
@@ -2000,18 +2109,28 @@ class SimpleRouter {
    */
   getMetrics() {
     if (!this.enableMetrics) {
-      throw new Error('Metrics collection is disabled. Enable with { enableMetrics: true }');
+      throw new Error(
+        'Metrics collection is disabled. Enable with { enableMetrics: true }'
+      );
     }
 
-    const avgResponseTime = this.metrics.responseTime.length > 0
-      ? this.metrics.responseTime.reduce((a, b) => a + b, 0) / this.metrics.responseTime.length
-      : 0;
+    const avgResponseTime =
+      this.metrics.responseTime.length > 0
+        ? this.metrics.responseTime.reduce((a, b) => a + b, 0) /
+          this.metrics.responseTime.length
+        : 0;
 
     return {
       ...this.metrics,
       averageResponseTime: Math.round(avgResponseTime * 100) / 100,
-      cacheHitRate: this.metrics.requests > 0 ? `${(this.metrics.cacheHits / this.metrics.requests * 100).toFixed(2)  }%` : '0%',
-      compilationHitRate: this.metrics.requests > 0 ? `${(this.metrics.compilationHits / this.metrics.requests * 100).toFixed(2)  }%` : '0%'
+      cacheHitRate:
+        this.metrics.requests > 0
+          ? `${((this.metrics.cacheHits / this.metrics.requests) * 100).toFixed(2)}%`
+          : '0%',
+      compilationHitRate:
+        this.metrics.requests > 0
+          ? `${((this.metrics.compilationHits / this.metrics.requests) * 100).toFixed(2)}%`
+          : '0%',
     };
   }
 
@@ -2021,7 +2140,7 @@ class SimpleRouter {
    */
   getCompilationStats() {
     const totalRoutes = this.routes.length;
-    const compiledRoutes = this.routes.filter(r => r.compiled).length;
+    const compiledRoutes = this.routes.filter((r) => r.compiled).length;
     const compilationCacheSize = this.routeCompilationCache.size;
 
     return {
@@ -2029,7 +2148,9 @@ class SimpleRouter {
       compiledRoutes,
       compilationEnabled: this.enableCompilation,
       compilationCacheSize,
-      compilationCacheHits: this.enableMetrics ? this.metrics.compilationHits : 'N/A (metrics disabled)'
+      compilationCacheHits: this.enableMetrics
+        ? this.metrics.compilationHits
+        : 'N/A (metrics disabled)',
     };
   }
 
@@ -2052,7 +2173,7 @@ class SimpleRouter {
    * @returns {Array} Array of route information objects
    */
   getRoutes() {
-    return this.routes.map(route => ({
+    return this.routes.map((route) => ({
       method: route.method,
       path: route.path,
       name: route.name || null,
@@ -2060,7 +2181,7 @@ class SimpleRouter {
       middlewareCount: route.middleware ? route.middleware.length : 0,
       compiled: !!route.compiled,
       compiledPattern: route.compiled ? route.compiled.regex.source : null,
-      paramNames: route.compiled ? route.compiled.paramNames : null
+      paramNames: route.compiled ? route.compiled.paramNames : null,
     }));
   }
 
@@ -2072,18 +2193,24 @@ class SimpleRouter {
   findRoutes(criteria = {}) {
     const { method, path, name, hasMiddleware } = criteria;
 
-    return this.routes.filter(route => {
-      if (method && route.method !== method.toUpperCase()) return false;
-      if (path && !route.path.includes(path)) return false;
-      if (name && route.name !== name) return false;
-      if (hasMiddleware !== undefined && !!route.middleware?.length !== hasMiddleware) return false;
-      return true;
-    }).map(route => ({
-      method: route.method,
-      path: route.path,
-      name: route.name || null,
-      middlewareCount: route.middleware ? route.middleware.length : 0
-    }));
+    return this.routes
+      .filter((route) => {
+        if (method && route.method !== method.toUpperCase()) return false;
+        if (path && !route.path.includes(path)) return false;
+        if (name && route.name !== name) return false;
+        if (
+          hasMiddleware !== undefined &&
+          !!route.middleware?.length !== hasMiddleware
+        )
+          return false;
+        return true;
+      })
+      .map((route) => ({
+        method: route.method,
+        path: route.path,
+        name: route.name || null,
+        middlewareCount: route.middleware ? route.middleware.length : 0,
+      }));
   }
 
   /**
@@ -2113,10 +2240,10 @@ class SimpleRouter {
               method: route.method,
               path: route.path,
               name: route.name || null,
-              middlewareCount: route.middleware ? route.middleware.length : 0
+              middlewareCount: route.middleware ? route.middleware.length : 0,
             },
             params,
-            compiledUsed: this.enableCompilation && !!route.compiled
+            compiledUsed: this.enableCompilation && !!route.compiled,
           };
         }
       }
@@ -2134,7 +2261,7 @@ class SimpleRouter {
     const namedRoutes = {};
 
     // Group routes by method
-    this.routes.forEach(route => {
+    this.routes.forEach((route) => {
       if (!routesByMethod[route.method]) {
         routesByMethod[route.method] = [];
       }
@@ -2142,7 +2269,7 @@ class SimpleRouter {
         path: route.path,
         name: route.name,
         middlewareCount: route.middleware ? route.middleware.length : 0,
-        compiled: !!route.compiled
+        compiled: !!route.compiled,
       });
     });
 
@@ -2161,7 +2288,7 @@ class SimpleRouter {
       maxCacheSize: this.maxCacheSize,
       compilationEnabled: this.enableCompilation,
       compilationCacheSize: this.routeCompilationCache.size,
-      metricsEnabled: this.enableMetrics
+      metricsEnabled: this.enableMetrics,
     };
   }
 
@@ -2197,33 +2324,40 @@ class SimpleRouter {
       const staticRoute = this.staticRoutes.get(`${method}:${pathname}`);
 
       // Skip route if versioning is enabled and versions don't match
-      if (staticRoute && (!this.enableVersioning || staticRoute.version === requestVersion)) {
+      if (
+        staticRoute &&
+        (!this.enableVersioning || staticRoute.version === requestVersion)
+      ) {
         // Track static route performance
         if (this.enableRouteMetrics && this.enableMetrics) {
-          this.metrics.staticRouteMatches = (this.metrics.staticRouteMatches || 0) + 1;
+          this.metrics.staticRouteMatches =
+            (this.metrics.staticRouteMatches || 0) + 1;
         }
         return { route: staticRoute, params: {} }; // Static routes have no parameters
       }
     }
 
     // Fallback to dynamic route matching if no static match found
-    const routesToSearch = this.enableVersioning && this.versionedRoutes.has(requestVersion)
-      ? this.versionedRoutes.get(requestVersion)
-      : this.routes;
+    const routesToSearch =
+      this.enableVersioning && this.versionedRoutes.has(requestVersion)
+        ? this.versionedRoutes.get(requestVersion)
+        : this.routes;
 
     for (const route of routesToSearch) {
       if (route.method !== method) continue;
       // Skip route if versioning is enabled and versions don't match
       if (this.enableVersioning && route.version !== requestVersion) continue;
 
-      const params = this.enableCompilation && route.compiled
-        ? this.matchCompiledRoute(route.compiled, pathname)
-        : extractParams(route.path, pathname);
+      const params =
+        this.enableCompilation && route.compiled
+          ? this.matchCompiledRoute(route.compiled, pathname)
+          : extractParams(route.path, pathname);
 
       if (params !== null) {
         // Track dynamic route performance
         if (this.enableRouteMetrics && this.enableMetrics) {
-          this.metrics.dynamicRouteMatches = (this.metrics.dynamicRouteMatches || 0) + 1;
+          this.metrics.dynamicRouteMatches =
+            (this.metrics.dynamicRouteMatches || 0) + 1;
         }
 
         // Cache the match if under size limit
@@ -2265,7 +2399,7 @@ class SimpleRouter {
     const {
       corsOrigin,
       rateLimit = { windowMs: 60000, maxRequests: 100 },
-      trustProxy = this.trustProxy
+      trustProxy = this.trustProxy,
     } = options;
 
     // Add security headers conditionally for performance optimization
@@ -2284,12 +2418,17 @@ class SimpleRouter {
     }
 
     // Get request version if versioning is enabled
-    const requestVersion = this.enableVersioning ? this.getRequestVersion(req) : null;
+    const requestVersion = this.enableVersioning
+      ? this.getRequestVersion(req)
+      : null;
 
     // Answer CORS preflights with 204, unless the application registered an
     // OPTIONS route for this path: router.options() handlers used to be
     // unreachable.
-    if (req.method === 'OPTIONS' && !this.findRoute('OPTIONS', pathname, requestVersion)) {
+    if (
+      req.method === 'OPTIONS' &&
+      !this.findRoute('OPTIONS', pathname, requestVersion)
+    ) {
       res.writeHead(204);
       res.end();
       return;
@@ -2297,14 +2436,21 @@ class SimpleRouter {
 
     // Rate limiting (`rateLimit: false` turns it off)
     if (rateLimit) {
-      const key = typeof rateLimit.keyGenerator === 'function'
-        ? String(rateLimit.keyGenerator(req))
-        : clientAddress(req, trustProxy);
-      const { allowed, resetTime } = this.rateLimiter.hit(key, rateLimit.windowMs, rateLimit.maxRequests);
+      const key =
+        typeof rateLimit.keyGenerator === 'function'
+          ? String(rateLimit.keyGenerator(req))
+          : clientAddress(req, trustProxy);
+      const { allowed, resetTime } = this.rateLimiter.hit(
+        key,
+        rateLimit.windowMs,
+        rateLimit.maxRequests
+      );
       if (!allowed) {
         res.writeHead(429, {
           'Content-Type': 'application/json',
-          'Retry-After': String(Math.max(1, Math.ceil((resetTime - Date.now()) / 1000)))
+          'Retry-After': String(
+            Math.max(1, Math.ceil((resetTime - Date.now()) / 1000))
+          ),
         });
         res.end(JSON.stringify({ error: 'Too Many Requests' }));
         return;
@@ -2317,7 +2463,12 @@ class SimpleRouter {
     } catch (_error) {
       if (this.enableMetrics) this.metrics.errors++;
       // The client went away mid-body: there is nobody to answer.
-      if (_error.code === 'ECONNABORTED' || responseStarted(res) || responseClosed(res)) return;
+      if (
+        _error.code === 'ECONNABORTED' ||
+        responseStarted(res) ||
+        responseClosed(res)
+      )
+        return;
       const statusCode = _error.statusCode === 413 ? 413 : 400;
       const headers = { 'Content-Type': 'application/json' };
       // Do not keep reading an oversized upload on this connection.
@@ -2329,13 +2480,19 @@ class SimpleRouter {
 
     // Track version requests in metrics
     if (this.enableMetrics && requestVersion) {
-      this.metrics.versionRequests.set(requestVersion, (this.metrics.versionRequests.get(requestVersion) || 0) + 1);
+      this.metrics.versionRequests.set(
+        requestVersion,
+        (this.metrics.versionRequests.get(requestVersion) || 0) + 1
+      );
     }
 
     // HEAD falls back to the GET route; node:http drops the body of a HEAD
     // response, so the headers (status, Content-Type) are the GET ones.
-    const matchedRoute = this.findRoute(req.method, pathname, requestVersion)
-      ?? (req.method === 'HEAD' ? this.findRoute('GET', pathname, requestVersion) : null);
+    const matchedRoute =
+      this.findRoute(req.method, pathname, requestVersion) ??
+      (req.method === 'HEAD'
+        ? this.findRoute('GET', pathname, requestVersion)
+        : null);
 
     if (matchedRoute) {
       req.params = matchedRoute.params;
@@ -2344,7 +2501,10 @@ class SimpleRouter {
       // Record route match metrics
       if (this.enableMetrics) {
         const routeKey = `${req.method}:${matchedRoute.route.path}`;
-        this.metrics.routeMatches.set(routeKey, (this.metrics.routeMatches.get(routeKey) || 0) + 1);
+        this.metrics.routeMatches.set(
+          routeKey,
+          (this.metrics.routeMatches.get(routeKey) || 0) + 1
+        );
       }
 
       try {
@@ -2356,12 +2516,19 @@ class SimpleRouter {
         let handled = false;
         if (route.middleware && route.middleware.length > 0) {
           for (const middleware of route.middleware) {
-            const { result: outcome, proceed } = await runMiddleware(middleware, req, res);
+            const { result: outcome, proceed } = await runMiddleware(
+              middleware,
+              req,
+              res
+            );
             if (!proceed) {
               handled = true;
               break;
             }
-            if (outcome && (typeof outcome === 'object' || typeof outcome === 'string')) {
+            if (
+              outcome &&
+              (typeof outcome === 'object' || typeof outcome === 'string')
+            ) {
               // Middleware returned the response body itself.
               result = outcome;
               handled = true;
@@ -2399,7 +2566,8 @@ class SimpleRouter {
             this.metrics.responseTime.push(responseTime);
             // Keep only last 1000 response times to prevent memory growth
             if (this.metrics.responseTime.length > 1000) {
-              this.metrics.responseTime = this.metrics.responseTime.slice(-1000);
+              this.metrics.responseTime =
+                this.metrics.responseTime.slice(-1000);
             }
           });
         }
@@ -2467,7 +2635,9 @@ class SimpleRouter {
    */
   toExpressRouter(express) {
     if (!express || typeof express.Router !== 'function') {
-      throw new Error('Express is required for toExpressRouter(). Pass the express module as argument: router.toExpressRouter(express)');
+      throw new Error(
+        'Express is required for toExpressRouter(). Pass the express module as argument: router.toExpressRouter(express)'
+      );
     }
 
     const expressRouter = express.Router();
@@ -2490,7 +2660,11 @@ class SimpleRouter {
           for (const mw of middleware) {
             const outcome = await runMiddleware(mw, req, res);
             if (!outcome.proceed) return;
-            if (outcome.result && (typeof outcome.result === 'object' || typeof outcome.result === 'string')) {
+            if (
+              outcome.result &&
+              (typeof outcome.result === 'object' ||
+                typeof outcome.result === 'string')
+            ) {
               result = outcome.result;
               handled = true;
               break;

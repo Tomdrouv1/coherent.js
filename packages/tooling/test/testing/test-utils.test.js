@@ -16,7 +16,7 @@ import {
   cleanup,
   within,
   screen,
-  userEvent
+  userEvent,
 } from '../../src/testing/test-utils.js';
 
 describe('Test Utils', () => {
@@ -49,12 +49,12 @@ describe('Test Utils', () => {
       expect(typeof event.stopPropagation).toBe('function');
     });
 
-    it("should return the created event", () => {
-      const element = { id: "test" };
-      const event = fireEvent(element, "change");
+    it('should return the created event', () => {
+      const element = { id: 'test' };
+      const event = fireEvent(element, 'change');
 
       expect(event).toBeDefined();
-      expect(event.type).toBe("change");
+      expect(event.type).toBe('change');
     });
   });
 
@@ -71,7 +71,7 @@ describe('Test Utils', () => {
         onkeyup: vi.fn(),
         onfocus: vi.fn(),
         onblur: vi.fn(),
-        value: ''
+        value: '',
       };
     });
 
@@ -81,7 +81,7 @@ describe('Test Utils', () => {
       expect(mockElement.onclick).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'click',
-          button: 0
+          button: 0,
         })
       );
     });
@@ -92,7 +92,7 @@ describe('Test Utils', () => {
       expect(mockElement.onchange).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'change',
-          target: { value: 'new value' }
+          target: { value: 'new value' },
         })
       );
     });
@@ -103,7 +103,7 @@ describe('Test Utils', () => {
       expect(mockElement.oninput).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'input',
-          target: { value: 'input value' }
+          target: { value: 'input value' },
         })
       );
     });
@@ -114,7 +114,7 @@ describe('Test Utils', () => {
       expect(mockElement.onkeydown).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'keydown',
-          key: 'Enter'
+          key: 'Enter',
         })
       );
     });
@@ -124,7 +124,7 @@ describe('Test Utils', () => {
 
       expect(mockElement.onfocus).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: 'focus'
+          type: 'focus',
         })
       );
     });
@@ -159,7 +159,9 @@ describe('Test Utils', () => {
       const promise = waitFor(condition, { timeout: 1000, interval: 50 });
 
       vi.advanceTimersByTime(1000);
-      await expect(promise).rejects.toThrow('Timeout waiting for condition after 1000ms');
+      await expect(promise).rejects.toThrow(
+        'Timeout waiting for condition after 1000ms'
+      );
     });
 
     it('should check condition immediately', async () => {
@@ -189,10 +191,13 @@ describe('Test Utils', () => {
 
       expect(result1).toBe(3);
       expect(result2).toBe(7);
-      expect(mockFn.mock.calls).toEqual([[1, 2], [3, 4]]);
+      expect(mockFn.mock.calls).toEqual([
+        [1, 2],
+        [3, 4],
+      ]);
       expect(mockFn.mock.results).toEqual([
         { type: 'return', value: 3 },
-        { type: 'return', value: 7 }
+        { type: 'return', value: 7 },
       ]);
     });
 
@@ -229,7 +234,7 @@ describe('Test Utils', () => {
   describe('createSpy', () => {
     it('should create spy on object method', () => {
       const obj = {
-        method: vi.fn(() => 'original')
+        method: vi.fn(() => 'original'),
       };
 
       const spy = createSpy(obj, 'method');
@@ -240,7 +245,7 @@ describe('Test Utils', () => {
 
     it('should spy on method calls', () => {
       const obj = {
-        method: vi.fn((x) => x * 2)
+        method: vi.fn((x) => x * 2),
       };
 
       const spy = createSpy(obj, 'method');
@@ -254,7 +259,7 @@ describe('Test Utils', () => {
     it('should support mockRestore', () => {
       const originalMethod = vi.fn(() => 'original');
       const obj = {
-        method: originalMethod
+        method: originalMethod,
       };
 
       const spy = createSpy(obj, 'method');
@@ -287,7 +292,7 @@ describe('Test Utils', () => {
         getByText: vi.fn(() => 'text-element'),
         queryByText: vi.fn(() => null),
         getByClassName: vi.fn(() => 'class-element'),
-        queryByClassName: vi.fn(() => null)
+        queryByClassName: vi.fn(() => null),
       };
 
       const scoped = within(container);
@@ -307,7 +312,7 @@ describe('Test Utils', () => {
         getByText: vi.fn(() => 'text'),
         queryByText: vi.fn(() => null),
         getByClassName: vi.fn(() => 'class'),
-        queryByClassName: vi.fn(() => null)
+        queryByClassName: vi.fn(() => null),
       };
 
       const scoped = within(container);

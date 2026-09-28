@@ -85,7 +85,10 @@ export function registerCompletionProvider(
       const tagName = item.label;
       item.documentation = {
         kind: 'markdown',
-        value: getElementDescription(tagName) + '\n\n' + getElementDocumentation(tagName),
+        value:
+          getElementDescription(tagName) +
+          '\n\n' +
+          getElementDocumentation(tagName),
       };
     } else if (item.data?.type === 'attribute' && item.data?.tagName) {
       const attrName = item.label;
@@ -111,8 +114,22 @@ function getTagNameCompletions(): CompletionItem[] {
 
   // Sort elements by common usage
   const commonElements = [
-    'div', 'span', 'p', 'a', 'button', 'input', 'img', 'form',
-    'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'section', 'article',
+    'div',
+    'span',
+    'p',
+    'a',
+    'button',
+    'input',
+    'img',
+    'form',
+    'ul',
+    'ol',
+    'li',
+    'h1',
+    'h2',
+    'h3',
+    'section',
+    'article',
   ];
 
   for (const tagName of commonElements) {
@@ -134,11 +151,16 @@ function getTagNameCompletions(): CompletionItem[] {
 /**
  * Create a completion item for a tag name.
  */
-function createTagCompletion(tagName: string, isCommon: boolean): CompletionItem {
+function createTagCompletion(
+  tagName: string,
+  isCommon: boolean
+): CompletionItem {
   return {
     label: tagName,
     kind: CompletionItemKind.Class,
-    detail: isVoidElement(tagName) ? `<${tagName}/> (void element)` : `<${tagName}>`,
+    detail: isVoidElement(tagName)
+      ? `<${tagName}/> (void element)`
+      : `<${tagName}>`,
     sortText: isCommon ? `0${tagName}` : `1${tagName}`,
     data: { type: 'tag', tagName },
   };
@@ -152,7 +174,14 @@ function getAttributeCompletions(tagName: string): CompletionItem[] {
   const items: CompletionItem[] = [];
 
   // Common attributes first
-  const commonAttrs = ['className', 'id', 'onClick', 'style', 'children', 'text'];
+  const commonAttrs = [
+    'className',
+    'id',
+    'onClick',
+    'style',
+    'children',
+    'text',
+  ];
 
   for (const attr of attributes) {
     const isCommon = commonAttrs.includes(attr.name);
@@ -262,7 +291,8 @@ function getElementStartCompletions(): CompletionItem[] {
     label: 'coherent-element',
     kind: CompletionItemKind.Snippet,
     detail: 'Create a Coherent.js element',
-    insertText: '{\n  ${1:div}: {\n    ${2:className}: \'${3}\',\n    ${4:children}: [${5}]\n  }\n}',
+    insertText:
+      "{\n  ${1:div}: {\n    ${2:className}: '${3}',\n    ${4:children}: [${5}]\n  }\n}",
     insertTextFormat: InsertTextFormat.Snippet,
     sortText: '0coherent',
   });
@@ -272,7 +302,8 @@ function getElementStartCompletions(): CompletionItem[] {
     label: 'coherent-component',
     kind: CompletionItemKind.Snippet,
     detail: 'Create a Coherent.js component function',
-    insertText: 'function ${1:ComponentName}(${2:props}) {\n  return {\n    ${3:div}: {\n      className: \'${4:component}\',\n      children: [${5}]\n    }\n  };\n}',
+    insertText:
+      "function ${1:ComponentName}(${2:props}) {\n  return {\n    ${3:div}: {\n      className: '${4:component}',\n      children: [${5}]\n    }\n  };\n}",
     insertTextFormat: InsertTextFormat.Snippet,
     sortText: '0component',
   });
@@ -298,7 +329,10 @@ function getElementDocumentation(tagName: string): string {
   doc += `\`\`\`\n\n`;
 
   // List some common attributes
-  const commonAttrs = attrs.slice(0, 5).map(a => `- \`${a.name}\`: ${a.type}`).join('\n');
+  const commonAttrs = attrs
+    .slice(0, 5)
+    .map((a) => `- \`${a.name}\`: ${a.type}`)
+    .join('\n');
   if (commonAttrs) {
     doc += `### Common Attributes\n${commonAttrs}\n`;
   }

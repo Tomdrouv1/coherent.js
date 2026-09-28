@@ -1,6 +1,6 @@
 /**
  * Tests for Forms - Validators
- * 
+ *
  * Coverage areas:
  * - Built-in validators
  * - Custom validators
@@ -9,7 +9,11 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { validators, createValidator, registerValidator } from '../src/validators.js';
+import {
+  validators,
+  createValidator,
+  registerValidator,
+} from '../src/validators.js';
 
 describe('Validators', () => {
   describe('Built-in Validators', () => {
@@ -39,7 +43,7 @@ describe('Validators', () => {
     it('should validate min/max length', () => {
       expect(validators.minLength('abc', { min: 5 })).toBeTruthy();
       expect(validators.minLength('abcdef', { min: 5 })).toBeFalsy();
-      
+
       expect(validators.maxLength('abcdefghij', { max: 5 })).toBeTruthy();
       expect(validators.maxLength('abc', { max: 5 })).toBeFalsy();
     });
@@ -47,16 +51,20 @@ describe('Validators', () => {
     it('should validate numeric ranges', () => {
       expect(validators.min(5, { min: 10 })).toBeTruthy();
       expect(validators.min(15, { min: 10 })).toBeFalsy();
-      
+
       expect(validators.max(15, { max: 10 })).toBeTruthy();
       expect(validators.max(5, { max: 10 })).toBeFalsy();
     });
 
     it('should validate patterns (regex)', () => {
       const phonePattern = /^\d{3}-\d{3}-\d{4}$/;
-      
-      expect(validators.pattern('123-456-7890', { pattern: phonePattern })).toBeFalsy();
-      expect(validators.pattern('invalid', { pattern: phonePattern })).toBeTruthy();
+
+      expect(
+        validators.pattern('123-456-7890', { pattern: phonePattern })
+      ).toBeFalsy();
+      expect(
+        validators.pattern('invalid', { pattern: phonePattern })
+      ).toBeTruthy();
     });
 
     it('should validate number type', () => {
@@ -110,7 +118,8 @@ describe('Validators', () => {
       const composed = validators.compose([
         validators.required,
         validators.email,
-        (value) => value.includes('@company.com') ? null : 'Must be company email'
+        (value) =>
+          value.includes('@company.com') ? null : 'Must be company email',
       ]);
 
       expect(composed('')).toBeTruthy(); // Fails required
@@ -135,7 +144,7 @@ describe('Validators', () => {
   describe('Async Validators', () => {
     it('should handle async validation', async () => {
       const asyncValidator = async (value) => {
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
         return value === 'taken' ? 'Username is taken' : null;
       };
 
@@ -151,7 +160,7 @@ describe('Validators', () => {
       debouncedValidator('user2');
       debouncedValidator('user3');
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(checkUsername).toHaveBeenCalledTimes(1);
       expect(checkUsername).toHaveBeenCalledWith('user3');
@@ -184,12 +193,16 @@ describe('Validators', () => {
     it('should validate with remote API', async () => {
       const checkEmail = async (email) => {
         // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 10));
-        return email === 'exists@example.com' ? 'Email already registered' : null;
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        return email === 'exists@example.com'
+          ? 'Email already registered'
+          : null;
       };
 
       expect(await checkEmail('new@example.com')).toBeNull();
-      expect(await checkEmail('exists@example.com')).toBe('Email already registered');
+      expect(await checkEmail('exists@example.com')).toBe(
+        'Email already registered'
+      );
     });
   });
 
@@ -208,7 +221,8 @@ describe('Validators', () => {
         return null;
       });
 
-      const t = (key) => key === 'validation.required' ? 'Ce champ est requis' : key;
+      const t = (key) =>
+        key === 'validation.required' ? 'Ce champ est requis' : key;
       const error = validator('', {}, t);
 
       expect(error).toBe('Ce champ est requis');
@@ -230,10 +244,13 @@ describe('Validators', () => {
 
   describe('Validator Chains', () => {
     it('should chain validators', () => {
-      const chain = validators.chain()
+      const chain = validators
+        .chain()
         .required()
         .email()
-        .custom((value) => value.endsWith('@company.com') ? null : 'Must be company email');
+        .custom((value) =>
+          value.endsWith('@company.com') ? null : 'Must be company email'
+        );
 
       expect(chain.validate('')).toBeTruthy();
       expect(chain.validate('invalid')).toBeTruthy();
@@ -245,7 +262,8 @@ describe('Validators', () => {
       const validator2 = vi.fn();
       const validator3 = vi.fn();
 
-      const chain = validators.chain({ stopOnFirstError: true })
+      const chain = validators
+        .chain({ stopOnFirstError: true })
         .custom(() => 'First error')
         .custom(validator2)
         .custom(validator3);
@@ -257,7 +275,8 @@ describe('Validators', () => {
     });
 
     it('should collect all errors', () => {
-      const chain = validators.chain({ stopOnFirstError: false })
+      const chain = validators
+        .chain({ stopOnFirstError: false })
         .custom(() => 'Error 1')
         .custom(() => 'Error 2')
         .custom(() => 'Error 3');
@@ -281,11 +300,8 @@ describe('Validators', () => {
 
     it('should skip validation when condition fails', () => {
       const expensiveValidator = vi.fn();
-      
-      const validator = validators.when(
-        () => false,
-        expensiveValidator
-      );
+
+      const validator = validators.when(() => false, expensiveValidator);
 
       validator('test');
 
@@ -302,15 +318,19 @@ describe('Validators', () => {
         return null;
       };
 
-      expect(matchPassword('pass123', {}, null, { password: 'pass123' })).toBeNull();
-      expect(matchPassword('pass456', {}, null, { password: 'pass123' })).toBeTruthy();
+      expect(
+        matchPassword('pass123', {}, null, { password: 'pass123' })
+      ).toBeNull();
+      expect(
+        matchPassword('pass456', {}, null, { password: 'pass123' })
+      ).toBeTruthy();
     });
 
     it('should validate date ranges', () => {
       const validateEndDate = (endDate, options, t, allValues) => {
         const start = new Date(allValues.startDate);
         const end = new Date(endDate);
-        
+
         if (end <= start) {
           return 'End date must be after start date';
         }
@@ -318,7 +338,7 @@ describe('Validators', () => {
       };
 
       const values = { startDate: '2024-01-01' };
-      
+
       expect(validateEndDate('2024-01-02', {}, null, values)).toBeNull();
       expect(validateEndDate('2023-12-31', {}, null, values)).toBeTruthy();
     });
@@ -327,24 +347,36 @@ describe('Validators', () => {
   describe('File Validation', () => {
     it('should validate file size', () => {
       const file = { size: 6 * 1024 * 1024 }; // 6MB
-      
-      expect(validators.fileSize(file, { maxSize: 5 * 1024 * 1024 })).toBeTruthy();
-      expect(validators.fileSize(file, { maxSize: 10 * 1024 * 1024 })).toBeFalsy();
+
+      expect(
+        validators.fileSize(file, { maxSize: 5 * 1024 * 1024 })
+      ).toBeTruthy();
+      expect(
+        validators.fileSize(file, { maxSize: 10 * 1024 * 1024 })
+      ).toBeFalsy();
     });
 
     it('should validate file type', () => {
       const imageFile = { type: 'image/jpeg' };
       const pdfFile = { type: 'application/pdf' };
 
-      expect(validators.fileType(imageFile, { accept: ['image/*'] })).toBeFalsy();
-      expect(validators.fileType(pdfFile, { accept: ['image/*'] })).toBeTruthy();
+      expect(
+        validators.fileType(imageFile, { accept: ['image/*'] })
+      ).toBeFalsy();
+      expect(
+        validators.fileType(pdfFile, { accept: ['image/*'] })
+      ).toBeTruthy();
     });
 
     it('should validate file extension', () => {
       const file = { name: 'document.pdf' };
 
-      expect(validators.fileExtension(file, { extensions: ['.pdf', '.doc'] })).toBeFalsy();
-      expect(validators.fileExtension(file, { extensions: ['.jpg', '.png'] })).toBeTruthy();
+      expect(
+        validators.fileExtension(file, { extensions: ['.pdf', '.doc'] })
+      ).toBeFalsy();
+      expect(
+        validators.fileExtension(file, { extensions: ['.jpg', '.png'] })
+      ).toBeTruthy();
     });
   });
 

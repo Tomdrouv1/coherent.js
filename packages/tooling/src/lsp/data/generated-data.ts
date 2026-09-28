@@ -16,7 +16,9 @@ import type { ExtractedData } from './element-attributes.js';
  */
 export function loadGeneratedData(): ExtractedData | null {
   try {
-    return createRequire(import.meta.url)('./element-attributes.generated.json') as ExtractedData;
+    return createRequire(import.meta.url)(
+      './element-attributes.generated.json'
+    ) as ExtractedData;
   } catch {
     return null;
   }

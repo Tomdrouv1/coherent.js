@@ -1,6 +1,6 @@
 /**
  * Tests for Forms - FormBuilder
- * 
+ *
  * Coverage areas:
  * - Form creation and field management
  * - Field types and configuration
@@ -18,7 +18,7 @@ describe('FormBuilder', () => {
     form = new FormBuilder({
       name: 'testForm',
       method: 'POST',
-      action: '/submit'
+      action: '/submit',
     });
   });
 
@@ -27,7 +27,7 @@ describe('FormBuilder', () => {
       form.addField('username', {
         type: 'text',
         label: 'Username',
-        required: true
+        required: true,
       });
 
       const fields = form.getFields();
@@ -59,7 +59,7 @@ describe('FormBuilder', () => {
 
     it('should get field by name', () => {
       form.addField('email', { type: 'email', label: 'Email Address' });
-      
+
       const field = form.getField('email');
       expect(field).toBeDefined();
       expect(field.label).toBe('Email Address');
@@ -70,7 +70,7 @@ describe('FormBuilder', () => {
     it('should create text fields', () => {
       form.addField('name', {
         type: 'text',
-        placeholder: 'Enter your name'
+        placeholder: 'Enter your name',
       });
 
       const field = form.getField('name');
@@ -82,7 +82,7 @@ describe('FormBuilder', () => {
       form.addField('age', {
         type: 'number',
         min: 0,
-        max: 120
+        max: 120,
       });
 
       const field = form.getField('age');
@@ -96,8 +96,8 @@ describe('FormBuilder', () => {
         type: 'select',
         options: [
           { value: 'us', label: 'United States' },
-          { value: 'uk', label: 'United Kingdom' }
-        ]
+          { value: 'uk', label: 'United Kingdom' },
+        ],
       });
 
       const field = form.getField('country');
@@ -108,7 +108,7 @@ describe('FormBuilder', () => {
     it('should create checkbox fields', () => {
       form.addField('terms', {
         type: 'checkbox',
-        label: 'I agree to terms'
+        label: 'I agree to terms',
       });
 
       const field = form.getField('terms');
@@ -120,8 +120,8 @@ describe('FormBuilder', () => {
         type: 'radio',
         options: [
           { value: 'male', label: 'Male' },
-          { value: 'female', label: 'Female' }
-        ]
+          { value: 'female', label: 'Female' },
+        ],
       });
 
       const field = form.getField('gender');
@@ -133,7 +133,7 @@ describe('FormBuilder', () => {
       form.addField('avatar', {
         type: 'file',
         accept: 'image/*',
-        maxSize: 5242880 // 5MB
+        maxSize: 5242880, // 5MB
       });
 
       const field = form.getField('avatar');
@@ -145,7 +145,7 @@ describe('FormBuilder', () => {
       form.addField('bio', {
         type: 'textarea',
         rows: 5,
-        maxLength: 500
+        maxLength: 500,
       });
 
       const field = form.getField('bio');
@@ -158,7 +158,7 @@ describe('FormBuilder', () => {
     it('should validate required fields', () => {
       form.addField('username', {
         type: 'text',
-        required: true
+        required: true,
       });
 
       form.setValues({ username: '' });
@@ -171,7 +171,7 @@ describe('FormBuilder', () => {
     it('should validate field types', () => {
       form.addField('email', {
         type: 'email',
-        required: true
+        required: true,
       });
 
       form.setValues({ email: 'invalid-email' });
@@ -188,7 +188,7 @@ describe('FormBuilder', () => {
             return 'Password must be at least 8 characters';
           }
           return null;
-        }
+        },
       });
 
       form.setValues({ password: 'short' });
@@ -200,7 +200,7 @@ describe('FormBuilder', () => {
     it('should show validation errors', () => {
       form.addField('email', { type: 'email', required: true });
       form.setValues({ email: 'invalid' });
-      
+
       const errors = form.validate();
       const hasErrors = form.hasErrors();
 
@@ -222,7 +222,7 @@ describe('FormBuilder', () => {
       form.addField('email', {
         type: 'email',
         required: true,
-        validateOnChange: true
+        validateOnChange: true,
       });
 
       form.setValue('email', 'invalid');
@@ -234,7 +234,7 @@ describe('FormBuilder', () => {
   describe('Form Submission', () => {
     it('should handle form submission', async () => {
       const onSubmit = vi.fn().mockResolvedValue({ success: true });
-      
+
       form.addField('username', { type: 'text', required: true });
       form.setValues({ username: 'testuser' });
       form.onSubmit(onSubmit);
@@ -246,7 +246,7 @@ describe('FormBuilder', () => {
 
     it('should prevent invalid submission', async () => {
       const onSubmit = vi.fn();
-      
+
       form.addField('email', { type: 'email', required: true });
       form.setValues({ email: '' });
       form.onSubmit(onSubmit);
@@ -261,14 +261,14 @@ describe('FormBuilder', () => {
       form.addField('email', { type: 'email' });
       form.setValues({
         username: 'john',
-        email: 'john@example.com'
+        email: 'john@example.com',
       });
 
       const data = form.serialize();
 
       expect(data).toEqual({
         username: 'john',
-        email: 'john@example.com'
+        email: 'john@example.com',
       });
     });
 
@@ -301,7 +301,7 @@ describe('FormBuilder', () => {
       form.addField('data', { type: 'text' });
       form.setValues({ data: 'test' });
       form.onSubmit(async () => {
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
         return { success: true };
       });
 
@@ -327,7 +327,7 @@ describe('FormBuilder', () => {
 
       form.setValues({
         firstName: 'John',
-        lastName: 'Doe'
+        lastName: 'Doe',
       });
 
       expect(form.getValue('firstName')).toBe('John');
@@ -340,21 +340,21 @@ describe('FormBuilder', () => {
 
       form.setValues({
         email: 'test@example.com',
-        age: 25
+        age: 25,
       });
 
       const values = form.getValues();
 
       expect(values).toEqual({
         email: 'test@example.com',
-        age: 25
+        age: 25,
       });
     });
 
     it('should handle default values', () => {
       form.addField('country', {
         type: 'select',
-        defaultValue: 'us'
+        defaultValue: 'us',
       });
 
       expect(form.getValue('country')).toBe('us');
@@ -363,7 +363,7 @@ describe('FormBuilder', () => {
     it('should reset to default values', () => {
       form.addField('name', {
         type: 'text',
-        defaultValue: 'Guest'
+        defaultValue: 'Guest',
       });
 
       form.setValue('name', 'John');
@@ -379,8 +379,8 @@ describe('FormBuilder', () => {
         name: 'contactForm',
         fields: [
           { name: 'email', type: 'email', required: true },
-          { name: 'message', type: 'textarea', required: true }
-        ]
+          { name: 'message', type: 'textarea', required: true },
+        ],
       });
 
       expect(newForm).toBeInstanceOf(FormBuilder);
@@ -396,17 +396,17 @@ describe('FormBuilder', () => {
 
     it('should check if form is dirty', () => {
       form.addField('name', { type: 'text' });
-      
+
       expect(form.isDirty()).toBe(false);
-      
+
       form.setValue('name', 'Changed');
-      
+
       expect(form.isDirty()).toBe(true);
     });
 
     it('should get form HTML', () => {
       form.addField('username', { type: 'text', label: 'Username' });
-      
+
       const html = form.toHTML();
 
       expect(html).toContain('<form');
@@ -420,8 +420,8 @@ describe('FormBuilder', () => {
         label: 'Personal Information',
         fields: [
           { name: 'firstName', type: 'text' },
-          { name: 'lastName', type: 'text' }
-        ]
+          { name: 'lastName', type: 'text' },
+        ],
       });
 
       const group = form.getGroup('personal');
@@ -433,8 +433,8 @@ describe('FormBuilder', () => {
       form.addGroup('contact', {
         fields: [
           { name: 'email', type: 'email', required: true },
-          { name: 'phone', type: 'tel', required: true }
-        ]
+          { name: 'phone', type: 'tel', required: true },
+        ],
       });
 
       form.setValues({ email: '', phone: '' });
@@ -450,7 +450,7 @@ describe('FormBuilder', () => {
       form.addField('hasAddress', { type: 'checkbox' });
       form.addField('address', {
         type: 'text',
-        showIf: (values) => values.hasAddress === true
+        showIf: (values) => values.hasAddress === true,
       });
 
       form.setValue('hasAddress', false);
@@ -465,7 +465,7 @@ describe('FormBuilder', () => {
       form.addField('email', {
         type: 'email',
         required: true,
-        showIf: (values) => values.subscribe === true
+        showIf: (values) => values.subscribe === true,
       });
 
       form.setValues({ subscribe: false, email: '' });

@@ -21,7 +21,7 @@ const DIALECT_ALIASES = {
   mysql: 'mysql',
   mariadb: 'mysql',
   sqlite: 'sqlite',
-  sqlite3: 'sqlite'
+  sqlite3: 'sqlite',
 };
 
 /**
@@ -36,7 +36,9 @@ function resolveDialect(db, config = {}) {
 
   const dialect = DIALECT_ALIASES[String(requested).toLowerCase()];
   if (!dialect) {
-    throw new Error(`SQL migrations are not supported for the '${requested}' database type. Use postgresql, mysql or sqlite.`);
+    throw new Error(
+      `SQL migrations are not supported for the '${requested}' database type. Use postgresql, mysql or sqlite.`
+    );
   }
   return dialect;
 }
@@ -93,7 +95,9 @@ async function importMigration(directory, file) {
   try {
     return await import(url);
   } catch (error) {
-    throw new Error(`Failed to load migration ${file}: ${error.message}`, { cause: error });
+    throw new Error(`Failed to load migration ${file}: ${error.message}`, {
+      cause: error,
+    });
   }
 }
 
@@ -118,8 +122,8 @@ async function beginMigrationTransaction(db, config) {
       warnedWithoutTransaction.add(db);
       console.warn(
         'Running migrations without a transaction: the database object has no transaction() method, ' +
-        'so a failed migration can be left half-applied. Pass { transactional: false } to run without ' +
-        'transactions on purpose and silence this warning.'
+          'so a failed migration can be left half-applied. Pass { transactional: false } to run without ' +
+          'transactions on purpose and silence this warning.'
       );
     }
   }
@@ -127,7 +131,7 @@ async function beginMigrationTransaction(db, config) {
   return {
     query: (sql, params) => db.query(sql, params),
     commit: async () => {},
-    rollback: async () => {}
+    rollback: async () => {},
   };
 }
 
@@ -153,7 +157,9 @@ async function inMigrationTransaction(db, config, work) {
 
 function assertBatchCount(count) {
   if (!Number.isSafeInteger(count) || count < 1) {
-    throw new Error(`Number of batches to roll back must be a positive integer, got ${count}`);
+    throw new Error(
+      `Number of batches to roll back must be a positive integer, got ${count}`
+    );
   }
   return count;
 }
@@ -171,17 +177,22 @@ function migrationTimestamp() {
 function formatDefault(value) {
   if (value === null) return 'NULL';
   if (typeof value === 'number') {
-    if (!Number.isFinite(value)) throw new Error(`Invalid column default: ${value}`);
+    if (!Number.isFinite(value))
+      throw new Error(`Invalid column default: ${value}`);
     return String(value);
   }
-  if (typeof value === 'bigint' || typeof value === 'boolean') return String(value);
+  if (typeof value === 'bigint' || typeof value === 'boolean')
+    return String(value);
   if (value instanceof Date) return `'${value.toISOString()}'`;
   if (typeof value === 'string') return `'${value.replace(/'/g, "''")}'`;
-  throw new Error(`Unsupported column default: ${String(value)}. Use defaultRaw() for SQL expressions.`);
+  throw new Error(
+    `Unsupported column default: ${String(value)}. Use defaultRaw() for SQL expressions.`
+  );
 }
 
 function renderColumnType(column, dialect) {
-  if (column.type === 'DATETIME' && dialect === 'postgresql') return 'TIMESTAMP';
+  if (column.type === 'DATETIME' && dialect === 'postgresql')
+    return 'TIMESTAMP';
   return column.type;
 }
 
@@ -219,7 +230,9 @@ function renderForeignKeys(columns) {
     .map((column) => {
       const [table, referenced, ...rest] = String(column.references).split('.');
       if (!referenced || rest.length > 0) {
-        throw new Error(`references() expects "table.column", got "${column.references}"`);
+        throw new Error(
+          `references() expects "table.column", got "${column.references}"`
+        );
       }
       assertIdentifier(table, 'referenced table');
       assertIdentifier(referenced, 'referenced column');
@@ -230,7 +243,7 @@ function renderForeignKeys(columns) {
 function renderCreateTable(tableName, columns, dialect) {
   const definitions = [
     ...columns.map((column) => renderColumn(column, dialect)),
-    ...renderForeignKeys(columns)
+    ...renderForeignKeys(columns),
   ];
   return `CREATE TABLE ${tableName} (\n  ${definitions.join(',\n  ')}\n)`;
 }
@@ -277,7 +290,7 @@ function createColumnBuilder(column) {
     references(foreignKey) {
       column.references = foreignKey;
       return this;
-    }
+    },
   };
 }
 
@@ -312,7 +325,11 @@ function tableBuilderDialect(options) {
 export class Migration {
   constructor(db, config = {}) {
     this.db = db;
-    this.config = { directory: './migrations', tableName: 'coherent_migrations', ...config };
+    this.config = {
+      directory: './migrations',
+      tableName: 'coherent_migrations',
+      ...config,
+    };
     assertIdentifier(this.config.tableName, 'migrations table');
     this.appliedMigrations = new Set();
     this.migrations = [];
@@ -336,7 +353,10 @@ export class Migration {
         if (!migration || typeof migration.name !== 'string') {
           throw new Error('Every migration must have a name');
         }
-        return { ...migration, applied: this.appliedMigrations.has(migration.name) };
+        return {
+          ...migration,
+          applied: this.appliedMigrations.has(migration.name),
+        };
       });
     } else {
       await this.loadMigrationFiles();
@@ -353,7 +373,7 @@ export class Migration {
   async run(options = {}) {
     await this.initialize();
 
-    const pendingMigrations = this.migrations.filter(m => !m.applied);
+    const pendingMigrations = this.migrations.filter((m) => !m.applied);
     if (pendingMigrations.length === 0) {
       return [];
     }
@@ -404,7 +424,7 @@ export class Migration {
 
     for (const batch of batches) {
       for (const name of await this.getMigrationsInBatch(batch)) {
-        const migration = this.migrations.find(m => m.name === name);
+        const migration = this.migrations.find((m) => m.name === name);
 
         if (!migration) {
           console.warn(`Migration file not found: ${name}`);
@@ -419,7 +439,10 @@ export class Migration {
         try {
           await inMigrationTransaction(this.db, this.config, async (tx) => {
             await migration.down(new SchemaBuilder(tx, { dialect }));
-            await tx.query(`DELETE FROM ${this.config.tableName} WHERE migration = ?`, [name]);
+            await tx.query(
+              `DELETE FROM ${this.config.tableName} WHERE migration = ?`,
+              [name]
+            );
           });
         } catch (_error) {
           console.error(`Rollback ${name} failed: ${_error.message}`);
@@ -441,15 +464,15 @@ export class Migration {
   async status() {
     await this.initialize();
 
-    const summarize = migration => ({
+    const summarize = (migration) => ({
       name: migration.name,
       applied: migration.applied,
-      file: migration.file || `${migration.name}.js`
+      file: migration.file || `${migration.name}.js`,
     });
 
     return {
-      pending: this.migrations.filter(m => !m.applied).map(summarize),
-      completed: this.migrations.filter(m => m.applied).map(summarize)
+      pending: this.migrations.filter((m) => !m.applied).map(summarize),
+      completed: this.migrations.filter((m) => m.applied).map(summarize),
     };
   }
 
@@ -466,7 +489,10 @@ export class Migration {
     await this.ensureDirectory();
 
     const isCreateTable = name.startsWith('create_') && name.endsWith('_table');
-    const template = this.getMigrationTemplate(name, { isCreateTable, ...options });
+    const template = this.getMigrationTemplate(name, {
+      isCreateTable,
+      ...options,
+    });
 
     await writeFile(filePath, template);
 
@@ -516,8 +542,11 @@ export async function down(schema) {
   }
 
   async getNextBatchNumber() {
-    const result = await this.db.query(`SELECT MAX(batch) as max_batch FROM ${this.config.tableName}`);
-    const maxBatch = result && result.rows && result.rows[0] ? result.rows[0].max_batch : 0;
+    const result = await this.db.query(
+      `SELECT MAX(batch) as max_batch FROM ${this.config.tableName}`
+    );
+    const maxBatch =
+      result && result.rows && result.rows[0] ? result.rows[0].max_batch : 0;
     return (maxBatch || 0) + 1;
   }
 
@@ -529,7 +558,7 @@ export async function down(schema) {
     const result = await this.db.query(
       `SELECT DISTINCT batch FROM ${this.config.tableName} ORDER BY batch DESC LIMIT ${assertBatchCount(count)}`
     );
-    return result && result.rows ? result.rows.map(row => row.batch) : [];
+    return result && result.rows ? result.rows.map((row) => row.batch) : [];
   }
 
   /**
@@ -541,7 +570,7 @@ export async function down(schema) {
       `SELECT migration FROM ${this.config.tableName} WHERE batch = ? ORDER BY id DESC`,
       [batch]
     );
-    return result && result.rows ? result.rows.map(row => row.migration) : [];
+    return result && result.rows ? result.rows.map((row) => row.migration) : [];
   }
 
   async ensureMigrationsTable() {
@@ -549,16 +578,20 @@ export async function down(schema) {
     try {
       await this.db.query(`SELECT 1 FROM ${this.config.tableName} LIMIT 1`);
     } catch {
-      await this.db.query(migrationsTableSQL(this.config.tableName, this.dialect));
+      await this.db.query(
+        migrationsTableSQL(this.config.tableName, this.dialect)
+      );
     }
   }
 
   async loadAppliedMigrations() {
-    const result = await this.db.query(`SELECT migration FROM ${this.config.tableName} ORDER BY id`);
+    const result = await this.db.query(
+      `SELECT migration FROM ${this.config.tableName} ORDER BY id`
+    );
 
     this.appliedMigrations.clear();
     if (result && result.rows) {
-      result.rows.forEach(row => {
+      result.rows.forEach((row) => {
         this.appliedMigrations.add(row.migration);
       });
     }
@@ -571,7 +604,9 @@ export async function down(schema) {
    * @returns {Promise<Array|null>}
    */
   async loadMigrations() {
-    return Array.isArray(this.config.migrations) ? this.config.migrations : null;
+    return Array.isArray(this.config.migrations)
+      ? this.config.migrations
+      : null;
   }
 
   /**
@@ -600,7 +635,9 @@ export async function down(schema) {
       }
 
       if (!/^\d{14}_/.test(file)) {
-        console.warn(`Failed to load migration ${file}: Invalid migration file name format`);
+        console.warn(
+          `Failed to load migration ${file}: Invalid migration file name format`
+        );
         continue;
       }
 
@@ -612,7 +649,7 @@ export async function down(schema) {
         file,
         up: migration.up || migration.default?.up,
         down: migration.down || migration.default?.down,
-        applied: this.appliedMigrations.has(migrationName)
+        applied: this.appliedMigrations.has(migrationName),
       });
     }
 
@@ -679,7 +716,7 @@ export class TableBuilder {
       name,
       type: 'INTEGER',
       primaryKey: true,
-      autoIncrement: true
+      autoIncrement: true,
     };
     this.columns.push(column);
     return this;
@@ -689,7 +726,7 @@ export class TableBuilder {
     const column = {
       name,
       type: `VARCHAR(${length})`,
-      nullable: true
+      nullable: true,
     };
     this.columns.push(column);
     return createColumnBuilder(column);
@@ -699,7 +736,7 @@ export class TableBuilder {
     const column = {
       name,
       type: 'TEXT',
-      nullable: true
+      nullable: true,
     };
     this.columns.push(column);
     return createColumnBuilder(column);
@@ -709,7 +746,7 @@ export class TableBuilder {
     const column = {
       name,
       type: 'INTEGER',
-      nullable: true
+      nullable: true,
     };
     this.columns.push(column);
     return createColumnBuilder(column);
@@ -720,7 +757,7 @@ export class TableBuilder {
       name,
       type: 'BOOLEAN',
       nullable: true,
-      default: false
+      default: false,
     };
     this.columns.push(column);
     return createColumnBuilder(column);
@@ -730,7 +767,7 @@ export class TableBuilder {
     const column = {
       name,
       type: 'DATETIME',
-      nullable: true
+      nullable: true,
     };
     this.columns.push(column);
     return createColumnBuilder(column);
@@ -746,7 +783,7 @@ export class TableBuilder {
     this.alterations.push({
       type: 'ADD',
       name,
-      columnType: type
+      columnType: type,
     });
     return this;
   }
@@ -754,7 +791,7 @@ export class TableBuilder {
   dropColumn(name) {
     this.alterations.push({
       type: 'DROP',
-      name
+      name,
     });
     return this;
   }
@@ -770,7 +807,9 @@ export class TableBuilder {
     if (this.alterations.length === 0) {
       return [`ALTER TABLE ${this.tableName};`];
     }
-    return this.alterations.map(alteration => renderAlteration(this.tableName, alteration));
+    return this.alterations.map((alteration) =>
+      renderAlteration(this.tableName, alteration)
+    );
   }
 }
 
@@ -801,7 +840,7 @@ export function createMigration(db, config = {}) {
   const migrationConfig = {
     directory: './migrations',
     tableName: 'coherent_migrations',
-    ...config
+    ...config,
   };
   assertIdentifier(migrationConfig.tableName, 'migrations table');
 
@@ -815,16 +854,20 @@ export function createMigration(db, config = {}) {
     try {
       await db.query(`SELECT 1 FROM ${tableName} LIMIT 1`);
     } catch {
-      await db.query(migrationsTableSQL(tableName, resolveDialect(db, migrationConfig)));
+      await db.query(
+        migrationsTableSQL(tableName, resolveDialect(db, migrationConfig))
+      );
     }
   }
 
   async function loadAppliedMigrations() {
-    const result = await db.query(`SELECT migration FROM ${migrationConfig.tableName} ORDER BY id`);
+    const result = await db.query(
+      `SELECT migration FROM ${migrationConfig.tableName} ORDER BY id`
+    );
 
     appliedMigrations.clear();
     if (result && result.rows) {
-      result.rows.forEach(row => {
+      result.rows.forEach((row) => {
         appliedMigrations.add(row.migration);
       });
     }
@@ -844,9 +887,7 @@ export function createMigration(db, config = {}) {
       throw _error;
     }
 
-    const migrationFiles = files
-      .filter(file => file.endsWith('.js'))
-      .sort();
+    const migrationFiles = files.filter((file) => file.endsWith('.js')).sort();
 
     for (const file of migrationFiles) {
       const migrationName = file.replace(/\.js$/, '');
@@ -857,7 +898,7 @@ export function createMigration(db, config = {}) {
         file: join(migrationConfig.directory, file),
         up: migration.up || migration.default?.up,
         down: migration.down || migration.default?.down,
-        applied: appliedMigrations.has(migrationName)
+        applied: appliedMigrations.has(migrationName),
       });
     }
   }
@@ -867,7 +908,8 @@ export function createMigration(db, config = {}) {
       `SELECT MAX(batch) as max_batch FROM ${migrationConfig.tableName}`
     );
 
-    const maxBatch = result && result.rows && result.rows[0] ? result.rows[0].max_batch : 0;
+    const maxBatch =
+      result && result.rows && result.rows[0] ? result.rows[0].max_batch : 0;
     return (maxBatch || 0) + 1;
   }
 
@@ -876,7 +918,7 @@ export function createMigration(db, config = {}) {
       `SELECT DISTINCT batch FROM ${migrationConfig.tableName} ORDER BY batch DESC LIMIT ${assertBatchCount(count)}`
     );
 
-    return result && result.rows ? result.rows.map(row => row.batch) : [];
+    return result && result.rows ? result.rows.map((row) => row.batch) : [];
   }
 
   async function getMigrationsInBatch(batch) {
@@ -885,7 +927,7 @@ export function createMigration(db, config = {}) {
       [batch]
     );
 
-    return result && result.rows ? result.rows.map(row => row.migration) : [];
+    return result && result.rows ? result.rows.map((row) => row.migration) : [];
   }
 
   async function ensureDirectory(dirPath) {
@@ -893,7 +935,8 @@ export function createMigration(db, config = {}) {
   }
 
   function getMigrationTemplate(name, options) {
-    const tableName = options.table || name.replace(/^create_/, '').replace(/_table$/, '');
+    const tableName =
+      options.table || name.replace(/^create_/, '').replace(/_table$/, '');
 
     if (name.startsWith('create_')) {
       return `/**
@@ -946,7 +989,7 @@ export async function down(schema) {
     async run(options = {}) {
       await this.initialize();
 
-      const pendingMigrations = migrations.filter(m => !m.applied);
+      const pendingMigrations = migrations.filter((m) => !m.applied);
 
       if (pendingMigrations.length === 0) {
         return [];
@@ -976,7 +1019,9 @@ export async function down(schema) {
 
           console.log(`✓ Migration ${migration.name} completed`);
         } catch (_error) {
-          console.error(`✗ Migration ${migration.name} failed: ${_error.message}`);
+          console.error(
+            `✗ Migration ${migration.name} failed: ${_error.message}`
+          );
 
           if (!options.continueOnError) {
             throw _error;
@@ -1005,7 +1050,7 @@ export async function down(schema) {
         const batchMigrations = await getMigrationsInBatch(batch);
 
         for (const migrationName of batchMigrations) {
-          const migration = migrations.find(m => m.name === migrationName);
+          const migration = migrations.find((m) => m.name === migrationName);
 
           if (!migration || !migration.down) {
             console.warn(`Cannot rollback migration: ${migrationName}`);
@@ -1029,7 +1074,9 @@ export async function down(schema) {
 
             console.log(`✓ Migration ${migrationName} rolled back`);
           } catch (_error) {
-            console.error(`✗ Rollback ${migrationName} failed: ${_error.message}`);
+            console.error(
+              `✗ Rollback ${migrationName} failed: ${_error.message}`
+            );
             throw _error;
           }
         }
@@ -1044,10 +1091,10 @@ export async function down(schema) {
     async status() {
       await this.initialize();
 
-      return migrations.map(migration => ({
+      return migrations.map((migration) => ({
         name: migration.name,
         applied: migration.applied,
-        file: migration.file
+        file: migration.file,
       }));
     },
 
@@ -1065,7 +1112,7 @@ export async function down(schema) {
 
       console.log(`Created migration: ${filePath}`);
       return filePath;
-    }
+    },
   };
 }
 
@@ -1102,7 +1149,7 @@ export function createSchemaBuilder(db, options = {}) {
 
     async raw(sql, params = []) {
       return await db.query(sql, params);
-    }
+    },
   };
 }
 
@@ -1129,7 +1176,7 @@ export function createTableBuilder(tableName, options = {}) {
         name,
         type: 'INTEGER',
         primaryKey: true,
-        autoIncrement: true
+        autoIncrement: true,
       });
       return this;
     },
@@ -1147,7 +1194,12 @@ export function createTableBuilder(tableName, options = {}) {
     },
 
     boolean(name) {
-      return addColumn({ name, type: 'BOOLEAN', nullable: true, default: false });
+      return addColumn({
+        name,
+        type: 'BOOLEAN',
+        nullable: true,
+        default: false,
+      });
     },
 
     datetime(name) {
@@ -1164,7 +1216,7 @@ export function createTableBuilder(tableName, options = {}) {
       alterations.push({
         type: 'ADD',
         name,
-        columnType: type
+        columnType: type,
       });
       return this;
     },
@@ -1172,7 +1224,7 @@ export function createTableBuilder(tableName, options = {}) {
     dropColumn(name) {
       alterations.push({
         type: 'DROP',
-        name
+        name,
       });
       return this;
     },
@@ -1182,7 +1234,9 @@ export function createTableBuilder(tableName, options = {}) {
     },
 
     toAlterSQL() {
-      return alterations.map(alteration => renderAlteration(tableName, alteration));
-    }
+      return alterations.map((alteration) =>
+        renderAlteration(tableName, alteration)
+      );
+    },
   };
 }

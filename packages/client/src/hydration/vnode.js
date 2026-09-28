@@ -13,8 +13,20 @@
 
 /** Elements the server renders without content or a closing tag. */
 export const VOID_ELEMENTS = new Set([
-  'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
-  'link', 'meta', 'param', 'source', 'track', 'wbr',
+  'area',
+  'base',
+  'br',
+  'col',
+  'embed',
+  'hr',
+  'img',
+  'input',
+  'link',
+  'meta',
+  'param',
+  'source',
+  'track',
+  'wbr',
 ]);
 
 /**
@@ -25,10 +37,12 @@ export const VOID_ELEMENTS = new Set([
 export function isTrustedContent(value) {
   // Same brand core's dangerouslySetInnerContent() sets: plain objects with
   // __trusted/__html keys (e.g. from JSON) are not trusted.
-  return Boolean(value) &&
+  return (
+    Boolean(value) &&
     typeof value === 'object' &&
     value[Symbol.for('coherent.js.trustedContent')] === true &&
-    typeof value.__html === 'string';
+    typeof value.__html === 'string'
+  );
 }
 
 /**
@@ -65,7 +79,12 @@ const TAG_NAME = /^[a-zA-Z][a-zA-Z0-9-]*$/;
  * @returns {boolean}
  */
 export function isElementVNode(vNode) {
-  if (!vNode || typeof vNode !== 'object' || Array.isArray(vNode) || isTrustedContent(vNode)) {
+  if (
+    !vNode ||
+    typeof vNode !== 'object' ||
+    Array.isArray(vNode) ||
+    isTrustedContent(vNode)
+  ) {
     return false;
   }
   const keys = Object.keys(vNode);
@@ -136,7 +155,10 @@ function flatten(node, out) {
   // then a button, as core's renderer does.
   const tagNames = Object.keys(node);
   for (const tagName of tagNames) {
-    out.push({ type: 'element', vNode: tagNames.length === 1 ? node : { [tagName]: node[tagName] } });
+    out.push({
+      type: 'element',
+      vNode: tagNames.length === 1 ? node : { [tagName]: node[tagName] },
+    });
   }
 }
 
@@ -165,7 +187,11 @@ const ATTRIBUTE_NAMES = { className: 'class', htmlFor: 'for' };
  * Enumerated attributes whose `false` is a value that must be written out,
  * as in core's ENUMERATED_BOOLEAN_ATTRIBUTES (core/html-utils.js).
  */
-const ENUMERATED_BOOLEAN_ATTRIBUTES = new Set(['spellcheck', 'draggable', 'contenteditable']);
+const ENUMERATED_BOOLEAN_ATTRIBUTES = new Set([
+  'spellcheck',
+  'draggable',
+  'contenteditable',
+]);
 
 function isEventProp(name, value) {
   return name.startsWith('on') && typeof value === 'function';
@@ -184,7 +210,9 @@ function toKebabCase(property) {
  */
 function styleToCss(style) {
   return Object.entries(style)
-    .filter(([, value]) => value !== null && value !== undefined && value !== false)
+    .filter(
+      ([, value]) => value !== null && value !== undefined && value !== false
+    )
     .map(([property, value]) => `${toKebabCase(property)}: ${value}`)
     .join('; ');
 }
@@ -201,7 +229,9 @@ function normalizeClassValue(value) {
     return value.map(normalizeClassValue).filter(Boolean).join(' ');
   }
   if (value && typeof value === 'object') {
-    return Object.keys(value).filter((name) => value[name]).join(' ');
+    return Object.keys(value)
+      .filter((name) => value[name])
+      .join(' ');
   }
   if (value === null || value === undefined || value === false) return '';
   return String(value);
@@ -233,16 +263,21 @@ export function renderedAttributes(props) {
     if (mergeClass && name === 'className') continue;
 
     const attrName = ATTRIBUTE_NAMES[name] ?? name;
-    let value = mergeClass && name === 'class'
-      ? [raw, props.className].map((v) => normalizeClassValue(resolveAttributeValue(v))).filter(Boolean).join(' ')
-      : resolveAttributeValue(raw);
+    let value =
+      mergeClass && name === 'class'
+        ? [raw, props.className]
+            .map((v) => normalizeClassValue(resolveAttributeValue(v)))
+            .filter(Boolean)
+            .join(' ')
+        : resolveAttributeValue(raw);
 
     if (attrName === 'class' && value !== null && typeof value === 'object') {
       value = normalizeClassValue(value);
     }
     if (
       typeof value === 'boolean' &&
-      (attrName.startsWith('aria-') || ENUMERATED_BOOLEAN_ATTRIBUTES.has(attrName.toLowerCase()))
+      (attrName.startsWith('aria-') ||
+        ENUMERATED_BOOLEAN_ATTRIBUTES.has(attrName.toLowerCase()))
     ) {
       value = String(value);
     }
@@ -284,7 +319,12 @@ export function getRenderedChildren(tagName, props) {
   // core, not the string "null"
   const html = resolveAttributeValue(props.html);
   if (html !== undefined && html !== null) {
-    return [{ type: 'opaque', html: isTrustedContent(html) ? html.__html : String(html) }];
+    return [
+      {
+        type: 'opaque',
+        html: isTrustedContent(html) ? html.__html : String(html),
+      },
+    ];
   }
   const text = resolveAttributeValue(props.text);
   if (isTrustedContent(text)) {
@@ -308,7 +348,9 @@ export function getRenderedChildren(tagName, props) {
     }
   }
 
-  return merged.filter((item) => item.type !== 'text' || item.text.trim() !== '');
+  return merged.filter(
+    (item) => item.type !== 'text' || item.text.trim() !== ''
+  );
 }
 
 /**
@@ -323,7 +365,10 @@ export function getSignificantDOMChildren(element) {
   return Array.from(element.childNodes).filter((node) => {
     if (node.nodeType === 1) return true;
     if (node.nodeType === 3) {
-      return typeof node.textContent === 'string' && node.textContent.trim().length > 0;
+      return (
+        typeof node.textContent === 'string' &&
+        node.textContent.trim().length > 0
+      );
     }
     return false;
   });
@@ -380,9 +425,13 @@ export function alignChildren(vList, dList) {
  * @returns {Array<[Object, Element]>} [child vNode, DOM element] pairs
  */
 export function pairElementChildren(tagName, props, domElement) {
-  const vElements = getRenderedChildren(tagName, props).filter((item) => item.type !== 'text');
-  const dElements = Array.from(domElement?.childNodes ?? []).filter((node) => node.nodeType === 1);
-  return alignChildren(vElements, dElements).pairs
-    .filter(([item]) => item.type === 'element')
+  const vElements = getRenderedChildren(tagName, props).filter(
+    (item) => item.type !== 'text'
+  );
+  const dElements = Array.from(domElement?.childNodes ?? []).filter(
+    (node) => node.nodeType === 1
+  );
+  return alignChildren(vElements, dElements)
+    .pairs.filter(([item]) => item.type === 'element')
     .map(([item, node]) => [item.vNode, node]);
 }

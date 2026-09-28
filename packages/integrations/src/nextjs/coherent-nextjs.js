@@ -6,13 +6,13 @@
 import {
   render,
   performanceMonitor,
-  renderComponentFactory
+  renderComponentFactory,
 } from '@coherent.js/core';
 
 function missingPeer(packageName, integrationName, cause) {
   const error = new Error(
     `${integrationName} requires the '${packageName}' package to be installed.\n` +
-    `Please install it with: npm install ${packageName} (or pnpm add / yarn add)`
+      `Please install it with: npm install ${packageName} (or pnpm add / yarn add)`
   );
   error.cause = cause;
   return error;
@@ -97,19 +97,16 @@ export function createCoherentAppRouterHandler(componentFactory, options = {}) {
       // Send HTML response
       return new Response(finalHtml, {
         status: 200,
-        headers: { 'Content-Type': 'text/html; charset=utf-8' }
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
       });
     } catch (_error) {
       console.error('Coherent.js Next.js App Router handler error:', _error);
-      return new Response(
-        JSON.stringify({ error: _error.message }),
-        {
-          status: 500,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
+      return new Response(JSON.stringify({ error: _error.message }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
-  }
+  };
 }
 
 /**
@@ -121,22 +118,28 @@ export function createCoherentAppRouterHandler(componentFactory, options = {}) {
  * @param {Object} [options.React] - React module to use instead of importing `react`
  * @returns {Promise<Function>} Next.js Server Component
  */
-export async function createCoherentServerComponent(componentFactory, options = {}) {
-  const {
-    enablePerformanceMonitoring = false
-  } = options;
+export async function createCoherentServerComponent(
+  componentFactory,
+  options = {}
+) {
+  const { enablePerformanceMonitoring = false } = options;
 
-  const React = await loadReact(options.React, 'Next.js Server Component integration');
+  const React = await loadReact(
+    options.React,
+    'Next.js Server Component integration'
+  );
 
   return async function CoherentServerComponent(props) {
     try {
       // Create component with props
-      const component = await Promise.resolve(
-        componentFactory(props)
-      );
+      const component = await Promise.resolve(componentFactory(props));
 
       if (!component) {
-        return React.createElement('div', null, 'Error: Component factory returned null/undefined');
+        return React.createElement(
+          'div',
+          null,
+          'Error: Component factory returned null/undefined'
+        );
       }
 
       // Render component
@@ -151,7 +154,7 @@ export async function createCoherentServerComponent(componentFactory, options = 
 
       // Return dangerouslySetInnerHTML to render HTML
       return React.createElement('div', {
-        dangerouslySetInnerHTML: { __html: html }
+        dangerouslySetInnerHTML: { __html: html },
       });
     } catch (_error) {
       console.error('Coherent.js Next.js Server Component error:', _error);
@@ -169,12 +172,16 @@ export async function createCoherentServerComponent(componentFactory, options = 
  * @param {Object} [options.React] - React module to use instead of importing `react`
  * @returns {Promise<Function>} Next.js Client Component
  */
-export async function createCoherentClientComponent(componentFactory, options = {}) {
-  const {
-    enablePerformanceMonitoring = false
-  } = options;
+export async function createCoherentClientComponent(
+  componentFactory,
+  options = {}
+) {
+  const { enablePerformanceMonitoring = false } = options;
 
-  const React = await loadReact(options.React, 'Next.js Client Component integration');
+  const React = await loadReact(
+    options.React,
+    'Next.js Client Component integration'
+  );
 
   return function CoherentClientComponent(props) {
     const [html, setHtml] = React.useState('');
@@ -183,9 +190,7 @@ export async function createCoherentClientComponent(componentFactory, options = 
       async function renderComponent() {
         try {
           // Create component with props
-          const component = await Promise.resolve(
-            componentFactory(props)
-          );
+          const component = await Promise.resolve(componentFactory(props));
 
           if (!component) {
             setHtml('Error: Component factory returned null/undefined');
@@ -213,7 +218,7 @@ export async function createCoherentClientComponent(componentFactory, options = 
     }, [props]);
 
     return React.createElement('div', {
-      dangerouslySetInnerHTML: { __html: html }
+      dangerouslySetInnerHTML: { __html: html },
     });
   };
 }
@@ -238,13 +243,31 @@ export async function createNextIntegration(options = {}) {
 
     return {
       createCoherentNextHandler: (componentFactory, handlerOptions = {}) =>
-        createCoherentNextHandler(componentFactory, { ...options, ...handlerOptions }),
+        createCoherentNextHandler(componentFactory, {
+          ...options,
+          ...handlerOptions,
+        }),
       createCoherentAppRouterHandler: (componentFactory, handlerOptions = {}) =>
-        createCoherentAppRouterHandler(componentFactory, { ...options, ...handlerOptions }),
-      createCoherentServerComponent: (componentFactory, componentOptions = {}) =>
-        createCoherentServerComponent(componentFactory, { ...options, ...componentOptions }),
-      createCoherentClientComponent: (componentFactory, componentOptions = {}) =>
-        createCoherentClientComponent(componentFactory, { ...options, ...componentOptions })
+        createCoherentAppRouterHandler(componentFactory, {
+          ...options,
+          ...handlerOptions,
+        }),
+      createCoherentServerComponent: (
+        componentFactory,
+        componentOptions = {}
+      ) =>
+        createCoherentServerComponent(componentFactory, {
+          ...options,
+          ...componentOptions,
+        }),
+      createCoherentClientComponent: (
+        componentFactory,
+        componentOptions = {}
+      ) =>
+        createCoherentClientComponent(componentFactory, {
+          ...options,
+          ...componentOptions,
+        }),
     };
   } catch (_error) {
     throw _error;
@@ -257,5 +280,5 @@ export default {
   createCoherentAppRouterHandler,
   createCoherentServerComponent,
   createCoherentClientComponent,
-  createNextIntegration
+  createNextIntegration,
 };

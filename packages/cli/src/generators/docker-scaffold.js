@@ -9,16 +9,22 @@ const _cliVersion = getCLIVersion();
 export function generateDockerScaffolding(dbType, dockerConfig) {
   const { port, name, user, password } = dockerConfig;
 
-  const dockerCompose = generateDockerCompose(dbType, port, name, user, password);
+  const dockerCompose = generateDockerCompose(
+    dbType,
+    port,
+    name,
+    user,
+    password
+  );
   const dockerfile = generateDockerfile();
   const dockerignore = generateDockerignore();
   const envConfig = generateDockerEnvConfig(dbType, port, name, user, password);
 
   return {
     'docker-compose.yml': dockerCompose,
-    'Dockerfile': dockerfile,
+    Dockerfile: dockerfile,
     '.dockerignore': dockerignore,
-    envConfig
+    envConfig,
   };
 }
 
@@ -101,7 +107,7 @@ volumes:
 
 networks:
   coherent-network:
-    driver: bridge`
+    driver: bridge`,
   };
 
   return configs[dbType] || configs.postgres;
@@ -283,7 +289,7 @@ function generateDockerEnvConfig(dbType, port, dbName, dbUser, dbPassword) {
       DB_NAME: dbName,
       DB_USER: dbUser,
       DB_PASSWORD: dbPassword,
-      DATABASE_URL: `postgresql://${dbUser}:${dbPassword}@postgres:${port}/${dbName}`
+      DATABASE_URL: `postgresql://${dbUser}:${dbPassword}@postgres:${port}/${dbName}`,
     },
     mysql: {
       DB_HOST: 'mysql',
@@ -291,7 +297,7 @@ function generateDockerEnvConfig(dbType, port, dbName, dbUser, dbPassword) {
       DB_NAME: dbName,
       DB_USER: dbUser,
       DB_PASSWORD: dbPassword,
-      DATABASE_URL: `mysql://${dbUser}:${dbPassword}@mysql:${port}/${dbName}`
+      DATABASE_URL: `mysql://${dbUser}:${dbPassword}@mysql:${port}/${dbName}`,
     },
     mongodb: {
       DB_HOST: 'mongodb',
@@ -299,8 +305,8 @@ function generateDockerEnvConfig(dbType, port, dbName, dbUser, dbPassword) {
       DB_NAME: dbName,
       DB_USER: dbUser,
       DB_PASSWORD: dbPassword,
-      DATABASE_URL: `mongodb://${dbUser}:${dbPassword}@mongodb:${port}/${dbName}`
-    }
+      DATABASE_URL: `mongodb://${dbUser}:${dbPassword}@mongodb:${port}/${dbName}`,
+    },
   };
 
   return configs[dbType] || configs.postgres;

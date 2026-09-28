@@ -67,20 +67,20 @@ export class EventBus {
       defaultPriority: 0,
       errorHandler: null,
       filters: {
-        allowList: null,  // null means allow all
-        blockList: []
+        allowList: null, // null means allow all
+        blockList: [],
       },
       throttle: {
         enabled: false,
         defaultDelay: 100,
-        events: {}
+        events: {},
       },
       batching: {
         enabled: false,
         maxBatchSize: 10,
-        flushInterval: 16
+        flushInterval: 16,
       },
-      ...options
+      ...options,
     };
 
     // Performance tracking
@@ -90,7 +90,7 @@ export class EventBus {
       errorsOccurred: 0,
       averageEmitTime: 0,
       throttledEvents: 0,
-      filteredEvents: 0
+      filteredEvents: 0,
     };
 
     // Batching queue
@@ -161,7 +161,9 @@ export class EventBus {
       if (patternParts.length !== eventParts.length) {
         return false;
       }
-      return patternParts.every((part, i) => part === '*' || part === eventParts[i]);
+      return patternParts.every(
+        (part, i) => part === '*' || part === eventParts[i]
+      );
     }
 
     return pattern === event;
@@ -186,7 +188,9 @@ export class EventBus {
 
     // Handle throttling
     if (this.options.throttle.enabled) {
-      const throttleDelay = (this.options.throttle.events && this.options.throttle.events[event]) || this.options.throttle.defaultDelay;
+      const throttleDelay =
+        (this.options.throttle.events && this.options.throttle.events[event]) ||
+        this.options.throttle.defaultDelay;
       if (throttleDelay > 0) {
         return this.emitThrottled(event, data, throttleDelay);
       }
@@ -216,8 +220,13 @@ export class EventBus {
       }
 
       // Execute listeners
-      const promises = listeners.map(listenerObj =>
-        this.executeListener(listenerObj.listener, event, data, listenerObj.options)
+      const promises = listeners.map((listenerObj) =>
+        this.executeListener(
+          listenerObj.listener,
+          event,
+          data,
+          listenerObj.options
+        )
       );
 
       if (this.options.enableAsync) {
@@ -230,7 +239,6 @@ export class EventBus {
 
       this.stats.eventsEmitted++;
       this.stats.listenersExecuted += listeners.length;
-
     } catch (error) {
       this.stats.errorsOccurred++;
       this.handleError(error, event, data);
@@ -302,7 +310,9 @@ export class EventBus {
 
     // Check max listeners
     if (listeners.length >= this.options.maxListeners) {
-      console.warn(`[EventBus] Max listeners (${this.options.maxListeners}) reached for event: ${event}`);
+      console.warn(
+        `[EventBus] Max listeners (${this.options.maxListeners}) reached for event: ${event}`
+      );
     }
 
     // Create listener object
@@ -310,10 +320,13 @@ export class EventBus {
     const listenerObj = {
       listener,
       listenerId,
-      priority: options.priority !== undefined ? options.priority : this.options.defaultPriority,
+      priority:
+        options.priority !== undefined
+          ? options.priority
+          : this.options.defaultPriority,
       condition: options.condition || null,
       timeout: options.timeout || null,
-      options
+      options,
     };
 
     listener.__listenerId = listenerId;
@@ -321,7 +334,9 @@ export class EventBus {
 
     // Insert listener in priority order
     if (this.options.enablePriority) {
-      const insertIndex = listeners.findIndex(l => l.priority < listenerObj.priority);
+      const insertIndex = listeners.findIndex(
+        (l) => l.priority < listenerObj.priority
+      );
       if (insertIndex === -1) {
         listeners.push(listenerObj);
       } else {
@@ -367,7 +382,7 @@ export class EventBus {
     }
 
     const listeners = this.listeners.get(event);
-    const index = listeners.findIndex(l => l.listenerId === listenerId);
+    const index = listeners.findIndex((l) => l.listenerId === listenerId);
 
     if (index !== -1) {
       const listenerObj = listeners[index];
@@ -401,12 +416,16 @@ export class EventBus {
     return {
       emit: (event, data) => this.emit(prefix + event, data),
       emitSync: (event, data) => this.emitSync(prefix + event, data),
-      on: (event, listener, options) => this.on(prefix + event, listener, options),
-      once: (event, listener, options) => this.once(prefix + event, listener, options),
+      on: (event, listener, options) =>
+        this.on(prefix + event, listener, options),
+      once: (event, listener, options) =>
+        this.once(prefix + event, listener, options),
       off: (event, listenerId) => this.off(prefix + event, listenerId),
-      registerAction: (action, handler) => this.registerAction(prefix + action, handler),
-      handleAction: (action, element, event, data) => this.handleAction(prefix + action, element, event, data),
-      createScope: (child) => this.createScope(prefix + child)
+      registerAction: (action, handler) =>
+        this.registerAction(prefix + action, handler),
+      handleAction: (action, element, event, data) =>
+        this.handleAction(prefix + action, element, event, data),
+      createScope: (child) => this.createScope(prefix + child),
     };
   }
 
@@ -510,9 +529,12 @@ export class EventBus {
     try {
       const listeners = this.getEventListeners(event);
 
-      listeners.forEach(listenerObj => {
+      listeners.forEach((listenerObj) => {
         try {
-          if (!listenerObj.options.condition || listenerObj.options.condition(data)) {
+          if (
+            !listenerObj.options.condition ||
+            listenerObj.options.condition(data)
+          ) {
             listenerObj.listener.call(this, data, event);
           }
         } catch (error) {
@@ -522,7 +544,6 @@ export class EventBus {
 
       this.stats.eventsEmitted++;
       this.stats.listenersExecuted += listeners.length;
-
     } catch (error) {
       this.stats.errorsOccurred++;
       this.handleError(error, event, data);
@@ -579,7 +600,7 @@ export class EventBus {
         event,
         data,
         emit: this.emit.bind(this),
-        emitSync: this.emitSync.bind(this)
+        emitSync: this.emitSync.bind(this),
       });
     } catch (error) {
       this.handleError(error, `action:${action}`, { element, event, data });
@@ -598,7 +619,8 @@ export class EventBus {
    */
   updatePerformanceStats(duration) {
     const count = this.stats.eventsEmitted;
-    this.stats.averageEmitTime = (this.stats.averageEmitTime * (count - 1) + duration) / count;
+    this.stats.averageEmitTime =
+      (this.stats.averageEmitTime * (count - 1) + duration) / count;
   }
 
   /**
@@ -618,7 +640,7 @@ export class EventBus {
       errorsOccurred: 0,
       averageEmitTime: 0,
       throttledEvents: 0,
-      filteredEvents: 0
+      filteredEvents: 0,
     };
   }
 
@@ -659,7 +681,8 @@ export const emitSync = globalEventBus.emitSync.bind(globalEventBus);
 export const on = globalEventBus.on.bind(globalEventBus);
 export const once = globalEventBus.once.bind(globalEventBus);
 export const off = globalEventBus.off.bind(globalEventBus);
-export const registerAction = globalEventBus.registerAction.bind(globalEventBus);
+export const registerAction =
+  globalEventBus.registerAction.bind(globalEventBus);
 export const handleAction = globalEventBus.handleAction.bind(globalEventBus);
 
 export default EventBus;

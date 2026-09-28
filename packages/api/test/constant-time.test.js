@@ -6,15 +6,22 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { timingSafeEqualSpy } = vi.hoisted(() => ({ timingSafeEqualSpy: { fn: null } }));
+const { timingSafeEqualSpy } = vi.hoisted(() => ({
+  timingSafeEqualSpy: { fn: null },
+}));
 
 vi.mock('crypto', async (importOriginal) => {
   const actual = await importOriginal();
   timingSafeEqualSpy.fn = vi.fn(actual.timingSafeEqual);
-  return { ...actual, default: actual, timingSafeEqual: (...args) => timingSafeEqualSpy.fn(...args) };
+  return {
+    ...actual,
+    default: actual,
+    timingSafeEqual: (...args) => timingSafeEqualSpy.fn(...args),
+  };
 });
 
-const { generateJWT, verifyToken, hashPassword, verifyPassword } = await import('../src/security.js');
+const { generateJWT, verifyToken, hashPassword, verifyPassword } =
+  await import('../src/security.js');
 
 const SECRET = 'constant-time-secret';
 

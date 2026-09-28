@@ -3,7 +3,7 @@ import {
   createPersistentState,
   withLocalStorage,
   withSessionStorage,
-  withIndexedDB
+  withIndexedDB,
 } from '../src/state-persistence.js';
 
 // Mock localStorage and sessionStorage for Node.js environment
@@ -11,9 +11,15 @@ const localStorageMock = (() => {
   let store = {};
   return {
     getItem: (key) => store[key] || null,
-    setItem: (key, value) => { store[key] = value.toString(); },
-    removeItem: (key) => { delete store[key]; },
-    clear: () => { store = {}; }
+    setItem: (key, value) => {
+      store[key] = value.toString();
+    },
+    removeItem: (key) => {
+      delete store[key];
+    },
+    clear: () => {
+      store = {};
+    },
   };
 })();
 
@@ -21,9 +27,15 @@ const sessionStorageMock = (() => {
   let store = {};
   return {
     getItem: (key) => store[key] || null,
-    setItem: (key, value) => { store[key] = value.toString(); },
-    removeItem: (key) => { delete store[key]; },
-    clear: () => { store = {}; }
+    setItem: (key, value) => {
+      store[key] = value.toString();
+    },
+    removeItem: (key) => {
+      delete store[key];
+    },
+    clear: () => {
+      store = {};
+    },
   };
 })();
 
@@ -65,7 +77,7 @@ describe('State Persistence', () => {
     it('should support function updates', () => {
       const state = createPersistentState({ count: 0 }, { storage: 'memory' });
 
-      state.setState(prev => ({ count: prev.count + 1 }), false);
+      state.setState((prev) => ({ count: prev.count + 1 }), false);
       expect(state.getState('count')).toBe(1);
     });
 
@@ -109,7 +121,9 @@ describe('State Persistence', () => {
 
   describe('LocalStorage persistence', () => {
     it('should save to localStorage', async () => {
-      const state = withLocalStorage({ count: 0 }, 'test-state', { debounce: false });
+      const state = withLocalStorage({ count: 0 }, 'test-state', {
+        debounce: false,
+      });
 
       state.setState({ count: 1 });
       await state.save();
@@ -123,7 +137,9 @@ describe('State Persistence', () => {
     });
 
     it('should restore from localStorage', async () => {
-      const state1 = withLocalStorage({ count: 0 }, 'test-restore', { debounce: false });
+      const state1 = withLocalStorage({ count: 0 }, 'test-restore', {
+        debounce: false,
+      });
       state1.setState({ count: 42 });
       await state1.save();
 
@@ -134,7 +150,9 @@ describe('State Persistence', () => {
     });
 
     it('should clear storage', async () => {
-      const state = withLocalStorage({ count: 0 }, 'test-clear', { debounce: false });
+      const state = withLocalStorage({ count: 0 }, 'test-clear', {
+        debounce: false,
+      });
       state.setState({ count: 1 });
       await state.save();
 
@@ -147,7 +165,9 @@ describe('State Persistence', () => {
 
   describe('SessionStorage persistence', () => {
     it('should save to sessionStorage', async () => {
-      const state = withSessionStorage({ count: 0 }, 'test-session', { debounce: false });
+      const state = withSessionStorage({ count: 0 }, 'test-session', {
+        debounce: false,
+      });
 
       state.setState({ count: 1 });
       await state.save();
@@ -161,7 +181,9 @@ describe('State Persistence', () => {
     });
 
     it('should restore from sessionStorage', async () => {
-      const state1 = withSessionStorage({ count: 0 }, 'test-session-restore', { debounce: false });
+      const state1 = withSessionStorage({ count: 0 }, 'test-session-restore', {
+        debounce: false,
+      });
       state1.setState({ count: 99 });
       await state1.save();
 
@@ -179,7 +201,7 @@ describe('State Persistence', () => {
         'test-include',
         {
           include: ['count', 'name'],
-          debounce: false
+          debounce: false,
         }
       );
 
@@ -201,7 +223,7 @@ describe('State Persistence', () => {
         'test-exclude',
         {
           exclude: ['secret'],
-          debounce: false
+          debounce: false,
         }
       );
 
@@ -226,7 +248,7 @@ describe('State Persistence', () => {
       const state = withLocalStorage({ count: 0 }, 'test-debounce', {
         debounce: true,
         debounceDelay: 300,
-        onSave
+        onSave,
       });
 
       state.setState({ count: 1 });
@@ -251,7 +273,7 @@ describe('State Persistence', () => {
       const onSave = vi.fn();
       const state = withLocalStorage({ count: 0 }, 'test-no-debounce', {
         debounce: false,
-        onSave
+        onSave,
       });
 
       state.setState({ count: 1 });
@@ -267,7 +289,7 @@ describe('State Persistence', () => {
       const onSave = vi.fn();
       const state = withLocalStorage({ count: 0 }, 'test-onsave', {
         debounce: false,
-        onSave
+        onSave,
       });
 
       state.setState({ count: 1 });
@@ -278,7 +300,9 @@ describe('State Persistence', () => {
     });
 
     it('should call onLoad callback', async () => {
-      const state1 = withLocalStorage({ count: 0 }, 'test-onload', { debounce: false });
+      const state1 = withLocalStorage({ count: 0 }, 'test-onload', {
+        debounce: false,
+      });
       state1.setState({ count: 42 });
       await state1.save();
 
@@ -292,15 +316,18 @@ describe('State Persistence', () => {
 
     it('should call onError callback on save error', async () => {
       const onError = vi.fn();
-      const state = createPersistentState({ count: 0 }, {
-        storage: 'localStorage',
-        key: 'test-error',
-        debounce: false,
-        serialize: () => {
-          throw new Error('Serialization error');
-        },
-        onError
-      });
+      const state = createPersistentState(
+        { count: 0 },
+        {
+          storage: 'localStorage',
+          key: 'test-error',
+          debounce: false,
+          serialize: () => {
+            throw new Error('Serialization error');
+          },
+          onError,
+        }
+      );
 
       state.setState({ count: 1 });
       await state.save();
@@ -314,7 +341,7 @@ describe('State Persistence', () => {
       const state = withLocalStorage({ secret: 'sensitive' }, 'test-encrypt', {
         encrypt: true,
         encryptionKey: 'my-secret-key',
-        debounce: false
+        debounce: false,
       });
 
       state.setState({ secret: 'very-sensitive' });
@@ -331,7 +358,7 @@ describe('State Persistence', () => {
       const state1 = withLocalStorage({ secret: 'sensitive' }, 'test-decrypt', {
         encrypt: true,
         encryptionKey: 'my-secret-key',
-        debounce: false
+        debounce: false,
       });
 
       state1.setState({ secret: 'encrypted-value' });
@@ -339,7 +366,7 @@ describe('State Persistence', () => {
 
       const state2 = withLocalStorage({ secret: '' }, 'test-decrypt', {
         encrypt: true,
-        encryptionKey: 'my-secret-key'
+        encryptionKey: 'my-secret-key',
       });
 
       await state2.restore();
@@ -352,7 +379,7 @@ describe('State Persistence', () => {
       const state = withLocalStorage({ count: 0 }, 'test-version', {
         versioning: true,
         version: '1.0.0',
-        debounce: false
+        debounce: false,
       });
 
       state.setState({ count: 1 });
@@ -369,7 +396,7 @@ describe('State Persistence', () => {
       const state1 = withLocalStorage({ count: 0 }, 'test-migrate', {
         versioning: true,
         version: '1.0.0',
-        debounce: false
+        debounce: false,
       });
 
       state1.setState({ count: 5 });
@@ -385,7 +412,7 @@ describe('State Persistence', () => {
       const state2 = withLocalStorage({ count: 0 }, 'test-migrate', {
         versioning: true,
         version: '2.0.0',
-        migrate
+        migrate,
       });
 
       await state2.restore();
@@ -403,7 +430,7 @@ describe('State Persistence', () => {
 
       const state1 = withLocalStorage({ count: 0 }, 'test-ttl', {
         ttl: 1000, // 1 second
-        debounce: false
+        debounce: false,
       });
 
       state1.setState({ count: 1 });
@@ -424,13 +451,15 @@ describe('State Persistence', () => {
     it('should not expire fresh data', async () => {
       const state1 = withLocalStorage({ count: 0 }, 'test-ttl-fresh', {
         ttl: 10000, // 10 seconds
-        debounce: false
+        debounce: false,
       });
 
       state1.setState({ count: 42 });
       await state1.save();
 
-      const state2 = withLocalStorage({ count: 0 }, 'test-ttl-fresh', { ttl: 10000 });
+      const state2 = withLocalStorage({ count: 0 }, 'test-ttl-fresh', {
+        ttl: 10000,
+      });
       const restored = await state2.restore();
 
       expect(restored).toBe(true);
@@ -447,10 +476,13 @@ describe('State Persistence', () => {
     });
 
     it('should save and load from memory', async () => {
-      const state = createPersistentState({ count: 0 }, {
-        storage: 'memory',
-        key: 'test-memory'
-      });
+      const state = createPersistentState(
+        { count: 0 },
+        {
+          storage: 'memory',
+          key: 'test-memory',
+        }
+      );
 
       state.setState({ count: 42 }, false);
       await state.save();

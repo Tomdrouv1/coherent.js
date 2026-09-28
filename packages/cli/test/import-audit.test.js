@@ -83,7 +83,7 @@ const PACKAGE_EXPORTS = {
     'withEventState',
     'createActionHandlers',
     'createEventHandlers',
-    'createEventComponent'
+    'createEventComponent',
   ],
   '@coherent.js/database': [
     'setupDatabase',
@@ -102,29 +102,26 @@ const PACKAGE_EXPORTS = {
     'withPagination',
     'createConnection',
     'runMigrations',
-    'DEFAULT_DB_CONFIG'
+    'DEFAULT_DB_CONFIG',
   ],
-  '@coherent.js/integrations/express': [
-    'setupCoherent',
-    'expressEngine'
-  ],
+  '@coherent.js/integrations/express': ['setupCoherent', 'expressEngine'],
   '@coherent.js/integrations/fastify': [
     'coherentFastify',
     'createHandler',
-    'setupCoherent'
+    'setupCoherent',
   ],
   '@coherent.js/integrations/koa': [
     'setupCoherent',
     'coherentKoaMiddleware',
     'createHandler',
-    'createKoaIntegration'
+    'createKoaIntegration',
   ],
   '@coherent.js/integrations/nextjs': [
     'createCoherentNextHandler',
     'createCoherentAppRouterHandler',
     'createCoherentServerComponent',
     'createCoherentClientComponent',
-    'createNextIntegration'
+    'createNextIntegration',
   ],
   '@coherent.js/api': [
     'createRouter',
@@ -154,7 +151,7 @@ const PACKAGE_EXPORTS = {
     'hashPassword',
     'verifyPassword',
     'generateToken',
-    'withInputValidation'
+    'withInputValidation',
   ],
   '@coherent.js/client': [
     'hydrate',
@@ -169,8 +166,8 @@ const PACKAGE_EXPORTS = {
     'serializeStateWithWarning',
     'detectMismatch',
     'reportMismatches',
-    'formatPath'
-  ]
+    'formatPath',
+  ],
 };
 
 /**
@@ -192,9 +189,9 @@ function extractImports(code) {
     // Parse individual names, handling 'as' aliases
     const names = namesRaw
       .split(',')
-      .map(n => n.trim())
-      .filter(n => n)
-      .map(n => {
+      .map((n) => n.trim())
+      .filter((n) => n)
+      .map((n) => {
         // Handle "Foo as Bar" - take original name (Foo)
         const parts = n.split(/\s+as\s+/);
         return parts[0].trim();
@@ -247,7 +244,9 @@ function validateImports(imports) {
     // Check each named export
     for (const name of names) {
       if (!knownExports.includes(name)) {
-        errors.push(`Invalid import: '${name}' is not exported from '${from}'. Known exports: ${knownExports.join(', ')}`);
+        errors.push(
+          `Invalid import: '${name}' is not exported from '${from}'. Known exports: ${knownExports.join(', ')}`
+        );
       }
     }
   }
@@ -273,7 +272,10 @@ async function getAllSourceFiles(dir) {
     if (entry.isDirectory()) {
       const subFiles = await getAllSourceFiles(fullPath);
       files.push(...subFiles);
-    } else if (entry.isFile() && (entry.name.endsWith('.js') || entry.name.endsWith('.ts'))) {
+    } else if (
+      entry.isFile() &&
+      (entry.name.endsWith('.js') || entry.name.endsWith('.ts'))
+    ) {
       files.push(fullPath);
     }
   }
@@ -302,7 +304,7 @@ describe('Import audit: generated code imports from actual exports', () => {
         template: 'basic',
         runtime: 'built-in',
         skipInstall: true,
-        skipGit: true
+        skipGit: true,
       });
 
       const files = await getAllSourceFiles(join(tempDir, 'src'));
@@ -333,7 +335,7 @@ describe('Import audit: generated code imports from actual exports', () => {
         template: 'basic',
         runtime: 'express',
         skipInstall: true,
-        skipGit: true
+        skipGit: true,
       });
 
       const files = await getAllSourceFiles(join(tempDir, 'src'));
@@ -366,7 +368,7 @@ describe('Import audit: generated code imports from actual exports', () => {
         database: 'postgres',
         packages: ['api'],
         skipInstall: true,
-        skipGit: true
+        skipGit: true,
       });
 
       const files = await getAllSourceFiles(join(tempDir, 'src'));
@@ -399,7 +401,7 @@ describe('Import audit: generated code imports from actual exports', () => {
         database: 'sqlite',
         auth: 'jwt',
         skipInstall: true,
-        skipGit: true
+        skipGit: true,
       });
 
       const files = await getAllSourceFiles(join(tempDir, 'src'));
@@ -435,7 +437,7 @@ describe('Import audit: generated code imports from actual exports', () => {
             runtime: 'built-in',
             database,
             skipInstall: true,
-            skipGit: true
+            skipGit: true,
           });
 
           // Read db/index.js specifically
@@ -484,7 +486,7 @@ describe('Import audit: no undefined exports referenced', () => {
 
   test('validateImports catches invalid exports', () => {
     const imports = [
-      { names: ['invalidExport'], from: '@coherent.js/core', isDefault: false }
+      { names: ['invalidExport'], from: '@coherent.js/core', isDefault: false },
     ];
 
     const errors = validateImports(imports);
@@ -496,8 +498,16 @@ describe('Import audit: no undefined exports referenced', () => {
 
   test('validateImports allows valid exports', () => {
     const imports = [
-      { names: ['render', 'createComponent'], from: '@coherent.js/core', isDefault: false },
-      { names: ['setupCoherent'], from: '@coherent.js/integrations/express', isDefault: false }
+      {
+        names: ['render', 'createComponent'],
+        from: '@coherent.js/core',
+        isDefault: false,
+      },
+      {
+        names: ['setupCoherent'],
+        from: '@coherent.js/integrations/express',
+        isDefault: false,
+      },
     ];
 
     const errors = validateImports(imports);
@@ -508,7 +518,7 @@ describe('Import audit: no undefined exports referenced', () => {
   test('validateImports ignores non-coherent packages', () => {
     const imports = [
       { names: ['anything'], from: 'some-other-package', isDefault: false },
-      { names: ['express'], from: 'express', isDefault: true }
+      { names: ['express'], from: 'express', isDefault: true },
     ];
 
     const errors = validateImports(imports);

@@ -1,9 +1,9 @@
 /**
  * Coherent.js Test Renderer
- * 
+ *
  * Provides utilities for rendering and testing Coherent.js components
  * in a test environment.
- * 
+ *
  * @module testing/test-renderer
  */
 
@@ -34,18 +34,21 @@ export class TestRendererResult {
   getByTestId(testId) {
     // Capture from the start of the opening tag, so the match's `html`
     // carries the element's tag name and all of its attributes.
-    const regex = new RegExp(`<[a-zA-Z][\\w:-]*(?:\\s[^>]*?)?\\sdata-testid="${escapeRegExp(testId)}"[^>]*>([^<]*)<`, 'i');
+    const regex = new RegExp(
+      `<[a-zA-Z][\\w:-]*(?:\\s[^>]*?)?\\sdata-testid="${escapeRegExp(testId)}"[^>]*>([^<]*)<`,
+      'i'
+    );
     const match = this.html.match(regex);
-    
+
     if (!match) {
       throw new Error(`Unable to find element with testId: ${testId}`);
     }
-    
+
     return {
       text: match[1],
       html: match[0],
       testId,
-      exists: true
+      exists: true,
     };
   }
 
@@ -68,20 +71,21 @@ export class TestRendererResult {
    * @returns {Object} Element
    */
   getByText(text) {
-    const regex = typeof text === 'string' 
-      ? new RegExp(`>([^<]*${escapeRegExp(text)}[^<]*)<`, 'i')
-      : new RegExp(`>([^<]*)<`, 'i');
-    
+    const regex =
+      typeof text === 'string'
+        ? new RegExp(`>([^<]*${escapeRegExp(text)}[^<]*)<`, 'i')
+        : new RegExp(`>([^<]*)<`, 'i');
+
     const match = this.html.match(regex);
-    
+
     if (!match || (typeof text === 'string' && !match[1].includes(text))) {
       throw new Error(`Unable to find element with text: ${text}`);
     }
-    
+
     return {
       text: match[1],
       html: match[0],
-      exists: true
+      exists: true,
     };
   }
 
@@ -106,18 +110,21 @@ export class TestRendererResult {
   getByClassName(className) {
     // Whole class tokens: 'btn' matches class="btn primary", not "btn-primary".
     const token = escapeRegExp(className);
-    const regex = new RegExp(`<[a-zA-Z][\\w:-]*(?:\\s[^>]*?)?\\sclass="(?:[^"]*\\s)?${token}(?:\\s[^"]*)?"[^>]*>([^<]*)<`, 'i');
+    const regex = new RegExp(
+      `<[a-zA-Z][\\w:-]*(?:\\s[^>]*?)?\\sclass="(?:[^"]*\\s)?${token}(?:\\s[^"]*)?"[^>]*>([^<]*)<`,
+      'i'
+    );
     const match = this.html.match(regex);
-    
+
     if (!match) {
       throw new Error(`Unable to find element with className: ${className}`);
     }
-    
+
     return {
       text: match[1],
       html: match[0],
       className,
-      exists: true
+      exists: true,
     };
   }
 
@@ -143,12 +150,12 @@ export class TestRendererResult {
     const tag = escapeRegExp(tagName);
     const regex = new RegExp(`<${tag}(?=[\\s/>])[^>]*>([^<]*)</${tag}>`, 'gi');
     const matches = [...this.html.matchAll(regex)];
-    
-    return matches.map(match => ({
+
+    return matches.map((match) => ({
       text: match[1],
       html: match[0],
       tagName,
-      exists: true
+      exists: true,
     }));
   }
 
@@ -210,11 +217,11 @@ export class TestRendererResult {
 
 /**
  * Render a component for testing
- * 
+ *
  * @param {Object} component - Component to render
  * @param {Object} [options] - Render options
  * @returns {TestRendererResult} Test renderer result
- * 
+ *
  * @example
  * const { getByTestId } = renderComponent({
  *   div: {
@@ -222,7 +229,7 @@ export class TestRendererResult {
  *     text: 'Hello World'
  *   }
  * });
- * 
+ *
  * expect(getByTestId('my-div').text).toBe('Hello World');
  */
 export function renderComponent(component, options = {}) {
@@ -232,18 +239,21 @@ export function renderComponent(component, options = {}) {
 
 /**
  * Render a component asynchronously
- * 
+ *
  * @param {Object|Function} component - Component or component factory
  * @param {Object} [props] - Component props
  * @param {Object} [options] - Render options
  * @returns {Promise<TestRendererResult>} Test renderer result
  */
-export async function renderComponentAsync(component, props = {}, options = {}) {
+export async function renderComponentAsync(
+  component,
+  props = {},
+  options = {}
+) {
   // If component is a function, call it with props
-  const resolvedComponent = typeof component === 'function' 
-    ? await component(props)
-    : component;
-  
+  const resolvedComponent =
+    typeof component === 'function' ? await component(props) : component;
+
   const html = render(resolvedComponent, options);
   return new TestRendererResult(resolvedComponent, html);
 }
@@ -308,16 +318,16 @@ export class TestRenderer {
 
 /**
  * Create a test renderer
- * 
+ *
  * @param {Object} component - Component to render
  * @param {Object} [options] - Render options
  * @returns {TestRenderer} Test renderer instance
- * 
+ *
  * @example
  * const renderer = createTestRenderer(MyComponent);
  * const result = renderer.render();
  * expect(result.getByText('Hello')).toBeTruthy();
- * 
+ *
  * // Update and re-render
  * renderer.update(UpdatedComponent);
  * expect(renderer.getRenderCount()).toBe(2);
@@ -328,27 +338,27 @@ export function createTestRenderer(component, options = {}) {
 
 /**
  * Shallow render a component (only render top level)
- * 
+ *
  * @param {Object} component - Component to render
  * @returns {Object} Shallow rendered component
  */
 export function shallowRender(component) {
   // Clone component without rendering children
   const shallow = { ...component };
-  
-  Object.keys(shallow).forEach(key => {
+
+  Object.keys(shallow).forEach((key) => {
     if (shallow[key] && typeof shallow[key] === 'object') {
       if (shallow[key].children) {
         shallow[key] = {
           ...shallow[key],
           children: Array.isArray(shallow[key].children)
             ? shallow[key].children.map(() => ({ _shallow: true }))
-            : { _shallow: true }
+            : { _shallow: true },
         };
       }
     }
   });
-  
+
   return shallow;
 }
 
@@ -361,5 +371,5 @@ export default {
   createTestRenderer,
   shallowRender,
   TestRenderer,
-  TestRendererResult
+  TestRendererResult,
 };

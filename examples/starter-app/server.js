@@ -23,7 +23,11 @@ const hydrationBuildResult = await build({
   platform: 'browser',
   write: false,
   target: ['es2020'],
-  define: { 'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production') },
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(
+      process.env.NODE_ENV || 'production'
+    ),
+  },
   stdin: {
     sourcefile: 'hydration-entry.js',
     resolveDir: __dirname,
@@ -51,7 +55,12 @@ const createPage = () => ({
         head: {
           children: [
             { meta: { charset: 'utf-8' } },
-            { meta: { name: 'viewport', content: 'width=device-width, initial-scale=1.0' } },
+            {
+              meta: {
+                name: 'viewport',
+                content: 'width=device-width, initial-scale=1.0',
+              },
+            },
             { title: { text: 'Coherent.js Starter App' } },
             {
               style: {
@@ -163,11 +172,11 @@ const createPage = () => ({
                     border-radius: 3px;
                     font-family: 'Courier New', monospace;
                   }
-                `)
-              }
-            }
-          ]
-        }
+                `),
+              },
+            },
+          ],
+        },
       },
       {
         body: {
@@ -177,7 +186,12 @@ const createPage = () => ({
                 className: 'container',
                 children: [
                   { h1: { text: '🚀 Coherent.js Starter App' } },
-                  { p: { text: 'A simple full-stack example with SSR and hydration', className: 'subtitle' } },
+                  {
+                    p: {
+                      text: 'A simple full-stack example with SSR and hydration',
+                      className: 'subtitle',
+                    },
+                  },
 
                   // Counter component
                   Counter(INITIAL_STATE),
@@ -190,43 +204,43 @@ const createPage = () => ({
                         { h3: { text: '✨ How it works' } },
                         {
                           p: {
-                            text: '1. The counter is rendered on the server (SSR)'
-                          }
+                            text: '1. The counter is rendered on the server (SSR)',
+                          },
                         },
                         {
                           p: {
-                            text: '2. HTML is sent to the browser instantly'
-                          }
+                            text: '2. HTML is sent to the browser instantly',
+                          },
                         },
                         {
                           p: {
-                            text: '3. Client-side hydration makes it interactive'
-                          }
+                            text: '3. Client-side hydration makes it interactive',
+                          },
                         },
                         {
                           p: {
-                            text: '4. Click the buttons - they work!'
-                          }
-                        }
-                      ]
-                    }
-                  }
-                ]
-              }
+                            text: '4. Click the buttons - they work!',
+                          },
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
             },
 
             // Hydration script
             {
               script: {
                 type: 'module',
-                src: '/hydration.js'
-              }
-            }
-          ]
-        }
-      }
-    ]
-  }
+                src: '/hydration.js',
+              },
+            },
+          ],
+        },
+      },
+    ],
+  },
 });
 
 // HTTP Server
@@ -260,7 +274,9 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log('');
   console.log('🚀 Coherent.js Starter App');
-  console.log(`📍 Server running at: http://localhost:${server.address().port}`);
+  console.log(
+    `📍 Server running at: http://localhost:${server.address().port}`
+  );
   console.log('');
   console.log('✨ Features:');
   console.log('   • Server-Side Rendering (SSR)');

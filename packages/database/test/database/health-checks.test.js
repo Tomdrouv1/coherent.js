@@ -11,7 +11,7 @@ function adapterWith(testConnection) {
   return {
     createPool: vi.fn(async () => ({ query: async () => ({ rows: [] }) })),
     testConnection,
-    closePool: vi.fn(async () => {})
+    closePool: vi.fn(async () => {}),
   };
 }
 
@@ -23,9 +23,12 @@ describe('periodic health checks', () => {
   it('start on connect and report healthy and unhealthy checks', async () => {
     vi.useFakeTimers();
     const testConnection = vi.fn(async () => {});
-    const db = createDatabaseManager({ adapter: adapterWith(testConnection), healthCheckInterval: 1000 });
+    const db = createDatabaseManager({
+      adapter: adapterWith(testConnection),
+      healthCheckInterval: 1000,
+    });
     const events = [];
-    db.on('healthCheck', event => events.push(event.status));
+    db.on('healthCheck', (event) => events.push(event.status));
     db.on('error', () => {});
 
     await db.connect();
@@ -46,7 +49,11 @@ describe('periodic health checks', () => {
   it('can be turned off', async () => {
     vi.useFakeTimers();
     const testConnection = vi.fn(async () => {});
-    const db = createDatabaseManager({ adapter: adapterWith(testConnection), healthCheck: false, healthCheckInterval: 1000 });
+    const db = createDatabaseManager({
+      adapter: adapterWith(testConnection),
+      healthCheck: false,
+      healthCheckInterval: 1000,
+    });
 
     await db.connect();
     await vi.advanceTimersByTimeAsync(5000);
@@ -56,8 +63,12 @@ describe('periodic health checks', () => {
   });
 
   it('rejects an invalid interval when the manager is created', () => {
-    expect(() => createDatabaseManager({ adapter: adapterWith(async () => {}), healthCheckInterval: 0 }))
-      .toThrow('healthCheckInterval must be a positive number of milliseconds');
+    expect(() =>
+      createDatabaseManager({
+        adapter: adapterWith(async () => {}),
+        healthCheckInterval: 0,
+      })
+    ).toThrow('healthCheckInterval must be a positive number of milliseconds');
   });
 
   it('does not keep the process alive', async () => {
@@ -73,8 +84,12 @@ describe('backup helpers', () => {
   it('throw instead of pretending to back up or restore', async () => {
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    await expect(createBackup({}, { outputPath: './backups' })).rejects.toThrow('createBackup() is not implemented');
-    await expect(restoreBackup({}, './backups/x.sql')).rejects.toThrow('restoreBackup() is not implemented');
+    await expect(createBackup({}, { outputPath: './backups' })).rejects.toThrow(
+      'createBackup() is not implemented'
+    );
+    await expect(restoreBackup({}, './backups/x.sql')).rejects.toThrow(
+      'restoreBackup() is not implemented'
+    );
     expect(log).not.toHaveBeenCalled();
     log.mockRestore();
   });

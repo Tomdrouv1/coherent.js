@@ -46,18 +46,10 @@ export function generateTsConfig() {
 
       // Advanced
       noEmit: false,
-      incremental: true
+      incremental: true,
     },
-    include: [
-      'src/**/*'
-    ],
-    exclude: [
-      'node_modules',
-      'dist',
-      'build',
-      '**/*.test.ts',
-      '**/*.spec.ts'
-    ]
+    include: ['src/**/*'],
+    exclude: ['node_modules', 'dist', 'build', '**/*.test.ts', '**/*.spec.ts'],
   };
 }
 
@@ -88,17 +80,11 @@ export function generateJsConfig() {
       // Advanced
       baseUrl: '.',
       paths: {
-        '@/*': ['src/*']
-      }
+        '@/*': ['src/*'],
+      },
     },
-    include: [
-      'src/**/*'
-    ],
-    exclude: [
-      'node_modules',
-      'dist',
-      'build'
-    ]
+    include: ['src/**/*'],
+    exclude: ['node_modules', 'dist', 'build'],
   };
 }
 
@@ -108,6 +94,6 @@ export function generateJsConfig() {
 export function getTypeScriptDependencies() {
   return {
     typescript: '^5.9.2',
-    '@types/node': '^24.3.0'
+    '@types/node': '^24.3.0',
   };
 }

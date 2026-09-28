@@ -13,7 +13,9 @@ describe('SQLite adapter through DatabaseManager', () => {
   beforeEach(async () => {
     db = createDatabaseManager({ type: 'sqlite', database: ':memory:' });
     await db.connect();
-    await db.query('CREATE TABLE items (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)');
+    await db.query(
+      'CREATE TABLE items (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)'
+    );
   });
 
   afterEach(async () => {
@@ -27,24 +29,34 @@ describe('SQLite adapter through DatabaseManager', () => {
     expect(first).toMatchObject({ insertId: 1, affectedRows: 1 });
     expect(second).toMatchObject({ insertId: 2, affectedRows: 1 });
 
-    const updated = await db.query('UPDATE items SET name = ? WHERE id > ?', ['z', 0]);
+    const updated = await db.query('UPDATE items SET name = ? WHERE id > ?', [
+      'z',
+      0,
+    ]);
     expect(updated).toMatchObject({ affectedRows: 2, insertId: null });
 
     const deleted = await db.query('DELETE FROM items WHERE id = ?', [42]);
     expect(deleted.affectedRows).toBe(0);
 
     const { rows } = await db.query('SELECT id, name FROM items ORDER BY id');
-    expect(rows).toEqual([{ id: 1, name: 'z' }, { id: 2, name: 'z' }]);
+    expect(rows).toEqual([
+      { id: 1, name: 'z' },
+      { id: 2, name: 'z' },
+    ]);
   });
 
   it('supports transactions that commit', async () => {
     const tx = await db.transaction();
-    const result = await tx.query('INSERT INTO items (name) VALUES (?)', ['kept']);
+    const result = await tx.query('INSERT INTO items (name) VALUES (?)', [
+      'kept',
+    ]);
     expect(result.insertId).toBe(1);
     await tx.commit();
 
     expect(tx.isCommitted).toBe(true);
-    expect((await db.query('SELECT name FROM items')).rows).toEqual([{ name: 'kept' }]);
+    expect((await db.query('SELECT name FROM items')).rows).toEqual([
+      { name: 'kept' },
+    ]);
   });
 
   it('supports transactions that roll back', async () => {
@@ -60,7 +72,12 @@ describe('SQLite adapter through DatabaseManager', () => {
   it('returns stats instead of throwing', () => {
     const stats = db.getStats();
     expect(stats.isConnected).toBe(true);
-    expect(stats.poolStats).toEqual({ total: 1, available: 1, acquired: 0, waiting: 0 });
+    expect(stats.poolStats).toEqual({
+      total: 1,
+      available: 1,
+      acquired: 0,
+      waiting: 0,
+    });
   });
 
   it('is reported healthy by withHealthCheck', async () => {
@@ -74,7 +91,10 @@ describe('SQLite adapter through DatabaseManager', () => {
 describe('DatabaseManager.testConnection', () => {
   it('treats a ping that resolves to false as a failed connection test', async () => {
     const db = createDatabaseManager({
-      adapter: { createPool: async () => ({ query: async () => ({ rows: [] }) }), ping: async () => false }
+      adapter: {
+        createPool: async () => ({ query: async () => ({ rows: [] }) }),
+        ping: async () => false,
+      },
     });
     db.retryDelay = 0;
     vi.spyOn(console, 'warn').mockImplementation(() => {});

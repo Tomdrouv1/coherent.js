@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { BaseRenderer, DEFAULT_RENDERER_CONFIG } from '../src/rendering/base-renderer.js';
+import {
+  BaseRenderer,
+  DEFAULT_RENDERER_CONFIG,
+} from '../src/rendering/base-renderer.js';
 
 describe('BaseRenderer', () => {
   describe('Constructor and Configuration', () => {
@@ -9,7 +12,7 @@ describe('BaseRenderer', () => {
       expect(renderer.metrics).toEqual({
         startTime: null,
         endTime: null,
-        elementsProcessed: 0
+        elementsProcessed: 0,
       });
     });
 
@@ -17,40 +20,63 @@ describe('BaseRenderer', () => {
       const customConfig = {
         maxDepth: 50,
         enableValidation: false,
-        chunkSize: 2048
+        chunkSize: 2048,
       };
       const renderer = new BaseRenderer(customConfig);
 
       expect(renderer.config.maxDepth).toBe(50);
       expect(renderer.config.enableValidation).toBe(false);
       expect(renderer.config.chunkSize).toBe(2048);
-      expect(renderer.config.enableMonitoring).toBe(DEFAULT_RENDERER_CONFIG.enableMonitoring);
+      expect(renderer.config.enableMonitoring).toBe(
+        DEFAULT_RENDERER_CONFIG.enableMonitoring
+      );
     });
 
     it('should validate maxDepth configuration', () => {
-      expect(() => new BaseRenderer({ maxDepth: 'invalid' })).toThrow('maxDepth must be a number');
-      expect(() => new BaseRenderer({ maxDepth: 0 })).toThrow('maxDepth must be a positive number');
-      expect(() => new BaseRenderer({ maxDepth: -1 })).toThrow('maxDepth must be a positive number');
+      expect(() => new BaseRenderer({ maxDepth: 'invalid' })).toThrow(
+        'maxDepth must be a number'
+      );
+      expect(() => new BaseRenderer({ maxDepth: 0 })).toThrow(
+        'maxDepth must be a positive number'
+      );
+      expect(() => new BaseRenderer({ maxDepth: -1 })).toThrow(
+        'maxDepth must be a positive number'
+      );
     });
 
     it('should validate chunkSize configuration', () => {
-      expect(() => new BaseRenderer({ chunkSize: 'invalid' })).toThrow('chunkSize must be a number');
-      expect(() => new BaseRenderer({ chunkSize: 0 })).toThrow('chunkSize must be a positive number');
-      expect(() => new BaseRenderer({ chunkSize: -1 })).toThrow('chunkSize must be a positive number');
+      expect(() => new BaseRenderer({ chunkSize: 'invalid' })).toThrow(
+        'chunkSize must be a number'
+      );
+      expect(() => new BaseRenderer({ chunkSize: 0 })).toThrow(
+        'chunkSize must be a positive number'
+      );
+      expect(() => new BaseRenderer({ chunkSize: -1 })).toThrow(
+        'chunkSize must be a positive number'
+      );
     });
 
     it('should validate yieldThreshold configuration', () => {
-      expect(() => new BaseRenderer({ yieldThreshold: 'invalid' })).toThrow('yieldThreshold must be a number');
-      expect(() => new BaseRenderer({ yieldThreshold: 0 })).toThrow('yieldThreshold must be a positive number');
-      expect(() => new BaseRenderer({ yieldThreshold: -1 })).toThrow('yieldThreshold must be a positive number');
+      expect(() => new BaseRenderer({ yieldThreshold: 'invalid' })).toThrow(
+        'yieldThreshold must be a number'
+      );
+      expect(() => new BaseRenderer({ yieldThreshold: 0 })).toThrow(
+        'yieldThreshold must be a positive number'
+      );
+      expect(() => new BaseRenderer({ yieldThreshold: -1 })).toThrow(
+        'yieldThreshold must be a positive number'
+      );
     });
 
     it('should accept valid configurations', () => {
-      expect(() => new BaseRenderer({
-        maxDepth: 10,
-        chunkSize: 512,
-        yieldThreshold: 50
-      })).not.toThrow();
+      expect(
+        () =>
+          new BaseRenderer({
+            maxDepth: 10,
+            chunkSize: 512,
+            yieldThreshold: 50,
+          })
+      ).not.toThrow();
     });
   });
 
@@ -79,11 +105,17 @@ describe('BaseRenderer', () => {
 
     it('should validate function components', () => {
       expect(renderer.isValidComponent(() => ({}))).toBe(true);
-      expect(renderer.isValidComponent(function() { return {}; })).toBe(true);
+      expect(
+        renderer.isValidComponent(function () {
+          return {};
+        })
+      ).toBe(true);
     });
 
     it('should validate array components', () => {
-      expect(renderer.isValidComponent(['text', 42, { div: 'content' }])).toBe(true);
+      expect(renderer.isValidComponent(['text', 42, { div: 'content' }])).toBe(
+        true
+      );
       expect(renderer.isValidComponent([])).toBe(true);
     });
 
@@ -113,8 +145,12 @@ describe('BaseRenderer', () => {
     });
 
     it('should reject depths exceeding maxDepth', () => {
-      expect(() => renderer.validateDepth(6)).toThrow('Maximum render depth (5) exceeded');
-      expect(() => renderer.validateDepth(10)).toThrow('Maximum render depth (5) exceeded');
+      expect(() => renderer.validateDepth(6)).toThrow(
+        'Maximum render depth (5) exceeded'
+      );
+      expect(() => renderer.validateDepth(10)).toThrow(
+        'Maximum render depth (5) exceeded'
+      );
     });
   });
 
@@ -126,25 +162,52 @@ describe('BaseRenderer', () => {
     });
 
     it('should process null and undefined components', () => {
-      expect(renderer.processComponentType(null)).toEqual({ type: 'empty', value: '' });
-      expect(renderer.processComponentType(undefined)).toEqual({ type: 'empty', value: '' });
+      expect(renderer.processComponentType(null)).toEqual({
+        type: 'empty',
+        value: '',
+      });
+      expect(renderer.processComponentType(undefined)).toEqual({
+        type: 'empty',
+        value: '',
+      });
     });
 
     it('should process string components', () => {
-      expect(renderer.processComponentType('Hello')).toEqual({ type: 'text', value: 'Hello' });
-      expect(renderer.processComponentType('')).toEqual({ type: 'text', value: '' });
+      expect(renderer.processComponentType('Hello')).toEqual({
+        type: 'text',
+        value: 'Hello',
+      });
+      expect(renderer.processComponentType('')).toEqual({
+        type: 'text',
+        value: '',
+      });
     });
 
     it('should process number components', () => {
-      expect(renderer.processComponentType(42)).toEqual({ type: 'text', value: '42' });
-      expect(renderer.processComponentType(0)).toEqual({ type: 'text', value: '0' });
-      expect(renderer.processComponentType(-1)).toEqual({ type: 'text', value: '-1' });
+      expect(renderer.processComponentType(42)).toEqual({
+        type: 'text',
+        value: '42',
+      });
+      expect(renderer.processComponentType(0)).toEqual({
+        type: 'text',
+        value: '0',
+      });
+      expect(renderer.processComponentType(-1)).toEqual({
+        type: 'text',
+        value: '-1',
+      });
     });
 
     it('should treat boolean components as empty', () => {
       // so `cond && { li: ... }` can sit in a children array
-      expect(renderer.processComponentType(true)).toEqual({ type: 'empty', value: '' });
-      expect(renderer.processComponentType(false)).toEqual({ type: 'empty', value: '' });
+      expect(renderer.processComponentType(true)).toEqual({
+        type: 'empty',
+        value: '',
+      });
+      expect(renderer.processComponentType(false)).toEqual({
+        type: 'empty',
+        value: '',
+      });
     });
 
     it('should process function components', () => {

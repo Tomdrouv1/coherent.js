@@ -24,9 +24,10 @@ export function hydrateForm(formSelector, options = {}) {
     return null;
   }
 
-  const form = typeof formSelector === 'string'
-    ? document.querySelector(formSelector)
-    : formSelector;
+  const form =
+    typeof formSelector === 'string'
+      ? document.querySelector(formSelector)
+      : formSelector;
 
   if (!form) {
     console.warn(`Form not found: ${formSelector}`);
@@ -45,8 +46,8 @@ export function hydrateForm(formSelector, options = {}) {
     classNames: {
       invalid: DEFAULT_CLASS_NAMES.invalid,
       error: DEFAULT_CLASS_NAMES.error,
-      ...options.classNames
-    }
+      ...options.classNames,
+    },
   };
 
   // Form state
@@ -55,7 +56,7 @@ export function hydrateForm(formSelector, options = {}) {
     errors: {},
     touched: {},
     isSubmitting: false,
-    fields: new Map()
+    fields: new Map(),
   };
 
   // Debounce timers
@@ -67,20 +68,22 @@ export function hydrateForm(formSelector, options = {}) {
   function discoverFields() {
     const inputs = form.querySelectorAll('[name]');
 
-    inputs.forEach(input => {
+    inputs.forEach((input) => {
       const name = input.getAttribute('name');
       const field = {
         name,
         element: input,
         type: input.getAttribute('type') || 'text',
-        required: input.hasAttribute('required') || input.dataset.required === 'true',
+        required:
+          input.hasAttribute('required') || input.dataset.required === 'true',
         validators: parseValidators(input.dataset.validators),
-        errorElement: null
+        errorElement: null,
       };
 
       // Find or create error display element
       const errorId = `${name}-error`;
-      field.errorElement = document.getElementById(errorId) || createErrorElement(name, input);
+      field.errorElement =
+        document.getElementById(errorId) || createErrorElement(name, input);
 
       state.fields.set(name, field);
       state.values[name] = getFieldValue(input);
@@ -101,7 +104,8 @@ export function hydrateForm(formSelector, options = {}) {
 
     // Insert after input or its parent field wrapper. Keyed off data-field
     // rather than a class, so consumers can name the wrapper what they like.
-    const fieldWrapper = inputElement.closest('[data-field]') || inputElement.parentElement;
+    const fieldWrapper =
+      inputElement.closest('[data-field]') || inputElement.parentElement;
     fieldWrapper.appendChild(errorDiv);
 
     return errorDiv;
@@ -153,7 +157,10 @@ export function hydrateForm(formSelector, options = {}) {
     let error = null;
 
     // Required validation
-    if (field.required && (value === null || value === undefined || value === '')) {
+    if (
+      field.required &&
+      (value === null || value === undefined || value === '')
+    ) {
       error = 'This field is required';
     }
 
@@ -184,7 +191,9 @@ export function hydrateForm(formSelector, options = {}) {
    * throws InvalidCharacterError.
    */
   function invalidClasses() {
-    return opts.classNames.invalid ? opts.classNames.invalid.trim().split(/\s+/) : [];
+    return opts.classNames.invalid
+      ? opts.classNames.invalid.trim().split(/\s+/)
+      : [];
   }
 
   /**
@@ -201,13 +210,13 @@ export function hydrateForm(formSelector, options = {}) {
       errorElement.textContent = error;
       errorElement.style.display = 'block';
       element.setAttribute('aria-invalid', 'true');
-      invalidClasses().forEach(name => element.classList.add(name));
+      invalidClasses().forEach((name) => element.classList.add(name));
     } else {
       // Hide error
       errorElement.textContent = '';
       errorElement.style.display = 'none';
       element.setAttribute('aria-invalid', 'false');
-      invalidClasses().forEach(name => element.classList.remove(name));
+      invalidClasses().forEach((name) => element.classList.remove(name));
     }
   }
 
@@ -282,8 +291,9 @@ export function hydrateForm(formSelector, options = {}) {
 
     if (!isValid) {
       // Focus first error field
-      const firstErrorField = Array.from(state.fields.values())
-        .find(field => state.errors[field.name]);
+      const firstErrorField = Array.from(state.fields.values()).find(
+        (field) => state.errors[field.name]
+      );
 
       if (firstErrorField) {
         firstErrorField.element.focus();
@@ -321,7 +331,7 @@ export function hydrateForm(formSelector, options = {}) {
               options.onSuccess(submitData);
             }
           })
-          .catch(error => {
+          .catch((error) => {
             state.isSubmitting = false;
             if (options.onError) {
               options.onError(error);
@@ -344,7 +354,7 @@ export function hydrateForm(formSelector, options = {}) {
    */
   function attachEventListeners() {
     // Input change events
-    state.fields.forEach(field => {
+    state.fields.forEach((field) => {
       field.element.addEventListener('input', handleChange);
       field.element.addEventListener('blur', handleBlur);
     });
@@ -357,7 +367,7 @@ export function hydrateForm(formSelector, options = {}) {
    * Detach event listeners (cleanup)
    */
   function detachEventListeners() {
-    state.fields.forEach(field => {
+    state.fields.forEach((field) => {
       field.element.removeEventListener('input', handleChange);
       field.element.removeEventListener('blur', handleBlur);
     });
@@ -365,7 +375,7 @@ export function hydrateForm(formSelector, options = {}) {
     form.removeEventListener('submit', handleSubmit);
 
     // Clear debounce timers
-    debounceTimers.forEach(timer => clearTimeout(timer));
+    debounceTimers.forEach((timer) => clearTimeout(timer));
     debounceTimers.clear();
   }
 
@@ -373,7 +383,7 @@ export function hydrateForm(formSelector, options = {}) {
    * Reset form to initial state
    */
   function reset() {
-    state.fields.forEach(field => {
+    state.fields.forEach((field) => {
       setFieldValue(field.name, '');
       state.touched[field.name] = false;
       state.errors[field.name] = null;
@@ -402,14 +412,14 @@ export function hydrateForm(formSelector, options = {}) {
     },
     reset,
     destroy: detachEventListeners,
-    isValid: () => Object.values(state.errors).every(e => !e),
+    isValid: () => Object.values(state.errors).every((e) => !e),
     isSubmitting: () => state.isSubmitting,
     getState: () => ({
       values: { ...state.values },
       errors: { ...state.errors },
       touched: { ...state.touched },
-      isSubmitting: state.isSubmitting
-    })
+      isSubmitting: state.isSubmitting,
+    }),
   };
 }
 

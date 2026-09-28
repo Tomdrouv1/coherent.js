@@ -68,7 +68,9 @@ describe('router request body parsing', () => {
   });
 
   it('preserves objects nested inside arrays', async () => {
-    const body = await postBody({ users: [{ name: 'ada' }, { name: 'grace' }] });
+    const body = await postBody({
+      users: [{ name: 'ada' }, { name: 'grace' }],
+    });
 
     expect(body.users).toEqual([{ name: 'ada' }, { name: 'grace' }]);
   });
@@ -87,7 +89,13 @@ describe('router request body parsing', () => {
   });
 
   it('preserves primitive types', async () => {
-    const body = await postBody({ n: 42, f: 1.5, t: true, f2: false, nil: null });
+    const body = await postBody({
+      n: 42,
+      f: 1.5,
+      t: true,
+      f2: false,
+      nil: null,
+    });
 
     expect(body).toEqual({ n: 42, f: 1.5, t: true, f2: false, nil: null });
   });
@@ -102,7 +110,9 @@ describe('router request body parsing', () => {
   });
 
   it('drops constructor and prototype keys', async () => {
-    const body = await postBody('{"constructor":{"prototype":{"p":1}},"prototype":{"q":2},"ok":1}');
+    const body = await postBody(
+      '{"constructor":{"prototype":{"p":1}},"prototype":{"q":2},"ok":1}'
+    );
 
     expect(Object.hasOwn(body, 'constructor')).toBe(false);
     expect(Object.hasOwn(body, 'prototype')).toBe(false);
@@ -112,7 +122,9 @@ describe('router request body parsing', () => {
   });
 
   it('strips unsafe keys at every depth, including through arrays', async () => {
-    const body = await postBody('{"items":[{"__proto__":{"bad":1},"keep":"me"}]}');
+    const body = await postBody(
+      '{"items":[{"__proto__":{"bad":1},"keep":"me"}]}'
+    );
 
     expect({}.bad).toBeUndefined();
     expect(body.items[0]).toEqual({ keep: 'me' });

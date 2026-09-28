@@ -34,24 +34,59 @@ export interface ExtractedData {
 // Load generated data or use fallback
 const data: ExtractedData = loadGeneratedData() ?? {
   elements: {},
-  voidElements: ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'],
+  voidElements: [
+    'area',
+    'base',
+    'br',
+    'col',
+    'embed',
+    'hr',
+    'img',
+    'input',
+    'link',
+    'meta',
+    'param',
+    'source',
+    'track',
+    'wbr',
+  ],
   globalAttributes: [
     { name: 'id', type: 'string', optional: true },
     { name: 'className', type: 'string', optional: true },
     { name: 'class', type: 'string', optional: true },
-    { name: 'style', type: 'string | Record<string, string | number>', optional: true },
+    {
+      name: 'style',
+      type: 'string | Record<string, string | number>',
+      optional: true,
+    },
     { name: 'title', type: 'string', optional: true },
     { name: 'hidden', type: 'boolean', optional: true },
     { name: 'tabIndex', type: 'number', optional: true },
     { name: 'key', type: 'string | number', optional: true },
     { name: 'text', type: 'string | number', optional: true },
     { name: 'html', type: 'string', optional: true },
-    { name: 'children', type: 'CoherentChild | CoherentChild[]', optional: true },
+    {
+      name: 'children',
+      type: 'CoherentChild | CoherentChild[]',
+      optional: true,
+    },
   ],
   eventHandlers: [
-    { name: 'onClick', type: 'string | ((event: MouseEvent) => void)', optional: true },
-    { name: 'onChange', type: 'string | ((event: Event) => void)', optional: true },
-    { name: 'onSubmit', type: 'string | ((event: SubmitEvent) => void)', optional: true },
+    {
+      name: 'onClick',
+      type: 'string | ((event: MouseEvent) => void)',
+      optional: true,
+    },
+    {
+      name: 'onChange',
+      type: 'string | ((event: Event) => void)',
+      optional: true,
+    },
+    {
+      name: 'onSubmit',
+      type: 'string | ((event: SubmitEvent) => void)',
+      optional: true,
+    },
   ],
   generatedAt: 'fallback',
 };
@@ -61,23 +96,116 @@ const data: ExtractedData = loadGeneratedData() ?? {
  */
 export const HTML_ELEMENTS: Set<string> = new Set([
   // Always include core elements
-  'div', 'span', 'p', 'a', 'button', 'input', 'img', 'form',
-  'ul', 'ol', 'li', 'table', 'tr', 'td', 'th', 'thead', 'tbody',
-  'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-  'section', 'article', 'header', 'footer', 'nav', 'main', 'aside',
-  'label', 'select', 'option', 'textarea', 'fieldset', 'legend',
-  'video', 'audio', 'source', 'canvas', 'iframe',
-  'script', 'style', 'link', 'meta',
-  'br', 'hr', 'pre', 'code', 'em', 'strong', 'small', 'mark',
-  'figure', 'figcaption', 'blockquote', 'cite',
-  'details', 'summary', 'dialog', 'menu',
-  'time', 'progress', 'meter', 'output', 'datalist',
-  'dl', 'dt', 'dd', 'address', 'abbr', 'dfn', 'sub', 'sup',
-  'i', 'b', 'u', 's', 'kbd', 'samp', 'var', 'ruby', 'rt', 'rp',
-  'bdi', 'bdo', 'wbr', 'data', 'embed', 'object', 'param',
-  'map', 'area', 'track', 'picture', 'col', 'colgroup', 'caption',
-  'tfoot', 'optgroup', 'html', 'head', 'body', 'title', 'base',
-  'template', 'slot', 'noscript', 'hgroup', 'search',
+  'div',
+  'span',
+  'p',
+  'a',
+  'button',
+  'input',
+  'img',
+  'form',
+  'ul',
+  'ol',
+  'li',
+  'table',
+  'tr',
+  'td',
+  'th',
+  'thead',
+  'tbody',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'section',
+  'article',
+  'header',
+  'footer',
+  'nav',
+  'main',
+  'aside',
+  'label',
+  'select',
+  'option',
+  'textarea',
+  'fieldset',
+  'legend',
+  'video',
+  'audio',
+  'source',
+  'canvas',
+  'iframe',
+  'script',
+  'style',
+  'link',
+  'meta',
+  'br',
+  'hr',
+  'pre',
+  'code',
+  'em',
+  'strong',
+  'small',
+  'mark',
+  'figure',
+  'figcaption',
+  'blockquote',
+  'cite',
+  'details',
+  'summary',
+  'dialog',
+  'menu',
+  'time',
+  'progress',
+  'meter',
+  'output',
+  'datalist',
+  'dl',
+  'dt',
+  'dd',
+  'address',
+  'abbr',
+  'dfn',
+  'sub',
+  'sup',
+  'i',
+  'b',
+  'u',
+  's',
+  'kbd',
+  'samp',
+  'var',
+  'ruby',
+  'rt',
+  'rp',
+  'bdi',
+  'bdo',
+  'wbr',
+  'data',
+  'embed',
+  'object',
+  'param',
+  'map',
+  'area',
+  'track',
+  'picture',
+  'col',
+  'colgroup',
+  'caption',
+  'tfoot',
+  'optgroup',
+  'html',
+  'head',
+  'body',
+  'title',
+  'base',
+  'template',
+  'slot',
+  'noscript',
+  'hgroup',
+  'search',
   // Add any elements from generated data
   ...Object.keys(data.elements),
 ]);
@@ -91,10 +219,30 @@ export const VOID_ELEMENTS: Set<string> = new Set(data.voidElements);
  * Coherent.js specific properties that can appear on any element.
  */
 const COHERENT_PROPERTIES: AttributeInfo[] = [
-  { name: 'text', type: 'string | number', optional: true, description: 'Text content (escaped during render)' },
-  { name: 'html', type: 'string', optional: true, description: 'Raw HTML content (not escaped - use with caution)' },
-  { name: 'children', type: 'CoherentChild | CoherentChild[]', optional: true, description: 'Child elements' },
-  { name: 'key', type: 'string | number', optional: true, description: 'Unique key for list reconciliation' },
+  {
+    name: 'text',
+    type: 'string | number',
+    optional: true,
+    description: 'Text content (escaped during render)',
+  },
+  {
+    name: 'html',
+    type: 'string',
+    optional: true,
+    description: 'Raw HTML content (not escaped - use with caution)',
+  },
+  {
+    name: 'children',
+    type: 'CoherentChild | CoherentChild[]',
+    optional: true,
+    description: 'Child elements',
+  },
+  {
+    name: 'key',
+    type: 'string | number',
+    optional: true,
+    description: 'Unique key for list reconciliation',
+  },
 ];
 
 /**
@@ -175,7 +323,10 @@ export function isVoidElement(tagName: string): boolean {
  * @param attributeName - The attribute name to check
  * @returns true if the attribute is valid for the element
  */
-export function isValidAttribute(tagName: string, attributeName: string): boolean {
+export function isValidAttribute(
+  tagName: string,
+  attributeName: string
+): boolean {
   // Always allow data-* attributes
   if (attributeName.startsWith('data-')) {
     return true;
@@ -187,7 +338,7 @@ export function isValidAttribute(tagName: string, attributeName: string): boolea
   }
 
   const validAttrs = getAttributesForElement(tagName);
-  return validAttrs.some(attr => attr.name === attributeName);
+  return validAttrs.some((attr) => attr.name === attributeName);
 }
 
 /**
@@ -200,7 +351,11 @@ export function isValidAttribute(tagName: string, attributeName: string): boolea
  * @param maxDistance - Maximum edit distance for suggestions (default: 3)
  * @returns Array of suggested attribute names, sorted by distance
  */
-export function getSuggestions(tagName: string, attributeName: string, maxDistance = 3): string[] {
+export function getSuggestions(
+  tagName: string,
+  attributeName: string,
+  maxDistance = 3
+): string[] {
   const validAttrs = getAttributesForElement(tagName);
   const suggestions: Array<{ name: string; distance: number }> = [];
 
@@ -218,7 +373,10 @@ export function getSuggestions(tagName: string, attributeName: string, maxDistan
     }
 
     // Calculate edit distance
-    const distance = levenshteinDistance(attributeName.toLowerCase(), attr.name.toLowerCase());
+    const distance = levenshteinDistance(
+      attributeName.toLowerCase(),
+      attr.name.toLowerCase()
+    );
     if (distance <= maxDistance && distance > 0) {
       suggestions.push({ name: attr.name, distance });
     }
@@ -227,7 +385,7 @@ export function getSuggestions(tagName: string, attributeName: string, maxDistan
   return suggestions
     .sort((a, b) => a.distance - b.distance)
     .slice(0, 3)
-    .map(s => s.name);
+    .map((s) => s.name);
 }
 
 /**
@@ -254,8 +412,8 @@ function levenshteinDistance(a: string, b: string): number {
       } else {
         matrix[i][j] = Math.min(
           matrix[i - 1][j - 1] + 1, // substitution
-          matrix[i][j - 1] + 1,     // insertion
-          matrix[i - 1][j] + 1      // deletion
+          matrix[i][j - 1] + 1, // insertion
+          matrix[i - 1][j] + 1 // deletion
         );
       }
     }
@@ -271,9 +429,12 @@ function levenshteinDistance(a: string, b: string): number {
  * @param attributeName - The attribute name
  * @returns Type string or undefined if attribute not found
  */
-export function getAttributeType(tagName: string, attributeName: string): string | undefined {
+export function getAttributeType(
+  tagName: string,
+  attributeName: string
+): string | undefined {
   const validAttrs = getAttributesForElement(tagName);
-  const attr = validAttrs.find(a => a.name === attributeName);
+  const attr = validAttrs.find((a) => a.name === attributeName);
   return attr?.type;
 }
 
@@ -284,9 +445,12 @@ export function getAttributeType(tagName: string, attributeName: string): string
  * @param attributeName - The attribute name
  * @returns Description string or undefined if not available
  */
-export function getAttributeDescription(tagName: string, attributeName: string): string | undefined {
+export function getAttributeDescription(
+  tagName: string,
+  attributeName: string
+): string | undefined {
   const validAttrs = getAttributesForElement(tagName);
-  const attr = validAttrs.find(a => a.name === attributeName);
+  const attr = validAttrs.find((a) => a.name === attributeName);
   return attr?.description;
 }
 

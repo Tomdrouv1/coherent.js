@@ -18,16 +18,16 @@ export function withOpenApi(options = {}) {
     if (!req.openapi) {
       req.openapi = {};
     }
-    
+
     // Store endpoint metadata
     req.openapi[req.method + req.url] = {
       summary: options.summary || '',
       description: options.description || '',
       responses: options.responses || {},
       requestBody: options.requestBody,
-      parameters: options.parameters || []
+      parameters: options.parameters || [],
     };
-    
+
     next();
   };
 }
@@ -47,44 +47,45 @@ export function generateOpenApiSpec(appInfo = {}, routes = []) {
     info: {
       title: appInfo.title || 'Coherent.js API',
       version: appInfo.version || '1.0.0',
-      description: appInfo.description || 'API documentation for Coherent.js application'
+      description:
+        appInfo.description || 'API documentation for Coherent.js application',
     },
-    paths: {}
+    paths: {},
   };
-  
+
   // Process each route
-  routes.forEach(route => {
+  routes.forEach((route) => {
     const path = normalizePath(route.path);
     const method = route.method.toLowerCase();
-    
+
     if (!spec.paths[path]) {
       spec.paths[path] = {};
     }
-    
+
     // Add operation
     spec.paths[path][method] = {
       summary: route.openapi?.summary || '',
       description: route.openapi?.description || '',
       parameters: route.openapi?.parameters || [],
       responses: route.openapi?.responses || {
-        '200': {
-          description: 'Successful response'
-        }
-      }
+        200: {
+          description: 'Successful response',
+        },
+      },
     };
-    
+
     // Add request body if specified
     if (route.openapi?.requestBody) {
       spec.paths[path][method].requestBody = {
         content: {
           'application/json': {
-            schema: route.openapi.requestBody
-          }
-        }
+            schema: route.openapi.requestBody,
+          },
+        },
       };
     }
   });
-  
+
   return spec;
 }
 
@@ -152,5 +153,5 @@ export default {
   withOpenApi,
   generateOpenApiSpec,
   createOpenApiHandler,
-  createSwaggerUIHandler
+  createSwaggerUIHandler,
 };

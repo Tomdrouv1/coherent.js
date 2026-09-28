@@ -12,7 +12,7 @@ import { createRouter } from '../../../api/src/index.js';
 
 const User = {
   name: 'User',
-  find: async (id) => (id === '1' ? { id: 1, name: 'Ada' } : null)
+  find: async (id) => (id === '1' ? { id: 1, name: 'Ada' } : null),
 };
 
 let server;
@@ -35,7 +35,9 @@ describe('withModel under the @coherent.js/api router', () => {
   it('answers 404 for a missing record on an addRoute() route', async () => {
     const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
     const router = createRouter();
-    router.get('/users/:id', (req) => ({ user: req.user }), { middleware: [withModel(User)] });
+    router.get('/users/:id', (req) => ({ user: req.user }), {
+      middleware: [withModel(User)],
+    });
 
     const missing = await get(router, '/users/2');
     expect(missing).toEqual({ status: 404, body: { error: 'User not found' } });
@@ -46,9 +48,12 @@ describe('withModel under the @coherent.js/api router', () => {
     const router = createRouter({
       users: {
         ':id': {
-          GET: { middleware: [withModel(User)], handler: (req) => ({ user: req.user }) }
-        }
-      }
+          GET: {
+            middleware: [withModel(User)],
+            handler: (req) => ({ user: req.user }),
+          },
+        },
+      },
     });
 
     const missing = await get(router, '/users/2');
@@ -57,18 +62,28 @@ describe('withModel under the @coherent.js/api router', () => {
 
   it('still loads a record that exists', async () => {
     const router = createRouter();
-    router.get('/users/:id', (req) => ({ user: req.user }), { middleware: [withModel(User)] });
+    router.get('/users/:id', (req) => ({ user: req.user }), {
+      middleware: [withModel(User)],
+    });
 
     const found = await get(router, '/users/1');
-    expect(found).toEqual({ status: 200, body: { user: { id: 1, name: 'Ada' } } });
+    expect(found).toEqual({
+      status: 200,
+      body: { user: { id: 1, name: 'Ada' } },
+    });
   });
 
   it('answers 400 when the route parameter is missing', async () => {
     const router = createRouter();
-    router.get('/users', (req) => ({ user: req.user }), { middleware: [withModel(User)] });
+    router.get('/users', (req) => ({ user: req.user }), {
+      middleware: [withModel(User)],
+    });
 
     const missing = await get(router, '/users');
-    expect(missing).toEqual({ status: 400, body: { error: "Parameter 'id' is required" } });
+    expect(missing).toEqual({
+      status: 400,
+      body: { error: "Parameter 'id' is required" },
+    });
   });
 });
 
@@ -76,11 +91,14 @@ describe('withQueryValidation under the @coherent.js/api router', () => {
   it('answers 400, not 500, for an invalid query parameter', async () => {
     const router = createRouter();
     router.get('/users', (req) => ({ query: req.query }), {
-      middleware: [withQueryValidation({ age: { type: 'number', min: 0 } })]
+      middleware: [withQueryValidation({ age: { type: 'number', min: 0 } })],
     });
 
     const invalid = await get(router, '/users?age=abc');
-    expect(invalid).toEqual({ status: 400, body: { error: "Query parameter 'age' must be a number" } });
+    expect(invalid).toEqual({
+      status: 400,
+      body: { error: "Query parameter 'age' must be a number" },
+    });
   });
 });
 
@@ -89,6 +107,8 @@ describe('errors withModel passes to next()', () => {
     const next = vi.fn();
     await withModel(User)({ params: { id: '2' } }, {}, next);
 
-    expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 404, statusCode: 404 }));
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 404, statusCode: 404 })
+    );
   });
 });

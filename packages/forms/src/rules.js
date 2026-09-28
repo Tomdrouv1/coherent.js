@@ -47,11 +47,19 @@ const BUILTIN = Symbol('coherent.forms.builtin');
 const DESCRIPTORS = new WeakMap();
 
 /** Names on `validators` that are helpers, not validation rules. */
-const HELPER_NAMES = new Set(['get', 'compose', 'debounce', 'cancellable', 'when', 'chain']);
+const HELPER_NAMES = new Set([
+  'get',
+  'compose',
+  'debounce',
+  'cancellable',
+  'when',
+  'chain',
+]);
 
-const isEmpty = value => value === null || value === undefined || value === '';
+const isEmpty = (value) =>
+  value === null || value === undefined || value === '';
 
-const isOptionsObject = value =>
+const isOptionsObject = (value) =>
   value !== null &&
   typeof value === 'object' &&
   !Array.isArray(value) &&
@@ -81,7 +89,12 @@ function argsFromString(params, kind, text) {
   if (params.length === 0) return [text.trim()];
 
   if (kind === 'list') {
-    return [text.split(',').map(part => part.trim()).filter(Boolean)];
+    return [
+      text
+        .split(',')
+        .map((part) => part.trim())
+        .filter(Boolean),
+    ];
   }
   if (kind === 'regexp') {
     try {
@@ -115,11 +128,16 @@ function argsFromString(params, kind, text) {
  * @param {(value: unknown, config: Object, formData: Object) => boolean} spec.valid
  * @param {(config: Object) => string} spec.message - Default error message
  */
-function defineRule(name, { params = [], stringArg = 'string', valid, message }) {
+function defineRule(
+  name,
+  { params = [], stringArg = 'string', valid, message }
+) {
   const fromOptions = (options = {}) => {
     const config = { message: options.message };
     for (const [key, ...aliases] of params) {
-      config[key] = [key, ...aliases].map(alias => options[alias]).find(v => v !== undefined);
+      config[key] = [key, ...aliases]
+        .map((alias) => options[alias])
+        .find((v) => v !== undefined);
     }
     return config;
   };
@@ -131,7 +149,9 @@ function defineRule(name, { params = [], stringArg = 'string', valid, message })
 
   const factory = (...args) => {
     const config = { message: args[params.length] };
-    params.forEach(([key], index) => { config[key] = args[index]; });
+    params.forEach(([key], index) => {
+      config[key] = args[index];
+    });
 
     // Also accepts the (value, options, translator, allValues) arguments of
     // the older direct convention, so it composes with either.
@@ -152,7 +172,10 @@ function defineRule(name, { params = [], stringArg = 'string', valid, message })
     }
     if (args.length === 1 && params.length === 0) {
       const [arg] = args;
-      return arg === '' || (arg !== undefined && arg !== null && typeof arg !== 'string');
+      return (
+        arg === '' ||
+        (arg !== undefined && arg !== null && typeof arg !== 'string')
+      );
     }
     return false;
   };
@@ -160,7 +183,11 @@ function defineRule(name, { params = [], stringArg = 'string', valid, message })
   function builtin(...args) {
     if (isDirectCall(args)) {
       const [value, options, , allValues] = args;
-      return check(value, fromOptions(isOptionsObject(options) ? options : {}), allValues);
+      return check(
+        value,
+        fromOptions(isOptionsObject(options) ? options : {}),
+        allValues
+      );
     }
     return factory(...args);
   }
@@ -169,12 +196,12 @@ function defineRule(name, { params = [], stringArg = 'string', valid, message })
   builtin[BUILTIN] = {
     name,
     factory,
-    argsFromString: (text) => argsFromString(params, stringArg, text)
+    argsFromString: (text) => argsFromString(params, stringArg, text),
   };
   return builtin;
 }
 
-const toNumber = value => (typeof value === 'number' ? value : Number(value));
+const toNumber = (value) => (typeof value === 'number' ? value : Number(value));
 
 function testRegExp(regex, value) {
   if (!(regex instanceof RegExp)) return true;
@@ -187,7 +214,7 @@ function fileMatchesType(file, allowedTypes) {
   const fileType = file.type;
   const fileExt = file.name ? file.name.split('.').pop().toLowerCase() : '';
 
-  return allowedTypes.some(type => {
+  return allowedTypes.some((type) => {
     if (type.startsWith('.')) {
       return fileExt === type.slice(1).toLowerCase();
     }
@@ -207,13 +234,13 @@ function fileMatchesType(file, allowedTypes) {
  */
 export const validators = {
   required: defineRule('required', {
-    valid: value => !isEmpty(value),
-    message: () => 'This field is required'
+    valid: (value) => !isEmpty(value),
+    message: () => 'This field is required',
   }),
 
   email: defineRule('email', {
-    valid: value => isEmpty(value) || isEmailShaped(value),
-    message: () => 'Invalid email address'
+    valid: (value) => isEmpty(value) || isEmailShaped(value),
+    message: () => 'Invalid email address',
   }),
 
   url: defineRule('url', {
@@ -226,21 +253,21 @@ export const validators = {
         return false;
       }
     },
-    message: () => 'Invalid URL'
+    message: () => 'Invalid URL',
   }),
 
   minLength: defineRule('minLength', {
     params: [['min', 'minLength']],
     stringArg: 'number',
     valid: (value, { min }) => !value || !(value.length < (min ?? 0)),
-    message: ({ min }) => `Minimum length is ${min}`
+    message: ({ min }) => `Minimum length is ${min}`,
   }),
 
   maxLength: defineRule('maxLength', {
     params: [['max', 'maxLength']],
     stringArg: 'number',
     valid: (value, { max }) => !value || !(value.length > (max ?? Infinity)),
-    message: ({ max }) => `Maximum length is ${max}`
+    message: ({ max }) => `Maximum length is ${max}`,
   }),
 
   // Empty values pass (combine with `required`); a non-numeric value fails.
@@ -252,7 +279,7 @@ export const validators = {
       const number = toNumber(value);
       return !Number.isNaN(number) && !(number < (min ?? -Infinity));
     },
-    message: ({ min }) => `Minimum value is ${min}`
+    message: ({ min }) => `Minimum value is ${min}`,
   }),
 
   max: defineRule('max', {
@@ -263,93 +290,102 @@ export const validators = {
       const number = toNumber(value);
       return !Number.isNaN(number) && !(number > (max ?? Infinity));
     },
-    message: ({ max }) => `Maximum value is ${max}`
+    message: ({ max }) => `Maximum value is ${max}`,
   }),
 
   pattern: defineRule('pattern', {
     params: [['pattern', 'regex']],
     stringArg: 'regexp',
     valid: (value, { pattern }) => isEmpty(value) || testRegExp(pattern, value),
-    message: () => 'Invalid format'
+    message: () => 'Invalid format',
   }),
 
   /** Equal to another field, even when empty */
   matches: defineRule('matches', {
     params: [['field', 'fieldName']],
     valid: (value, { field }, formData) => value === formData[field],
-    message: () => 'Fields do not match'
+    message: () => 'Fields do not match',
   }),
 
   /** Equal to another field; an empty value passes */
   match: defineRule('match', {
     params: [['field', 'fieldName']],
     valid: (value, { field }, formData) => !value || value === formData[field],
-    message: ({ field }) => `Must match ${field}`
+    message: ({ field }) => `Must match ${field}`,
   }),
 
   oneOf: defineRule('oneOf', {
     params: [['options', 'values']],
     stringArg: 'list',
-    valid: (value, { options }) => !value || !Array.isArray(options) || options.includes(value),
-    message: () => 'Invalid option'
+    valid: (value, { options }) =>
+      !value || !Array.isArray(options) || options.includes(value),
+    message: () => 'Invalid option',
   }),
 
   custom: defineRule('custom', {
     params: [['validator', 'fn']],
     valid: (value, { validator }, formData) =>
       typeof validator !== 'function' || Boolean(validator(value, formData)),
-    message: () => 'Validation failed'
+    message: () => 'Validation failed',
   }),
 
   number: defineRule('number', {
-    valid: value => isEmpty(value) || !Number.isNaN(Number(value)),
-    message: () => 'Must be a valid number'
+    valid: (value) => isEmpty(value) || !Number.isNaN(Number(value)),
+    message: () => 'Must be a valid number',
   }),
 
   integer: defineRule('integer', {
-    valid: value => isEmpty(value) || Number.isInteger(Number(value)),
-    message: () => 'Must be a whole number'
+    valid: (value) => isEmpty(value) || Number.isInteger(Number(value)),
+    message: () => 'Must be a whole number',
   }),
 
   phone: defineRule('phone', {
-    valid: value => !value || (/^[\d\s\-+()]+$/.test(value) && value.replace(/\D/g, '').length >= 10),
-    message: () => 'Please enter a valid phone number'
+    valid: (value) =>
+      !value ||
+      (/^[\d\s\-+()]+$/.test(value) && value.replace(/\D/g, '').length >= 10),
+    message: () => 'Please enter a valid phone number',
   }),
 
   date: defineRule('date', {
-    valid: value => !value || !Number.isNaN(new Date(value).getTime()),
-    message: () => 'Please enter a valid date'
+    valid: (value) => !value || !Number.isNaN(new Date(value).getTime()),
+    message: () => 'Please enter a valid date',
   }),
 
   alpha: defineRule('alpha', {
-    valid: value => !value || /^[a-zA-Z]+$/.test(value),
-    message: () => 'Must contain only letters'
+    valid: (value) => !value || /^[a-zA-Z]+$/.test(value),
+    message: () => 'Must contain only letters',
   }),
 
   alphanumeric: defineRule('alphanumeric', {
-    valid: value => !value || /^[a-zA-Z0-9]+$/.test(value),
-    message: () => 'Must contain only letters and numbers'
+    valid: (value) => !value || /^[a-zA-Z0-9]+$/.test(value),
+    message: () => 'Must contain only letters and numbers',
   }),
 
   uppercase: defineRule('uppercase', {
-    valid: value => !value || value === String(value).toUpperCase(),
-    message: () => 'Must be uppercase'
+    valid: (value) => !value || value === String(value).toUpperCase(),
+    message: () => 'Must be uppercase',
   }),
 
   fileType: defineRule('fileType', {
     params: [['accept', 'types']],
     stringArg: 'list',
     valid: (value, { accept }) =>
-      !value || value.type === undefined || fileMatchesType(value, accept || []),
-    message: ({ accept }) => `File type must be one of: ${(accept || []).join(', ')}`
+      !value ||
+      value.type === undefined ||
+      fileMatchesType(value, accept || []),
+    message: ({ accept }) =>
+      `File type must be one of: ${(accept || []).join(', ')}`,
   }),
 
   fileSize: defineRule('fileSize', {
     params: [['maxSize']],
     stringArg: 'number',
     valid: (value, { maxSize }) =>
-      !value || value.size === undefined || !(value.size > (maxSize ?? Infinity)),
-    message: ({ maxSize }) => `File size must be less than ${((maxSize ?? Infinity) / (1024 * 1024)).toFixed(2)}MB`
+      !value ||
+      value.size === undefined ||
+      !(value.size > (maxSize ?? Infinity)),
+    message: ({ maxSize }) =>
+      `File size must be less than ${((maxSize ?? Infinity) / (1024 * 1024)).toFixed(2)}MB`,
   }),
 
   fileExtension: defineRule('fileExtension', {
@@ -359,13 +395,17 @@ export const validators = {
       if (!value) return true;
       const fileName = value.name || value;
       const ext = `.${String(fileName).split('.').pop().toLowerCase()}`;
-      return (extensions || []).some(allowed => ext === allowed.toLowerCase());
+      return (extensions || []).some(
+        (allowed) => ext === allowed.toLowerCase()
+      );
     },
-    message: ({ extensions }) => `File extension must be one of: ${(extensions || []).join(', ')}`
+    message: ({ extensions }) =>
+      `File extension must be one of: ${(extensions || []).join(', ')}`,
   }),
 
   /** A registered validator or built-in by name */
-  get: (name) => (Object.hasOwn(validators, name) ? validators[name] : undefined),
+  get: (name) =>
+    Object.hasOwn(validators, name) ? validators[name] : undefined,
 
   /** Combine validators into one returning the first error */
   compose: (validatorList) => {
@@ -403,9 +443,13 @@ export const validators = {
         abortController.abort();
       }
       // AbortController is a global browser/Node.js API
-      abortController = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      abortController =
+        typeof AbortController !== 'undefined' ? new AbortController() : null;
       try {
-        return await validator(value, abortController ? abortController.signal : null);
+        return await validator(
+          value,
+          abortController ? abortController.signal : null
+        );
       } catch (error) {
         if (error.name === 'AbortError') {
           return null;
@@ -426,10 +470,12 @@ export const validators = {
     const rule = resolveValidator(validator);
     return (value, options = {}, translator, allValues = {}) => {
       // Pass options as context if it looks like context (has non-validator properties)
-      const context = options.min !== undefined || options.max !== undefined ? allValues : options;
-      const shouldValidate = typeof condition === 'function'
-        ? condition(value, context)
-        : condition;
+      const context =
+        options.min !== undefined || options.max !== undefined
+          ? allValues
+          : options;
+      const shouldValidate =
+        typeof condition === 'function' ? condition(value, context) : condition;
 
       if (!shouldValidate) {
         return null;
@@ -444,8 +490,10 @@ export const validators = {
     const validatorList = [];
     const stopOnFirstError = options.stopOnFirstError !== false;
 
-    const direct = name => (opts) => {
-      validatorList.push((v, o, t, a) => validators[name](v, opts || o || {}, t, a));
+    const direct = (name) => (opts) => {
+      validatorList.push((v, o, t, a) =>
+        validators[name](v, opts || o || {}, t, a)
+      );
       return chain;
     };
 
@@ -458,7 +506,9 @@ export const validators = {
         validatorList.push((v, o, t, a) => {
           // Custom validator returns null if valid, message if invalid
           const result = fn(v, a);
-          return result === null || result === true || result === undefined ? null : (message || result);
+          return result === null || result === true || result === undefined
+            ? null
+            : message || result;
         });
         return chain;
       },
@@ -482,18 +532,19 @@ export const validators = {
           }
         }
         return errors.length > 0 ? errors : null;
-      }
+      },
     };
 
     return chain;
-  }
+  },
 };
 
 /** The registry entry named `name`, if it is a validator (not a helper). */
 function lookup(name) {
-  const found = Object.hasOwn(validators, name) && !HELPER_NAMES.has(name)
-    ? validators[name]
-    : null;
+  const found =
+    Object.hasOwn(validators, name) && !HELPER_NAMES.has(name)
+      ? validators[name]
+      : null;
   return typeof found === 'function' ? found : null;
 }
 
@@ -522,7 +573,11 @@ function resolveString(entry) {
 
   const args = found[BUILTIN].argsFromString(text);
   if (!args) return null;
-  return { name: found[BUILTIN].name, args, validator: found[BUILTIN].factory(...args) };
+  return {
+    name: found[BUILTIN].name,
+    args,
+    validator: found[BUILTIN].factory(...args),
+  };
 }
 
 /**
@@ -657,7 +712,9 @@ export function describeValidator(entry) {
     // `'minLength:8'` is described like `validators.minLength(8)`.
     descriptor = resolveString(entry);
   } else if (typeof entry === 'function') {
-    descriptor = entry[BUILTIN] ? { name: entry[BUILTIN].name, args: [] } : DESCRIPTORS.get(entry);
+    descriptor = entry[BUILTIN]
+      ? { name: entry[BUILTIN].name, args: [] }
+      : DESCRIPTORS.get(entry);
   }
   if (!descriptor || !descriptor.args.every(isSerializable)) return null;
 
@@ -696,20 +753,28 @@ export function parseValidators(attribute) {
   } else {
     specs = text.split(',').map((part) => {
       const [name, ...params] = part.trim().split(':');
-      return { name, args: params.map(p => (p !== '' && !Number.isNaN(Number(p)) ? Number(p) : p)) };
+      return {
+        name,
+        args: params.map((p) =>
+          p !== '' && !Number.isNaN(Number(p)) ? Number(p) : p
+        ),
+      };
     });
   }
 
-  return specs.map((spec) => {
-    if (!spec || typeof spec.name !== 'string') return null;
-    const { name } = spec;
-    if (!Object.hasOwn(validators, name) || HELPER_NAMES.has(name)) return null;
+  return specs
+    .map((spec) => {
+      if (!spec || typeof spec.name !== 'string') return null;
+      const { name } = spec;
+      if (!Object.hasOwn(validators, name) || HELPER_NAMES.has(name))
+        return null;
 
-    const entry = validators[name];
-    if (typeof entry !== 'function') return null;
+      const entry = validators[name];
+      if (typeof entry !== 'function') return null;
 
-    // Built-ins are rebuilt through their factory, never the direct form.
-    const args = Array.isArray(spec.args) ? spec.args.map(reviveArg) : [];
-    return entry[BUILTIN] ? entry[BUILTIN].factory(...args) : entry;
-  }).filter(Boolean);
+      // Built-ins are rebuilt through their factory, never the direct form.
+      const args = Array.isArray(spec.args) ? spec.args.map(reviveArg) : [];
+      return entry[BUILTIN] ? entry[BUILTIN].factory(...args) : entry;
+    })
+    .filter(Boolean);
 }

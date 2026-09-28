@@ -12,7 +12,7 @@ const entries = [
   'src/performance/index.js',
   'src/performance/cache.js',
   'src/performance/code-splitting.js',
-  'src/performance/lazy-loading.js'
+  'src/performance/lazy-loading.js',
 ];
 
 for (const entry of entries) {
@@ -26,7 +26,7 @@ for (const entry of entries) {
     outfile,
     external: ['@coherent.js/core'],
     minify: false,
-    sourcemap: true
+    sourcemap: true,
   });
 }
 

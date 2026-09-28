@@ -7,7 +7,10 @@
 
 import { Range } from 'vscode-languageserver';
 import { CoherentElementInfo } from './coherent-analyzer.js';
-import { validateNesting as checkNesting, ValidationError } from '../data/nesting-rules.js';
+import {
+  validateNesting as checkNesting,
+  ValidationError,
+} from '../data/nesting-rules.js';
 
 /**
  * Nesting validation error.
@@ -20,7 +23,8 @@ export interface NestingValidationError {
   range: Range;
 
   /** Error code for categorization */
-  code: 'invalid-nesting' | 'invalid-parent' | 'block-in-inline' | 'invalid-child';
+  code:
+    'invalid-nesting' | 'invalid-parent' | 'block-in-inline' | 'invalid-child';
 
   /** Severity of the error */
   severity: 'error' | 'warning';
@@ -41,7 +45,9 @@ export interface NestingValidationError {
  * @param element - The Coherent element to validate
  * @returns Array of nesting validation errors
  */
-export function validateElementNesting(element: CoherentElementInfo): NestingValidationError[] {
+export function validateElementNesting(
+  element: CoherentElementInfo
+): NestingValidationError[] {
   const errors: NestingValidationError[] = [];
 
   // Check this element against its parent
@@ -72,7 +78,9 @@ export function validateElementNesting(element: CoherentElementInfo): NestingVal
  * @param elements - Array of Coherent elements to validate
  * @returns Array of all nesting validation errors
  */
-export function validateAllNesting(elements: CoherentElementInfo[]): NestingValidationError[] {
+export function validateAllNesting(
+  elements: CoherentElementInfo[]
+): NestingValidationError[] {
   const errors: NestingValidationError[] = [];
 
   for (const element of elements) {
@@ -88,7 +96,9 @@ export function validateAllNesting(elements: CoherentElementInfo[]): NestingVali
  * @param error - The nesting validation error
  * @returns Suggested fix description or null
  */
-export function getNestingFixSuggestion(error: NestingValidationError): string | null {
+export function getNestingFixSuggestion(
+  error: NestingValidationError
+): string | null {
   switch (error.code) {
     case 'invalid-parent':
       return `Move <${error.childTag}> to be a child of the correct parent element`;

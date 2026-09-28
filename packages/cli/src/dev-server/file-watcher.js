@@ -33,7 +33,7 @@ import { relative, sep } from 'node:path';
  */
 
 const DEFAULT_IGNORES = [
-  /(^|[/\\])\../,             // dotfiles + dotted dirs (.git, .DS_Store, etc.)
+  /(^|[/\\])\../, // dotfiles + dotted dirs (.git, .DS_Store, etc.)
   /(^|[/\\])node_modules([/\\]|$)/,
   /(^|[/\\])dist([/\\]|$)/,
   /(^|[/\\])coverage([/\\]|$)/,
@@ -69,13 +69,7 @@ function toWebPath(root, absPath) {
  * @returns {Promise<FileWatcher>}
  */
 export async function createFileWatcher(options) {
-  const {
-    root,
-    onChange,
-    onError,
-    debounceMs = 50,
-    ignored = [],
-  } = options;
+  const { root, onChange, onError, debounceMs = 50, ignored = [] } = options;
 
   const watcher = chokidar.watch(root, {
     ignored: [...DEFAULT_IGNORES, ...ignored],

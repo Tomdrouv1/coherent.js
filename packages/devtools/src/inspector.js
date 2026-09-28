@@ -1,8 +1,8 @@
 /**
  * Coherent.js Component Inspector
- * 
+ *
  * Provides tools for inspecting component structure, props, and state
- * 
+ *
  * @module devtools/inspector
  */
 
@@ -16,9 +16,9 @@ export class ComponentInspector {
       trackHistory: true,
       maxHistory: 100,
       verbose: false,
-      ...options
+      ...options,
     };
-    
+
     this.components = new Map();
     this.history = [];
     this.inspectionCount = 0;
@@ -26,20 +26,20 @@ export class ComponentInspector {
 
   /**
    * Inspect a component
-   * 
+   *
    * @param {Object} component - Component to inspect
    * @param {Object} [metadata] - Additional metadata
    * @returns {Object} Inspection result
    */
   inspect(component, metadata = {}) {
     this.inspectionCount++;
-    
+
     const startTime = performance.now();
     const analysis = this.analyzeComponent(component);
     const tree = this.buildComponentTree(component);
     const stats = this.calculateStats(component);
     const endTime = performance.now();
-    
+
     const inspection = {
       id: this.generateId(),
       timestamp: Date.now(),
@@ -50,7 +50,7 @@ export class ComponentInspector {
       type: analysis.type,
       structure: component,
       props: this.extractProps(component),
-      depth: stats.depth || 0,  // Use stats.depth, not tree.depth
+      depth: stats.depth || 0, // Use stats.depth, not tree.depth
       childCount: stats.elementCount || 0,
       complexity: stats.complexity || 0,
       nodeCount: stats.nodeCount || 0,
@@ -60,14 +60,14 @@ export class ComponentInspector {
       stats,
       valid: analysis.valid,
       issues: analysis.issues || [],
-      errors: analysis.issues || [],  // Alias for compatibility
-      warnings: analysis.warnings || []
+      errors: analysis.issues || [], // Alias for compatibility
+      warnings: analysis.warnings || [],
     };
 
     // Track in history
     if (this.options.trackHistory) {
       this.history.push(inspection);
-      
+
       // Limit history size
       if (this.history.length > this.options.maxHistory) {
         this.history.shift();
@@ -89,22 +89,22 @@ export class ComponentInspector {
    */
   extractProps(component) {
     const props = [];
-    
+
     if (!component || typeof component !== 'object') {
       return props;
     }
-    
-    Object.keys(component).forEach(key => {
+
+    Object.keys(component).forEach((key) => {
       const element = component[key];
       if (element && typeof element === 'object') {
-        Object.keys(element).forEach(prop => {
+        Object.keys(element).forEach((prop) => {
           if (!props.includes(prop) && prop !== 'children' && prop !== 'text') {
             props.push(prop);
           }
         });
       }
     });
-    
+
     return props;
   }
 
@@ -116,7 +116,7 @@ export class ComponentInspector {
       return {
         type: typeof component,
         valid: false,
-        issues: ['Component is not an object']
+        issues: ['Component is not an object'],
       };
     }
 
@@ -139,9 +139,11 @@ export class ComponentInspector {
       seen.add(obj);
 
       if (Array.isArray(obj)) {
-        obj.forEach((item, index) => checkCircular(item, [...path, `[${index}]`]));
+        obj.forEach((item, index) =>
+          checkCircular(item, [...path, `[${index}]`])
+        );
       } else {
-        Object.keys(obj).forEach(key => {
+        Object.keys(obj).forEach((key) => {
           checkCircular(obj[key], [...path, key]);
         });
       }
@@ -151,7 +153,7 @@ export class ComponentInspector {
 
     // Check component structure
     const keys = Object.keys(component);
-    
+
     if (keys.length === 0) {
       issues.push('Component is empty');
     }
@@ -161,9 +163,9 @@ export class ComponentInspector {
     }
 
     // Analyze each element
-    keys.forEach(key => {
+    keys.forEach((key) => {
       const element = component[key];
-      
+
       if (typeof element === 'object' && element !== null) {
         // Check for common issues
         if (element.children && !Array.isArray(element.children)) {
@@ -179,9 +181,13 @@ export class ComponentInspector {
         }
 
         // Check for event handlers
-        const eventHandlers = Object.keys(element).filter(k => k.startsWith('on'));
+        const eventHandlers = Object.keys(element).filter((k) =>
+          k.startsWith('on')
+        );
         if (eventHandlers.length > 0) {
-          info.push(`${key} has ${eventHandlers.length} event handler(s): ${eventHandlers.join(', ')}`);
+          info.push(
+            `${key} has ${eventHandlers.length} event handler(s): ${eventHandlers.join(', ')}`
+          );
         }
       }
     });
@@ -192,7 +198,7 @@ export class ComponentInspector {
       rootElements: keys,
       issues,
       warnings,
-      info
+      info,
     };
   }
 
@@ -209,7 +215,9 @@ export class ComponentInspector {
     }
 
     if (Array.isArray(component)) {
-      return component.map(child => this.buildComponentTree(child, depth + 1, maxDepth));
+      return component.map((child) =>
+        this.buildComponentTree(child, depth + 1, maxDepth)
+      );
     }
 
     const tree = {};
@@ -219,13 +227,17 @@ export class ComponentInspector {
         tree[key] = {
           type: 'element',
           props: {},
-          children: []
+          children: [],
         };
 
         // Extract props and children
         for (const [prop, propValue] of Object.entries(value)) {
           if (prop === 'children') {
-            tree[key].children = this.buildComponentTree(propValue, depth + 1, maxDepth);
+            tree[key].children = this.buildComponentTree(
+              propValue,
+              depth + 1,
+              maxDepth
+            );
           } else {
             tree[key].props[prop] = propValue;
           }
@@ -249,7 +261,7 @@ export class ComponentInspector {
       eventHandlers: 0,
       hasStyles: false,
       hasClasses: false,
-      complexity: 0
+      complexity: 0,
     };
 
     const traverse = (node, currentDepth = 1) => {
@@ -261,7 +273,7 @@ export class ComponentInspector {
       }
 
       if (Array.isArray(node)) {
-        node.forEach(child => traverse(child, currentDepth));
+        node.forEach((child) => traverse(child, currentDepth));
         return;
       }
 
@@ -275,7 +287,7 @@ export class ComponentInspector {
           if (value.className) stats.hasClasses = true;
 
           // Count event handlers
-          const handlers = Object.keys(value).filter(k => k.startsWith('on'));
+          const handlers = Object.keys(value).filter((k) => k.startsWith('on'));
           stats.eventHandlers += handlers.length;
 
           // Traverse children
@@ -289,13 +301,13 @@ export class ComponentInspector {
     traverse(component);
 
     // Calculate complexity based on various factors
-    stats.complexity = 
-      stats.elementCount * 10 +  // Base complexity from element count
-      stats.depth * 5 +            // Depth adds complexity
-      stats.eventHandlers * 3 +    // Event handlers add complexity
-      stats.textNodes +            // Text nodes add minimal complexity
-      (stats.hasStyles ? 5 : 0) +  // Styles add complexity
-      (stats.hasClasses ? 3 : 0);  // Classes add complexity
+    stats.complexity =
+      stats.elementCount * 10 + // Base complexity from element count
+      stats.depth * 5 + // Depth adds complexity
+      stats.eventHandlers * 3 + // Event handlers add complexity
+      stats.textNodes + // Text nodes add minimal complexity
+      (stats.hasStyles ? 5 : 0) + // Styles add complexity
+      (stats.hasClasses ? 3 : 0); // Classes add complexity
 
     return stats;
   }
@@ -331,11 +343,17 @@ export class ComponentInspector {
         matches = false;
       }
 
-      if (criteria.minElements && inspection.stats.elementCount < criteria.minElements) {
+      if (
+        criteria.minElements &&
+        inspection.stats.elementCount < criteria.minElements
+      ) {
         matches = false;
       }
 
-      if (criteria.maxElements && inspection.stats.elementCount > criteria.maxElements) {
+      if (
+        criteria.maxElements &&
+        inspection.stats.elementCount > criteria.maxElements
+      ) {
         matches = false;
       }
 
@@ -351,37 +369,40 @@ export class ComponentInspector {
    * Compare two components
    */
   compare(componentA, componentB) {
-    const inspectionA = typeof componentA === 'string' 
-      ? this.getComponent(componentA)
-      : this.inspect(componentA);
-    
-    const inspectionB = typeof componentB === 'string'
-      ? this.getComponent(componentB)
-      : this.inspect(componentB);
+    const inspectionA =
+      typeof componentA === 'string'
+        ? this.getComponent(componentA)
+        : this.inspect(componentA);
+
+    const inspectionB =
+      typeof componentB === 'string'
+        ? this.getComponent(componentB)
+        : this.inspect(componentB);
 
     return {
       statsComparison: {
         elementCount: {
           a: inspectionA.stats.elementCount,
           b: inspectionB.stats.elementCount,
-          diff: inspectionB.stats.elementCount - inspectionA.stats.elementCount
+          diff: inspectionB.stats.elementCount - inspectionA.stats.elementCount,
         },
         depth: {
           a: inspectionA.stats.depth,
           b: inspectionB.stats.depth,
-          diff: inspectionB.stats.depth - inspectionA.stats.depth
+          diff: inspectionB.stats.depth - inspectionA.stats.depth,
         },
         textNodes: {
           a: inspectionA.stats.textNodes,
           b: inspectionB.stats.textNodes,
-          diff: inspectionB.stats.textNodes - inspectionA.stats.textNodes
-        }
+          diff: inspectionB.stats.textNodes - inspectionA.stats.textNodes,
+        },
       },
-      structureMatch: JSON.stringify(inspectionA.tree) === JSON.stringify(inspectionB.tree),
+      structureMatch:
+        JSON.stringify(inspectionA.tree) === JSON.stringify(inspectionB.tree),
       issuesComparison: {
         a: inspectionA.analysis.issues.length,
-        b: inspectionB.analysis.issues.length
-      }
+        b: inspectionB.analysis.issues.length,
+      },
     };
   }
 
@@ -394,15 +415,22 @@ export class ComponentInspector {
       componentsTracked: this.components.size,
       historySize: this.history.length,
       summary: {
-        totalElements: Array.from(this.components.values())
-          .reduce((sum, c) => sum + c.stats.elementCount, 0),
-        averageDepth: Array.from(this.components.values())
-          .reduce((sum, c) => sum + c.stats.depth, 0) / this.components.size || 0,
-        componentsWithIssues: Array.from(this.components.values())
-          .filter(c => c.analysis.issues.length > 0).length,
-        componentsWithWarnings: Array.from(this.components.values())
-          .filter(c => c.analysis.warnings.length > 0).length
-      }
+        totalElements: Array.from(this.components.values()).reduce(
+          (sum, c) => sum + c.stats.elementCount,
+          0
+        ),
+        averageDepth:
+          Array.from(this.components.values()).reduce(
+            (sum, c) => sum + c.stats.depth,
+            0
+          ) / this.components.size || 0,
+        componentsWithIssues: Array.from(this.components.values()).filter(
+          (c) => c.analysis.issues.length > 0
+        ).length,
+        componentsWithWarnings: Array.from(this.components.values()).filter(
+          (c) => c.analysis.warnings.length > 0
+        ).length,
+      },
     };
   }
 
@@ -429,7 +457,7 @@ export class ComponentInspector {
     return {
       totalInspections: this.inspectionCount,
       componentsTracked: this.components.size,
-      historySize: this.history.length
+      historySize: this.history.length,
     };
   }
 
@@ -438,17 +466,17 @@ export class ComponentInspector {
    */
   export() {
     return {
-      inspections: this.history.map(h => ({
+      inspections: this.history.map((h) => ({
         id: h.id,
         timestamp: h.timestamp,
         type: h.type,
         complexity: h.complexity,
         depth: h.depth,
         issues: h.issues,
-        warnings: h.warnings
+        warnings: h.warnings,
       })),
       stats: this.getStats(),
-      exportedAt: Date.now()
+      exportedAt: Date.now(),
     };
   }
 
@@ -481,13 +509,13 @@ export function inspect(component, options = {}) {
 export function validateComponent(component) {
   const inspector = new ComponentInspector();
   const inspection = inspector.inspect(component);
-  
+
   return {
     valid: inspection.valid,
     errors: inspection.issues || [],
     issues: inspection.issues || [],
     warnings: inspection.warnings || [],
-    stats: inspection.stats
+    stats: inspection.stats,
   };
 }
 
@@ -495,5 +523,5 @@ export default {
   ComponentInspector,
   createInspector,
   inspect,
-  validateComponent
+  validateComponent,
 };

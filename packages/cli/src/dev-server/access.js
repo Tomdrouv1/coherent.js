@@ -36,8 +36,12 @@ import { dirname, join, relative, resolve, sep, isAbsolute } from 'node:path';
 function hostnameOf(value, isUrl = false) {
   try {
     const url = new URL(isUrl ? value : `http://${value}`);
-    if (!isUrl && (url.pathname !== '/' || url.username || url.password)) return null;
-    return url.hostname.replace(/^\[|\]$/g, '').replace(/\.$/, '').toLowerCase();
+    if (!isUrl && (url.pathname !== '/' || url.username || url.password))
+      return null;
+    return url.hostname
+      .replace(/^\[|\]$/g, '')
+      .replace(/\.$/, '')
+      .toLowerCase();
   } catch {
     return null;
   }
@@ -48,7 +52,14 @@ function isHostnameAllowed(hostname, { host, allowedHosts = [] } = {}) {
   // DNS rebinding needs a DNS name: an IP literal can't be re-pointed.
   if (isIP(hostname)) return true;
   if (hostname === 'localhost' || hostname.endsWith('.localhost')) return true;
-  if (host && hostname === String(host).replace(/^\[|\]$/g, '').toLowerCase()) return true;
+  if (
+    host &&
+    hostname ===
+      String(host)
+        .replace(/^\[|\]$/g, '')
+        .toLowerCase()
+  )
+    return true;
   return allowedHosts.some((entry) => {
     const allowed = String(entry).toLowerCase();
     return allowed.startsWith('.')
@@ -100,7 +111,10 @@ export function isOriginAllowed(origin, options = {}) {
 export function findWorkspaceRoot(start) {
   let dir = resolve(start);
   for (;;) {
-    if (existsSync(join(dir, 'pnpm-workspace.yaml')) || existsSync(join(dir, 'lerna.json'))) {
+    if (
+      existsSync(join(dir, 'pnpm-workspace.yaml')) ||
+      existsSync(join(dir, 'lerna.json'))
+    ) {
       return dir;
     }
     const pkgPath = join(dir, 'package.json');
@@ -119,7 +133,10 @@ export function findWorkspaceRoot(start) {
 
 function isInside(dir, target) {
   const rel = relative(dir, target);
-  return rel === '' || (!rel.startsWith(`..${sep}`) && rel !== '..' && !isAbsolute(rel));
+  return (
+    rel === '' ||
+    (!rel.startsWith(`..${sep}`) && rel !== '..' && !isAbsolute(rel))
+  );
 }
 
 /**
@@ -175,10 +192,13 @@ export function createFsAccess({ root, fsAllow = [] }) {
 
   /** Real directory of the node_modules/<pkg> (or @scope/<pkg>) entry a URL goes through. */
   function packageRootFor(urlSegments) {
-    if (urlSegments[0] !== 'node_modules' || urlSegments.length < 2) return null;
+    if (urlSegments[0] !== 'node_modules' || urlSegments.length < 2)
+      return null;
     const nameLength = urlSegments[1].startsWith('@') ? 2 : 1;
     if (urlSegments.length < 1 + nameLength) return null;
-    return realpathOrNull(join(projectRoot, ...urlSegments.slice(0, 1 + nameLength)));
+    return realpathOrNull(
+      join(projectRoot, ...urlSegments.slice(0, 1 + nameLength))
+    );
   }
 
   return {

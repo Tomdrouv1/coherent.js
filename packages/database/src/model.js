@@ -46,7 +46,7 @@ function affectedRowsOf(result) {
  * @private
  */
 function usesReturning(...databases) {
-  return databases.some(db => db?.config?.type === 'postgresql');
+  return databases.some((db) => db?.config?.type === 'postgresql');
 }
 
 /**
@@ -86,7 +86,12 @@ function equalityConditions(conditions, context, { requireOne = false } = {}) {
  * @private
  */
 function resolveRelatedModel(model, name, owner) {
-  const Related = typeof model === 'function' ? model : (typeof model === 'string' ? globalThis[model] : undefined);
+  const Related =
+    typeof model === 'function'
+      ? model
+      : typeof model === 'string'
+        ? globalThis[model]
+        : undefined;
   if (typeof Related !== 'function') {
     throw new Error(
       `Related model ${String(model)} for relationship '${name}' on ${owner} not found. Pass the model class as \`model\`.`
@@ -109,13 +114,14 @@ export class Model {
     this._isDirty = false;
 
     // Relationship accessors: user.posts() resolves relationships.posts
-    const relationships = this.constructor.relationships || this.constructor.relations || {};
+    const relationships =
+      this.constructor.relationships || this.constructor.relations || {};
     for (const name of Object.keys(relationships)) {
       if (!(name in this)) {
         Object.defineProperty(this, name, {
           value: () => this.getRelation(name),
           configurable: true,
-          writable: true
+          writable: true,
         });
       }
     }
@@ -156,7 +162,11 @@ export class Model {
     }
 
     const primaryKey = this.primaryKey || 'id';
-    const result = await executeQuery(db, { table: this.tableName, where: { [primaryKey]: id }, limit: 1 });
+    const result = await executeQuery(db, {
+      table: this.tableName,
+      where: { [primaryKey]: id },
+      limit: 1,
+    });
     const row = result?.rows?.[0];
     return row ? this._fromRow(row) : null;
   }
@@ -178,7 +188,10 @@ export class Model {
 
     if (this.attributes) {
       for (const [key, config] of Object.entries(this.attributes)) {
-        if (config.default !== undefined && instance.attributes[key] === undefined) {
+        if (
+          config.default !== undefined &&
+          instance.attributes[key] === undefined
+        ) {
           instance.setAttribute(key, config.default);
         }
       }
@@ -203,7 +216,7 @@ export class Model {
   static async all() {
     const db = requireDatabase(this);
     const result = await executeQuery(db, { table: this.tableName });
-    return (result?.rows || []).map(row => this._fromRow(row));
+    return (result?.rows || []).map((row) => this._fromRow(row));
   }
 
   /**
@@ -216,7 +229,7 @@ export class Model {
     const db = requireDatabase(this);
     const where = equalityConditions(conditions, `${this.name}.where()`);
     const result = await executeQuery(db, { table: this.tableName, where });
-    return (result?.rows || []).map(row => this._fromRow(row));
+    return (result?.rows || []).map((row) => this._fromRow(row));
   }
 
   /**
@@ -228,8 +241,14 @@ export class Model {
    */
   static async updateWhere(conditions, updates) {
     const db = requireDatabase(this);
-    const where = equalityConditions(conditions, `${this.name}.updateWhere()`, { requireOne: true });
-    const result = await executeQuery(db, { table: this.tableName, update: updates, where });
+    const where = equalityConditions(conditions, `${this.name}.updateWhere()`, {
+      requireOne: true,
+    });
+    const result = await executeQuery(db, {
+      table: this.tableName,
+      update: updates,
+      where,
+    });
     return affectedRowsOf(result);
   }
 
@@ -241,8 +260,14 @@ export class Model {
    */
   static async deleteWhere(conditions) {
     const db = requireDatabase(this);
-    const where = equalityConditions(conditions, `${this.name}.deleteWhere()`, { requireOne: true });
-    const result = await executeQuery(db, { table: this.tableName, delete: true, where });
+    const where = equalityConditions(conditions, `${this.name}.deleteWhere()`, {
+      requireOne: true,
+    });
+    const result = await executeQuery(db, {
+      table: this.tableName,
+      delete: true,
+      where,
+    });
     return affectedRowsOf(result);
   }
 
@@ -251,14 +276,16 @@ export class Model {
   }
 
   // Attribute access methods
-  get(key) { return this.attributes[key]; }
-  getAttribute(key, defaultValue) { 
+  get(key) {
+    return this.attributes[key];
+  }
+  getAttribute(key, defaultValue) {
     if (this.attributes.hasOwnProperty(key)) {
       return this.attributes[key];
     }
     return arguments.length > 1 ? defaultValue : null;
   }
-  
+
   set(key, value) {
     // Same as setAttribute: casts the value and marks the model dirty so save() persists it
     return this.setAttribute(key, value);
@@ -271,12 +298,12 @@ export class Model {
     }
     return this;
   }
-  
+
   // Fill methods
   fill(attributes) {
     const fillable = this.constructor.fillable;
     const guarded = this.constructor.guarded;
-    
+
     for (const [key, value] of Object.entries(attributes)) {
       if (fillable.length > 0 && !fillable.includes(key)) {
         this.setAttribute(key, undefined); // Explicitly set filtered attributes to undefined
@@ -290,68 +317,89 @@ export class Model {
     }
     return this;
   }
-  
+
   // Casting
   castAttribute(key, value, type = null) {
     const casts = this.constructor.casts;
     const castType = type || casts[key];
     if (!castType || value === null) return value;
-    
+
     switch (castType) {
-      case 'string': return String(value);
-      case 'number': return Number(value);
-      case 'boolean': return Boolean(value === 'true' || value === true || value === 1);
-      case 'date': return new Date(value);
-      case 'json': return typeof value === 'string' ? JSON.parse(value) : value;
-      case 'array': return Array.isArray(value) ? value : [value];
-      default: return value;
+      case 'string':
+        return String(value);
+      case 'number':
+        return Number(value);
+      case 'boolean':
+        return Boolean(value === 'true' || value === true || value === 1);
+      case 'date':
+        return new Date(value);
+      case 'json':
+        return typeof value === 'string' ? JSON.parse(value) : value;
+      case 'array':
+        return Array.isArray(value) ? value : [value];
+      default:
+        return value;
     }
   }
-  
+
   // State properties
-  get isNew() { return this._isNew; }
-  set isNew(value) { this._isNew = value; }
-  get isDeleted() { return this._isDeleted || false; }
-  get isDirty() { return this._isDirty; }
-  set isDirty(value) { this._isDirty = value; }
-  
+  get isNew() {
+    return this._isNew;
+  }
+  set isNew(value) {
+    this._isNew = value;
+  }
+  get isDeleted() {
+    return this._isDeleted || false;
+  }
+  get isDirty() {
+    return this._isDirty;
+  }
+  set isDirty(value) {
+    this._isDirty = value;
+  }
+
   // Object conversion
   toObject(includeHidden = false) {
     const obj = { ...this.attributes };
     if (!includeHidden) {
       const hidden = this.constructor.hidden;
-      hidden.forEach(key => delete obj[key]);
+      hidden.forEach((key) => delete obj[key]);
     }
     return obj;
   }
-  
+
   toJSON() {
     return this.toObject();
   }
-  
+
   // Validation
   async validate(options = {}) {
     const rules = this.constructor.validationRules;
     const errors = {};
-    
+
     // Return true if no validation rules
     if (!rules || Object.keys(rules).length === 0) {
       return true;
     }
-    
+
     for (const [field, fieldRules] of Object.entries(rules)) {
       const value = this.getAttribute(field);
-      
+
       // For existing models, only validate fields that are present
       // Skip required validation for missing fields on existing models
       if (!this.isNew && !this.attributes.hasOwnProperty(field)) {
         continue;
       }
-      
+
       // Handle array of validation rules
       if (Array.isArray(fieldRules)) {
         // Check if this is a [function, message] tuple format
-        if (fieldRules.length === 2 && typeof fieldRules[0] === 'function' && typeof fieldRules[1] === 'string') {
+        if (
+          fieldRules.length === 2 &&
+          typeof fieldRules[0] === 'function' &&
+          typeof fieldRules[1] === 'string'
+        ) {
           const [validator, message] = fieldRules;
           const isValid = validator(value);
           if (!isValid) {
@@ -361,16 +409,19 @@ export class Model {
         } else {
           // Handle array of individual rules
           for (const rule of fieldRules) {
-            if (rule === 'required' && (value === undefined || value === null || value === '')) {
+            if (
+              rule === 'required' &&
+              (value === undefined || value === null || value === '')
+            ) {
               errors[field] = errors[field] || [];
               errors[field].push(`${field} is required`);
             }
-            
+
             if (rule === 'email' && value && !value.includes('@')) {
               errors[field] = errors[field] || [];
               errors[field].push(`${field} must be a valid email address`);
             }
-            
+
             if (typeof rule === 'function') {
               const isValid = rule(value);
               if (!isValid) {
@@ -381,58 +432,70 @@ export class Model {
           }
         }
       }
-      
+
       // Handle object validation rules with constraints
       if (typeof fieldRules === 'object' && !Array.isArray(fieldRules)) {
-        if (fieldRules.required && (value === undefined || value === null || value === '')) {
+        if (
+          fieldRules.required &&
+          (value === undefined || value === null || value === '')
+        ) {
           errors[field] = errors[field] || [];
           errors[field].push(`${field} is required`);
         }
-        
+
         if (fieldRules.email && value && !value.includes('@')) {
           errors[field] = errors[field] || [];
           errors[field].push(`${field} must be a valid email address`);
         }
-        
+
         if (fieldRules.minLength !== undefined) {
-          if (typeof value === 'string' && value.length < fieldRules.minLength) {
+          if (
+            typeof value === 'string' &&
+            value.length < fieldRules.minLength
+          ) {
             errors[field] = errors[field] || [];
-            errors[field].push(`${field} must be at least ${fieldRules.minLength} characters`);
+            errors[field].push(
+              `${field} must be at least ${fieldRules.minLength} characters`
+            );
           }
         }
-        
+
         if (fieldRules.min !== undefined) {
           if (typeof value === 'number' && value < fieldRules.min) {
             errors[field] = errors[field] || [];
             errors[field].push(`${field} must be at least ${fieldRules.min}`);
           }
         }
-        
+
         if (fieldRules.max !== undefined) {
           if (typeof value === 'string' && value.length > fieldRules.max) {
             errors[field] = errors[field] || [];
-            errors[field].push(`${field} must be at most ${fieldRules.max} characters`);
+            errors[field].push(
+              `${field} must be at most ${fieldRules.max} characters`
+            );
           } else if (typeof value === 'number' && value > fieldRules.max) {
             errors[field] = errors[field] || [];
-            errors[field].push(`${field} must be no more than ${fieldRules.max}`);
+            errors[field].push(
+              `${field} must be no more than ${fieldRules.max}`
+            );
           }
         }
       }
     }
-    
+
     if (Object.keys(errors).length > 0) {
       this.errors = errors; // Store errors on instance
-      
+
       // If throwOnError is false, just return false
       if (options.throwOnError === false) {
         return false;
       }
-      
+
       // Only throw errors when explicitly requested
       if (options.throwOnError !== true) {
         return false;
       }
-      
+
       // If there are multiple validation errors, use general message
       const totalErrors = Object.keys(errors).length;
       if (totalErrors > 1) {
@@ -440,7 +503,7 @@ export class Model {
         _error.errors = errors;
         throw _error;
       }
-      
+
       // For single field _error, throw with the specific message
       const firstError = Object.values(errors)[0];
       if (Array.isArray(firstError) && firstError[0]) {
@@ -448,16 +511,16 @@ export class Model {
         _error.errors = errors;
         throw _error;
       }
-      
+
       const _error = new Error('Validation failed');
       _error.errors = errors;
       throw _error;
     }
-    
+
     this.errors = {};
     return true;
   }
-  
+
   /**
    * Insert or update the record.
    *
@@ -503,7 +566,11 @@ export class Model {
       // fill() stores filtered-out attributes as undefined, so a body that
       // carried a non-fillable `id` left the key undefined rather than null.
       const currentId = this.getAttribute(primaryKey);
-      if ((currentId === null || currentId === undefined) && generatedId !== undefined && generatedId !== null) {
+      if (
+        (currentId === null || currentId === undefined) &&
+        generatedId !== undefined &&
+        generatedId !== null
+      ) {
         this.setAttribute(primaryKey, generatedId);
       }
 
@@ -524,7 +591,9 @@ export class Model {
 
       const id = this.getAttribute(primaryKey);
       if (id === null || id === undefined) {
-        throw new Error(`Cannot update ${ModelClass.name} without a primary key`);
+        throw new Error(
+          `Cannot update ${ModelClass.name} without a primary key`
+        );
       }
 
       if (this.beforeUpdate) await this.beforeUpdate();
@@ -536,7 +605,11 @@ export class Model {
 
       const changes = { ...this.attributes };
       delete changes[primaryKey];
-      await executeQuery(db, { table: ModelClass.tableName, update: changes, where: { [primaryKey]: id } });
+      await executeQuery(db, {
+        table: ModelClass.tableName,
+        update: changes,
+        where: { [primaryKey]: id },
+      });
 
       if (this.afterUpdate) await this.afterUpdate();
     }
@@ -567,7 +640,11 @@ export class Model {
     // Call lifecycle hooks
     if (this.beforeDelete) await this.beforeDelete();
 
-    await executeQuery(db, { table: ModelClass.tableName, delete: true, where: { [primaryKey]: id } });
+    await executeQuery(db, {
+      table: ModelClass.tableName,
+      delete: true,
+      where: { [primaryKey]: id },
+    });
 
     this._isDeleted = true;
 
@@ -584,11 +661,14 @@ export class Model {
    */
   async getRelation(name) {
     const ModelClass = this.constructor;
-    const relationships = ModelClass.relationships || ModelClass.relations || {};
+    const relationships =
+      ModelClass.relationships || ModelClass.relations || {};
     const relation = relationships[name];
 
     if (!relation) {
-      throw new Error(`Relationship '${name}' not defined on ${ModelClass.name}`);
+      throw new Error(
+        `Relationship '${name}' not defined on ${ModelClass.name}`
+      );
     }
 
     const Related = resolveRelatedModel(relation.model, name, ModelClass.name);
@@ -597,7 +677,8 @@ export class Model {
       case 'hasMany':
       case 'hasOne': {
         const localKey = relation.localKey || ModelClass.primaryKey || 'id';
-        const foreignKey = relation.foreignKey || `${ModelClass.name.toLowerCase()}_id`;
+        const foreignKey =
+          relation.foreignKey || `${ModelClass.name.toLowerCase()}_id`;
         const value = this.getAttribute(localKey);
 
         if (value === null || value === undefined) {
@@ -609,7 +690,8 @@ export class Model {
       }
 
       case 'belongsTo': {
-        const foreignKey = relation.foreignKey || `${Related.name.toLowerCase()}_id`;
+        const foreignKey =
+          relation.foreignKey || `${Related.name.toLowerCase()}_id`;
         const ownerKey = relation.ownerKey || Related.primaryKey || 'id';
         const value = this.getAttribute(foreignKey);
 
@@ -622,7 +704,9 @@ export class Model {
       }
 
       default:
-        throw new Error(`Unsupported relationship type '${relation.type}' for '${name}' on ${ModelClass.name}`);
+        throw new Error(
+          `Unsupported relationship type '${relation.type}' for '${name}' on ${ModelClass.name}`
+        );
     }
   }
 }
@@ -634,13 +718,17 @@ export function createModel(db) {
 
   /** INSERT config for a model's row, with RETURNING of the primary key on PostgreSQL. */
   function insertQuery(data, primaryKey) {
-    return usesReturning(db) ? { insert: data, returning: primaryKey } : { insert: data };
+    return usesReturning(db)
+      ? { insert: data, returning: primaryKey }
+      : { insert: data };
   }
 
   /** An instance's column values: its own properties minus the attached methods. */
   function instanceData(instance) {
     return Object.fromEntries(
-      Object.entries(instance).filter(([, value]) => typeof value !== 'function')
+      Object.entries(instance).filter(
+        ([, value]) => typeof value !== 'function'
+      )
     );
   }
 
@@ -648,7 +736,7 @@ export function createModel(db) {
     if (!definition.tableName) {
       throw new Error('Model must have a tableName');
     }
-    
+
     if (!definition.attributes || typeof definition.attributes !== 'object') {
       throw new Error('Model must have attributes object');
     }
@@ -695,7 +783,7 @@ export function createModel(db) {
     instance.delete = async () => {
       const primaryKey = model.primaryKey || 'id';
       const id = instance[primaryKey];
-      
+
       if (!id) {
         throw new Error('Cannot delete instance without primary key');
       }
@@ -715,13 +803,16 @@ export function createModel(db) {
       // Core query method
       query: async (config) => {
         // Default to the model's table without mutating the caller's config
-        const query = config.table || config.from ? { ...config } : { ...config, table: definition.tableName };
+        const query =
+          config.table || config.from
+            ? { ...config }
+            : { ...config, table: definition.tableName };
 
         const result = await executeQuery(db, query);
 
         // Convert results to model instances for SELECT queries
         if (config.select && result.rows) {
-          return result.rows.map(row => createInstance(name, row));
+          return result.rows.map((row) => createInstance(name, row));
         }
 
         return result;
@@ -732,7 +823,7 @@ export function createModel(db) {
         const results = await model.query({
           select: '*',
           where: { [definition.primaryKey || 'id']: id },
-          limit: 1
+          limit: 1,
         });
         return results.length > 0 ? results[0] : null;
       },
@@ -746,10 +837,13 @@ export function createModel(db) {
       },
 
       create: async (attributes) => {
-        const result = await model.query(insertQuery(attributes, definition.primaryKey || 'id'));
+        const result = await model.query(
+          insertQuery(attributes, definition.primaryKey || 'id')
+        );
 
         // Return created instance with ID
-        const generatedId = result.insertId ?? result.rows?.[0]?.[definition.primaryKey || 'id'];
+        const generatedId =
+          result.insertId ?? result.rows?.[0]?.[definition.primaryKey || 'id'];
         if (generatedId !== undefined && generatedId !== null) {
           return await model.find(generatedId);
         }
@@ -760,7 +854,7 @@ export function createModel(db) {
       updateWhere: async (conditions, updates) => {
         const result = await model.query({
           update: updates,
-          where: conditions
+          where: conditions,
         });
         return result.affectedRows || 0;
       },
@@ -768,10 +862,10 @@ export function createModel(db) {
       deleteWhere: async (conditions) => {
         const result = await model.query({
           delete: true,
-          where: conditions
+          where: conditions,
         });
         return result.affectedRows || 0;
-      }
+      },
     };
 
     // Add static methods if defined
@@ -787,17 +881,17 @@ export function createModel(db) {
   return {
     /**
      * Register a model with pure object definition
-     * 
+     *
      * @param {string} name - Model name
      * @param {Object} definition - Model definition object
      * @returns {Object} Enhanced model object
      */
     registerModel(name, definition) {
       validateModelDefinition(definition);
-      
+
       const model = createModel(name, definition);
       models.set(name, model);
-      
+
       return model;
     },
 
@@ -806,16 +900,16 @@ export function createModel(db) {
      */
     async execute(queryObject) {
       const results = {};
-      
+
       for (const [modelName, queryConfig] of Object.entries(queryObject)) {
         const model = models.get(modelName);
         if (!model) {
           throw new Error(`Model '${modelName}' not found`);
         }
-        
+
         results[modelName] = await model.query(queryConfig);
       }
-      
+
       return results;
     },
 
@@ -824,6 +918,6 @@ export function createModel(db) {
      */
     getModel(name) {
       return models.get(name);
-    }
+    },
   };
 }

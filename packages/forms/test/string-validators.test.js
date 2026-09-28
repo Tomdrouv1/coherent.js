@@ -15,7 +15,7 @@ import {
   validateForm,
   FormValidator,
   registerValidator,
-  validators
+  validators,
 } from '../src/index.js';
 
 /** The `data-validators` attribute of `name` as a browser would read it. */
@@ -23,7 +23,9 @@ function renderedAttribute(builder, name) {
   const html = render(builder.buildForm());
   const input = html.match(new RegExp(`<input[^>]*name="${name}"[^>]*>`))[0];
   const attribute = input.match(/data-validators="([^"]*)"/);
-  return attribute ? attribute[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&') : null;
+  return attribute
+    ? attribute[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&')
+    : null;
 }
 
 /** hydrateForm over a minimal DOM double holding one input. */
@@ -32,23 +34,26 @@ function hydrateInput(name, validatorsAttribute) {
     name,
     type: 'text',
     value: '',
-    dataset: validatorsAttribute === null ? {} : { validators: validatorsAttribute },
+    dataset:
+      validatorsAttribute === null ? {} : { validators: validatorsAttribute },
     attributes: { name },
     style: {},
     classList: { add() {}, remove() {} },
-    getAttribute: attr => input.attributes[attr] ?? null,
-    setAttribute: (attr, value) => { input.attributes[attr] = String(value); },
-    hasAttribute: attr => attr in input.attributes,
+    getAttribute: (attr) => input.attributes[attr] ?? null,
+    setAttribute: (attr, value) => {
+      input.attributes[attr] = String(value);
+    },
+    hasAttribute: (attr) => attr in input.attributes,
     addEventListener() {},
     removeEventListener() {},
     closest: () => null,
-    parentElement: { appendChild: child => child }
+    parentElement: { appendChild: (child) => child },
   };
   return hydrateForm({
-    querySelectorAll: selector => (selector === '[name]' ? [input] : []),
+    querySelectorAll: (selector) => (selector === '[name]' ? [input] : []),
     querySelector: () => null,
     addEventListener() {},
-    removeEventListener() {}
+    removeEventListener() {},
   });
 }
 
@@ -56,7 +61,7 @@ beforeEach(() => {
   global.document = {
     createElement: () => ({ style: {}, setAttribute() {} }),
     getElementById: () => null,
-    querySelector: () => null
+    querySelector: () => null,
   };
 });
 
@@ -65,9 +70,16 @@ afterEach(() => {
 });
 
 describe("FormBuilder with ['required', 'minLength:8']", () => {
-  const signup = () => createFormBuilder({
-    fields: [{ name: 'password', type: 'password', validators: ['required', 'minLength:8'] }]
-  });
+  const signup = () =>
+    createFormBuilder({
+      fields: [
+        {
+          name: 'password',
+          type: 'password',
+          validators: ['required', 'minLength:8'],
+        },
+      ],
+    });
 
   it('enforces minLength on the server', () => {
     const form = signup().fork().setValues({ password: 'abc' });
@@ -84,7 +96,10 @@ describe("FormBuilder with ['required', 'minLength:8']", () => {
   });
 
   it('is enforced by hydrateForm', () => {
-    const controller = hydrateInput('password', renderedAttribute(signup(), 'password'));
+    const controller = hydrateInput(
+      'password',
+      renderedAttribute(signup(), 'password')
+    );
 
     controller.setFieldValue('password', 'abc');
     expect(controller.validateField('password')).toBe(false);
@@ -98,7 +113,15 @@ describe("FormBuilder with ['required', 'minLength:8']", () => {
 describe("'name:arg1,arg2' entries", () => {
   it('map onto the built-in factories', () => {
     const errors = validateForm(
-      { age: '15', size: 'xl', code: 'ab1', name: 'Al', bio: 'x'.repeat(11), confirm: 'b', password: 'a' },
+      {
+        age: '15',
+        size: 'xl',
+        code: 'ab1',
+        name: 'Al',
+        bio: 'x'.repeat(11),
+        confirm: 'b',
+        password: 'a',
+      },
       {
         age: ['min:18'],
         size: ['oneOf:s, m, l'],
@@ -106,7 +129,7 @@ describe("'name:arg1,arg2' entries", () => {
         name: ['minLength:3,Use at least 3 letters, please'],
         bio: ['maxLength:10'],
         confirm: ['matches:password'],
-        password: ['required:Password please']
+        password: ['required:Password please'],
       }
     );
 
@@ -116,26 +139,37 @@ describe("'name:arg1,arg2' entries", () => {
       code: 'Invalid format',
       name: 'Use at least 3 letters, please',
       bio: 'Maximum length is 10',
-      confirm: 'Fields do not match'
+      confirm: 'Fields do not match',
     });
 
-    expect(validateForm({ age: '18', size: 'm', code: 'abc' }, {
-      age: ['min:18', 'max:120'],
-      size: ['oneOf:s,m,l'],
-      code: ['pattern:^[a-z]{2,3}$']
-    })).toBeNull();
+    expect(
+      validateForm(
+        { age: '18', size: 'm', code: 'abc' },
+        {
+          age: ['min:18', 'max:120'],
+          size: ['oneOf:s,m,l'],
+          code: ['pattern:^[a-z]{2,3}$'],
+        }
+      )
+    ).toBeNull();
 
-    expect(validateForm({ password: '' }, { password: ['required:Password please'] }))
-      .toEqual({ password: 'Password please' });
+    expect(
+      validateForm({ password: '' }, { password: ['required:Password please'] })
+    ).toEqual({ password: 'Password please' });
   });
 
   it('give the client the same rules and messages as the server', () => {
-    const fieldValidators = ['pattern:^[a-z]{2,3}$', 'minLength:3,Too short, sorry'];
-    const builder = createFormBuilder({ fields: [{ name: 'code', validators: fieldValidators }] });
+    const fieldValidators = [
+      'pattern:^[a-z]{2,3}$',
+      'minLength:3,Too short, sorry',
+    ];
+    const builder = createFormBuilder({
+      fields: [{ name: 'code', validators: fieldValidators }],
+    });
     const attribute = renderedAttribute(builder, 'code');
     expect(JSON.parse(attribute)).toEqual([
       { name: 'pattern', args: [{ $regexp: ['^[a-z]{2,3}$', ''] }] },
-      { name: 'minLength', args: [3, 'Too short, sorry'] }
+      { name: 'minLength', args: [3, 'Too short, sorry'] },
     ]);
 
     const controller = hydrateInput('code', attribute);
@@ -143,7 +177,9 @@ describe("'name:arg1,arg2' entries", () => {
       builder.setValues({ code: value });
       controller.setFieldValue('code', value);
       controller.validateField('code');
-      expect(controller.getError('code') ?? null, value).toBe(builder.validateField('code'));
+      expect(controller.getError('code') ?? null, value).toBe(
+        builder.validateField('code')
+      );
     }
   });
 
@@ -151,22 +187,31 @@ describe("'name:arg1,arg2' entries", () => {
     const schema = new FormValidator({ password: ['required', 'minLength:8'] });
     expect(schema.validate({ password: 'abc' })).toEqual({
       isValid: false,
-      errors: { password: 'Minimum length is 8' }
+      errors: { password: 'Minimum length is 8' },
     });
   });
 
   it('are skipped when the arguments do not fit the rule, like unknown names', () => {
-    expect(validateForm({ a: 'x' }, { a: ['minLength:abc', 'pattern:(', 'nope:1'] })).toBeNull();
+    expect(
+      validateForm({ a: 'x' }, { a: ['minLength:abc', 'pattern:(', 'nope:1'] })
+    ).toBeNull();
   });
 
   it('pass no arguments to registered validators, and still resolve exact names', () => {
-    const noShouting = value => (value && value === value.toUpperCase() ? 'Please stop shouting' : null);
+    const noShouting = (value) =>
+      value && value === value.toUpperCase() ? 'Please stop shouting' : null;
     registerValidator('noShoutingString', noShouting);
     registerValidator('legacy:name', noShouting);
     try {
-      expect(validateForm({ a: 'HEY' }, { a: ['noShoutingString'] })).toEqual({ a: 'Please stop shouting' });
-      expect(validateForm({ a: 'HEY' }, { a: ['legacy:name'] })).toEqual({ a: 'Please stop shouting' });
-      expect(validateForm({ a: 'HEY' }, { a: ['noShoutingString:1'] })).toBeNull();
+      expect(validateForm({ a: 'HEY' }, { a: ['noShoutingString'] })).toEqual({
+        a: 'Please stop shouting',
+      });
+      expect(validateForm({ a: 'HEY' }, { a: ['legacy:name'] })).toEqual({
+        a: 'Please stop shouting',
+      });
+      expect(
+        validateForm({ a: 'HEY' }, { a: ['noShoutingString:1'] })
+      ).toBeNull();
     } finally {
       delete validators.noShoutingString;
       delete validators['legacy:name'];

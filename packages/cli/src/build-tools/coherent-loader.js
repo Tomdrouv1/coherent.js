@@ -8,7 +8,10 @@
 import { warnExperimental } from './experimental.js';
 
 export function coherentLoader(source, map) {
-  warnExperimental('coherentLoader', typeof this?.getOptions === 'function' ? this.getOptions() : {});
+  warnExperimental(
+    'coherentLoader',
+    typeof this?.getOptions === 'function' ? this.getOptions() : {}
+  );
   if (typeof this?.callback === 'function') {
     this.callback(null, source, map);
     return undefined;

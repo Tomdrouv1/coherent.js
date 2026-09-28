@@ -174,7 +174,9 @@ describe('ModuleTracker', () => {
     });
 
     it('should handle dispose errors gracefully', () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
       const hot = tracker.createHotContext('/src/test.js');
       hot.dispose(() => {
         throw new Error('Dispose error');
@@ -335,7 +337,9 @@ describe('ModuleTracker', () => {
     });
 
     it('should handle accept errors gracefully', () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
       const hot = tracker.createHotContext('/src/test.js');
       hot.accept(() => {
         throw new Error('Accept error');

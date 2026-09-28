@@ -24,7 +24,9 @@ export class HandlerRegistry {
    */
   register(handlerId, handler, componentRef = null) {
     if (typeof handler !== 'function') {
-      throw new Error(`Handler must be a function, received: ${typeof handler}`);
+      throw new Error(
+        `Handler must be a function, received: ${typeof handler}`
+      );
     }
     this.handlers.set(handlerId, { handler, componentRef });
   }

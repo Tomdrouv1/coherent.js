@@ -6,7 +6,6 @@
  * @license MIT
  */
 
-
 // Performance monitoring
 import { readFileSync } from 'node:fs';
 import { performanceMonitor } from './performance/monitor.js';
@@ -15,7 +14,7 @@ import { escapeHtml, createTrustedContent } from './core/html-utils.js';
 // Unified HTML renderer
 import {
   render as renderWithHtmlRenderer,
-  renderToStream as streamWithHtmlRenderer
+  renderToStream as streamWithHtmlRenderer,
 } from './rendering/html-renderer.js';
 
 // Component system imports
@@ -31,7 +30,7 @@ import {
   lazy,
   isLazy,
   evaluateLazy,
-  memo as memoWithOptions
+  memo as memoWithOptions,
 } from './components/component-system.js';
 
 // Component lifecycle imports
@@ -41,21 +40,17 @@ import {
   withLifecycle,
   createLifecycleHooks,
   useHooks,
-  componentUtils as lifecycleUtils
+  componentUtils as lifecycleUtils,
 } from './components/lifecycle.js';
 
 // Object factory imports
-import {
-  createElement,
-  createTextNode,
-  h
-} from './core/object-factory.js';
+import { createElement, createTextNode, h } from './core/object-factory.js';
 
 // Component cache imports
 import {
   ComponentCache,
   createComponentCache,
-  memoize
+  memoize,
 } from './performance/component-cache.js';
 
 // Error boundary imports
@@ -65,7 +60,7 @@ import {
   withErrorBoundary,
   createAsyncErrorBoundary,
   GlobalErrorHandler,
-  createGlobalErrorHandler
+  createGlobalErrorHandler,
 } from './components/error-boundary.js';
 
 // CSS Scoping System (similar to Angular View Encapsulation)
@@ -88,7 +83,14 @@ function generateScopeId(cssText) {
 // At-rules whose blocks contain style rules; others (@keyframes,
 // @font-face, @page, @property...) contain declarations or keyframe
 // selectors and are left untouched.
-const GROUPING_AT_RULES = new Set(['media', 'supports', 'container', 'layer', 'document', 'scope']);
+const GROUPING_AT_RULES = new Set([
+  'media',
+  'supports',
+  'container',
+  'layer',
+  'document',
+  'scope',
+]);
 
 function splitSelectorList(prelude) {
   const parts = [];
@@ -150,16 +152,24 @@ function scopeCSS(css, scopeId) {
     const rawPrelude = css.slice(i, open);
     const semicolon = rawPrelude.lastIndexOf(';');
     const lead = semicolon === -1 ? '' : rawPrelude.slice(0, semicolon + 1);
-    const prelude = semicolon === -1 ? rawPrelude : rawPrelude.slice(semicolon + 1);
+    const prelude =
+      semicolon === -1 ? rawPrelude : rawPrelude.slice(semicolon + 1);
     const trimmed = prelude.trim();
 
     if (trimmed.startsWith('@')) {
-      const name = trimmed.slice(1).split(/[\s({]/)[0].toLowerCase();
-      const inner = GROUPING_AT_RULES.has(name) ? scopeCSS(body, scopeId) : body;
+      const name = trimmed
+        .slice(1)
+        .split(/[\s({]/)[0]
+        .toLowerCase();
+      const inner = GROUPING_AT_RULES.has(name)
+        ? scopeCSS(body, scopeId)
+        : body;
       result += `${lead}${prelude}{${inner}}`;
     } else {
       const leading = prelude.match(/^\s*/)[0];
-      const scoped = splitSelectorList(prelude).map((part) => scopeSelector(part, scopeId)).join(', ');
+      const scoped = splitSelectorList(prelude)
+        .map((part) => scopeSelector(part, scopeId))
+        .join(', ');
       result += `${lead}${leading}${scoped} {${body}}`;
     }
 
@@ -174,7 +184,7 @@ function applyScopeToElement(element, scopeId) {
   }
 
   if (Array.isArray(element)) {
-    return element.map(item => applyScopeToElement(item, scopeId));
+    return element.map((item) => applyScopeToElement(item, scopeId));
   }
 
   if (typeof element === 'object') {
@@ -189,7 +199,10 @@ function applyScopeToElement(element, scopeId) {
 
         // Recursively scope children
         if (scopedProps.children) {
-          scopedProps.children = applyScopeToElement(scopedProps.children, scopeId);
+          scopedProps.children = applyScopeToElement(
+            scopedProps.children,
+            scopeId
+          );
         }
 
         scoped[tagName] = scopedProps;
@@ -261,7 +274,7 @@ export function Island(componentFn) {
     const result = componentFn(props);
     return injectHydrationAttributes(result, {
       island: true,
-      _islandComponentName: componentName
+      _islandComponentName: componentName,
     });
   };
 }
@@ -271,7 +284,13 @@ export function Island(componentFn) {
 function prepareRender(obj, options) {
   const scoped = options.scoped ?? options.encapsulate ?? false;
 
-  const { scoped: _scoped, encapsulate: _encapsulate, hydratable: _hydratable, island: _island, ...rendererOptions } = options;
+  const {
+    scoped: _scoped,
+    encapsulate: _encapsulate,
+    hydratable: _hydratable,
+    island: _island,
+    ...rendererOptions
+  } = options;
 
   // Handle function components passed directly to render. Called before
   // scoping: scoping a function was a no-op, so render(Fn, { scoped: true })
@@ -284,7 +303,10 @@ function prepareRender(obj, options) {
 
   // Inject hydration attributes if needed
   if (_hydratable || _island) {
-    component = injectHydrationAttributes(component, { hydratable: _hydratable, island: _island });
+    component = injectHydrationAttributes(component, {
+      hydratable: _hydratable,
+      island: _island,
+    });
   }
 
   return { component, rendererOptions };
@@ -320,7 +342,12 @@ function collectStyleText(element, out = []) {
     element.forEach((item) => collectStyleText(item, out));
   } else if (element && typeof element === 'object') {
     for (const [tagName, props] of Object.entries(element)) {
-      if (tagName === 'style' && props && typeof props === 'object' && typeof props.text === 'string') {
+      if (
+        tagName === 'style' &&
+        props &&
+        typeof props === 'object' &&
+        typeof props.text === 'string'
+      ) {
         out.push(props.text);
       } else if (props && typeof props === 'object' && props.children) {
         collectStyleText(props.children, out);
@@ -351,7 +378,7 @@ function renderScopedComponent(component) {
         // Scope CSS within style tags
         result[tagName] = {
           ...props,
-          text: scopeCSS(props.text, scopeId)
+          text: scopeCSS(props.text, scopeId),
         };
       } else if (typeof props === 'object' && props !== null) {
         // Recursively process children
@@ -390,7 +417,7 @@ export {
   getRegisteredComponents,
   lazy,
   isLazy,
-  evaluateLazy
+  evaluateLazy,
 } from './components/component-system.js';
 
 // HTML utilities. escapeHtml is also imported below for the default export;
@@ -399,13 +426,13 @@ export {
 export {
   escapeHtml,
   isVoidElement,
-  formatAttributes
+  formatAttributes,
 } from './core/html-utils.js';
 
 // Cache management
 export {
   cacheManager,
-  createCacheManager
+  createCacheManager,
 } from './performance/cache-manager.js';
 
 // Component lifecycle exports
@@ -415,21 +442,17 @@ export {
   withLifecycle,
   createLifecycleHooks,
   useHooks,
-  componentUtils as lifecycleUtils
+  componentUtils as lifecycleUtils,
 } from './components/lifecycle.js';
 
 // Object factory exports
-export {
-  createElement,
-  createTextNode,
-  h
-} from './core/object-factory.js';
+export { createElement, createTextNode, h } from './core/object-factory.js';
 
 // Component cache exports
 export {
   ComponentCache,
   createComponentCache,
-  memoize
+  memoize,
 } from './performance/component-cache.js';
 
 // Error boundaries
@@ -439,7 +462,7 @@ export {
   withErrorBoundary,
   createAsyncErrorBoundary,
   GlobalErrorHandler,
-  createGlobalErrorHandler
+  createGlobalErrorHandler,
 };
 
 export {
@@ -447,26 +470,23 @@ export {
   renderWithTemplate,
   renderComponentFactory,
   isCoherentComponent,
-  createErrorResponse
+  createErrorResponse,
 } from './utils/render-utils.js';
 
 export {
   isPeerDependencyAvailable,
   importPeerDependency,
   createLazyIntegration,
-  checkPeerDependencies
+  checkPeerDependencies,
 } from './utils/dependency-utils.js';
 
-export {
-  hasChildren,
-  normalizeChildren
-} from './core/object-utils.js';
+export { hasChildren, normalizeChildren } from './core/object-utils.js';
 
 // HTML nesting validation exports
 export {
   validateNesting,
   FORBIDDEN_CHILDREN,
-  HTMLNestingError
+  HTMLNestingError,
 } from './core/html-nesting-rules.js';
 
 /**
@@ -484,7 +504,9 @@ export function memo(component, options = {}) {
   const withDefaultProps = (props = {}, ...rest) => component(props, ...rest);
   if (typeof options === 'function') {
     const keyGenerator = options;
-    return memoWithOptions(withDefaultProps, { keyFn: (props = {}, ...rest) => keyGenerator(props, ...rest) });
+    return memoWithOptions(withDefaultProps, {
+      keyFn: (props = {}, ...rest) => keyGenerator(props, ...rest),
+    });
   }
   return memoWithOptions(withDefaultProps, options);
 }
@@ -516,9 +538,12 @@ export function deepClone(obj) {
 // Substituted with the manifest version by esbuild `define` at build time
 // (a literal, so it works in both the ESM and CJS bundles); the fallback
 // covers running from source inside the monorepo.
-export const VERSION = typeof __COHERENT_VERSION__ !== 'undefined'
-  ? __COHERENT_VERSION__
-  : JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
+export const VERSION =
+  typeof __COHERENT_VERSION__ !== 'undefined'
+    ? __COHERENT_VERSION__
+    : JSON.parse(
+        readFileSync(new URL('../package.json', import.meta.url), 'utf8')
+      ).version;
 
 // Performance monitoring export
 export { performanceMonitor };
@@ -531,46 +556,46 @@ import * as shadowDOM from './shadow-dom.js';
 
 // Event system imports and exports
 import eventSystemDefault, {
-    EventBus,
-    createEventBus,
-    globalEventBus,
-    emit,
-    emitSync,
-    on,
-    once,
-    off,
-    registerAction,
-    handleAction,
-    DOMEventIntegration,
-    globalDOMIntegration,
-    initializeDOMIntegration,
-    withEventBus,
-    withEventState,
-    createActionHandlers,
-    createEventHandlers,
-    createEventComponent
+  EventBus,
+  createEventBus,
+  globalEventBus,
+  emit,
+  emitSync,
+  on,
+  once,
+  off,
+  registerAction,
+  handleAction,
+  DOMEventIntegration,
+  globalDOMIntegration,
+  initializeDOMIntegration,
+  withEventBus,
+  withEventState,
+  createActionHandlers,
+  createEventHandlers,
+  createEventComponent,
 } from './events/index.js';
 
 export {
-    eventSystemDefault as eventSystem,
-    EventBus,
-    createEventBus,
-    globalEventBus,
-    emit,
-    emitSync,
-    on,
-    once,
-    off,
-    registerAction,
-    handleAction,
-    DOMEventIntegration,
-    globalDOMIntegration,
-    initializeDOMIntegration,
-    withEventBus,
-    withEventState,
-    createActionHandlers,
-    createEventHandlers,
-    createEventComponent
+  eventSystemDefault as eventSystem,
+  EventBus,
+  createEventBus,
+  globalEventBus,
+  emit,
+  emitSync,
+  on,
+  once,
+  off,
+  registerAction,
+  handleAction,
+  DOMEventIntegration,
+  globalDOMIntegration,
+  initializeDOMIntegration,
+  withEventBus,
+  withEventState,
+  createActionHandlers,
+  createEventHandlers,
+  createEventComponent,
 };
 
 // Enhanced FP composition tools
@@ -585,7 +610,7 @@ export const fp = {
    */
   map(fn) {
     return (array) => array.map(fn);
-  }
+  },
 };
 
 // Note: Forms have been moved to @coherent.js/forms package
@@ -659,7 +684,7 @@ const coherent = {
   deepClone,
   escapeHtml,
   performanceMonitor,
-  VERSION
+  VERSION,
 };
 
 export default coherent;

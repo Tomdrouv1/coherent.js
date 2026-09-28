@@ -12,10 +12,14 @@ import { createFormBuilder, validate, validators } from '@coherent.js/forms';
 // ============================================================================
 
 const registrationSchema = {
-  username: [validators.required(), validators.minLength(3), validators.maxLength(20)],
+  username: [
+    validators.required(),
+    validators.minLength(3),
+    validators.maxLength(20),
+  ],
   email: [validators.required(), validators.email()],
   password: [validators.required(), validators.minLength(8)],
-  website: [validators.url()]
+  website: [validators.url()],
 };
 
 // ============================================================================
@@ -28,8 +32,8 @@ export function RegistrationForm() {
       { name: 'username', type: 'text', label: 'Username', required: true },
       { name: 'email', type: 'email', label: 'Email', required: true },
       { name: 'password', type: 'password', label: 'Password', required: true },
-      { name: 'website', type: 'url', label: 'Website (optional)' }
-    ]
+      { name: 'website', type: 'url', label: 'Website (optional)' },
+    ],
   });
 
   return form.buildForm({ submitText: 'Create account' });
@@ -42,9 +46,9 @@ export function App() {
       children: [
         { h1: { text: 'Create your account' } },
         { p: { text: 'All components are pure JavaScript objects — no JSX.' } },
-        RegistrationForm()
-      ]
-    }
+        RegistrationForm(),
+      ],
+    },
   };
 }
 
@@ -59,11 +63,20 @@ console.log('='.repeat(80));
 console.log('\n📝 Rendering registration form...');
 const htmlOut = render(App());
 console.log(`✅ Rendered ${htmlOut.length} characters`);
-console.log(htmlOut.includes('name="username"') ? '   Contains username field ✓' : '   Missing username field ✗');
+console.log(
+  htmlOut.includes('name="username"')
+    ? '   Contains username field ✓'
+    : '   Missing username field ✗'
+);
 
 console.log('\n🔍 Validating good data...');
 const good = await validate(
-  { username: 'ada', email: 'ada@example.com', password: 'correct-horse-battery', website: 'https://example.com' },
+  {
+    username: 'ada',
+    email: 'ada@example.com',
+    password: 'correct-horse-battery',
+    website: 'https://example.com',
+  },
   registrationSchema
 );
 console.log(`✅ isValid: ${good.isValid}`);

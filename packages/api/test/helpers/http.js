@@ -28,7 +28,7 @@ export async function startServer(router, options) {
       new Promise((resolve) => {
         server.closeAllConnections?.();
         server.close(() => resolve());
-      })
+      }),
   };
 }
 
@@ -55,6 +55,6 @@ export function jsonInit(method, body, headers = {}) {
   return {
     method,
     headers: { 'content-type': 'application/json', ...headers },
-    body: typeof body === 'string' ? body : JSON.stringify(body)
+    body: typeof body === 'string' ? body : JSON.stringify(body),
   };
 }

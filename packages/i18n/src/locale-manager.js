@@ -1,8 +1,8 @@
 /**
  * Coherent.js I18n Locale Manager
- * 
+ *
  * Manages locale detection and switching
- * 
+ *
  * @module i18n/locale-manager
  */
 
@@ -18,14 +18,14 @@ export class LocaleManager {
       supportedLocales: ['en'],
       storage: typeof localStorage !== 'undefined' ? localStorage : null,
       storageKey: 'coherent_locale',
-      ...options
+      ...options,
     };
-    
+
     // Add default locale to supported locales if not present
     if (!this.options.supportedLocales.includes(this.options.defaultLocale)) {
       this.options.supportedLocales.push(this.options.defaultLocale);
     }
-    
+
     this.currentLocale = this.detectLocale();
     this.listeners = new Map();
     this.localeCache = new Map();
@@ -37,7 +37,11 @@ export class LocaleManager {
    */
   detectLocale() {
     // In test/server environment, always use default locale
-    if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'test') {
+    if (
+      typeof process !== 'undefined' &&
+      process.env &&
+      process.env.NODE_ENV === 'test'
+    ) {
       return this.options.defaultLocale;
     }
 
@@ -179,7 +183,7 @@ export class LocaleManager {
     const parts = localeCode.split('-');
     const result = {
       language: parts[0],
-      region: parts[1] || null
+      region: parts[1] || null,
     };
     if (parts.length > 2) {
       result.script = parts[1];
@@ -200,13 +204,15 @@ export class LocaleManager {
   getDisplayName(locale, displayLocale = 'en') {
     if (typeof Intl !== 'undefined' && Intl.DisplayNames) {
       try {
-        const displayNames = new Intl.DisplayNames([displayLocale], { type: 'language' });
+        const displayNames = new Intl.DisplayNames([displayLocale], {
+          type: 'language',
+        });
         return displayNames.of(locale);
       } catch {
         // Fallback
       }
     }
-    
+
     // Simple fallback
     const names = {
       en: 'English',
@@ -218,9 +224,9 @@ export class LocaleManager {
       ja: 'Japanese',
       zh: 'Chinese',
       ar: 'Arabic',
-      ru: 'Russian'
+      ru: 'Russian',
     };
-    
+
     return names[locale] || locale;
   }
 
@@ -233,18 +239,18 @@ export class LocaleManager {
     if (locale && locale.includes('-')) {
       return locale;
     }
-    
+
     // Exact match
     if (this.isSupported(locale)) {
       return locale;
     }
-    
+
     // Try base language
     const lang = locale.split('-')[0];
     if (this.isSupported(lang)) {
       return lang;
     }
-    
+
     return this.options.defaultLocale;
   }
 
@@ -256,7 +262,7 @@ export class LocaleManager {
       this.listeners.set(event, []);
     }
     this.listeners.get(event).push(callback);
-    
+
     // Return unsubscribe function
     return () => {
       const callbacks = this.listeners.get(event);
@@ -275,7 +281,7 @@ export class LocaleManager {
   emit(event, data) {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
-      callbacks.forEach(callback => callback(data));
+      callbacks.forEach((callback) => callback(data));
     }
   }
 
@@ -286,7 +292,7 @@ export class LocaleManager {
     if (this.localeCache.has(locale)) {
       return this.localeCache.get(locale);
     }
-    
+
     const data = await loader();
     this.localeCache.set(locale, data);
     return data;
@@ -321,7 +327,7 @@ export class LocaleManager {
    * Preload multiple locales
    */
   async preloadLocales(locales, loaders) {
-    const promises = locales.map(locale => {
+    const promises = locales.map((locale) => {
       const loader = loaders[locale];
       return loader ? this.lazyLoad(locale, loader) : Promise.resolve();
     });
@@ -350,13 +356,13 @@ export class LocaleManager {
     if (this.isSupported(locale)) {
       return locale;
     }
-    
+
     // Try base language
     const lang = locale.split('-')[0];
     if (this.isSupported(lang)) {
       return lang;
     }
-    
+
     // Try fallback chain
     for (const fallback of this.fallbackChain) {
       if (this.isSupported(fallback)) {
@@ -367,7 +373,7 @@ export class LocaleManager {
         return fallbackLang;
       }
     }
-    
+
     return this.options.defaultLocale;
   }
 }
@@ -381,5 +387,5 @@ export function createLocaleManager(options = {}) {
 
 export default {
   LocaleManager,
-  createLocaleManager
+  createLocaleManager,
 };

@@ -4,7 +4,7 @@ const entries = [
   'src/index.js',
   'src/meta.js',
   'src/sitemap.js',
-  'src/structured-data.js'
+  'src/structured-data.js',
 ];
 
 for (const entry of entries) {
@@ -18,7 +18,7 @@ for (const entry of entries) {
     outfile,
     external: ['@coherent.js/core'],
     minify: false,
-    sourcemap: true
+    sourcemap: true,
   });
 }
 

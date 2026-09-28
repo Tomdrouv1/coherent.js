@@ -7,7 +7,7 @@ describe('LRU Route Compilation Cache', () => {
   beforeEach(() => {
     router = createRouter(null, {
       enableMetrics: true,
-      maxCompilationCacheSize: 3 // Small cache for testing LRU behavior
+      maxCompilationCacheSize: 3, // Small cache for testing LRU behavior
     });
   });
 
@@ -62,7 +62,7 @@ describe('LRU Route Compilation Cache', () => {
 
     it('should respect custom cache size configuration', () => {
       const customRouter = createRouter(null, {
-        maxCompilationCacheSize: 5
+        maxCompilationCacheSize: 5,
       });
 
       // Fill cache to custom capacity
@@ -104,7 +104,7 @@ describe('LRU Route Compilation Cache', () => {
     it('should handle complex route patterns efficiently', () => {
       const performanceRouter = createRouter(null, {
         enableMetrics: true,
-        maxCompilationCacheSize: 10 // Larger cache for this test
+        maxCompilationCacheSize: 10, // Larger cache for this test
       });
 
       const complexPatterns = [
@@ -112,11 +112,11 @@ describe('LRU Route Compilation Cache', () => {
         '/api/v1/users/:id/posts/:postId/comments/:commentId',
         '/files/:category/**',
         '/search/:query?/:page?/:limit?',
-        '/admin/users/:id/edit'
+        '/admin/users/:id/edit',
       ];
 
       // First pass (cache misses)
-      complexPatterns.forEach(pattern => {
+      complexPatterns.forEach((pattern) => {
         const result = performanceRouter.compileRoute(pattern);
         expect(result.regex).toBeInstanceOf(RegExp);
         expect(result.paramNames.length).toBeGreaterThan(0);
@@ -127,11 +127,13 @@ describe('LRU Route Compilation Cache', () => {
 
       // Second pass (should have cache hits)
       const hitCount = performanceRouter.metrics.compilationHits;
-      complexPatterns.forEach(pattern => {
+      complexPatterns.forEach((pattern) => {
         performanceRouter.compileRoute(pattern);
       });
 
-      expect(performanceRouter.metrics.compilationHits).toBeGreaterThan(hitCount);
+      expect(performanceRouter.metrics.compilationHits).toBeGreaterThan(
+        hitCount
+      );
       expect(performanceRouter.metrics.compilationHits).toBe(5); // All 5 patterns should hit cache
     });
   });
@@ -141,7 +143,7 @@ describe('LRU Route Compilation Cache', () => {
       const smartRouter = createRouter(null, {
         enableSmartRouting: true,
         enableMetrics: true,
-        maxCompilationCacheSize: 10
+        maxCompilationCacheSize: 10,
       });
 
       // Add routes that will trigger compilation
@@ -149,7 +151,7 @@ describe('LRU Route Compilation Cache', () => {
       smartRouter.get('/users/:id', (req, _res) => ({ userId: req.params.id }));
       smartRouter.get('/posts/:id/comments/:commentId', (req, _res) => ({
         postId: req.params.postId,
-        commentId: req.params.commentId
+        commentId: req.params.commentId,
       }));
 
       // Routes should be registered and compiled

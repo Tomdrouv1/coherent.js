@@ -16,17 +16,23 @@ const pkg = JSON.parse(readFileSync(join(pkgDir, 'package.json'), 'utf8'));
 describe('@coherent.js/integrations package exports', () => {
   const subpaths = Object.entries(pkg.exports);
 
-  it.each(subpaths)('%s has a types condition, listed first, that exists', (_subpath, entry) => {
-    expect(typeof entry).toBe('object');
-    expect(Object.keys(entry)[0]).toBe('types');
-    expect(existsSync(join(pkgDir, entry.types))).toBe(true);
-    expect(existsSync(join(pkgDir, entry.default))).toBe(true);
-  });
+  it.each(subpaths)(
+    '%s has a types condition, listed first, that exists',
+    (_subpath, entry) => {
+      expect(typeof entry).toBe('object');
+      expect(Object.keys(entry)[0]).toBe('types');
+      expect(existsSync(join(pkgDir, entry.types))).toBe(true);
+      expect(existsSync(join(pkgDir, entry.default))).toBe(true);
+    }
+  );
 
   it('keeps the framework peers optional', () => {
     for (const name of Object.keys(pkg.peerDependencies)) {
       if (name === '@coherent.js/core') continue;
-      expect(pkg.peerDependenciesMeta?.[name]?.optional, `${name} should be an optional peer`).toBe(true);
+      expect(
+        pkg.peerDependenciesMeta?.[name]?.optional,
+        `${name} should be an optional peer`
+      ).toBe(true);
     }
   });
 });

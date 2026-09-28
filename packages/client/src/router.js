@@ -83,7 +83,7 @@ export function createRouter(options = {}) {
   const opts = {
     mode: options.mode || 'history',
     base: options.base || '/',
-    ...options
+    ...options,
   };
 
   // '/app/' and '/app' mean the same base; '/' means none. Trimmed with a
@@ -102,9 +102,9 @@ export function createRouter(options = {}) {
       critical: 100,
       high: 50,
       normal: 0,
-      low: -50
+      low: -50,
     },
-    ...(options.prefetch || {})
+    ...(options.prefetch || {}),
   };
 
   opts.transitions = {
@@ -112,12 +112,12 @@ export function createRouter(options = {}) {
     default: {
       enter: 'fade-in',
       leave: 'fade-out',
-      duration: 300
+      duration: 300,
     },
     routes: {},
     onStart: null,
     onComplete: null,
-    ...(options.transitions || {})
+    ...(options.transitions || {}),
   };
 
   opts.codeSplitting = {
@@ -126,7 +126,7 @@ export function createRouter(options = {}) {
     chunkNaming: '[name]-[hash]',
     preload: [],
     onLoad: null,
-    ...(options.codeSplitting || {})
+    ...(options.codeSplitting || {}),
   };
 
   opts.scrollBehavior = {
@@ -136,7 +136,7 @@ export function createRouter(options = {}) {
     delay: 0,
     savePosition: true,
     custom: null,
-    ...(options.scrollBehavior || {})
+    ...(options.scrollBehavior || {}),
   };
 
   // Router state
@@ -149,7 +149,7 @@ export function createRouter(options = {}) {
     loadedChunks: new Map(),
     savedPositions: new Map(),
     transitionState: null,
-    forwardStack: []
+    forwardStack: [],
   };
 
   /** Incremented per navigation; only the latest one may commit */
@@ -164,7 +164,7 @@ export function createRouter(options = {}) {
     prefetches: 0,
     transitionsCompleted: 0,
     chunksLoaded: 0,
-    scrollRestores: 0
+    scrollRestores: 0,
   };
 
   /**
@@ -182,13 +182,15 @@ export function createRouter(options = {}) {
       transition: config.transition || opts.transitions.default,
       lazy: typeof config.component === 'function',
       loaded: !config.component || typeof config.component !== 'function',
-      chunk: null
+      chunk: null,
     });
 
     // Preload if configured
-    if (opts.codeSplitting.enabled &&
-        Array.isArray(opts.codeSplitting.preload) &&
-        opts.codeSplitting.preload.includes(path)) {
+    if (
+      opts.codeSplitting.enabled &&
+      Array.isArray(opts.codeSplitting.preload) &&
+      opts.codeSplitting.preload.includes(path)
+    ) {
       loadRoute(path);
     }
   }
@@ -221,7 +223,8 @@ export function createRouter(options = {}) {
    * Load a route component
    */
   async function loadRoute(path) {
-    const route = state.routes.get(path) ?? matchRoute(parseLocation(path).path)?.route;
+    const route =
+      state.routes.get(path) ?? matchRoute(parseLocation(path).path)?.route;
     if (!route) {
       throw new Error(`Route not found: ${path}`);
     }
@@ -246,7 +249,7 @@ export function createRouter(options = {}) {
       state.loadedChunks.set(path, {
         path,
         loadTime,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       stats.chunksLoaded++;
@@ -268,7 +271,8 @@ export function createRouter(options = {}) {
   async function prefetchRoute(path, priority = opts.prefetch.priority.normal) {
     if (!opts.prefetch.enabled) return;
 
-    const route = state.routes.get(path) ?? matchRoute(parseLocation(path).path)?.route;
+    const route =
+      state.routes.get(path) ?? matchRoute(parseLocation(path).path)?.route;
     if (!route || route.loaded || state.prefetching.has(path)) {
       return;
     }
@@ -328,7 +332,7 @@ export function createRouter(options = {}) {
       });
     } else if (opts.prefetch.strategy === 'visible') {
       const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
+        entries.forEach((entry) => {
           if (entry.isIntersecting) {
             prefetchRoute(path);
             observer.unobserve(element);
@@ -351,12 +355,13 @@ export function createRouter(options = {}) {
   async function executeTransition(from, to) {
     if (!opts.transitions.enabled) return;
 
-    const transition = state.routes.get(to)?.transition || opts.transitions.default;
+    const transition =
+      state.routes.get(to)?.transition || opts.transitions.default;
 
     state.transitionState = {
       from,
       to,
-      phase: 'start'
+      phase: 'start',
     };
 
     if (opts.transitions.onStart) {
@@ -385,7 +390,7 @@ export function createRouter(options = {}) {
    * Apply transition animation
    */
   function applyTransition(animationName, duration) {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       const element = document.querySelector('[data-router-view]');
       if (!element) {
         resolve();
@@ -437,7 +442,7 @@ export function createRouter(options = {}) {
       if (element) {
         position = {
           el: element,
-          behavior: opts.scrollBehavior.behavior
+          behavior: opts.scrollBehavior.behavior,
         };
       }
     } else if (opts.scrollBehavior.position === 'top') {
@@ -462,13 +467,13 @@ export function createRouter(options = {}) {
 
     if (position.el) {
       position.el.scrollIntoView({
-        behavior: position.behavior || opts.scrollBehavior.behavior
+        behavior: position.behavior || opts.scrollBehavior.behavior,
       });
     } else {
       window.scrollTo({
         left: position.x || 0,
         top: position.y || 0,
-        behavior: position.behavior || opts.scrollBehavior.behavior
+        behavior: position.behavior || opts.scrollBehavior.behavior,
       });
     }
   }
@@ -477,19 +482,22 @@ export function createRouter(options = {}) {
    * Save current scroll position
    */
   function saveScrollPosition(path) {
-    if (!opts.scrollBehavior.savePosition || typeof window === 'undefined') return;
+    if (!opts.scrollBehavior.savePosition || typeof window === 'undefined')
+      return;
 
     state.savedPositions.set(path, {
       x: window.scrollX,
-      y: window.scrollY
+      y: window.scrollY,
     });
   }
 
   /** Whether the browser History API is available */
   function hasHistoryApi() {
-    return typeof window !== 'undefined' &&
+    return (
+      typeof window !== 'undefined' &&
       Boolean(window.history) &&
-      typeof window.history.pushState === 'function';
+      typeof window.history.pushState === 'function'
+    );
   }
 
   /** The URL written to the address bar for a router path */
@@ -535,7 +543,7 @@ export function createRouter(options = {}) {
       params: matched?.params ?? {},
       query: location.query,
       hash: location.hash,
-      meta: matched?.route.meta ?? {}
+      meta: matched?.route.meta ?? {},
     };
 
     // Save scroll position
@@ -550,10 +558,16 @@ export function createRouter(options = {}) {
 
       // Guards: returning false cancels the navigation
       const leaving = from ? matchRoute(from.path)?.route : null;
-      if (leaving?.beforeLeave && (await leaving.beforeLeave(to, from)) === false) {
+      if (
+        leaving?.beforeLeave &&
+        (await leaving.beforeLeave(to, from)) === false
+      ) {
         return false;
       }
-      if (matched.route.beforeEnter && (await matched.route.beforeEnter(to, from)) === false) {
+      if (
+        matched.route.beforeEnter &&
+        (await matched.route.beforeEnter(to, from)) === false
+      ) {
         return false;
       }
       if (id !== navigationId) {
@@ -577,7 +591,11 @@ export function createRouter(options = {}) {
       state.currentRoute = { ...to, component };
 
       // Record in history
-      const entry = { path: location.path, fullPath: String(fullPath), timestamp: Date.now() };
+      const entry = {
+        path: location.path,
+        fullPath: String(fullPath),
+        timestamp: Date.now(),
+      };
       if (historyAction === 'replace' && state.history.length > 0) {
         state.history[state.history.length - 1] = entry;
       } else if (historyAction === 'push' || state.history.length === 0) {
@@ -586,8 +604,13 @@ export function createRouter(options = {}) {
       }
 
       if (hasHistoryApi() && historyAction !== 'pop') {
-        const method = historyAction === 'replace' ? 'replaceState' : 'pushState';
-        window.history[method]({ path: String(fullPath) }, '', toURL(String(fullPath)));
+        const method =
+          historyAction === 'replace' ? 'replaceState' : 'pushState';
+        window.history[method](
+          { path: String(fullPath) },
+          '',
+          toURL(String(fullPath))
+        );
       }
 
       // Handle scroll
@@ -666,14 +689,27 @@ export function createRouter(options = {}) {
     };
 
     const onClick = (event) => {
-      if (event.defaultPrevented || event.button !== 0 ||
-          event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
         return;
       }
-      const link = typeof event.target?.closest === 'function' ? event.target.closest('a[href]') : null;
+      const link =
+        typeof event.target?.closest === 'function'
+          ? event.target.closest('a[href]')
+          : null;
       const target = link?.getAttribute('target');
-      if (!link || link.hasAttribute('download') || link.hasAttribute('data-router-ignore') ||
-          (target && target !== '_self')) {
+      if (
+        !link ||
+        link.hasAttribute('download') ||
+        link.hasAttribute('data-router-ignore') ||
+        (target && target !== '_self')
+      ) {
         return;
       }
 
@@ -690,7 +726,12 @@ export function createRouter(options = {}) {
         if (!url.hash.startsWith('#/')) return;
         fullPath = url.hash.slice(1);
       } else {
-        if (base && url.pathname !== base && !url.pathname.startsWith(`${base}/`)) return;
+        if (
+          base &&
+          url.pathname !== base &&
+          !url.pathname.startsWith(`${base}/`)
+        )
+          return;
         fullPath = `${url.pathname.slice(base.length) || '/'}${url.search}${url.hash}`;
       }
       if (!matchRoute(parseLocation(fullPath).path)) return;
@@ -701,7 +742,10 @@ export function createRouter(options = {}) {
 
     const popEvent = opts.mode === 'hash' ? 'hashchange' : 'popstate';
     window.addEventListener(popEvent, onPop);
-    if (startOptions.interceptLinks !== false && typeof document !== 'undefined') {
+    if (
+      startOptions.interceptLinks !== false &&
+      typeof document !== 'undefined'
+    ) {
       document.addEventListener('click', onClick);
     }
     listening = { popEvent, onPop, onClick };
@@ -725,14 +769,16 @@ export function createRouter(options = {}) {
    * Prefetch multiple routes
    */
   function prefetchRoutes(paths, priority) {
-    paths.forEach(path => prefetchRoute(path, priority));
+    paths.forEach((path) => prefetchRoute(path, priority));
   }
 
   /**
    * Get route by path
    */
   function getRoute(path) {
-    return state.routes.get(path) ?? matchRoute(parseLocation(path).path)?.route;
+    return (
+      state.routes.get(path) ?? matchRoute(parseLocation(path).path)?.route
+    );
   }
 
   /**
@@ -760,7 +806,7 @@ export function createRouter(options = {}) {
       activePrefetches: state.prefetching.size,
       loadedChunks: state.loadedChunks.size,
       savedPositions: state.savedPositions.size,
-      historyLength: state.history.length
+      historyLength: state.history.length,
     };
   }
 
@@ -773,7 +819,7 @@ export function createRouter(options = {}) {
     state.savedPositions.clear();
 
     // Unload lazy-loaded chunks
-    state.routes.forEach(route => {
+    state.routes.forEach((route) => {
       if (route.lazy && route.loaded) {
         route.loaded = false;
       }
@@ -789,7 +835,7 @@ export function createRouter(options = {}) {
     let hash = 0;
     for (let i = 0; i < input.length; i++) {
       const char = input.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash;
     }
     return Math.abs(hash).toString(36).substring(0, 8);
@@ -826,7 +872,7 @@ export function createRouter(options = {}) {
     getStats,
     clearCaches,
     // Expose state for testing
-    _state: state
+    _state: state,
   };
 }
 

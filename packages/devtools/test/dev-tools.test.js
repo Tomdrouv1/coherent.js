@@ -16,7 +16,9 @@ import * as core from '@coherent.js/core';
 import { DevTools, createDevTools } from '../src/dev-tools.js';
 
 const DEVTOOLS_DIR = fileURLToPath(new URL('..', import.meta.url));
-const DEV_TOOLS_URL = pathToFileURL(fileURLToPath(new URL('../src/dev-tools.js', import.meta.url))).href;
+const DEV_TOOLS_URL = pathToFileURL(
+  fileURLToPath(new URL('../src/dev-tools.js', import.meta.url))
+).href;
 
 const instances = [];
 function make(...args) {
@@ -33,11 +35,24 @@ afterEach(() => {
 
 /** Run a module snippet in a fresh Node process with DevTools imported. */
 function runNode(body) {
-  return spawnSync(process.execPath, ['--input-type=module', '-e', `
+  return spawnSync(
+    process.execPath,
+    [
+      '--input-type=module',
+      '-e',
+      `
     import { DevTools } from ${JSON.stringify(DEV_TOOLS_URL)};
     console.log = () => {};
     ${body}
-  `], { cwd: DEVTOOLS_DIR, encoding: 'utf8', env: { ...process.env, NODE_ENV: 'development' }, timeout: 10_000 });
+  `,
+    ],
+    {
+      cwd: DEVTOOLS_DIR,
+      encoding: 'utf8',
+      env: { ...process.env, NODE_ENV: 'development' },
+      timeout: 10_000,
+    }
+  );
 }
 
 describe('createDevTools', () => {
@@ -45,7 +60,9 @@ describe('createDevTools', () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
     expect(() => make()).not.toThrow();
     expect(() => make(undefined, { enabled: true })).not.toThrow();
-    expect(() => make(undefined, { enabled: true }).render({ div: {} })).toThrow(/needs a Coherent instance/);
+    expect(() =>
+      make(undefined, { enabled: true }).render({ div: {} })
+    ).toThrow(/needs a Coherent instance/);
   });
 
   it('wraps the (frozen) core module namespace instead of patching it', () => {
@@ -113,10 +130,18 @@ describe('bounded history', () => {
     expect(devtools.errors).toHaveLength(5);
     expect(devtools.errors.at(-1).message).toBe('error 49');
 
-    const huge = { ul: { children: Array.from({ length: 1200 }, (_, i) => ({ li: { text: String(i) } })) } };
+    const huge = {
+      ul: {
+        children: Array.from({ length: 1200 }, (_, i) => ({
+          li: { text: String(i) },
+        })),
+      },
+    };
     for (let i = 0; i < 20; i++) devtools.render(huge);
     expect(devtools.warnings.length).toBeLessThanOrEqual(5);
-    expect(devtools.warnings.some((w) => /High complexity/.test(w.message))).toBe(true);
+    expect(
+      devtools.warnings.some((w) => /High complexity/.test(w.message))
+    ).toBe(true);
   });
 
   it('destroy() restores console.error and removes the global helpers', () => {
@@ -172,29 +197,56 @@ describe('browser enablement', () => {
   function shouldEnableInBrowser(location) {
     const realProcess = globalThis.process;
     globalThis.window = { location };
-    Object.defineProperty(globalThis, 'process', { value: undefined, configurable: true, writable: true });
+    Object.defineProperty(globalThis, 'process', {
+      value: undefined,
+      configurable: true,
+      writable: true,
+    });
     try {
       return DevTools.prototype.shouldEnable.call({});
     } finally {
-      Object.defineProperty(globalThis, 'process', { value: realProcess, configurable: true, writable: true });
+      Object.defineProperty(globalThis, 'process', {
+        value: realProcess,
+        configurable: true,
+        writable: true,
+      });
     }
   }
 
   it('?dev=true does not enable DevTools on a production host', () => {
-    expect(shouldEnableInBrowser({ hostname: 'shop.example.com', search: '?dev=true' })).toBe(false);
-    expect(shouldEnableInBrowser({ hostname: 'localhost', search: '' })).toBe(true);
-    expect(shouldEnableInBrowser({ hostname: '127.0.0.1', search: '' })).toBe(true);
+    expect(
+      shouldEnableInBrowser({
+        hostname: 'shop.example.com',
+        search: '?dev=true',
+      })
+    ).toBe(false);
+    expect(shouldEnableInBrowser({ hostname: 'localhost', search: '' })).toBe(
+      true
+    );
+    expect(shouldEnableInBrowser({ hostname: '127.0.0.1', search: '' })).toBe(
+      true
+    );
   });
 
   it('only opens a hot-reload socket to an explicitly configured URL', () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
-    const WebSocket = vi.fn(function () { this.close = vi.fn(); });
-    globalThis.window = { location: { hostname: 'localhost' }, WebSocket, addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const WebSocket = vi.fn(function () {
+      this.close = vi.fn();
+    });
+    globalThis.window = {
+      location: { hostname: 'localhost' },
+      WebSocket,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    };
 
     make(core, { enabled: true });
     expect(WebSocket).not.toHaveBeenCalled();
 
-    make(core, { enabled: true, hotReloadUrl: 'ws://localhost:5173/coherent-dev' });
+    make(core, {
+      enabled: true,
+      hotReloadUrl: 'ws://localhost:5173/coherent-dev',
+    });
     expect(WebSocket).toHaveBeenCalledWith('ws://localhost:5173/coherent-dev');
   });
 });

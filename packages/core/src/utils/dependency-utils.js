@@ -35,9 +35,9 @@ export async function importPeerDependency(packageName, integrationName) {
   } catch {
     throw new Error(
       `${integrationName} integration requires the '${packageName}' package to be installed.\n` +
-      `Please install it with: npm install ${packageName}\n` +
-      `Or with pnpm: pnpm add ${packageName}\n` +
-      `Or with yarn: yarn add ${packageName}`
+        `Please install it with: npm install ${packageName}\n` +
+        `Or with pnpm: pnpm add ${packageName}\n` +
+        `Or with yarn: yarn add ${packageName}`
     );
   }
 }
@@ -49,11 +49,15 @@ export async function importPeerDependency(packageName, integrationName) {
  * @param {Function} createIntegration - Function that creates the integration using the imported package
  * @returns {Function} - Lazy-loaded integration function
  */
-export function createLazyIntegration(packageName, integrationName, createIntegration) {
+export function createLazyIntegration(
+  packageName,
+  integrationName,
+  createIntegration
+) {
   let cachedIntegration = null;
   let importPromise = null;
 
-  return async function(...args) {
+  return async function (...args) {
     // Return cached integration if available
     if (cachedIntegration) {
       return cachedIntegration(...args);
@@ -61,11 +65,12 @@ export function createLazyIntegration(packageName, integrationName, createIntegr
 
     // Avoid multiple concurrent imports
     if (!importPromise) {
-      importPromise = importPeerDependency(packageName, integrationName)
-        .then(module => {
+      importPromise = importPeerDependency(packageName, integrationName).then(
+        (module) => {
           cachedIntegration = createIntegration(module);
           return cachedIntegration;
-        });
+        }
+      );
     }
 
     const integration = await importPromise;
@@ -85,7 +90,7 @@ export function checkPeerDependencies(dependencies) {
   for (const { package: packageName, integration } of dependencies) {
     const available = isPeerDependencyAvailable(packageName);
     results[packageName] = available;
-    
+
     if (!available) {
       missing.push({ package: packageName, integration });
     }
@@ -93,13 +98,15 @@ export function checkPeerDependencies(dependencies) {
 
   if (missing.length > 0) {
     const installCommands = missing.map(({ package: pkg }) => pkg).join(' ');
-    const integrationsList = missing.map(({ integration }) => integration).join(', ');
-    
+    const integrationsList = missing
+      .map(({ integration }) => integration)
+      .join(', ');
+
     console.warn(
       `Optional dependencies missing for ${integrationsList} integration(s).\n` +
-      `To use these integrations, install: npm install ${installCommands}\n` +
-      `Or with pnpm: pnpm add ${installCommands}\n` +
-      `Or with yarn: yarn add ${installCommands}`
+        `To use these integrations, install: npm install ${installCommands}\n` +
+        `Or with pnpm: pnpm add ${installCommands}\n` +
+        `Or with yarn: yarn add ${installCommands}`
     );
   }
 
@@ -114,11 +121,11 @@ export function checkPeerDependencies(dependencies) {
  * @returns {Function} - Wrapped function with dependency check
  */
 export function requirePeerDependency(packageName, integrationName, fn) {
-  return function(...args) {
+  return function (...args) {
     if (!isPeerDependencyAvailable(packageName)) {
       throw new Error(
         `${integrationName} integration requires the '${packageName}' package to be installed.\n` +
-        `Please install it with: npm install ${packageName}`
+          `Please install it with: npm install ${packageName}`
       );
     }
     return fn.apply(this, args);

@@ -31,15 +31,27 @@ function element(tag, attributes = {}) {
           throw new Error(`InvalidCharacterError: ${JSON.stringify(name)}`);
         }
       },
-      add(name) { this._assertToken(name); this._set.add(name); },
-      remove(name) { this._assertToken(name); this._set.delete(name); },
-      contains(name) { return this._set.has(name); }
+      add(name) {
+        this._assertToken(name);
+        this._set.add(name);
+      },
+      remove(name) {
+        this._assertToken(name);
+        this._set.delete(name);
+      },
+      contains(name) {
+        return this._set.has(name);
+      },
     },
     value: '',
-    get type() { return node.attributes.type ?? 'text'; },
-    getAttribute: name => node.attributes[name] ?? null,
-    setAttribute: (name, value) => { node.attributes[name] = String(value); },
-    hasAttribute: name => name in node.attributes,
+    get type() {
+      return node.attributes.type ?? 'text';
+    },
+    getAttribute: (name) => node.attributes[name] ?? null,
+    setAttribute: (name, value) => {
+      node.attributes[name] = String(value);
+    },
+    hasAttribute: (name) => name in node.attributes,
     addEventListener() {},
     removeEventListener() {},
     appendChild(child) {
@@ -54,26 +66,31 @@ function element(tag, attributes = {}) {
 
       for (let current = node; current; current = current.parentElement) {
         if (attribute && attribute in current.attributes) return current;
-        if (className && current.className.split(' ').includes(className)) return current;
+        if (className && current.className.split(' ').includes(className))
+          return current;
       }
       return null;
     },
     querySelectorAll: () => [],
-    querySelector: () => null
+    querySelector: () => null,
   };
   return node;
 }
 
 /** A wrapper carrying `data-field` plus a custom class, with one input. */
 function formWithField(wrapperClass) {
-  const input = element('input', { name: 'email', type: 'email', required: '' });
+  const input = element('input', {
+    name: 'email',
+    type: 'email',
+    required: '',
+  });
   const wrapper = element('div', { 'data-field': 'email' });
   wrapper.className = wrapperClass;
   wrapper.appendChild(input);
 
   const form = element('form');
   form.appendChild(wrapper);
-  form.querySelectorAll = selector => (selector === '[name]' ? [input] : []);
+  form.querySelectorAll = (selector) => (selector === '[name]' ? [input] : []);
 
   return { form, wrapper, input };
 }
@@ -83,13 +100,13 @@ let created;
 beforeEach(() => {
   created = [];
   global.document = {
-    createElement: tag => {
+    createElement: (tag) => {
       const node = element(tag);
       created.push(node);
       return node;
     },
     getElementById: () => null,
-    querySelector: () => null
+    querySelector: () => null,
   };
 });
 
@@ -116,7 +133,8 @@ describe('finding the field wrapper', () => {
 
     const form = element('form');
     form.appendChild(wrapper);
-    form.querySelectorAll = selector => (selector === '[name]' ? [input] : []);
+    form.querySelectorAll = (selector) =>
+      selector === '[name]' ? [input] : [];
 
     hydrateForm(form);
 
@@ -142,7 +160,7 @@ describe('error class names', () => {
     const { form, input } = formWithField('contact-form__field');
 
     const controller = hydrateForm(form, {
-      classNames: { error: 'contact-form__error', invalid: 'is-invalid' }
+      classNames: { error: 'contact-form__error', invalid: 'is-invalid' },
     });
     controller.setTouched('email');
     controller.validateField('email');
@@ -158,7 +176,7 @@ describe('error class names', () => {
     const { form, input } = formWithField('contact-form__field');
 
     const controller = hydrateForm(form, {
-      classNames: { invalid: 'is-invalid has-error' }
+      classNames: { invalid: 'is-invalid has-error' },
     });
     controller.setTouched('email');
     controller.validateField('email');
@@ -176,7 +194,9 @@ describe('error class names', () => {
   it('removes the configured invalid class once the field passes', () => {
     const { form, input } = formWithField('contact-form__field');
 
-    const controller = hydrateForm(form, { classNames: { invalid: 'is-invalid' } });
+    const controller = hydrateForm(form, {
+      classNames: { invalid: 'is-invalid' },
+    });
     controller.setTouched('email');
     controller.validateField('email');
     expect(input.classList.contains('is-invalid')).toBe(true);

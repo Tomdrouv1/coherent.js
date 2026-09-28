@@ -12,7 +12,7 @@ import {
   coherentMiddleware,
   createCoherentHandler,
   expressEngine,
-  setupCoherent
+  setupCoherent,
 } from '../../src/express/index.js';
 import { listen, hit } from '../helpers/listen.js';
 
@@ -32,7 +32,9 @@ describe('Express: JSON responses are not auto-rendered by default', () => {
     setupCoherent(app);
     app.get('/users', (_req, res) => res.send({ users: [{ name: 'a' }] }));
     app.get('/ok', (_req, res) => res.json({ ok: true }));
-    app.get('/401', (_req, res) => res.status(401).send({ error: 'Invalid credentials' }));
+    app.get('/401', (_req, res) =>
+      res.status(401).send({ error: 'Invalid credentials' })
+    );
     server = await listen(app);
 
     const users = await hit(server.url, '/users');
@@ -66,19 +68,25 @@ describe('Express: res.coherent renders explicitly', () => {
   it('renders a component as text/html with the configured template', async () => {
     const app = express();
     setupCoherent(app, { template: '<!DOCTYPE html><main>{{content}}</main>' });
-    app.get('/', (_req, res) => res.coherent({ h1: { text: 'Hello <world>' } }));
+    app.get('/', (_req, res) =>
+      res.coherent({ h1: { text: 'Hello <world>' } })
+    );
     server = await listen(app);
 
     const result = await hit(server.url, '/');
     expect(result.status).toBe(200);
     expect(result.type).toMatch(/^text\/html/);
-    expect(result.body).toBe('<!DOCTYPE html><main><h1>Hello &lt;world&gt;</h1></main>');
+    expect(result.body).toBe(
+      '<!DOCTYPE html><main><h1>Hello &lt;world&gt;</h1></main>'
+    );
   });
 
   it('accepts a per-call template override', async () => {
     const app = express();
     app.use(coherentMiddleware());
-    app.get('/', (_req, res) => res.coherent({ p: { text: 'x' } }, { template: '[{{content}}]' }));
+    app.get('/', (_req, res) =>
+      res.coherent({ p: { text: 'x' } }, { template: '[{{content}}]' })
+    );
     server = await listen(app);
 
     expect((await hit(server.url, '/')).body).toBe('[<p>x</p>]');
@@ -88,11 +96,31 @@ describe('Express: res.coherent renders explicitly', () => {
     const app = express();
     app.use(coherentMiddleware());
     app.get('/sync', (_req, res) => {
-      res.coherent({ div: { children: [{ get span() { throw new Error('boom-sync'); } }] } });
+      res.coherent({
+        div: {
+          children: [
+            {
+              get span() {
+                throw new Error('boom-sync');
+              },
+            },
+          ],
+        },
+      });
     });
     app.get('/async', async (_req, res) => {
       await Promise.resolve();
-      res.coherent({ div: { children: [{ get span() { throw new Error('boom-async'); } }] } });
+      res.coherent({
+        div: {
+          children: [
+            {
+              get span() {
+                throw new Error('boom-async');
+              },
+            },
+          ],
+        },
+      });
     });
     app.use(errorHandler);
     server = await listen(app);
@@ -157,7 +185,9 @@ describe('Express: view engine', () => {
     const app = express();
     app.set('views', viewsDir);
     setupCoherent(app, { useEngine: true });
-    app.get('/', (_req, res) => res.render('marker', { div: { text: 'engine' } }));
+    app.get('/', (_req, res) =>
+      res.render('marker', { div: { text: 'engine' } })
+    );
     app.use(errorHandler);
     server = await listen(app);
 
@@ -174,7 +204,9 @@ describe('Express: view engine', () => {
     app.use(errorHandler);
     server = await listen(app);
 
-    expect((await hit(server.url, '/')).body).toBe('<h1 data-leaked="no">Hello Ann</h1>');
+    expect((await hit(server.url, '/')).body).toBe(
+      '<h1 data-leaked="no">Hello Ann</h1>'
+    );
   });
 });
 
@@ -182,13 +214,19 @@ describe('Express: createCoherentHandler', () => {
   it('does not send again when the factory already responded', async () => {
     const errors = [];
     const app = express();
-    app.get('/redirect', createCoherentHandler((_req, res) => {
-      res.redirect('/elsewhere');
-      return { div: { text: 'unused' } };
-    }));
-    app.get('/redirect-only', createCoherentHandler((_req, res) => {
-      res.redirect('/login');
-    }));
+    app.get(
+      '/redirect',
+      createCoherentHandler((_req, res) => {
+        res.redirect('/elsewhere');
+        return { div: { text: 'unused' } };
+      })
+    );
+    app.get(
+      '/redirect-only',
+      createCoherentHandler((_req, res) => {
+        res.redirect('/login');
+      })
+    );
     app.use((err, _req, _res, next) => {
       errors.push(err);
       next(err);
@@ -208,7 +246,10 @@ describe('Express: createCoherentHandler', () => {
 
   it('still renders the returned component', async () => {
     const app = express();
-    app.get('/', createCoherentHandler((req) => ({ p: { text: req.query.q } })));
+    app.get(
+      '/',
+      createCoherentHandler((req) => ({ p: { text: req.query.q } }))
+    );
     server = await listen(app);
 
     const result = await hit(server.url, '/?q=%3Cb%3E');
@@ -225,7 +266,7 @@ describe('Express: module shape', () => {
       'createCoherentHandler',
       'createExpressIntegration',
       'enhancedExpressEngine',
-      'setupCoherent'
+      'setupCoherent',
     ]);
   });
 });

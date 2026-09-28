@@ -19,15 +19,18 @@ const dashboard = { createPerformanceDashboard };
 // Application code
 const TestApp = () => ({
   div: {
-    text: 'Selective Bundle Test - Tree Shaking Enabled'
-  }
+    text: 'Selective Bundle Test - Tree Shaking Enabled',
+  },
 });
 
 const app = {
-  render: () => render(TestApp())
+  render: () => render(TestApp()),
 };
 
 // Use only imported features
-console.log('Tree-shakable DevTools features:', Object.keys(visualizer).length + Object.keys(dashboard).length);
+console.log(
+  'Tree-shakable DevTools features:',
+  Object.keys(visualizer).length + Object.keys(dashboard).length
+);
 
 export default app;

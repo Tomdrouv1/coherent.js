@@ -27,7 +27,8 @@ const PAGE = `<!DOCTYPE html><html><body>
 <p>static</p>
 </body></html>`;
 
-const FABRICATED = /UserList|UserProfile|Dashboard|virtualization|John Doe|245KB/;
+const FABRICATED =
+  /UserList|UserProfile|Dashboard|virtualization|John Doe|245KB/;
 
 let server;
 let base;
@@ -43,17 +44,24 @@ beforeAll(async () => {
       return;
     }
     if (req.url === '/static') {
-      res.writeHead(200, { 'content-type': 'text/html' }).end('<html><body><p>hi</p></body></html>');
+      res
+        .writeHead(200, { 'content-type': 'text/html' })
+        .end('<html><body><p>hi</p></body></html>');
       return;
     }
-    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(PAGE);
+    res
+      .writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
+      .end(PAGE);
   });
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   base = `http://127.0.0.1:${server.address().port}`;
 
   workDir = await mkdtemp(join(tmpdir(), 'coherent-debug-'));
   entry = join(workDir, 'entry.mjs');
-  await writeFile(entry, `import { createCLI } from ${JSON.stringify(CLI_SRC)};\nawait createCLI();\n`);
+  await writeFile(
+    entry,
+    `import { createCLI } from ${JSON.stringify(CLI_SRC)};\nawait createCLI();\n`
+  );
 });
 
 afterAll(async () => {
@@ -63,16 +71,27 @@ afterAll(async () => {
 
 async function runCli(args, cwd = workDir) {
   try {
-    const { stdout, stderr } = await execFileAsync(process.execPath, [entry, ...args], { cwd });
+    const { stdout, stderr } = await execFileAsync(
+      process.execPath,
+      [entry, ...args],
+      { cwd }
+    );
     return { code: 0, stdout, output: stdout + stderr };
   } catch (error) {
-    return { code: error.code, stdout: error.stdout, output: `${error.stdout}${error.stderr}` };
+    return {
+      code: error.code,
+      stdout: error.stdout,
+      output: `${error.stdout}${error.stderr}`,
+    };
   }
 }
 
 describe('analyzeHydration', () => {
   it('reports what the page actually contains', async () => {
-    const result = await analyzeHydration({ url: base, components: 'Counter,Missing' });
+    const result = await analyzeHydration({
+      url: base,
+      components: 'Counter,Missing',
+    });
     expect(result.summary.status).toBe('success');
     expect(result.summary.httpStatus).toBe(200);
     expect(result.summary.hydrationMarkers).toBe(3);
@@ -108,32 +127,53 @@ describe('analyzeHydration', () => {
 describe('analyzePerformance', () => {
   it('times real requests', async () => {
     const before = requests;
-    const result = await analyzePerformance({ url: base, samples: '5', time: '10' });
+    const result = await analyzePerformance({
+      url: base,
+      samples: '5',
+      time: '10',
+    });
     expect(requests - before).toBe(5);
     expect(result.summary.status).toBe('success');
     expect(result.summary.requests).toBe(5);
     expect(result.details.metrics.statusCodes).toEqual({ 200: 5 });
     expect(result.details.metrics.responseBytes).toBe(Buffer.byteLength(PAGE));
-    expect(result.details.metrics.minMs).toBeLessThanOrEqual(result.details.metrics.maxMs);
+    expect(result.details.metrics.minMs).toBeLessThanOrEqual(
+      result.details.metrics.maxMs
+    );
     expect(JSON.stringify(result)).not.toMatch(FABRICATED);
   });
 
   it('flags non-2xx responses', async () => {
-    const result = await analyzePerformance({ url: `${base}/missing`, samples: '2' });
+    const result = await analyzePerformance({
+      url: `${base}/missing`,
+      samples: '2',
+    });
     expect(result.summary.status).toBe('warning');
     expect(result.details.metrics.statusCodes).toEqual({ 404: 2 });
   });
 
   it('reports errors instead of numbers it did not measure', async () => {
-    expect((await analyzePerformance({ url: 'http://127.0.0.1:1' })).summary.status).toBe('error');
-    expect((await analyzePerformance({ url: base, component: 'UserList' })).summary.error).toMatch(/not implemented/);
-    expect((await analyzePerformance({ url: base, memory: true })).summary.error).toMatch(/not implemented/);
+    expect(
+      (await analyzePerformance({ url: 'http://127.0.0.1:1' })).summary.status
+    ).toBe('error');
+    expect(
+      (await analyzePerformance({ url: base, component: 'UserList' })).summary
+        .error
+    ).toMatch(/not implemented/);
+    expect(
+      (await analyzePerformance({ url: base, memory: true })).summary.error
+    ).toMatch(/not implemented/);
   });
 });
 
 describe('coherent debug (CLI)', () => {
   it('debug hydration against a dead port exits non-zero without fabricated output', async () => {
-    const { code, output } = await runCli(['debug', 'hydration', '--url', 'http://127.0.0.1:1']);
+    const { code, output } = await runCli([
+      'debug',
+      'hydration',
+      '--url',
+      'http://127.0.0.1:1',
+    ]);
     expect(code).toBe(1);
     expect(output).toContain('http://127.0.0.1:1');
     expect(output).toMatch(/Status: error/);
@@ -141,7 +181,14 @@ describe('coherent debug (CLI)', () => {
   });
 
   it('debug performance --url measures the given server', async () => {
-    const { code, output } = await runCli(['debug', 'performance', '--url', base, '--samples', '3']);
+    const { code, output } = await runCli([
+      'debug',
+      'performance',
+      '--url',
+      base,
+      '--samples',
+      '3',
+    ]);
     expect(code).toBe(0);
     expect(output).toContain(base);
     expect(output).toMatch(/requests: 3/);
@@ -153,10 +200,20 @@ describe('coherent debug (CLI)', () => {
     await mkdir(join(project, 'dist', 'chunks'), { recursive: true });
     await writeFile(join(project, 'dist', 'index.js'), 'x'.repeat(2048));
     await writeFile(join(project, 'dist', 'chunks', 'a.js'), 'y'.repeat(1024));
-    const { code, stdout } = await runCli(['debug', 'bundle', '--output', 'json'], project);
+    const { code, stdout } = await runCli(
+      ['debug', 'bundle', '--output', 'json'],
+      project
+    );
     expect(code).toBe(0);
     const report = JSON.parse(stdout.slice(stdout.indexOf('{\n')));
-    expect(report.summary).toMatchObject({ files: 2, scriptFiles: 2, totalSize: '3.0KB' });
-    expect(Object.keys(report.details.largestScripts)).toEqual(['index.js', join('chunks', 'a.js')]);
+    expect(report.summary).toMatchObject({
+      files: 2,
+      scriptFiles: 2,
+      totalSize: '3.0KB',
+    });
+    expect(Object.keys(report.details.largestScripts)).toEqual([
+      'index.js',
+      join('chunks', 'a.js'),
+    ]);
   });
 });

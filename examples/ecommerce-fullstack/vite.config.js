@@ -21,9 +21,12 @@ export default defineConfig({
         // Full bundle with all devtools (for comparison)
         'full-bundle': resolve(import.meta.dirname, 'test-full-bundle.js'),
         // Selective bundle with tree shaking
-        'selective-bundle': resolve(import.meta.dirname, 'test-selective-bundle.js'),
+        'selective-bundle': resolve(
+          import.meta.dirname,
+          'test-selective-bundle.js'
+        ),
         // Production bundle (optimal)
-        'production-bundle': resolve(import.meta.dirname, 'app.js')
+        'production-bundle': resolve(import.meta.dirname, 'app.js'),
       },
       output: {
         dir: 'dist',
@@ -31,7 +34,7 @@ export default defineConfig({
         entryFileNames: '[name].js',
         chunkFileNames: '[name]-chunk.js',
         // Don't split chunks initially to see full bundle sizes
-        manualChunks: undefined
+        manualChunks: undefined,
       },
       // CRITICAL: Don't externalize Coherent.js packages for bundle analysis
       external: [],
@@ -39,8 +42,8 @@ export default defineConfig({
       treeshake: {
         moduleSideEffects: false,
         propertyReadSideEffects: false,
-        unknownGlobalSideEffects: false
-      }
+        unknownGlobalSideEffects: false,
+      },
     },
 
     // Production optimizations
@@ -54,20 +57,20 @@ export default defineConfig({
 
     // Enable CSS and asset optimization
     cssCodeSplit: true,
-    assetsInlineLimit: 4096
+    assetsInlineLimit: 4096,
   },
 
   // An SSR build externalizes dependencies by default; bundle them instead, so
   // the size comparison measures what each entry actually pulls in. Node
   // built-ins stay external regardless.
   ssr: {
-    noExternal: true
+    noExternal: true,
   },
 
   // Development server configuration
   server: {
     port: 3000,
-    host: true
+    host: true,
   },
 
   // CRITICAL: Include Coherent.js packages in bundle for analysis
@@ -76,15 +79,15 @@ export default defineConfig({
       '@coherent.js/core',
       '@coherent.js/state',
       '@coherent.js/api',
-      '@coherent.js/devtools'
+      '@coherent.js/devtools',
     ],
-    exclude: []
+    exclude: [],
   },
 
   // Define environment variables
   define: {
     'process.env.NODE_ENV': JSON.stringify('production'),
-    __DEV__: JSON.stringify(false)
+    __DEV__: JSON.stringify(false),
   },
 
   // Resolve workspace packages to their sources. Exact matches: a plain
@@ -97,10 +100,10 @@ export default defineConfig({
       ['api', 'api/src/index.js'],
       ['devtools', 'devtools/src/index.js'],
       ['devtools/visualizer', 'devtools/src/component-visualizer.js'],
-      ['devtools/performance', 'devtools/src/performance/index.js']
+      ['devtools/performance', 'devtools/src/performance/index.js'],
     ].map(([name, file]) => ({
       find: new RegExp(`^@coherent\\.js/${name}$`),
-      replacement: resolve(import.meta.dirname, '../../packages', file)
-    }))
-  }
+      replacement: resolve(import.meta.dirname, '../../packages', file),
+    })),
+  },
 });

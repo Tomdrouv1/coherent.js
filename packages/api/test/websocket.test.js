@@ -35,7 +35,7 @@ function handshake({ origin, host = 'localhost' } = {}) {
     'Upgrade: websocket',
     'Connection: Upgrade',
     'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==',
-    'Sec-WebSocket-Version: 13'
+    'Sec-WebSocket-Version: 13',
   ];
   if (origin) lines.push(`Origin: ${origin}`);
   return `${lines.join('\r\n')}\r\n\r\n`;
@@ -55,7 +55,9 @@ async function startWsServer(routerOptions = {}, routeOptions = {}) {
     routeOptions
   );
   const server = router.createServer();
-  server.on('upgrade', (req, socket, head) => router.handleWebSocketUpgrade(req, socket, head));
+  server.on('upgrade', (req, socket, head) =>
+    router.handleWebSocketUpgrade(req, socket, head)
+  );
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
   return { server, router, received, port: server.address().port };
@@ -67,8 +69,14 @@ async function connect(port, options) {
   await once(socket, 'connect');
   const data = [];
   socket.on('data', (chunk) => data.push(chunk));
-  socket.write(options?.withFirstFrame ? Buffer.concat([Buffer.from(handshake(options)), options.withFirstFrame]) : handshake(options));
-  await waitFor(() => Buffer.concat(data).includes('\r\n\r\n') || socket.destroyed);
+  socket.write(
+    options?.withFirstFrame
+      ? Buffer.concat([Buffer.from(handshake(options)), options.withFirstFrame])
+      : handshake(options)
+  );
+  await waitFor(
+    () => Buffer.concat(data).includes('\r\n\r\n') || socket.destroyed
+  );
   const text = Buffer.concat(data).toString('latin1');
   return { socket, status: text.split('\r\n')[0], data };
 }
@@ -96,7 +104,9 @@ describe('WebSocket routes', () => {
   it('rejects a cross-origin handshake by default', async () => {
     current = await startWsServer();
 
-    const evil = await connect(current.port, { origin: 'https://evil.example' });
+    const evil = await connect(current.port, {
+      origin: 'https://evil.example',
+    });
     const same = await connect(current.port, { origin: 'http://localhost' });
     const noOrigin = await connect(current.port, {});
 
@@ -107,10 +117,16 @@ describe('WebSocket routes', () => {
   });
 
   it('honours allowedOrigins on the route and wsAllowedOrigins on the router', async () => {
-    current = await startWsServer({ wsAllowedOrigins: ['https://app.example'] });
+    current = await startWsServer({
+      wsAllowedOrigins: ['https://app.example'],
+    });
 
-    const allowed = await connect(current.port, { origin: 'https://app.example' });
-    const other = await connect(current.port, { origin: 'https://other.example' });
+    const allowed = await connect(current.port, {
+      origin: 'https://app.example',
+    });
+    const other = await connect(current.port, {
+      origin: 'https://other.example',
+    });
 
     expect(allowed.status).toBe('HTTP/1.1 101 Switching Protocols');
     expect(other.status).toBe('HTTP/1.1 403 Forbidden');
@@ -119,7 +135,9 @@ describe('WebSocket routes', () => {
 
     await new Promise((resolve) => current.server.close(resolve));
     current = await startWsServer({}, { allowedOrigins: '*' });
-    const any = await connect(current.port, { origin: 'https://anything.example' });
+    const any = await connect(current.port, {
+      origin: 'https://anything.example',
+    });
     expect(any.status).toBe('HTTP/1.1 101 Switching Protocols');
     any.socket.destroy();
   });
@@ -144,7 +162,13 @@ describe('WebSocket routes', () => {
     current = await startWsServer();
     const { socket } = await connect(current.port);
 
-    socket.write(Buffer.concat([clientFrame('one'), clientFrame('two'), clientFrame('x'.repeat(300))]));
+    socket.write(
+      Buffer.concat([
+        clientFrame('one'),
+        clientFrame('two'),
+        clientFrame('x'.repeat(300)),
+      ])
+    );
 
     expect(await waitFor(() => current.received.length === 3)).toBe(true);
     expect(current.received).toEqual(['one', 'two', 'x'.repeat(300)]);
@@ -153,7 +177,9 @@ describe('WebSocket routes', () => {
 
   it('delivers a frame sent together with the handshake', async () => {
     current = await startWsServer();
-    const { socket } = await connect(current.port, { withFirstFrame: clientFrame('early') });
+    const { socket } = await connect(current.port, {
+      withFirstFrame: clientFrame('early'),
+    });
 
     expect(await waitFor(() => current.received.length === 1)).toBe(true);
     expect(current.received).toEqual(['early']);
@@ -169,7 +195,7 @@ describe('WebSocket routes', () => {
       Buffer.concat([
         clientFrame('frag', { fin: false }),
         clientFrame('ping-body', { opcode: 0x9 }),
-        clientFrame('mented', { opcode: 0x0 })
+        clientFrame('mented', { opcode: 0x0 }),
       ])
     );
 
@@ -184,12 +210,18 @@ describe('WebSocket routes', () => {
   it('closes its side and forgets the connection when the client leaves without a close frame', async () => {
     current = await startWsServer();
     const { socket } = await connect(current.port);
-    expect(await waitFor(() => current.router.getWebSocketConnections().length === 1)).toBe(true);
+    expect(
+      await waitFor(() => current.router.getWebSocketConnections().length === 1)
+    ).toBe(true);
 
     socket.end();
 
-    expect(await waitFor(() => current.router.getWebSocketConnections().length === 0)).toBe(true);
-    expect(await waitFor(() => socket.readableEnded || socket.destroyed)).toBe(true);
+    expect(
+      await waitFor(() => current.router.getWebSocketConnections().length === 0)
+    ).toBe(true);
+    expect(await waitFor(() => socket.readableEnded || socket.destroyed)).toBe(
+      true
+    );
     socket.destroy();
   });
 
@@ -199,7 +231,9 @@ describe('WebSocket routes', () => {
 
     socket.write(clientFrame('y'.repeat(200)));
 
-    expect(await waitFor(() => socket.destroyed || socket.readableEnded)).toBe(true);
+    expect(await waitFor(() => socket.destroyed || socket.readableEnded)).toBe(
+      true
+    );
     expect(current.received).toEqual([]);
     socket.destroy();
   });

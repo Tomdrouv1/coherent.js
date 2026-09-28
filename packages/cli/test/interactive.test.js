@@ -7,7 +7,15 @@
  * (exit 13) — unusable in CI, and no indication of what went wrong.
  */
 
-import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  beforeEach,
+  afterEach,
+  afterAll,
+} from 'vitest';
 import { execFile } from 'child_process';
 import { mkdtemp, rm } from 'fs/promises';
 import { writeFileSync } from 'fs';
@@ -89,15 +97,23 @@ describe('isInteractive', () => {
 
 async function runCli(args, cwd) {
   try {
-    const { stdout, stderr } = await execFileAsync(process.execPath, [entry, ...args], {
-      cwd,
-      timeout: 60_000,
-      // No stdin: exactly the condition that used to hang.
-      stdio: ['ignore', 'pipe', 'pipe']
-    });
+    const { stdout, stderr } = await execFileAsync(
+      process.execPath,
+      [entry, ...args],
+      {
+        cwd,
+        timeout: 60_000,
+        // No stdin: exactly the condition that used to hang.
+        stdio: ['ignore', 'pipe', 'pipe'],
+      }
+    );
     return { code: 0, stdout, stderr };
   } catch (error) {
-    return { code: error.code ?? 1, stdout: error.stdout ?? '', stderr: error.stderr ?? '' };
+    return {
+      code: error.code ?? 1,
+      stdout: error.stdout ?? '',
+      stderr: error.stderr ?? '',
+    };
   }
 }
 
@@ -105,7 +121,7 @@ describe('commands without a terminal', () => {
   it.each([
     [['generate'], 'the generation type'],
     [['generate', 'component'], 'the component name'],
-    [['create'], 'the project name']
+    [['create'], 'the project name'],
   ])('%j fails fast with guidance', async (args, expected) => {
     const { code, stderr } = await runCli(args);
 
@@ -128,7 +144,9 @@ describe('commands without a terminal', () => {
     expect(code).toBe(0);
 
     const { readFile } = await import('fs/promises');
-    const manifest = JSON.parse(await readFile(join(dir, 'ci-app/package.json'), 'utf-8'));
+    const manifest = JSON.parse(
+      await readFile(join(dir, 'ci-app/package.json'), 'utf-8')
+    );
     expect(manifest.dependencies['@coherent.js/core']).toBeDefined();
   }, 90_000);
 });

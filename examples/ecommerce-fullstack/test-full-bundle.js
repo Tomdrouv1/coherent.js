@@ -27,7 +27,7 @@ import {
   createPerformanceDashboard,
   showPerformanceDashboard,
   createEnhancedErrorHandler,
-  handleEnhancedError
+  handleEnhancedError,
 } from '@coherent.js/devtools';
 
 import { render } from '@coherent.js/core';
@@ -54,18 +54,18 @@ const allDevTools = {
   createPerformanceDashboard,
   showPerformanceDashboard,
   createEnhancedErrorHandler,
-  handleEnhancedError
+  handleEnhancedError,
 };
 
 // Application code
 const TestApp = () => ({
   div: {
-    text: 'Full Bundle Test - All DevTools Included'
-  }
+    text: 'Full Bundle Test - All DevTools Included',
+  },
 });
 
 const app = {
-  render: () => render(TestApp())
+  render: () => render(TestApp()),
 };
 
 // Use all imported features to ensure they're not tree-shaken

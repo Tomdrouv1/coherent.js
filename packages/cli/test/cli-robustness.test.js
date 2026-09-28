@@ -13,7 +13,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { mkdtemp, rm, mkdir, writeFile, copyFile, readFile, readdir } from 'node:fs/promises';
+import {
+  mkdtemp,
+  rm,
+  mkdir,
+  writeFile,
+  copyFile,
+  readFile,
+  readdir,
+} from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -33,7 +41,10 @@ let entry;
 beforeEach(async () => {
   workDir = await mkdtemp(join(tmpdir(), 'coherent-cli-robustness-'));
   entry = join(workDir, 'entry.mjs');
-  await writeFile(entry, `import { createCLI } from ${JSON.stringify(CLI_SRC)};\nawait createCLI();\n`);
+  await writeFile(
+    entry,
+    `import { createCLI } from ${JSON.stringify(CLI_SRC)};\nawait createCLI();\n`
+  );
 });
 
 afterEach(async () => {
@@ -43,7 +54,11 @@ afterEach(async () => {
 
 async function run(file, args, cwd = workDir) {
   try {
-    const { stdout, stderr } = await execFileAsync(process.execPath, [file, ...args], { cwd, timeout: 30_000 });
+    const { stdout, stderr } = await execFileAsync(
+      process.execPath,
+      [file, ...args],
+      { cwd, timeout: 30_000 }
+    );
     return { code: 0, stdout, stderr };
   } catch (error) {
     return { code: error.code, stdout: error.stdout, stderr: error.stderr };
@@ -59,12 +74,17 @@ describe('bin/coherent.js', () => {
     await copyFile(BIN, join(pkg, 'bin', 'coherent.js'));
     await writeFile(join(pkg, 'package.json'), '{"type":"module"}');
     await writeFile(join(pkg, 'dist', 'index.js'), distSource);
-    await writeFile(join(pkg, 'src', 'index.js'), 'export async function createCLI() { console.log("SRC FALLBACK"); }');
+    await writeFile(
+      join(pkg, 'src', 'index.js'),
+      'export async function createCLI() { console.log("SRC FALLBACK"); }'
+    );
     return join(pkg, 'bin', 'coherent.js');
   }
 
   it('reports a failing command once and exits 1, without re-running it from src/', async () => {
-    const bin = await fakePackage('export async function createCLI() { console.log("RUN"); throw new Error("real failure"); }');
+    const bin = await fakePackage(
+      'export async function createCLI() { console.log("RUN"); throw new Error("real failure"); }'
+    );
     const { code, stdout, stderr } = await run(bin, []);
     expect(code).toBe(1);
     expect(stderr).toContain('real failure');
@@ -73,7 +93,9 @@ describe('bin/coherent.js', () => {
   });
 
   it('prints the real load error instead of falling back to src/', async () => {
-    const bin = await fakePackage('import "a-dependency-that-is-not-installed";\nexport async function createCLI() {}');
+    const bin = await fakePackage(
+      'import "a-dependency-that-is-not-installed";\nexport async function createCLI() {}'
+    );
     const { code, stdout, stderr } = await run(bin, []);
     expect(code).toBe(1);
     expect(stderr).toContain('a-dependency-that-is-not-installed');
@@ -91,8 +113,12 @@ describe('coherent dev', () => {
 
   it('--open without the optional "open" package explains instead of failing', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
-    const missing = Object.assign(new Error("Cannot find package 'open'"), { code: 'ERR_MODULE_NOT_FOUND' });
-    await expect(openBrowser('http://localhost:3000', () => Promise.reject(missing))).resolves.toBe(false);
+    const missing = Object.assign(new Error("Cannot find package 'open'"), {
+      code: 'ERR_MODULE_NOT_FOUND',
+    });
+    await expect(
+      openBrowser('http://localhost:3000', () => Promise.reject(missing))
+    ).resolves.toBe(false);
     const printed = console.log.mock.calls.flat().join('\n');
     expect(printed).toContain('npm install --save-dev open');
     expect(printed).toContain('http://localhost:3000');
@@ -102,11 +128,20 @@ describe('coherent dev', () => {
     const project = join(workDir, 'app');
     await mkdir(project);
     const marker = join(project, 'server-started');
-    await writeFile(join(project, 'package.json'), JSON.stringify({
-      name: 'app',
-      scripts: { dev: `node -e "require('fs').writeFileSync('server-started', '1'); setTimeout(() => {}, 1500)"` }
-    }));
-    const { code, stdout, stderr } = await run(entry, ['dev', '--open'], project);
+    await writeFile(
+      join(project, 'package.json'),
+      JSON.stringify({
+        name: 'app',
+        scripts: {
+          dev: `node -e "require('fs').writeFileSync('server-started', '1'); setTimeout(() => {}, 1500)"`,
+        },
+      })
+    );
+    const { code, stdout, stderr } = await run(
+      entry,
+      ['dev', '--open'],
+      project
+    );
     expect(existsSync(marker)).toBe(true);
     expect(stdout + stderr).toContain('Open http://localhost:3000 manually');
     expect(stdout + stderr).not.toContain('Failed to start development server');
@@ -117,7 +152,15 @@ describe('coherent dev', () => {
 
 describe('coherent create', () => {
   it('rejects an unknown --runtime before creating anything', async () => {
-    const { code, stderr } = await run(entry, ['create', 'my-app', '--runtime', 'nope', '--skip-install', '--skip-git', '--skip-prompts']);
+    const { code, stderr } = await run(entry, [
+      'create',
+      'my-app',
+      '--runtime',
+      'nope',
+      '--skip-install',
+      '--skip-git',
+      '--skip-prompts',
+    ]);
     expect(code).toBe(1);
     expect(stderr).toContain('Unknown runtime "nope"');
     expect(await readdir(workDir)).toEqual(['entry.mjs']);
@@ -126,7 +169,17 @@ describe('coherent create', () => {
   it('rejects a project name that is a path', async () => {
     const inner = join(workDir, 'a', 'b');
     await mkdir(inner, { recursive: true });
-    const { code, stderr } = await run(entry, ['create', 'foo/../../x', '--skip-install', '--skip-git', '--skip-prompts'], inner);
+    const { code, stderr } = await run(
+      entry,
+      [
+        'create',
+        'foo/../../x',
+        '--skip-install',
+        '--skip-git',
+        '--skip-prompts',
+      ],
+      inner
+    );
     expect(code).toBe(1);
     expect(stderr).toContain('path separators');
     expect(existsSync(join(workDir, 'x'))).toBe(false);
@@ -135,14 +188,23 @@ describe('coherent create', () => {
 
   it('scaffoldProject() rejects unknown options before writing', async () => {
     const target = join(workDir, 'lib-app');
-    await expect(scaffoldProject(target, { name: 'lib-app', runtime: 'nope', skipInstall: true, skipGit: true }))
-      .rejects.toThrow(/Unknown runtime "nope"/);
+    await expect(
+      scaffoldProject(target, {
+        name: 'lib-app',
+        runtime: 'nope',
+        skipInstall: true,
+        skipGit: true,
+      })
+    ).rejects.toThrow(/Unknown runtime "nope"/);
     expect(existsSync(target)).toBe(false);
   });
 
   it('runs the dev server attached and reports its exit code', async () => {
     const started = Date.now();
-    const code = await runAttached('node -e "setTimeout(() => process.exit(3), 300)"', workDir);
+    const code = await runAttached(
+      'node -e "setTimeout(() => process.exit(3), 300)"',
+      workDir
+    );
     expect(code).toBe(3);
     expect(Date.now() - started).toBeGreaterThanOrEqual(250);
   });
@@ -157,10 +219,14 @@ describe('coherent generate', () => {
       const file = join(workDir, 'src/components/Button.js');
       await writeFile(file, '// my edits');
 
-      await expect(generateComponent('Button', { skipStory: true })).rejects.toThrow(/Refusing to overwrite.*Button\.js.*--force/);
+      await expect(
+        generateComponent('Button', { skipStory: true })
+      ).rejects.toThrow(/Refusing to overwrite.*Button\.js.*--force/);
       expect(await readFile(file, 'utf8')).toBe('// my edits');
       // Nothing was written by the refused run (the test file is untouched too)
-      expect(existsSync(join(workDir, 'src/components/Button.stories.js'))).toBe(false);
+      expect(
+        existsSync(join(workDir, 'src/components/Button.stories.js'))
+      ).toBe(false);
 
       await generateComponent('Button', { skipStory: true, force: true });
       expect(await readFile(file, 'utf8')).toContain('Button');
@@ -174,6 +240,8 @@ describe('coherent generate', () => {
     const second = await run(entry, ['generate', 'page', 'About']);
     expect(second.code).toBe(1);
     expect(second.stdout + second.stderr).toContain('--force');
-    expect((await run(entry, ['generate', 'page', 'About', '--force'])).code).toBe(0);
+    expect(
+      (await run(entry, ['generate', 'page', 'About', '--force'])).code
+    ).toBe(0);
   });
 });

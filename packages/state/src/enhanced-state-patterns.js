@@ -12,13 +12,16 @@ import { createReactiveState } from './reactive-state.js';
  */
 export class FormState {
   constructor(initialValues = {}, options = {}) {
-    this._state = createReactiveState({
-      values: { ...initialValues },
-      errors: {},
-      touched: {},
-      isSubmitting: false,
-      isValid: true
-    }, options);
+    this._state = createReactiveState(
+      {
+        values: { ...initialValues },
+        errors: {},
+        touched: {},
+        isSubmitting: false,
+        isValid: true,
+      },
+      options
+    );
 
     this._validators = {};
     this._options = options;
@@ -28,12 +31,12 @@ export class FormState {
   setValue(field, value) {
     this._state.set('values', {
       ...this._state.get('values'),
-      [field]: value
+      [field]: value,
     });
     this._validateField(field);
     this._state.set('touched', {
       ...this._state.get('touched'),
-      [field]: true
+      [field]: true,
     });
   }
 
@@ -44,7 +47,7 @@ export class FormState {
   setError(field, error) {
     this._state.set('errors', {
       ...this._state.get('errors'),
-      [field]: error
+      [field]: error,
     });
     this._updateIsValid();
   }
@@ -118,8 +121,8 @@ export class FormState {
   }
 
   _updateIsValid() {
-    const hasErrors = Object.keys(this._state.get('errors')).some(key =>
-      this._state.get('errors')[key]
+    const hasErrors = Object.keys(this._state.get('errors')).some(
+      (key) => this._state.get('errors')[key]
     );
     this._state.set('isValid', !hasErrors);
   }
@@ -130,16 +133,19 @@ export class FormState {
  */
 export class ListState {
   constructor(initialItems = [], options = {}) {
-    this._state = createReactiveState({
-      items: [...initialItems],
-      loading: false,
-      error: null,
-      filters: {},
-      sortBy: null,
-      sortOrder: 'asc',
-      page: 1,
-      pageSize: options.pageSize || 10
-    }, options);
+    this._state = createReactiveState(
+      {
+        items: [...initialItems],
+        loading: false,
+        error: null,
+        filters: {},
+        sortBy: null,
+        sortOrder: 'asc',
+        page: 1,
+        pageSize: options.pageSize || 10,
+      },
+      options
+    );
 
     this._options = options;
   }
@@ -156,7 +162,7 @@ export class ListState {
     if (typeof indexOrPredicate === 'number') {
       newItems = items.filter((_, i) => i !== indexOrPredicate);
     } else {
-      newItems = items.filter(item => !indexOrPredicate(item));
+      newItems = items.filter((item) => !indexOrPredicate(item));
     }
 
     this._state.set('items', newItems);
@@ -210,10 +216,12 @@ export class ListState {
     const items = this._state.get('items');
     const filters = this._state.get('filters');
 
-    return items.filter(item => {
+    return items.filter((item) => {
       return Object.entries(filters).every(([key, value]) => {
         if (!value) return true;
-        return String(item[key] || '').toLowerCase().includes(String(value).toLowerCase());
+        return String(item[key] || '')
+          .toLowerCase()
+          .includes(String(value).toLowerCase());
       });
     });
   }
@@ -270,7 +278,7 @@ export class ModalState {
       isOpen: false,
       data: null,
       loading: false,
-      error: null
+      error: null,
     });
 
     this._resolvers = new Map();
@@ -336,14 +344,17 @@ export class ModalState {
  */
 export class RouterState {
   constructor(initialRoute = '/', options = {}) {
-    this._state = createReactiveState({
-      current: initialRoute,
-      params: {},
-      query: {},
-      history: [initialRoute],
-      canGoBack: false,
-      canGoForward: false
-    }, options);
+    this._state = createReactiveState(
+      {
+        current: initialRoute,
+        params: {},
+        query: {},
+        history: [initialRoute],
+        canGoBack: false,
+        canGoForward: false,
+      },
+      options
+    );
 
     this._routes = new Map();
     this._options = options;
@@ -423,5 +434,5 @@ export default {
   createFormState,
   createListState,
   createModalState,
-  createRouterState
+  createRouterState,
 };

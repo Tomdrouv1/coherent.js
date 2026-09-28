@@ -38,16 +38,16 @@ export function createAstroIntegration(options = {}) {
           updateConfig({
             vite: {
               optimizeDeps: {
-                include: ['@coherent.js/client']
-              }
-            }
+                include: ['@coherent.js/client'],
+              },
+            },
           });
         }
       },
       'astro:build:done': ({ logger }) => {
         logger?.info('Coherent.js components built successfully');
-      }
-    }
+      },
+    },
   };
 }
 
@@ -60,9 +60,8 @@ export function createAstroIntegration(options = {}) {
  * @returns {string} Rendered HTML
  */
 export function renderComponent(Component, props = {}, renderOptions = {}) {
-  const componentDef = typeof Component === 'function'
-    ? Component(props)
-    : Component;
+  const componentDef =
+    typeof Component === 'function' ? Component(props) : Component;
 
   return render(componentDef, renderOptions);
 }
@@ -78,12 +77,16 @@ export function createRenderer(options = {}) {
     name: '@coherent.js/astro-renderer',
     check(Component) {
       // Check if this looks like a Coherent.js component (function or plain object with tag keys)
-      return typeof Component === 'function' ||
-        (typeof Component === 'object' && Component !== null && !Array.isArray(Component));
+      return (
+        typeof Component === 'function' ||
+        (typeof Component === 'object' &&
+          Component !== null &&
+          !Array.isArray(Component))
+      );
     },
     renderToStaticMarkup(Component, props) {
       const html = renderComponent(Component, props, options);
       return { html };
-    }
+    },
   };
 }

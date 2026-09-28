@@ -27,12 +27,12 @@ export function createPerformanceMonitor(options = {}) {
   const opts = {
     enabled: true,
     metrics: {
-      custom: {}
+      custom: {},
     },
     sampling: {
       enabled: false,
       rate: 1.0,
-      strategy: 'random'
+      strategy: 'random',
     },
     reporting: {
       enabled: false,
@@ -41,19 +41,19 @@ export function createPerformanceMonitor(options = {}) {
       batch: {
         enabled: false,
         maxSize: 100,
-        flushInterval: 5000
+        flushInterval: 5000,
       },
-      onReport: null
+      onReport: null,
     },
     alerts: {
       enabled: true,
       debounceMs: 5000,
-      rules: []
+      rules: [],
     },
     resources: {
       enabled: false,
       track: ['memory'],
-      interval: 1000
+      interval: 1000,
     },
     profiling: {
       enabled: false,
@@ -61,10 +61,10 @@ export function createPerformanceMonitor(options = {}) {
       flamegraph: false,
       tracing: {
         enabled: false,
-        sampleRate: 0.01
-      }
+        sampleRate: 0.01,
+      },
     },
-    ...options
+    ...options,
   };
 
   // Ensure nested defaults are preserved
@@ -72,7 +72,7 @@ export function createPerformanceMonitor(options = {}) {
     enabled: false,
     maxSize: 100,
     flushInterval: 5000,
-    ...(options.reporting?.batch || {})
+    ...(options.reporting?.batch || {}),
   };
 
   // Metrics storage
@@ -81,9 +81,9 @@ export function createPerformanceMonitor(options = {}) {
       renderTime: { type: 'histogram', unit: 'ms', values: [] },
       componentCount: { type: 'counter', unit: 'renders', value: 0 },
       errorCount: { type: 'counter', unit: 'errors', value: 0 },
-      memoryUsage: { type: 'gauge', unit: 'MB', values: [] }
+      memoryUsage: { type: 'gauge', unit: 'MB', values: [] },
     },
-    custom: {}
+    custom: {},
   };
 
   // Initialize custom metrics
@@ -93,7 +93,8 @@ export function createPerformanceMonitor(options = {}) {
       unit: config.unit || '',
       threshold: config.threshold,
       values: config.type === 'histogram' ? [] : undefined,
-      value: config.type === 'counter' || config.type === 'gauge' ? 0 : undefined
+      value:
+        config.type === 'counter' || config.type === 'gauge' ? 0 : undefined,
     };
   });
 
@@ -101,7 +102,7 @@ export function createPerformanceMonitor(options = {}) {
   const samplingState = {
     count: 0,
     sampled: 0,
-    adaptiveRate: opts.sampling.rate
+    adaptiveRate: opts.sampling.rate,
   };
 
   // Reporting state
@@ -109,25 +110,25 @@ export function createPerformanceMonitor(options = {}) {
     batch: [],
     lastReport: Date.now(),
     reportTimer: null,
-    flushTimer: null
+    flushTimer: null,
   };
 
   // Alert state
   const alertState = {
     triggered: new Map(),
-    history: []
+    history: [],
   };
 
   // Resource monitoring state
   const resourceState = {
     samples: [],
-    timer: null
+    timer: null,
   };
 
   // Profiling state
   const profilingState = {
     traces: [],
-    flamegraphData: []
+    flamegraphData: [],
   };
 
   // Statistics
@@ -135,7 +136,7 @@ export function createPerformanceMonitor(options = {}) {
     metricsRecorded: 0,
     sampleRate: opts.sampling.rate,
     reportsGenerated: 0,
-    alertsTriggered: 0
+    alertsTriggered: 0,
   };
 
   /**
@@ -149,14 +150,21 @@ export function createPerformanceMonitor(options = {}) {
     if (opts.sampling.strategy === 'random') {
       return Math.random() < samplingState.adaptiveRate;
     } else if (opts.sampling.strategy === 'deterministic') {
-      return samplingState.count % Math.ceil(1 / samplingState.adaptiveRate) === 0;
+      return (
+        samplingState.count % Math.ceil(1 / samplingState.adaptiveRate) === 0
+      );
     } else if (opts.sampling.strategy === 'adaptive') {
       // Adaptive sampling based on recent metric values
       const recentRenderTimes = metrics.builtin.renderTime.values.slice(-10);
       if (recentRenderTimes.length > 0) {
-        const avgTime = recentRenderTimes.reduce((a, b) => a + b, 0) / recentRenderTimes.length;
+        const avgTime =
+          recentRenderTimes.reduce((a, b) => a + b, 0) /
+          recentRenderTimes.length;
         // Sample more when performance is poor
-        samplingState.adaptiveRate = avgTime > 16 ? Math.min(1.0, opts.sampling.rate * 2) : opts.sampling.rate;
+        samplingState.adaptiveRate =
+          avgTime > 16
+            ? Math.min(1.0, opts.sampling.rate * 2)
+            : opts.sampling.rate;
       }
       return Math.random() < samplingState.adaptiveRate;
     }
@@ -212,9 +220,10 @@ export function createPerformanceMonitor(options = {}) {
 
       // Check threshold
       if (customMetric.threshold) {
-        const currentValue = customMetric.type === 'histogram' || customMetric.type === 'gauge'
-          ? customMetric.values[customMetric.values.length - 1]
-          : customMetric.value;
+        const currentValue =
+          customMetric.type === 'histogram' || customMetric.type === 'gauge'
+            ? customMetric.values[customMetric.values.length - 1]
+            : customMetric.value;
 
         if (currentValue > customMetric.threshold) {
           checkAlerts(name, currentValue);
@@ -228,7 +237,7 @@ export function createPerformanceMonitor(options = {}) {
         metric: name,
         value,
         metadata,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       if (reportingState.batch.length >= opts.reporting.batch.maxSize) {
@@ -246,7 +255,7 @@ export function createPerformanceMonitor(options = {}) {
   function checkAlerts(metric, value) {
     if (!opts.alerts.enabled) return;
 
-    opts.alerts.rules.forEach(rule => {
+    opts.alerts.rules.forEach((rule) => {
       if (rule.metric !== metric) return;
 
       let triggered = false;
@@ -270,7 +279,7 @@ export function createPerformanceMonitor(options = {}) {
           alertState.history.push({
             rule,
             value,
-            timestamp: now
+            timestamp: now,
           });
           stats.alertsTriggered++;
 
@@ -303,7 +312,7 @@ export function createPerformanceMonitor(options = {}) {
     const report = {
       timestamp: Date.now(),
       statistics: { ...stats },
-      metrics: {}
+      metrics: {},
     };
 
     // Built-in metrics
@@ -315,27 +324,32 @@ export function createPerformanceMonitor(options = {}) {
           count: metric.values.length,
           min: metric.values.length > 0 ? Math.min(...metric.values) : 0,
           max: metric.values.length > 0 ? Math.max(...metric.values) : 0,
-          avg: metric.values.length > 0
-            ? metric.values.reduce((a, b) => a + b, 0) / metric.values.length
-            : 0,
+          avg:
+            metric.values.length > 0
+              ? metric.values.reduce((a, b) => a + b, 0) / metric.values.length
+              : 0,
           p50: percentile(metric.values, 0.5),
           p95: percentile(metric.values, 0.95),
-          p99: percentile(metric.values, 0.99)
+          p99: percentile(metric.values, 0.99),
         };
       } else if (metric.type === 'counter') {
         report.metrics[name] = {
           type: 'counter',
           unit: metric.unit,
-          value: metric.value
+          value: metric.value,
         };
       } else if (metric.type === 'gauge') {
         report.metrics[name] = {
           type: 'gauge',
           unit: metric.unit,
-          current: metric.values.length > 0 ? metric.values[metric.values.length - 1] : 0,
-          avg: metric.values.length > 0
-            ? metric.values.reduce((a, b) => a + b, 0) / metric.values.length
-            : 0
+          current:
+            metric.values.length > 0
+              ? metric.values[metric.values.length - 1]
+              : 0,
+          avg:
+            metric.values.length > 0
+              ? metric.values.reduce((a, b) => a + b, 0) / metric.values.length
+              : 0,
         };
       }
     });
@@ -349,26 +363,31 @@ export function createPerformanceMonitor(options = {}) {
           count: metric.values?.length || 0,
           min: metric.values?.length > 0 ? Math.min(...metric.values) : 0,
           max: metric.values?.length > 0 ? Math.max(...metric.values) : 0,
-          avg: metric.values?.length > 0
-            ? metric.values.reduce((a, b) => a + b, 0) / metric.values.length
-            : 0,
+          avg:
+            metric.values?.length > 0
+              ? metric.values.reduce((a, b) => a + b, 0) / metric.values.length
+              : 0,
           p95: percentile(metric.values || [], 0.95),
-          p99: percentile(metric.values || [], 0.99)
+          p99: percentile(metric.values || [], 0.99),
         };
       } else if (metric.type === 'counter') {
         report.metrics[name] = {
           type: 'counter',
           unit: metric.unit,
-          value: metric.value || 0
+          value: metric.value || 0,
         };
       } else if (metric.type === 'gauge') {
         report.metrics[name] = {
           type: 'gauge',
           unit: metric.unit,
-          current: metric.values?.length > 0 ? metric.values[metric.values.length - 1] : 0,
-          avg: metric.values?.length > 0
-            ? metric.values.reduce((a, b) => a + b, 0) / metric.values.length
-            : 0
+          current:
+            metric.values?.length > 0
+              ? metric.values[metric.values.length - 1]
+              : 0,
+          avg:
+            metric.values?.length > 0
+              ? metric.values.reduce((a, b) => a + b, 0) / metric.values.length
+              : 0,
         };
       }
     });
@@ -376,13 +395,13 @@ export function createPerformanceMonitor(options = {}) {
     // Alerts
     report.alerts = {
       total: alertState.history.length,
-      recent: alertState.history.slice(-10)
+      recent: alertState.history.slice(-10),
     };
 
     // Resources
     if (opts.resources.enabled) {
       report.resources = {
-        samples: resourceState.samples.slice(-20)
+        samples: resourceState.samples.slice(-20),
       };
     }
 
@@ -413,7 +432,7 @@ export function createPerformanceMonitor(options = {}) {
 
     const collectResources = () => {
       const sample = {
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
 
       if (opts.resources.track.includes('memory')) {
@@ -423,12 +442,12 @@ export function createPerformanceMonitor(options = {}) {
             heapUsed: mem.heapUsed / 1024 / 1024,
             heapTotal: mem.heapTotal / 1024 / 1024,
             external: mem.external / 1024 / 1024,
-            rss: mem.rss / 1024 / 1024
+            rss: mem.rss / 1024 / 1024,
           };
         } else if (typeof performance !== 'undefined' && performance.memory) {
           sample.memory = {
             heapUsed: performance.memory.usedJSHeapSize / 1024 / 1024,
-            heapTotal: performance.memory.totalJSHeapSize / 1024 / 1024
+            heapTotal: performance.memory.totalJSHeapSize / 1024 / 1024,
           };
         }
       }
@@ -438,7 +457,10 @@ export function createPerformanceMonitor(options = {}) {
         resourceState.samples = resourceState.samples.slice(-100);
       }
 
-      resourceState.timer = setTimeout(collectResources, opts.resources.interval);
+      resourceState.timer = setTimeout(
+        collectResources,
+        opts.resources.interval
+      );
     };
 
     collectResources();
@@ -505,7 +527,7 @@ export function createPerformanceMonitor(options = {}) {
         name,
         duration,
         metadata,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       if (profilingState.traces.length > 1000) {
@@ -565,7 +587,8 @@ export function createPerformanceMonitor(options = {}) {
       unit: config.unit || '',
       threshold: config.threshold,
       values: config.type === 'histogram' ? [] : undefined,
-      value: config.type === 'counter' || config.type === 'gauge' ? 0 : undefined
+      value:
+        config.type === 'counter' || config.type === 'gauge' ? 0 : undefined,
     };
   }
 
@@ -588,8 +611,8 @@ export function createPerformanceMonitor(options = {}) {
       traces: profilingState.traces.length,
       alerts: {
         total: alertState.history.length,
-        unique: alertState.triggered.size
-      }
+        unique: alertState.triggered.size,
+      },
     };
   }
 
@@ -598,7 +621,7 @@ export function createPerformanceMonitor(options = {}) {
    */
   function reset() {
     // Reset built-in metrics
-    Object.values(metrics.builtin).forEach(metric => {
+    Object.values(metrics.builtin).forEach((metric) => {
       if (metric.type === 'histogram' || metric.type === 'gauge') {
         metric.values = [];
       } else if (metric.type === 'counter') {
@@ -607,7 +630,7 @@ export function createPerformanceMonitor(options = {}) {
     });
 
     // Reset custom metrics
-    Object.values(metrics.custom).forEach(metric => {
+    Object.values(metrics.custom).forEach((metric) => {
       if (metric.type === 'histogram' || metric.type === 'gauge') {
         metric.values = [];
       } else if (metric.type === 'counter') {
@@ -675,7 +698,11 @@ export function createPerformanceMonitor(options = {}) {
    * Record an error reported by the renderer.
    */
   function recordError(operation, error, metadata = {}) {
-    recordMetric('errorCount', 1, { operation, error: error?.message, ...metadata });
+    recordMetric('errorCount', 1, {
+      operation,
+      error: error?.message,
+      ...metadata,
+    });
   }
 
   return {
@@ -702,7 +729,7 @@ export function createPerformanceMonitor(options = {}) {
       stopResourceMonitoring();
       stopReporting();
       return generateReport();
-    }
+    },
   };
 }
 

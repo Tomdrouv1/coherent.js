@@ -32,8 +32,8 @@ describe('@coherent.js/core public API', () => {
     'isVoidElement',
     'formatAttributes',
     'cacheManager',
-    'createCacheManager'
-  ])('exports %s', name => {
+    'createCacheManager',
+  ])('exports %s', (name) => {
     expect(core[name]).toBeDefined();
   });
 

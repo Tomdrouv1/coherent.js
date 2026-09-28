@@ -17,13 +17,25 @@ import { render, dangerouslySetInnerContent } from '../src/index.js';
 
 describe('attribute values', () => {
   it('writes htmlFor as for', () => {
-    expect(render({ label: { htmlFor: 'email', text: 'Email' } })).toBe('<label for="email">Email</label>');
+    expect(render({ label: { htmlFor: 'email', text: 'Email' } })).toBe(
+      '<label for="email">Email</label>'
+    );
   });
 
   it('leaves out style values that are null, undefined or false', () => {
     const active = false;
-    expect(render({ div: { style: { color: active && 'red', margin: null, padding: undefined, fontSize: '2px' } } }))
-      .toBe('<div style="font-size: 2px"></div>');
+    expect(
+      render({
+        div: {
+          style: {
+            color: active && 'red',
+            margin: null,
+            padding: undefined,
+            fontSize: '2px',
+          },
+        },
+      })
+    ).toBe('<div style="font-size: 2px"></div>');
   });
 
   it('writes no style attribute for an empty style', () => {
@@ -32,27 +44,42 @@ describe('attribute values', () => {
   });
 
   it('keeps the case of custom properties', () => {
-    expect(render({ div: { style: { '--mainColor': 'red', backgroundColor: 'var(--mainColor)' } } }))
-      .toBe('<div style="--mainColor: red; background-color: var(--mainColor)"></div>');
+    expect(
+      render({
+        div: {
+          style: { '--mainColor': 'red', backgroundColor: 'var(--mainColor)' },
+        },
+      })
+    ).toBe(
+      '<div style="--mainColor: red; background-color: var(--mainColor)"></div>'
+    );
   });
 
   it('calls function values when merging class and className', () => {
-    expect(render({ p: { class: () => ['a', false], className: () => 'b' } })).toBe('<p class="a b"></p>');
+    expect(
+      render({ p: { class: () => ['a', false], className: () => 'b' } })
+    ).toBe('<p class="a b"></p>');
   });
 });
 
 describe('content values', () => {
   it('renders nothing for a text function that returns null or undefined', () => {
     expect(render({ p: { text: () => null } })).toBe('<p></p>');
-    expect(render({ p: { text: () => undefined, children: ['after'] } })).toBe('<p>after</p>');
+    expect(render({ p: { text: () => undefined, children: ['after'] } })).toBe(
+      '<p>after</p>'
+    );
   });
 
   it('treats html: null like no raw HTML', () => {
     expect(render({ p: { html: null } })).toBe('<p></p>');
-    expect(render({ p: { html: () => null, text: 'fallback' } })).toBe('<p>fallback</p>');
+    expect(render({ p: { html: () => null, text: 'fallback' } })).toBe(
+      '<p>fallback</p>'
+    );
   });
 
   it('emits trusted content returned by a text function verbatim', () => {
-    expect(render({ p: { text: () => dangerouslySetInnerContent('<i>x</i>') } })).toBe('<p><i>x</i></p>');
+    expect(
+      render({ p: { text: () => dangerouslySetInnerContent('<i>x</i>') } })
+    ).toBe('<p><i>x</i></p>');
   });
 });

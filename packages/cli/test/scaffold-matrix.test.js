@@ -36,37 +36,45 @@ describe('Scaffold Matrix Tests', () => {
             template: 'basic',
             runtime,
             skipInstall: true,
-            skipGit: true
+            skipGit: true,
           });
 
           // Assert basic structure exists
           expect(existsSync(join(tempDir, 'src/index.js'))).toBe(true);
-          expect(existsSync(join(tempDir, 'src/components/HomePage.js'))).toBe(true);
+          expect(existsSync(join(tempDir, 'src/components/HomePage.js'))).toBe(
+            true
+          );
           expect(existsSync(join(tempDir, 'package.json'))).toBe(true);
 
           // Read index.js for runtime-specific assertions
-          const indexContent = await readFile(join(tempDir, 'src/index.js'), 'utf-8');
+          const indexContent = await readFile(
+            join(tempDir, 'src/index.js'),
+            'utf-8'
+          );
 
           // Assert runtime-specific content
           if (runtime === 'built-in') {
             expect(indexContent).toContain("import http from 'node:http'");
-            expect(indexContent).toContain("server.listen");
+            expect(indexContent).toContain('server.listen');
           } else if (runtime === 'express') {
             expect(indexContent).toContain("import express from 'express'");
-            expect(indexContent).toContain("render");
-            expect(indexContent).toContain("app.listen");
+            expect(indexContent).toContain('render');
+            expect(indexContent).toContain('app.listen');
           } else if (runtime === 'fastify') {
             expect(indexContent).toContain("import Fastify from 'fastify'");
-            expect(indexContent).toContain("setupCoherent");
-            expect(indexContent).toContain("fastify.listen");
+            expect(indexContent).toContain('setupCoherent');
+            expect(indexContent).toContain('fastify.listen');
           } else if (runtime === 'koa') {
             expect(indexContent).toContain("import Koa from 'koa'");
-            expect(indexContent).toContain("setupCoherent");
-            expect(indexContent).toContain("app.listen");
+            expect(indexContent).toContain('setupCoherent');
+            expect(indexContent).toContain('app.listen');
           }
 
           // Read and verify package.json
-          const packageJsonContent = await readFile(join(tempDir, 'package.json'), 'utf-8');
+          const packageJsonContent = await readFile(
+            join(tempDir, 'package.json'),
+            'utf-8'
+          );
           const packageJson = JSON.parse(packageJsonContent);
 
           // All should have @coherent.js/core
@@ -75,13 +83,19 @@ describe('Scaffold Matrix Tests', () => {
           // Runtime-specific deps
           if (runtime === 'express') {
             expect(packageJson.dependencies.express).toBeDefined();
-            expect(packageJson.dependencies['@coherent.js/integrations']).toBeDefined();
+            expect(
+              packageJson.dependencies['@coherent.js/integrations']
+            ).toBeDefined();
           } else if (runtime === 'fastify') {
             expect(packageJson.dependencies.fastify).toBeDefined();
-            expect(packageJson.dependencies['@coherent.js/integrations']).toBeDefined();
+            expect(
+              packageJson.dependencies['@coherent.js/integrations']
+            ).toBeDefined();
           } else if (runtime === 'koa') {
             expect(packageJson.dependencies.koa).toBeDefined();
-            expect(packageJson.dependencies['@coherent.js/integrations']).toBeDefined();
+            expect(
+              packageJson.dependencies['@coherent.js/integrations']
+            ).toBeDefined();
           }
         } finally {
           await cleanupTempDir(tempDir);
@@ -96,7 +110,7 @@ describe('Scaffold Matrix Tests', () => {
       postgres: 'postgresql',
       mysql: 'mysql',
       sqlite: 'sqlite',
-      mongodb: 'mongodb'
+      mongodb: 'mongodb',
     };
 
     for (const database of databases) {
@@ -111,7 +125,7 @@ describe('Scaffold Matrix Tests', () => {
             database,
             packages: ['api'],
             skipInstall: true,
-            skipGit: true
+            skipGit: true,
           });
 
           // Assert database files exist
@@ -121,15 +135,23 @@ describe('Scaffold Matrix Tests', () => {
           expect(existsSync(join(tempDir, 'src/db/models/User.js'))).toBe(true);
 
           // Read db/index.js and verify type-based configuration
-          const dbIndexContent = await readFile(join(tempDir, 'src/db/index.js'), 'utf-8');
+          const dbIndexContent = await readFile(
+            join(tempDir, 'src/db/index.js'),
+            'utf-8'
+          );
           expect(dbIndexContent).toContain(`type: '${dbTypeNames[database]}'`);
           expect(dbIndexContent).toContain('setupDatabase');
           expect(dbIndexContent).toContain("'@coherent.js/database'");
 
           // Read and verify package.json has database dep
-          const packageJsonContent = await readFile(join(tempDir, 'package.json'), 'utf-8');
+          const packageJsonContent = await readFile(
+            join(tempDir, 'package.json'),
+            'utf-8'
+          );
           const packageJson = JSON.parse(packageJsonContent);
-          expect(packageJson.dependencies['@coherent.js/database']).toBeDefined();
+          expect(
+            packageJson.dependencies['@coherent.js/database']
+          ).toBeDefined();
         } finally {
           await cleanupTempDir(tempDir);
         }
@@ -154,18 +176,23 @@ describe('Scaffold Matrix Tests', () => {
               database: 'sqlite', // Required for auth
               auth,
               skipInstall: true,
-              skipGit: true
+              skipGit: true,
             });
 
             // Determine auth directory based on runtime
             const authDir = runtime === 'fastify' ? 'plugins' : 'middleware';
 
             // Assert auth files exist
-            expect(existsSync(join(tempDir, `src/${authDir}/auth.js`))).toBe(true);
+            expect(existsSync(join(tempDir, `src/${authDir}/auth.js`))).toBe(
+              true
+            );
             expect(existsSync(join(tempDir, 'src/api/auth.js'))).toBe(true);
 
             // Read auth routes and verify imports
-            const authRoutesContent = await readFile(join(tempDir, 'src/api/auth.js'), 'utf-8');
+            const authRoutesContent = await readFile(
+              join(tempDir, 'src/api/auth.js'),
+              'utf-8'
+            );
 
             if (auth === 'jwt') {
               // JWT auth should import generateToken
@@ -174,7 +201,10 @@ describe('Scaffold Matrix Tests', () => {
             }
 
             // Read .env.example and verify secrets
-            const envContent = await readFile(join(tempDir, '.env.example'), 'utf-8');
+            const envContent = await readFile(
+              join(tempDir, '.env.example'),
+              'utf-8'
+            );
             if (auth === 'jwt') {
               expect(envContent).toContain('JWT_SECRET');
             } else if (auth === 'session') {
@@ -189,12 +219,40 @@ describe('Scaffold Matrix Tests', () => {
   });
 
   describe('P0: every generated source file parses', () => {
-    const allPackages = ['api', 'client', 'i18n', 'forms', 'devtools', 'seo', 'testing'];
+    const allPackages = [
+      'api',
+      'client',
+      'i18n',
+      'forms',
+      'devtools',
+      'seo',
+      'testing',
+    ];
     const configs = [
-      { label: 'js-built-in-all-packages', language: 'javascript', runtime: 'built-in', packages: allPackages },
-      { label: 'js-koa-api', language: 'javascript', runtime: 'koa', packages: ['api'] },
-      { label: 'ts-fastify-all-packages', language: 'typescript', runtime: 'fastify', packages: allPackages },
-      { label: 'ts-express-api', language: 'typescript', runtime: 'express', packages: ['api'] }
+      {
+        label: 'js-built-in-all-packages',
+        language: 'javascript',
+        runtime: 'built-in',
+        packages: allPackages,
+      },
+      {
+        label: 'js-koa-api',
+        language: 'javascript',
+        runtime: 'koa',
+        packages: ['api'],
+      },
+      {
+        label: 'ts-fastify-all-packages',
+        language: 'typescript',
+        runtime: 'fastify',
+        packages: allPackages,
+      },
+      {
+        label: 'ts-express-api',
+        language: 'typescript',
+        runtime: 'express',
+        packages: ['api'],
+      },
     ];
 
     for (const config of configs) {
@@ -209,12 +267,17 @@ describe('Scaffold Matrix Tests', () => {
             language: config.language,
             packages: config.packages,
             skipInstall: true,
-            skipGit: true
+            skipGit: true,
           });
 
-          const entries = await readdir(tempDir, { recursive: true, withFileTypes: true });
+          const entries = await readdir(tempDir, {
+            recursive: true,
+            withFileTypes: true,
+          });
           const sourceFiles = entries
-            .filter((e) => e.isFile() && ['.js', '.ts'].includes(extname(e.name)))
+            .filter(
+              (e) => e.isFile() && ['.js', '.ts'].includes(extname(e.name))
+            )
             .map((e) => join(e.parentPath, e.name));
           expect(sourceFiles.length).toBeGreaterThan(3);
 
@@ -223,7 +286,9 @@ describe('Scaffold Matrix Tests', () => {
             const loader = extname(file) === '.ts' ? 'ts' : 'js';
             // transform() throws on any syntax error, with the offending file named
             await transform(code, { loader }).catch((error) => {
-              throw new Error(`Generated file does not parse: ${file}\n${error.message}`);
+              throw new Error(
+                `Generated file does not parse: ${file}\n${error.message}`
+              );
             });
           }
         } finally {
@@ -242,16 +307,20 @@ describe('Scaffold Matrix Tests', () => {
             language: config.language,
             packages: config.packages,
             skipInstall: true,
-            skipGit: true
+            skipGit: true,
           });
 
-          const pkg = JSON.parse(await readFile(join(tempDir, 'package.json'), 'utf-8'));
+          const pkg = JSON.parse(
+            await readFile(join(tempDir, 'package.json'), 'utf-8')
+          );
           const ext = config.language === 'typescript' ? '.ts' : '.js';
 
           // The test file the scaffold writes must be runnable by the test script
           expect(pkg.scripts.test).toBe('vitest run');
           expect(pkg.devDependencies.vitest).toBeDefined();
-          expect(existsSync(join(tempDir, `tests/basic.test${ext}`))).toBe(true);
+          expect(existsSync(join(tempDir, `tests/basic.test${ext}`))).toBe(
+            true
+          );
         } finally {
           await cleanupTempDir(tempDir);
         }
@@ -270,23 +339,31 @@ describe('Scaffold Matrix Tests', () => {
           runtime: 'built-in',
           language: 'typescript',
           skipInstall: true,
-          skipGit: true
+          skipGit: true,
         });
 
         // Assert .ts files exist
         expect(existsSync(join(tempDir, 'src/index.ts'))).toBe(true);
-        expect(existsSync(join(tempDir, 'src/components/HomePage.ts'))).toBe(true);
+        expect(existsSync(join(tempDir, 'src/components/HomePage.ts'))).toBe(
+          true
+        );
 
         // Assert tsconfig.json exists
         expect(existsSync(join(tempDir, 'tsconfig.json'))).toBe(true);
 
         // Verify tsconfig has correct settings
-        const tsconfigContent = await readFile(join(tempDir, 'tsconfig.json'), 'utf-8');
+        const tsconfigContent = await readFile(
+          join(tempDir, 'tsconfig.json'),
+          'utf-8'
+        );
         const tsconfig = JSON.parse(tsconfigContent);
         expect(tsconfig.compilerOptions.module).toBe('ESNext');
 
         // Verify package.json has typescript devDeps
-        const packageJsonContent = await readFile(join(tempDir, 'package.json'), 'utf-8');
+        const packageJsonContent = await readFile(
+          join(tempDir, 'package.json'),
+          'utf-8'
+        );
         const packageJson = JSON.parse(packageJsonContent);
         expect(packageJson.devDependencies.typescript).toBeDefined();
         expect(packageJson.devDependencies.tsx).toBeDefined();
@@ -306,14 +383,17 @@ describe('Scaffold Matrix Tests', () => {
           database: 'postgres',
           language: 'typescript',
           skipInstall: true,
-          skipGit: true
+          skipGit: true,
         });
 
         // Assert typed model file exists
         expect(existsSync(join(tempDir, 'src/db/models/User.ts'))).toBe(true);
 
         // Verify model contains TypeScript constructs
-        const modelContent = await readFile(join(tempDir, 'src/db/models/User.ts'), 'utf-8');
+        const modelContent = await readFile(
+          join(tempDir, 'src/db/models/User.ts'),
+          'utf-8'
+        );
         expect(modelContent).toContain('interface');
         expect(modelContent).toContain(': Promise<');
       } finally {

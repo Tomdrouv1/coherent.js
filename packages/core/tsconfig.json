@@ -4,12 +4,8 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "paths": {
-      "@coherent.js/core": [
-        "./dist"
-      ]
+      "@coherent.js/core": ["./dist"]
     }
   },
-  "include": [
-    "src/**/*"
-  ]
+  "include": ["src/**/*"]
 }

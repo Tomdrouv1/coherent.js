@@ -9,8 +9,12 @@ function createMockRes() {
   const headers = {};
   return {
     headers,
-    setHeader(name, value) { headers[name] = value; },
-    getHeader(name) { return headers[name]; },
+    setHeader(name, value) {
+      headers[name] = value;
+    },
+    getHeader(name) {
+      return headers[name];
+    },
     writeHead() {},
     end() {},
   };
@@ -42,14 +46,18 @@ describe('router CORS headers', () => {
     it('serves the development default without credentials', async () => {
       const headers = await headersFor({});
 
-      expect(headers['Access-Control-Allow-Origin']).toBe('http://localhost:3000');
+      expect(headers['Access-Control-Allow-Origin']).toBe(
+        'http://localhost:3000'
+      );
       expect(headers['Access-Control-Allow-Credentials']).toBeUndefined();
     });
 
     it('does not vary on Origin, since the value is fixed', async () => {
       const headers = await headersFor({}, 'https://evil.example');
 
-      expect(headers['Access-Control-Allow-Origin']).toBe('http://localhost:3000');
+      expect(headers['Access-Control-Allow-Origin']).toBe(
+        'http://localhost:3000'
+      );
       expect(headers['Access-Control-Allow-Credentials']).toBeUndefined();
       expect(headers.Vary).toBeUndefined();
     });
@@ -61,7 +69,9 @@ describe('router CORS headers', () => {
     it('allows credentials for the configured origin', async () => {
       const headers = await headersFor(options, 'https://app.example');
 
-      expect(headers['Access-Control-Allow-Origin']).toBe('https://app.example');
+      expect(headers['Access-Control-Allow-Origin']).toBe(
+        'https://app.example'
+      );
       expect(headers['Access-Control-Allow-Credentials']).toBe('true');
       expect(headers.Vary).toBe('Origin');
     });
@@ -69,7 +79,9 @@ describe('router CORS headers', () => {
     it('advertises the configured origin when the request has no Origin', async () => {
       const headers = await headersFor(options);
 
-      expect(headers['Access-Control-Allow-Origin']).toBe('https://app.example');
+      expect(headers['Access-Control-Allow-Origin']).toBe(
+        'https://app.example'
+      );
       expect(headers['Access-Control-Allow-Credentials']).toBe('true');
     });
 
@@ -89,12 +101,16 @@ describe('router CORS headers', () => {
   });
 
   describe('with an allowlist of origins', () => {
-    const options = { corsOrigin: ['https://app.example', 'https://admin.app.example'] };
+    const options = {
+      corsOrigin: ['https://app.example', 'https://admin.app.example'],
+    };
 
     it('echoes back whichever listed origin made the request', async () => {
       const headers = await headersFor(options, 'https://admin.app.example');
 
-      expect(headers['Access-Control-Allow-Origin']).toBe('https://admin.app.example');
+      expect(headers['Access-Control-Allow-Origin']).toBe(
+        'https://admin.app.example'
+      );
       expect(headers['Access-Control-Allow-Credentials']).toBe('true');
       expect(headers.Vary).toBe('Origin');
     });
@@ -102,7 +118,9 @@ describe('router CORS headers', () => {
     it('matches the first entry too', async () => {
       const headers = await headersFor(options, 'https://app.example');
 
-      expect(headers['Access-Control-Allow-Origin']).toBe('https://app.example');
+      expect(headers['Access-Control-Allow-Origin']).toBe(
+        'https://app.example'
+      );
     });
 
     it('rejects an origin that only shares a prefix with a listed one', async () => {
@@ -122,7 +140,10 @@ describe('router CORS headers', () => {
     });
 
     it('are still sent when the origin is rejected', async () => {
-      const headers = await headersFor({ corsOrigin: 'https://app.example' }, 'https://evil.example');
+      const headers = await headersFor(
+        { corsOrigin: 'https://app.example' },
+        'https://evil.example'
+      );
 
       expect(headers['X-Content-Type-Options']).toBe('nosniff');
     });
@@ -145,11 +166,16 @@ describe('router CORS headers', () => {
     // distinct message for the life of the process, so a later test cannot
     // observe a warning an earlier one already consumed.
     it("serves '*' without credentials rather than throwing, and says so", async () => {
-      const headers = await headersFor({ corsOrigin: '*' }, 'https://anything.example');
+      const headers = await headersFor(
+        { corsOrigin: '*' },
+        'https://anything.example'
+      );
 
       expect(headers['Access-Control-Allow-Origin']).toBe('*');
       expect(headers['Access-Control-Allow-Credentials']).toBeUndefined();
-      expect(warn).toHaveBeenCalledWith(expect.stringContaining('cannot carry credentials'));
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('cannot carry credentials')
+      );
     });
 
     it("lets '*' win over origins listed beside it, with a warning", async () => {
@@ -160,7 +186,9 @@ describe('router CORS headers', () => {
 
       expect(headers['Access-Control-Allow-Origin']).toBe('*');
       expect(headers['Access-Control-Allow-Credentials']).toBeUndefined();
-      expect(warn).toHaveBeenCalledWith(expect.stringContaining('have no effect'));
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('have no effect')
+      );
     });
 
     it.each([[[]], [42], ['']])(
@@ -168,14 +196,25 @@ describe('router CORS headers', () => {
       async (corsOrigin) => {
         const headers = await headersFor({ corsOrigin });
 
-        expect(headers['Access-Control-Allow-Origin']).toBe('http://localhost:3000');
+        expect(headers['Access-Control-Allow-Origin']).toBe(
+          'http://localhost:3000'
+        );
         expect(headers['Access-Control-Allow-Credentials']).toBeUndefined();
-        expect(warn).toHaveBeenCalledWith(expect.stringContaining('must be a non-empty string'));
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining('must be a non-empty string')
+        );
       }
     );
 
     it('never throws on a bad value', () => {
-      for (const corsOrigin of ['*', [], 42, '', [null], ['https://a.example', '*']]) {
+      for (const corsOrigin of [
+        '*',
+        [],
+        42,
+        '',
+        [null],
+        ['https://a.example', '*'],
+      ]) {
         expect(() => createRouter({}, { corsOrigin })).not.toThrow();
       }
     });
@@ -193,7 +232,9 @@ describe('router CORS headers', () => {
         corsOrigin: 'https://other.example',
       });
 
-      expect(res.headers['Access-Control-Allow-Origin']).toBe('https://other.example');
+      expect(res.headers['Access-Control-Allow-Origin']).toBe(
+        'https://other.example'
+      );
       expect(res.headers['Access-Control-Allow-Credentials']).toBe('true');
     });
   });

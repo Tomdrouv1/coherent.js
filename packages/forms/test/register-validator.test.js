@@ -35,7 +35,7 @@ describe('registerValidator', () => {
   });
 
   it('registers a validator a schema can then use', () => {
-    register('noShouting', value =>
+    register('noShouting', (value) =>
       typeof value === 'string' && value && value === value.toUpperCase()
         ? 'Please stop shouting'
         : null
@@ -45,7 +45,7 @@ describe('registerValidator', () => {
 
     expect(validator.validate({ message: 'HELLO' })).toEqual({
       isValid: false,
-      errors: { message: 'Please stop shouting' }
+      errors: { message: 'Please stop shouting' },
     });
     expect(validator.validate({ message: 'hello' }).isValid).toBe(true);
   });

@@ -1,6 +1,6 @@
 /**
  * Tests for DevTools - DevLogger
- * 
+ *
  * Coverage areas:
  * - Logging levels
  * - Filtering and formatting
@@ -9,7 +9,12 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { DevLogger, LogLevel, createLogger, createComponentLogger } from '../src/logger.js';
+import {
+  DevLogger,
+  LogLevel,
+  createLogger,
+  createComponentLogger,
+} from '../src/logger.js';
 
 describe('DevLogger', () => {
   let logger;
@@ -19,14 +24,14 @@ describe('DevLogger', () => {
     logger = new DevLogger({
       level: LogLevel.TRACE,
       timestamp: true,
-      colors: false
+      colors: false,
     });
 
     // Spy on console methods
     consoleSpy = {
       log: vi.spyOn(console, 'log').mockImplementation(() => {}),
       warn: vi.spyOn(console, 'warn').mockImplementation(() => {}),
-      error: vi.spyOn(console, 'error').mockImplementation(() => {})
+      error: vi.spyOn(console, 'error').mockImplementation(() => {}),
     };
   });
 
@@ -85,7 +90,7 @@ describe('DevLogger', () => {
 
     it('should filter by category', () => {
       const categorizedLogger = new DevLogger({
-        categories: ['component', 'api']
+        categories: ['component', 'api'],
       });
 
       categorizedLogger.log('component', 'Component log');
@@ -97,7 +102,7 @@ describe('DevLogger', () => {
 
     it('should apply custom filters', () => {
       const filteredLogger = new DevLogger({
-        filter: (message) => !message.includes('ignore')
+        filter: (message) => !message.includes('ignore'),
       });
 
       filteredLogger.info('Important message');
@@ -138,7 +143,13 @@ describe('DevLogger', () => {
       logger.error('Error occurred', error);
 
       const call = consoleSpy.error.mock.calls[0];
-      expect(call.some(arg => (typeof arg === 'string' && arg.includes('stack')) || (arg && arg.stack))).toBe(true);
+      expect(
+        call.some(
+          (arg) =>
+            (typeof arg === 'string' && arg.includes('stack')) ||
+            (arg && arg.stack)
+        )
+      ).toBe(true);
     });
 
     it('should format objects', () => {
@@ -167,7 +178,7 @@ describe('DevLogger', () => {
     it('should support custom output handlers', () => {
       const customOutput = vi.fn();
       const customLogger = new DevLogger({
-        output: customOutput
+        output: customOutput,
       });
 
       customLogger.info('Custom output');
@@ -263,7 +274,7 @@ describe('DevLogger', () => {
     it('should support log tables', () => {
       const data = [
         { name: 'Item 1', value: 100 },
-        { name: 'Item 2', value: 200 }
+        { name: 'Item 2', value: 200 },
       ];
 
       logger.table(data);
@@ -281,7 +292,10 @@ describe('DevLogger', () => {
 
   describe('Advanced Features', () => {
     it('should support log contexts', () => {
-      const contextLogger = logger.withContext({ userId: '123', requestId: 'abc' });
+      const contextLogger = logger.withContext({
+        userId: '123',
+        requestId: 'abc',
+      });
 
       contextLogger.info('Contextual message');
 
@@ -323,7 +337,7 @@ describe('DevLogger', () => {
     it('should handle log rotation', () => {
       const rotatingLogger = new DevLogger({
         buffer: true,
-        maxBufferSize: 5
+        maxBufferSize: 5,
       });
 
       for (let i = 0; i < 10; i++) {

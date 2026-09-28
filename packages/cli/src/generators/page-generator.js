@@ -9,7 +9,12 @@ import { writeGeneratedFiles } from '../utils/files.js';
  * Generate a new page
  */
 export async function generatePage(name, options = {}) {
-  const { path = 'src/pages', template = 'basic', skipTest = false, force = false } = options;
+  const {
+    path = 'src/pages',
+    template = 'basic',
+    skipTest = false,
+    force = false,
+  } = options;
 
   // Ensure page name is PascalCase
   const pageName = toPascalCase(name);
@@ -19,16 +24,28 @@ export async function generatePage(name, options = {}) {
   const nextSteps = [];
 
   // Page and test files
-  const toWrite = [{ path: join(outputDir, `${fileName}.js`), content: generatePageContent(pageName, template) }];
+  const toWrite = [
+    {
+      path: join(outputDir, `${fileName}.js`),
+      content: generatePageContent(pageName, template),
+    },
+  ];
   if (!skipTest) {
-    toWrite.push({ path: join(outputDir, `${fileName}.test.js`), content: generateTestContent(pageName) });
+    toWrite.push({
+      path: join(outputDir, `${fileName}.test.js`),
+      content: generateTestContent(pageName),
+    });
   }
   const files = writeGeneratedFiles(toWrite, { force });
 
   // Add next steps
-  nextSteps.push(`Import the page: import { ${pageName} } from '${path}/${fileName}.js'`);
+  nextSteps.push(
+    `Import the page: import { ${pageName} } from '${path}/${fileName}.js'`
+  );
   nextSteps.push(`Add route to your router for /${name.toLowerCase()}`);
-  nextSteps.push(`Visit http://localhost:3000/${name.toLowerCase()} to see the page`);
+  nextSteps.push(
+    `Visit http://localhost:3000/${name.toLowerCase()} to see the page`
+  );
 
   if (!skipTest) {
     nextSteps.push('Run tests: npm test');
@@ -592,6 +609,6 @@ describe('${name} Page', () => {
  */
 function toPascalCase(str) {
   return str
-    .replace(/[-_\s]+(.)?/g, (_, c) => c ? c.toUpperCase() : '')
+    .replace(/[-_\s]+(.)?/g, (_, c) => (c ? c.toUpperCase() : ''))
     .replace(/^(.)/, (_, c) => c.toUpperCase());
 }

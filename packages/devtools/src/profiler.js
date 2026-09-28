@@ -15,7 +15,8 @@ const hasPerformanceTimeline = () =>
 
 /** Monotonic high-resolution clock in milliseconds. */
 function now() {
-  return typeof performance !== 'undefined' && typeof performance.now === 'function'
+  return typeof performance !== 'undefined' &&
+    typeof performance.now === 'function'
     ? performance.now()
     : Date.now();
 }
@@ -60,9 +61,9 @@ export class PerformanceProfiler {
       slowThreshold: 16, // 16ms = 60fps
       trackMemory: typeof performance !== 'undefined' && performance.memory,
       maxSamples: options.maxSamples || 1000,
-      ...options
+      ...options,
     };
-    
+
     this.measurements = [];
     this.sessions = new Map();
     this.currentSession = null;
@@ -78,7 +79,10 @@ export class PerformanceProfiler {
     }
 
     // Apply sampling
-    if (this.options.sampleRate < 1.0 && Math.random() > this.options.sampleRate) {
+    if (
+      this.options.sampleRate < 1.0 &&
+      Math.random() > this.options.sampleRate
+    ) {
       return null;
     }
 
@@ -88,7 +92,7 @@ export class PerformanceProfiler {
       startTime: now(),
       measurements: [],
       marks: [],
-      active: true
+      active: true,
     };
 
     this.sessions.set(session.id, session);
@@ -140,7 +144,7 @@ export class PerformanceProfiler {
    */
   startRender(componentName, props = {}) {
     if (!this.options.enabled) return null;
-    
+
     // Sample rate check
     if (Math.random() > this.options.sampleRate) return null;
 
@@ -151,7 +155,7 @@ export class PerformanceProfiler {
       props,
       startTime: now(),
       startMemory: this.getMemoryUsage(),
-      phase: 'render'
+      phase: 'render',
     };
 
     this.marks.set(measurementId, measurement);
@@ -173,9 +177,10 @@ export class PerformanceProfiler {
     measurement.endTime = now();
     measurement.duration = measurement.endTime - measurement.startTime;
     measurement.endMemory = this.getMemoryUsage();
-    measurement.memoryDelta = measurement.startMemory && measurement.endMemory
-      ? measurement.endMemory.used - measurement.startMemory.used
-      : null;
+    measurement.memoryDelta =
+      measurement.startMemory && measurement.endMemory
+        ? measurement.endMemory.used - measurement.startMemory.used
+        : null;
     measurement.result = result;
     measurement.slow = measurement.duration > this.options.slowThreshold;
 
@@ -208,7 +213,7 @@ export class PerformanceProfiler {
       name,
       timestamp: now(),
       data,
-      memory: this.getMemoryUsage()
+      memory: this.getMemoryUsage(),
     };
 
     if (this.currentSession) {
@@ -233,7 +238,7 @@ export class PerformanceProfiler {
     return {
       duration: end.timestamp - start.timestamp,
       startMark: start.name,
-      endMark: end.name
+      endMark: end.name,
     };
   }
 
@@ -263,7 +268,7 @@ export class PerformanceProfiler {
       return {
         used: performance.memory.usedJSHeapSize,
         total: performance.memory.totalJSHeapSize,
-        limit: performance.memory.jsHeapSizeLimit
+        limit: performance.memory.jsHeapSizeLimit,
       };
     }
     return null;
@@ -274,7 +279,7 @@ export class PerformanceProfiler {
    */
   findMark(name) {
     if (!this.currentSession) return null;
-    return this.currentSession.marks.find(m => m.name === name);
+    return this.currentSession.marks.find((m) => m.name === name);
   }
 
   /**
@@ -284,15 +289,15 @@ export class PerformanceProfiler {
     let results = [...this.measurements];
 
     if (filter.componentName) {
-      results = results.filter(m => m.componentName === filter.componentName);
+      results = results.filter((m) => m.componentName === filter.componentName);
     }
 
     if (filter.slow) {
-      results = results.filter(m => m.slow);
+      results = results.filter((m) => m.slow);
     }
 
     if (filter.minDuration) {
-      results = results.filter(m => m.duration >= filter.minDuration);
+      results = results.filter((m) => m.duration >= filter.minDuration);
     }
 
     if (filter.limit) {
@@ -313,11 +318,11 @@ export class PerformanceProfiler {
         session: session.id,
         duration: session.duration,
         measurements: 0,
-        analysis: null
+        analysis: null,
       };
     }
 
-    const durations = measurements.map(m => m.duration);
+    const durations = measurements.map((m) => m.duration);
     const sorted = [...durations].sort((a, b) => a - b);
 
     return {
@@ -333,18 +338,20 @@ export class PerformanceProfiler {
         max: Math.max(...durations),
         p95: sorted[Math.floor(sorted.length * 0.95)],
         p99: sorted[Math.floor(sorted.length * 0.99)],
-        slowRenders: measurements.filter(m => m.slow).length,
-        slowPercentage: (measurements.filter(m => m.slow).length / measurements.length) * 100
+        slowRenders: measurements.filter((m) => m.slow).length,
+        slowPercentage:
+          (measurements.filter((m) => m.slow).length / measurements.length) *
+          100,
       },
       byComponent: this.groupByComponent(measurements),
       slowest: measurements
         .sort((a, b) => b.duration - a.duration)
         .slice(0, 10)
-        .map(m => ({
+        .map((m) => ({
           component: m.componentName,
           duration: m.duration,
-          timestamp: m.startTime
-        }))
+          timestamp: m.startTime,
+        })),
     };
   }
 
@@ -354,12 +361,12 @@ export class PerformanceProfiler {
   groupByComponent(measurements) {
     const groups = {};
 
-    measurements.forEach(m => {
+    measurements.forEach((m) => {
       if (!groups[m.componentName]) {
         groups[m.componentName] = {
           count: 0,
           totalDuration: 0,
-          durations: []
+          durations: [],
         };
       }
 
@@ -369,7 +376,7 @@ export class PerformanceProfiler {
     });
 
     // Calculate stats for each component
-    Object.keys(groups).forEach(name => {
+    Object.keys(groups).forEach((name) => {
       const group = groups[name];
       group.average = group.totalDuration / group.count;
       group.min = Math.min(...group.durations);
@@ -389,31 +396,34 @@ export class PerformanceProfiler {
       return {
         totalMeasurements: 0,
         totalSessions: this.sessions.size,
-        analysis: null
+        analysis: null,
       };
     }
 
-    const durations = allMeasurements.map(m => m.duration);
+    const durations = allMeasurements.map((m) => m.duration);
 
     return {
       totalMeasurements: allMeasurements.length,
       totalSessions: this.sessions.size,
-      slowRenders: allMeasurements.filter(m => m.slow).length,
+      slowRenders: allMeasurements.filter((m) => m.slow).length,
       analysis: {
         average: durations.reduce((a, b) => a + b, 0) / durations.length,
         min: Math.min(...durations),
         max: Math.max(...durations),
-        slowPercentage: (allMeasurements.filter(m => m.slow).length / allMeasurements.length) * 100
+        slowPercentage:
+          (allMeasurements.filter((m) => m.slow).length /
+            allMeasurements.length) *
+          100,
       },
       byComponent: this.groupByComponent(allMeasurements),
       recentSlow: allMeasurements
-        .filter(m => m.slow)
+        .filter((m) => m.slow)
         .slice(-10)
-        .map(m => ({
+        .map((m) => ({
           component: m.componentName,
           duration: m.duration,
-          timestamp: m.startTime
-        }))
+          timestamp: m.startTime,
+        })),
     };
   }
 
@@ -425,14 +435,16 @@ export class PerformanceProfiler {
       return { mean: 0, median: 0, min: 0, max: 0, stdDev: 0 };
     }
 
-    const durations = this.measurements.map(m => m.duration);
+    const durations = this.measurements.map((m) => m.duration);
     const sum = durations.reduce((a, b) => a + b, 0);
     const mean = sum / durations.length;
-    
+
     const sorted = [...durations].sort((a, b) => a - b);
     const median = sorted[Math.floor(sorted.length / 2)];
-    
-    const variance = durations.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / durations.length;
+
+    const variance =
+      durations.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) /
+      durations.length;
     const stdDev = Math.sqrt(variance);
 
     return {
@@ -440,7 +452,7 @@ export class PerformanceProfiler {
       median,
       min: Math.min(...durations),
       max: Math.max(...durations),
-      stdDev
+      stdDev,
     };
   }
 
@@ -450,12 +462,12 @@ export class PerformanceProfiler {
   getBottlenecks(threshold = null) {
     const slowThreshold = threshold || this.options.slowThreshold;
     return this.measurements
-      .filter(m => m.duration > slowThreshold)
+      .filter((m) => m.duration > slowThreshold)
       .sort((a, b) => b.duration - a.duration)
-      .map(m => ({
+      .map((m) => ({
         name: m.name,
         duration: m.duration,
-        timestamp: m.startTime
+        timestamp: m.startTime,
       }));
   }
 
@@ -464,20 +476,29 @@ export class PerformanceProfiler {
    */
   getMetrics() {
     const operationCounts = {};
-    this.measurements.forEach(m => {
+    this.measurements.forEach((m) => {
       operationCounts[m.name] = (operationCounts[m.name] || 0) + 1;
     });
 
-    const totalDuration = this.measurements.reduce((sum, m) => sum + m.duration, 0);
+    const totalDuration = this.measurements.reduce(
+      (sum, m) => sum + m.duration,
+      0
+    );
 
     return {
       totalOperations: this.measurements.length,
       totalDuration,
       operationCounts,
-      averageDuration: this.measurements.length > 0 ? totalDuration / this.measurements.length : 0,
-      memoryUsage: this.options.trackMemory && typeof performance !== 'undefined' && performance.memory
-        ? performance.memory.usedJSHeapSize
-        : null
+      averageDuration:
+        this.measurements.length > 0
+          ? totalDuration / this.measurements.length
+          : 0,
+      memoryUsage:
+        this.options.trackMemory &&
+        typeof performance !== 'undefined' &&
+        performance.memory
+          ? performance.memory.usedJSHeapSize
+          : null,
     };
   }
 
@@ -494,17 +515,17 @@ export class PerformanceProfiler {
       summary: {
         totalOperations: metrics.totalOperations,
         averageDuration: metrics.averageDuration,
-        slowOperations: bottlenecks.length
+        slowOperations: bottlenecks.length,
       },
       statistics: stats,
-      operations: this.measurements.map(m => ({
+      operations: this.measurements.map((m) => ({
         name: m.name,
         duration: m.duration,
-        timestamp: m.startTime
+        timestamp: m.startTime,
       })),
       bottlenecks: bottlenecks.slice(0, 10),
       recommendations,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
   }
 
@@ -517,7 +538,7 @@ export class PerformanceProfiler {
       measurements: this.measurements,
       metrics: this.getMetrics(),
       statistics: this.getStatistics(),
-      exportedAt: Date.now()
+      exportedAt: Date.now(),
     };
   }
 
@@ -527,7 +548,7 @@ export class PerformanceProfiler {
   formatMetrics() {
     const metrics = this.getMetrics();
     const stats = this.getStatistics();
-    
+
     let output = `Performance Metrics\n`;
     output += `==================\n`;
     output += `Total Operations: ${metrics.totalOperations}\n`;
@@ -536,7 +557,7 @@ export class PerformanceProfiler {
     output += `Median: ${stats.median.toFixed(2)}ms\n`;
     output += `Min: ${stats.min.toFixed(2)}ms\n`;
     output += `Max: ${stats.max.toFixed(2)}ms\n`;
-    
+
     return output;
   }
 
@@ -553,9 +574,10 @@ export class PerformanceProfiler {
 
     return {
       difference: session2.duration - session1.duration,
-      percentChange: ((session2.duration - session1.duration) / session1.duration) * 100,
+      percentChange:
+        ((session2.duration - session1.duration) / session1.duration) * 100,
       profile1: { name: session1.name, duration: session1.duration },
-      profile2: { name: session2.name, duration: session2.duration }
+      profile2: { name: session2.name, duration: session2.duration },
     };
   }
 
@@ -568,13 +590,13 @@ export class PerformanceProfiler {
     const stats = this.getStatistics();
 
     if (bottlenecks.length > 0) {
-      bottlenecks.slice(0, 5).forEach(bottleneck => {
+      bottlenecks.slice(0, 5).forEach((bottleneck) => {
         recommendations.push({
           type: 'bottleneck',
           operation: bottleneck.name,
           suggestion: `Optimize ${bottleneck.name} - duration: ${bottleneck.duration.toFixed(2)}ms exceeds threshold`,
           severity: 'high',
-          message: `Found slow operation exceeding ${this.options.slowThreshold}ms`
+          message: `Found slow operation exceeding ${this.options.slowThreshold}ms`,
         });
       });
     }
@@ -585,7 +607,7 @@ export class PerformanceProfiler {
         operation: 'general',
         suggestion: `Review operations with high duration`,
         message: `Maximum duration (${stats.max.toFixed(2)}ms) is significantly high`,
-        severity: 'medium'
+        severity: 'medium',
       });
     }
 
@@ -600,7 +622,7 @@ export class PerformanceProfiler {
       ...[...this.marks.keys()].map((id) => `coherent-render-start-${id}`),
       ...[...this.sessions.values()]
         .filter((session) => session.active)
-        .map((session) => `coherent-session-start-${session.id}`)
+        .map((session) => `coherent-session-start-${session.id}`),
     ]);
     this.measurements = [];
     this.sessions.clear();
@@ -636,7 +658,9 @@ export class PerformanceProfiler {
   generateId() {
     const bytes = new Uint8Array(8);
     globalThis.crypto.getRandomValues(bytes);
-    const suffix = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+    const suffix = Array.from(bytes, (byte) =>
+      byte.toString(16).padStart(2, '0')
+    ).join('');
     return `prof-${Date.now()}-${suffix}`;
   }
 }
@@ -666,9 +690,10 @@ export async function measure(name, fn, profiler = null) {
     return { value, duration: result?.duration || 0 };
   } catch (error) {
     const result = prof.stop(sessionId);
-    const failure = error instanceof Error
-      ? error
-      : new Error(`${name} failed: ${String(error)}`, { cause: error });
+    const failure =
+      error instanceof Error
+        ? error
+        : new Error(`${name} failed: ${String(error)}`, { cause: error });
     try {
       failure.duration = result?.duration || 0;
     } catch {
@@ -691,7 +716,8 @@ export function profile(fn, options = {}) {
   if (typeof fn !== 'function') {
     throw new TypeError('profile() expects a function');
   }
-  const opts = options instanceof PerformanceProfiler ? { profiler: options } : options;
+  const opts =
+    options instanceof PerformanceProfiler ? { profiler: options } : options;
   const profiler = opts.profiler || new PerformanceProfiler({ enabled: true });
   const name = opts.name || fn.name || 'anonymous';
 
@@ -729,5 +755,5 @@ export default {
   PerformanceProfiler,
   createProfiler,
   measure,
-  profile
+  profile,
 };

@@ -22,9 +22,17 @@ export async function openBrowser(url, importOpen = () => import('open')) {
     return true;
   } catch (error) {
     if (error?.code === 'ERR_MODULE_NOT_FOUND') {
-      console.log(picocolors.yellow('⚠️  --open needs the optional "open" package: npm install --save-dev open'));
+      console.log(
+        picocolors.yellow(
+          '⚠️  --open needs the optional "open" package: npm install --save-dev open'
+        )
+      );
     } else {
-      console.log(picocolors.yellow(`⚠️  Could not open a browser: ${error?.message ?? error}`));
+      console.log(
+        picocolors.yellow(
+          `⚠️  Could not open a browser: ${error?.message ?? error}`
+        )
+      );
     }
     console.log(picocolors.gray(`   Open ${url} manually.`));
     return false;
@@ -39,12 +47,18 @@ export async function openBrowser(url, importOpen = () => import('open')) {
  */
 function shouldUseCoherentDevServer(cwd, options) {
   if (options.coherent) return true;
-  return existsSync(join(cwd, 'coherent.config.js')) || existsSync(join(cwd, 'coherent.config.mjs'));
+  return (
+    existsSync(join(cwd, 'coherent.config.js')) ||
+    existsSync(join(cwd, 'coherent.config.mjs'))
+  );
 }
 
 /** Split a comma-separated option value into its trimmed, non-empty entries. */
 function splitList(value) {
-  return String(value).split(',').map((entry) => entry.trim()).filter(Boolean);
+  return String(value)
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
 }
 
 /** Commander parser for a comma-separated option that may also be repeated. */
@@ -58,17 +72,33 @@ export const devCommand = new Command('dev')
   .option('-H, --host <host>', 'host address', 'localhost')
   .option('--open', 'open browser automatically')
   .option('--no-hmr', 'disable hot module replacement')
-  .option('--coherent', 'use the built-in Coherent HMR dev server (HTTP + WebSocket + chokidar)')
-  .option('--allowed-hosts <hosts>', 'built-in server: comma-separated extra Host names to answer (besides localhost, IPs and --host)')
-  .option('--fs-allow <dirs>', 'built-in server: comma-separated extra directories files may be served from, relative to the project root (repeatable)', collectList)
+  .option(
+    '--coherent',
+    'use the built-in Coherent HMR dev server (HTTP + WebSocket + chokidar)'
+  )
+  .option(
+    '--allowed-hosts <hosts>',
+    'built-in server: comma-separated extra Host names to answer (besides localhost, IPs and --host)'
+  )
+  .option(
+    '--fs-allow <dirs>',
+    'built-in server: comma-separated extra directories files may be served from, relative to the project root (repeatable)',
+    collectList
+  )
   .action(async (options) => {
-    console.log(picocolors.cyan('🚀 Starting Coherent.js development server...'));
+    console.log(
+      picocolors.cyan('🚀 Starting Coherent.js development server...')
+    );
     console.log();
 
     const cwd = process.cwd();
     const packageJsonPath = join(cwd, 'package.json');
     if (!existsSync(packageJsonPath)) {
-      console.error(picocolors.red('❌ No package.json found. Are you in a project directory?'));
+      console.error(
+        picocolors.red(
+          '❌ No package.json found. Are you in a project directory?'
+        )
+      );
       process.exit(1);
     }
 
@@ -90,14 +120,20 @@ export const devCommand = new Command('dev')
           open: false,
           log: true,
           hmr: options.hmr !== false,
-          allowedHosts: options.allowedHosts ? splitList(options.allowedHosts) : [],
+          allowedHosts: options.allowedHosts
+            ? splitList(options.allowedHosts)
+            : [],
           fsAllow: options.fsAllow ?? [],
         });
 
         const cleanup = async () => {
           console.log();
           console.log(picocolors.yellow('👋 Stopping Coherent dev server...'));
-          try { await server.close(); } catch { /* ignore */ }
+          try {
+            await server.close();
+          } catch {
+            /* ignore */
+          }
           process.exit(0);
         };
         process.on('SIGINT', cleanup);
@@ -107,7 +143,10 @@ export const devCommand = new Command('dev')
           await openBrowser(`http://${server.host}:${server.port}`);
         }
       } catch (error) {
-        console.error(picocolors.red('❌ Failed to start Coherent dev server:'), error.message);
+        console.error(
+          picocolors.red('❌ Failed to start Coherent dev server:'),
+          error.message
+        );
         process.exit(1);
       }
       return;
@@ -133,18 +172,26 @@ export const devCommand = new Command('dev')
         });
       } else if (existsSync('vite.config.js') || existsSync('vite.config.ts')) {
         spinner.text = 'Starting default dev server...';
-        devProcess = spawn('npx', ['vite', '--port', options.port, '--host', options.host], {
-          stdio: 'inherit',
-          cwd,
-          shell: true,
-        });
+        devProcess = spawn(
+          'npx',
+          ['vite', '--port', options.port, '--host', options.host],
+          {
+            stdio: 'inherit',
+            cwd,
+            shell: true,
+          }
+        );
       } else if (existsSync('webpack.config.js')) {
         spinner.text = 'Starting default dev server...';
-        devProcess = spawn('npx', ['webpack', 'serve', '--port', options.port, '--host', options.host], {
-          stdio: 'inherit',
-          cwd,
-          shell: true,
-        });
+        devProcess = spawn(
+          'npx',
+          ['webpack', 'serve', '--port', options.port, '--host', options.host],
+          {
+            stdio: 'inherit',
+            cwd,
+            shell: true,
+          }
+        );
       } else if (packageJson.type === 'module' || existsSync('src/index.js')) {
         spinner.text = 'Starting default dev server...';
         devProcess = spawn('npx', ['nodemon', 'src/index.js'], {
@@ -158,17 +205,25 @@ export const devCommand = new Command('dev')
           },
         });
       } else {
-        throw new Error('No development server configuration found. Run with --coherent to use the built-in Coherent HMR dev server.');
+        throw new Error(
+          'No development server configuration found. Run with --coherent to use the built-in Coherent HMR dev server.'
+        );
       }
 
       spinner.stop();
 
       console.log(picocolors.green('✅ Development server started!'));
       console.log();
-      console.log(picocolors.cyan('🌐 Local:'), `http://${options.host}:${options.port}`);
+      console.log(
+        picocolors.cyan('🌐 Local:'),
+        `http://${options.host}:${options.port}`
+      );
 
       if (options.host !== 'localhost') {
-        console.log(picocolors.cyan('🔗 Network:'), `http://${options.host}:${options.port}`);
+        console.log(
+          picocolors.cyan('🔗 Network:'),
+          `http://${options.host}:${options.port}`
+        );
       }
 
       console.log();
@@ -189,20 +244,24 @@ export const devCommand = new Command('dev')
 
       devProcess.on('exit', (code) => {
         if (code !== 0) {
-          console.error(picocolors.red(`❌ Development server exited with code ${code}`));
+          console.error(
+            picocolors.red(`❌ Development server exited with code ${code}`)
+          );
           process.exit(code);
         }
       });
 
       devProcess.on('error', (_error) => {
-        console.error(picocolors.red('❌ Failed to start development server:'), _error.message);
+        console.error(
+          picocolors.red('❌ Failed to start development server:'),
+          _error.message
+        );
         process.exit(1);
       });
 
       if (options.open) {
         await openBrowser(`http://${options.host}:${options.port}`);
       }
-
     } catch (error) {
       // Never leave a server running behind a command that reports failure
       if (devProcess && devProcess.exitCode === null) {
@@ -213,10 +272,20 @@ export const devCommand = new Command('dev')
 
       console.log();
       console.log(picocolors.yellow('💡 Suggestions:'));
-      console.log(picocolors.gray('  • Run with --coherent to use the built-in Coherent HMR dev server'));
-      console.log(picocolors.gray('  • Make sure you have a dev script in package.json'));
-      console.log(picocolors.gray('  • Install development dependencies: npm install'));
-      console.log(picocolors.gray('  • Check if port', options.port, 'is available'));
+      console.log(
+        picocolors.gray(
+          '  • Run with --coherent to use the built-in Coherent HMR dev server'
+        )
+      );
+      console.log(
+        picocolors.gray('  • Make sure you have a dev script in package.json')
+      );
+      console.log(
+        picocolors.gray('  • Install development dependencies: npm install')
+      );
+      console.log(
+        picocolors.gray('  • Check if port', options.port, 'is available')
+      );
 
       process.exit(1);
     }

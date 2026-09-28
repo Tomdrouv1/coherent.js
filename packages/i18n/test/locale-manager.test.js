@@ -1,6 +1,6 @@
 /**
  * Tests for i18n - LocaleManager
- * 
+ *
  * Coverage areas:
  * - Locale management
  * - Fallback handling
@@ -18,7 +18,7 @@ describe('LocaleManager', () => {
     manager = new LocaleManager({
       defaultLocale: 'en',
       fallbackLocale: 'en',
-      supportedLocales: ['en', 'fr', 'es', 'de']
+      supportedLocales: ['en', 'fr', 'es', 'de'],
     });
   });
 
@@ -82,44 +82,44 @@ describe('LocaleManager', () => {
     it('should load locale data', async () => {
       const data = { hello: 'Hello' };
       await manager.loadLocaleData('en', data);
-      
+
       const loaded = manager.getLocaleData('en');
       expect(loaded).toEqual(data);
     });
 
     it('should lazy load locales', async () => {
       const loader = vi.fn().mockResolvedValue({ hello: 'Bonjour' });
-      
+
       await manager.lazyLoad('fr', loader);
-      
+
       expect(loader).toHaveBeenCalled();
       expect(manager.getLocaleData('fr')).toEqual({ hello: 'Bonjour' });
     });
 
     it('should cache locale data', async () => {
       const loader = vi.fn().mockResolvedValue({ hello: 'Hola' });
-      
+
       await manager.lazyLoad('es', loader);
       await manager.lazyLoad('es', loader); // Second call
-      
+
       expect(loader).toHaveBeenCalledTimes(1); // Cached
     });
 
     it('should clear locale cache', () => {
       manager.loadLocaleData('en', { hello: 'Hello' });
       manager.clearCache('en');
-      
+
       expect(manager.getLocaleData('en')).toBeUndefined();
     });
 
     it('should preload multiple locales', async () => {
       const loaders = {
         fr: () => Promise.resolve({ hello: 'Bonjour' }),
-        es: () => Promise.resolve({ hello: 'Hola' })
+        es: () => Promise.resolve({ hello: 'Hola' }),
       };
-      
+
       await manager.preloadLocales(['fr', 'es'], loaders);
-      
+
       expect(manager.getLocaleData('fr')).toBeDefined();
       expect(manager.getLocaleData('es')).toBeDefined();
     });
@@ -129,24 +129,24 @@ describe('LocaleManager', () => {
     it('should emit locale change events', () => {
       const listener = vi.fn();
       manager.on('localeChange', listener);
-      
+
       manager.setLocale('fr');
-      
+
       expect(listener).toHaveBeenCalledWith({
         from: 'en',
-        to: 'fr'
+        to: 'fr',
       });
     });
 
     it('should notify listeners', () => {
       const listener1 = vi.fn();
       const listener2 = vi.fn();
-      
+
       manager.on('localeChange', listener1);
       manager.on('localeChange', listener2);
-      
+
       manager.setLocale('es');
-      
+
       expect(listener1).toHaveBeenCalled();
       expect(listener2).toHaveBeenCalled();
     });
@@ -154,19 +154,19 @@ describe('LocaleManager', () => {
     it('should handle locale errors', () => {
       const errorListener = vi.fn();
       manager.on('error', errorListener);
-      
+
       manager.setLocale(null);
-      
+
       expect(errorListener).toHaveBeenCalled();
     });
 
     it('should remove event listeners', () => {
       const listener = vi.fn();
       const unsubscribe = manager.on('localeChange', listener);
-      
+
       unsubscribe();
       manager.setLocale('fr');
-      
+
       expect(listener).not.toHaveBeenCalled();
     });
   });
@@ -205,7 +205,7 @@ describe('LocaleManager', () => {
       const parsed = manager.parseLocale('en-US');
       expect(parsed).toEqual({
         language: 'en',
-        region: 'US'
+        region: 'US',
       });
     });
 
@@ -228,9 +228,9 @@ describe('LocaleManager', () => {
 
     it('should respect supported locales', () => {
       const customManager = new LocaleManager({
-        supportedLocales: ['en', 'fr']
+        supportedLocales: ['en', 'fr'],
       });
-      
+
       expect(customManager.isValidLocale('en')).toBe(true);
       expect(customManager.isValidLocale('es')).toBe(false);
     });

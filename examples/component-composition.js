@@ -14,18 +14,16 @@ export const Header = ({ title, subtitle }) => ({
     className: 'app-header',
     children: [
       { h1: { text: title } },
-      subtitle ? { p: { text: subtitle } } : null
-    ].filter(Boolean)
-  }
+      subtitle ? { p: { text: subtitle } } : null,
+    ].filter(Boolean),
+  },
 });
 
 export const Footer = ({ copyright }) => ({
   footer: {
     className: 'app-footer',
-    children: [
-      { p: { text: ` ${new Date().getFullYear()} ${copyright}` } }
-    ]
-  }
+    children: [{ p: { text: ` ${new Date().getFullYear()} ${copyright}` } }],
+  },
 });
 
 export const Layout = ({ header, footer, children }) => ({
@@ -36,54 +34,60 @@ export const Layout = ({ header, footer, children }) => ({
       {
         main: {
           className: 'app-main',
-          children: Array.isArray(children) ? children : [children]
-        }
+          children: Array.isArray(children) ? children : [children],
+        },
       },
-      footer
-    ]
-  }
+      footer,
+    ],
+  },
 });
 
 // Example 2: Higher-order component for loading states
-export const withLoading = (WrappedComponent) => 
-  withState({ loading: false, error: null })(({ state, setState, ...props }) => {
-    if (state.loading) {
-      return {
-        div: {
-          className: 'loading-container',
-          children: [
-            { h3: { text: 'Loading...' } },
-            { div: { className: 'spinner', text: '' } }
-          ]
-        }
+export const withLoading = (WrappedComponent) =>
+  withState({ loading: false, error: null })(
+    ({ state, setState, ...props }) => {
+      if (state.loading) {
+        return {
+          div: {
+            className: 'loading-container',
+            children: [
+              { h3: { text: 'Loading...' } },
+              { div: { className: 'spinner', text: '' } },
+            ],
+          },
+        };
+      }
+
+      if (state.error) {
+        return {
+          div: {
+            className: 'error-container',
+            children: [
+              { h3: { text: 'Error Occurred' } },
+              {
+                p: { text: state.error.message || 'An unknown error occurred' },
+              },
+              {
+                button: {
+                  text: 'Retry',
+                  onclick: () => setState({ error: null }),
+                },
+              },
+            ],
+          },
+        };
+      }
+
+      // Add loading controls to props
+      const propsWithLoading = {
+        ...props,
+        setLoading: (loading) => setState({ loading }),
+        setError: (error) => setState({ error }),
       };
+
+      return WrappedComponent(propsWithLoading);
     }
-    
-    if (state.error) {
-      return {
-        div: {
-          className: 'error-container',
-          children: [
-            { h3: { text: 'Error Occurred' } },
-            { p: { text: state.error.message || 'An unknown error occurred' } },
-            { button: { 
-              text: 'Retry', 
-              onclick: () => setState({ error: null }) 
-            }}
-          ]
-        }
-      };
-    }
-    
-    // Add loading controls to props
-    const propsWithLoading = {
-      ...props,
-      setLoading: (loading) => setState({ loading }),
-      setError: (error) => setState({ error })
-    };
-    
-    return WrappedComponent(propsWithLoading);
-  });
+  );
 
 // Example 3: Component composition with mixins
 export const withTimestamp = (Component) => (props) => ({
@@ -91,30 +95,30 @@ export const withTimestamp = (Component) => (props) => ({
     className: 'timestamp-wrapper',
     children: [
       Component(props),
-      { small: { 
-        text: `Last updated: ${new Date().toLocaleTimeString()}`,
-        className: 'timestamp'
-      }}
-    ]
-  }
+      {
+        small: {
+          text: `Last updated: ${new Date().toLocaleTimeString()}`,
+          className: 'timestamp',
+        },
+      },
+    ],
+  },
 });
 
 export const withBorder = (Component) => (props) => ({
   div: {
     className: 'border-wrapper',
-    style: 'border: 2px solid #ccc; padding: 10px; margin: 10px 0; border-radius: 4px;',
-    children: [Component(props)]
-  }
+    style:
+      'border: 2px solid #ccc; padding: 10px; margin: 10px 0; border-radius: 4px;',
+    children: [Component(props)],
+  },
 });
 
 export const SimpleCard = ({ title, content }) => ({
   div: {
     className: 'simple-card',
-    children: [
-      { h3: { text: title } },
-      { p: { text: content } }
-    ]
-  }
+    children: [{ h3: { text: title } }, { p: { text: content } }],
+  },
 });
 
 // Compose multiple HOCs
@@ -125,15 +129,19 @@ const ContactFormComponent = withState({
   name: '',
   email: '',
   message: '',
-  submitted: false
+  submitted: false,
 })(({ state, stateUtils }) => {
   const { setState } = stateUtils;
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    console.log('Form submitted:', { name: state.name, email: state.email, message: state.message });
+    console.log('Form submitted:', {
+      name: state.name,
+      email: state.email,
+      message: state.message,
+    });
     setState({ submitted: true });
-    
+
     // Reset form after 2 seconds
     setTimeout(() => {
       setState({ name: '', email: '', message: '', submitted: false });
@@ -154,14 +162,16 @@ const ContactFormComponent = withState({
             onsubmit: handleSubmit,
             children: [
               { h2: { text: 'Contact Us' } },
-              state.submitted ? {
-                div: {
-                  className: 'success-message',
-                  children: [
-                    { p: { text: '✓ Message sent successfully!' } }
-                  ]
-                }
-              } : null,
+              state.submitted
+                ? {
+                    div: {
+                      className: 'success-message',
+                      children: [
+                        { p: { text: '✓ Message sent successfully!' } },
+                      ],
+                    },
+                  }
+                : null,
               {
                 div: {
                   className: 'form-field',
@@ -174,11 +184,11 @@ const ContactFormComponent = withState({
                         value: state.name,
                         placeholder: 'Your name',
                         oninput: updateField('name'),
-                        required: true
-                      }
-                    }
-                  ]
-                }
+                        required: true,
+                      },
+                    },
+                  ],
+                },
               },
               {
                 div: {
@@ -192,11 +202,11 @@ const ContactFormComponent = withState({
                         value: state.email,
                         placeholder: 'your@email.com',
                         oninput: updateField('email'),
-                        required: true
-                      }
-                    }
-                  ]
-                }
+                        required: true,
+                      },
+                    },
+                  ],
+                },
               },
               {
                 div: {
@@ -210,25 +220,25 @@ const ContactFormComponent = withState({
                         placeholder: 'Your message here...',
                         oninput: updateField('message'),
                         rows: 4,
-                        required: true
-                      }
-                    }
-                  ]
-                }
+                        required: true,
+                      },
+                    },
+                  ],
+                },
               },
               {
                 button: {
                   className: 'btn btn--primary',
                   type: 'submit',
                   text: state.submitted ? 'Sent!' : 'Send Message',
-                  disabled: state.submitted
-                }
-              }
-            ].filter(Boolean)
-          }
-        }
-      ]
-    }
+                  disabled: state.submitted,
+                },
+              },
+            ].filter(Boolean),
+          },
+        },
+      ],
+    },
   };
 });
 
@@ -331,46 +341,58 @@ export const demoPage = {
                   margin: 10px 0;
                   border: 1px solid #c3e6cb;
                 }
-                `
-              }
-            }
-          ]
-        }
+                `,
+              },
+            },
+          ],
+        },
       },
       {
         body: {
           children: [
             Layout({
-              header: Header({ 
-                title: 'Component Composition Demo', 
-                subtitle: 'Exploring different composition patterns in Coherent.js' 
+              header: Header({
+                title: 'Component Composition Demo',
+                subtitle:
+                  'Exploring different composition patterns in Coherent.js',
               }),
               footer: Footer({ copyright: 'Coherent.js Examples' }),
               children: [
                 { h2: { text: 'Enhanced Card with Multiple HOCs' } },
-                { p: { text: 'This card demonstrates composition using withBorder and withTimestamp HOCs:' } },
-                EnhancedCard({ 
-                  title: 'Enhanced Card Example', 
-                  content: 'This card has a border and timestamp automatically added through composition.' 
+                {
+                  p: {
+                    text: 'This card demonstrates composition using withBorder and withTimestamp HOCs:',
+                  },
+                },
+                EnhancedCard({
+                  title: 'Enhanced Card Example',
+                  content:
+                    'This card has a border and timestamp automatically added through composition.',
                 }),
-                
+
                 { h2: { text: 'Interactive Form with State' } },
-                { p: { text: 'This form demonstrates state management, event handling, and client-side hydration:' } },
-                HydratableContactForm()
-              ]
-            })
-          ]
-        }
-      }
-    ]
-  }
+                {
+                  p: {
+                    text: 'This form demonstrates state management, event handling, and client-side hydration:',
+                  },
+                },
+                HydratableContactForm(),
+              ],
+            }),
+          ],
+        },
+      },
+    ],
+  },
 };
 
 // Set up client-side hydration (browser only)
 if (typeof window !== 'undefined') {
   // Hydrate the server-rendered form explicitly (autoHydrate was removed in 1.0)
   document.addEventListener('DOMContentLoaded', () => {
-    const element = document.querySelector('[data-coherent-component="contact-form"]');
+    const element = document.querySelector(
+      '[data-coherent-component="contact-form"]'
+    );
     if (element) {
       hydrate(HydratableContactForm, element);
       console.log('✅ Component composition hydration complete!');
@@ -385,8 +407,9 @@ export default demoPage;
 // or the playground runner, which feeds the file on stdin — but not when it is
 // imported. `import.meta.main` says so exactly from Node 22.18; before that,
 // compare against argv[1], which is empty when the program came on stdin.
-const isProgram = import.meta.main
-  ?? (!process.argv[1] || fileURLToPath(import.meta.url) === process.argv[1]);
+const isProgram =
+  import.meta.main ??
+  (!process.argv[1] || fileURLToPath(import.meta.url) === process.argv[1]);
 if (isProgram) {
   console.log(render(demoPage));
 }

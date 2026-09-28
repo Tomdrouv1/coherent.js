@@ -5,7 +5,12 @@
 
 /* Custom typography using Inter font from Google Fonts */
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
   font-weight: 400;
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
 }
@@ -27,14 +32,26 @@ body {
 
 /* Override button styles with custom colors */
 .btn--primary {
-  background: linear-gradient(135deg, var(--custom-primary) 0%, var(--custom-secondary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--custom-primary) 0%,
+    var(--custom-secondary) 100%
+  );
   border: none;
-  box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.1), 0 2px 4px -1px rgba(99, 102, 241, 0.06);
+  box-shadow:
+    0 4px 6px -1px rgba(99, 102, 241, 0.1),
+    0 2px 4px -1px rgba(99, 102, 241, 0.06);
 }
 
 .btn--primary:hover {
-  background: linear-gradient(135deg, var(--custom-secondary) 0%, var(--custom-primary) 100%);
-  box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.1), 0 4px 6px -2px rgba(99, 102, 241, 0.05);
+  background: linear-gradient(
+    135deg,
+    var(--custom-secondary) 0%,
+    var(--custom-primary) 100%
+  );
+  box-shadow:
+    0 10px 15px -3px rgba(99, 102, 241, 0.1),
+    0 4px 6px -2px rgba(99, 102, 241, 0.05);
 }
 
 .btn--success {
@@ -78,12 +95,20 @@ body {
 }
 
 .card-header {
-  background: linear-gradient(90deg, rgba(99, 102, 241, 0.05), rgba(139, 92, 246, 0.05));
+  background: linear-gradient(
+    90deg,
+    rgba(99, 102, 241, 0.05),
+    rgba(139, 92, 246, 0.05)
+  );
 }
 
 /* Custom grid enhancements */
 .grid-item {
-  background: linear-gradient(135deg, var(--custom-accent) 0%, var(--custom-primary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--custom-accent) 0%,
+    var(--custom-primary) 100%
+  );
   position: relative;
   overflow: hidden;
 }
@@ -95,7 +120,11 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
+  background: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    transparent 100%
+  );
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -106,7 +135,11 @@ body {
 
 /* Utility classes */
 .text-gradient {
-  background: linear-gradient(135deg, var(--custom-primary) 0%, var(--custom-secondary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--custom-primary) 0%,
+    var(--custom-secondary) 100%
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -125,17 +158,21 @@ body {
     background: #0f172a;
     color: #f8fafc;
   }
-  
+
   .card {
     background: rgba(30, 41, 59, 0.8);
     border-color: rgba(99, 102, 241, 0.2);
     color: #f8fafc;
   }
-  
+
   .card-header {
-    background: linear-gradient(90deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+    background: linear-gradient(
+      90deg,
+      rgba(99, 102, 241, 0.1),
+      rgba(139, 92, 246, 0.1)
+    );
   }
-  
+
   .app {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   }

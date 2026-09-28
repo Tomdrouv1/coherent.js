@@ -17,20 +17,40 @@
  */
 
 const VOID_ELEMENTS = new Set([
-  'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
-  'link', 'meta', 'param', 'source', 'track', 'wbr',
+  'area',
+  'base',
+  'br',
+  'col',
+  'embed',
+  'hr',
+  'img',
+  'input',
+  'link',
+  'meta',
+  'param',
+  'source',
+  'track',
+  'wbr',
 ]);
 
 const RAW_TEXT_ELEMENTS = new Set(['script', 'style', 'textarea', 'title']);
 
-const NAMED_ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
+const NAMED_ENTITIES = {
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  nbsp: ' ',
+};
 
 function decodeEntities(text) {
   return text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (match, body) => {
     if (body[0] === '#') {
-      const code = body[1] === 'x' || body[1] === 'X'
-        ? parseInt(body.slice(2), 16)
-        : parseInt(body.slice(1), 10);
+      const code =
+        body[1] === 'x' || body[1] === 'X'
+          ? parseInt(body.slice(2), 16)
+          : parseInt(body.slice(1), 10);
       return String.fromCodePoint(code);
     }
     return NAMED_ENTITIES[body.toLowerCase()] ?? match;
@@ -38,7 +58,10 @@ function decodeEntities(text) {
 }
 
 function escapeText(text) {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 function escapeAttr(text) {
@@ -92,7 +115,8 @@ export class ShimEvent {
 }
 
 function normalizeListenerOptions(options) {
-  if (typeof options === 'boolean') return { capture: options, passive: false, once: false };
+  if (typeof options === 'boolean')
+    return { capture: options, passive: false, once: false };
   return {
     capture: Boolean(options?.capture),
     passive: Boolean(options?.passive),
@@ -109,7 +133,8 @@ class ShimEventTarget {
     if (!handler) return;
     const opts = normalizeListenerOptions(options);
     const exists = this.listeners.some(
-      (l) => l.type === type && l.handler === handler && l.capture === opts.capture
+      (l) =>
+        l.type === type && l.handler === handler && l.capture === opts.capture
     );
     if (!exists) this.listeners.push({ type, handler, ...opts });
   }
@@ -117,7 +142,8 @@ class ShimEventTarget {
   removeEventListener(type, handler, options) {
     const { capture } = normalizeListenerOptions(options);
     this.listeners = this.listeners.filter(
-      (l) => !(l.type === type && l.handler === handler && l.capture === capture)
+      (l) =>
+        !(l.type === type && l.handler === handler && l.capture === capture)
     );
   }
 
@@ -131,11 +157,13 @@ class ShimEventTarget {
       if (listener.type !== event.type) continue;
       if (phase === 'capture' && !listener.capture) continue;
       if (phase === 'bubble' && listener.capture) continue;
-      if (listener.once) this.removeEventListener(listener.type, listener.handler, listener);
+      if (listener.once)
+        this.removeEventListener(listener.type, listener.handler, listener);
       event.currentTarget = this;
       event.inPassiveListener = listener.passive;
       try {
-        if (typeof listener.handler === 'function') listener.handler.call(this, event);
+        if (typeof listener.handler === 'function')
+          listener.handler.call(this, event);
         else listener.handler.handleEvent(event);
       } finally {
         event.inPassiveListener = false;
@@ -147,7 +175,11 @@ class ShimEventTarget {
   dispatchEvent(event) {
     event.target = this;
     const path = [];
-    for (let node = this; node; node = node.parentNode ?? (node.isDocument ? node.defaultView : null)) {
+    for (
+      let node = this;
+      node;
+      node = node.parentNode ?? (node.isDocument ? node.defaultView : null)
+    ) {
       path.push(node);
     }
     event.path = path;
@@ -190,7 +222,9 @@ class ShimNode extends ShimEventTarget {
   }
 
   get parentElement() {
-    return this.parentNode && this.parentNode.nodeType === 1 ? this.parentNode : null;
+    return this.parentNode && this.parentNode.nodeType === 1
+      ? this.parentNode
+      : null;
   }
 
   get firstChild() {
@@ -238,12 +272,14 @@ class ShimNode extends ShimEventTarget {
 
   insertBefore(child, reference) {
     if (child.nodeType === 11) {
-      for (const node of child.childNodes.slice()) this.insertBefore(node, reference);
+      for (const node of child.childNodes.slice())
+        this.insertBefore(node, reference);
       return child;
     }
     if (child.parentNode) child.parentNode.detach(child);
     const index = reference ? this.childNodes.indexOf(reference) : -1;
-    if (reference && index < 0) throw new Error('NotFoundError: reference is not a child');
+    if (reference && index < 0)
+      throw new Error('NotFoundError: reference is not a child');
     if (index < 0) this.childNodes.push(child);
     else this.childNodes.splice(index, 0, child);
     child.parentNode = this;
@@ -255,13 +291,15 @@ class ShimNode extends ShimEventTarget {
   }
 
   removeChild(child) {
-    if (child.parentNode !== this) throw new Error('NotFoundError: not a child');
+    if (child.parentNode !== this)
+      throw new Error('NotFoundError: not a child');
     this.detach(child);
     return child;
   }
 
   replaceChild(newChild, oldChild) {
-    if (oldChild.parentNode !== this) throw new Error('NotFoundError: not a child');
+    if (oldChild.parentNode !== this)
+      throw new Error('NotFoundError: not a child');
     this.insertBefore(newChild, oldChild);
     this.detach(oldChild);
     return oldChild;
@@ -328,7 +366,9 @@ class ShimFragment extends ShimNode {
 }
 
 function toKebab(prop) {
-  return prop.startsWith('--') ? prop : prop.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
+  return prop.startsWith('--')
+    ? prop
+    : prop.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
 }
 
 function parseCss(cssText) {
@@ -459,11 +499,20 @@ export class ShimElement extends ShimNode {
     const list = () => element.className.split(/\s+/).filter(Boolean);
     return {
       contains: (c) => list().includes(c),
-      add: (...cs) => { element.className = [...new Set([...list(), ...cs])].join(' '); },
-      remove: (...cs) => { element.className = list().filter((c) => !cs.includes(c)).join(' '); },
+      add: (...cs) => {
+        element.className = [...new Set([...list(), ...cs])].join(' ');
+      },
+      remove: (...cs) => {
+        element.className = list()
+          .filter((c) => !cs.includes(c))
+          .join(' ');
+      },
       toggle: (c) => {
         const has = list().includes(c);
-        if (has) element.className = list().filter((x) => x !== c).join(' ');
+        if (has)
+          element.className = list()
+            .filter((x) => x !== c)
+            .join(' ');
         else element.className = [...list(), c].join(' ');
         return !has;
       },
@@ -475,9 +524,12 @@ export class ShimElement extends ShimNode {
   }
 
   get type() {
-    if (this.localName === 'input') return (this.getAttribute('type') ?? 'text').toLowerCase();
-    if (this.localName === 'button') return (this.getAttribute('type') ?? 'submit').toLowerCase();
-    if (this.localName === 'select') return this.hasAttribute('multiple') ? 'select-multiple' : 'select-one';
+    if (this.localName === 'input')
+      return (this.getAttribute('type') ?? 'text').toLowerCase();
+    if (this.localName === 'button')
+      return (this.getAttribute('type') ?? 'submit').toLowerCase();
+    if (this.localName === 'select')
+      return this.hasAttribute('multiple') ? 'select-multiple' : 'select-one';
     if (this.localName === 'textarea') return 'textarea';
     return undefined;
   }
@@ -505,7 +557,8 @@ export class ShimElement extends ShimNode {
     }
     if (this.dirtyValue !== undefined) return this.dirtyValue;
     if (this.localName === 'textarea') return this.textContent;
-    if (this.localName === 'option') return this.getAttribute('value') ?? this.textContent;
+    if (this.localName === 'option')
+      return this.getAttribute('value') ?? this.textContent;
     return this.getAttribute('value') ?? '';
   }
 
@@ -520,7 +573,9 @@ export class ShimElement extends ShimNode {
   }
 
   get checked() {
-    return this.dirtyChecked !== undefined ? this.dirtyChecked : this.hasAttribute('checked');
+    return this.dirtyChecked !== undefined
+      ? this.dirtyChecked
+      : this.hasAttribute('checked');
   }
 
   set checked(value) {
@@ -529,14 +584,18 @@ export class ShimElement extends ShimNode {
       // Unchecking the rest of the group, like a browser.
       let root = this;
       while (root.parentNode) root = root.parentNode;
-      for (const other of root.querySelectorAll(`input[type="radio"][name="${this.name}"]`)) {
+      for (const other of root.querySelectorAll(
+        `input[type="radio"][name="${this.name}"]`
+      )) {
         if (other !== this) other.dirtyChecked = false;
       }
     }
   }
 
   get selected() {
-    return this.dirtySelected !== undefined ? this.dirtySelected : this.hasAttribute('selected');
+    return this.dirtySelected !== undefined
+      ? this.dirtySelected
+      : this.hasAttribute('selected');
   }
 
   set selected(value) {
@@ -577,7 +636,8 @@ export class ShimElement extends ShimNode {
 
   set innerHTML(html) {
     for (const child of this.childNodes.slice()) this.detach(child);
-    for (const node of parseHTML(String(html), this.ownerDocument)) this.appendChild(node);
+    for (const node of parseHTML(String(html), this.ownerDocument))
+      this.appendChild(node);
   }
 
   get outerHTML() {
@@ -591,7 +651,9 @@ export class ShimElement extends ShimNode {
   // Selectors -------------------------------------------------------------
 
   matches(selector) {
-    return parseSelectorList(selector).some((complex) => matchComplex(this, complex, null));
+    return parseSelectorList(selector).some((complex) =>
+      matchComplex(this, complex, null)
+    );
   }
 
   closest(selector) {
@@ -607,7 +669,8 @@ export class ShimElement extends ShimNode {
     const found = [];
     const visit = (node) => {
       for (const child of node.children) {
-        if (list.some((complex) => matchComplex(child, complex, this))) found.push(child);
+        if (list.some((complex) => matchComplex(child, complex, this)))
+          found.push(child);
         visit(child);
       }
     };
@@ -626,7 +689,8 @@ export class ShimElement extends ShimNode {
   }
 
   blur() {
-    if (this.ownerDocument.activeElement === this) this.ownerDocument.activeElement = null;
+    if (this.ownerDocument.activeElement === this)
+      this.ownerDocument.activeElement = null;
   }
 
   click() {
@@ -650,13 +714,18 @@ export class ShimElement extends ShimNode {
 
   get dataset() {
     const element = this;
-    return new Proxy({}, {
-      get(_target, prop) {
-        if (typeof prop !== 'string') return undefined;
-        const value = element.getAttribute(`data-${prop.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)}`);
-        return value === null ? undefined : value;
-      },
-    });
+    return new Proxy(
+      {},
+      {
+        get(_target, prop) {
+          if (typeof prop !== 'string') return undefined;
+          const value = element.getAttribute(
+            `data-${prop.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)}`
+          );
+          return value === null ? undefined : value;
+        },
+      }
+    );
   }
 }
 
@@ -667,22 +736,30 @@ export class ShimElement extends ShimNode {
 
 function parseCompound(text) {
   const compound = { tag: null, ids: [], classes: [], attrs: [], scope: false };
-  const re = /^(\*|[a-zA-Z][\w-]*)|#([\w-]+)|\.([\w-]+)|\[\s*([^\]=*^$~|\s]+)\s*(?:([*^$]?=)\s*("[^"]*"|'[^']*'|[^\]\s]*)\s*)?\]|:scope/g;
+  const re =
+    /^(\*|[a-zA-Z][\w-]*)|#([\w-]+)|\.([\w-]+)|\[\s*([^\]=*^$~|\s]+)\s*(?:([*^$]?=)\s*("[^"]*"|'[^']*'|[^\]\s]*)\s*)?\]|:scope/g;
   let match;
   let consumed = 0;
   while ((match = re.exec(text))) {
     if (match.index !== consumed) break;
     consumed = re.lastIndex;
-    if (match[1]) compound.tag = match[1] === '*' ? null : match[1].toLowerCase();
+    if (match[1])
+      compound.tag = match[1] === '*' ? null : match[1].toLowerCase();
     else if (match[2]) compound.ids.push(match[2]);
     else if (match[3]) compound.classes.push(match[3]);
     else if (match[4]) {
       let value = match[6];
-      if (value && (value[0] === '"' || value[0] === "'")) value = value.slice(1, -1);
-      compound.attrs.push({ name: match[4].toLowerCase(), op: match[5] ?? null, value });
+      if (value && (value[0] === '"' || value[0] === "'"))
+        value = value.slice(1, -1);
+      compound.attrs.push({
+        name: match[4].toLowerCase(),
+        op: match[5] ?? null,
+        value,
+      });
     } else compound.scope = true;
   }
-  if (consumed !== text.length) throw new Error(`SyntaxError: unsupported selector "${text}"`);
+  if (consumed !== text.length)
+    throw new Error(`SyntaxError: unsupported selector "${text}"`);
   return compound;
 }
 
@@ -690,7 +767,11 @@ function parseSelectorList(selector) {
   return String(selector)
     .split(',')
     .map((part) => {
-      const tokens = part.trim().replace(/\s*>\s*/g, ' > ').split(/\s+/).filter(Boolean);
+      const tokens = part
+        .trim()
+        .replace(/\s*>\s*/g, ' > ')
+        .split(/\s+/)
+        .filter(Boolean);
       const steps = [];
       let combinator = ' ';
       for (const token of tokens) {
@@ -745,8 +826,10 @@ export function parseHTML(html, doc) {
   const stack = [root];
   const current = () => stack[stack.length - 1];
   // `--!>` also ends a comment in HTML.
-  const tagRe = /<!--([\s\S]*?)--!?>|<!doctype[^>]*>|<\/([a-zA-Z][\w-]*)\s*>|<([a-zA-Z][\w-]*)((?:\s+[^\s"'>/=]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?)*)\s*(\/?)>/gi;
-  const attrRe = /([^\s"'>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+  const tagRe =
+    /<!--([\s\S]*?)--!?>|<!doctype[^>]*>|<\/([a-zA-Z][\w-]*)\s*>|<([a-zA-Z][\w-]*)((?:\s+[^\s"'>/=]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?)*)\s*(\/?)>/gi;
+  const attrRe =
+    /([^\s"'>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
   let last = 0;
   let match;
 
@@ -783,7 +866,15 @@ export function parseHTML(html, doc) {
         const close = html.toLowerCase().indexOf(`</${name}`, last);
         const end = close < 0 ? html.length : close;
         const raw = html.slice(last, end);
-        if (raw) el.appendChild(new ShimText(name === 'textarea' || name === 'title' ? decodeEntities(raw) : raw, doc));
+        if (raw)
+          el.appendChild(
+            new ShimText(
+              name === 'textarea' || name === 'title'
+                ? decodeEntities(raw)
+                : raw,
+              doc
+            )
+          );
         const closeEnd = close < 0 ? html.length : html.indexOf('>', close) + 1;
         tagRe.lastIndex = closeEnd;
         last = closeEnd;
@@ -884,8 +975,16 @@ export function installDom() {
   const window = new ShimWindow(document);
   document.defaultView = window;
 
-  Object.defineProperty(globalThis, 'document', { value: document, configurable: true, writable: true });
-  Object.defineProperty(globalThis, 'window', { value: window, configurable: true, writable: true });
+  Object.defineProperty(globalThis, 'document', {
+    value: document,
+    configurable: true,
+    writable: true,
+  });
+  Object.defineProperty(globalThis, 'window', {
+    value: window,
+    configurable: true,
+    writable: true,
+  });
 
   return {
     document,
@@ -903,7 +1002,8 @@ export function installDom() {
     },
     uninstall() {
       for (const key of ['document', 'window']) {
-        if (previous[key]) Object.defineProperty(globalThis, key, previous[key]);
+        if (previous[key])
+          Object.defineProperty(globalThis, key, previous[key]);
         else delete globalThis[key];
       }
     },

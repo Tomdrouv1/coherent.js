@@ -34,13 +34,25 @@ describe('route cache', () => {
 
   it('keys cached matches by API version', async () => {
     const router = new SimpleRouter({ enableVersioning: true });
-    router.addVersionedRoute('v2', 'GET', '/items/:id', (req) => ({ version: 'v2', id: req.params.id }));
-    router.addVersionedRoute('v1', 'GET', '/items/:id', (req) => ({ version: 'v1', id: req.params.id }));
+    router.addVersionedRoute('v2', 'GET', '/items/:id', (req) => ({
+      version: 'v2',
+      id: req.params.id,
+    }));
+    router.addVersionedRoute('v1', 'GET', '/items/:id', (req) => ({
+      version: 'v1',
+      id: req.params.id,
+    }));
     server = await startServer(router, { rateLimit: false });
 
-    const v1 = await request(`${server.base}/items/1`, { headers: { 'api-version': 'v1' } });
-    const v2 = await request(`${server.base}/items/1`, { headers: { 'api-version': 'v2' } });
-    const v1Again = await request(`${server.base}/items/1`, { headers: { 'api-version': 'v1' } });
+    const v1 = await request(`${server.base}/items/1`, {
+      headers: { 'api-version': 'v1' },
+    });
+    const v2 = await request(`${server.base}/items/1`, {
+      headers: { 'api-version': 'v2' },
+    });
+    const v1Again = await request(`${server.base}/items/1`, {
+      headers: { 'api-version': 'v1' },
+    });
 
     expect(v1.json).toEqual({ version: 'v1', id: '1' });
     expect(v2.json).toEqual({ version: 'v2', id: '1' });

@@ -18,7 +18,7 @@ export class HybridVisualizer {
       showComponentComposition: options.showComponentComposition !== false,
       showPerformanceImpact: options.showPerformanceImpact !== false,
       colorOutput: options.colorOutput !== false,
-      ...options
+      ...options,
     };
 
     this.stateInstances = new Map();
@@ -35,7 +35,7 @@ export class HybridVisualizer {
       type: this.getStateType(stateInstance),
       methods: this.getStateMethods(stateInstance),
       properties: this.getStateProperties(stateInstance),
-      connections: []
+      connections: [],
     });
   }
 
@@ -47,16 +47,16 @@ export class HybridVisualizer {
       function: componentFunction,
       usedStates,
       composition: this.analyzeComposition(componentFunction),
-      complexity: this.assessComplexity(componentFunction)
+      complexity: this.assessComplexity(componentFunction),
     });
 
     // Track connections
-    usedStates.forEach(stateName => {
+    usedStates.forEach((stateName) => {
       if (this.stateInstances.has(stateName)) {
         this.connections.push({
           from: stateName,
           to: name,
-          type: 'state-to-component'
+          type: 'state-to-component',
         });
 
         this.stateInstances.get(stateName).connections.push(name);
@@ -94,15 +94,19 @@ export class HybridVisualizer {
     this.componentInstances.forEach((component, name) => {
       lines.push(`\n⚡ ${name}`);
       lines.push(`   Complexity: ${component.complexity}`);
-      lines.push(`   Uses states: ${component.usedStates.join(', ') || 'None'}`);
-      lines.push(`   Composition: ${component.composition.join(', ') || 'Direct'}`);
+      lines.push(
+        `   Uses states: ${component.usedStates.join(', ') || 'None'}`
+      );
+      lines.push(
+        `   Composition: ${component.composition.join(', ') || 'Direct'}`
+      );
     });
 
     // Data Flow Visualization
     if (this.options.showStateFlow) {
       lines.push('\n🔄 State-to-Component Flow');
       lines.push('─'.repeat(30));
-      this.connections.forEach(connection => {
+      this.connections.forEach((connection) => {
         lines.push(`   ${connection.from} → ${connection.to}`);
       });
     }
@@ -181,7 +185,7 @@ export class HybridVisualizer {
     const methods = [];
     const prototype = Object.getPrototypeOf(stateInstance);
 
-    Object.getOwnPropertyNames(prototype).forEach(name => {
+    Object.getOwnPropertyNames(prototype).forEach((name) => {
       if (typeof stateInstance[name] === 'function' && name !== 'constructor') {
         methods.push(name);
       }
@@ -225,17 +229,24 @@ export class HybridVisualizer {
 
     // State efficiency
     if (stateCount > 5) {
-      insights.push('⚠️  Many state instances - consider consolidating related state');
+      insights.push(
+        '⚠️  Many state instances - consider consolidating related state'
+      );
     } else {
       insights.push('✅ Good state organization');
     }
 
     // Component complexity
-    const avgComplexity = Array.from(this.componentInstances.values())
-      .reduce((sum, comp) => sum + comp.complexity, 0) / Math.max(componentCount, 1);
+    const avgComplexity =
+      Array.from(this.componentInstances.values()).reduce(
+        (sum, comp) => sum + comp.complexity,
+        0
+      ) / Math.max(componentCount, 1);
 
     if (avgComplexity > 10) {
-      insights.push('⚠️  High average component complexity - consider breaking down components');
+      insights.push(
+        '⚠️  High average component complexity - consider breaking down components'
+      );
     } else {
       insights.push('✅ Reasonable component complexity');
     }
@@ -243,17 +254,23 @@ export class HybridVisualizer {
     // State coupling
     const couplingRatio = connectionCount / Math.max(componentCount, 1);
     if (couplingRatio > 2) {
-      insights.push('⚠️  High state-to-component coupling - consider using context');
+      insights.push(
+        '⚠️  High state-to-component coupling - consider using context'
+      );
     } else {
       insights.push('✅ Good state decoupling');
     }
 
     // Composition usage
-    const compositionUsage = Array.from(this.componentInstances.values())
-      .filter(comp => comp.composition.length > 0).length / Math.max(componentCount, 1);
+    const compositionUsage =
+      Array.from(this.componentInstances.values()).filter(
+        (comp) => comp.composition.length > 0
+      ).length / Math.max(componentCount, 1);
 
     if (compositionUsage < 0.5) {
-      insights.push('💡 Consider using more composition utilities for better reusability');
+      insights.push(
+        '💡 Consider using more composition utilities for better reusability'
+      );
     } else {
       insights.push('✅ Good use of composition patterns');
     }
@@ -267,21 +284,27 @@ export class HybridVisualizer {
   exportAnalysis() {
     return {
       timestamp: Date.now(),
-      stateInstances: Array.from(this.stateInstances.entries()).map(([name, state]) => ({
-        name,
-        type: state.type,
-        methods: state.methods,
-        properties: state.properties,
-        connections: state.connections
-      })),
-      componentInstances: Array.from(this.componentInstances.entries()).map(([name, comp]) => ({
-        name,
-        complexity: comp.complexity,
-        usedStates: comp.usedStates,
-        composition: comp.composition
-      })),
+      stateInstances: Array.from(this.stateInstances.entries()).map(
+        ([name, state]) => ({
+          name,
+          type: state.type,
+          methods: state.methods,
+          properties: state.properties,
+          connections: state.connections,
+        })
+      ),
+      componentInstances: Array.from(this.componentInstances.entries()).map(
+        ([name, comp]) => ({
+          name,
+          complexity: comp.complexity,
+          usedStates: comp.usedStates,
+          composition: comp.composition,
+        })
+      ),
       connections: this.connections,
-      insights: this.generatePerformanceInsights().split('\n   ').filter(Boolean)
+      insights: this.generatePerformanceInsights()
+        .split('\n   ')
+        .filter(Boolean),
     };
   }
 }
@@ -307,7 +330,7 @@ export class StateFlowTracker {
       oldValue,
       newValue,
       affectedComponents,
-      duration: null
+      duration: null,
     };
 
     this.flows.push(flow);
@@ -336,37 +359,46 @@ export class StateFlowTracker {
       averageDuration: 0,
       mostActiveStates: {},
       bottleneckComponents: {},
-      recommendations: []
+      recommendations: [],
     };
 
     if (this.flows.length === 0) return analysis;
 
     // Calculate average duration
-    const completedFlows = this.flows.filter(flow => flow.duration !== null);
-    analysis.averageDuration = completedFlows.reduce((sum, flow) => sum + flow.duration, 0) / completedFlows.length;
+    const completedFlows = this.flows.filter((flow) => flow.duration !== null);
+    analysis.averageDuration =
+      completedFlows.reduce((sum, flow) => sum + flow.duration, 0) /
+      completedFlows.length;
 
     // Most active states
-    this.flows.forEach(flow => {
-      analysis.mostActiveStates[flow.stateName] = (analysis.mostActiveStates[flow.stateName] || 0) + 1;
+    this.flows.forEach((flow) => {
+      analysis.mostActiveStates[flow.stateName] =
+        (analysis.mostActiveStates[flow.stateName] || 0) + 1;
     });
 
     // Bottleneck components
-    this.flows.forEach(flow => {
-      flow.affectedComponents.forEach(component => {
-        analysis.bottleneckComponents[component] = (analysis.bottleneckComponents[component] || 0) + 1;
+    this.flows.forEach((flow) => {
+      flow.affectedComponents.forEach((component) => {
+        analysis.bottleneckComponents[component] =
+          (analysis.bottleneckComponents[component] || 0) + 1;
       });
     });
 
     // Generate recommendations
     if (analysis.averageDuration > 50) {
-      analysis.recommendations.push('Consider optimizing state updates - average duration is high');
+      analysis.recommendations.push(
+        'Consider optimizing state updates - average duration is high'
+      );
     }
 
-    const topState = Object.entries(analysis.mostActiveStates)
-      .sort(([,a], [,b]) => b - a)[0];
+    const topState = Object.entries(analysis.mostActiveStates).sort(
+      ([, a], [, b]) => b - a
+    )[0];
 
     if (topState && topState[1] > 10) {
-      analysis.recommendations.push(`State "${topState[0]}" is very active - consider splitting or optimizing`);
+      analysis.recommendations.push(
+        `State "${topState[0]}" is very active - consider splitting or optimizing`
+      );
     }
 
     return analysis;
@@ -387,7 +419,7 @@ export class StateFlowTracker {
     if (Object.keys(analysis.mostActiveStates).length > 0) {
       lines.push('\n📊 Most Active States:');
       Object.entries(analysis.mostActiveStates)
-        .sort(([,a], [,b]) => b - a)
+        .sort(([, a], [, b]) => b - a)
         .slice(0, 5)
         .forEach(([state, count]) => {
           lines.push(`   ${state}: ${count} updates`);
@@ -397,7 +429,7 @@ export class StateFlowTracker {
     if (Object.keys(analysis.bottleneckComponents).length > 0) {
       lines.push('\n⚠️  Most Affected Components:');
       Object.entries(analysis.bottleneckComponents)
-        .sort(([,a], [,b]) => b - a)
+        .sort(([, a], [, b]) => b - a)
         .slice(0, 5)
         .forEach(([component, count]) => {
           lines.push(`   ${component}: ${count} re-renders`);
@@ -406,7 +438,7 @@ export class StateFlowTracker {
 
     if (analysis.recommendations.length > 0) {
       lines.push('\n💡 Recommendations:');
-      analysis.recommendations.forEach(rec => {
+      analysis.recommendations.forEach((rec) => {
         lines.push(`   • ${rec}`);
       });
     }
@@ -423,7 +455,7 @@ export class HybridPerformanceMonitor {
     this.metrics = {
       stateOperations: [],
       componentRenders: [],
-      hybridInteractions: []
+      hybridInteractions: [],
     };
 
     this.startTime = Date.now();
@@ -438,7 +470,7 @@ export class HybridPerformanceMonitor {
       stateName,
       operation,
       duration,
-      memoryDelta
+      memoryDelta,
     });
   }
 
@@ -450,7 +482,7 @@ export class HybridPerformanceMonitor {
       timestamp: Date.now(),
       componentName,
       duration,
-      usedStates
+      usedStates,
     });
   }
 
@@ -463,7 +495,7 @@ export class HybridPerformanceMonitor {
       stateName,
       componentName,
       action,
-      duration
+      duration,
     });
   }
 
@@ -479,36 +511,48 @@ export class HybridPerformanceMonitor {
     // State operations summary
     const stateOps = this.metrics.stateOperations;
     if (stateOps.length > 0) {
-      const avgStateDuration = stateOps.reduce((sum, op) => sum + op.duration, 0) / stateOps.length;
+      const avgStateDuration =
+        stateOps.reduce((sum, op) => sum + op.duration, 0) / stateOps.length;
       lines.push(`\n🔧 State Operations: ${stateOps.length}`);
       lines.push(`   Average Duration: ${avgStateDuration.toFixed(2)}ms`);
 
       const stateCounts = {};
-      stateOps.forEach(op => {
+      stateOps.forEach((op) => {
         stateCounts[op.stateName] = (stateCounts[op.stateName] || 0) + 1;
       });
 
-      const topState = Object.entries(stateCounts).sort(([,a], [,b]) => b - a)[0];
+      const topState = Object.entries(stateCounts).sort(
+        ([, a], [, b]) => b - a
+      )[0];
       if (topState) {
-        lines.push(`   Most Active: ${topState[0]} (${topState[1]} operations)`);
+        lines.push(
+          `   Most Active: ${topState[0]} (${topState[1]} operations)`
+        );
       }
     }
 
     // Component renders summary
     const componentRenders = this.metrics.componentRenders;
     if (componentRenders.length > 0) {
-      const avgRenderDuration = componentRenders.reduce((sum, r) => sum + r.duration, 0) / componentRenders.length;
+      const avgRenderDuration =
+        componentRenders.reduce((sum, r) => sum + r.duration, 0) /
+        componentRenders.length;
       lines.push(`\n⚡ Component Renders: ${componentRenders.length}`);
       lines.push(`   Average Duration: ${avgRenderDuration.toFixed(2)}ms`);
 
       const renderCounts = {};
-      componentRenders.forEach(r => {
-        renderCounts[r.componentName] = (renderCounts[r.componentName] || 0) + 1;
+      componentRenders.forEach((r) => {
+        renderCounts[r.componentName] =
+          (renderCounts[r.componentName] || 0) + 1;
       });
 
-      const topComponent = Object.entries(renderCounts).sort(([,a], [,b]) => b - a)[0];
+      const topComponent = Object.entries(renderCounts).sort(
+        ([, a], [, b]) => b - a
+      )[0];
       if (topComponent) {
-        lines.push(`   Most Rendered: ${topComponent[0]} (${topComponent[1]} times)`);
+        lines.push(
+          `   Most Rendered: ${topComponent[0]} (${topComponent[1]} times)`
+        );
       }
     }
 
@@ -518,7 +562,7 @@ export class HybridPerformanceMonitor {
       lines.push(`\n🔄 Hybrid Interactions: ${interactions.length}`);
 
       const actionCounts = {};
-      interactions.forEach(i => {
+      interactions.forEach((i) => {
         actionCounts[i.action] = (actionCounts[i.action] || 0) + 1;
       });
 
@@ -538,7 +582,7 @@ export class HybridPerformanceMonitor {
     return {
       timestamp: Date.now(),
       uptime: Date.now() - this.startTime,
-      metrics: { ...this.metrics }
+      metrics: { ...this.metrics },
     };
   }
 }
@@ -561,7 +605,11 @@ export function createHybridPerformanceMonitor() {
 /**
  * Quick visualization function
  */
-export function visualizeHybridArchitecture(stateInstances, componentInstances, options = {}) {
+export function visualizeHybridArchitecture(
+  stateInstances,
+  componentInstances,
+  options = {}
+) {
   const visualizer = createHybridVisualizer(options);
 
   // Register states
@@ -570,9 +618,11 @@ export function visualizeHybridArchitecture(stateInstances, componentInstances, 
   });
 
   // Register components
-  Object.entries(componentInstances).forEach(([name, { component, states }]) => {
-    visualizer.registerComponent(name, component, states);
-  });
+  Object.entries(componentInstances).forEach(
+    ([name, { component, states }]) => {
+      visualizer.registerComponent(name, component, states);
+    }
+  );
 
   return visualizer.visualizeHybridArchitecture();
 }
@@ -584,5 +634,5 @@ export default {
   createHybridVisualizer,
   createStateFlowTracker,
   createHybridPerformanceMonitor,
-  visualizeHybridArchitecture
+  visualizeHybridArchitecture,
 };

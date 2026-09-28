@@ -246,14 +246,17 @@ interface CounterState {
 }
 
 // Component expecting WithStateProps
-const CounterBase: CoherentComponent<WithStateProps<CounterProps, CounterState>> = (props) => ({
+const CounterBase: CoherentComponent<
+  WithStateProps<CounterProps, CounterState>
+> = (props) => ({
   div: {
     children: [
       { span: { text: `${props?.label}: ${props?.state.count}` } },
       {
         button: {
           text: '+',
-          onClick: () => props?.setState({ count: (props?.state.count ?? 0) + 1 }),
+          onClick: () =>
+            props?.setState({ count: (props?.state.count ?? 0) + 1 }),
         },
       },
     ],
@@ -304,7 +307,10 @@ const memoOptions: MemoOptions = {
 const memoizedWithOptions = memo(expensiveFn, memoOptions);
 
 // memo(fn, keyFn): the original signature
-const memoizedByKey = memo((props: { id: number }) => ({ div: { text: String(props.id) } }), (props) => String(props.id));
+const memoizedByKey = memo(
+  (props: { id: number }) => ({ div: { text: String(props.id) } }),
+  (props) => String(props.id)
+);
 expectTypeOf(memoizedByKey).toBeCallableWith({ id: 1 });
 
 // @ts-expect-error - comparison options were never implemented
@@ -340,8 +346,12 @@ const lazyValue = lazy(() => ({ data: 'loaded' }));
 expectTypeOf(lazyValue).toMatchTypeOf<LazyWrapper<{ data: string }>>();
 expectTypeOf(lazyValue.evaluate).returns.toMatchTypeOf<{ data: string }>();
 expectTypeOf(lazyValue.isEvaluated).returns.toBeBoolean();
-expectTypeOf(lazyValue.invalidate).returns.toMatchTypeOf<LazyWrapper<{ data: string }>>();
-expectTypeOf(lazyValue.getCachedValue).returns.toMatchTypeOf<{ data: string } | null>();
+expectTypeOf(lazyValue.invalidate).returns.toMatchTypeOf<
+  LazyWrapper<{ data: string }>
+>();
+expectTypeOf(lazyValue.getCachedValue).returns.toMatchTypeOf<{
+  data: string;
+} | null>();
 
 // LazyWrapper methods
 expectTypeOf(lazyValue.map).toBeFunction();
@@ -396,7 +406,9 @@ expectTypeOf(stateContainer.set).toBeFunction();
 expectTypeOf(stateContainer.has).toBeFunction();
 expectTypeOf(stateContainer.delete).toBeFunction();
 expectTypeOf(stateContainer.clear).returns.toMatchTypeOf<StateContainer>();
-expectTypeOf(stateContainer.toObject).returns.toMatchTypeOf<Record<string, unknown>>();
+expectTypeOf(stateContainer.toObject).returns.toMatchTypeOf<
+  Record<string, unknown>
+>();
 expectTypeOf(stateContainer._internal).toMatchTypeOf<Map<string, unknown>>();
 
 // StateListener type

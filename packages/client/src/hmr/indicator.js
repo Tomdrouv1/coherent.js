@@ -11,10 +11,10 @@
  * Status color mapping for connection states.
  */
 const STATUS_COLORS = {
-  connected: '#10b981',    // Green
+  connected: '#10b981', // Green
   disconnected: '#ef4444', // Red
   reconnecting: '#f59e0b', // Yellow/amber
-  error: '#ef4444'         // Red
+  error: '#ef4444', // Red
 };
 
 /**
@@ -24,7 +24,7 @@ const STATUS_TITLES = {
   connected: 'HMR: Connected',
   disconnected: 'HMR: Disconnected',
   reconnecting: 'HMR: Reconnecting...',
-  error: 'HMR: Error'
+  error: 'HMR: Error',
 };
 
 /**

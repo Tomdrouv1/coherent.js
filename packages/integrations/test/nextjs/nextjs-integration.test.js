@@ -9,7 +9,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   createCoherentNextHandler,
-  createCoherentAppRouterHandler
+  createCoherentAppRouterHandler,
 } from '../../src/nextjs/coherent-nextjs.js';
 import { render } from '@coherent.js/core';
 
@@ -27,12 +27,12 @@ describe('Next.js Integration', () => {
   it('should create handlers with options', () => {
     const handler1 = createCoherentNextHandler(() => ({}), {
       enablePerformanceMonitoring: true,
-      template: '<html><body>{{content}}</body></html>'
+      template: '<html><body>{{content}}</body></html>',
     });
 
     const handler2 = createCoherentAppRouterHandler(() => ({}), {
       enablePerformanceMonitoring: true,
-      template: '<html><body>{{content}}</body></html>'
+      template: '<html><body>{{content}}</body></html>',
     });
 
     expect(typeof handler1).toBe('function');
@@ -43,8 +43,8 @@ describe('Next.js Integration', () => {
     const testComponent = {
       div: {
         className: 'test',
-        text: 'Hello Coherent.js!'
-      }
+        text: 'Hello Coherent.js!',
+      },
     };
 
     const html = render(testComponent);
@@ -61,10 +61,12 @@ describe('Next.js Integration', () => {
       status: () => mockRes,
       json: () => mockRes,
       send: () => mockRes,
-      end: () => {}
+      end: () => {},
     };
 
-    const handler = createCoherentNextHandler(() => ({ div: { text: 'Test' } }));
+    const handler = createCoherentNextHandler(() => ({
+      div: { text: 'Test' },
+    }));
 
     expect(() => {
       handler(mockReq, mockRes);

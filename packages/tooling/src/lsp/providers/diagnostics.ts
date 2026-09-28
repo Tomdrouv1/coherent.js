@@ -12,9 +12,18 @@ import {
   DiagnosticSeverity,
 } from 'vscode-languageserver';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { findCoherentElements, createSourceFile } from '../analysis/coherent-analyzer.js';
-import { validateAllAttributes, AttributeValidationError } from '../analysis/element-validator.js';
-import { validateAllNesting, NestingValidationError } from '../analysis/nesting-validator.js';
+import {
+  findCoherentElements,
+  createSourceFile,
+} from '../analysis/coherent-analyzer.js';
+import {
+  validateAllAttributes,
+  AttributeValidationError,
+} from '../analysis/element-validator.js';
+import {
+  validateAllNesting,
+  NestingValidationError,
+} from '../analysis/nesting-validator.js';
 
 /**
  * Debounce timeout for validation (ms).
@@ -30,9 +39,14 @@ const validationTimers = new Map<string, NodeJS.Timeout>();
 /**
  * Convert an attribute validation error to an LSP diagnostic.
  */
-function attributeErrorToDiagnostic(error: AttributeValidationError): Diagnostic {
+function attributeErrorToDiagnostic(
+  error: AttributeValidationError
+): Diagnostic {
   return {
-    severity: error.severity === 'error' ? DiagnosticSeverity.Error : DiagnosticSeverity.Warning,
+    severity:
+      error.severity === 'error'
+        ? DiagnosticSeverity.Error
+        : DiagnosticSeverity.Warning,
     range: error.range,
     message: error.message,
     source: 'coherent',
@@ -49,7 +63,10 @@ function attributeErrorToDiagnostic(error: AttributeValidationError): Diagnostic
  */
 function nestingErrorToDiagnostic(error: NestingValidationError): Diagnostic {
   return {
-    severity: error.severity === 'error' ? DiagnosticSeverity.Error : DiagnosticSeverity.Warning,
+    severity:
+      error.severity === 'error'
+        ? DiagnosticSeverity.Error
+        : DiagnosticSeverity.Warning,
     range: error.range,
     message: error.message,
     source: 'coherent',
@@ -73,7 +90,8 @@ export function validateDocument(document: TextDocument): Diagnostic[] {
 
     // Determine file type for proper parsing
     const isTypeScript = uri.endsWith('.ts') || uri.endsWith('.tsx');
-    const isJavaScript = uri.endsWith('.js') || uri.endsWith('.jsx') || uri.endsWith('.mjs');
+    const isJavaScript =
+      uri.endsWith('.js') || uri.endsWith('.jsx') || uri.endsWith('.mjs');
 
     // Skip non-JS/TS files
     if (!isTypeScript && !isJavaScript) {

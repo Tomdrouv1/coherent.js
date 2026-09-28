@@ -28,7 +28,8 @@ export function createSvelteKitAdapter(_options = {}) {
      * Render a Coherent.js component to HTML
      */
     renderComponent(component, props = {}) {
-      const def = typeof component === 'function' ? component(props) : component;
+      const def =
+        typeof component === 'function' ? component(props) : component;
       return render(def);
     },
 
@@ -41,7 +42,8 @@ export function createSvelteKitAdapter(_options = {}) {
           ? await getProps({ params, url, fetch })
           : { params };
 
-        const def = typeof component === 'function' ? component(props) : component;
+        const def =
+          typeof component === 'function' ? component(props) : component;
         const html = render(def);
 
         return { html, props };
@@ -57,7 +59,7 @@ export function createSvelteKitAdapter(_options = {}) {
         const data = Object.fromEntries(formData);
         return handler({ data, params });
       };
-    }
+    },
   };
 }
 
@@ -67,7 +69,10 @@ const RENDER_IMPORT = `import { render as ${RENDER_IDENTIFIER} } from '@coherent
 
 /** `<script context="module">` (Svelte 4) or `<script module>` (Svelte 5). */
 function isModuleScript(attributes) {
-  return /\bcontext\s*=\s*["']?module\b/.test(attributes) || /(?:^|\s)module(?:\s|=|$)/.test(attributes);
+  return (
+    /\bcontext\s*=\s*["']?module\b/.test(attributes) ||
+    /(?:^|\s)module(?:\s|=|$)/.test(attributes)
+  );
 }
 
 /**
@@ -118,9 +123,9 @@ export function createPreprocessor(options = {}) {
 
       return {
         code: found ? injectRenderImport(transformed) : content,
-        map: null
+        map: null,
       };
-    }
+    },
   };
 }
 
@@ -135,9 +140,10 @@ export function createHandle(_options = {}) {
     // Add Coherent.js render function to locals
     event.locals.coherent = {
       render(component, props = {}) {
-        const def = typeof component === 'function' ? component(props) : component;
+        const def =
+          typeof component === 'function' ? component(props) : component;
         return render(def);
-      }
+      },
     };
 
     return resolve(event);

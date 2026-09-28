@@ -43,7 +43,7 @@ async function scaffold(options) {
     template: 'fullstack',
     skipInstall: true,
     skipGit: true,
-    ...options
+    ...options,
   });
   return dir;
 }
@@ -51,7 +51,10 @@ async function scaffold(options) {
 function stubPackage(projectDir, name, source) {
   const dir = join(projectDir, 'node_modules', name);
   mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, 'package.json'), JSON.stringify({ name, type: 'module', main: 'index.js' }));
+  writeFileSync(
+    join(dir, 'package.json'),
+    JSON.stringify({ name, type: 'module', main: 'index.js' })
+  );
   writeFileSync(join(dir, 'index.js'), source);
 }
 
@@ -80,25 +83,39 @@ export const UserModel = {
 
 describe('fastify + JWT auth scaffold', () => {
   it('boots with the generated plugin and routes, and answers auth routes with JSON', async () => {
-    const dir = await scaffold({ runtime: 'fastify', database: 'sqlite', auth: 'jwt', packages: [] });
+    const dir = await scaffold({
+      runtime: 'fastify',
+      database: 'sqlite',
+      auth: 'jwt',
+      packages: [],
+    });
     stubPackage(dir, 'jsonwebtoken', JWT_STUB);
     writeFileSync(join(dir, 'src/db/models/User.js'), USER_MODEL_STUB);
     process.env.JWT_SECRET = 'test-secret';
 
-    const { authPlugin } = await import(pathToFileURL(join(dir, 'src/plugins/auth.js')).href);
-    const { default: authRoutes } = await import(pathToFileURL(join(dir, 'src/api/auth.js')).href);
+    const { authPlugin } = await import(
+      pathToFileURL(join(dir, 'src/plugins/auth.js')).href
+    );
+    const { default: authRoutes } = await import(
+      pathToFileURL(join(dir, 'src/api/auth.js')).href
+    );
 
     // Same registration order as the generated src/index.js
     const app = Fastify();
     await app.register(authPlugin);
-    await app.register(setupCoherent, { template: '<!DOCTYPE html>{{content}}' });
+    await app.register(setupCoherent, {
+      template: '<!DOCTYPE html>{{content}}',
+    });
     await app.register(authRoutes, { prefix: '/api/auth' });
 
     try {
       // Used to throw FST_ERR_HOOK_INVALID_HANDLER: fastify.authenticate was undefined
       await app.ready();
 
-      const anonymous = await app.inject({ method: 'GET', url: '/api/auth/me' });
+      const anonymous = await app.inject({
+        method: 'GET',
+        url: '/api/auth/me',
+      });
       expect(anonymous.statusCode).toBe(401);
       expect(anonymous.headers['content-type']).toMatch(/^application\/json/);
       expect(anonymous.json()).toEqual({ error: 'No token provided' });
@@ -106,7 +123,11 @@ describe('fastify + JWT auth scaffold', () => {
       const registered = await app.inject({
         method: 'POST',
         url: '/api/auth/register',
-        payload: { email: 'ada@example.com', name: 'Ada', password: 'correct horse' }
+        payload: {
+          email: 'ada@example.com',
+          name: 'Ada',
+          password: 'correct horse',
+        },
       });
       expect(registered.statusCode).toBe(200);
       const { token } = registered.json();
@@ -115,11 +136,13 @@ describe('fastify + JWT auth scaffold', () => {
       const me = await app.inject({
         method: 'GET',
         url: '/api/auth/me',
-        headers: { authorization: `Bearer ${token}` }
+        headers: { authorization: `Bearer ${token}` },
       });
       expect(me.statusCode).toBe(200);
       expect(me.headers['content-type']).toMatch(/^application\/json/);
-      expect(me.json()).toEqual({ user: { id: 1, email: 'ada@example.com', name: 'Ada' } });
+      expect(me.json()).toEqual({
+        user: { id: 1, email: 'ada@example.com', name: 'Ada' },
+      });
     } finally {
       await app.close();
       delete process.env.JWT_SECRET;
@@ -130,7 +153,10 @@ describe('fastify + JWT auth scaffold', () => {
 describe('generated package.json', () => {
   const repoVitestMajor = (() => {
     const rootPkg = JSON.parse(
-      readFileSync(fileURLToPath(new URL('../../../package.json', import.meta.url)), 'utf8')
+      readFileSync(
+        fileURLToPath(new URL('../../../package.json', import.meta.url)),
+        'utf8'
+      )
     );
     return /\d+/.exec(rootPkg.devDependencies.vitest)[0];
   })();
@@ -142,16 +168,37 @@ describe('generated package.json', () => {
   });
 
   it('dev restarts on file changes (node --watch / tsx watch) and loads .env', async () => {
-    const js = JSON.parse(readFileSync(join(await scaffold({ runtime: 'koa' }), 'package.json'), 'utf8'));
+    const js = JSON.parse(
+      readFileSync(
+        join(await scaffold({ runtime: 'koa' }), 'package.json'),
+        'utf8'
+      )
+    );
     expect(js.scripts.dev.split(/\s+/)).toEqual(
-      expect.arrayContaining(['node', '--watch', '--env-file-if-exists=.env', 'src/index.js'])
+      expect.arrayContaining([
+        'node',
+        '--watch',
+        '--env-file-if-exists=.env',
+        'src/index.js',
+      ])
     );
 
     const ts = JSON.parse(
-      readFileSync(join(await scaffold({ runtime: 'koa', language: 'typescript' }), 'package.json'), 'utf8')
+      readFileSync(
+        join(
+          await scaffold({ runtime: 'koa', language: 'typescript' }),
+          'package.json'
+        ),
+        'utf8'
+      )
     );
     expect(ts.scripts.dev.split(/\s+/)).toEqual(
-      expect.arrayContaining(['tsx', 'watch', '--env-file-if-exists=.env', 'src/index.ts'])
+      expect.arrayContaining([
+        'tsx',
+        'watch',
+        '--env-file-if-exists=.env',
+        'src/index.ts',
+      ])
     );
   });
 });
@@ -164,20 +211,34 @@ describe('client hydration loader', () => {
 
     // The generated component, served from /components/ in the app
     mkdirSync(join(dir, 'components'));
-    writeFileSync(join(dir, 'components/InteractiveCounter.js'), scaffolding['src/components/InteractiveCounter.js']);
+    writeFileSync(
+      join(dir, 'components/InteractiveCounter.js'),
+      scaffolding['src/components/InteractiveCounter.js']
+    );
 
     // Stand-in for @coherent.js/client that records how hydrate() is called
-    writeFileSync(join(dir, 'client-stub.mjs'), 'export const calls = []; export function hydrate(...args) { calls.push(args); }');
+    writeFileSync(
+      join(dir, 'client-stub.mjs'),
+      'export const calls = []; export function hydrate(...args) { calls.push(args); }'
+    );
     const loader = scaffolding['public/js/hydration.js']
-      .replace("'@coherent.js/client'", `'${pathToFileURL(join(dir, 'client-stub.mjs')).href}'`)
+      .replace(
+        "'@coherent.js/client'",
+        `'${pathToFileURL(join(dir, 'client-stub.mjs')).href}'`
+      )
       .replace('`/components/', `\`${pathToFileURL(dir).href}/components/`);
     writeFileSync(join(dir, 'loader.mjs'), loader);
 
-    const element = { getAttribute: (name) => (name === 'data-hydrate' ? 'InteractiveCounter' : null) };
+    const element = {
+      getAttribute: (name) =>
+        name === 'data-hydrate' ? 'InteractiveCounter' : null,
+    };
     let onReady;
     globalThis.document = {
-      addEventListener: (type, cb) => { if (type === 'DOMContentLoaded') onReady = cb; },
-      querySelectorAll: () => [element]
+      addEventListener: (type, cb) => {
+        if (type === 'DOMContentLoaded') onReady = cb;
+      },
+      querySelectorAll: () => [element],
     };
     const errors = [];
     const originalError = console.error;
@@ -185,7 +246,9 @@ describe('client hydration loader', () => {
 
     try {
       await import(pathToFileURL(join(dir, 'loader.mjs')).href);
-      const { calls } = await import(pathToFileURL(join(dir, 'client-stub.mjs')).href);
+      const { calls } = await import(
+        pathToFileURL(join(dir, 'client-stub.mjs')).href
+      );
       onReady();
       await expect.poll(() => calls.length + errors.length).toBeGreaterThan(0);
 
@@ -195,7 +258,9 @@ describe('client hydration loader', () => {
       expect(container).toBe(element);
 
       // The real hydrate() rejects the old (container, component) order outright
-      expect(() => realHydrate(element, component)).toThrow(/requires a component function/);
+      expect(() => realHydrate(element, component)).toThrow(
+        /requires a component function/
+      );
     } finally {
       console.error = originalError;
       delete globalThis.document;

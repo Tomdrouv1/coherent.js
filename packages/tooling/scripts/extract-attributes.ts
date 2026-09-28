@@ -19,9 +19,13 @@ const ELEMENTS_PATH = path.resolve(__dirname, '../../core/types/elements.d.ts');
 // `--out <file>` writes elsewhere (the VS Code extension build uses its own
 // copy, so it never reads a file another package's build is still writing).
 const outFlag = process.argv.indexOf('--out');
-const OUTPUT_PATH = outFlag !== -1 && process.argv[outFlag + 1]
-  ? path.resolve(process.argv[outFlag + 1])
-  : path.resolve(__dirname, '../src/lsp/data/element-attributes.generated.json');
+const OUTPUT_PATH =
+  outFlag !== -1 && process.argv[outFlag + 1]
+    ? path.resolve(process.argv[outFlag + 1])
+    : path.resolve(
+        __dirname,
+        '../src/lsp/data/element-attributes.generated.json'
+      );
 
 interface AttributeInfo {
   name: string;
@@ -48,7 +52,10 @@ function extractAttributes(): void {
   console.log('[extract-attributes] Starting extraction from', ELEMENTS_PATH);
 
   if (!fs.existsSync(ELEMENTS_PATH)) {
-    console.error('[extract-attributes] Error: elements.d.ts not found at', ELEMENTS_PATH);
+    console.error(
+      '[extract-attributes] Error: elements.d.ts not found at',
+      ELEMENTS_PATH
+    );
     console.log('[extract-attributes] Creating fallback data...');
     createFallbackData();
     return;
@@ -152,7 +159,10 @@ function extractUnionLiterals(type: ts.TypeNode): string[] {
 
   if (ts.isUnionTypeNode(type)) {
     for (const typeNode of type.types) {
-      if (ts.isLiteralTypeNode(typeNode) && ts.isStringLiteral(typeNode.literal)) {
+      if (
+        ts.isLiteralTypeNode(typeNode) &&
+        ts.isStringLiteral(typeNode.literal)
+      ) {
         literals.push(typeNode.literal.text);
       }
     }
@@ -175,7 +185,8 @@ function extractInterfaceMembers(
 
       // Extract JSDoc comment if available
       const jsDocs = ts.getJSDocTags(member);
-      const description = jsDocs.length > 0 ? jsDocs[0].comment?.toString() : undefined;
+      const description =
+        jsDocs.length > 0 ? jsDocs[0].comment?.toString() : undefined;
 
       attributes.push({
         name,
@@ -217,7 +228,9 @@ function extractElementAttributes(
         const parentName = type.expression.getText(sourceFile);
         const parentInterface = interfaces[parentName];
         if (parentInterface) {
-          attributes.push(...extractInterfaceMembers(parentInterface, typeChecker));
+          attributes.push(
+            ...extractInterfaceMembers(parentInterface, typeChecker)
+          );
         }
       }
     }
@@ -257,7 +270,11 @@ function createFallbackData(): void {
       button: {
         tagName: 'button',
         attributes: [
-          { name: 'type', type: "'button' | 'submit' | 'reset'", optional: true },
+          {
+            name: 'type',
+            type: "'button' | 'submit' | 'reset'",
+            optional: true,
+          },
           { name: 'disabled', type: 'boolean', optional: true },
         ],
         isVoidElement: false,
@@ -293,12 +310,31 @@ function createFallbackData(): void {
         isVoidElement: false,
       },
     },
-    voidElements: ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'],
+    voidElements: [
+      'area',
+      'base',
+      'br',
+      'col',
+      'embed',
+      'hr',
+      'img',
+      'input',
+      'link',
+      'meta',
+      'param',
+      'source',
+      'track',
+      'wbr',
+    ],
     globalAttributes: [
       { name: 'id', type: 'string', optional: true },
       { name: 'className', type: 'string', optional: true },
       { name: 'class', type: 'string', optional: true },
-      { name: 'style', type: 'string | Record<string, string | number>', optional: true },
+      {
+        name: 'style',
+        type: 'string | Record<string, string | number>',
+        optional: true,
+      },
       { name: 'title', type: 'string', optional: true },
       { name: 'hidden', type: 'boolean', optional: true },
       { name: 'tabIndex', type: 'number', optional: true },
@@ -306,12 +342,36 @@ function createFallbackData(): void {
       { name: 'key', type: 'string | number', optional: true },
     ],
     eventHandlers: [
-      { name: 'onClick', type: 'string | ((event: MouseEvent) => void)', optional: true },
-      { name: 'onChange', type: 'string | ((event: Event) => void)', optional: true },
-      { name: 'onSubmit', type: 'string | ((event: SubmitEvent) => void)', optional: true },
-      { name: 'onKeyDown', type: 'string | ((event: KeyboardEvent) => void)', optional: true },
-      { name: 'onFocus', type: 'string | ((event: FocusEvent) => void)', optional: true },
-      { name: 'onBlur', type: 'string | ((event: FocusEvent) => void)', optional: true },
+      {
+        name: 'onClick',
+        type: 'string | ((event: MouseEvent) => void)',
+        optional: true,
+      },
+      {
+        name: 'onChange',
+        type: 'string | ((event: Event) => void)',
+        optional: true,
+      },
+      {
+        name: 'onSubmit',
+        type: 'string | ((event: SubmitEvent) => void)',
+        optional: true,
+      },
+      {
+        name: 'onKeyDown',
+        type: 'string | ((event: KeyboardEvent) => void)',
+        optional: true,
+      },
+      {
+        name: 'onFocus',
+        type: 'string | ((event: FocusEvent) => void)',
+        optional: true,
+      },
+      {
+        name: 'onBlur',
+        type: 'string | ((event: FocusEvent) => void)',
+        optional: true,
+      },
     ],
     generatedAt: new Date().toISOString(),
   };
@@ -322,7 +382,11 @@ function createFallbackData(): void {
   }
 
   fs.writeFileSync(OUTPUT_PATH, JSON.stringify(fallbackData, null, 2));
-  console.log('[extract-attributes] Created fallback data with', Object.keys(fallbackData.elements).length, 'elements');
+  console.log(
+    '[extract-attributes] Created fallback data with',
+    Object.keys(fallbackData.elements).length,
+    'elements'
+  );
 }
 
 // Run extraction

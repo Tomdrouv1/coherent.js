@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { CodeSplitter, createCodeSplitter, lazy, createRouteSplitter, BundleAnalyzer } from '../../src/performance/code-splitting.js';
+import {
+  CodeSplitter,
+  createCodeSplitter,
+  lazy,
+  createRouteSplitter,
+  BundleAnalyzer,
+} from '../../src/performance/code-splitting.js';
 
 describe('CodeSplitter', () => {
   let splitter;
@@ -65,7 +71,7 @@ describe('lazy', () => {
   it('uses custom loading component', () => {
     const loader = () => new Promise(() => {});
     const LazyComp = lazy(loader, {
-      loadingComponent: () => ({ span: { text: 'Custom loader' } })
+      loadingComponent: () => ({ span: { text: 'Custom loader' } }),
     });
     const result = LazyComp({});
     expect(result.span.text).toBe('Custom loader');
@@ -80,7 +86,7 @@ describe('lazy', () => {
     LazyComp({ name: 'test' });
 
     // Wait for promise to resolve
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
 
     // Now should return the actual component
     const result = LazyComp({ name: 'test' });
@@ -91,7 +97,9 @@ describe('lazy', () => {
     // Directly test the error path by simulating a pre-errored lazy component
     // The lazy() source re-throws from .catch, causing unhandled rejections in tests,
     // so we test the error rendering path by setting internal state via a custom errorComponent
-    const errorComp = ({ error }) => ({ div: { className: 'custom-error', text: error.message } });
+    const errorComp = ({ error }) => ({
+      div: { className: 'custom-error', text: error.message },
+    });
     const loader = () => new Promise(() => {}); // never resolves
     const LazyComp = lazy(loader, { errorComponent: errorComp });
 
@@ -105,7 +113,7 @@ describe('createRouteSplitter', () => {
   it('creates route splitter from string config', () => {
     const router = createRouteSplitter({
       '/home': './home.js',
-      '/about': './about.js'
+      '/about': './about.js',
     });
 
     expect(router.getRoutes()).toEqual(['/home', '/about']);
@@ -113,7 +121,7 @@ describe('createRouteSplitter', () => {
 
   it('creates route splitter from object config', () => {
     const router = createRouteSplitter({
-      '/home': { component: './home.js', preload: ['./nav.js'] }
+      '/home': { component: './home.js', preload: ['./nav.js'] },
     });
 
     expect(router.getRoutes()).toEqual(['/home']);
@@ -122,7 +130,9 @@ describe('createRouteSplitter', () => {
 
   it('throws on unknown route', async () => {
     const router = createRouteSplitter({ '/home': './home.js' });
-    await expect(router.loadRoute('/unknown')).rejects.toThrow('Route not found');
+    await expect(router.loadRoute('/unknown')).rejects.toThrow(
+      'Route not found'
+    );
   });
 });
 

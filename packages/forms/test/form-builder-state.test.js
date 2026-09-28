@@ -19,15 +19,19 @@ function signupForm() {
     fields: [
       { name: 'email', type: 'email', required: true },
       { name: 'plan', type: 'text', defaultValue: 'free' },
-      { name: 'company', type: 'text', showWhen: values => values.plan === 'team' }
-    ]
+      {
+        name: 'company',
+        type: 'text',
+        showWhen: (values) => values.plan === 'team',
+      },
+    ],
   });
 }
 
-const tick = () => new Promise(resolve => setTimeout(resolve, 0));
+const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe('fork()', () => {
-  it('keeps one request\'s values and errors out of the shared builder', () => {
+  it("keeps one request's values and errors out of the shared builder", () => {
     const signup = signupForm();
     const pristine = render(signup.buildForm());
 
@@ -39,7 +43,9 @@ describe('fork()', () => {
 
     expect(aliceHtml).toContain('value="alice@"');
     expect(aliceHtml).toContain('value="Acme"');
-    expect(aliceHtml).toContain('<div id="email-error" role="alert" class="error-message">Please enter a valid email address</div>');
+    expect(aliceHtml).toContain(
+      '<div id="email-error" role="alert" class="error-message">Please enter a valid email address</div>'
+    );
 
     // Bob's GET renders the shared definition: none of Alice's data.
     expect(render(signup.buildForm())).toBe(pristine);
@@ -48,7 +54,7 @@ describe('fork()', () => {
   });
 
   it('copies the definition: fields, options, defaults and handlers', async () => {
-    const signup = signupForm().onSubmit(values => ({ saved: values.email }));
+    const signup = signupForm().onSubmit((values) => ({ saved: values.email }));
     const copy = signup.fork();
 
     expect(copy.getFields()).toEqual(signup.getFields());
@@ -56,7 +62,10 @@ describe('fork()', () => {
     expect(render(copy.buildForm())).toBe(render(signup.buildForm()));
 
     copy.setValues({ email: 'bob@example.com' });
-    expect(await copy.submit()).toEqual({ success: true, data: { saved: 'bob@example.com' } });
+    expect(await copy.submit()).toEqual({
+      success: true,
+      data: { saved: 'bob@example.com' },
+    });
 
     copy.setAction('/elsewhere');
     expect(signup.options.action).toBe('/signup');
@@ -77,7 +86,7 @@ describe('fork()', () => {
 
     const [alice, bob] = await Promise.all([
       handle({ email: 'alice@' }),
-      handle({ email: 'bob@example.com' })
+      handle({ email: 'bob@example.com' }),
     ]);
 
     expect(alice).toContain('value="alice@"');
@@ -94,15 +103,19 @@ describe('buildForm({ values, errors })', () => {
     const signup = signupForm();
     const pristine = render(signup.buildForm());
 
-    const html = render(signup.buildForm({
-      values: { email: 'alice@', plan: 'team', company: 'Acme' },
-      errors: { email: 'Please enter a valid email address' }
-    }));
+    const html = render(
+      signup.buildForm({
+        values: { email: 'alice@', plan: 'team', company: 'Acme' },
+        errors: { email: 'Please enter a valid email address' },
+      })
+    );
 
     expect(html).toContain('value="alice@"');
     expect(html).toContain('value="Acme"'); // showWhen sees the per-render values
     expect(html).toContain('aria-describedby="email-error" class="error"');
-    expect(html).toContain('<div id="email-error" role="alert" class="error-message">Please enter a valid email address</div>');
+    expect(html).toContain(
+      '<div id="email-error" role="alert" class="error-message">Please enter a valid email address</div>'
+    );
 
     expect(signup.getValues()).toEqual({ plan: 'free' });
     expect(signup.errors).toEqual({});
@@ -115,7 +128,9 @@ describe('buildForm({ values, errors })', () => {
     signup.errors = { email: 'Stale error' };
     signup.touch('email');
 
-    const html = render(signup.buildForm({ values: { email: 'fresh@example.com' } }));
+    const html = render(
+      signup.buildForm({ values: { email: 'fresh@example.com' } })
+    );
 
     expect(html).toContain('value="fresh@example.com"');
     expect(html).toContain('value="free"');
@@ -125,11 +140,13 @@ describe('buildForm({ values, errors })', () => {
 
   it('shows an error only for fields marked touched when touched is given', () => {
     const signup = signupForm();
-    const html = render(signup.buildForm({
-      values: { email: '' },
-      errors: { email: 'This field is required' },
-      touched: {}
-    }));
+    const html = render(
+      signup.buildForm({
+        values: { email: '' },
+        errors: { email: 'This field is required' },
+        touched: {},
+      })
+    );
 
     expect(html).not.toContain('id="email-error"');
     expect(html).toContain('aria-invalid="true"');

@@ -1,6 +1,6 @@
 /**
  * Database Middleware for Coherent.js Router Integration
- * 
+ *
  * @fileoverview Provides middleware for seamless database integration with the router,
  * including connection management, transaction handling, and query helpers.
  */
@@ -52,17 +52,17 @@ function httpError(message, status) {
 
 /**
  * Database middleware for router integration
- * 
+ *
  * @param {DatabaseManager} db - Database manager instance
  * @param {Object} [options={}] - Middleware options
  * @returns {Function} Middleware function
- * 
+ *
  * @example
  * import { withDatabase } from '@coherent.js/database';
- * 
+ *
  * const router = new SimpleRouter();
  * router.use(withDatabase(db));
- * 
+ *
  * router.get('/users', async (req, res) => {
  *   const users = await req.db.query('SELECT * FROM users');
  *   res.json(users.rows);
@@ -73,7 +73,7 @@ export function withDatabase(db, options = {}) {
     autoConnect: true,
     attachModels: true,
     transactionKey: 'tx',
-    ...options
+    ...options,
   };
 
   return async (req, res, next) => {
@@ -94,7 +94,7 @@ export function withDatabase(db, options = {}) {
       // Attach transaction helper
       req.transaction = async (callback) => {
         const tx = await db.transaction();
-        
+
         try {
           const result = await callback(tx);
           await tx.commit();
@@ -132,7 +132,8 @@ function settleWhenResponseEnds(res, settle) {
     return false;
   }
 
-  const report = (_error) => console.error('withTransaction: failed to finish the transaction:', _error);
+  const report = (_error) =>
+    console.error('withTransaction: failed to finish the transaction:', _error);
   listen.call(res, 'finish', () => {
     settle(res.statusCode >= 400).catch(report);
   });
@@ -172,7 +173,7 @@ export function withTransaction(db, options = {}) {
   const config = {
     isolationLevel: null,
     readOnly: false,
-    ...options
+    ...options,
   };
 
   return async (req, res, next) => {
@@ -215,7 +216,7 @@ export function withTransaction(db, options = {}) {
       await settle(true);
       throw new Error(
         'withTransaction cannot tell when the request ends: next() did not return a promise ' +
-        'and the response does not emit "finish"/"close". The transaction was rolled back.'
+          'and the response does not emit "finish"/"close". The transaction was rolled back.'
       );
     }
   };
@@ -223,18 +224,18 @@ export function withTransaction(db, options = {}) {
 
 /**
  * Model binding middleware
- * 
+ *
  * @param {Function} ModelClass - Model class to bind
  * @param {string} [paramName='id'] - Route parameter name
  * @param {string} [requestKey] - Request key to attach model (defaults to model name)
  * @returns {Function} Middleware function
- * 
+ *
  * @example
  * router.get('/users/:id', withModel(User), async (req, res) => {
  *   // req.user contains the loaded User model
  *   res.json(req.user.toJSON());
  * });
- * 
+ *
  * router.get('/posts/:postId', withModel(Post, 'postId', 'post'), async (req, res) => {
  *   // req.post contains the loaded Post model
  *   res.json(req.post.toJSON());
@@ -253,17 +254,17 @@ export function withModel(ModelClass, paramName = 'id', requestKey = null) {
     }
   }
   const key = modelName;
-  
+
   return async (req, res, next) => {
     try {
       const paramValue = req.params[paramName];
-      
+
       if (!paramValue) {
         throw httpError(`Parameter '${paramName}' is required`, 400);
       }
 
       const model = await ModelClass.find(paramValue);
-      
+
       if (!model) {
         throw httpError(`${ModelClass.name} not found`, 404);
       }
@@ -279,17 +280,17 @@ export function withModel(ModelClass, paramName = 'id', requestKey = null) {
 
 /**
  * Pagination middleware
- * 
+ *
  * @param {Object} [options={}] - Pagination options
  * @returns {Function} Middleware function
- * 
+ *
  * @example
  * router.get('/users', withPagination(), async (req, res) => {
  *   const users = await User.query()
  *     .limit(req.pagination.limit)
  *     .offset(req.pagination.offset)
  *     .execute();
- *   
+ *
  *   res.json({
  *     data: users.rows,
  *     pagination: req.pagination
@@ -302,7 +303,7 @@ export function withPagination(options = {}) {
     maxLimit: 100,
     pageParam: 'page',
     limitParam: 'limit',
-    ...options
+    ...options,
   };
 
   return async (req, res, next) => {
@@ -320,7 +321,7 @@ export function withPagination(options = {}) {
       hasNext: null, // To be set by the handler
       hasPrev: page > 1,
       totalPages: null, // To be set by the handler
-      totalCount: null // To be set by the handler
+      totalCount: null, // To be set by the handler
     };
 
     await proceed(next);
@@ -329,11 +330,11 @@ export function withPagination(options = {}) {
 
 /**
  * Query validation middleware
- * 
+ *
  * @param {Object} schema - Validation schema
  * @param {Object} [options={}] - Validation options
  * @returns {Function} Middleware function
- * 
+ *
  * @example
  * router.get('/users', withQueryValidation({
  *   status: { type: 'string', enum: ['active', 'inactive'] },
@@ -346,16 +347,16 @@ export function withQueryValidation(schema, options = {}) {
   const config = {
     stripUnknown: true,
     coerceTypes: true,
-    ...options
+    ...options,
   };
 
   return async (req, res, next) => {
     try {
       const validatedQuery = {};
-      
+
       for (const [key, rules] of Object.entries(schema)) {
         const value = req.query[key];
-        
+
         // Skip if not provided and not required
         if (value === undefined || value === null || value === '') {
           if (rules.required) {
@@ -371,7 +372,10 @@ export function withQueryValidation(schema, options = {}) {
             case 'number':
               coercedValue = Number(value);
               if (isNaN(coercedValue)) {
-                throw httpError(`Query parameter '${key}' must be a number`, 400);
+                throw httpError(
+                  `Query parameter '${key}' must be a number`,
+                  400
+                );
               }
               break;
             case 'boolean':
@@ -385,15 +389,24 @@ export function withQueryValidation(schema, options = {}) {
 
         // Validation
         if (rules.enum && !rules.enum.includes(coercedValue)) {
-          throw httpError(`Query parameter '${key}' must be one of: ${rules.enum.join(', ')}`, 400);
+          throw httpError(
+            `Query parameter '${key}' must be one of: ${rules.enum.join(', ')}`,
+            400
+          );
         }
 
         if (rules.min !== undefined && coercedValue < rules.min) {
-          throw httpError(`Query parameter '${key}' must be at least ${rules.min}`, 400);
+          throw httpError(
+            `Query parameter '${key}' must be at least ${rules.min}`,
+            400
+          );
         }
 
         if (rules.max !== undefined && coercedValue > rules.max) {
-          throw httpError(`Query parameter '${key}' must be at most ${rules.max}`, 400);
+          throw httpError(
+            `Query parameter '${key}' must be at most ${rules.max}`,
+            400
+          );
         }
 
         validatedQuery[key] = coercedValue;
@@ -401,7 +414,9 @@ export function withQueryValidation(schema, options = {}) {
 
       // Replace query with the validated (and coerced) version; keep unknown keys
       // alongside it when asked, without overwriting the coerced values
-      req.query = config.stripUnknown ? validatedQuery : { ...req.query, ...validatedQuery };
+      req.query = config.stripUnknown
+        ? validatedQuery
+        : { ...req.query, ...validatedQuery };
     } catch (_error) {
       return fail(next, _error);
     }
@@ -412,11 +427,11 @@ export function withQueryValidation(schema, options = {}) {
 
 /**
  * Database health check middleware
- * 
+ *
  * @param {DatabaseManager} db - Database manager instance
  * @param {Object} [options={}] - Health check options
  * @returns {Function} Middleware function
- * 
+ *
  * @example
  * router.get('/health', withHealthCheck(db), (req, res) => {
  *   res.json({ status: 'healthy', database: req.dbHealth });
@@ -426,7 +441,7 @@ export function withHealthCheck(db, options = {}) {
   const config = {
     timeout: 5000,
     includeStats: true,
-    ...options
+    ...options,
   };
 
   return async (req, res, next) => {
@@ -438,16 +453,19 @@ export function withHealthCheck(db, options = {}) {
       await Promise.race([
         db.query('SELECT 1'),
         new Promise((_, reject) => {
-          timer = setTimeout(() => reject(new Error('Health check timeout')), config.timeout);
-        })
+          timer = setTimeout(
+            () => reject(new Error('Health check timeout')),
+            config.timeout
+          );
+        }),
       ]);
-      
+
       const responseTime = Date.now() - startTime;
-      
+
       req.dbHealth = {
         status: 'healthy',
         responseTime,
-        connected: db.isConnected
+        connected: db.isConnected,
       };
 
       if (config.includeStats) {
@@ -457,7 +475,7 @@ export function withHealthCheck(db, options = {}) {
       req.dbHealth = {
         status: 'unhealthy',
         error: _error.message,
-        connected: db.isConnected
+        connected: db.isConnected,
       };
     } finally {
       clearTimeout(timer);
@@ -469,11 +487,11 @@ export function withHealthCheck(db, options = {}) {
 
 /**
  * Connection pooling middleware for request-scoped connections
- * 
+ *
  * @param {DatabaseManager} db - Database manager instance
  * @param {Object} [options={}] - Pool options
  * @returns {Function} Middleware function
- * 
+ *
  * @example
  * router.use(withConnectionPool(db, { acquireTimeout: 10000 }));
  */
@@ -481,7 +499,7 @@ export function withConnectionPool(db, options = {}) {
   const config = {
     acquireTimeout: 30000,
     releaseOnResponse: true,
-    ...options
+    ...options,
   };
 
   return async (req, res, next) => {
@@ -497,10 +515,10 @@ export function withConnectionPool(db, options = {}) {
     try {
       // Acquire connection from pool
       connection = await db.pool.acquire(config.acquireTimeout);
-      
+
       // Attach connection to request
       req.dbConnection = connection;
-      
+
       // Attach query helper to use this connection
       req.dbQuery = async (sql, params, queryOptions) => {
         return await db.adapter.query(connection, sql, params, queryOptions);

@@ -1,9 +1,9 @@
 /**
  * Database Integration Layer for Coherent.js
- * 
+ *
  * @fileoverview Provides database connectivity, query building, and ORM functionality
  * with support for multiple database engines (PostgreSQL, MySQL, SQLite, MongoDB).
- * 
+ *
  * @author Coherent.js Team
  * @version 1.0.0
  */
@@ -13,7 +13,12 @@ export { createQuery, executeQuery } from './query-builder.js';
 export { createModel } from './model.js';
 export { createMigration } from './migration.js';
 export { createDatabaseManager } from './connection-manager.js';
-export { withDatabase, withTransaction, withModel, withPagination } from './middleware.js';
+export {
+  withDatabase,
+  withTransaction,
+  withModel,
+  withPagination,
+} from './middleware.js';
 
 // Import for internal use
 import { createDatabaseManager } from './connection-manager.js';
@@ -37,18 +42,18 @@ export const DEFAULT_DB_CONFIG = {
   logging: false,
   entities: [],
   migrations: [],
-  subscribers: []
+  subscribers: [],
 };
 
 /**
  * Quick setup function for common database configurations
- * 
+ *
  * @param {Object} config - Database configuration
  * @returns {DatabaseManager} Configured database manager
- * 
+ *
  * @example
  * import { setupDatabase } from '@coherent.js/database';
- * 
+ *
  * const db = setupDatabase({
  *   type: 'postgresql',
  *   host: 'localhost',
@@ -60,11 +65,11 @@ export const DEFAULT_DB_CONFIG = {
 export function setupDatabase(config = {}) {
   const mergedConfig = { ...DEFAULT_DB_CONFIG, ...config };
   const dbManager = createDatabaseManager(mergedConfig);
-  
+
   // Auto-connect if autoConnect is not explicitly set to false
   if (mergedConfig.autoConnect !== false) {
     dbManager.connect().catch(console.error);
   }
-  
+
   return dbManager;
 }

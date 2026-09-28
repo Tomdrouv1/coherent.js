@@ -1,6 +1,6 @@
 /**
  * PostgreSQL Database Adapter for Coherent.js
- * 
+ *
  * @fileoverview PostgreSQL adapter implementation with connection pooling and advanced features.
  */
 
@@ -31,9 +31,12 @@ function convertPlaceholders(sql) {
     const char = sql[i];
     const next = sql[i + 1];
 
-    if (char === '\'' || char === '"') {
+    if (char === "'" || char === '"') {
       // E'...' strings treat backslash as an escape character
-      const escapes = char === '\'' && /[Ee]/.test(sql[i - 1] || '') && !/[A-Za-z0-9_]/.test(sql[i - 2] || '');
+      const escapes =
+        char === "'" &&
+        /[Ee]/.test(sql[i - 1] || '') &&
+        !/[A-Za-z0-9_]/.test(sql[i - 2] || '');
       let j = i + 1;
       while (j < sql.length) {
         if (escapes && sql[j] === '\\') {
@@ -96,7 +99,7 @@ function convertPlaceholders(sql) {
 
 /**
  * Create PostgreSQL adapter instance
- * 
+ *
  * @returns {Object} PostgreSQL adapter instance
  */
 export function createPostgreSQLAdapter() {
@@ -108,7 +111,9 @@ export function createPostgreSQLAdapter() {
         const pgModule = await import('pg');
         pg = pgModule.default || pgModule;
       } catch {
-        throw new Error('pg package is required for PostgreSQL adapter. Install with: npm install pg');
+        throw new Error(
+          'pg package is required for PostgreSQL adapter. Install with: npm install pg'
+        );
       }
     }
   }
@@ -127,7 +132,7 @@ export function createPostgreSQLAdapter() {
      */
     async createPool(config) {
       await initializePostgreSQL();
-      
+
       const poolConfig = {
         host: config.host,
         port: config.port,
@@ -142,7 +147,7 @@ export function createPostgreSQLAdapter() {
         idleTimeoutMillis: config.pool.idleTimeoutMillis,
         reapIntervalMillis: config.pool.reapIntervalMillis,
         createRetryIntervalMillis: config.pool.createRetryIntervalMillis,
-        ssl: config.ssl || false
+        ssl: config.ssl || false,
       };
 
       const pool = new pg.Pool(poolConfig);
@@ -159,7 +164,7 @@ export function createPostgreSQLAdapter() {
      */
     async testConnection(pool) {
       const client = await pool.connect();
-      
+
       try {
         await client.query('SELECT 1');
       } finally {
@@ -172,22 +177,21 @@ export function createPostgreSQLAdapter() {
      */
     async query(pool, sql, params = [], options = {}) {
       const client = await pool.connect();
-      
+
       try {
         const pgSql = convertPlaceholders(sql);
         const result = await client.query(pgSql, params);
-        
+
         if (options.single) {
           return result.rows[0] || null;
         }
-        
+
         return {
           rows: result.rows,
           rowCount: result.rowCount,
           affectedRows: result.rowCount,
-          insertId: extractInsertId(result)
+          insertId: extractInsertId(result),
         };
-        
       } finally {
         client.release();
       }
@@ -259,7 +263,7 @@ export function createPostgreSQLAdapter() {
             rows: result.rows,
             rowCount: result.rowCount,
             affectedRows: result.rowCount,
-            insertId: extractInsertId(result)
+            insertId: extractInsertId(result),
           };
         },
 
@@ -289,7 +293,7 @@ export function createPostgreSQLAdapter() {
             release(_error);
             throw _error;
           }
-        }
+        },
       };
 
       return transaction;
@@ -303,7 +307,7 @@ export function createPostgreSQLAdapter() {
         total: pool.totalCount,
         available: pool.idleCount,
         acquired: pool.totalCount - pool.idleCount,
-        waiting: pool.waitingCount
+        waiting: pool.waitingCount,
       };
     },
 
@@ -312,6 +316,6 @@ export function createPostgreSQLAdapter() {
      */
     async closePool(pool) {
       await pool.end();
-    }
+    },
   };
 }

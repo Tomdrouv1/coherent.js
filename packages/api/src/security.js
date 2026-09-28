@@ -26,8 +26,11 @@ function base64UrlEncode(str) {
  */
 function base64UrlDecode(str) {
   // Add padding if needed
-  str += '='.repeat((4 - str.length % 4) % 4);
-  return Buffer.from(str.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString();
+  str += '='.repeat((4 - (str.length % 4)) % 4);
+  return Buffer.from(
+    str.replace(/-/g, '+').replace(/_/g, '/'),
+    'base64'
+  ).toString();
 }
 
 /**
@@ -37,7 +40,9 @@ function base64UrlDecode(str) {
  * @returns {string} HMAC signature
  */
 function createSignature(data, secret) {
-  return createHmac('sha256', secret).update(data).digest('base64')
+  return createHmac('sha256', secret)
+    .update(data)
+    .digest('base64')
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=/g, '');
@@ -56,7 +61,11 @@ function createSignature(data, secret) {
  * @param {string} usage - How the caller should pass it, for the message
  */
 function requireSecret(secret, usage) {
-  if (typeof secret === 'string' ? secret.length > 0 : Buffer.isBuffer(secret) && secret.length > 0) {
+  if (
+    typeof secret === 'string'
+      ? secret.length > 0
+      : Buffer.isBuffer(secret) && secret.length > 0
+  ) {
     return;
   }
   throw new TypeError(
@@ -74,17 +83,20 @@ function requireSecret(secret, usage) {
  * @throws {TypeError} If no secret is given
  */
 export function generateJWT(payload, expiresIn = '1h', secret) {
-  requireSecret(secret, "generateJWT(payload, expiresIn, secret) was called without a secret");
+  requireSecret(
+    secret,
+    'generateJWT(payload, expiresIn, secret) was called without a secret'
+  );
 
   const header = {
     alg: 'HS256',
-    typ: 'JWT'
+    typ: 'JWT',
   };
 
   // Calculate expiration time
   const now = Math.floor(Date.now() / 1000);
   let exp = now;
-  
+
   if (expiresIn.endsWith('h')) {
     exp += parseInt(expiresIn) * 3600;
   } else if (expiresIn.endsWith('m')) {
@@ -98,7 +110,7 @@ export function generateJWT(payload, expiresIn = '1h', secret) {
   const tokenPayload = {
     ...payload,
     iat: now,
-    exp: exp
+    exp: exp,
   };
 
   const encodedHeader = base64UrlEncode(JSON.stringify(header));
@@ -117,16 +129,19 @@ export function generateJWT(payload, expiresIn = '1h', secret) {
  * @throws {TypeError} If no secret is given
  */
 export function verifyToken(token, secret) {
-  requireSecret(secret, 'verifyToken(token, secret) was called without a secret');
+  requireSecret(
+    secret,
+    'verifyToken(token, secret) was called without a secret'
+  );
 
   try {
     let jwtToken = token;
-    
+
     // Handle Bearer token format
     if (token && token.startsWith('Bearer ')) {
       jwtToken = token.slice(7);
     }
-    
+
     if (!jwtToken) {
       return null;
     }
@@ -142,7 +157,7 @@ export function verifyToken(token, secret) {
     // Verify signature
     const data = `${encodedHeader}.${encodedPayload}`;
     const expectedSignature = createSignature(data, secret);
-    
+
     if (!safeEqual(signature, expectedSignature)) {
       return null;
     }
@@ -186,7 +201,9 @@ export function withAuth(options = {}) {
 
   if (verify !== undefined) {
     if (typeof verify !== 'function') {
-      throw new TypeError('[coherent.js/api] withAuth({ verify }) expects verify to be a function (req) => user.');
+      throw new TypeError(
+        '[coherent.js/api] withAuth({ verify }) expects verify to be a function (req) => user.'
+      );
     }
     return async (req, res) => {
       let user = null;
@@ -227,20 +244,20 @@ export function withAuth(options = {}) {
  */
 export function withRole(roles) {
   const requiredRoles = Array.isArray(roles) ? roles : [roles];
-  
+
   return (req, res) => {
     if (!req.user) {
       res.writeHead(401, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Unauthorized' }));
       return;
     }
-    
+
     if (!requiredRoles.includes(req.user.role)) {
       res.writeHead(403, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Forbidden' }));
       return;
     }
-    
+
     return null; // Continue to next middleware
   };
 }
@@ -289,7 +306,13 @@ function safeEqual(a, b) {
  */
 export function hashPassword(password) {
   const salt = randomBytes(16).toString('hex');
-  const hash = pbkdf2Sync(password, salt, PBKDF2_ITERATIONS, PBKDF2_KEY_LENGTH, PBKDF2_DIGEST).toString('hex');
+  const hash = pbkdf2Sync(
+    password,
+    salt,
+    PBKDF2_ITERATIONS,
+    PBKDF2_KEY_LENGTH,
+    PBKDF2_DIGEST
+  ).toString('hex');
   return `${salt}:${hash}`;
 }
 
@@ -306,7 +329,13 @@ export function verifyPassword(password, hashedPassword) {
   try {
     const [salt, hash] = hashedPassword.split(':');
     if (!salt || !hash) return false;
-    const verifyHash = pbkdf2Sync(password, salt, PBKDF2_ITERATIONS, PBKDF2_KEY_LENGTH, PBKDF2_DIGEST).toString('hex');
+    const verifyHash = pbkdf2Sync(
+      password,
+      salt,
+      PBKDF2_ITERATIONS,
+      PBKDF2_KEY_LENGTH,
+      PBKDF2_DIGEST
+    ).toString('hex');
     return safeEqual(hash, verifyHash);
   } catch {
     return false;
@@ -339,38 +368,41 @@ export function generateToken(length = 32) {
 export function withInputValidation(rules) {
   return (req, res) => {
     const errors = [];
-    
+
     for (const [field, rule] of Object.entries(rules)) {
       const value = req.body[field];
-      
-      if (rule.required && (value === undefined || value === null || value === '')) {
+
+      if (
+        rule.required &&
+        (value === undefined || value === null || value === '')
+      ) {
         errors.push(`${field} is required`);
         continue;
       }
-      
+
       if (value !== undefined && rule.type && typeof value !== rule.type) {
         errors.push(`${field} must be of type ${rule.type}`);
       }
-      
+
       if (value && rule.minLength && value.length < rule.minLength) {
         errors.push(`${field} must be at least ${rule.minLength} characters`);
       }
-      
+
       if (value && rule.maxLength && value.length > rule.maxLength) {
         errors.push(`${field} must be at most ${rule.maxLength} characters`);
       }
-      
+
       if (value && rule.pattern && !rule.pattern.test(value)) {
         errors.push(`${field} format is invalid`);
       }
     }
-    
+
     if (errors.length > 0) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Validation failed', details: errors }));
       return;
     }
-    
+
     return null; // Continue to next middleware
   };
 }
@@ -383,5 +415,5 @@ export default {
   hashPassword,
   verifyPassword,
   generateToken,
-  withInputValidation
+  withInputValidation,
 };

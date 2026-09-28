@@ -1,8 +1,8 @@
 /**
  * Coherent.js SEO Meta Tags
- * 
+ *
  * Utilities for generating SEO meta tags
- * 
+ *
  * @module seo/meta
  */
 
@@ -17,9 +17,9 @@ export class MetaBuilder {
       siteUrl: '',
       locale: 'en_US',
       twitterHandle: '',
-      ...defaults
+      ...defaults,
     };
-    
+
     this.tags = [];
   }
 
@@ -37,7 +37,7 @@ export class MetaBuilder {
 
     // Open Graph
     this.og('title', fullTitle);
-    
+
     // Twitter
     this.twitter('title', fullTitle);
 
@@ -51,13 +51,13 @@ export class MetaBuilder {
     this.tags.push({
       meta: {
         name: 'description',
-        content: description
-      }
+        content: description,
+      },
     });
 
     // Open Graph
     this.og('description', description);
-    
+
     // Twitter
     this.twitter('description', description);
 
@@ -71,8 +71,8 @@ export class MetaBuilder {
     this.tags.push({
       link: {
         rel: 'canonical',
-        href: url
-      }
+        href: url,
+      },
     });
 
     // Open Graph
@@ -85,13 +85,15 @@ export class MetaBuilder {
    * Set keywords
    */
   keywords(keywords) {
-    const keywordString = Array.isArray(keywords) ? keywords.join(', ') : keywords;
-    
+    const keywordString = Array.isArray(keywords)
+      ? keywords.join(', ')
+      : keywords;
+
     this.tags.push({
       meta: {
         name: 'keywords',
-        content: keywordString
-      }
+        content: keywordString,
+      },
     });
 
     return this;
@@ -101,13 +103,15 @@ export class MetaBuilder {
    * Set robots directives
    */
   robots(directives) {
-    const content = Array.isArray(directives) ? directives.join(', ') : directives;
-    
+    const content = Array.isArray(directives)
+      ? directives.join(', ')
+      : directives;
+
     this.tags.push({
       meta: {
         name: 'robots',
-        content
-      }
+        content,
+      },
     });
 
     return this;
@@ -120,8 +124,8 @@ export class MetaBuilder {
     this.tags.push({
       meta: {
         property: `og:${property}`,
-        content
-      }
+        content,
+      },
     });
 
     return this;
@@ -134,8 +138,8 @@ export class MetaBuilder {
     this.tags.push({
       meta: {
         name: `twitter:${name}`,
-        content
-      }
+        content,
+      },
     });
 
     return this;
@@ -147,7 +151,7 @@ export class MetaBuilder {
   image(url, options = {}) {
     // Open Graph
     this.og('image', url);
-    
+
     if (options.width) this.og('image:width', options.width);
     if (options.height) this.og('image:height', options.height);
     if (options.alt) this.og('image:alt', options.alt);
@@ -168,21 +172,21 @@ export class MetaBuilder {
     if (options.publishedTime) {
       this.og('article:published_time', options.publishedTime);
     }
-    
+
     if (options.modifiedTime) {
       this.og('article:modified_time', options.modifiedTime);
     }
-    
+
     if (options.author) {
       this.og('article:author', options.author);
     }
-    
+
     if (options.section) {
       this.og('article:section', options.section);
     }
-    
+
     if (options.tags) {
-      options.tags.forEach(tag => this.og('article:tag', tag));
+      options.tags.forEach((tag) => this.og('article:tag', tag));
     }
 
     return this;
@@ -193,7 +197,7 @@ export class MetaBuilder {
    */
   twitterCard(type = 'summary_large_image') {
     this.twitter('card', type);
-    
+
     if (this.defaults.twitterHandle) {
       this.twitter('site', this.defaults.twitterHandle);
     }
@@ -206,8 +210,8 @@ export class MetaBuilder {
    */
   locale(locale, alternates = []) {
     this.og('locale', locale);
-    
-    alternates.forEach(alt => {
+
+    alternates.forEach((alt) => {
       this.og('locale:alternate', alt);
     });
 
@@ -313,5 +317,5 @@ export function generateMeta(options = {}) {
 export default {
   MetaBuilder,
   createMetaBuilder,
-  generateMeta
+  generateMeta,
 };

@@ -28,22 +28,22 @@ const HMR_SCRIPT_TAG = `<script type="module" src="${HMR_CLIENT_PATH}"></script>
 // Minimal MIME map — covers the things a Coherent dev project actually serves.
 const MIME = {
   '.html': 'text/html; charset=utf-8',
-  '.htm':  'text/html; charset=utf-8',
-  '.js':   'text/javascript; charset=utf-8',
-  '.mjs':  'text/javascript; charset=utf-8',
-  '.cjs':  'text/javascript; charset=utf-8',
-  '.css':  'text/css; charset=utf-8',
+  '.htm': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
+  '.cjs': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
-  '.svg':  'image/svg+xml',
-  '.png':  'image/png',
-  '.jpg':  'image/jpeg',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
-  '.gif':  'image/gif',
-  '.ico':  'image/x-icon',
+  '.gif': 'image/gif',
+  '.ico': 'image/x-icon',
   '.webp': 'image/webp',
   '.woff': 'font/woff',
-  '.woff2':'font/woff2',
-  '.map':  'application/json; charset=utf-8',
+  '.woff2': 'font/woff2',
+  '.map': 'application/json; charset=utf-8',
 };
 
 // Bootstrap shipped at /__coherent_hmr_client.js — imports hmrClient
@@ -85,7 +85,8 @@ function urlSegments(url) {
   }
   if (decoded.includes('\0')) return null;
   const segments = decoded.split(/[/\\]+/).filter(Boolean);
-  if (segments.some((segment) => segment === '.' || segment === '..')) return null;
+  if (segments.some((segment) => segment === '.' || segment === '..'))
+    return null;
   return segments;
 }
 
@@ -117,7 +118,13 @@ function urlSegments(url) {
  * @param {string[]|true} [options.allowedHosts] - Extra accepted Host names, or `true` to accept any.
  * @returns {(req: import('node:http').IncomingMessage, res: import('node:http').ServerResponse) => Promise<void>}
  */
-export function createStaticHandler({ root, hmr = true, fsAllow = [], host, allowedHosts = [] }) {
+export function createStaticHandler({
+  root,
+  hmr = true,
+  fsAllow = [],
+  host,
+  allowedHosts = [],
+}) {
   const fsAccess = createFsAccess({ root, fsAllow });
   const hostOptions = { host, allowedHosts };
 
@@ -132,14 +139,22 @@ export function createStaticHandler({ root, hmr = true, fsAllow = [], host, allo
       // DNS rebinding: a page on evil.example re-pointed at 127.0.0.1 sends
       // "Host: evil.example". Only answer requests addressed to this server.
       if (!isHostAllowed(req.headers.host, hostOptions)) {
-        deny(res, 403, 'Blocked request: this host is not allowed. Add it to allowedHosts to serve it.');
+        deny(
+          res,
+          403,
+          'Blocked request: this host is not allowed. Add it to allowedHosts to serve it.'
+        );
         return;
       }
 
       const urlPath = req.url || '/';
 
       // Serve the inline HMR client bootstrap.
-      if (hmr && (urlPath === HMR_CLIENT_PATH || urlPath.startsWith(`${HMR_CLIENT_PATH}?`))) {
+      if (
+        hmr &&
+        (urlPath === HMR_CLIENT_PATH ||
+          urlPath.startsWith(`${HMR_CLIENT_PATH}?`))
+      ) {
         res.statusCode = 200;
         res.setHeader('content-type', MIME['.js']);
         res.setHeader('cache-control', 'no-cache');
@@ -171,7 +186,11 @@ export function createStaticHandler({ root, hmr = true, fsAllow = [], host, allo
       }
 
       if (!(await fsAccess.isAllowed(segments, target))) {
-        deny(res, 403, 'Forbidden: outside the files the dev server may serve (see fsAllow)');
+        deny(
+          res,
+          403,
+          'Forbidden: outside the files the dev server may serve (see fsAllow)'
+        );
         return;
       }
 

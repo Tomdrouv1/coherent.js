@@ -36,7 +36,9 @@ describe('middleware chain stops once a response is sent', () => {
       );
       server = await startServer(router);
 
-      const res = await request(`${server.base}/users/42`, { method: 'DELETE' });
+      const res = await request(`${server.base}/users/42`, {
+        method: 'DELETE',
+      });
 
       expect(res.status).toBe(401);
       expect(res.json).toEqual({ error: 'Unauthorized' });
@@ -49,9 +51,11 @@ describe('middleware chain stops once a response is sent', () => {
       const setUser = (role) => (req) => {
         if (role) req.user = { id: 1, role };
       };
-      router.post('/anon', () => actions.push('anon'), { middleware: [withRole('admin')] });
+      router.post('/anon', () => actions.push('anon'), {
+        middleware: [withRole('admin')],
+      });
       router.post('/user', () => actions.push('user'), {
-        middleware: [setUser('user'), withRole('admin')]
+        middleware: [setUser('user'), withRole('admin')],
       });
       server = await startServer(router);
 
@@ -72,11 +76,18 @@ describe('middleware chain stops once a response is sent', () => {
           signups.push(req.body);
           return { ok: true };
         },
-        { middleware: [withInputValidation({ email: { required: true, type: 'string' } })] }
+        {
+          middleware: [
+            withInputValidation({ email: { required: true, type: 'string' } }),
+          ],
+        }
       );
       server = await startServer(router);
 
-      const res = await request(`${server.base}/signup`, jsonInit('POST', { email: 123 }));
+      const res = await request(
+        `${server.base}/signup`,
+        jsonInit('POST', { email: 123 })
+      );
 
       expect(res.status).toBe(400);
       expect(res.json.error).toBe('Validation failed');
@@ -87,7 +98,7 @@ describe('middleware chain stops once a response is sent', () => {
       const ran = [];
       const router = new SimpleRouter();
       router.get('/x', () => ran.push('handler'), {
-        middleware: [withAuth({ secret: SECRET }), () => ran.push('second')]
+        middleware: [withAuth({ secret: SECRET }), () => ran.push('second')],
       });
       server = await startServer(router);
 
@@ -100,9 +111,11 @@ describe('middleware chain stops once a response is sent', () => {
     it('still runs the handler when middleware lets the request through', async () => {
       const router = new SimpleRouter();
       router.get('/open', (req) => ({ tagged: req.tagged }), {
-        middleware: [(req) => {
-          req.tagged = true;
-        }]
+        middleware: [
+          (req) => {
+            req.tagged = true;
+          },
+        ],
       });
       server = await startServer(router);
 
@@ -116,7 +129,7 @@ describe('middleware chain stops once a response is sent', () => {
       const ran = [];
       const router = new SimpleRouter();
       router.get('/short', () => ran.push('handler'), {
-        middleware: [() => ({ from: 'middleware' })]
+        middleware: [() => ({ from: 'middleware' })],
       });
       server = await startServer(router);
 
@@ -139,14 +152,16 @@ describe('middleware chain stops once a response is sent', () => {
               handler: () => {
                 effects.push('deleted');
                 return { ok: 1 };
-              }
-            }
-          }
-        }
+              },
+            },
+          },
+        },
       });
       server = await startServer(router);
 
-      const res = await request(`${server.base}/api/users`, { method: 'DELETE' });
+      const res = await request(`${server.base}/api/users`, {
+        method: 'DELETE',
+      });
 
       expect(res.status).toBe(401);
       expect(res.json).toEqual({ error: 'Unauthorized' });
@@ -160,9 +175,9 @@ describe('middleware chain stops once a response is sent', () => {
             handler: (req, res) => {
               res.writeHead(201, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ id: 7 }));
-            }
-          }
-        }
+            },
+          },
+        },
       });
       server = await startServer(router);
 

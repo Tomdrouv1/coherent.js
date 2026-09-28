@@ -22,8 +22,8 @@ const CONFIG = {
   fields: [
     { name: 'email', type: 'email', label: 'Email', required: true },
     { name: 'age', type: 'number', label: 'Age' },
-    { name: 'bio', type: 'textarea', label: 'Bio' }
-  ]
+    { name: 'bio', type: 'textarea', label: 'Bio' },
+  ],
 };
 
 describe('buildForm', () => {
@@ -59,12 +59,21 @@ describe('buildForm', () => {
   });
 
   it('renders a select field with its options', () => {
-    const html = render(buildForm({
-      fields: [{ name: 'plan', type: 'select', label: 'Plan', options: [
-        { value: 'free', label: 'Free' },
-        { value: 'pro', label: 'Pro' }
-      ] }]
-    }));
+    const html = render(
+      buildForm({
+        fields: [
+          {
+            name: 'plan',
+            type: 'select',
+            label: 'Plan',
+            options: [
+              { value: 'free', label: 'Free' },
+              { value: 'pro', label: 'Pro' },
+            ],
+          },
+        ],
+      })
+    );
 
     expect(html).toContain('<select');
     expect(html).toContain('<option value="free">Free</option>');
@@ -77,17 +86,21 @@ describe('buildForm', () => {
   });
 
   it('accepts fields keyed by name', () => {
-    const html = render(buildForm({
-      action: '/x',
-      fields: { email: { type: 'email', label: 'Email' } }
-    }));
+    const html = render(
+      buildForm({
+        action: '/x',
+        fields: { email: { type: 'email', label: 'Email' } },
+      })
+    );
 
     expect(html).toContain('name="email"');
     expect(html).toContain('type="email"');
   });
 
   it('accepts a bare array of fields', () => {
-    const html = render(buildForm([{ name: 'email', type: 'email', label: 'Email' }]));
+    const html = render(
+      buildForm([{ name: 'email', type: 'email', label: 'Email' }])
+    );
 
     expect(html).toContain('name="email"');
   });
@@ -128,9 +141,12 @@ describe('FormBuilder.toHTML', () => {
 });
 
 describe('declared FormBuilder methods', () => {
-  it.each(['setAction', 'setMethod', 'build', 'render'])('implements %s', name => {
-    expect(typeof new FormBuilder()[name]).toBe('function');
-  });
+  it.each(['setAction', 'setMethod', 'build', 'render'])(
+    'implements %s',
+    (name) => {
+      expect(typeof new FormBuilder()[name]).toBe('function');
+    }
+  );
 
   it('chains setAction and setMethod into the built form', () => {
     const builder = new FormBuilder();

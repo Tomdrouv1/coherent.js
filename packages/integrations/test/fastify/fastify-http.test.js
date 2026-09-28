@@ -30,16 +30,24 @@ describe('Fastify: JSON responses are not auto-rendered by default', () => {
     app.get('/users', async () => ({ users: [{ name: 'a' }] }));
     app.get(
       '/schema',
-      { schema: { response: { 200: { type: 'object', properties: { ok: { type: 'boolean' } } } } } },
+      {
+        schema: {
+          response: {
+            200: { type: 'object', properties: { ok: { type: 'boolean' } } },
+          },
+        },
+      },
       async () => ({ ok: true })
     );
-    app.post('/login', async (_request, reply) => reply.code(401).send({ error: 'Invalid credentials' }));
+    app.post('/login', async (_request, reply) =>
+      reply.code(401).send({ error: 'Invalid credentials' })
+    );
     const url = await start(app);
 
     for (const [path, expected] of [
       ['/ok', { ok: true }],
       ['/users', { users: [{ name: 'a' }] }],
-      ['/schema', { ok: true }]
+      ['/schema', { ok: true }],
     ]) {
       const result = await hit(url, path);
       expect(result.status).toBe(200);
@@ -56,7 +64,9 @@ describe('Fastify: JSON responses are not auto-rendered by default', () => {
   it('reply.coherent renders explicitly with the plugin template', async () => {
     app = Fastify();
     await app.register(setupCoherent, { template: '<main>{{content}}</main>' });
-    app.get('/', async (_request, reply) => reply.coherent({ h1: { text: 'Hi <you>' } }));
+    app.get('/', async (_request, reply) =>
+      reply.coherent({ h1: { text: 'Hi <you>' } })
+    );
     const url = await start(app);
 
     const result = await hit(url, '/');
@@ -67,7 +77,17 @@ describe('Fastify: JSON responses are not auto-rendered by default', () => {
 });
 
 describe('Fastify: reply.coherent errors use Fastify error handling', () => {
-  const broken = { p: { children: [{ get b() { throw new Error('render-fail'); } }] } };
+  const broken = {
+    p: {
+      children: [
+        {
+          get b() {
+            throw new Error('render-fail');
+          },
+        },
+      ],
+    },
+  };
 
   it('runs the app setErrorHandler and onError hooks', async () => {
     const seen = [];
@@ -112,7 +132,9 @@ describe('Fastify: reply.coherent errors use Fastify error handling', () => {
 describe('Fastify: setupCoherent is a plugin', () => {
   it('explains how to register it when called directly', () => {
     const instance = Fastify();
-    expect(() => setupCoherent(instance, {})).toThrow(/fastify\.register\(setupCoherent/);
+    expect(() => setupCoherent(instance, {})).toThrow(
+      /fastify\.register\(setupCoherent/
+    );
   });
 });
 

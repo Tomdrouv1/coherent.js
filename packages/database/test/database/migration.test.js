@@ -14,7 +14,7 @@ vi.mock('fs/promises', () => ({
   readdir: vi.fn(),
   readFile: vi.fn(),
   writeFile: vi.fn(),
-  mkdir: vi.fn()
+  mkdir: vi.fn(),
 }));
 
 describe('Migration', () => {
@@ -24,12 +24,12 @@ describe('Migration', () => {
   beforeEach(() => {
     mockDb = {
       query: vi.fn(),
-      transaction: vi.fn()
+      transaction: vi.fn(),
     };
 
     migration = new Migration(mockDb, {
       directory: './test-migrations',
-      tableName: 'test_migrations'
+      tableName: 'test_migrations',
     });
 
     vi.clearAllMocks();
@@ -44,7 +44,7 @@ describe('Migration', () => {
 
     it('should use default config values', () => {
       const defaultMigration = new Migration(mockDb);
-      
+
       expect(defaultMigration.config.directory).toBe('./migrations');
       expect(defaultMigration.config.tableName).toBe('coherent_migrations');
     });
@@ -53,20 +53,22 @@ describe('Migration', () => {
   describe('ensureMigrationsTable', () => {
     it('should not create table if it exists', async () => {
       mockDb.query.mockResolvedValueOnce({ rows: [{ count: 1 }] });
-      
+
       await migration.ensureMigrationsTable();
-      
+
       expect(mockDb.query).toHaveBeenCalledTimes(1);
-      expect(mockDb.query).toHaveBeenCalledWith('SELECT 1 FROM test_migrations LIMIT 1');
+      expect(mockDb.query).toHaveBeenCalledWith(
+        'SELECT 1 FROM test_migrations LIMIT 1'
+      );
     });
 
     it('should create table if it does not exist', async () => {
       mockDb.query
         .mockRejectedValueOnce(new Error('Table does not exist'))
         .mockResolvedValueOnce();
-      
+
       await migration.ensureMigrationsTable();
-      
+
       expect(mockDb.query).toHaveBeenCalledTimes(2);
       expect(mockDb.query).toHaveBeenLastCalledWith(
         expect.stringContaining('CREATE TABLE test_migrations')
@@ -79,22 +81,26 @@ describe('Migration', () => {
       const mockResult = {
         rows: [
           { migration: '20231201000001_create_users' },
-          { migration: '20231201000002_create_posts' }
-        ]
+          { migration: '20231201000002_create_posts' },
+        ],
       };
       mockDb.query.mockResolvedValue(mockResult);
-      
+
       await migration.loadAppliedMigrations();
-      
-      expect(migration.appliedMigrations.has('20231201000001_create_users')).toBe(true);
-      expect(migration.appliedMigrations.has('20231201000002_create_posts')).toBe(true);
+
+      expect(
+        migration.appliedMigrations.has('20231201000001_create_users')
+      ).toBe(true);
+      expect(
+        migration.appliedMigrations.has('20231201000002_create_posts')
+      ).toBe(true);
     });
 
     it('should handle empty result', async () => {
       mockDb.query.mockResolvedValue({ rows: [] });
-      
+
       await migration.loadAppliedMigrations();
-      
+
       expect(migration.appliedMigrations.size).toBe(0);
     });
   });
@@ -104,18 +110,27 @@ describe('Migration', () => {
       // Real files: readdir is mocked in this file, but the modules are really imported
       const dir = mkdtempSync(join(tmpdir(), 'coherent-migrations-'));
       try {
-        writeFileSync(join(dir, '20231201000001_create_users.js'), "export async function up() { return 'users-up'; }\nexport async function down() {}\n");
-        writeFileSync(join(dir, '20231201000002_create_posts.js'), "export default { up: async () => 'posts-up', down: async () => {} };\n");
+        writeFileSync(
+          join(dir, '20231201000001_create_users.js'),
+          "export async function up() { return 'users-up'; }\nexport async function down() {}\n"
+        );
+        writeFileSync(
+          join(dir, '20231201000002_create_posts.js'),
+          "export default { up: async () => 'posts-up', down: async () => {} };\n"
+        );
         fs.readdir.mockResolvedValue([
           '20231201000002_create_posts.js',
           '20231201000001_create_users.js',
-          'not_a_migration.txt'
+          'not_a_migration.txt',
         ]);
 
         const fromDir = new Migration(mockDb, { directory: dir });
         await fromDir.loadMigrationFiles();
 
-        expect(fromDir.migrations.map(m => m.name)).toEqual(['20231201000001_create_users', '20231201000002_create_posts']);
+        expect(fromDir.migrations.map((m) => m.name)).toEqual([
+          '20231201000001_create_users',
+          '20231201000002_create_posts',
+        ]);
         expect(await fromDir.migrations[0].up()).toBe('users-up');
         expect(await fromDir.migrations[1].up()).toBe('posts-up');
       } finally {
@@ -126,36 +141,38 @@ describe('Migration', () => {
     it('should throw when a migration file cannot be imported', async () => {
       fs.readdir.mockResolvedValue(['20231201000001_missing.js']);
 
-      await expect(migration.loadMigrationFiles()).rejects.toThrow('Failed to load migration 20231201000001_missing.js');
+      await expect(migration.loadMigrationFiles()).rejects.toThrow(
+        'Failed to load migration 20231201000001_missing.js'
+      );
     });
 
     it('should handle missing directory', async () => {
       const _error = new Error('Directory not found');
       _error.code = 'ENOENT';
       fs.readdir.mockRejectedValue(_error);
-      
+
       await migration.loadMigrationFiles();
-      
+
       expect(migration.migrations).toHaveLength(0);
     });
 
     it('should skip invalid migration files', async () => {
       fs.readdir.mockResolvedValue(['invalid_migration.js']);
-      
+
       // Mock import that throws
       vi.doMock('./test-migrations/invalid_migration.js', () => {
         throw new Error('Invalid migration');
       });
-      
+
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      
+
       await migration.loadMigrationFiles();
-      
+
       expect(migration.migrations).toHaveLength(0);
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('Failed to load migration invalid_migration.js')
       );
-      
+
       consoleSpy.mockRestore();
     });
   });
@@ -176,15 +193,15 @@ describe('Migration', () => {
     //     commit: vi.fn().mockResolvedValue(),
     //     rollback: vi.fn().mockResolvedValue()
     //   };
-      
+
     //   migration.migrations = [
     //     { name: 'test_migration', up: mockUp, applied: false }
     //   ];
-      
+
     //   mockDb.transaction.mockResolvedValue(mockTx);
-      
+
     //   const applied = await migration.run();
-      
+
     //   expect(applied).toEqual([]);
     //   expect(mockUp).toHaveBeenCalledWith(expect.any(SchemaBuilder));
     //   expect(mockTx.commit).toHaveBeenCalled();
@@ -192,11 +209,11 @@ describe('Migration', () => {
 
     it('should skip already applied migrations', async () => {
       migration.migrations = [
-        { name: 'test_migration', up: vi.fn(), applied: true }
+        { name: 'test_migration', up: vi.fn(), applied: true },
       ];
-      
+
       const applied = await migration.run();
-      
+
       expect(applied).toEqual([]);
     });
 
@@ -207,33 +224,37 @@ describe('Migration', () => {
     //     commit: vi.fn(),
     //     rollback: vi.fn().mockResolvedValue()
     //   };
-      
+
     //   migration.migrations = [
     //     { name: 'test_migration', up: mockUp, applied: false }
     //   ];
-      
+
     //   mockDb.transaction.mockResolvedValue(mockTx);
-      
+
     //   await expect(migration.run()).rejects.toThrow('Migration failed');
     //   expect(mockTx.rollback).toHaveBeenCalled();
     // });
 
     it('should continue on error when configured', async () => {
-      const mockUp1 = vi.fn().mockRejectedValue(new Error('Migration 1 failed'));
+      const mockUp1 = vi
+        .fn()
+        .mockRejectedValue(new Error('Migration 1 failed'));
       const mockUp2 = vi.fn().mockResolvedValue();
       const mockTx = {
         query: vi.fn().mockResolvedValue(),
         commit: vi.fn().mockResolvedValue(),
-        rollback: vi.fn().mockResolvedValue()
+        rollback: vi.fn().mockResolvedValue(),
       };
 
       migration.migrations = [
         { name: 'migration1', up: mockUp1, applied: false },
-        { name: 'migration2', up: mockUp2, applied: false }
+        { name: 'migration2', up: mockUp2, applied: false },
       ];
 
       mockDb.transaction.mockResolvedValue(mockTx);
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
 
       const applied = await migration.run({ continueOnError: true });
 
@@ -241,7 +262,10 @@ describe('Migration', () => {
       expect(mockUp2).toHaveBeenCalledWith(expect.any(SchemaBuilder));
       expect(mockTx.rollback).toHaveBeenCalledTimes(1);
       expect(mockTx.commit).toHaveBeenCalledTimes(1);
-      expect(mockTx.query).toHaveBeenCalledWith('INSERT INTO test_migrations (migration, batch) VALUES (?, ?)', ['migration2', 1]);
+      expect(mockTx.query).toHaveBeenCalledWith(
+        'INSERT INTO test_migrations (migration, batch) VALUES (?, ?)',
+        ['migration2', 1]
+      );
       consoleSpy.mockRestore();
     });
 
@@ -249,15 +273,21 @@ describe('Migration', () => {
       const mockTx = {
         query: vi.fn().mockResolvedValue(),
         commit: vi.fn().mockResolvedValue(),
-        rollback: vi.fn().mockResolvedValue()
+        rollback: vi.fn().mockResolvedValue(),
       };
       const mockUp2 = vi.fn();
       migration.migrations = [
-        { name: 'migration1', up: vi.fn().mockRejectedValue(new Error('Migration 1 failed')), applied: false },
-        { name: 'migration2', up: mockUp2, applied: false }
+        {
+          name: 'migration1',
+          up: vi.fn().mockRejectedValue(new Error('Migration 1 failed')),
+          applied: false,
+        },
+        { name: 'migration2', up: mockUp2, applied: false },
       ];
       mockDb.transaction.mockResolvedValue(mockTx);
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
 
       await expect(migration.run()).rejects.toThrow('Migration 1 failed');
       expect(mockTx.rollback).toHaveBeenCalledTimes(1);
@@ -270,7 +300,9 @@ describe('Migration', () => {
     beforeEach(() => {
       migration.initialize = vi.fn().mockResolvedValue();
       migration.getLastBatches = vi.fn().mockResolvedValue([2]);
-      migration.getMigrationsInBatch = vi.fn().mockResolvedValue(['migration2', 'migration1']);
+      migration.getMigrationsInBatch = vi
+        .fn()
+        .mockResolvedValue(['migration2', 'migration1']);
     });
 
     it('should rollback migrations in reverse order', async () => {
@@ -279,52 +311,50 @@ describe('Migration', () => {
       const mockTx = {
         query: vi.fn().mockResolvedValue(),
         commit: vi.fn().mockResolvedValue(),
-        rollback: vi.fn().mockResolvedValue()
+        rollback: vi.fn().mockResolvedValue(),
       };
-      
+
       migration.migrations = [
         { name: 'migration1', down: mockDown1 },
-        { name: 'migration2', down: mockDown2 }
+        { name: 'migration2', down: mockDown2 },
       ];
-      
+
       mockDb.transaction.mockResolvedValue(mockTx);
-      
+
       const rolledBack = await migration.rollback(1);
-      
+
       expect(rolledBack).toEqual(['migration2', 'migration1']);
       expect(mockDown2).toHaveBeenCalled();
       expect(mockDown1).toHaveBeenCalled();
     });
 
     it('should skip migrations without down method', async () => {
-      migration.migrations = [
-        { name: 'migration1', down: null }
-      ];
-      
+      migration.migrations = [{ name: 'migration1', down: null }];
+
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      
+
       const rolledBack = await migration.rollback(1);
-      
+
       expect(rolledBack).toEqual([]);
       expect(consoleSpy).toHaveBeenCalledWith(
         'No rollback method for migration: migration1'
       );
-      
+
       consoleSpy.mockRestore();
     });
 
     it('should handle missing migration files', async () => {
       migration.migrations = [];
-      
+
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      
+
       const rolledBack = await migration.rollback(1);
-      
+
       expect(rolledBack).toEqual([]);
       expect(consoleSpy).toHaveBeenCalledWith(
         'Migration file not found: migration2'
       );
-      
+
       consoleSpy.mockRestore();
     });
   });
@@ -334,18 +364,22 @@ describe('Migration', () => {
       migration.initialize = vi.fn().mockResolvedValue();
       migration.migrations = [
         { name: 'migration1', applied: true, file: '/path/to/migration1.js' },
-        { name: 'migration2', applied: false, file: '/path/to/migration2.js' }
+        { name: 'migration2', applied: false, file: '/path/to/migration2.js' },
       ];
-      
+
       const status = await migration.status();
-      
+
       expect(status).toEqual({
         pending: [
-          { name: 'migration2', applied: false, file: '/path/to/migration2.js' }
+          {
+            name: 'migration2',
+            applied: false,
+            file: '/path/to/migration2.js',
+          },
         ],
         completed: [
-          { name: 'migration1', applied: true, file: '/path/to/migration1.js' }
-        ]
+          { name: 'migration1', applied: true, file: '/path/to/migration1.js' },
+        ],
       });
     });
   });
@@ -354,9 +388,9 @@ describe('Migration', () => {
     it('should create migration file', async () => {
       migration.ensureDirectory = vi.fn().mockResolvedValue();
       fs.writeFile.mockResolvedValue();
-      
+
       const filePath = await migration.create('create_users_table');
-      
+
       expect(fs.writeFile).toHaveBeenCalled();
       expect(filePath).toMatch(/create_users_table\.js$/);
     });
@@ -364,12 +398,12 @@ describe('Migration', () => {
     it('should generate create table template', async () => {
       migration.ensureDirectory = vi.fn().mockResolvedValue();
       fs.writeFile.mockResolvedValue();
-      
+
       await migration.create('create_users_table');
-      
+
       const writeCall = fs.writeFile.mock.calls[0];
       const template = writeCall[1];
-      
+
       expect(template).toContain('createTable');
       expect(template).toContain('dropTable');
       expect(template).toContain('users');
@@ -378,12 +412,12 @@ describe('Migration', () => {
     it('should generate generic template for non-create migrations', async () => {
       migration.ensureDirectory = vi.fn().mockResolvedValue();
       fs.writeFile.mockResolvedValue();
-      
+
       await migration.create('add_email_to_users');
-      
+
       const writeCall = fs.writeFile.mock.calls[0];
       const template = writeCall[1];
-      
+
       expect(template).toContain('Add your migration logic here');
       expect(template).toContain('Add your rollback logic here');
     });
@@ -392,21 +426,21 @@ describe('Migration', () => {
   describe('getNextBatchNumber', () => {
     it('should return next batch number', async () => {
       mockDb.query.mockResolvedValue({
-        rows: [{ max_batch: 5 }]
+        rows: [{ max_batch: 5 }],
       });
-      
+
       const batchNumber = await migration.getNextBatchNumber();
-      
+
       expect(batchNumber).toBe(6);
     });
 
     it('should return 1 for first batch', async () => {
       mockDb.query.mockResolvedValue({
-        rows: [{ max_batch: null }]
+        rows: [{ max_batch: null }],
       });
-      
+
       const batchNumber = await migration.getNextBatchNumber();
-      
+
       expect(batchNumber).toBe(1);
     });
   });
@@ -418,7 +452,7 @@ describe('SchemaBuilder', () => {
 
   beforeEach(() => {
     mockDb = {
-      query: vi.fn()
+      query: vi.fn(),
     };
     schema = new SchemaBuilder(mockDb);
   });
@@ -426,12 +460,12 @@ describe('SchemaBuilder', () => {
   describe('createTable', () => {
     it('should create table with callback', async () => {
       mockDb.query.mockResolvedValue();
-      
+
       await schema.createTable('users', (table) => {
         table.id();
         table.string('name').notNull();
       });
-      
+
       expect(mockDb.query).toHaveBeenCalledWith(
         expect.stringContaining('CREATE TABLE users')
       );
@@ -441,12 +475,12 @@ describe('SchemaBuilder', () => {
   describe('alterTable', () => {
     it('should alter table with multiple statements', async () => {
       mockDb.query.mockResolvedValue();
-      
+
       await schema.alterTable('users', (table) => {
         table.addColumn('email', 'string');
         table.dropColumn('old_field');
       });
-      
+
       expect(mockDb.query).toHaveBeenCalledTimes(2);
       expect(mockDb.query).toHaveBeenCalledWith(
         'ALTER TABLE users ADD COLUMN email string'
@@ -460,9 +494,9 @@ describe('SchemaBuilder', () => {
   describe('dropTable', () => {
     it('should drop table', async () => {
       mockDb.query.mockResolvedValue();
-      
+
       await schema.dropTable('users');
-      
+
       expect(mockDb.query).toHaveBeenCalledWith('DROP TABLE IF EXISTS users');
     });
   });
@@ -470,10 +504,12 @@ describe('SchemaBuilder', () => {
   describe('raw', () => {
     it('should execute raw SQL', async () => {
       mockDb.query.mockResolvedValue({ rows: [] });
-      
+
       await schema.raw('SELECT * FROM users', ['param']);
-      
-      expect(mockDb.query).toHaveBeenCalledWith('SELECT * FROM users', ['param']);
+
+      expect(mockDb.query).toHaveBeenCalledWith('SELECT * FROM users', [
+        'param',
+      ]);
     });
   });
 });
@@ -488,68 +524,68 @@ describe('TableBuilder', () => {
   describe('column methods', () => {
     it('should add id column', () => {
       table.id();
-      
+
       expect(table.columns).toHaveLength(1);
       expect(table.columns[0]).toMatchObject({
         name: 'id',
         type: 'INTEGER',
         primaryKey: true,
-        autoIncrement: true
+        autoIncrement: true,
       });
     });
 
     it('should add string column', () => {
       const column = table.string('name', 100);
-      
+
       expect(table.columns).toHaveLength(1);
       expect(table.columns[0]).toMatchObject({
         name: 'name',
         type: 'VARCHAR(100)',
-        nullable: true
+        nullable: true,
       });
       expect(column).toBeDefined(); // Returns ColumnBuilder
     });
 
     it('should add text column', () => {
       table.text('description');
-      
+
       expect(table.columns[0]).toMatchObject({
         name: 'description',
-        type: 'TEXT'
+        type: 'TEXT',
       });
     });
 
     it('should add integer column', () => {
       table.integer('age');
-      
+
       expect(table.columns[0]).toMatchObject({
         name: 'age',
-        type: 'INTEGER'
+        type: 'INTEGER',
       });
     });
 
     it('should add boolean column', () => {
       table.boolean('active');
-      
+
       expect(table.columns[0]).toMatchObject({
         name: 'active',
         type: 'BOOLEAN',
-        default: false
+        default: false,
       });
     });
 
     it('should add datetime column', () => {
       table.datetime('created_at');
-      
+
       expect(table.columns[0]).toMatchObject({
         name: 'created_at',
-        type: 'DATETIME'
+        type: 'DATETIME',
       });
     });
 
     it('should add timestamps', () => {
       table.timestamps();
-      
+
       expect(table.columns).toHaveLength(2);
       expect(table.columns[0].name).toBe('created_at');
       expect(table.columns[1].name).toBe('updated_at');
@@ -563,22 +599,22 @@ describe('TableBuilder', () => {
 
     it('should add column alteration', () => {
       table.addColumn('email', 'string');
-      
+
       expect(table.alterations).toHaveLength(1);
       expect(table.alterations[0]).toMatchObject({
         type: 'ADD',
         name: 'email',
-        columnType: 'string'
+        columnType: 'string',
       });
     });
 
     it('should add drop column alteration', () => {
       table.dropColumn('old_field');
-      
+
       expect(table.alterations).toHaveLength(1);
       expect(table.alterations[0]).toMatchObject({
         type: 'DROP',
-        name: 'old_field'
+        name: 'old_field',
       });
     });
   });
@@ -588,9 +624,9 @@ describe('TableBuilder', () => {
       table.id();
       table.string('name').notNull();
       table.string('email').unique();
-      
+
       const sql = table.toCreateSQL();
-      
+
       expect(sql).toContain('CREATE TABLE users');
       expect(sql).toContain('id INTEGER PRIMARY KEY AUTOINCREMENT');
       expect(sql).toContain('name VARCHAR(255) NOT NULL');
@@ -603,11 +639,13 @@ describe('TableBuilder', () => {
       table = new TableBuilder('users', 'alter');
       table.addColumn('email', 'VARCHAR(255)');
       table.dropColumn('old_field');
-      
+
       const statements = table.toAlterSQL();
-      
+
       expect(statements).toHaveLength(2);
-      expect(statements[0]).toBe('ALTER TABLE users ADD COLUMN email VARCHAR(255)');
+      expect(statements[0]).toBe(
+        'ALTER TABLE users ADD COLUMN email VARCHAR(255)'
+      );
       expect(statements[1]).toBe('ALTER TABLE users DROP COLUMN old_field');
     });
   });
@@ -620,36 +658,47 @@ describe('ColumnBuilder', () => {
   beforeEach(() => {
     column = { name: 'test', type: 'VARCHAR(255)', nullable: true };
     columnBuilder = new (class ColumnBuilder {
-      constructor(column) { this.column = column; }
-      notNull() { this.column.nullable = false; return this; }
-      unique() { this.column.unique = true; return this; }
-      default(value) { this.column.default = typeof value === 'string' ? `'${value}'` : value; return this; }
+      constructor(column) {
+        this.column = column;
+      }
+      notNull() {
+        this.column.nullable = false;
+        return this;
+      }
+      unique() {
+        this.column.unique = true;
+        return this;
+      }
+      default(value) {
+        this.column.default = typeof value === 'string' ? `'${value}'` : value;
+        return this;
+      }
     })(column);
   });
 
   it('should make column not nullable', () => {
     const result = columnBuilder.notNull();
-    
+
     expect(column.nullable).toBe(false);
     expect(result).toBe(columnBuilder); // chainable
   });
 
   it('should make column unique', () => {
     const result = columnBuilder.unique();
-    
+
     expect(column.unique).toBe(true);
     expect(result).toBe(columnBuilder);
   });
 
   it('should set default value', () => {
     columnBuilder.default('test');
-    
+
     expect(column.default).toBe("'test'");
   });
 
   it('should set numeric default value', () => {
     columnBuilder.default(42);
-    
+
     expect(column.default).toBe(42);
   });
 });

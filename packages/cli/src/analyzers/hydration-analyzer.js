@@ -14,7 +14,7 @@ const HYDRATION_MARKERS = [
   'data-hydratable',
   'data-hydrate',
   'data-hydration-id',
-  'data-state'
+  'data-state',
 ];
 
 function countAttribute(html, name) {
@@ -40,13 +40,14 @@ export async function analyzeHydration(options = {}) {
     type: 'hydration-analysis',
     summary: { url },
     details: {},
-    recommendations: []
+    recommendations: [],
   };
 
   if (options.compare) {
     analysis.summary.status = 'error';
-    analysis.summary.error = '--compare (server vs. client output) is not implemented yet. '
-      + 'Run the page in a browser: hydrate() logs mismatches to the console in development.';
+    analysis.summary.error =
+      '--compare (server vs. client output) is not implemented yet. ' +
+      'Run the page in a browser: hydrate() logs mismatches to the console in development.';
     return analysis;
   }
 
@@ -54,7 +55,9 @@ export async function analyzeHydration(options = {}) {
   let html;
   const started = performance.now();
   try {
-    response = await globalThis.fetch(url, { signal: globalThis.AbortSignal.timeout(options.timeoutMs ?? 10_000) });
+    response = await globalThis.fetch(url, {
+      signal: globalThis.AbortSignal.timeout(options.timeoutMs ?? 10_000),
+    });
     html = await response.text();
   } catch (error) {
     analysis.summary.status = 'error';
@@ -79,23 +82,33 @@ export async function analyzeHydration(options = {}) {
     return analysis;
   }
 
-  const markers = Object.fromEntries(HYDRATION_MARKERS.map((name) => [name, countAttribute(html, name)]));
+  const markers = Object.fromEntries(
+    HYDRATION_MARKERS.map((name) => [name, countAttribute(html, name)])
+  );
   const total = Object.values(markers).reduce((sum, n) => sum + n, 0);
   analysis.summary.hydrationMarkers = total;
   analysis.details.markers = markers;
 
   if (options.components) {
-    const names = String(options.components).split(',').map((n) => n.trim()).filter(Boolean);
-    analysis.details.components = Object.fromEntries(names.map((name) => {
-      const pattern = new RegExp(`data-(?:coherent-component|coherent-island-component|hydrate)=["']${escapeRegExp(name)}["']`, 'g');
-      return [name, (html.match(pattern) || []).length];
-    }));
+    const names = String(options.components)
+      .split(',')
+      .map((n) => n.trim())
+      .filter(Boolean);
+    analysis.details.components = Object.fromEntries(
+      names.map((name) => {
+        const pattern = new RegExp(
+          `data-(?:coherent-component|coherent-island-component|hydrate)=["']${escapeRegExp(name)}["']`,
+          'g'
+        );
+        return [name, (html.match(pattern) || []).length];
+      })
+    );
     for (const [name, count] of Object.entries(analysis.details.components)) {
       if (count === 0) {
         analysis.recommendations.push({
           type: 'hydration',
           priority: 'medium',
-          message: `No element on ${url} is marked as component "${name}".`
+          message: `No element on ${url} is marked as component "${name}".`,
         });
       }
     }
@@ -106,13 +119,15 @@ export async function analyzeHydration(options = {}) {
     analysis.recommendations.push({
       type: 'hydration',
       priority: 'medium',
-      message: 'No hydration markers found: the page is static HTML, so there is nothing for the client to hydrate.'
+      message:
+        'No hydration markers found: the page is static HTML, so there is nothing for the client to hydrate.',
     });
   }
   analysis.recommendations.push({
     type: 'info',
     priority: 'low',
-    message: 'This inspects server HTML only. Mismatches show up in the browser console, where hydrate() reports them in development.'
+    message:
+      'This inspects server HTML only. Mismatches show up in the browser console, where hydrate() reports them in development.',
   });
 
   return analysis;

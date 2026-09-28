@@ -22,24 +22,30 @@ afterEach(() => {
   errorSpy.mockRestore();
 });
 
-const throwing = (name, extra = {}) => new Component({
-  name,
-  render: () => { throw new Error('boom'); },
-  ...extra
-});
+const throwing = (name, extra = {}) =>
+  new Component({
+    name,
+    render: () => {
+      throw new Error('boom');
+    },
+    ...extra,
+  });
 
 describe('Component.handleError', () => {
   it('returns the fallback element instead of throwing', () => {
     const component = throwing('Solo');
 
     expect(component.render({})).toEqual({
-      div: { className: 'component-error', text: 'Error in Solo' }
+      div: { className: 'component-error', text: 'Error in Solo' },
     });
   });
 
   it('does not throw when propagating to a parent', () => {
     const child = throwing('Child');
-    child.parent = new Component({ name: 'Parent', render: () => ({ div: {} }) });
+    child.parent = new Component({
+      name: 'Parent',
+      render: () => ({ div: {} }),
+    });
 
     expect(() => child.render({})).not.toThrow();
     expect(child.render({}).div.text).toBe('Error in Child');
@@ -47,7 +53,10 @@ describe('Component.handleError', () => {
 
   it('records the propagation trail', () => {
     const child = throwing('Child');
-    child.parent = new Component({ name: 'Parent', render: () => ({ div: {} }) });
+    child.parent = new Component({
+      name: 'Parent',
+      render: () => ({ div: {} }),
+    });
 
     child.render({});
 
@@ -66,17 +75,21 @@ describe('Component.handleError', () => {
 
   it('survives an errorCaptured hook that throws', () => {
     const component = throwing('Bad', {
-      errorCaptured: () => { throw new Error('hook exploded'); }
+      errorCaptured: () => {
+        throw new Error('hook exploded');
+      },
     });
 
     expect(component.render({})).toEqual({
-      div: { className: 'component-error', text: 'Error in Bad' }
+      div: { className: 'component-error', text: 'Error in Bad' },
     });
   });
 
   it('clears the re-entrancy guard between errors', () => {
     const component = throwing('Bad', {
-      errorCaptured: () => { throw new Error('hook exploded'); }
+      errorCaptured: () => {
+        throw new Error('hook exploded');
+      },
     });
 
     component.render({});

@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { render, dangerouslySetInnerContent, isTrustedContent } from '../src/index.js';
+import {
+  render,
+  dangerouslySetInnerContent,
+  isTrustedContent,
+} from '../src/index.js';
 import {
   deepClone,
   shallowClone,
@@ -16,7 +20,7 @@ import {
   freeze,
   hasCircularReferences,
   getMemoryFootprint,
-  validateComponentGraceful
+  validateComponentGraceful,
 } from '../src/core/object-utils.js';
 
 describe('Object Utilities', () => {
@@ -69,7 +73,10 @@ describe('Object Utilities', () => {
     });
 
     it('should clone Map objects', () => {
-      const map = new Map([['key', 'value'], [1, { nested: true }]]);
+      const map = new Map([
+        ['key', 'value'],
+        [1, { nested: true }],
+      ]);
       const cloned = deepClone(map);
 
       expect(cloned).toBeInstanceOf(Map);
@@ -190,8 +197,12 @@ describe('Object Utilities', () => {
     });
 
     it('should validate null and undefined', () => {
-      expect(() => validateComponent(null)).toThrow('Invalid component at root: null or undefined');
-      expect(() => validateComponent(undefined)).toThrow('Invalid component at root: null or undefined');
+      expect(() => validateComponent(null)).toThrow(
+        'Invalid component at root: null or undefined'
+      );
+      expect(() => validateComponent(undefined)).toThrow(
+        'Invalid component at root: null or undefined'
+      );
     });
 
     it('should validate functions', () => {
@@ -245,8 +256,8 @@ describe('Object Utilities', () => {
         div: {
           className: 'test-class',
           id: 'test-id',
-          children: 'Hello World'
-        }
+          children: 'Hello World',
+        },
       };
 
       const props = extractProps(coherent);
@@ -255,8 +266,8 @@ describe('Object Utilities', () => {
         div: {
           className: 'test-class',
           id: 'test-id',
-          children: 'Hello World'
-        }
+          children: 'Hello World',
+        },
       });
     });
 
@@ -265,7 +276,7 @@ describe('Object Utilities', () => {
       const props = extractProps(coherent);
 
       expect(props).toEqual({
-        div: {}
+        div: {},
       });
     });
 
@@ -273,8 +284,8 @@ describe('Object Utilities', () => {
       const coherent = {
         div: {
           className: 'parent',
-          children: ['child1', 'child2']
-        }
+          children: ['child1', 'child2'],
+        },
       };
 
       const props = extractProps(coherent);
@@ -488,8 +499,12 @@ describe('Object Utilities', () => {
       const obj = { a: 1 };
       const frozen = freeze(obj);
 
-      expect(() => { frozen.a = 2; }).toThrow();
-      expect(() => { frozen.newProp = 'value'; }).toThrow();
+      expect(() => {
+        frozen.a = 2;
+      }).toThrow();
+      expect(() => {
+        frozen.newProp = 'value';
+      }).toThrow();
     });
   });
 
@@ -568,20 +583,23 @@ describe('Object Utilities', () => {
   });
 });
 
-
 describe('validateComponent with trusted content', () => {
   // dangerouslySetInnerContent() returns an inert leaf the renderer emits
   // verbatim. The validator used to read its __html/__trusted keys as tag
   // names and throw on the boolean, so a documented public API could not be
   // used inside a component that gets validated.
-  const marker = dangerouslySetInnerContent('<h3>Fixed</h3><ul><li>a</li></ul>');
+  const marker = dangerouslySetInnerContent(
+    '<h3>Fixed</h3><ul><li>a</li></ul>'
+  );
 
   it('accepts a marker on its own', () => {
     expect(validateComponent(marker)).toBe(true);
   });
 
   it('accepts a marker nested in a tree', () => {
-    expect(validateComponent({ div: { className: 'x', children: [marker] } })).toBe(true);
+    expect(
+      validateComponent({ div: { className: 'x', children: [marker] } })
+    ).toBe(true);
   });
 
   it('accepts a marker gracefully', () => {
@@ -589,7 +607,9 @@ describe('validateComponent with trusted content', () => {
   });
 
   it('renders the marker verbatim once validated', () => {
-    expect(render({ div: { children: [marker] } })).toBe('<div><h3>Fixed</h3><ul><li>a</li></ul></div>');
+    expect(render({ div: { children: [marker] } })).toBe(
+      '<div><h3>Fixed</h3><ul><li>a</li></ul></div>'
+    );
   });
 
   it.each([

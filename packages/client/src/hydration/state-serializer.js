@@ -115,8 +115,8 @@ export function serializeStateWithWarning(state, componentName = 'Unknown') {
   if (encoded && encoded.length > STATE_SIZE_WARNING_THRESHOLD) {
     console.warn(
       `[Coherent.js] Large state detected for component "${componentName}": ` +
-      `${Math.round(encoded.length / 1024)}KB. Consider using a state management ` +
-      `solution for large datasets.`
+        `${Math.round(encoded.length / 1024)}KB. Consider using a state management ` +
+        `solution for large datasets.`
     );
   }
 

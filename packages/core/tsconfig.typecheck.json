@@ -4,9 +4,7 @@
     "noEmit": true,
     "rootDir": ".",
     "paths": {
-      "@coherent.js/core": [
-        "./types/index.d.ts"
-      ]
+      "@coherent.js/core": ["./types/index.d.ts"]
     },
     "strict": true,
     "noImplicitAny": true,
@@ -24,7 +22,5 @@
     "incremental": false,
     "tsBuildInfoFile": "./node_modules/.cache/tsconfig.typecheck.tsbuildinfo"
   },
-  "include": [
-    "type-tests/**/*.ts"
-  ]
+  "include": ["type-tests/**/*.ts"]
 }

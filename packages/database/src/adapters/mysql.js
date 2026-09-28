@@ -1,6 +1,6 @@
 /**
  * MySQL Database Adapter for Coherent.js
- * 
+ *
  * @fileoverview MySQL adapter implementation with connection pooling and transaction support.
  */
 
@@ -8,7 +8,7 @@ import { normalizeIsolationLevel } from './isolation-level.js';
 
 /**
  * Create MySQL adapter instance
- * 
+ *
  * @returns {Object} MySQL adapter instance
  */
 export function createMySQLAdapter() {
@@ -20,7 +20,9 @@ export function createMySQLAdapter() {
         const mysqlModule = await import('mysql2/promise');
         mysql = mysqlModule.default || mysqlModule;
       } catch {
-        throw new Error('mysql2 package is required for MySQL adapter. Install with: npm install mysql2');
+        throw new Error(
+          'mysql2 package is required for MySQL adapter. Install with: npm install mysql2'
+        );
       }
     }
   }
@@ -31,7 +33,7 @@ export function createMySQLAdapter() {
      */
     async createPool(config) {
       await initializeMySQL();
-      
+
       const poolConfig = {
         host: config.host,
         port: config.port,
@@ -43,7 +45,7 @@ export function createMySQLAdapter() {
         timeout: config.pool.createTimeoutMillis,
         reconnect: true,
         charset: 'utf8mb4',
-        timezone: 'Z'
+        timezone: 'Z',
       };
 
       const pool = mysql.createPool(poolConfig);
@@ -55,7 +57,7 @@ export function createMySQLAdapter() {
      */
     async testConnection(pool) {
       const connection = await pool.getConnection();
-      
+
       try {
         await connection.query('SELECT 1');
       } finally {
@@ -68,30 +70,29 @@ export function createMySQLAdapter() {
      */
     async query(pool, sql, params = [], options = {}) {
       const connection = await pool.getConnection();
-      
+
       try {
         const [rows] = await connection.execute(sql, params);
-        
+
         if (options.single) {
           return Array.isArray(rows) ? rows[0] || null : rows;
         }
-        
+
         if (Array.isArray(rows)) {
           return {
             rows,
             rowCount: rows.length,
             affectedRows: rows.affectedRows || rows.length,
-            insertId: rows.insertId || null
+            insertId: rows.insertId || null,
           };
         } else {
           return {
             rows: [],
             rowCount: rows.affectedRows || 0,
             affectedRows: rows.affectedRows || 0,
-            insertId: rows.insertId || null
+            insertId: rows.insertId || null,
           };
         }
-        
       } finally {
         connection.release();
       }
@@ -122,7 +123,9 @@ export function createMySQLAdapter() {
       try {
         if (isolationLevel) {
           // Applies to the next transaction started on this connection only
-          await connection.query(`SET TRANSACTION ISOLATION LEVEL ${isolationLevel}`);
+          await connection.query(
+            `SET TRANSACTION ISOLATION LEVEL ${isolationLevel}`
+          );
         }
         if (options.readOnly) {
           await connection.query('START TRANSACTION READ ONLY');
@@ -162,14 +165,14 @@ export function createMySQLAdapter() {
               rows,
               rowCount: rows.length,
               affectedRows: rows.affectedRows || rows.length,
-              insertId: rows.insertId || null
+              insertId: rows.insertId || null,
             };
           } else {
             return {
               rows: [],
               rowCount: rows.affectedRows || 0,
               affectedRows: rows.affectedRows || 0,
-              insertId: rows.insertId || null
+              insertId: rows.insertId || null,
             };
           }
         },
@@ -198,7 +201,7 @@ export function createMySQLAdapter() {
           } finally {
             release();
           }
-        }
+        },
       };
 
       return transaction;
@@ -211,8 +214,11 @@ export function createMySQLAdapter() {
       return {
         total: pool.config.connectionLimit,
         available: pool._freeConnections ? pool._freeConnections.length : 0,
-        acquired: pool._allConnections ? pool._allConnections.length - (pool._freeConnections ? pool._freeConnections.length : 0) : 0,
-        waiting: pool._connectionQueue ? pool._connectionQueue.length : 0
+        acquired: pool._allConnections
+          ? pool._allConnections.length -
+            (pool._freeConnections ? pool._freeConnections.length : 0)
+          : 0,
+        waiting: pool._connectionQueue ? pool._connectionQueue.length : 0,
       };
     },
 
@@ -221,6 +227,6 @@ export function createMySQLAdapter() {
      */
     async closePool(pool) {
       await pool.end();
-    }
+    },
   };
 }

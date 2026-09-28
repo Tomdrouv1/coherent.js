@@ -16,7 +16,11 @@
 export { HMRClient, hmrClient } from './client.js';
 
 // Module Tracker - hot context API and boundary detection
-export { ModuleTracker, moduleTracker, createHotContext } from './module-tracker.js';
+export {
+  ModuleTracker,
+  moduleTracker,
+  createHotContext,
+} from './module-tracker.js';
 
 // Cleanup Tracker - resource management for timers, listeners, fetch
 export { CleanupTracker, cleanupTracker } from './cleanup-tracker.js';
@@ -25,7 +29,12 @@ export { CleanupTracker, cleanupTracker } from './cleanup-tracker.js';
 export { StateCapturer, stateCapturer } from './state-capturer.js';
 
 // Error Overlay - displays HMR errors with file/line info
-export { ErrorOverlay, errorOverlay, escapeHtml, formatCodeFrame } from './overlay.js';
+export {
+  ErrorOverlay,
+  errorOverlay,
+  escapeHtml,
+  formatCodeFrame,
+} from './overlay.js';
 
 // Connection Indicator - shows WebSocket connection status
 export { ConnectionIndicator, connectionIndicator } from './indicator.js';

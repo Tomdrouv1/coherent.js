@@ -34,22 +34,80 @@ export interface NestingRule {
  * Block-level elements that should not appear inside inline elements.
  */
 export const BLOCK_ELEMENTS = new Set([
-  'div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-  'ul', 'ol', 'li', 'dl', 'dt', 'dd',
-  'table', 'thead', 'tbody', 'tfoot', 'tr', 'td', 'th',
-  'form', 'fieldset', 'legend',
-  'section', 'article', 'aside', 'header', 'footer', 'nav', 'main',
-  'figure', 'figcaption', 'blockquote', 'pre', 'address',
-  'details', 'dialog', 'menu', 'hgroup', 'search',
+  'div',
+  'p',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'ul',
+  'ol',
+  'li',
+  'dl',
+  'dt',
+  'dd',
+  'table',
+  'thead',
+  'tbody',
+  'tfoot',
+  'tr',
+  'td',
+  'th',
+  'form',
+  'fieldset',
+  'legend',
+  'section',
+  'article',
+  'aside',
+  'header',
+  'footer',
+  'nav',
+  'main',
+  'figure',
+  'figcaption',
+  'blockquote',
+  'pre',
+  'address',
+  'details',
+  'dialog',
+  'menu',
+  'hgroup',
+  'search',
 ]);
 
 /**
  * Inline elements that cannot contain block-level elements.
  */
 export const INLINE_ELEMENTS = new Set([
-  'span', 'a', 'em', 'strong', 'b', 'i', 'u', 's', 'small',
-  'mark', 'abbr', 'cite', 'code', 'dfn', 'kbd', 'samp', 'var',
-  'sub', 'sup', 'q', 'time', 'data', 'bdi', 'bdo', 'ruby', 'rt', 'rp',
+  'span',
+  'a',
+  'em',
+  'strong',
+  'b',
+  'i',
+  'u',
+  's',
+  'small',
+  'mark',
+  'abbr',
+  'cite',
+  'code',
+  'dfn',
+  'kbd',
+  'samp',
+  'var',
+  'sub',
+  'sup',
+  'q',
+  'time',
+  'data',
+  'bdi',
+  'bdo',
+  'ruby',
+  'rt',
+  'rp',
   'label',
 ]);
 
@@ -59,35 +117,142 @@ export const INLINE_ELEMENTS = new Set([
 export const NESTING_RULES: Record<string, NestingRule> = {
   // Block elements cannot be inside inline elements
   div: {
-    forbiddenParents: ['p', 'span', 'a', 'em', 'strong', 'b', 'i', 'u', 's', 'small', 'label'],
+    forbiddenParents: [
+      'p',
+      'span',
+      'a',
+      'em',
+      'strong',
+      'b',
+      'i',
+      'u',
+      's',
+      'small',
+      'label',
+    ],
     message: 'Block-level element cannot be nested inside inline element',
   },
   section: {
-    forbiddenParents: ['p', 'span', 'a', 'em', 'strong', 'b', 'i', 'u', 's', 'small', 'label'],
+    forbiddenParents: [
+      'p',
+      'span',
+      'a',
+      'em',
+      'strong',
+      'b',
+      'i',
+      'u',
+      's',
+      'small',
+      'label',
+    ],
     message: 'Block-level element cannot be nested inside inline element',
   },
   article: {
-    forbiddenParents: ['p', 'span', 'a', 'em', 'strong', 'b', 'i', 'u', 's', 'small', 'label'],
+    forbiddenParents: [
+      'p',
+      'span',
+      'a',
+      'em',
+      'strong',
+      'b',
+      'i',
+      'u',
+      's',
+      'small',
+      'label',
+    ],
     message: 'Block-level element cannot be nested inside inline element',
   },
   aside: {
-    forbiddenParents: ['p', 'span', 'a', 'em', 'strong', 'b', 'i', 'u', 's', 'small', 'label'],
+    forbiddenParents: [
+      'p',
+      'span',
+      'a',
+      'em',
+      'strong',
+      'b',
+      'i',
+      'u',
+      's',
+      'small',
+      'label',
+    ],
     message: 'Block-level element cannot be nested inside inline element',
   },
   header: {
-    forbiddenParents: ['p', 'span', 'a', 'em', 'strong', 'b', 'i', 'u', 's', 'small', 'label', 'header', 'footer'],
-    message: 'Block-level element cannot be nested inside inline element; header cannot be inside header/footer',
+    forbiddenParents: [
+      'p',
+      'span',
+      'a',
+      'em',
+      'strong',
+      'b',
+      'i',
+      'u',
+      's',
+      'small',
+      'label',
+      'header',
+      'footer',
+    ],
+    message:
+      'Block-level element cannot be nested inside inline element; header cannot be inside header/footer',
   },
   footer: {
-    forbiddenParents: ['p', 'span', 'a', 'em', 'strong', 'b', 'i', 'u', 's', 'small', 'label', 'header', 'footer'],
-    message: 'Block-level element cannot be nested inside inline element; footer cannot be inside header/footer',
+    forbiddenParents: [
+      'p',
+      'span',
+      'a',
+      'em',
+      'strong',
+      'b',
+      'i',
+      'u',
+      's',
+      'small',
+      'label',
+      'header',
+      'footer',
+    ],
+    message:
+      'Block-level element cannot be nested inside inline element; footer cannot be inside header/footer',
   },
   nav: {
-    forbiddenParents: ['p', 'span', 'a', 'em', 'strong', 'b', 'i', 'u', 's', 'small', 'label'],
+    forbiddenParents: [
+      'p',
+      'span',
+      'a',
+      'em',
+      'strong',
+      'b',
+      'i',
+      'u',
+      's',
+      'small',
+      'label',
+    ],
     message: 'Block-level element cannot be nested inside inline element',
   },
   main: {
-    forbiddenParents: ['p', 'span', 'a', 'em', 'strong', 'b', 'i', 'u', 's', 'small', 'label', 'article', 'aside', 'footer', 'header', 'nav'],
+    forbiddenParents: [
+      'p',
+      'span',
+      'a',
+      'em',
+      'strong',
+      'b',
+      'i',
+      'u',
+      's',
+      'small',
+      'label',
+      'article',
+      'aside',
+      'footer',
+      'header',
+      'nav',
+    ],
     message: 'main element cannot be nested inside sectioning content',
   },
 
@@ -115,7 +280,8 @@ export const NESTING_RULES: Record<string, NestingRule> = {
   // Table structure
   tr: {
     allowedParents: ['table', 'thead', 'tbody', 'tfoot'],
-    message: '<tr> must be a direct child of <table>, <thead>, <tbody>, or <tfoot>',
+    message:
+      '<tr> must be a direct child of <table>, <thead>, <tbody>, or <tfoot>',
   },
   td: {
     allowedParents: ['tr'],
@@ -153,7 +319,8 @@ export const NESTING_RULES: Record<string, NestingRule> = {
   // Form elements
   option: {
     allowedParents: ['select', 'optgroup', 'datalist'],
-    message: '<option> must be a direct child of <select>, <optgroup>, or <datalist>',
+    message:
+      '<option> must be a direct child of <select>, <optgroup>, or <datalist>',
   },
   optgroup: {
     allowedParents: ['select'],
@@ -189,7 +356,8 @@ export const NESTING_RULES: Record<string, NestingRule> = {
   // Source and track
   source: {
     allowedParents: ['audio', 'video', 'picture'],
-    message: '<source> must be a direct child of <audio>, <video>, or <picture>',
+    message:
+      '<source> must be a direct child of <audio>, <video>, or <picture>',
   },
   track: {
     allowedParents: ['audio', 'video'],
@@ -222,7 +390,10 @@ export interface ValidationError {
  * @param parentTag - The parent element tag name (or null for root)
  * @returns Array of validation errors (empty if valid)
  */
-export function validateNesting(childTag: string, parentTag: string | null): ValidationError[] {
+export function validateNesting(
+  childTag: string,
+  parentTag: string | null
+): ValidationError[] {
   const errors: ValidationError[] = [];
 
   if (!parentTag) {
@@ -234,7 +405,8 @@ export function validateNesting(childTag: string, parentTag: string | null): Val
   // Check forbidden parents
   if (rules?.forbiddenParents?.includes(parentTag)) {
     errors.push({
-      message: rules.message || `<${childTag}> cannot be nested inside <${parentTag}>`,
+      message:
+        rules.message || `<${childTag}> cannot be nested inside <${parentTag}>`,
       severity: 'error',
       code: 'invalid-nesting',
     });
@@ -243,14 +415,20 @@ export function validateNesting(childTag: string, parentTag: string | null): Val
   // Check required parents
   if (rules?.allowedParents && !rules.allowedParents.includes(parentTag)) {
     errors.push({
-      message: rules.message || `<${childTag}> must be a direct child of ${rules.allowedParents.map(p => `<${p}>`).join(', ')}`,
+      message:
+        rules.message ||
+        `<${childTag}> must be a direct child of ${rules.allowedParents.map((p) => `<${p}>`).join(', ')}`,
       severity: 'error',
       code: 'invalid-parent',
     });
   }
 
   // Check block-in-inline (if not already caught by forbiddenParents)
-  if (!rules && BLOCK_ELEMENTS.has(childTag) && INLINE_ELEMENTS.has(parentTag)) {
+  if (
+    !rules &&
+    BLOCK_ELEMENTS.has(childTag) &&
+    INLINE_ELEMENTS.has(parentTag)
+  ) {
     errors.push({
       message: `Block-level element <${childTag}> should not be nested inside inline element <${parentTag}>`,
       severity: 'warning',

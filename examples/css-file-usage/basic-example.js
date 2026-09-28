@@ -6,38 +6,47 @@
 import { render, renderSync } from '@coherent.js/core';
 
 // Simple component using CSS classes
-const Button = ({ variant = 'primary', size = 'medium', children, onClick }) => ({
+const Button = ({
+  variant = 'primary',
+  size = 'medium',
+  children,
+  onClick,
+}) => ({
   button: {
     className: `btn btn--${variant} btn--${size}`,
     onclick: onClick,
-    children: Array.isArray(children) ? children : [children]
-  }
+    children: Array.isArray(children) ? children : [children],
+  },
 });
 
 const Card = ({ title, content, footer }) => ({
   div: {
     className: 'card',
     children: [
-      title ? {
-        div: {
-          className: 'card-header',
-          children: [{ h3: { text: title } }]
-        }
-      } : null,
+      title
+        ? {
+            div: {
+              className: 'card-header',
+              children: [{ h3: { text: title } }],
+            },
+          }
+        : null,
       {
         div: {
           className: 'card-body',
-          children: Array.isArray(content) ? content : [content]
-        }
+          children: Array.isArray(content) ? content : [content],
+        },
       },
-      footer ? {
-        div: {
-          className: 'card-footer',
-          children: Array.isArray(footer) ? footer : [footer]
-        }
-      } : null
-    ].filter(Boolean)
-  }
+      footer
+        ? {
+            div: {
+              className: 'card-footer',
+              children: Array.isArray(footer) ? footer : [footer],
+            },
+          }
+        : null,
+    ].filter(Boolean),
+  },
 });
 
 const App = () => ({
@@ -48,9 +57,14 @@ const App = () => ({
           children: [
             { title: { text: 'CSS File Example' } },
             { meta: { charset: 'utf-8' } },
-            { meta: { name: 'viewport', content: 'width=device-width, initial-scale=1' } }
-          ]
-        }
+            {
+              meta: {
+                name: 'viewport',
+                content: 'width=device-width, initial-scale=1',
+              },
+            },
+          ],
+        },
       },
       {
         body: {
@@ -60,7 +74,12 @@ const App = () => ({
               div: {
                 className: 'container',
                 children: [
-                  { h1: { className: 'page-title', text: 'CSS File Integration Demo' } },
+                  {
+                    h1: {
+                      className: 'page-title',
+                      text: 'CSS File Integration Demo',
+                    },
+                  },
                   {
                     div: {
                       className: 'demo-section',
@@ -68,22 +87,39 @@ const App = () => ({
                         Card({
                           title: 'Button Examples',
                           content: [
-                            { p: { text: 'Different button styles using CSS files:' } },
+                            {
+                              p: {
+                                text: 'Different button styles using CSS files:',
+                              },
+                            },
                             {
                               div: {
                                 className: 'button-group',
                                 children: [
-                                  Button({ variant: 'primary', children: [{ text: 'Primary' }] }),
-                                  Button({ variant: 'secondary', children: [{ text: 'Secondary' }] }),
-                                  Button({ variant: 'success', children: [{ text: 'Success' }] }),
-                                  Button({ variant: 'danger', size: 'large', children: [{ text: 'Large Danger' }] })
-                                ]
-                              }
-                            }
-                          ]
-                        })
-                      ]
-                    }
+                                  Button({
+                                    variant: 'primary',
+                                    children: [{ text: 'Primary' }],
+                                  }),
+                                  Button({
+                                    variant: 'secondary',
+                                    children: [{ text: 'Secondary' }],
+                                  }),
+                                  Button({
+                                    variant: 'success',
+                                    children: [{ text: 'Success' }],
+                                  }),
+                                  Button({
+                                    variant: 'danger',
+                                    size: 'large',
+                                    children: [{ text: 'Large Danger' }],
+                                  }),
+                                ],
+                              },
+                            },
+                          ],
+                        }),
+                      ],
+                    },
                   },
                   {
                     div: {
@@ -96,29 +132,54 @@ const App = () => ({
                               div: {
                                 className: 'grid-demo',
                                 children: [
-                                  { div: { className: 'grid-item', children: [{ text: 'Item 1' }] } },
-                                  { div: { className: 'grid-item', children: [{ text: 'Item 2' }] } },
-                                  { div: { className: 'grid-item', children: [{ text: 'Item 3' }] } },
-                                  { div: { className: 'grid-item', children: [{ text: 'Item 4' }] } }
-                                ]
-                              }
-                            }
+                                  {
+                                    div: {
+                                      className: 'grid-item',
+                                      children: [{ text: 'Item 1' }],
+                                    },
+                                  },
+                                  {
+                                    div: {
+                                      className: 'grid-item',
+                                      children: [{ text: 'Item 2' }],
+                                    },
+                                  },
+                                  {
+                                    div: {
+                                      className: 'grid-item',
+                                      children: [{ text: 'Item 3' }],
+                                    },
+                                  },
+                                  {
+                                    div: {
+                                      className: 'grid-item',
+                                      children: [{ text: 'Item 4' }],
+                                    },
+                                  },
+                                ],
+                              },
+                            },
                           ],
                           footer: [
-                            { p: { className: 'text-muted', text: 'Styled with external CSS files' } }
-                          ]
-                        })
-                      ]
-                    }
-                  }
-                ]
-              }
-            }
-          ]
-        }
-      }
-    ]
-  }
+                            {
+                              p: {
+                                className: 'text-muted',
+                                text: 'Styled with external CSS files',
+                              },
+                            },
+                          ],
+                        }),
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    ],
+  },
 });
 
 // Example 1: Basic CSS file loading
@@ -126,34 +187,30 @@ export async function basicExample() {
   const html = await render(App(), {
     cssFiles: [
       './examples/css-file-usage/styles/main.css',
-      './examples/css-file-usage/styles/components.css'
-    ]
+      './examples/css-file-usage/styles/components.css',
+    ],
   });
-  
+
   return html;
 }
 
 // Example 2: CSS files with external CDN links
 export async function cdnExample() {
   const html = await render(App(), {
-    cssFiles: [
-      './examples/css-file-usage/styles/custom.css'
-    ],
+    cssFiles: ['./examples/css-file-usage/styles/custom.css'],
     cssLinks: [
       'https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.css',
-      'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'
-    ]
+      'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap',
+    ],
   });
-  
+
   return html;
 }
 
 // Example 3: CSS files with inline overrides
 export async function mixedExample() {
   const html = await render(App(), {
-    cssFiles: [
-      './examples/css-file-usage/styles/main.css'
-    ],
+    cssFiles: ['./examples/css-file-usage/styles/main.css'],
     cssInline: `
       .page-title {
         color: #e74c3c !important;
@@ -169,9 +226,9 @@ export async function mixedExample() {
         margin-bottom: 0.5rem;
       }
     `,
-    cssMinify: true
+    cssMinify: true,
   });
-  
+
   return html;
 }
 
@@ -181,12 +238,12 @@ export async function productionExample() {
     cssFiles: [
       './examples/css-file-usage/styles/main.css',
       './examples/css-file-usage/styles/components.css',
-      './examples/css-file-usage/styles/themes/professional.css'
+      './examples/css-file-usage/styles/themes/professional.css',
     ],
     cssMinify: true,
-    minify: true
+    minify: true,
   });
-  
+
   return html;
 }
 
@@ -194,7 +251,7 @@ export async function productionExample() {
 export function synchronousExample() {
   const html = renderSync(App(), {
     cssLinks: [
-      'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css'
+      'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css',
     ],
     cssInline: `
       .app { 
@@ -206,35 +263,35 @@ export function synchronousExample() {
         margin: 0 auto; 
         padding: 2rem; 
       }
-    `
+    `,
   });
-  
+
   return html;
 }
 
 // Demo runner
 if (import.meta.url === `file://${process.argv[1]}`) {
   console.log('🎨 CSS File Usage Examples\n');
-  
+
   console.log('1. Basic CSS file loading...');
   const basic = await basicExample();
   console.log(`   Generated ${basic.length} characters of HTML\n`);
-  
+
   console.log('2. CDN links example...');
   const cdn = await cdnExample();
   console.log(`   Generated ${cdn.length} characters of HTML\n`);
-  
+
   console.log('3. Mixed CSS sources...');
   const mixed = await mixedExample();
   console.log(`   Generated ${mixed.length} characters of HTML\n`);
-  
+
   console.log('4. Production build...');
   const prod = await productionExample();
   console.log(`   Generated ${prod.length} characters of HTML (minified)\n`);
-  
+
   console.log('5. Synchronous rendering...');
   const sync = synchronousExample();
   console.log(`   Generated ${sync.length} characters of HTML\n`);
-  
+
   console.log('✅ All examples completed successfully!');
 }

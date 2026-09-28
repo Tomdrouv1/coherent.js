@@ -17,10 +17,11 @@ export function listen(listenable) {
       const { port } = server.address();
       resolve({
         url: `http://127.0.0.1:${port}`,
-        close: () => new Promise((done) => {
-          server.closeAllConnections?.();
-          server.close(() => done());
-        })
+        close: () =>
+          new Promise((done) => {
+            server.closeAllConnections?.();
+            server.close(() => done());
+          }),
       });
     });
     server.once('error', reject);
@@ -35,11 +36,14 @@ export function listen(listenable) {
  * @param {RequestInit} [init] - fetch options
  */
 export async function hit(url, path, init = {}) {
-  const response = await fetch(`${url}${path}`, { redirect: 'manual', ...init });
+  const response = await fetch(`${url}${path}`, {
+    redirect: 'manual',
+    ...init,
+  });
   return {
     status: response.status,
     type: response.headers.get('content-type') ?? '',
     headers: response.headers,
-    body: await response.text()
+    body: await response.text(),
   };
 }

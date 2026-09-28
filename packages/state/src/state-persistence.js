@@ -50,7 +50,9 @@
 class WebStorageAdapter {
   constructor(storageName) {
     this.storageName = storageName;
-    this.available = typeof globalThis[storageName] !== 'undefined' && globalThis[storageName] !== null;
+    this.available =
+      typeof globalThis[storageName] !== 'undefined' &&
+      globalThis[storageName] !== null;
   }
 
   get storage() {
@@ -118,9 +120,10 @@ class IndexedDBAdapter {
    */
   open(version) {
     return new Promise((resolve, reject) => {
-      const request = version === undefined
-        ? indexedDB.open(this.dbName)
-        : indexedDB.open(this.dbName, version);
+      const request =
+        version === undefined
+          ? indexedDB.open(this.dbName)
+          : indexedDB.open(this.dbName, version);
 
       request.onerror = () => {
         console.error('IndexedDB open error:', request.error);
@@ -276,7 +279,6 @@ class MemoryAdapter {
   }
 }
 
-
 /**
  * Stand-in for browser storage on the server. Web Storage there (Node's
  * `--experimental-webstorage`, on by default in newer releases) is shared by
@@ -336,7 +338,7 @@ class XorObfuscation {
     if (typeof key !== 'string' || key.length === 0) {
       throw new TypeError(
         'createPersistentState: `encrypt: true` requires a non-empty `encryptionKey`. ' +
-        'It is XOR obfuscation, not encryption; there is no default key.'
+          'It is XOR obfuscation, not encryption; there is no default key.'
       );
     }
     this.keyBytes = new globalThis.TextEncoder().encode(key);
@@ -372,7 +374,10 @@ function createStorageAdapter(type, options = {}) {
     case 'sessionStorage':
       return new SessionStorageAdapter();
     case 'indexedDB':
-      return new IndexedDBAdapter(options.dbName ?? undefined, options.storeName ?? undefined);
+      return new IndexedDBAdapter(
+        options.dbName ?? undefined,
+        options.storeName ?? undefined
+      );
     case 'memory':
       return new MemoryAdapter();
     default:
@@ -424,11 +429,13 @@ export function createPersistentState(initialState = {}, options = {}) {
     migrate: null,
     ttl: null,
     crossTab: false,
-    ...options
+    ...options,
   };
 
   const onServer = typeof window === 'undefined';
-  const obfuscation = opts.encrypt ? new XorObfuscation(opts.encryptionKey) : null;
+  const obfuscation = opts.encrypt
+    ? new XorObfuscation(opts.encryptionKey)
+    : null;
 
   let adapter;
   if (opts.adapter) {
@@ -469,7 +476,7 @@ export function createPersistentState(initialState = {}, options = {}) {
     // If include list is provided, only include those keys
     if (opts.include && Array.isArray(opts.include)) {
       const filtered = {};
-      opts.include.forEach(key => {
+      opts.include.forEach((key) => {
         if (key in obj) {
           filtered[key] = obj[key];
         }
@@ -480,7 +487,7 @@ export function createPersistentState(initialState = {}, options = {}) {
     // If exclude list is provided, exclude those keys
     if (opts.exclude && Array.isArray(opts.exclude)) {
       const filtered = { ...obj };
-      opts.exclude.forEach(key => {
+      opts.exclude.forEach((key) => {
         delete filtered[key];
       });
       return filtered;
@@ -497,7 +504,12 @@ export function createPersistentState(initialState = {}, options = {}) {
     channel = new BroadcastChannel(`coherent-state-sync:${opts.key}`);
     channel.onmessage = (event) => {
       const message = event.data;
-      if (destroyed || !message || message.type !== 'state-update' || message.source === instanceId) {
+      if (
+        destroyed ||
+        !message ||
+        message.type !== 'state-update' ||
+        message.source === instanceId
+      ) {
         return;
       }
       const oldState = { ...state };
@@ -511,7 +523,11 @@ export function createPersistentState(initialState = {}, options = {}) {
   function broadcast(filteredState) {
     if (!channel) return;
     try {
-      channel.postMessage({ type: 'state-update', source: instanceId, state: filteredState });
+      channel.postMessage({
+        type: 'state-update',
+        source: instanceId,
+        state: filteredState,
+      });
     } catch (error) {
       reportError(error);
     }
@@ -535,7 +551,7 @@ export function createPersistentState(initialState = {}, options = {}) {
         state: serialized,
         version: opts.version,
         timestamp: Date.now(),
-        ttl: opts.ttl
+        ttl: opts.ttl,
       };
 
       let dataString = JSON.stringify(data);
@@ -648,7 +664,7 @@ export function createPersistentState(initialState = {}, options = {}) {
    * @param {Object} newState - New state
    */
   function notifyListeners(oldState, newState) {
-    listeners.forEach(listener => {
+    listeners.forEach((listener) => {
       try {
         listener(newState, oldState);
       } catch (error) {
@@ -669,7 +685,9 @@ export function createPersistentState(initialState = {}, options = {}) {
     // Object.fromEntries defines keys as own data properties, so a stored
     // "__proto__" key cannot reach a prototype.
     const updates = Object.fromEntries(
-      Object.entries(loaded).filter(([key]) => !skipTouched || !touchedKeys.has(key))
+      Object.entries(loaded).filter(
+        ([key]) => !skipTouched || !touchedKeys.has(key)
+      )
     );
 
     if (Object.keys(updates).length > 0) {
@@ -812,7 +830,7 @@ export function createPersistentState(initialState = {}, options = {}) {
     ready,
     get adapter() {
       return adapter;
-    }
+    },
   };
 }
 
@@ -823,11 +841,15 @@ export function createPersistentState(initialState = {}, options = {}) {
  * @param {Partial<PersistenceOptions>} options - Additional options
  * @returns {Object} Persistent state manager
  */
-export function withLocalStorage(initialState = {}, key = 'coherent-state', options = {}) {
+export function withLocalStorage(
+  initialState = {},
+  key = 'coherent-state',
+  options = {}
+) {
   return createPersistentState(initialState, {
     ...options,
     storage: 'localStorage',
-    key
+    key,
   });
 }
 
@@ -838,11 +860,15 @@ export function withLocalStorage(initialState = {}, key = 'coherent-state', opti
  * @param {Partial<PersistenceOptions>} options - Additional options
  * @returns {Object} Persistent state manager
  */
-export function withSessionStorage(initialState = {}, key = 'coherent-state', options = {}) {
+export function withSessionStorage(
+  initialState = {},
+  key = 'coherent-state',
+  options = {}
+) {
   return createPersistentState(initialState, {
     ...options,
     storage: 'sessionStorage',
-    key
+    key,
   });
 }
 
@@ -853,11 +879,15 @@ export function withSessionStorage(initialState = {}, key = 'coherent-state', op
  * @param {Partial<PersistenceOptions>} options - Additional options
  * @returns {Object} Persistent state manager
  */
-export function withIndexedDB(initialState = {}, key = 'coherent-state', options = {}) {
+export function withIndexedDB(
+  initialState = {},
+  key = 'coherent-state',
+  options = {}
+) {
   return createPersistentState(initialState, {
     ...options,
     storage: 'indexedDB',
-    key
+    key,
   });
 }
 
@@ -866,5 +896,5 @@ export default {
   withLocalStorage,
   withSessionStorage,
   withIndexedDB,
-  createStorageAdapter
+  createStorageAdapter,
 };

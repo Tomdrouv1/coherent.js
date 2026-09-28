@@ -29,10 +29,10 @@ function failingRouters(options) {
           GET: {
             handler: () => {
               throw new Error(INTERNAL);
-            }
-          }
-        }
-      }
+            },
+          },
+        },
+      },
     },
     options
   );
@@ -117,8 +117,12 @@ describe('5xx responses do not leak internal error messages', () => {
     const simpleServer = await serve(simple);
     const objectServer = await serve(object);
 
-    expect((await request(`${simpleServer.base}/boom`)).json).toEqual({ error: INTERNAL });
-    expect((await request(`${objectServer.base}/api/users`)).json).toEqual({ error: INTERNAL });
+    expect((await request(`${simpleServer.base}/boom`)).json).toEqual({
+      error: INTERNAL,
+    });
+    expect((await request(`${objectServer.base}/api/users`)).json).toEqual({
+      error: INTERNAL,
+    });
   });
 
   it('exposes the message when NODE_ENV is development', async () => {
@@ -126,7 +130,9 @@ describe('5xx responses do not leak internal error messages', () => {
     vi.stubEnv('NODE_ENV', 'development');
     const server = await serve(failingRouters().simple);
 
-    expect((await request(`${server.base}/boom`)).json).toEqual({ error: INTERNAL });
+    expect((await request(`${server.base}/boom`)).json).toEqual({
+      error: INTERNAL,
+    });
   });
 });
 
@@ -156,19 +162,31 @@ describe('createErrorHandler', () => {
     const res = run(createErrorHandler(), error);
 
     expect(res.statusCode).toBe(500);
-    expect(res.body).toEqual({ error: 'Error', message: 'Internal Server Error', statusCode: 500 });
+    expect(res.body).toEqual({
+      error: 'Error',
+      message: 'Internal Server Error',
+      statusCode: 500,
+    });
   });
 
   it('keeps 4xx messages, and exposes 5xx when asked', () => {
     const logger = vi.fn();
 
-    expect(run(createErrorHandler({ logger }), new NotFoundError('No such order')).body).toMatchObject({
+    expect(
+      run(createErrorHandler({ logger }), new NotFoundError('No such order'))
+        .body
+    ).toMatchObject({
       message: 'No such order',
-      statusCode: 404
+      statusCode: 404,
     });
-    expect(run(createErrorHandler({ logger, exposeErrors: true }), new Error(INTERNAL)).body).toMatchObject({
+    expect(
+      run(
+        createErrorHandler({ logger, exposeErrors: true }),
+        new Error(INTERNAL)
+      ).body
+    ).toMatchObject({
       message: INTERNAL,
-      statusCode: 500
+      statusCode: 500,
     });
     expect(logger).toHaveBeenCalledTimes(2);
   });

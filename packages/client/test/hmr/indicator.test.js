@@ -5,7 +5,10 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ConnectionIndicator, connectionIndicator } from '../../src/hmr/indicator.js';
+import {
+  ConnectionIndicator,
+  connectionIndicator,
+} from '../../src/hmr/indicator.js';
 
 describe('ConnectionIndicator', () => {
   let indicator;
@@ -18,10 +21,10 @@ describe('ConnectionIndicator', () => {
       id: '',
       style: {
         cssText: '',
-        background: ''
+        background: '',
       },
       title: '',
-      parentNode: null
+      parentNode: null,
     };
 
     // Create mock body
@@ -33,13 +36,13 @@ describe('ConnectionIndicator', () => {
       removeChild: vi.fn((child) => {
         child.parentNode = null;
         return child;
-      })
+      }),
     };
 
     // Setup global mocks
     global.document = {
       createElement: vi.fn(() => mockIndicatorEl),
-      body: mockBody
+      body: mockBody,
     };
 
     indicator = new ConnectionIndicator();
@@ -76,7 +79,9 @@ describe('ConnectionIndicator', () => {
       expect(mockIndicatorEl.style.cssText).toContain('border-radius: 50%');
       expect(mockIndicatorEl.style.cssText).toContain('z-index: 99998');
       expect(mockIndicatorEl.style.cssText).toContain('pointer-events: none');
-      expect(mockIndicatorEl.style.cssText).toContain('transition: background 0.3s ease');
+      expect(mockIndicatorEl.style.cssText).toContain(
+        'transition: background 0.3s ease'
+      );
     });
 
     it('sets default gray background', () => {
@@ -232,12 +237,12 @@ describe('connectionIndicator singleton', () => {
         id: '',
         style: { cssText: '', background: '' },
         title: '',
-        parentNode: null
+        parentNode: null,
       })),
       body: {
         appendChild: vi.fn(),
-        removeChild: vi.fn()
-      }
+        removeChild: vi.fn(),
+      },
     };
   });
 

@@ -62,7 +62,7 @@ export const dbConfig = {
     socketTimeoutMS: 45000,
   }
 };
-`
+`,
   };
 
   return configs[dbType] || '';
@@ -276,7 +276,7 @@ process.on('SIGINT', async () => {
   }
   process.exit(0);
 });
-`
+`,
   };
 
   return inits[dbType] || '';
@@ -294,13 +294,15 @@ export function generateExampleModel(dbType, language = 'javascript') {
   const pPartial = isTypeScript ? ': Partial<UserData>' : '';
   const pUpdate = isTypeScript ? ": Pick<UserData, 'email' | 'name'>" : '';
   const pIdMongo = isTypeScript ? ': string' : '';
-  const interfaceDef = isTypeScript ? `
+  const interfaceDef = isTypeScript
+    ? `
 interface UserData {
   email: string;
   name: string;
   /** "scrypt:<salt>:<hash>" produced by the auth scaffold's hashPassword() */
   passwordHash?: string;
-}` : '';
+}`
+    : '';
 
   const models = {
     postgres: `
@@ -525,7 +527,7 @@ export class UserModel {
     return result.deletedCount > 0;
   }
 }
-`
+`,
   };
 
   return models[dbType] || '';
@@ -556,7 +558,7 @@ DB_PATH=./data/database.sqlite
     mongodb: `# MongoDB Configuration
 MONGODB_URI=mongodb://localhost:27017
 MONGODB_DB=coherent_db
-`
+`,
   };
 
   return envs[dbType] || '';
@@ -569,22 +571,22 @@ export function getDatabaseDependencies(dbType) {
   const deps = {
     postgres: {
       pg: '^8.12.0',
-      '@coherent.js/database': cliRange
+      '@coherent.js/database': cliRange,
     },
     mysql: {
-      'mysql2': '^3.11.0',
-      '@coherent.js/database': cliRange
+      mysql2: '^3.11.0',
+      '@coherent.js/database': cliRange,
     },
     sqlite: {
       // @coherent.js/database's SQLite adapter uses node-sqlite3 (peer dep),
       // not better-sqlite3. Keep these in sync if the adapter changes.
       sqlite3: '^5.1.7',
-      '@coherent.js/database': cliRange
+      '@coherent.js/database': cliRange,
     },
     mongodb: {
       mongodb: '^6.9.0',
-      '@coherent.js/database': cliRange
-    }
+      '@coherent.js/database': cliRange,
+    },
   };
 
   return deps[dbType] || {};
@@ -599,6 +601,6 @@ export function generateDatabaseScaffolding(dbType, language = 'javascript') {
     init: generateDatabaseInit(dbType, language),
     model: generateExampleModel(dbType, language),
     env: generateEnvExample(dbType),
-    dependencies: getDatabaseDependencies(dbType)
+    dependencies: getDatabaseDependencies(dbType),
   };
 }

@@ -7,17 +7,17 @@ import { DatabaseManager } from '../../src/connection-manager.js';
 import { executeQuery } from '../../src/query-builder.js';
 import { Model } from '../../src/model.js';
 import { Migration } from '../../src/migration.js';
-import { 
-  withDatabase, 
-  withTransaction, 
-  withModel, 
-  withPagination 
+import {
+  withDatabase,
+  withTransaction,
+  withModel,
+  withPagination,
 } from '../../src/middleware.js';
-import { 
-  MockAdapter, 
-  DatabaseTestHelper, 
-  createMockRequest, 
-  createMockResponse, 
+import {
+  MockAdapter,
+  DatabaseTestHelper,
+  createMockRequest,
+  createMockResponse,
   createMockNext,
 } from './test-utils.js';
 
@@ -29,13 +29,13 @@ describe('Database Integration E2E Tests', () => {
   beforeEach(async () => {
     adapter = new MockAdapter();
     testHelper = new DatabaseTestHelper(adapter);
-    
+
     dbManager = new DatabaseManager({
       adapter: adapter,
       store: { filename: ':memory:' },
-      pool: { min: 1, max: 5 }
+      pool: { min: 1, max: 5 },
     });
-    
+
     await dbManager.connect();
   });
 
@@ -55,19 +55,19 @@ describe('Database Integration E2E Tests', () => {
         joins: [{ table: 'posts', alias: 'p', condition: 'u.id = p.user_id' }],
         where: {
           'u.active': true,
-          'p.published_at': { '>': '2023-01-01' }
+          'p.published_at': { '>': '2023-01-01' },
         },
         orderBy: { 'u.name': 'ASC', 'p.created_at': 'DESC' },
         limit: 10,
-        offset: 0
+        offset: 0,
       });
-      
+
       expect(result.rows).toBeDefined();
 
       const lastQuery = testHelper.getLastQuery();
       expect(lastQuery.sql).toBe(
         'SELECT u.name, u.email, p.title FROM users u INNER JOIN posts p ON u.id = p.user_id ' +
-        'WHERE u.active = ? AND p.published_at > ? ORDER BY u.name ASC, p.created_at DESC LIMIT 10'
+          'WHERE u.active = ? AND p.published_at > ? ORDER BY u.name ASC, p.created_at DESC LIMIT 10'
       );
       expect(lastQuery.params).toEqual([true, '2023-01-01']);
     });
@@ -90,7 +90,7 @@ describe('Database Integration E2E Tests', () => {
           },
           down: async (schema) => {
             await schema.dropTable('users');
-          }
+          },
         },
         {
           name: '002_create_posts.js',
@@ -106,8 +106,8 @@ describe('Database Integration E2E Tests', () => {
           },
           down: async (schema) => {
             await schema.dropTable('posts');
-          }
-        }
+          },
+        },
       ];
 
       // Mock file system
@@ -115,9 +115,11 @@ describe('Database Integration E2E Tests', () => {
 
       // Run migrations
       const results = await migration.run();
-      
+
       expect(results).toEqual(['001_create_users.js', '002_create_posts.js']);
-      expect(testHelper.getQueries().map(q => q.sql)).toContain('SELECT migration FROM coherent_migrations ORDER BY id');
+      expect(testHelper.getQueries().map((q) => q.sql)).toContain(
+        'SELECT migration FROM coherent_migrations ORDER BY id'
+      );
 
       // A second run applies nothing: the migrations are recorded as applied
       expect(await migration.run()).toEqual([]);
@@ -133,7 +135,7 @@ describe('Database Integration E2E Tests', () => {
     it('should integrate with router middleware', async () => {
       const req = createMockRequest({
         params: { id: '1' },
-        query: { page: '2', limit: '5' }
+        query: { page: '2', limit: '5' },
       });
       const res = createMockResponse();
       const next = createMockNext();
@@ -155,7 +157,7 @@ describe('Database Integration E2E Tests', () => {
         limit: 5,
         offset: 5,
         hasNext: null,
-        hasPrev: true
+        hasPrev: true,
       });
 
       // Test database query through middleware
@@ -166,9 +168,11 @@ describe('Database Integration E2E Tests', () => {
     it('should handle model middleware', async () => {
       class User extends Model {
         static tableName = 'users';
-        static find = vi.fn().mockResolvedValue(
-          new User({ id: 1, name: 'John Doe', email: 'john@example.com' })
-        );
+        static find = vi
+          .fn()
+          .mockResolvedValue(
+            new User({ id: 1, name: 'John Doe', email: 'john@example.com' })
+          );
       }
 
       const req = createMockRequest({ params: { id: '1' } });
@@ -205,14 +209,14 @@ describe('Database Integration E2E Tests', () => {
         executeQuery(dbManager, {
           select: '*',
           from: 'users',
-          where: { id: i }
+          where: { id: i },
         })
       );
 
       const results = await Promise.all(queryPromises);
 
       expect(results).toHaveLength(20);
-      expect(results.every(result => result.rows !== undefined)).toBe(true);
+      expect(results.every((result) => result.rows !== undefined)).toBe(true);
     });
 
     it('should maintain performance with large datasets', async () => {
@@ -224,7 +228,7 @@ describe('Database Integration E2E Tests', () => {
         from: 'users',
         where: { active: true },
         orderBy: { created_at: 'DESC' },
-        limit: 1000
+        limit: 1000,
       });
 
       const endTime = performance.now();
@@ -239,14 +243,16 @@ describe('Database Integration E2E Tests', () => {
     it('should handle database connection failures gracefully', async () => {
       // Simulate connection failure
       adapter.errors.connect = 'Connection failed';
-      
+
       const failingManager = new DatabaseManager({
         adapter: adapter,
-        store: { filename: ':memory:' }
+        store: { filename: ':memory:' },
       });
       failingManager.retryDelay = 0;
 
-      await expect(failingManager.connect()).rejects.toThrow('Connection failed');
+      await expect(failingManager.connect()).rejects.toThrow(
+        'Connection failed'
+      );
     });
 
     it('should handle query failures with proper error messages', async () => {
@@ -255,18 +261,19 @@ describe('Database Integration E2E Tests', () => {
       await expect(
         executeQuery(dbManager, {
           select: '*',
-          from: 'invalid_table'
+          from: 'invalid_table',
         })
       ).rejects.toThrow('SQL syntax error');
     });
 
     it('should handle transaction failures and cleanup', async () => {
       adapter.errors.transaction = 'Transaction failed';
-      
-      await expect(dbManager.transaction()).rejects.toThrow('Transaction failed');
+
+      await expect(dbManager.transaction()).rejects.toThrow(
+        'Transaction failed'
+      );
     });
   });
-
 });
 
 describe('Model workflow on SQLite', () => {
@@ -278,20 +285,23 @@ describe('Model workflow on SQLite', () => {
       name: { type: 'string', required: true },
       email: { type: 'string', required: true },
       age: { type: 'number', min: 0 },
-      active: { type: 'boolean', default: true }
+      active: { type: 'boolean', default: true },
     };
     static validationRules = {
-      email: [(value) => typeof value === 'string' && value.includes('@'), 'Must be valid email']
+      email: [
+        (value) => typeof value === 'string' && value.includes('@'),
+        'Must be valid email',
+      ],
     };
     static relationships = {
-      posts: { type: 'hasMany', model: 'Post', foreignKey: 'user_id' }
+      posts: { type: 'hasMany', model: 'Post', foreignKey: 'user_id' },
     };
   }
 
   class Post extends Model {
     static tableName = 'posts';
     static relationships = {
-      user: { type: 'belongsTo', model: User, foreignKey: 'user_id' }
+      user: { type: 'belongsTo', model: User, foreignKey: 'user_id' },
     };
   }
 
@@ -317,7 +327,11 @@ describe('Model workflow on SQLite', () => {
   });
 
   it('should handle full CRUD workflow with models', async () => {
-    const user = await User.create({ name: 'John Doe', email: 'john@example.com', age: 30 });
+    const user = await User.create({
+      name: 'John Doe',
+      email: 'john@example.com',
+      age: 30,
+    });
 
     expect(user.get('id')).toBe(1);
     expect(user.get('active')).toBe(true);
@@ -330,7 +344,9 @@ describe('Model workflow on SQLite', () => {
     expect(found.get('name')).toBe('John Doe');
     expect(found.get('age')).toBe(31);
 
-    expect((await User.where({ active: true })).map(u => u.get('email'))).toEqual(['john@example.com']);
+    expect(
+      (await User.where({ active: true })).map((u) => u.get('email'))
+    ).toEqual(['john@example.com']);
     expect(await User.where({ active: false })).toEqual([]);
 
     await user.delete();
@@ -339,7 +355,10 @@ describe('Model workflow on SQLite', () => {
   });
 
   it('should give every created row its own id', async () => {
-    const alice = await User.create({ name: 'alice', email: 'alice@example.com' });
+    const alice = await User.create({
+      name: 'alice',
+      email: 'alice@example.com',
+    });
     const bob = await User.create({ name: 'bob', email: 'bob@example.com' });
 
     expect([alice.get('id'), bob.get('id')]).toEqual([1, 2]);
@@ -348,12 +367,17 @@ describe('Model workflow on SQLite', () => {
     await bob.save();
 
     const { rows } = await db.query('SELECT id, name FROM users ORDER BY id');
-    expect(rows).toEqual([{ id: 1, name: 'alice' }, { id: 2, name: 'bob-renamed' }]);
+    expect(rows).toEqual([
+      { id: 1, name: 'alice' },
+      { id: 2, name: 'bob-renamed' },
+    ]);
   });
 
   it('should return null from find() for a missing row', async () => {
     expect(await User.find(424242)).toBe(null);
-    await expect(User.findOrFail(424242)).rejects.toThrow('User with id 424242 not found');
+    await expect(User.findOrFail(424242)).rejects.toThrow(
+      'User with id 424242 not found'
+    );
   });
 
   it('should report the real number of affected rows', async () => {
@@ -364,17 +388,31 @@ describe('Model workflow on SQLite', () => {
     expect(await User.updateWhere({ active: true }, { age: 40 })).toBe(2);
     expect(await User.deleteWhere({ id: 999 })).toBe(0);
     expect(await User.deleteWhere({ name: 'a' })).toBe(1);
-    expect((await User.all()).map(u => u.get('name'))).toEqual(['b']);
+    expect((await User.all()).map((u) => u.get('name'))).toEqual(['b']);
   });
 
   it('should handle relationships between models', async () => {
-    const user = await User.create({ name: 'John Doe', email: 'john@example.com' });
-    const post1 = await Post.create({ title: 'First Post', content: 'Hello World', user_id: user.get('id') });
-    await Post.create({ title: 'Second Post', content: 'Another post', user_id: user.get('id') });
+    const user = await User.create({
+      name: 'John Doe',
+      email: 'john@example.com',
+    });
+    const post1 = await Post.create({
+      title: 'First Post',
+      content: 'Hello World',
+      user_id: user.get('id'),
+    });
+    await Post.create({
+      title: 'Second Post',
+      content: 'Another post',
+      user_id: user.get('id'),
+    });
     await Post.create({ title: 'Someone else', content: '...', user_id: 99 });
 
     const userPosts = await user.posts();
-    expect(userPosts.map(post => post.get('title'))).toEqual(['First Post', 'Second Post']);
+    expect(userPosts.map((post) => post.get('title'))).toEqual([
+      'First Post',
+      'Second Post',
+    ]);
 
     const postUser = await post1.user();
     expect(postUser.get('name')).toBe('John Doe');
@@ -386,7 +424,10 @@ describe('Model workflow on SQLite', () => {
   it('should handle transactions with rollback', async () => {
     const transaction = await db.transaction();
 
-    const user = await User.create({ name: 'John Doe', email: 'john@example.com' }, { transaction });
+    const user = await User.create(
+      { name: 'John Doe', email: 'john@example.com' },
+      { transaction }
+    );
     expect(user.get('id')).toBe(1);
 
     await transaction.rollback();
@@ -397,16 +438,21 @@ describe('Model workflow on SQLite', () => {
 
   it('should handle concurrent database operations', async () => {
     const users = await Promise.all(
-      Array.from({ length: 10 }, (_, i) => User.create({ name: `User ${i}`, email: `user${i}@example.com` }))
+      Array.from({ length: 10 }, (_, i) =>
+        User.create({ name: `User ${i}`, email: `user${i}@example.com` })
+      )
     );
 
-    expect(users.every(user => user instanceof User)).toBe(true);
-    expect(new Set(users.map(user => user.get('id'))).size).toBe(10);
-    expect((await User.all())).toHaveLength(10);
+    expect(users.every((user) => user instanceof User)).toBe(true);
+    expect(new Set(users.map((user) => user.get('id'))).size).toBe(10);
+    expect(await User.all()).toHaveLength(10);
   });
 
   it('should maintain data consistency across operations', async () => {
-    const user = await User.create({ name: 'John Doe', email: 'john@example.com' });
+    const user = await User.create({
+      name: 'John Doe',
+      email: 'john@example.com',
+    });
 
     await user.set('name', 'John Smith').save();
     await user.set('email', 'john.smith@example.com').save();
@@ -417,18 +463,32 @@ describe('Model workflow on SQLite', () => {
   });
 
   it('should delete only the targeted row', async () => {
-    const user = await User.create({ name: 'John Doe', email: 'john@example.com' });
-    const other = await User.create({ name: 'Jane', email: 'jane@example.com' });
-    await Post.create({ title: 'Test Post', content: 'Content', user_id: user.get('id') });
+    const user = await User.create({
+      name: 'John Doe',
+      email: 'john@example.com',
+    });
+    const other = await User.create({
+      name: 'Jane',
+      email: 'jane@example.com',
+    });
+    await Post.create({
+      title: 'Test Post',
+      content: 'Content',
+      user_id: user.get('id'),
+    });
 
     await user.delete();
 
     expect(user.isDeleted).toBe(true);
-    expect((await User.all()).map(u => u.get('id'))).toEqual([other.get('id')]);
+    expect((await User.all()).map((u) => u.get('id'))).toEqual([
+      other.get('id'),
+    ]);
   });
 
   it('should reject model validation errors before writing', async () => {
-    await expect(User.create({ name: 'John Doe', email: 'invalid-email' })).rejects.toThrow('Must be valid email');
+    await expect(
+      User.create({ name: 'John Doe', email: 'invalid-email' })
+    ).rejects.toThrow('Must be valid email');
     expect(await User.all()).toEqual([]);
   });
 
@@ -439,6 +499,8 @@ describe('Model workflow on SQLite', () => {
     await withModel(User)(req, createMockResponse(), next);
 
     expect(req.user).toBeUndefined();
-    expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 404, message: 'User not found' }));
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 404, message: 'User not found' })
+    );
   });
 });

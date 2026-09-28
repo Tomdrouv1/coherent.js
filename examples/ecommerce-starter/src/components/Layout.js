@@ -6,7 +6,12 @@ export const Layout = ({ title = 'Shop', children = [] }) => ({
         head: {
           children: [
             { meta: { charset: 'utf-8' } },
-            { meta: { name: 'viewport', content: 'width=device-width, initial-scale=1.0' } },
+            {
+              meta: {
+                name: 'viewport',
+                content: 'width=device-width, initial-scale=1.0',
+              },
+            },
             { title: { text: `${title} | Coherent Store` } },
             {
               style: {
@@ -38,7 +43,7 @@ export const Layout = ({ title = 'Shop', children = [] }) => ({
   .cart-total { font-size: 1.25rem; font-weight: 700; margin-top: 16px; text-align: right; }
   footer { margin-top: 48px; padding: 24px; text-align: center; color: #6b7280; font-size: .875rem; border-top: 1px solid #e5e7eb; }
   @media (max-width: 640px) { .detail { grid-template-columns: 1fr; } }
-`
+`,
               },
             },
           ],
@@ -51,7 +56,12 @@ export const Layout = ({ title = 'Shop', children = [] }) => ({
               header: {
                 className: 'site-header',
                 children: [
-                  { a: { href: '/', children: [{ strong: { text: 'Coherent Store' } }] } },
+                  {
+                    a: {
+                      href: '/',
+                      children: [{ strong: { text: 'Coherent Store' } }],
+                    },
+                  },
                   {
                     nav: {
                       children: [
@@ -67,7 +77,11 @@ export const Layout = ({ title = 'Shop', children = [] }) => ({
             {
               footer: {
                 children: [
-                  { p: { text: 'Built with Coherent.js -- ecommerce starter example' } },
+                  {
+                    p: {
+                      text: 'Built with Coherent.js -- ecommerce starter example',
+                    },
+                  },
                 ],
               },
             },

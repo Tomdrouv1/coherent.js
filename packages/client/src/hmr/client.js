@@ -38,10 +38,10 @@ function parseErrorLocation(error) {
   // Firefox: "Function@file.js:10:5"
   // Safari: "file.js:10:5"
   const patterns = [
-    /at\s[^(]*\(([^()]+):(\d+):(\d+)\)/,  // Chrome/Node with parens
-    /at\s+([^\s].*):(\d+):(\d+)/,          // Chrome/Node without parens
-    /@([^@]+):(\d+):(\d+)/,                // Firefox
-    /^(.+?):(\d+):(\d+)/,                  // Safari
+    /at\s[^(]*\(([^()]+):(\d+):(\d+)\)/, // Chrome/Node with parens
+    /at\s+([^\s].*):(\d+):(\d+)/, // Chrome/Node without parens
+    /@([^@]+):(\d+):(\d+)/, // Firefox
+    /^(.+?):(\d+):(\d+)/, // Safari
   ];
 
   // These patterns scan from every "at" or "@" in a line, so an oversized
@@ -216,12 +216,15 @@ export class HMRClient {
 
     // Exponential backoff with jitter
     const delay = Math.min(
-      this.reconnectDelay * Math.pow(2, this.reconnectAttempts) + Math.random() * 1000,
+      this.reconnectDelay * Math.pow(2, this.reconnectAttempts) +
+        Math.random() * 1000,
       30000
     );
     this.reconnectAttempts++;
 
-    console.log(`[HMR] Reconnecting in ${Math.round(delay)}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+    console.log(
+      `[HMR] Reconnecting in ${Math.round(delay)}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`
+    );
 
     this.reconnectTimeout = setTimeout(() => {
       this.reconnectTimeout = null;
@@ -243,7 +246,11 @@ export class HMRClient {
       return;
     }
 
-    console.log('[HMR] message', data.type, data.filePath || data.webPath || '');
+    console.log(
+      '[HMR] message',
+      data.type,
+      data.filePath || data.webPath || ''
+    );
 
     switch (data.type) {
       case 'connected':
@@ -313,7 +320,9 @@ export class HMRClient {
 
       // 4. Re-import module with cache bust
       const importPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
-      const newModule = await this.importModule(`${importPath}?t=${Date.now()}`);
+      const newModule = await this.importModule(
+        `${importPath}?t=${Date.now()}`
+      );
 
       // 5. Execute accept handler if module can hot-update
       if (!moduleTracker.canHotUpdate(moduleId)) {

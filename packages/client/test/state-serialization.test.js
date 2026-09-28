@@ -3,7 +3,7 @@ import {
   serializeState,
   deserializeState,
   extractState,
-  serializeStateWithWarning
+  serializeStateWithWarning,
 } from '../src/hydration/index.js';
 
 describe('serializeState', () => {
@@ -76,8 +76,8 @@ describe('serializeState', () => {
     const state = {
       items: [
         { id: 1, text: 'First' },
-        { id: 2, text: 'Second' }
-      ]
+        { id: 2, text: 'Second' },
+      ],
     };
     const encoded = serializeState(state);
     const decoded = deserializeState(encoded);
@@ -130,7 +130,7 @@ describe('extractState', () => {
     const encoded = serializeState(state);
 
     const mockElement = {
-      getAttribute: vi.fn().mockReturnValue(encoded)
+      getAttribute: vi.fn().mockReturnValue(encoded),
     };
 
     const extracted = extractState(mockElement);
@@ -140,7 +140,7 @@ describe('extractState', () => {
 
   it('returns null for element without data-state', () => {
     const mockElement = {
-      getAttribute: vi.fn().mockReturnValue(null)
+      getAttribute: vi.fn().mockReturnValue(null),
     };
 
     expect(extractState(mockElement)).toBeNull();
@@ -190,15 +190,15 @@ describe('Round-trip serialization', () => {
         name: 'Test User',
         preferences: {
           theme: 'dark',
-          notifications: true
-        }
+          notifications: true,
+        },
       },
       items: [
         { id: 1, completed: false, text: 'First item' },
-        { id: 2, completed: true, text: 'Second item' }
+        { id: 2, completed: true, text: 'Second item' },
       ],
       filter: 'all',
-      count: 42
+      count: 42,
     };
 
     const encoded = serializeState(complexState);

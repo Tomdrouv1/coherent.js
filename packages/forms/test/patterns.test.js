@@ -3,7 +3,11 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { EMAIL_PATTERN, EMAIL_MAX_LENGTH, isEmailShaped } from '../src/patterns.js';
+import {
+  EMAIL_PATTERN,
+  EMAIL_MAX_LENGTH,
+  isEmailShaped,
+} from '../src/patterns.js';
 
 /**
  * A subject the old `[^\s@]+\.[^\s@]+` domain pattern could split at every

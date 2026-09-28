@@ -6,7 +6,7 @@ import {
   createAsyncErrorBoundary,
   GlobalErrorHandler,
   createGlobalErrorHandler,
-  default as errorBoundaryDefault
+  default as errorBoundaryDefault,
 } from '../src/components/error-boundary.js';
 
 describe('Error Boundary', () => {
@@ -72,7 +72,7 @@ describe('Error Boundary', () => {
 
     it('should use function fallback when error occurs', () => {
       const fallback = vi.fn((error, _errorInfo) => ({
-        div: { text: `Error: ${error.message}` }
+        div: { text: `Error: ${error.message}` },
       }));
       const boundary = createErrorBoundary({ fallback });
       const errorComponent = vi.fn(() => {
@@ -116,7 +116,7 @@ describe('Error Boundary', () => {
         SafeComponent: vi.fn(() => ({ div: 'Safe' })),
         UnsafeComponent: vi.fn(() => {
           throw new Error('Unsafe');
-        })
+        }),
       };
 
       const wrappedComponents = withErrorBoundary({}, components);
@@ -248,9 +248,13 @@ describe('Error Boundary', () => {
       expect(typeof errorBoundaryDefault.createErrorBoundary).toBe('function');
       expect(typeof errorBoundaryDefault.createErrorFallback).toBe('function');
       expect(typeof errorBoundaryDefault.withErrorBoundary).toBe('function');
-      expect(typeof errorBoundaryDefault.createAsyncErrorBoundary).toBe('function');
+      expect(typeof errorBoundaryDefault.createAsyncErrorBoundary).toBe(
+        'function'
+      );
       expect(typeof errorBoundaryDefault.GlobalErrorHandler).toBe('function');
-      expect(typeof errorBoundaryDefault.createGlobalErrorHandler).toBe('function');
+      expect(typeof errorBoundaryDefault.createGlobalErrorHandler).toBe(
+        'function'
+      );
     });
   });
 
@@ -261,7 +265,7 @@ describe('Error Boundary', () => {
 
       const boundary = createErrorBoundary({
         fallback,
-        onError
+        onError,
       });
 
       const errorComponent = vi.fn(() => {

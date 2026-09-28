@@ -4,17 +4,11 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "paths": {
-      "@coherent.js/core": [
-        "../core/dist"
-      ],
-      "@coherent.js/database": [
-        "./dist"
-      ]
+      "@coherent.js/core": ["../core/dist"],
+      "@coherent.js/database": ["./dist"]
     }
   },
-  "include": [
-    "src/**/*"
-  ],
+  "include": ["src/**/*"],
   "references": [
     {
       "path": "../core/tsconfig.json"

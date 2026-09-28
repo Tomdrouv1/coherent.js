@@ -48,14 +48,25 @@ describe('preventDefault()', () => {
         form: {
           children: [
             { input: { id: 'name', onKeyDown: (e) => e.preventDefault() } },
-            { input: { id: 'agree', type: 'checkbox', onChange: (e) => e.preventDefault() } },
+            {
+              input: {
+                id: 'agree',
+                type: 'checkbox',
+                onChange: (e) => e.preventDefault(),
+              },
+            },
           ],
         },
       })
     );
 
-    expect(dom.fire(container.querySelector('#name'), 'keydown', { key: 'Enter' }).defaultPrevented).toBe(true);
-    expect(dom.fire(container.querySelector('#agree'), 'change').defaultPrevented).toBe(true);
+    expect(
+      dom.fire(container.querySelector('#name'), 'keydown', { key: 'Enter' })
+        .defaultPrevented
+    ).toBe(true);
+    expect(
+      dom.fire(container.querySelector('#agree'), 'change').defaultPrevented
+    ).toBe(true);
   });
 
   it('keeps scroll-blocking types passive', () => {
@@ -94,7 +105,9 @@ describe('event types beyond the defaults', () => {
     const container = mountAndHydrate('<ul><li>one</li></ul>', () => ({
       ul: {
         onMouseEnter: () => calls.push('ul'),
-        children: [{ li: { text: 'one', onMouseEnter: () => calls.push('li') } }],
+        children: [
+          { li: { text: 'one', onMouseEnter: () => calls.push('li') } },
+        ],
       },
     }));
 
@@ -133,7 +146,8 @@ describe('bubbling through delegated handlers', () => {
       ],
     },
   });
-  const html = '<section id="outer"><div><button><span>Go</span></button></div></section>';
+  const html =
+    '<section id="outer"><div><button><span>Go</span></button></div></section>';
 
   it('runs the handlers of the target and every ancestor, innermost first', () => {
     const calls = [];
@@ -156,13 +170,20 @@ describe('bubbling through delegated handlers', () => {
 
   it('passes each handler the element it is registered on', () => {
     const seen = [];
-    const container = mountAndHydrate('<div id="a"><p id="b">x</p></div>', () => ({
-      div: {
-        id: 'a',
-        onClick: (e) => seen.push(e.currentTarget.id),
-        children: [{ p: { id: 'b', text: 'x', onClick: (e) => seen.push(e.target.id) } }],
-      },
-    }));
+    const container = mountAndHydrate(
+      '<div id="a"><p id="b">x</p></div>',
+      () => ({
+        div: {
+          id: 'a',
+          onClick: (e) => seen.push(e.currentTarget.id),
+          children: [
+            {
+              p: { id: 'b', text: 'x', onClick: (e) => seen.push(e.target.id) },
+            },
+          ],
+        },
+      })
+    );
 
     dom.fire(container.querySelector('#b'), 'click');
 

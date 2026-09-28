@@ -1,13 +1,13 @@
 /**
  * In-Memory Database Adapter for Coherent.js
- * 
+ *
  * @fileoverview In-memory adapter for development and testing purposes.
  * Provides a simple, non-persistent storage solution.
  */
 
 /**
  * In-Memory Database Adapter
- * 
+ *
  * @class MemoryAdapter
  * @description Provides in-memory database operations with a simple key-value store.
  */
@@ -18,23 +18,23 @@ export class MemoryAdapter {
 
   /**
    * Create a new in-memory store
-   * 
+   *
    * @param {Object} config - Store configuration
    * @returns {Promise<Object>} Store instance
    */
   async createPool(config) {
     const collections = new Map();
     const schemas = new Map();
-    
+
     const store = {
       config,
       stats: {
         created: Date.now(),
         operations: 0,
         collections: 0,
-        queries: 0
+        queries: 0,
       },
-      
+
       /**
        * Get a collection by name
        * @private
@@ -45,7 +45,7 @@ export class MemoryAdapter {
         }
         return collections.get(name);
       },
-      
+
       /**
        * Get schema for a collection
        * @private
@@ -53,7 +53,7 @@ export class MemoryAdapter {
       _getSchema(collectionName) {
         return schemas.get(collectionName) || {};
       },
-      
+
       /**
        * Execute a query
        * @param {string} operation - Operation type
@@ -63,17 +63,17 @@ export class MemoryAdapter {
       async query(operation, params = {}) {
         this.stats.operations++;
         this.stats.queries++;
-        
+
         const { table, where = {}, data, limit, offset, orderBy } = params;
         const collection = this._getCollection(table);
-        
+
         switch (operation.toUpperCase()) {
           case 'FIND': {
             let results = Array.from(collection.values());
-            
+
             // Apply WHERE conditions
             if (Object.keys(where).length > 0) {
-              results = results.filter(item => 
+              results = results.filter((item) =>
                 Object.entries(where).every(([key, value]) => {
                   if (value === undefined) return true;
                   if (value === null) return item[key] === null;
@@ -81,7 +81,7 @@ export class MemoryAdapter {
                 })
               );
             }
-            
+
             // Apply ORDER BY
             if (orderBy) {
               let field, direction;
@@ -96,7 +96,7 @@ export class MemoryAdapter {
                 field = orderBy;
                 direction = 'ASC';
               }
-              
+
               if (field) {
                 const dir = direction.toLowerCase();
                 results.sort((a, b) => {
@@ -106,76 +106,78 @@ export class MemoryAdapter {
                 });
               }
             }
-            
+
             // Apply OFFSET and LIMIT
             if (offset) results = results.slice(offset);
             if (limit) results = results.slice(0, limit);
-            
+
             return results;
           }
-          
+
           case 'INSERT': {
             if (!data) throw new Error('No data provided for insert');
-            
-            const id = data.id || Date.now().toString(36) + Math.random().toString(36).substr(2);
+
+            const id =
+              data.id ||
+              Date.now().toString(36) + Math.random().toString(36).substr(2);
             const record = { ...data, id };
-            
+
             collection.set(id, record);
             this.stats.collections = collections.size;
-            
+
             return { id };
           }
-          
+
           case 'UPDATE': {
             if (!data) throw new Error('No data provided for update');
-            
+
             const records = await this.query('FIND', { table, where });
             const updated = [];
-            
+
             for (const record of records) {
               const updatedRecord = { ...record, ...data };
               collection.set(record.id, updatedRecord);
               updated.push(updatedRecord);
             }
-            
+
             return { affectedRows: updated.length };
           }
-          
+
           case 'DELETE': {
             const records = await this.query('FIND', { table, where });
             const deleted = [];
-            
+
             for (const record of records) {
               if (collection.delete(record.id)) {
                 deleted.push(record);
               }
             }
-            
+
             return { affectedRows: deleted.length };
           }
-          
+
           case 'COUNT': {
             const results = await this.query('FIND', { table, where });
             return { count: results.length };
           }
-          
+
           case 'CREATE_COLLECTION': {
             const { name, schema } = params;
             schemas.set(name, schema || {});
             return { success: true };
           }
-          
+
           case 'SET_SCHEMA': {
             const { model, schema } = params;
             schemas.set(model, schema);
             return { success: true };
           }
-          
+
           default:
             throw new Error(`Unsupported operation: ${operation}`);
         }
       },
-      
+
       /**
        * Get store statistics
        * @returns {Object}
@@ -186,10 +188,10 @@ export class MemoryAdapter {
           uptime: Date.now() - this.stats.created,
           collections: collections.size,
           operations: this.stats.operations,
-          queries: this.stats.queries
+          queries: this.stats.queries,
         };
       },
-      
+
       /**
        * Copy of every collection and schema, for rolling back a transaction
        * @private
@@ -197,7 +199,15 @@ export class MemoryAdapter {
       _snapshot() {
         const copy = new Map();
         for (const [name, records] of collections) {
-          copy.set(name, new Map([...records].map(([id, record]) => [id, globalThis.structuredClone(record)])));
+          copy.set(
+            name,
+            new Map(
+              [...records].map(([id, record]) => [
+                id,
+                globalThis.structuredClone(record),
+              ])
+            )
+          );
         }
         return { collections: copy, schemas: new Map(schemas) };
       },
@@ -230,13 +240,13 @@ export class MemoryAdapter {
         const snapshot = this._snapshot();
         try {
           return await callback({
-            query: (operation, params) => this.query(operation, params)
+            query: (operation, params) => this.query(operation, params),
           });
         } catch (_error) {
           this._restore(snapshot);
           throw _error;
         }
-      }
+      },
     };
 
     this.stores.set(config.name || 'default', store);
@@ -245,7 +255,7 @@ export class MemoryAdapter {
 
   /**
    * Get a store by name
-   * 
+   *
    * @param {string} name - Store name
    * @returns {Object|undefined} Store instance or undefined if not found
    */
@@ -255,13 +265,13 @@ export class MemoryAdapter {
 
   /**
    * Close all stores and clean up
-   * 
+   *
    * @returns {Promise<void>}
    */
   async close() {
     this.stores.clear();
   }
-  
+
   /**
    * Close the connection pool
    * @param {Object} pool - The connection pool to close
@@ -281,7 +291,7 @@ export class MemoryAdapter {
     }
     return Promise.resolve();
   }
-  
+
   /**
    * Start a transaction (the DatabaseManager contract), or run a callback in one.
    *
@@ -303,7 +313,9 @@ export class MemoryAdapter {
 
     const store = storeOrCallback || this.getStore();
     if (!store || typeof store._snapshot !== 'function') {
-      throw new Error('MemoryAdapter.transaction() needs a store created by createPool()');
+      throw new Error(
+        'MemoryAdapter.transaction() needs a store created by createPool()'
+      );
     }
 
     const snapshot = store._snapshot();
@@ -331,7 +343,7 @@ export class MemoryAdapter {
         assertActive();
         store._restore(snapshot);
         tx.isRolledBack = true;
-      }
+      },
     };
 
     return tx;

@@ -1,8 +1,8 @@
 /**
  * Coherent.js Development Logger
- * 
+ *
  * Advanced logging system for development and debugging
- * 
+ *
  * @module devtools/logger
  */
 
@@ -15,7 +15,7 @@ export const LogLevel = {
   INFO: 2,
   WARN: 3,
   ERROR: 4,
-  FATAL: 5
+  FATAL: 5,
 };
 
 /**
@@ -38,9 +38,9 @@ export class DevLogger {
       output: options.output || null,
       categories: options.categories || null,
       filter: options.filter || null,
-      ...options
+      ...options,
     };
-    
+
     this.logs = [];
     this.groups = [];
     this.filters = [];
@@ -53,8 +53,14 @@ export class DevLogger {
    */
   log(categoryOrLevel, messageOrData, data) {
     // Support log(category, message) signature
-    if (typeof categoryOrLevel === 'string' && typeof messageOrData === 'string') {
-      return this.logWithLevel(LogLevel.INFO, messageOrData, { category: categoryOrLevel, ...data });
+    if (
+      typeof categoryOrLevel === 'string' &&
+      typeof messageOrData === 'string'
+    ) {
+      return this.logWithLevel(LogLevel.INFO, messageOrData, {
+        category: categoryOrLevel,
+        ...data,
+      });
     }
     // Support log(level, message, data) signature
     return this.logWithLevel(categoryOrLevel, messageOrData, data);
@@ -97,7 +103,7 @@ export class DevLogger {
         message: data.message,
         stack: data.stack,
         name: data.name,
-        ...data
+        ...data,
       };
     }
     return this.logWithLevel(LogLevel.ERROR, message, data);
@@ -115,7 +121,10 @@ export class DevLogger {
    */
   logWithLevel(level, message, data = {}) {
     // Apply sampling
-    if (this.options.sampleRate < 1.0 && Math.random() > this.options.sampleRate) {
+    if (
+      this.options.sampleRate < 1.0 &&
+      Math.random() > this.options.sampleRate
+    ) {
       return;
     }
 
@@ -139,21 +148,24 @@ export class DevLogger {
       message,
       data: mergedData,
       timestamp: Date.now(),
-      group: this.groups.length > 0 ? this.groups[this.groups.length - 1] : null,
-      stack: level >= LogLevel.ERROR ? new Error().stack : null
+      group:
+        this.groups.length > 0 ? this.groups[this.groups.length - 1] : null,
+      stack: level >= LogLevel.ERROR ? new Error().stack : null,
     };
 
     // Store log (always store for history/export)
     this.logs.push(logEntry);
-    
+
     // Limit log size (rotation)
-    const maxSize = this.options.buffer ? this.options.maxBufferSize : this.options.maxLogs;
+    const maxSize = this.options.buffer
+      ? this.options.maxBufferSize
+      : this.options.maxLogs;
     if (this.logs.length > maxSize) {
       this.logs.shift();
     }
 
     // Call handlers
-    this.handlers.forEach(handler => {
+    this.handlers.forEach((handler) => {
       try {
         handler(logEntry);
       } catch (error) {
@@ -198,7 +210,9 @@ export class DevLogger {
     // Add context data to output if present
     const contextKeys = Object.keys(logEntry.data);
     if (contextKeys.length > 0) {
-      const contextStr = contextKeys.map(key => `${key}=${logEntry.data[key]}`).join(' ');
+      const contextStr = contextKeys
+        .map((key) => `${key}=${logEntry.data[key]}`)
+        .join(' ');
       parts.push(`{${contextStr}}`);
     }
 
@@ -249,7 +263,7 @@ export class DevLogger {
       [LogLevel.INFO]: 'color: green',
       [LogLevel.WARN]: 'color: orange',
       [LogLevel.ERROR]: 'color: red',
-      [LogLevel.FATAL]: 'color: red; font-weight: bold'
+      [LogLevel.FATAL]: 'color: red; font-weight: bold',
     };
     return styles[level] || '';
   }
@@ -264,7 +278,7 @@ export class DevLogger {
       [LogLevel.INFO]: 'INFO',
       [LogLevel.WARN]: 'WARN',
       [LogLevel.ERROR]: 'ERROR',
-      [LogLevel.FATAL]: 'FATAL'
+      [LogLevel.FATAL]: 'FATAL',
     };
     return names[level] || 'UNKNOWN';
   }
@@ -287,7 +301,7 @@ export class DevLogger {
 
     // Check registered filters
     if (this.filters.length > 0) {
-      return this.filters.every(filter => filter(level, message, data));
+      return this.filters.every((filter) => filter(level, message, data));
     }
 
     return true;
@@ -332,7 +346,7 @@ export class DevLogger {
    */
   group(name) {
     this.groups.push(name);
-    
+
     if (typeof console !== 'undefined' && console.group) {
       console.group(name);
     }
@@ -343,7 +357,7 @@ export class DevLogger {
    */
   groupEnd() {
     this.groups.pop();
-    
+
     if (typeof console !== 'undefined' && console.groupEnd) {
       console.groupEnd();
     }
@@ -356,18 +370,19 @@ export class DevLogger {
     let results = [...this.logs];
 
     if (filter.level !== undefined) {
-      results = results.filter(log => log.level >= filter.level);
+      results = results.filter((log) => log.level >= filter.level);
     }
 
     if (filter.group) {
-      results = results.filter(log => log.group === filter.group);
+      results = results.filter((log) => log.group === filter.group);
     }
 
     if (filter.search) {
       const search = filter.search.toLowerCase();
-      results = results.filter(log => 
-        log.message.toLowerCase().includes(search) ||
-        JSON.stringify(log.data).toLowerCase().includes(search)
+      results = results.filter(
+        (log) =>
+          log.message.toLowerCase().includes(search) ||
+          JSON.stringify(log.data).toLowerCase().includes(search)
       );
     }
 
@@ -383,24 +398,29 @@ export class DevLogger {
    */
   getStats() {
     const byLevel = {};
-    
-    Object.values(LogLevel).forEach(level => {
+
+    Object.values(LogLevel).forEach((level) => {
       byLevel[this.getLevelName(level)] = 0;
     });
 
-    this.logs.forEach(log => {
+    this.logs.forEach((log) => {
       byLevel[log.levelName]++;
     });
 
     return {
       total: this.logs.length,
       byLevel,
-      groups: [...new Set(this.logs.map(l => l.group).filter(Boolean))],
-      timeRange: this.logs.length > 0 ? {
-        start: this.logs[0].timestamp,
-        end: this.logs[this.logs.length - 1].timestamp,
-        duration: this.logs[this.logs.length - 1].timestamp - this.logs[0].timestamp
-      } : null
+      groups: [...new Set(this.logs.map((l) => l.group).filter(Boolean))],
+      timeRange:
+        this.logs.length > 0
+          ? {
+              start: this.logs[0].timestamp,
+              end: this.logs[this.logs.length - 1].timestamp,
+              duration:
+                this.logs[this.logs.length - 1].timestamp -
+                this.logs[0].timestamp,
+            }
+          : null,
     };
   }
 
@@ -425,36 +445,38 @@ export class DevLogger {
   export(format = 'array') {
     if (format === 'array' || !format) {
       // Return array of log objects for tests
-      return this.logs.map(log => ({
+      return this.logs.map((log) => ({
         level: log.levelName,
         message: log.message,
         timestamp: log.timestamp,
-        data: log.data
+        data: log.data,
       }));
     }
-    
+
     switch (format) {
       case 'json':
         return JSON.stringify(this.logs, null, 2);
-      
+
       case 'csv':
         const headers = ['timestamp', 'level', 'group', 'message', 'data'];
-        const rows = this.logs.map(log => [
+        const rows = this.logs.map((log) => [
           new Date(log.timestamp).toISOString(),
           log.levelName,
           log.group || '',
           log.message,
-          JSON.stringify(log.data)
+          JSON.stringify(log.data),
         ]);
-        return [headers, ...rows].map(row => row.join(',')).join('\n');
-      
+        return [headers, ...rows].map((row) => row.join(',')).join('\n');
+
       case 'text':
-        return this.logs.map(log => {
-          const date = new Date(log.timestamp).toISOString();
-          const group = log.group ? `[${log.group}]` : '';
-          return `${date} [${log.levelName}] ${group} ${log.message} ${JSON.stringify(log.data)}`;
-        }).join('\n');
-      
+        return this.logs
+          .map((log) => {
+            const date = new Date(log.timestamp).toISOString();
+            const group = log.group ? `[${log.group}]` : '';
+            return `${date} [${log.levelName}] ${group} ${log.message} ${JSON.stringify(log.data)}`;
+          })
+          .join('\n');
+
       default:
         throw new Error(`Unknown export format: ${format}`);
     }
@@ -514,7 +536,7 @@ export class DevLogger {
    */
   flush() {
     // Output all buffered logs
-    this.logs.forEach(log => {
+    this.logs.forEach((log) => {
       this.output(log);
     });
   }
@@ -547,7 +569,7 @@ export function createLogger(options = {}) {
 export function createComponentLogger(componentName, options = {}) {
   const logger = new DevLogger({
     prefix: `[${componentName}]`,
-    ...options
+    ...options,
   });
 
   // Add perf method for component performance logging
@@ -573,7 +595,7 @@ export function createConsoleLogger(prefix = '') {
     info: (...args) => console.info(prefix, ...args),
     warn: (...args) => console.warn(prefix, ...args),
     error: (...args) => console.error(prefix, ...args),
-    fatal: (...args) => console.error(prefix, 'FATAL:', ...args)
+    fatal: (...args) => console.error(prefix, 'FATAL:', ...args),
   };
 }
 
@@ -582,5 +604,5 @@ export default {
   LogLevel,
   createLogger,
   createComponentLogger,
-  createConsoleLogger
+  createConsoleLogger,
 };

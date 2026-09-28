@@ -1,6 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render } from '@coherent.js/core';
-import { StructuredDataBuilder, createStructuredData, generateStructuredData } from '../src/structured-data.js';
+import {
+  StructuredDataBuilder,
+  createStructuredData,
+  generateStructuredData,
+} from '../src/structured-data.js';
 
 describe('StructuredDataBuilder', () => {
   let builder;
@@ -28,7 +32,7 @@ describe('StructuredDataBuilder', () => {
       headline: 'Test Article',
       description: 'About testing',
       author: { name: 'John', url: 'https://john.com' },
-      datePublished: '2024-01-01'
+      datePublished: '2024-01-01',
     });
     const data = JSON.parse(builder.toJSON());
 
@@ -44,7 +48,7 @@ describe('StructuredDataBuilder', () => {
       description: 'A great widget',
       brand: 'Acme',
       offers: { price: '29.99', currency: 'USD' },
-      rating: { value: 4.5, count: 100 }
+      rating: { value: 4.5, count: 100 },
     });
     const data = JSON.parse(builder.toJSON());
 
@@ -59,7 +63,9 @@ describe('StructuredDataBuilder', () => {
     builder.website({
       name: 'My Site',
       url: 'https://example.com',
-      searchAction: { target: 'https://example.com/search?q={search_term_string}' }
+      searchAction: {
+        target: 'https://example.com/search?q={search_term_string}',
+      },
     });
     const data = JSON.parse(builder.toJSON());
 
@@ -71,7 +77,7 @@ describe('StructuredDataBuilder', () => {
     builder.breadcrumb([
       { name: 'Home', url: '/' },
       { name: 'Products', url: '/products' },
-      { name: 'Widget', url: '/products/widget' }
+      { name: 'Widget', url: '/products/widget' },
     ]);
     const data = JSON.parse(builder.toJSON());
 
@@ -84,7 +90,7 @@ describe('StructuredDataBuilder', () => {
   it('creates FAQ schema', () => {
     builder.faq([
       { question: 'What is Coherent?', answer: 'A JS framework' },
-      { question: 'Is it fast?', answer: 'Yes!' }
+      { question: 'Is it fast?', answer: 'Yes!' },
     ]);
     const data = JSON.parse(builder.toJSON());
 
@@ -98,7 +104,7 @@ describe('StructuredDataBuilder', () => {
     builder.person({
       name: 'Jane',
       jobTitle: 'Developer',
-      organization: 'Acme'
+      organization: 'Acme',
     });
     const data = JSON.parse(builder.toJSON());
 
@@ -159,19 +165,26 @@ describe('generateStructuredData', () => {
   });
 
   it('generates breadcrumb data', () => {
-    const result = generateStructuredData('breadcrumb', [{ name: 'Home', url: '/' }]);
+    const result = generateStructuredData('breadcrumb', [
+      { name: 'Home', url: '/' },
+    ]);
     const data = JSON.parse(result.script.text);
     expect(data['@type']).toBe('BreadcrumbList');
   });
 
   it('generates faq data', () => {
-    const result = generateStructuredData('faq', [{ question: 'Q?', answer: 'A' }]);
+    const result = generateStructuredData('faq', [
+      { question: 'Q?', answer: 'A' },
+    ]);
     const data = JSON.parse(result.script.text);
     expect(data['@type']).toBe('FAQPage');
   });
 
   it('handles unknown type by adding raw data', () => {
-    const result = generateStructuredData('custom', { '@type': 'Custom', name: 'test' });
+    const result = generateStructuredData('custom', {
+      '@type': 'Custom',
+      name: 'test',
+    });
     const data = JSON.parse(result.script.text);
     expect(data['@type']).toBe('Custom');
   });
@@ -181,38 +194,44 @@ describe('JSON-LD script safety', () => {
   it('escapes <, >, &, U+2028 and U+2029 as JSON unicode escapes', () => {
     const result = generateStructuredData('custom', {
       '@type': 'Thing',
-      name: 'a<!--<script>b</script>c & d > e f g'
+      name: 'a<!--<script>b</script>c & d > e f g',
     });
 
     expect(result.script.text).toBe(
       '{\n' +
-      '  "@type": "Thing",\n' +
-      '  "name": "a\\u003c!--\\u003cscript\\u003eb\\u003c/script\\u003ec \\u0026 d \\u003e e\\u2028f\\u2029g"\n' +
-      '}'
+        '  "@type": "Thing",\n' +
+        '  "name": "a\\u003c!--\\u003cscript\\u003eb\\u003c/script\\u003ec \\u0026 d \\u003e e\\u2028f\\u2029g"\n' +
+        '}'
     );
     // Still the same data once parsed.
-    expect(JSON.parse(result.script.text).name).toBe('a<!--<script>b</script>c & d > e f g');
+    expect(JSON.parse(result.script.text).name).toBe(
+      'a<!--<script>b</script>c & d > e f g'
+    );
   });
 
   it('applies the same escaping to toJSON()', () => {
     const builder = new StructuredDataBuilder().add({ name: '<!--<script>' });
-    expect(builder.toJSON()).toBe('{\n  "name": "\\u003c!--\\u003cscript\\u003e"\n}');
+    expect(builder.toJSON()).toBe(
+      '{\n  "name": "\\u003c!--\\u003cscript\\u003e"\n}'
+    );
   });
 
   it('cannot swallow the rest of the page when rendered by core', () => {
-    const jsonLd = generateStructuredData('custom', { name: 'Evil <!--<script>' });
+    const jsonLd = generateStructuredData('custom', {
+      name: 'Evil <!--<script>',
+    });
     const html = render({
       html: {
         children: [
           { head: { children: [jsonLd] } },
-          { body: { children: [{ p: { text: 'after' } }] } }
-        ]
-      }
+          { body: { children: [{ p: { text: 'after' } }] } },
+        ],
+      },
     });
 
     expect(html).toContain(
       '<head><script type="application/ld+json">{\n  "name": "Evil \\u003c!--\\u003cscript\\u003e"\n}</script></head>' +
-      '<body><p>after</p></body>'
+        '<body><p>after</p></body>'
     );
     expect(html).not.toContain('<!--');
   });

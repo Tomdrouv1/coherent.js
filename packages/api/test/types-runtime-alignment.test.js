@@ -10,7 +10,7 @@ import api, {
   verifyToken,
   hashPassword,
   verifyPassword,
-  ValidationError
+  ValidationError,
 } from '../src/index.js';
 import { startServer, request } from './helpers/http.js';
 
@@ -27,9 +27,9 @@ describe('runtime matches the declared API', () => {
       api: {
         users: {
           GET: () => ({ users: [] }),
-          post: (req) => ({ created: req.body })
-        }
-      }
+          post: (req) => ({ created: req.body }),
+        },
+      },
     });
     server = await startServer(router);
 
@@ -37,7 +37,7 @@ describe('runtime matches the declared API', () => {
     const created = await request(`${server.base}/api/users`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: '{"name":"Ada"}'
+      body: '{"name":"Ada"}',
     });
 
     expect(list.status).toBe(200);
@@ -57,8 +57,12 @@ describe('runtime matches the declared API', () => {
     );
     server = await startServer(router);
 
-    const prefixed = await request(`${server.base}/v1/admin`, { method: 'DELETE' });
-    const unprefixed = await request(`${server.base}/admin`, { method: 'DELETE' });
+    const prefixed = await request(`${server.base}/v1/admin`, {
+      method: 'DELETE',
+    });
+    const unprefixed = await request(`${server.base}/admin`, {
+      method: 'DELETE',
+    });
 
     expect(prefixed.status).toBe(401);
     expect(unprefixed.status).toBe(404);
@@ -71,9 +75,14 @@ describe('runtime matches the declared API', () => {
     createRouter({}, { prefix: `${'/'.repeat(50_000)}x` });
     expect(performance.now() - started).toBeLessThan(250);
 
-    const router = createRouter({ ping: { GET: () => ({ pong: true }) } }, { prefix: '/v2///' });
+    const router = createRouter(
+      { ping: { GET: () => ({ pong: true }) } },
+      { prefix: '/v2///' }
+    );
     server = await startServer(router);
-    expect((await request(`${server.base}/v2/ping`)).json).toEqual({ pong: true });
+    expect((await request(`${server.base}/v2/ping`)).json).toEqual({
+      pong: true,
+    });
   });
 
   it('exports generateJWT and verifyToken from the package root', () => {
@@ -92,8 +101,12 @@ describe('runtime matches the declared API', () => {
   });
 
   it('generateToken called as the old JWT signature points to generateJWT', () => {
-    expect(() => generateToken({ userId: 1 }, { secret: 's' })).toThrow(TypeError);
-    expect(() => generateToken({ userId: 1 }, { secret: 's' })).toThrow(/generateJWT/);
+    expect(() => generateToken({ userId: 1 }, { secret: 's' })).toThrow(
+      TypeError
+    );
+    expect(() => generateToken({ userId: 1 }, { secret: 's' })).toThrow(
+      /generateJWT/
+    );
     expect(() => generateToken(0)).toThrow(/byte count/);
   });
 
@@ -106,7 +119,9 @@ describe('runtime matches the declared API', () => {
   });
 
   it('ValidationError exposes the field errors it was built with', () => {
-    const errors = [{ field: 'email', message: 'Invalid email format', rule: 'format' }];
+    const errors = [
+      { field: 'email', message: 'Invalid email format', rule: 'format' },
+    ];
     const error = new ValidationError(errors);
 
     expect(error.errors).toBe(errors);
@@ -118,12 +133,36 @@ describe('runtime matches the declared API', () => {
     expect('BadRequestError' in api).toBe(false);
     expect(Object.keys(api).sort()).toEqual(
       [
-        'ApiError', 'AuthenticationError', 'AuthorizationError', 'ConflictError', 'NotFoundError',
-        'ValidationError', 'createErrorHandler', 'createRouter', 'deserializeDate', 'deserializeMap',
-        'deserializeSet', 'generateJWT', 'generateToken', 'hashPassword', 'serializeDate',
-        'serializeForJSON', 'serializeMap', 'serializeSet', 'validateAgainstSchema', 'validateField',
-        'verifyPassword', 'verifyToken', 'withAuth', 'withErrorHandling', 'withInputValidation',
-        'withParamsValidation', 'withQueryValidation', 'withRole', 'withSerialization', 'withValidation'
+        'ApiError',
+        'AuthenticationError',
+        'AuthorizationError',
+        'ConflictError',
+        'NotFoundError',
+        'ValidationError',
+        'createErrorHandler',
+        'createRouter',
+        'deserializeDate',
+        'deserializeMap',
+        'deserializeSet',
+        'generateJWT',
+        'generateToken',
+        'hashPassword',
+        'serializeDate',
+        'serializeForJSON',
+        'serializeMap',
+        'serializeSet',
+        'validateAgainstSchema',
+        'validateField',
+        'verifyPassword',
+        'verifyToken',
+        'withAuth',
+        'withErrorHandling',
+        'withInputValidation',
+        'withParamsValidation',
+        'withQueryValidation',
+        'withRole',
+        'withSerialization',
+        'withValidation',
       ].sort()
     );
   });

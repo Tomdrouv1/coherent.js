@@ -27,12 +27,38 @@ const DEFAULT_EVENT_TYPES = [
  * reach a handler on the event's own target.
  */
 const NON_BUBBLING_EVENTS = new Set([
-  'mouseenter', 'mouseleave', 'pointerenter', 'pointerleave',
-  'load', 'error', 'abort', 'scroll', 'toggle', 'invalid', 'cancel', 'close',
-  'play', 'pause', 'ended', 'playing', 'waiting', 'seeked', 'seeking',
-  'canplay', 'canplaythrough', 'durationchange', 'emptied', 'loadeddata',
-  'loadedmetadata', 'loadstart', 'progress', 'ratechange', 'stalled',
-  'suspend', 'timeupdate', 'volumechange',
+  'mouseenter',
+  'mouseleave',
+  'pointerenter',
+  'pointerleave',
+  'load',
+  'error',
+  'abort',
+  'scroll',
+  'toggle',
+  'invalid',
+  'cancel',
+  'close',
+  'play',
+  'pause',
+  'ended',
+  'playing',
+  'waiting',
+  'seeked',
+  'seeking',
+  'canplay',
+  'canplaythrough',
+  'durationchange',
+  'emptied',
+  'loadeddata',
+  'loadedmetadata',
+  'loadstart',
+  'progress',
+  'ratechange',
+  'stalled',
+  'suspend',
+  'timeupdate',
+  'volumechange',
 ]);
 
 /**
@@ -47,7 +73,13 @@ const CAPTURED_BUBBLING_EVENTS = new Set(['focus', 'blur']);
  * document level, so delegation never delays scrolling. preventDefault() is
  * ignored for them; every other type is registered non-passive.
  */
-const PASSIVE_EVENTS = new Set(['touchstart', 'touchmove', 'wheel', 'mousewheel', 'scroll']);
+const PASSIVE_EVENTS = new Set([
+  'touchstart',
+  'touchmove',
+  'wheel',
+  'mousewheel',
+  'scroll',
+]);
 
 /**
  * Listener options for a delegated event type.
@@ -56,7 +88,9 @@ const PASSIVE_EVENTS = new Set(['touchstart', 'touchmove', 'wheel', 'mousewheel'
  */
 export function getListenerOptions(eventType) {
   return {
-    capture: CAPTURED_BUBBLING_EVENTS.has(eventType) || NON_BUBBLING_EVENTS.has(eventType),
+    capture:
+      CAPTURED_BUBBLING_EVENTS.has(eventType) ||
+      NON_BUBBLING_EVENTS.has(eventType),
     passive: PASSIVE_EVENTS.has(eventType),
   };
 }
@@ -177,7 +211,11 @@ export class EventDelegation {
       }
 
       const parent = current.parentElement;
-      if (!parent || typeof parent.closest !== 'function' || !this.isWithinRoot(parent)) {
+      if (
+        !parent ||
+        typeof parent.closest !== 'function' ||
+        !this.isWithinRoot(parent)
+      ) {
         return;
       }
       current = parent.closest(selector);

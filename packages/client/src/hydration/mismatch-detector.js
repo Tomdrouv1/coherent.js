@@ -34,7 +34,7 @@ const ATTRIBUTE_CHECKS = [
   { virtual: 'checked', dom: 'checked' },
   { virtual: 'disabled', dom: 'disabled' },
   { virtual: 'href', dom: 'href' },
-  { virtual: 'src', dom: 'src' }
+  { virtual: 'src', dom: 'src' },
 ];
 
 function textOf(node) {
@@ -56,7 +56,7 @@ function compareChildren(parent, vList, path, mismatches, childSegment) {
       type: 'children_count',
       expected: vList.length,
       actual: dList.length,
-      domPath: getDOMPath(parent)
+      domPath: getDOMPath(parent),
     });
   }
 
@@ -73,7 +73,7 @@ function compareChildren(parent, vList, path, mismatches, childSegment) {
           type: 'text',
           expected,
           actual: describeNode(node),
-          domPath: getDOMPath(parent)
+          domPath: getDOMPath(parent),
         });
       } else if (textOf(node) !== expected) {
         mismatches.push({
@@ -81,7 +81,7 @@ function compareChildren(parent, vList, path, mismatches, childSegment) {
           type: 'text',
           expected,
           actual: textOf(node),
-          domPath: getDOMPath(parent)
+          domPath: getDOMPath(parent),
         });
       }
     }
@@ -95,7 +95,7 @@ function compareChildren(parent, vList, path, mismatches, childSegment) {
       type: 'missing_dom_child',
       expected: describeRendered(vList[i]),
       actual: null,
-      domPath: getDOMPath(parent)
+      domPath: getDOMPath(parent),
     });
   }
   for (let i = vList.length; i < dList.length; i++) {
@@ -104,7 +104,7 @@ function compareChildren(parent, vList, path, mismatches, childSegment) {
       type: 'extra_dom_child',
       expected: null,
       actual: describeNode(dList[i]),
-      domPath: getDOMPath(parent)
+      domPath: getDOMPath(parent),
     });
   }
 }
@@ -125,7 +125,11 @@ function compareChildren(parent, vList, path, mismatches, childSegment) {
 export function detectMismatch(domElement, virtualNode, path = []) {
   const mismatches = [];
 
-  if (virtualNode === null || virtualNode === undefined || typeof virtualNode === 'boolean') {
+  if (
+    virtualNode === null ||
+    virtualNode === undefined ||
+    typeof virtualNode === 'boolean'
+  ) {
     return mismatches;
   }
 
@@ -140,7 +144,7 @@ export function detectMismatch(domElement, virtualNode, path = []) {
         type: 'text',
         expected: expectedText,
         actual: actualText,
-        domPath: getDOMPath(domElement)
+        domPath: getDOMPath(domElement),
       });
     }
     return mismatches;
@@ -167,7 +171,7 @@ export function detectMismatch(domElement, virtualNode, path = []) {
       type: 'tagName',
       expected: tagName,
       actual: domTagName,
-      domPath: getDOMPath(domElement)
+      domPath: getDOMPath(domElement),
     });
     // Can't continue comparing if tag is different
     return mismatches;
@@ -177,16 +181,21 @@ export function detectMismatch(domElement, virtualNode, path = []) {
   const attributes = renderedAttributes(props);
   for (const { virtual, dom } of ATTRIBUTE_CHECKS) {
     const isClass = dom === 'class';
-    if (props[virtual] === undefined && !(isClass && props.class !== undefined)) continue;
+    if (props[virtual] === undefined && !(isClass && props.class !== undefined))
+      continue;
 
     // class comes from className, class or both, arrays and objects joined
     const expectedValue = isClass
-      ? attributes.get('class') ?? null
+      ? (attributes.get('class') ?? null)
       : resolveAttributeValue(props[virtual]);
     const actualValue = domElement.getAttribute(dom);
 
     // true renders a bare attribute; false and null render none
-    if (typeof expectedValue === 'boolean' || expectedValue === null || expectedValue === undefined) {
+    if (
+      typeof expectedValue === 'boolean' ||
+      expectedValue === null ||
+      expectedValue === undefined
+    ) {
       const expectedPresent = expectedValue === true;
       const actualPresent = actualValue !== null && actualValue !== undefined;
       if (expectedPresent !== actualPresent) {
@@ -195,7 +204,7 @@ export function detectMismatch(domElement, virtualNode, path = []) {
           type: 'attribute',
           expected: expectedPresent,
           actual: actualPresent,
-          domPath: getDOMPath(domElement)
+          domPath: getDOMPath(domElement),
         });
       }
       continue;
@@ -208,7 +217,7 @@ export function detectMismatch(domElement, virtualNode, path = []) {
         type: 'attribute',
         expected: expectedStr,
         actual: actualValue,
-        domPath: getDOMPath(domElement)
+        domPath: getDOMPath(domElement),
       });
     }
   }
@@ -236,17 +245,23 @@ export function reportMismatches(mismatches, options = {}) {
 
   const { componentName = 'Unknown', strict = false } = options;
 
-  const header = `[Coherent.js] Hydration mismatch detected in "${componentName}"!\n` +
+  const header =
+    `[Coherent.js] Hydration mismatch detected in "${componentName}"!\n` +
     `Found ${mismatches.length} difference(s) between server and client:\n`;
 
-  const details = mismatches.map((m, i) => {
-    return `\n${i + 1}. ${m.type} at ${m.path}\n` +
-      `   DOM path: ${m.domPath}\n` +
-      `   Expected: ${JSON.stringify(m.expected)}\n` +
-      `   Actual:   ${JSON.stringify(m.actual)}`;
-  }).join('');
+  const details = mismatches
+    .map((m, i) => {
+      return (
+        `\n${i + 1}. ${m.type} at ${m.path}\n` +
+        `   DOM path: ${m.domPath}\n` +
+        `   Expected: ${JSON.stringify(m.expected)}\n` +
+        `   Actual:   ${JSON.stringify(m.actual)}`
+      );
+    })
+    .join('');
 
-  const advice = '\n\nThis usually happens when:\n' +
+  const advice =
+    '\n\nThis usually happens when:\n' +
     '  - Server renders with different data than client\n' +
     '  - Using Date.now(), Math.random(), or browser-only APIs during render\n' +
     '  - Component is not pure (has side effects during render)\n';
@@ -254,10 +269,11 @@ export function reportMismatches(mismatches, options = {}) {
   console.warn(header + details + advice);
 
   if (strict) {
-    throw new Error(`Hydration failed: ${mismatches.length} mismatch(es) found. See console for details.`);
+    throw new Error(
+      `Hydration failed: ${mismatches.length} mismatch(es) found. See console for details.`
+    );
   }
 }
-
 
 /**
  * Get a readable DOM path for debugging
@@ -314,10 +330,12 @@ function describeRendered(item) {
  */
 function describeNode(node) {
   if (!node) return '(null)';
-  if (node.nodeType === 3) { // Text node
+  if (node.nodeType === 3) {
+    // Text node
     return `text: "${(node.textContent || '').substring(0, 50)}"`;
   }
-  if (node.nodeType === 1) { // Element
+  if (node.nodeType === 1) {
+    // Element
     return `<${node.tagName.toLowerCase()}>`;
   }
   return `node(type=${node.nodeType})`;

@@ -7,129 +7,123 @@
 
 // Re-export everything from reactive-state
 export {
-    Observable,
-    ReactiveState,
-    StateError,
-    globalErrorHandler,
-    createReactiveState,
-    observable,
-    computed,
-    batch,
-    stateUtils
+  Observable,
+  ReactiveState,
+  StateError,
+  globalErrorHandler,
+  createReactiveState,
+  observable,
+  computed,
+  batch,
+  stateUtils,
 } from './reactive-state.js';
 
 // Import for default export
 import {
-    createReactiveState,
-    observable,
-    computed,
-    batch,
-    stateUtils
+  createReactiveState,
+  observable,
+  computed,
+  batch,
+  stateUtils,
 } from './reactive-state.js';
 
 import {
-    createState,
-    globalStateManager,
-    provideContext,
-    createContextProvider,
-    restoreContext,
-    clearAllContexts,
-    useContext,
-    runWithContext
+  createState,
+  globalStateManager,
+  provideContext,
+  createContextProvider,
+  restoreContext,
+  clearAllContexts,
+  useContext,
+  runWithContext,
 } from './state-manager.js';
 
 import {
-    createPersistentState,
-    withLocalStorage,
-    withSessionStorage,
-    withIndexedDB
+  createPersistentState,
+  withLocalStorage,
+  withSessionStorage,
+  withIndexedDB,
 } from './state-persistence.js';
 
-import {
-    createValidatedState,
-    validators
-} from './state-validation.js';
+import { createValidatedState, validators } from './state-validation.js';
 
 // Import enhanced state patterns
 import {
-    createFormState,
-    createListState,
-    createModalState,
-    createRouterState
+  createFormState,
+  createListState,
+  createModalState,
+  createRouterState,
 } from './enhanced-state-patterns.js';
 
 // Re-export everything from state-manager (SSR-compatible state)
 export {
-    createState,
-    globalStateManager,
-    provideContext,
-    createContextProvider,
-    restoreContext,
-    clearAllContexts,
-    useContext,
-    runWithContext
+  createState,
+  globalStateManager,
+  provideContext,
+  createContextProvider,
+  restoreContext,
+  clearAllContexts,
+  useContext,
+  runWithContext,
 } from './state-manager.js';
 
 // Re-export everything from state-persistence
 export {
-    createPersistentState,
-    withLocalStorage,
-    withSessionStorage,
-    withIndexedDB
+  createPersistentState,
+  withLocalStorage,
+  withSessionStorage,
+  withIndexedDB,
 } from './state-persistence.js';
 
 // Re-export everything from state-validation
-export {
-    createValidatedState,
-    validators
-} from './state-validation.js';
+export { createValidatedState, validators } from './state-validation.js';
 
 // Re-export enhanced state patterns
 export {
-    FormState,
-    ListState,
-    ModalState,
-    RouterState,
-    createFormState,
-    createListState,
-    createModalState,
-    createRouterState
+  FormState,
+  ListState,
+  ModalState,
+  RouterState,
+  createFormState,
+  createListState,
+  createModalState,
+  createRouterState,
 } from './enhanced-state-patterns.js';
 
 // Default export provides all utilities
 export default {
-    // Reactive state utilities
-    createReactiveState,
-    observable,
-    computed,
-    batch,
+  // Reactive state utilities
+  createReactiveState,
+  observable,
+  computed,
+  batch,
 
-    // SSR-compatible state management
-    createState,
-    globalStateManager,
-    provideContext,
-    createContextProvider,
-    restoreContext,
-    clearAllContexts,
-    useContext,
-    runWithContext,
+  // SSR-compatible state management
+  createState,
+  globalStateManager,
+  provideContext,
+  createContextProvider,
+  restoreContext,
+  clearAllContexts,
+  useContext,
+  runWithContext,
 
-    // Persistence utilities
-    createPersistentState,
-    withLocalStorage,
-    withSessionStorage,
-    withIndexedDB,
+  // Persistence utilities
+  createPersistentState,
+  withLocalStorage,
+  withSessionStorage,
+  withIndexedDB,
 
-    // Validation utilities
-    createValidatedState,
-    validators,
+  // Validation utilities
+  createValidatedState,
+  validators,
 
-    // Enhanced state patterns
-    createFormState,
-    createListState,
-    createModalState,
-    createRouterState,
+  // Enhanced state patterns
+  createFormState,
+  createListState,
+  createModalState,
+  createRouterState,
 
-    // State utilities
-    stateUtils
+  // State utilities
+  stateUtils,
 };

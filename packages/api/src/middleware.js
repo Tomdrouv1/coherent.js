@@ -66,7 +66,7 @@ export function withAuth(verifyToken) {
     if (!authHeader || typeof authHeader !== 'string') {
       return sendJson(res, 401, {
         error: 'Unauthorized',
-        message: 'Missing authorization header'
+        message: 'Missing authorization header',
       });
     }
 
@@ -84,7 +84,7 @@ export function withAuth(verifyToken) {
     if (!user) {
       return sendJson(res, 401, {
         error: 'Unauthorized',
-        message: 'Invalid token'
+        message: 'Invalid token',
       });
     }
 
@@ -102,26 +102,26 @@ export function withPermission(checkPermission) {
   return createApiMiddleware((req, res, next) => {
     if (!req.user) {
       return sendJson(res, 401, {
-        error: 'Unauthorized', 
-        message: 'User not authenticated' 
+        error: 'Unauthorized',
+        message: 'User not authenticated',
       });
     }
-    
+
     try {
       const hasPermission = checkPermission(req.user, req);
-      
+
       if (!hasPermission) {
         return sendJson(res, 403, {
-          error: 'Forbidden', 
-          message: 'Insufficient permissions' 
+          error: 'Forbidden',
+          message: 'Insufficient permissions',
         });
       }
-      
+
       next();
     } catch {
       return sendJson(res, 403, {
-        error: 'Forbidden', 
-        message: 'Permission check failed' 
+        error: 'Forbidden',
+        message: 'Permission check failed',
       });
     }
   });
@@ -134,21 +134,23 @@ export function withPermission(checkPermission) {
  */
 export function withLogging(options = {}) {
   const { logger = console, level = 'info' } = options;
-  
+
   return createApiMiddleware((req, res, next) => {
     const startTime = Date.now();
-    
+
     // Log request
     logger[level](`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-    
+
     // Capture response finish to log completion
     const originalSend = res.send;
-    res.send = function(body) {
+    res.send = function (body) {
       const duration = Date.now() - startTime;
-      logger[level](`[${new Date().toISOString()}] ${req.method} ${req.url} ${res.statusCode} - ${duration}ms`);
+      logger[level](
+        `[${new Date().toISOString()}] ${req.method} ${req.url} ${res.statusCode} - ${duration}ms`
+      );
       return originalSend.call(this, body);
     };
-    
+
     next();
   });
 }
@@ -165,17 +167,17 @@ export function withCors(options = {}) {
     allowedHeaders = ['Content-Type', 'Authorization'],
     exposedHeaders = [],
     credentials = false,
-    maxAge = 86400
+    maxAge = 86400,
   } = options;
-  
+
   return createApiMiddleware((req, res, next) => {
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', origin);
-    
+
     if (credentials) {
       res.setHeader('Access-Control-Allow-Credentials', 'true');
     }
-    
+
     if (req.method === 'OPTIONS') {
       // Preflight request
       res.setHeader('Access-Control-Allow-Methods', methods.join(', '));
@@ -185,7 +187,7 @@ export function withCors(options = {}) {
       res.status(204).send('');
       return;
     }
-    
+
     next();
   });
 }
@@ -200,12 +202,12 @@ export function withRateLimit(options = {}) {
     windowMs = 60000, // 1 minute
     max = 100, // limit each IP to 100 requests per windowMs
     message = 'Too many requests, please try again later',
-    statusCode = 429
+    statusCode = 429,
   } = options;
-  
+
   // Store request counts per IP
   const requestCounts = new Map();
-  
+
   // Cleanup old entries periodically (do not keep event loop alive)
   const cleanupInterval = setInterval(() => {
     const now = Date.now();
@@ -218,42 +220,45 @@ export function withRateLimit(options = {}) {
   if (typeof cleanupInterval.unref === 'function') {
     cleanupInterval.unref();
   }
-  
+
   return createApiMiddleware((req, res, next) => {
     const ip = req.ip || req.connection.remoteAddress;
     const now = Date.now();
-    
+
     if (!requestCounts.has(ip)) {
       requestCounts.set(ip, {
         count: 0,
-        resetTime: now + windowMs
+        resetTime: now + windowMs,
       });
     }
-    
+
     const record = requestCounts.get(ip);
-    
+
     // Reset count if window has passed
     if (now > record.resetTime) {
       record.count = 0;
       record.resetTime = now + windowMs;
     }
-    
+
     // Increment count
     record.count++;
-    
+
     // Check if limit exceeded
     if (record.count > max) {
       return sendJson(res, statusCode, {
         error: 'Rate limit exceeded',
-        message
+        message,
       });
     }
-    
+
     // Add rate limit info to response headers
     res.setHeader('X-RateLimit-Limit', max);
     res.setHeader('X-RateLimit-Remaining', Math.max(0, max - record.count));
-    res.setHeader('X-RateLimit-Reset', new Date(record.resetTime).toISOString());
-    
+    res.setHeader(
+      'X-RateLimit-Reset',
+      new Date(record.resetTime).toISOString()
+    );
+
     next();
   });
 }
@@ -271,25 +276,25 @@ export function withRateLimit(options = {}) {
  * @returns {Function} Middleware function
  */
 export function withSanitization(options = {}) {
-  const { 
-    sanitizeBody = true, 
-    sanitizeQuery = true, 
-    sanitizeParams = true 
+  const {
+    sanitizeBody = true,
+    sanitizeQuery = true,
+    sanitizeParams = true,
   } = options;
-  
+
   return createApiMiddleware((req, res, next) => {
     if (sanitizeBody && req.body) {
       req.body = sanitizeObject(req.body);
     }
-    
+
     if (sanitizeQuery && req.query) {
       req.query = sanitizeObject(req.query);
     }
-    
+
     if (sanitizeParams && req.params) {
       req.params = sanitizeObject(req.params);
     }
-    
+
     next();
   });
 }
@@ -337,7 +342,8 @@ function isPlainObject(value) {
  * An `&` that does not already start a character reference.
  * @private
  */
-const BARE_AMPERSAND = /&(?!(?:[a-zA-Z][a-zA-Z0-9]{1,31}|#[0-9]{1,7}|#[xX][0-9a-fA-F]{1,6});)/g;
+const BARE_AMPERSAND =
+  /&(?!(?:[a-zA-Z][a-zA-Z0-9]{1,31}|#[0-9]{1,7}|#[xX][0-9a-fA-F]{1,6});)/g;
 
 /**
  * Sanitize a string by escaping HTML entities
@@ -364,5 +370,5 @@ export default {
   withLogging,
   withCors,
   withRateLimit,
-  withSanitization
+  withSanitization,
 };

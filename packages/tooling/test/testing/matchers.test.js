@@ -10,32 +10,48 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { customMatchers, extendExpect, assertions } from '../../src/testing/matchers.js';
+import {
+  customMatchers,
+  extendExpect,
+  assertions,
+} from '../../src/testing/matchers.js';
 import { renderComponent } from '../../src/testing/test-renderer.js';
 import { createMock } from '../../src/testing/test-utils.js';
 
 extendExpect(expect);
 
-const card = () => renderComponent({
-  div: {
-    className: 'btn-primary card',
-    id: 'main',
-    'data-testid': 'card',
-    children: [
-      { h2: { className: 'btn', 'data-testid': 'title', text: 'Tom & "Jerry" <3' } },
-      { input: { type: 'text', name: 'q', disabled: true, value: 'a&b' } },
-      { br: {} },
-      { img: { src: 'x.png', alt: '' } },
-      { p: { text: 'Second' } }
-    ]
-  }
-});
+const card = () =>
+  renderComponent({
+    div: {
+      className: 'btn-primary card',
+      id: 'main',
+      'data-testid': 'card',
+      children: [
+        {
+          h2: {
+            className: 'btn',
+            'data-testid': 'title',
+            text: 'Tom & "Jerry" <3',
+          },
+        },
+        { input: { type: 'text', name: 'q', disabled: true, value: 'a&b' } },
+        { br: {} },
+        { img: { src: 'x.png', alt: '' } },
+        { p: { text: 'Second' } },
+      ],
+    },
+  });
 
 describe('Vitest built-ins stay intact after extendExpect()', () => {
   it('does not register matchers under built-in names', () => {
     const builtIns = [
-      'toMatchSnapshot', 'toMatchInlineSnapshot', 'toHaveBeenCalled',
-      'toHaveBeenCalledWith', 'toHaveBeenCalledTimes', 'toEqual', 'toContain'
+      'toMatchSnapshot',
+      'toMatchInlineSnapshot',
+      'toHaveBeenCalled',
+      'toHaveBeenCalledWith',
+      'toHaveBeenCalledTimes',
+      'toEqual',
+      'toContain',
     ];
     for (const name of builtIns) {
       expect(Object.keys(customMatchers)).not.toContain(name);
@@ -51,8 +67,12 @@ describe('Vitest built-ins stay intact after extendExpect()', () => {
 
   it('toMatchSnapshot is still the snapshot matcher', () => {
     // Only the built-in refuses `.not` (the override passed everything)
-    expect(() => expect('x').not.toMatchSnapshot()).toThrow(/cannot be used with "not"/);
-    expect(card().toSnapshot()).toMatchInlineSnapshot(`"<div class="btn-primary card" id="main" data-testid="card"><h2 class="btn" data-testid="title">Tom &amp; &quot;Jerry&quot; &lt;3</h2><input type="text" name="q" disabled value="a&amp;b"><br><img src="x.png" alt=""><p>Second</p></div>"`);
+    expect(() => expect('x').not.toMatchSnapshot()).toThrow(
+      /cannot be used with "not"/
+    );
+    expect(card().toSnapshot()).toMatchInlineSnapshot(
+      `"<div class="btn-primary card" id="main" data-testid="card"><h2 class="btn" data-testid="title">Tom &amp; &quot;Jerry&quot; &lt;3</h2><input type="text" name="q" disabled value="a&amp;b"><br><img src="x.png" alt=""><p>Second</p></div>"`
+    );
   });
 
   it('createMock() works with the built-in call matchers', () => {
@@ -110,14 +130,18 @@ describe('matchers on renderComponent() output', () => {
     expect(result).not.toHaveAttribute('testid');
     expect(result.getByTestId('title')).toHaveTagName('h2');
 
-    const input = renderComponent({ input: { type: 'text', disabled: true, value: 'a&b' } });
+    const input = renderComponent({
+      input: { type: 'text', disabled: true, value: 'a&b' },
+    });
     expect(input).toHaveAttribute('disabled');
     expect(input).toHaveAttribute('value', 'a&b');
   });
 
   it('toBeValidHTML accepts void elements and rejects broken markup', () => {
     expect(card()).toBeValidHTML();
-    expect('<!DOCTYPE html><html><body><br><hr><img src="a"><p>x</p><!-- <b> --></body></html>').toBeValidHTML();
+    expect(
+      '<!DOCTYPE html><html><body><br><hr><img src="a"><p>x</p><!-- <b> --></body></html>'
+    ).toBeValidHTML();
     expect('<script>if (a < b) document.write("<p>")</script>').toBeValidHTML();
     expect('<div><p>x</div></p>').not.toBeValidHTML();
     expect('<div><span>x</span>').not.toBeValidHTML();

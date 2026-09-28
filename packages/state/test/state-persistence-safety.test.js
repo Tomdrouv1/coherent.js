@@ -32,8 +32,14 @@ function createStorage() {
   };
 }
 
-const stored = (storage, key) => JSON.parse(JSON.parse(storage.store.get(key)).state);
-const payload = (state) => JSON.stringify({ state: JSON.stringify(state), version: '1.0.0', timestamp: Date.now() });
+const stored = (storage, key) =>
+  JSON.parse(JSON.parse(storage.store.get(key)).state);
+const payload = (state) =>
+  JSON.stringify({
+    state: JSON.stringify(state),
+    version: '1.0.0',
+    timestamp: Date.now(),
+  });
 
 let storage;
 let created;
@@ -60,7 +66,10 @@ describe('restore on creation', () => {
   it('keeps an update made before the restore finished, and persists it', async () => {
     storage.store.set('cart', payload({ qty: 1, coupon: 'SPRING' }));
 
-    const cart = create({ qty: 0, coupon: null }, { key: 'cart', debounceDelay: 5 });
+    const cart = create(
+      { qty: 0, coupon: null },
+      { key: 'cart', debounceDelay: 5 }
+    );
     cart.setState({ qty: 5 });
     await cart.ready;
     await tick();
@@ -83,7 +92,9 @@ describe('restore on creation', () => {
 
 describe('storage failures', () => {
   it('reports a failed write through onError, not onSave', async () => {
-    const quota = Object.assign(new Error('The quota has been exceeded.'), { name: 'QuotaExceededError' });
+    const quota = Object.assign(new Error('The quota has been exceeded.'), {
+      name: 'QuotaExceededError',
+    });
     storage.failWith = quota;
     const onSave = vi.fn();
     const onError = vi.fn();
@@ -101,17 +112,25 @@ describe('storage failures', () => {
 
 describe('encrypt (XOR obfuscation)', () => {
   it('has no default key', () => {
-    expect(() => createPersistentState({}, { key: 'x', encrypt: true })).toThrow(TypeError);
+    expect(() =>
+      createPersistentState({}, { key: 'x', encrypt: true })
+    ).toThrow(TypeError);
   });
 
   it('round-trips any Unicode text', async () => {
     const onError = vi.fn();
-    const first = create({ name: '日本 — café 🎉' }, { key: 'enc', encrypt: true, encryptionKey: 'k3y', onError });
+    const first = create(
+      { name: '日本 — café 🎉' },
+      { key: 'enc', encrypt: true, encryptionKey: 'k3y', onError }
+    );
     await first.ready;
     await first.save();
 
     const raw = storage.store.get('enc');
-    const second = create({ name: '' }, { key: 'enc', encrypt: true, encryptionKey: 'k3y', onError });
+    const second = create(
+      { name: '' },
+      { key: 'enc', encrypt: true, encryptionKey: 'k3y', onError }
+    );
     await second.ready;
 
     expect(onError).not.toHaveBeenCalled();
@@ -122,9 +141,18 @@ describe('encrypt (XOR obfuscation)', () => {
 
 describe('crossTab', () => {
   it('syncs stores sharing a key, once per update, and never unrelated stores', async () => {
-    const tabA = create({ items: [] }, { key: 'cart', storage: 'memory', crossTab: true, debounce: false });
-    const tabB = create({ items: [] }, { key: 'cart', storage: 'memory', crossTab: true, debounce: false });
-    const user = create({ name: 'ann' }, { key: 'user', storage: 'memory', crossTab: true, debounce: false });
+    const tabA = create(
+      { items: [] },
+      { key: 'cart', storage: 'memory', crossTab: true, debounce: false }
+    );
+    const tabB = create(
+      { items: [] },
+      { key: 'cart', storage: 'memory', crossTab: true, debounce: false }
+    );
+    const user = create(
+      { name: 'ann' },
+      { key: 'user', storage: 'memory', crossTab: true, debounce: false }
+    );
     const tabANotified = vi.fn();
     tabA.subscribe(tabANotified);
 
@@ -137,8 +165,14 @@ describe('crossTab', () => {
   });
 
   it('stops syncing after destroy()', async () => {
-    const tabA = create({ n: 0 }, { key: 'counter', storage: 'memory', crossTab: true, debounce: false });
-    const tabB = create({ n: 0 }, { key: 'counter', storage: 'memory', crossTab: true, debounce: false });
+    const tabA = create(
+      { n: 0 },
+      { key: 'counter', storage: 'memory', crossTab: true, debounce: false }
+    );
+    const tabB = create(
+      { n: 0 },
+      { key: 'counter', storage: 'memory', crossTab: true, debounce: false }
+    );
 
     await tabB.destroy();
     tabA.setState({ n: 1 });

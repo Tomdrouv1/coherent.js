@@ -1,8 +1,8 @@
 /**
  * Coherent.js Lazy Loading
- * 
+ *
  * Utilities for lazy loading resources
- * 
+ *
  * @module performance/lazy-loading
  */
 
@@ -15,13 +15,13 @@ export class LazyLoader {
     this.options = {
       rootMargin: '50px',
       threshold: 0.01,
-      ...options
+      ...options,
     };
-    
+
     this.observer = null;
     this.observed = new Set();
     this.loaded = new Set();
-    
+
     this.initObserver();
   }
 
@@ -37,7 +37,7 @@ export class LazyLoader {
       (entries) => this.handleIntersection(entries),
       {
         rootMargin: this.options.rootMargin,
-        threshold: this.options.threshold
+        threshold: this.options.threshold,
       }
     );
   }
@@ -46,7 +46,7 @@ export class LazyLoader {
    * Handle intersection
    */
   handleIntersection(entries) {
-    entries.forEach(entry => {
+    entries.forEach((entry) => {
       if (entry.isIntersecting) {
         this.loadElement(entry.target);
       }
@@ -121,7 +121,7 @@ export class LazyLoader {
    */
   loadScript(script) {
     const src = script.dataset.src;
-    
+
     if (src) {
       script.src = src;
     }
@@ -132,7 +132,7 @@ export class LazyLoader {
    */
   loadIframe(iframe) {
     const src = iframe.dataset.src;
-    
+
     if (src) {
       iframe.src = src;
     }
@@ -155,13 +155,14 @@ export class LazyLoader {
 export class ImageLazyLoader {
   constructor(options = {}) {
     this.options = {
-      placeholder: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"%3E%3C/svg%3E',
+      placeholder:
+        'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"%3E%3C/svg%3E',
       loadingClass: 'lazy-loading',
       loadedClass: 'lazy-loaded',
       errorClass: 'lazy-error',
-      ...options
+      ...options,
     };
-    
+
     this.loader = new LazyLoader(options);
   }
 
@@ -177,9 +178,9 @@ export class ImageLazyLoader {
         alt: options.alt || '',
         className: this.options.loadingClass,
         loading: 'lazy',
-        onload: `this.classList.add("${  this.options.loadedClass  }")`,
-        onerror: `this.classList.add("${  this.options.errorClass  }")`
-      }
+        onload: `this.classList.add("${this.options.loadedClass}")`,
+        onerror: `this.classList.add("${this.options.errorClass}")`,
+      },
     };
   }
 
@@ -192,14 +193,14 @@ export class ImageLazyLoader {
     }
 
     const images = document.querySelectorAll(selector);
-    images.forEach(img => this.loader.observe(img));
+    images.forEach((img) => this.loader.observe(img));
   }
 
   /**
    * Load all images immediately
    */
   loadAll() {
-    this.observed.forEach(element => {
+    this.observed.forEach((element) => {
       this.loader.loadElement(element);
     });
   }
@@ -248,7 +249,7 @@ export class ResourcePreloader {
    * Preload multiple images
    */
   async preloadImages(sources) {
-    return Promise.all(sources.map(src => this.preloadImage(src)));
+    return Promise.all(sources.map((src) => this.preloadImage(src)));
   }
 
   /**
@@ -295,7 +296,7 @@ export class ResourcePreloader {
     const link = document.createElement('link');
     link.rel = 'prefetch';
     link.href = href;
-    
+
     if (options.as) {
       link.as = options.as;
     }
@@ -337,8 +338,8 @@ export class ProgressiveImageLoader {
               src: lowResSrc,
               className: 'progressive-image-low',
               alt: options.alt || '',
-              style: 'filter: blur(10px); transition: opacity 0.3s;'
-            }
+              style: 'filter: blur(10px); transition: opacity 0.3s;',
+            },
           },
           {
             img: {
@@ -346,11 +347,12 @@ export class ProgressiveImageLoader {
               className: 'progressive-image-high',
               alt: options.alt || '',
               style: 'opacity: 0; transition: opacity 0.3s;',
-              onload: 'this.style.opacity = 1; this.previousElementSibling.style.opacity = 0;'
-            }
-          }
-        ]
-      }
+              onload:
+                'this.style.opacity = 1; this.previousElementSibling.style.opacity = 0;',
+            },
+          },
+        ],
+      },
     };
   }
 }
@@ -401,5 +403,5 @@ export default {
   createImageLazyLoader,
   createPreloader,
   lazyImage,
-  progressiveImage
+  progressiveImage,
 };

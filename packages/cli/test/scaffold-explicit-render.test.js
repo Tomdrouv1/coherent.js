@@ -23,7 +23,8 @@ import { setupCoherent as setupKoa } from '../../integrations/src/koa/index.js';
 import { scaffoldProject } from '../src/generators/project-scaffold.js';
 
 const require = createRequire(import.meta.url);
-const realModule = (name) => JSON.stringify(pathToFileURL(require.resolve(name)).href);
+const realModule = (name) =>
+  JSON.stringify(pathToFileURL(require.resolve(name)).href);
 
 const tempDirs = [];
 globalThis.__scaffoldServers = [];
@@ -40,7 +41,10 @@ afterEach(async () => {
 function stubPackage(projectDir, name, source) {
   const dir = join(projectDir, 'node_modules', name);
   mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, 'package.json'), JSON.stringify({ name, type: 'module', main: 'index.js' }));
+  writeFileSync(
+    join(dir, 'package.json'),
+    JSON.stringify({ name, type: 'module', main: 'index.js' })
+  );
   writeFileSync(join(dir, 'index.js'), source);
 }
 
@@ -60,7 +64,7 @@ function express(...args) {
 }
 Object.assign(express, realExpress);
 export default express;
-`
+`,
   },
   fastify: {
     fastify: `
@@ -76,7 +80,7 @@ export default function Fastify(options = {}) {
   return app;
 }
 `,
-    '@fastify/static': 'export default async function fastifyStatic() {}'
+    '@fastify/static': 'export default async function fastifyStatic() {}',
   },
   koa: {
     koa: `
@@ -104,12 +108,14 @@ export default class Router {
 }
 `,
     'koa-body': 'export const koaBody = () => (ctx, next) => next();',
-    'koa-static': 'export default () => (ctx, next) => next();'
-  }
+    'koa-static': 'export default () => (ctx, next) => next();',
+  },
 };
 
 async function bootScaffold(runtime) {
-  const dir = await mkdtemp(join(tmpdir(), `coherent-explicit-render-${runtime}-`));
+  const dir = await mkdtemp(
+    join(tmpdir(), `coherent-explicit-render-${runtime}-`)
+  );
   tempDirs.push(dir);
   await scaffoldProject(dir, {
     name: `explicit-render-${runtime}`,
@@ -117,7 +123,7 @@ async function bootScaffold(runtime) {
     runtime,
     packages: ['api'],
     skipInstall: true,
-    skipGit: true
+    skipGit: true,
   });
   for (const [name, source] of Object.entries(STUBS[runtime])) {
     stubPackage(dir, name, source);
@@ -125,37 +131,48 @@ async function bootScaffold(runtime) {
 
   const index = readFileSync(join(dir, 'src/index.js'), 'utf8');
   await import(pathToFileURL(join(dir, 'src/index.js')).href);
-  await expect.poll(() => globalThis.__scaffoldServers[0]?.listening).toBe(true);
+  await expect
+    .poll(() => globalThis.__scaffoldServers[0]?.listening)
+    .toBe(true);
   const { port } = globalThis.__scaffoldServers[0].address();
   return { index, baseUrl: `http://127.0.0.1:${port}` };
 }
 
-describe.each(['express', 'fastify', 'koa'])('generated %s server', (runtime) => {
-  it('renders the home page explicitly and keeps API responses JSON', async () => {
-    const { index, baseUrl } = await bootScaffold(runtime);
+describe.each(['express', 'fastify', 'koa'])(
+  'generated %s server',
+  (runtime) => {
+    it('renders the home page explicitly and keeps API responses JSON', async () => {
+      const { index, baseUrl } = await bootScaffold(runtime);
 
-    expect(index).not.toContain('autoRender');
-    const explicitCall = { express: 'res.coherent(HomePage({}))', fastify: 'reply.coherent(HomePage({}))', koa: 'ctx.coherent(HomePage({}))' };
-    expect(index).toContain(explicitCall[runtime]);
+      expect(index).not.toContain('autoRender');
+      const explicitCall = {
+        express: 'res.coherent(HomePage({}))',
+        fastify: 'reply.coherent(HomePage({}))',
+        koa: 'ctx.coherent(HomePage({}))',
+      };
+      expect(index).toContain(explicitCall[runtime]);
 
-    const home = await fetch(`${baseUrl}/`);
-    expect(home.status).toBe(200);
-    expect(home.headers.get('content-type')).toMatch(/^text\/html/);
-    const html = await home.text();
-    expect(html).toMatch(/^<!DOCTYPE html>/);
-    expect(html).toContain('<title>Coherent.js App</title>');
-    expect(html).toContain(`<h1>Welcome to explicit-render-${runtime}!</h1>`);
+      const home = await fetch(`${baseUrl}/`);
+      expect(home.status).toBe(200);
+      expect(home.headers.get('content-type')).toMatch(/^text\/html/);
+      const html = await home.text();
+      expect(html).toMatch(/^<!DOCTYPE html>/);
+      expect(html).toContain('<title>Coherent.js App</title>');
+      expect(html).toContain(`<h1>Welcome to explicit-render-${runtime}!</h1>`);
 
-    const user = await fetch(`${baseUrl}/api/users/7`);
-    expect(user.status).toBe(200);
-    expect(user.headers.get('content-type')).toMatch(/^application\/json/);
-    expect(await user.json()).toMatchObject({ id: 7 });
-  });
-});
+      const user = await fetch(`${baseUrl}/api/users/7`);
+      expect(user.status).toBe(200);
+      expect(user.headers.get('content-type')).toMatch(/^application\/json/);
+      expect(await user.json()).toMatchObject({ id: 7 });
+    });
+  }
+);
 
 describe('generated Koa JWT middleware', () => {
   it('answers with JSON objects under the generated setupCoherent() options', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'coherent-explicit-render-koa-auth-'));
+    const dir = await mkdtemp(
+      join(tmpdir(), 'coherent-explicit-render-koa-auth-')
+    );
     tempDirs.push(dir);
     await scaffoldProject(dir, {
       name: 'explicit-render-koa-auth',
@@ -165,15 +182,23 @@ describe('generated Koa JWT middleware', () => {
       auth: 'jwt',
       packages: [],
       skipInstall: true,
-      skipGit: true
+      skipGit: true,
     });
-    stubPackage(dir, 'jsonwebtoken', 'export default { sign: () => "t", verify: () => { throw new Error("bad"); } };');
+    stubPackage(
+      dir,
+      'jsonwebtoken',
+      'export default { sign: () => "t", verify: () => { throw new Error("bad"); } };'
+    );
     process.env.JWT_SECRET = 'test-secret';
 
     try {
-      const { authMiddleware, sendJson } = await import(pathToFileURL(join(dir, 'src/middleware/auth.js')).href);
+      const { authMiddleware, sendJson } = await import(
+        pathToFileURL(join(dir, 'src/middleware/auth.js')).href
+      );
       // sendJson hands Koa the object itself: no pre-serialized string
-      expect(readFileSync(join(dir, 'src/middleware/auth.js'), 'utf8')).not.toContain('JSON.stringify(body)');
+      expect(
+        readFileSync(join(dir, 'src/middleware/auth.js'), 'utf8')
+      ).not.toContain('JSON.stringify(body)');
 
       // Same Coherent setup as the generated src/index.js (explicit rendering only)
       const app = new Koa();
@@ -187,12 +212,18 @@ describe('generated Koa JWT middleware', () => {
 
       const anonymous = await fetch(`${baseUrl}/api/protected/x`);
       expect(anonymous.status).toBe(401);
-      expect(anonymous.headers.get('content-type')).toMatch(/^application\/json/);
+      expect(anonymous.headers.get('content-type')).toMatch(
+        /^application\/json/
+      );
       expect(await anonymous.json()).toEqual({ error: 'No token provided' });
 
-      const forged = await fetch(`${baseUrl}/api/protected/x`, { headers: { authorization: 'Bearer forged' } });
+      const forged = await fetch(`${baseUrl}/api/protected/x`, {
+        headers: { authorization: 'Bearer forged' },
+      });
       expect(forged.status).toBe(401);
-      expect(await forged.json()).toEqual({ error: 'Invalid or expired token' });
+      expect(await forged.json()).toEqual({
+        error: 'Invalid or expired token',
+      });
     } finally {
       delete process.env.JWT_SECRET;
     }

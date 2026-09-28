@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { LazyLoader, ImageLazyLoader, ResourcePreloader, ProgressiveImageLoader, createLazyLoader, lazyImage, progressiveImage } from '../../src/performance/lazy-loading.js';
+import {
+  LazyLoader,
+  ImageLazyLoader,
+  ResourcePreloader,
+  ProgressiveImageLoader,
+  createLazyLoader,
+  lazyImage,
+  progressiveImage,
+} from '../../src/performance/lazy-loading.js';
 
 describe('LazyLoader', () => {
   it('creates without IntersectionObserver (server-side)', () => {
@@ -25,7 +33,9 @@ describe('LazyLoader', () => {
 describe('ImageLazyLoader', () => {
   it('creates image component with placeholder', () => {
     const loader = new ImageLazyLoader();
-    const img = loader.createImage('https://example.com/photo.jpg', { alt: 'Photo' });
+    const img = loader.createImage('https://example.com/photo.jpg', {
+      alt: 'Photo',
+    });
 
     expect(img.img.src).toContain('data:image/svg+xml');
     expect(img.img['data-src']).toBe('https://example.com/photo.jpg');
@@ -43,7 +53,7 @@ describe('ImageLazyLoader', () => {
     const loader = new ImageLazyLoader({
       loadingClass: 'my-loading',
       loadedClass: 'my-loaded',
-      errorClass: 'my-error'
+      errorClass: 'my-error',
     });
     const img = loader.createImage('https://example.com/photo.jpg');
     expect(img.img.className).toBe('my-loading');

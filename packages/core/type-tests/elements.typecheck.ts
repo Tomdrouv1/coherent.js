@@ -31,28 +31,44 @@ import type {
 // ============================================================================
 
 // Simple text element
-expectTypeOf<{ div: { text: 'Hello' } }>().toMatchTypeOf<StrictCoherentElement>();
+expectTypeOf<{
+  div: { text: 'Hello' };
+}>().toMatchTypeOf<StrictCoherentElement>();
 
 // Element with className
-expectTypeOf<{ div: { className: 'my-class' } }>().toMatchTypeOf<StrictCoherentElement>();
+expectTypeOf<{
+  div: { className: 'my-class' };
+}>().toMatchTypeOf<StrictCoherentElement>();
 
 // Element with class alias
-expectTypeOf<{ div: { class: 'my-class' } }>().toMatchTypeOf<StrictCoherentElement>();
+expectTypeOf<{
+  div: { class: 'my-class' };
+}>().toMatchTypeOf<StrictCoherentElement>();
 
 // Element with children array
-expectTypeOf<{ div: { children: [{ span: { text: 'child' } }] } }>().toMatchTypeOf<StrictCoherentElement>();
+expectTypeOf<{
+  div: { children: [{ span: { text: 'child' } }] };
+}>().toMatchTypeOf<StrictCoherentElement>();
 
 // Conditional children (null/undefined allowed)
-expectTypeOf<{ div: { children: [null, undefined, { span: {} }] } }>().toMatchTypeOf<StrictCoherentElement>();
+expectTypeOf<{
+  div: { children: [null, undefined, { span: {} }] };
+}>().toMatchTypeOf<StrictCoherentElement>();
 
 // String child
-expectTypeOf<{ div: { children: 'text content' } }>().toMatchTypeOf<StrictCoherentElement>();
+expectTypeOf<{
+  div: { children: 'text content' };
+}>().toMatchTypeOf<StrictCoherentElement>();
 
 // Number child
-expectTypeOf<{ div: { children: 42 } }>().toMatchTypeOf<StrictCoherentElement>();
+expectTypeOf<{
+  div: { children: 42 };
+}>().toMatchTypeOf<StrictCoherentElement>();
 
 // Data attributes with template literal types
-expectTypeOf<{ div: { 'data-testid': 'my-test', 'data-value': 123 } }>().toMatchTypeOf<StrictCoherentElement>();
+expectTypeOf<{
+  div: { 'data-testid': 'my-test'; 'data-value': 123 };
+}>().toMatchTypeOf<StrictCoherentElement>();
 
 // ARIA attributes
 expectTypeOf<{
@@ -60,17 +76,23 @@ expectTypeOf<{
 }>().toMatchTypeOf<StrictCoherentElement>();
 
 // Key prop for reconciliation
-expectTypeOf<{ div: { key: 'unique-key', text: 'content' } }>().toMatchTypeOf<StrictCoherentElement>();
+expectTypeOf<{
+  div: { key: 'unique-key'; text: 'content' };
+}>().toMatchTypeOf<StrictCoherentElement>();
 
 // Key with number
-expectTypeOf<{ li: { key: 123, text: 'item' } }>().toMatchTypeOf<StrictCoherentElement>();
+expectTypeOf<{
+  li: { key: 123; text: 'item' };
+}>().toMatchTypeOf<StrictCoherentElement>();
 
 // Style as string
-expectTypeOf<{ div: { style: 'color: red; font-size: 14px;' } }>().toMatchTypeOf<StrictCoherentElement>();
+expectTypeOf<{
+  div: { style: 'color: red; font-size: 14px;' };
+}>().toMatchTypeOf<StrictCoherentElement>();
 
 // Style as object
 expectTypeOf<{
-  div: { style: { color: 'red', fontSize: 14 } };
+  div: { style: { color: 'red'; fontSize: 14 } };
 }>().toMatchTypeOf<StrictCoherentElement>();
 
 // Global attributes
@@ -87,7 +109,9 @@ expectTypeOf<{
 }>().toMatchTypeOf<StrictCoherentElement>();
 
 // Raw HTML content
-expectTypeOf<{ div: { html: '<strong>Bold</strong>' } }>().toMatchTypeOf<StrictCoherentElement>();
+expectTypeOf<{
+  div: { html: '<strong>Bold</strong>' };
+}>().toMatchTypeOf<StrictCoherentElement>();
 
 // ============================================================================
 // Element-Specific Attributes (Valid)
@@ -100,7 +124,12 @@ expectTypeOf<{
 
 // Input with text attributes
 expectTypeOf<{
-  input: { type: 'text'; value: 'hello'; placeholder: 'Enter text'; maxLength: 100 };
+  input: {
+    type: 'text';
+    value: 'hello';
+    placeholder: 'Enter text';
+    maxLength: 100;
+  };
 }>().toMatchTypeOf<StrictCoherentElement>();
 
 // Input with number type
@@ -115,7 +144,12 @@ expectTypeOf<{
 
 // Input with form association
 expectTypeOf<{
-  input: { type: 'submit'; form: 'my-form'; formAction: '/submit'; formMethod: 'post' };
+  input: {
+    type: 'submit';
+    form: 'my-form';
+    formAction: '/submit';
+    formMethod: 'post';
+  };
 }>().toMatchTypeOf<StrictCoherentElement>();
 
 // Button with submit type
@@ -125,7 +159,11 @@ expectTypeOf<{
 
 // Button with popover attributes
 expectTypeOf<{
-  button: { type: 'button'; popoverTarget: 'popover-id'; popoverTargetAction: 'toggle' };
+  button: {
+    type: 'button';
+    popoverTarget: 'popover-id';
+    popoverTargetAction: 'toggle';
+  };
 }>().toMatchTypeOf<StrictCoherentElement>();
 
 // Anchor with href
@@ -175,7 +213,12 @@ expectTypeOf<{
 
 // Textarea with attributes
 expectTypeOf<{
-  textarea: { name: 'comment'; rows: 4; cols: 50; placeholder: 'Enter comment' };
+  textarea: {
+    name: 'comment';
+    rows: 4;
+    cols: 50;
+    placeholder: 'Enter comment';
+  };
 }>().toMatchTypeOf<StrictCoherentElement>();
 
 // Textarea with wrap
@@ -294,7 +337,12 @@ expectTypeOf<{
 
 // Link element (void)
 expectTypeOf<{
-  link: { href: '/style.css'; rel: 'stylesheet'; type: 'text/css'; media: 'screen' };
+  link: {
+    href: '/style.css';
+    rel: 'stylesheet';
+    type: 'text/css';
+    media: 'screen';
+  };
 }>().toMatchTypeOf<StrictCoherentElement>();
 
 // Meta element (void)
@@ -372,17 +420,27 @@ expectTypeOf<{
 
 // Touch events
 expectTypeOf<{
-  div: { onTouchStart: (e: TouchEvent) => void; onTouchEnd: (e: TouchEvent) => void };
+  div: {
+    onTouchStart: (e: TouchEvent) => void;
+    onTouchEnd: (e: TouchEvent) => void;
+  };
 }>().toMatchTypeOf<StrictCoherentElement>();
 
 // Animation events
 expectTypeOf<{
-  div: { onAnimationStart: (e: AnimationEvent) => void; onAnimationEnd: (e: AnimationEvent) => void };
+  div: {
+    onAnimationStart: (e: AnimationEvent) => void;
+    onAnimationEnd: (e: AnimationEvent) => void;
+  };
 }>().toMatchTypeOf<StrictCoherentElement>();
 
 // Media element events
 expectTypeOf<{
-  video: { onPlay: (e: Event) => void; onPause: (e: Event) => void; onEnded: (e: Event) => void };
+  video: {
+    onPlay: (e: Event) => void;
+    onPause: (e: Event) => void;
+    onEnded: (e: Event) => void;
+  };
 }>().toMatchTypeOf<StrictCoherentElement>();
 
 // ============================================================================
@@ -419,8 +477,10 @@ const colsOnInput: StrictCoherentElement = { input: { cols: 50 } };
 // @ts-expect-error - value attribute not valid on div
 const valueOnDiv: StrictCoherentElement = { div: { value: 'test' } };
 
-// @ts-expect-error - placeholder not valid on div
-const placeholderOnDiv: StrictCoherentElement = { div: { placeholder: 'Enter...' } };
+const placeholderOnDiv: StrictCoherentElement = {
+  // @ts-expect-error - placeholder not valid on div
+  div: { placeholder: 'Enter...' },
+};
 
 // @ts-expect-error - action is not valid on div (only on form)
 const actionOnDiv: StrictCoherentElement = { div: { action: '/submit' } };
@@ -453,8 +513,10 @@ const inputWithChildren: StrictCoherentElement = {
 // @ts-expect-error - br cannot have children
 const brWithChildren: StrictCoherentElement = { br: { children: 'text' } };
 
-// @ts-expect-error - hr cannot have children
-const hrWithChildren: StrictCoherentElement = { hr: { children: [{ div: {} }] } };
+const hrWithChildren: StrictCoherentElement = {
+  // @ts-expect-error - hr cannot have children
+  hr: { children: [{ div: {} }] },
+};
 
 // meta cannot have children
 const metaWithChildren: StrictCoherentElement = {
@@ -495,8 +557,10 @@ const trackWithChildren: StrictCoherentElement = {
 // @ts-expect-error - wbr cannot have children
 const wbrWithChildren: StrictCoherentElement = { wbr: { children: 'text' } };
 
-// @ts-expect-error - col cannot have children
-const colWithChildren: StrictCoherentElement = { col: { span: 2, children: [] } };
+const colWithChildren: StrictCoherentElement = {
+  // @ts-expect-error - col cannot have children
+  col: { span: 2, children: [] },
+};
 
 // ============================================================================
 // Type Inference Tests

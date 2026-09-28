@@ -1,8 +1,8 @@
 /**
  * Coherent.js Advanced Caching
- * 
+ *
  * Smart caching strategies for performance optimization
- * 
+ *
  * @module performance/cache
  */
 
@@ -57,7 +57,7 @@ export class LRUCache {
     // Add new entry
     this.cache.set(key, {
       value,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
     this.accessOrder.push(key);
@@ -144,7 +144,7 @@ export class LRUCache {
    * Get all values
    */
   values() {
-    return Array.from(this.cache.values()).map(entry => entry.value);
+    return Array.from(this.cache.values()).map((entry) => entry.value);
   }
 
   /**
@@ -154,9 +154,9 @@ export class LRUCache {
     return {
       size: this.cache.size,
       maxSize: this.maxSize,
-      utilizationPercent: (this.cache.size / this.maxSize * 100).toFixed(2),
+      utilizationPercent: ((this.cache.size / this.maxSize) * 100).toFixed(2),
       oldestKey: this.accessOrder[0],
-      newestKey: this.accessOrder[this.accessOrder.length - 1]
+      newestKey: this.accessOrder[this.accessOrder.length - 1],
     };
   }
 }
@@ -170,7 +170,7 @@ export class MemoryCache {
       strategy: 'lru', // lru, lfu, fifo
       maxSize: 100,
       ttl: null,
-      ...options
+      ...options,
     };
 
     this.cache = new Map();
@@ -219,12 +219,12 @@ export class MemoryCache {
       value,
       ttl,
       expiresAt: ttl ? Date.now() + ttl : null,
-      createdAt: Date.now()
+      createdAt: Date.now(),
     });
 
     this.metadata.set(key, {
       accessCount: 0,
-      lastAccess: Date.now()
+      lastAccess: Date.now(),
     });
 
     return this;
@@ -349,7 +349,7 @@ export class MemoryCache {
    */
   getStats() {
     const total = this.hits + this.misses;
-    const hitRate = total > 0 ? (this.hits / total * 100).toFixed(2) : 0;
+    const hitRate = total > 0 ? ((this.hits / total) * 100).toFixed(2) : 0;
 
     return {
       size: this.cache.size,
@@ -357,7 +357,7 @@ export class MemoryCache {
       hits: this.hits,
       misses: this.misses,
       hitRate: `${hitRate}%`,
-      strategy: this.options.strategy
+      strategy: this.options.strategy,
     };
   }
 }
@@ -384,14 +384,14 @@ export class MemoCache {
   memoize(fn) {
     return (...args) => {
       const key = this.keyGenerator(...args);
-      
+
       if (this.cache.has(key)) {
         return this.cache.get(key);
       }
 
       const result = fn(...args);
       this.cache.set(key, result);
-      
+
       return result;
     };
   }
@@ -419,7 +419,7 @@ export class RenderCache {
     this.cache = new MemoryCache({
       maxSize: options.maxSize || 50,
       ttl: options.ttl || 60000, // 1 minute default
-      strategy: 'lru'
+      strategy: 'lru',
     });
   }
 
@@ -506,5 +506,5 @@ export default {
   MemoCache,
   RenderCache,
   createCache,
-  memoize
+  memoize,
 };

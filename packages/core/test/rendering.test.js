@@ -6,16 +6,16 @@ describe('Component Rendering', () => {
     const BasicComponent = {
       div: {
         className: 'test',
-        text: 'Hello, World!'
-      }
+        text: 'Hello, World!',
+      },
     };
 
     const html = render(BasicComponent, {
       enableCache: true,
       enableMonitoring: false,
-      encapsulate: false
+      encapsulate: false,
     });
-    
+
     expect(html).toBe('<div class="test">Hello, World!</div>');
   });
 
@@ -23,36 +23,32 @@ describe('Component Rendering', () => {
     const ComponentWithChildren = {
       div: {
         className: 'parent',
-        children: [
-          { h1: { text: 'Title' } },
-          { p: { text: 'Content' } }
-        ]
-      }
+        children: [{ h1: { text: 'Title' } }, { p: { text: 'Content' } }],
+      },
     };
 
     const html = render(ComponentWithChildren, {
       enableCache: true,
       enableMonitoring: false,
-      encapsulate: false
+      encapsulate: false,
     });
 
-    expect(html).toMatch(/<div class="parent"><h1>Title<\/h1><p>Content<\/p><\/div>/);
+    expect(html).toMatch(
+      /<div class="parent"><h1>Title<\/h1><p>Content<\/p><\/div>/
+    );
   });
 
   it('renders boolean values as text', () => {
     const ComponentWithBooleans = {
       div: {
-        children: [
-          { span: { text: true } },
-          { span: { text: false } }
-        ]
-      }
+        children: [{ span: { text: true } }, { span: { text: false } }],
+      },
     };
 
     const html = render(ComponentWithBooleans, {
       enableCache: true,
       enableMonitoring: false,
-      encapsulate: false
+      encapsulate: false,
     });
 
     expect(html).toMatch(/<div><span>true<\/span><span>false<\/span><\/div>/);
@@ -67,20 +63,20 @@ describe('Component Rendering', () => {
             header: {
               children: [
                 { h1: { text: 'Article Title' } },
-                { time: { datetime: '2023-01-01', text: 'Jan 1, 2023' } }
-              ]
-            }
+                { time: { datetime: '2023-01-01', text: 'Jan 1, 2023' } },
+              ],
+            },
           },
           {
             main: {
               children: [
                 { p: { text: 'First paragraph' } },
-                { p: { text: 'Second paragraph' } }
-              ]
-            }
-          }
-        ]
-      }
+                { p: { text: 'Second paragraph' } },
+              ],
+            },
+          },
+        ],
+      },
     };
 
     const html = render(ComplexComponent);

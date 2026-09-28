@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, getCache, resetCache, getRenderingStats } from '../src/rendering/html-renderer.js';
+import {
+  render,
+  getCache,
+  resetCache,
+  getRenderingStats,
+} from '../src/rendering/html-renderer.js';
 
 // Mock the performance monitor to avoid actual monitoring during tests
 vi.mock('../src/performance/monitor.js', () => ({
@@ -8,8 +13,8 @@ vi.mock('../src/performance/monitor.js', () => ({
     recordError: vi.fn(),
     recordRender: vi.fn(),
     startTimer: vi.fn(() => ({ end: vi.fn() })),
-    getStats: vi.fn(() => ({}))
-  }
+    getStats: vi.fn(() => ({})),
+  },
 }));
 
 describe('HTML Renderer', () => {
@@ -35,8 +40,8 @@ describe('HTML Renderer', () => {
         div: {
           className: 'container',
           id: 'test',
-          text: 'Content'
-        }
+          text: 'Content',
+        },
       };
       const result = render(component);
 
@@ -59,8 +64,8 @@ describe('HTML Renderer', () => {
           type: 'checkbox',
           checked: true,
           disabled: false,
-          required: true
-        }
+          required: true,
+        },
       };
       const result = render(component);
 
@@ -73,7 +78,9 @@ describe('HTML Renderer', () => {
       const component = { div: '<script>alert("xss")</script>' };
       const result = render(component);
 
-      expect(result).toContain('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;');
+      expect(result).toContain(
+        '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;'
+      );
     });
 
     it('should work with enableCache option', () => {
@@ -93,10 +100,18 @@ describe('HTML Renderer', () => {
 
   describe('Void Elements', () => {
     it('renders void elements with attributes and no closing tag', () => {
-      expect(render({ meta: { charset: 'utf-8' } })).toBe('<meta charset="utf-8">');
-      expect(render({ img: { src: 'x.png', alt: 'x' } })).toBe('<img src="x.png" alt="x">');
-      expect(render({ input: { type: 'text', name: 'q' } })).toBe('<input type="text" name="q">');
-      expect(render({ link: { rel: 'stylesheet', href: 'a.css' } })).toBe('<link rel="stylesheet" href="a.css">');
+      expect(render({ meta: { charset: 'utf-8' } })).toBe(
+        '<meta charset="utf-8">'
+      );
+      expect(render({ img: { src: 'x.png', alt: 'x' } })).toBe(
+        '<img src="x.png" alt="x">'
+      );
+      expect(render({ input: { type: 'text', name: 'q' } })).toBe(
+        '<input type="text" name="q">'
+      );
+      expect(render({ link: { rel: 'stylesheet', href: 'a.css' } })).toBe(
+        '<link rel="stylesheet" href="a.css">'
+      );
     });
 
     it('renders bare void elements without a closing tag', () => {
@@ -107,11 +122,8 @@ describe('HTML Renderer', () => {
     it('renders void elements correctly inside children', () => {
       const html = render({
         head: {
-          children: [
-            { meta: { charset: 'utf-8' } },
-            { title: { text: 'T' } }
-          ]
-        }
+          children: [{ meta: { charset: 'utf-8' } }, { title: { text: 'T' } }],
+        },
       });
       expect(html).toBe('<head><meta charset="utf-8"><title>T</title></head>');
     });
@@ -176,7 +188,7 @@ describe('HTML Renderer', () => {
   describe('Integration Tests', () => {
     it('should handle simple form components', () => {
       const component = {
-        input: { type: 'text', placeholder: 'Enter text' }
+        input: { type: 'text', placeholder: 'Enter text' },
       };
 
       const result = render(component);

@@ -1,29 +1,61 @@
 import { describe, it, expect } from 'vitest';
 import http from 'node:http';
 import net from 'node:net';
-import { render, renderToStream, streamingUtils, dangerouslySetInnerContent } from '../src/index.js';
+import {
+  render,
+  renderToStream,
+  streamingUtils,
+  dangerouslySetInnerContent,
+} from '../src/index.js';
 import { createStreamMinifier, minifyHtml } from '../src/core/html-utils.js';
 
 async function collect(component, options) {
   const chunks = [];
-  for await (const chunk of renderToStream(component, options)) chunks.push(chunk);
+  for await (const chunk of renderToStream(component, options))
+    chunks.push(chunk);
   return chunks;
 }
 
-const bigList = (n) => ({ ul: { children: Array.from({ length: n }, (_, i) => ({ li: { key: i, className: 'row', text: `item ${i} <&>` } })) } });
+const bigList = (n) => ({
+  ul: {
+    children: Array.from({ length: n }, (_, i) => ({
+      li: { key: i, className: 'row', text: `item ${i} <&>` },
+    })),
+  },
+});
 
 describe('renderToStream', () => {
   const cases = {
-    'script bodies are not HTML-escaped': { script: { text: 'if (a < b && c) { run("x"); }' } },
-    'text and children both render': { p: { text: 'Hello ', children: [{ b: { text: 'world' } }] } },
+    'script bodies are not HTML-escaped': {
+      script: { text: 'if (a < b && c) { run("x"); }' },
+    },
+    'text and children both render': {
+      p: { text: 'Hello ', children: [{ b: { text: 'world' } }] },
+    },
     'key is not an attribute': { div: { key: 'k1', id: 'x', text: 'y' } },
     'number shorthand': { td: 42 },
-    'invalid tag names render nothing': { div: { children: [{ 'img src=x onerror=alert(1)': {} }] } },
-    'void elements': { div: { children: [{ br: {} }, { img: { src: '/a.png', alt: '' } }] } },
-    'trusted content': { div: { children: [dangerouslySetInnerContent('<em>raw</em>')] } },
-    'booleans in children': { ul: { children: [false && { li: 'x' }, { li: 'y' }] } },
+    'invalid tag names render nothing': {
+      div: { children: [{ 'img src=x onerror=alert(1)': {} }] },
+    },
+    'void elements': {
+      div: { children: [{ br: {} }, { img: { src: '/a.png', alt: '' } }] },
+    },
+    'trusted content': {
+      div: { children: [dangerouslySetInnerContent('<em>raw</em>')] },
+    },
+    'booleans in children': {
+      ul: { children: [false && { li: 'x' }, { li: 'y' }] },
+    },
     'multi-key objects': { h1: { text: 'Title' }, p: { text: 'Paragraph' } },
-    'streamed large list with nested small subtrees': { main: { children: [{ h1: 'List' }, bigList(50), { footer: { children: [{ small: '(c)' }] } }] } }
+    'streamed large list with nested small subtrees': {
+      main: {
+        children: [
+          { h1: 'List' },
+          bigList(50),
+          { footer: { children: [{ small: '(c)' }] } },
+        ],
+      },
+    },
   };
 
   for (const [name, component] of Object.entries(cases)) {
@@ -33,8 +65,17 @@ describe('renderToStream', () => {
   }
 
   it('matches render() with scoped CSS and a function component', async () => {
-    const Card = () => ({ div: { children: [{ style: { text: '.c{color:red}' } }, { p: { className: 'c', text: 'x' } }] } });
-    expect((await collect(Card, { scoped: true })).join('')).toBe(render(Card, { scoped: true }));
+    const Card = () => ({
+      div: {
+        children: [
+          { style: { text: '.c{color:red}' } },
+          { p: { className: 'c', text: 'x' } },
+        ],
+      },
+    });
+    expect((await collect(Card, { scoped: true })).join('')).toBe(
+      render(Card, { scoped: true })
+    );
   });
 
   it('yields several chunks and gives the event loop a turn between them', async () => {
@@ -47,19 +88,26 @@ describe('renderToStream', () => {
     };
     setImmediate(tick);
 
-    const chunks = await collect({ table: { children: [bigList(3000)] } }, { chunkSize: 4096 });
+    const chunks = await collect(
+      { table: { children: [bigList(3000)] } },
+      { chunkSize: 4096 }
+    );
     running = false;
 
     expect(chunks.length).toBeGreaterThan(10);
     expect(ticks).toBeGreaterThanOrEqual(chunks.length - 1);
-    expect(chunks.join('')).toBe(render({ table: { children: [bigList(3000)] } }));
+    expect(chunks.join('')).toBe(
+      render({ table: { children: [bigList(3000)] } })
+    );
   });
 
   it('throws errors instead of hiding them in an HTML comment', async () => {
     const Boom = () => {
       throw new Error('boom --> <script>alert(1)</script>');
     };
-    await expect(collect({ div: { children: [bigList(20), Boom] } })).rejects.toThrow('boom');
+    await expect(
+      collect({ div: { children: [bigList(20), Boom] } })
+    ).rejects.toThrow('boom');
   });
 
   it('supports onError like render()', async () => {
@@ -68,13 +116,17 @@ describe('renderToStream', () => {
     };
     const tree = { div: { children: [Boom, { p: 'after' }] } };
     const onError = () => ({ p: 'fallback' });
-    expect((await collect(tree, { onError })).join('')).toBe(render(tree, { onError }));
+    expect((await collect(tree, { onError })).join('')).toBe(
+      render(tree, { onError })
+    );
   });
 
   it('reports cycles', async () => {
     const children = [{ span: 'a' }];
     children.push(children);
-    await expect(collect({ div: { children } })).rejects.toThrow(/Circular reference/);
+    await expect(collect({ div: { children } })).rejects.toThrow(
+      /Circular reference/
+    );
   });
 
   it('streamToResponse aborts the response when rendering fails', async () => {
@@ -86,14 +138,22 @@ describe('renderToStream', () => {
       headersSent: false,
       getHeader: () => undefined,
       setHeader: (name, value) => events.push(['header', name, value]),
-      write: (chunk) => { events.push(['write', chunk.length]); return true; },
+      write: (chunk) => {
+        events.push(['write', chunk.length]);
+        return true;
+      },
       on: () => {},
       off: () => {},
       end: () => events.push(['end']),
-      destroy: (error) => events.push(['destroy', error.message])
+      destroy: (error) => events.push(['destroy', error.message]),
     };
 
-    await expect(streamingUtils.streamToResponse(renderToStream({ div: { children: [Boom] } }), response)).rejects.toThrow('boom');
+    await expect(
+      streamingUtils.streamToResponse(
+        renderToStream({ div: { children: [Boom] } }),
+        response
+      )
+    ).rejects.toThrow('boom');
     expect(events).toContainEqual(['destroy', 'boom']);
     expect(events.some(([type]) => type === 'end')).toBe(false);
   });
@@ -127,7 +187,9 @@ describe('renderToStream', () => {
 
       const outcome = await Promise.race([
         result.then((bytes) => ({ bytes })),
-        new Promise((resolve) => setTimeout(() => resolve('still pending'), 3000))
+        new Promise((resolve) =>
+          setTimeout(() => resolve('still pending'), 3000)
+        ),
       ]);
 
       expect(outcome).not.toBe('still pending');
@@ -143,30 +205,50 @@ describe('renderToStream', () => {
   // from render({ minify: true }).
   describe('minify', () => {
     const trees = {
-      'whitespace between children': { div: { children: [{ p: { text: 'a' } }, '\n   ', { p: { text: 'b' } }] } },
+      'whitespace between children': {
+        div: {
+          children: [{ p: { text: 'a' } }, '\n   ', { p: { text: 'b' } }],
+        },
+      },
       'comments and raw html': {
         main: {
           children: [
             { div: { html: '  <!-- note -->  <b> x </b>\n' } },
             dangerouslySetInnerContent('<!-- a > b -->  <i>y</i>  '),
-            ' tail  '
-          ]
-        }
+            ' tail  ',
+          ],
+        },
       },
-      'a large list': bigList(300)
+      'a large list': bigList(300),
     };
 
     for (const [name, tree] of Object.entries(trees)) {
       it(`matches render() for ${name}`, async () => {
         const expected = render(tree, { minify: true });
         for (const chunkSize of [1, 7, 8192]) {
-          expect((await collect(tree, { minify: true, chunkSize })).join('')).toBe(expected);
+          expect(
+            (await collect(tree, { minify: true, chunkSize })).join('')
+          ).toBe(expected);
         }
       });
     }
 
     it('minifies incrementally exactly like minifyHtml() over the whole input', () => {
-      const alphabet = ['<', '>', '!', '-', ' ', '\n', 'a', '<!--', '-->', '<p>', '</p>', '  ', '\t'];
+      const alphabet = [
+        '<',
+        '>',
+        '!',
+        '-',
+        ' ',
+        '\n',
+        'a',
+        '<!--',
+        '-->',
+        '<p>',
+        '</p>',
+        '  ',
+        '\t',
+      ];
       let seed = 7;
       const random = (n) => {
         seed = (seed * 1103515245 + 12345) % 2147483648;
@@ -176,7 +258,8 @@ describe('renderToStream', () => {
       for (let run = 0; run < 3000; run++) {
         let input = '';
         const length = random(30);
-        for (let i = 0; i < length; i++) input += alphabet[random(alphabet.length)];
+        for (let i = 0; i < length; i++)
+          input += alphabet[random(alphabet.length)];
 
         const minifier = createStreamMinifier();
         let output = '';
@@ -187,7 +270,9 @@ describe('renderToStream', () => {
         }
         output += minifier.end();
 
-        expect(output, JSON.stringify(input)).toBe(minifyHtml(input, { minify: true }));
+        expect(output, JSON.stringify(input)).toBe(
+          minifyHtml(input, { minify: true })
+        );
       }
     });
   });
@@ -203,14 +288,20 @@ describe('renderToStream', () => {
     };
 
     it('reports nested arrays past maxDepth while streaming', async () => {
-      await expect(collect(nested(300), { maxDepth: 100 })).rejects.toThrow(/Maximum render depth \(100\) exceeded/);
+      await expect(collect(nested(300), { maxDepth: 100 })).rejects.toThrow(
+        /Maximum render depth \(100\) exceeded/
+      );
     });
 
     it('reports maxDepth instead of overflowing the stack on very deep nesting', async () => {
       const tree = nested(20_000);
 
-      expect(() => render(tree, { maxDepth: 100 })).toThrow(/Maximum render depth \(100\) exceeded/);
-      await expect(collect(tree, { maxDepth: 100 })).rejects.toThrow(/Maximum render depth \(100\) exceeded/);
+      expect(() => render(tree, { maxDepth: 100 })).toThrow(
+        /Maximum render depth \(100\) exceeded/
+      );
+      await expect(collect(tree, { maxDepth: 100 })).rejects.toThrow(
+        /Maximum render depth \(100\) exceeded/
+      );
     });
   });
 });

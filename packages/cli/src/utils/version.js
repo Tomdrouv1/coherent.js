@@ -27,8 +27,13 @@ export function getCLIVersion() {
     // bundling moves.
     while (dir && dir !== dirname(dir)) {
       try {
-        const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf-8'));
-        if (pkg.name === '@coherent.js/cli' && typeof pkg.version === 'string') {
+        const pkg = JSON.parse(
+          readFileSync(join(dir, 'package.json'), 'utf-8')
+        );
+        if (
+          pkg.name === '@coherent.js/cli' &&
+          typeof pkg.version === 'string'
+        ) {
           cachedVersion = pkg.version;
           return cachedVersion;
         }

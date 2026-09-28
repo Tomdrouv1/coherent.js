@@ -5,7 +5,15 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { execFile } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, symlinkSync, realpathSync } from 'node:fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  realpathSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -16,14 +24,16 @@ const run = promisify(execFile);
 
 const pkgDir = fileURLToPath(new URL('../../', import.meta.url));
 const pkgJson = JSON.parse(readFileSync(join(pkgDir, 'package.json'), 'utf8'));
-const coreSrc = fileURLToPath(new URL('../../../core/src/index.js', import.meta.url));
+const coreSrc = fileURLToPath(
+  new URL('../../../core/src/index.js', import.meta.url)
+);
 
 /** Run the integration's config hook and capture what it registers. */
 function registeredRenderers(options) {
   const renderers = [];
   createAstroIntegration(options).hooks['astro:config:setup']({
     addRenderer: (renderer) => renderers.push(renderer),
-    updateConfig: () => {}
+    updateConfig: () => {},
   });
   return renderers;
 }
@@ -48,8 +58,9 @@ describe('Astro: server entrypoint', () => {
 
     const Hello = ({ name }) => ({ h1: { text: `Hello ${name}` } });
     expect(await mod.default.check(Hello, { name: 'x' })).toBe(true);
-    expect(await mod.default.renderToStaticMarkup(Hello, { name: '<b>' }))
-      .toEqual({ html: '<h1>Hello &lt;b&gt;</h1>' });
+    expect(
+      await mod.default.renderToStaticMarkup(Hello, { name: '<b>' })
+    ).toEqual({ html: '<h1>Hello &lt;b&gt;</h1>' });
   });
 });
 
@@ -62,28 +73,52 @@ describe('Astro: astro build', () => {
     mkdirSync(join(modules, '@coherent.js', 'core'), { recursive: true });
     mkdirSync(join(root, 'src', 'pages'), { recursive: true });
 
-    symlinkSync(realpathSync(join(pkgDir, 'node_modules', 'astro')), join(modules, 'astro'), 'dir');
-    symlinkSync(realpathSync(pkgDir), join(modules, '@coherent.js', 'integrations'), 'dir');
+    symlinkSync(
+      realpathSync(join(pkgDir, 'node_modules', 'astro')),
+      join(modules, 'astro'),
+      'dir'
+    );
+    symlinkSync(
+      realpathSync(pkgDir),
+      join(modules, '@coherent.js', 'integrations'),
+      'dir'
+    );
     // Point @coherent.js/core at its source so the test does not need a build.
-    writeFileSync(join(modules, '@coherent.js', 'core', 'package.json'), JSON.stringify({
-      name: '@coherent.js/core', type: 'module', exports: { '.': './index.js' }
-    }));
-    writeFileSync(join(modules, '@coherent.js', 'core', 'index.js'),
-      `export * from ${JSON.stringify(pathToFileURL(coreSrc).href)};\n`);
+    writeFileSync(
+      join(modules, '@coherent.js', 'core', 'package.json'),
+      JSON.stringify({
+        name: '@coherent.js/core',
+        type: 'module',
+        exports: { '.': './index.js' },
+      })
+    );
+    writeFileSync(
+      join(modules, '@coherent.js', 'core', 'index.js'),
+      `export * from ${JSON.stringify(pathToFileURL(coreSrc).href)};\n`
+    );
 
-    writeFileSync(join(root, 'package.json'), JSON.stringify({ name: 'astro-fixture', type: 'module', private: true }));
-    writeFileSync(join(root, 'astro.config.mjs'), [
-      "import { createAstroIntegration } from '@coherent.js/integrations/astro';",
-      'export default { integrations: [createAstroIntegration()] };',
-      ''
-    ].join('\n'));
-    writeFileSync(join(root, 'src', 'pages', 'index.astro'), [
-      '---',
-      "const Hello = (props) => ({ h1: { text: 'Hello ' + props.name } });",
-      '---',
-      '<html><body><Hello name="<astro>" /></body></html>',
-      ''
-    ].join('\n'));
+    writeFileSync(
+      join(root, 'package.json'),
+      JSON.stringify({ name: 'astro-fixture', type: 'module', private: true })
+    );
+    writeFileSync(
+      join(root, 'astro.config.mjs'),
+      [
+        "import { createAstroIntegration } from '@coherent.js/integrations/astro';",
+        'export default { integrations: [createAstroIntegration()] };',
+        '',
+      ].join('\n')
+    );
+    writeFileSync(
+      join(root, 'src', 'pages', 'index.astro'),
+      [
+        '---',
+        "const Hello = (props) => ({ h1: { text: 'Hello ' + props.name } });",
+        '---',
+        '<html><body><Hello name="<astro>" /></body></html>',
+        '',
+      ].join('\n')
+    );
   });
 
   afterAll(() => {
@@ -95,8 +130,12 @@ describe('Astro: astro build', () => {
     try {
       await run(process.execPath, [astroBin, 'build'], {
         cwd: root,
-        env: { ...process.env, ASTRO_TELEMETRY_DISABLED: '1', NODE_ENV: 'production' },
-        timeout: 90_000
+        env: {
+          ...process.env,
+          ASTRO_TELEMETRY_DISABLED: '1',
+          NODE_ENV: 'production',
+        },
+        timeout: 90_000,
       });
     } catch (error) {
       throw new Error(`astro build failed:\n${error.stdout}\n${error.stderr}`);

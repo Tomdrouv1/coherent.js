@@ -4,7 +4,13 @@
 
 const HTML_ESCAPE_TEST = /[&<>"']/;
 const HTML_ESCAPE = /[&<>"']/g;
-const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+const HTML_ESCAPES = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+};
 
 export function escapeHtml(text) {
   if (typeof text !== 'string') return text;
@@ -44,10 +50,12 @@ export function createTrustedContent(content) {
  * @returns {boolean} True when the value is a trusted-content marker
  */
 export function isTrustedContent(value) {
-  return Boolean(value) &&
+  return (
+    Boolean(value) &&
     typeof value === 'object' &&
     value[TRUSTED_CONTENT] === true &&
-    typeof value.__html === 'string';
+    typeof value.__html === 'string'
+  );
 }
 
 /**
@@ -64,7 +72,11 @@ const INVALID_ATTRIBUTE_NAME = /[\s"'<>/=\u0000-\u001F\u007F-\u009F]/;
  * @returns {boolean} True when the name can't break out of the tag
  */
 export function isValidAttributeName(name) {
-  return typeof name === 'string' && name.length > 0 && !INVALID_ATTRIBUTE_NAME.test(name);
+  return (
+    typeof name === 'string' &&
+    name.length > 0 &&
+    !INVALID_ATTRIBUTE_NAME.test(name)
+  );
 }
 
 export function unescapeHtml(text) {
@@ -92,7 +104,11 @@ export function isVoidElement(tagName) {
  * Enumerated attributes whose "false" is meaningful and must be written out
  * (a bare or missing attribute means something else).
  */
-const ENUMERATED_BOOLEAN_ATTRIBUTES = new Set(['spellcheck', 'draggable', 'contenteditable']);
+const ENUMERATED_BOOLEAN_ATTRIBUTES = new Set([
+  'spellcheck',
+  'draggable',
+  'contenteditable',
+]);
 
 /**
  * Normalize a class value: strings as-is, arrays flattened with falsy
@@ -103,7 +119,9 @@ function normalizeClassValue(value) {
     return value.map(normalizeClassValue).filter(Boolean).join(' ');
   }
   if (value && typeof value === 'object') {
-    return Object.keys(value).filter((name) => value[name]).join(' ');
+    return Object.keys(value)
+      .filter((name) => value[name])
+      .join(' ');
   }
   if (value === null || value === undefined || value === false) return '';
   return String(value);
@@ -137,7 +155,7 @@ const ATTRIBUTE_NAMES = {
   className: 'class',
   // Written as is, browsers read `htmlFor` as an unknown `htmlfor`
   // attribute: the label was not associated with its control.
-  htmlFor: 'for'
+  htmlFor: 'for',
 };
 
 /**
@@ -150,7 +168,9 @@ function styleToCss(style) {
   return Object.entries(style)
     .filter(([, val]) => val !== null && val !== undefined && val !== false)
     .map(([prop, val]) => {
-      const name = prop.startsWith('--') ? prop : prop.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`);
+      const name = prop.startsWith('--')
+        ? prop
+        : prop.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
       return `${name}: ${val}`;
     })
     .join('; ');
@@ -161,13 +181,24 @@ export function formatAttributes(props, skip) {
   // Function values are called first: they were joined as source code.
   if (props && props.class !== undefined && props.className !== undefined) {
     const { className, ...rest } = props;
-    const resolve = (key, value) => normalizeClassValue(typeof value === 'function' ? callAttribute(key, value) : value);
-    props = { ...rest, class: [resolve('class', props.class), resolve('className', className)].filter(Boolean).join(' ') };
+    const resolve = (key, value) =>
+      normalizeClassValue(
+        typeof value === 'function' ? callAttribute(key, value) : value
+      );
+    props = {
+      ...rest,
+      class: [resolve('class', props.class), resolve('className', className)]
+        .filter(Boolean)
+        .join(' '),
+    };
   }
 
   let formatted = '';
   for (const key in props) {
-    if (Object.prototype.hasOwnProperty.call(props, key) && !(skip && skip.has(key))) {
+    if (
+      Object.prototype.hasOwnProperty.call(props, key) &&
+      !(skip && skip.has(key))
+    ) {
       let value = props[key];
 
       const attributeName = ATTRIBUTE_NAMES[key] ?? key;
@@ -175,7 +206,9 @@ export function formatAttributes(props, skip) {
       // Names are emitted unescaped: `{ 'onmouseover="alert(1)" x': 'y' }`
       // used to render a live handler, and a key containing `>` ended the tag.
       if (!isValidAttributeName(attributeName)) {
-        throw new Error(`Invalid attribute name ${JSON.stringify(key)}: attribute names cannot contain whitespace, quotes, '<', '>', '/', '=' or control characters`);
+        throw new Error(
+          `Invalid attribute name ${JSON.stringify(key)}: attribute names cannot contain whitespace, quotes, '<', '>', '/', '=' or control characters`
+        );
       }
 
       // Function values: event handlers render nothing. The client's
@@ -193,20 +226,33 @@ export function formatAttributes(props, skip) {
         }
       }
 
-      if (attributeName === 'class' && typeof value === 'object' && value !== null) {
+      if (
+        attributeName === 'class' &&
+        typeof value === 'object' &&
+        value !== null
+      ) {
         // ['a', cond && 'b'] or { a: true, b: false } — was "a,b" / "[object Object]"
         value = normalizeClassValue(value);
       }
 
-      if (typeof value === 'boolean' && (attributeName.startsWith('aria-') || ENUMERATED_BOOLEAN_ATTRIBUTES.has(attributeName.toLowerCase()))) {
+      if (
+        typeof value === 'boolean' &&
+        (attributeName.startsWith('aria-') ||
+          ENUMERATED_BOOLEAN_ATTRIBUTES.has(attributeName.toLowerCase()))
+      ) {
         // aria-hidden="false", spellcheck="false": false is a value here, not absence
         value = String(value);
       }
 
       // Handle style objects by converting to CSS string
-      if (attributeName === 'style' && typeof value === 'object' && value !== null) {
+      if (
+        attributeName === 'style' &&
+        typeof value === 'object' &&
+        value !== null
+      ) {
         const cssString = styleToCss(value);
-        if (cssString) formatted += ` ${attributeName}="${escapeHtml(cssString)}"`;
+        if (cssString)
+          formatted += ` ${attributeName}="${escapeHtml(cssString)}"`;
       } else if (value === true) {
         formatted += ` ${attributeName}`;
       } else if (value !== false && value !== null && value !== undefined) {
@@ -310,7 +356,7 @@ export function createStreamMinifier() {
       const rest = pending;
       pending = '';
       return rest || !started ? minifyPiece(rest, true) : '';
-    }
+    },
   };
 }
 

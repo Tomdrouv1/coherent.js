@@ -15,7 +15,8 @@ import { requireInteractive } from '../utils/interactive.js';
 // API names may be lowercase (`coherent generate api users`); components and
 // pages are PascalCase.
 const API_TYPES = ['api', 'route', 'r'];
-const nameValidator = (type) => (API_TYPES.includes(type) ? validateApiName : validateComponentName);
+const nameValidator = (type) =>
+  API_TYPES.includes(type) ? validateApiName : validateComponentName;
 
 export const generateCommand = new Command('generate')
   .alias('g')
@@ -33,19 +34,42 @@ export const generateCommand = new Command('generate')
 
     // Interactive type selection if not provided
     if (!generationType) {
-      requireInteractive('the generation type', 'coherent generate <type> <name>');
+      requireInteractive(
+        'the generation type',
+        'coherent generate <type> <name>'
+      );
 
       const response = await prompts({
         type: 'select',
         name: 'type',
         message: 'What would you like to generate?',
         choices: [
-          { title: '🧩 Component', value: 'component', description: 'Reusable UI component' },
-          { title: '📄 Page', value: 'page', description: 'Full page with routing' },
-          { title: '🔌 API Route', value: 'api', description: 'API endpoint with validation' },
-          { title: '📊 Database Model', value: 'model', description: 'Database model with migrations' },
-          { title: '🔄 Middleware', value: 'middleware', description: 'Express/Fastify middleware' }
-        ]
+          {
+            title: '🧩 Component',
+            value: 'component',
+            description: 'Reusable UI component',
+          },
+          {
+            title: '📄 Page',
+            value: 'page',
+            description: 'Full page with routing',
+          },
+          {
+            title: '🔌 API Route',
+            value: 'api',
+            description: 'API endpoint with validation',
+          },
+          {
+            title: '📊 Database Model',
+            value: 'model',
+            description: 'Database model with migrations',
+          },
+          {
+            title: '🔄 Middleware',
+            value: 'middleware',
+            description: 'Express/Fastify middleware',
+          },
+        ],
       });
 
       if (!response.type) {
@@ -67,7 +91,7 @@ export const generateCommand = new Command('generate')
         type: 'text',
         name: 'name',
         message: `What is the ${generationType} name?`,
-        validate: nameValidator(generationType)
+        validate: nameValidator(generationType),
       });
 
       if (!response.name) {
@@ -88,11 +112,11 @@ export const generateCommand = new Command('generate')
     console.log();
     console.log(picocolors.cyan(`🚀 Generating ${generationType}...`));
     console.log(picocolors.gray('📝 Name:'), picocolors.bold(itemName));
-    
+
     if (options.path) {
       console.log(picocolors.gray('📍 Path:'), options.path);
     }
-    
+
     console.log();
 
     const spinner = ora(`Generating ${generationType}...`).start();
@@ -136,13 +160,15 @@ export const generateCommand = new Command('generate')
 
       // Success message
       console.log();
-      console.log(picocolors.green(`✅ ${generationType} generated successfully!`));
+      console.log(
+        picocolors.green(`✅ ${generationType} generated successfully!`)
+      );
       console.log();
-      
+
       // Show generated files
       if (result?.files && result.files.length > 0) {
         console.log(picocolors.cyan('📁 Generated files:'));
-        result.files.forEach(file => {
+        result.files.forEach((file) => {
           console.log(picocolors.gray('  ✨'), file);
         });
         console.log();
@@ -151,12 +177,11 @@ export const generateCommand = new Command('generate')
       // Show next steps
       if (result?.nextSteps && result.nextSteps.length > 0) {
         console.log(picocolors.cyan('Next steps:'));
-        result.nextSteps.forEach(step => {
+        result.nextSteps.forEach((step) => {
           console.log(picocolors.gray('  •'), step);
         });
         console.log();
       }
-
     } catch (_error) {
       spinner.fail(`Failed to generate ${generationType}`);
       console.error(picocolors.red('❌ Error:'), _error.message);

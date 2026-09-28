@@ -1,6 +1,6 @@
 /**
  * Tests for DevTools - ComponentInspector
- * 
+ *
  * Coverage areas:
  * - Component inspection and analysis
  * - Validation and error detection
@@ -9,7 +9,12 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ComponentInspector, createInspector, inspect, validateComponent } from '../src/inspector.js';
+import {
+  ComponentInspector,
+  createInspector,
+  inspect,
+  validateComponent,
+} from '../src/inspector.js';
 
 describe('ComponentInspector', () => {
   let inspector;
@@ -18,7 +23,7 @@ describe('ComponentInspector', () => {
     inspector = new ComponentInspector({
       trackHistory: true,
       maxHistory: 100,
-      verbose: false
+      verbose: false,
     });
   });
 
@@ -31,8 +36,8 @@ describe('ComponentInspector', () => {
       const component = {
         div: {
           className: 'test',
-          text: 'Hello World'
-        }
+          text: 'Hello World',
+        },
       };
 
       const result = inspector.inspect(component);
@@ -46,11 +51,8 @@ describe('ComponentInspector', () => {
     it('should track component hierarchy', () => {
       const component = {
         div: {
-          children: [
-            { h1: { text: 'Title' } },
-            { p: { text: 'Content' } }
-          ]
-        }
+          children: [{ h1: { text: 'Title' } }, { p: { text: 'Content' } }],
+        },
       };
 
       const result = inspector.inspect(component);
@@ -64,8 +66,8 @@ describe('ComponentInspector', () => {
         div: {
           className: 'container',
           id: 'main',
-          'data-test': 'value'
-        }
+          'data-test': 'value',
+        },
       };
 
       const result = inspector.inspect(component);
@@ -92,16 +94,16 @@ describe('ComponentInspector', () => {
           children: [
             {
               header: {
-                children: [{ h1: { text: 'Title' } }]
-              }
+                children: [{ h1: { text: 'Title' } }],
+              },
             },
             {
               main: {
-                children: [{ p: { text: 'Content' } }]
-              }
-            }
-          ]
-        }
+                children: [{ p: { text: 'Content' } }],
+              },
+            },
+          ],
+        },
       };
 
       const result = inspector.inspect(component);
@@ -116,8 +118,8 @@ describe('ComponentInspector', () => {
       const component = {
         div: {
           className: 'valid',
-          text: 'Valid component'
-        }
+          text: 'Valid component',
+        },
       };
 
       const result = validateComponent(component);
@@ -139,8 +141,8 @@ describe('ComponentInspector', () => {
       const component = {
         img: {
           // Missing src attribute
-          alt: 'Image'
-        }
+          alt: 'Image',
+        },
       };
 
       const result = inspector.inspect(component);
@@ -155,15 +157,15 @@ describe('ComponentInspector', () => {
       const result = inspector.inspect(component);
 
       expect(result.warnings).toBeDefined();
-      expect(result.warnings.some(w => w.includes('circular'))).toBe(true);
+      expect(result.warnings.some((w) => w.includes('circular'))).toBe(true);
     });
 
     it('should validate prop types', () => {
       const component = {
         div: {
           className: 123, // Should be string
-          onClick: 'not a function' // Should be function
-        }
+          onClick: 'not a function', // Should be function
+        },
       };
 
       const result = inspector.inspect(component);
@@ -187,9 +189,9 @@ describe('ComponentInspector', () => {
       const complexComponent = {
         div: {
           children: Array.from({ length: 100 }, (_, i) => ({
-            span: { text: `Item ${i}` }
-          }))
-        }
+            span: { text: `Item ${i}` },
+          })),
+        },
       };
 
       const simple = inspector.inspect(simpleComponent);
@@ -205,11 +207,11 @@ describe('ComponentInspector', () => {
             div: {
               children: [
                 { h3: { text: `Title ${i}` } },
-                { p: { text: `Content ${i}` } }
-              ]
-            }
-          }))
-        }
+                { p: { text: `Content ${i}` } },
+              ],
+            },
+          })),
+        },
       };
 
       const result = inspector.inspect(largeComponent);
@@ -246,7 +248,7 @@ describe('ComponentInspector', () => {
     it('should limit history size', () => {
       const limitedInspector = new ComponentInspector({
         trackHistory: true,
-        maxHistory: 5
+        maxHistory: 5,
       });
 
       for (let i = 0; i < 10; i++) {
@@ -284,8 +286,8 @@ describe('ComponentInspector', () => {
       inspector.inspect({ div: { className: 'success', text: 'Success' } });
 
       const history = inspector.getHistory();
-      const errorComponents = history.filter(h => 
-        h.structure.div?.className === 'error'
+      const errorComponents = history.filter(
+        (h) => h.structure.div?.className === 'error'
       );
 
       expect(errorComponents).toHaveLength(1);

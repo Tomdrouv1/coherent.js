@@ -15,7 +15,7 @@ describe('API Fixes for v1.0.0', () => {
 
   it('should render simple component with render function', async () => {
     const component = {
-      div: { class: 'test', text: 'Hello World' }
+      div: { class: 'test', text: 'Hello World' },
     };
 
     const html = await render(component);
@@ -31,7 +31,7 @@ describe('API Fixes for v1.0.0', () => {
   it('should create form state with initial values', () => {
     const formState = createFormState({
       name: 'John',
-      email: 'john@example.com'
+      email: 'john@example.com',
     });
 
     expect(formState.getValue('name')).toBe('John');
@@ -41,16 +41,16 @@ describe('API Fixes for v1.0.0', () => {
   it('should work with reactive state and rendering together', async () => {
     const state = createReactiveState({
       title: 'Coherent.js',
-      count: 42
+      count: 42,
     });
 
     const component = {
       div: {
         children: [
-          { h1: { text: state.get('title') }},
-          { p: { text: `Count: ${state.get('count')}` }}
-        ]
-      }
+          { h1: { text: state.get('title') } },
+          { p: { text: `Count: ${state.get('count')}` } },
+        ],
+      },
     };
 
     const html = await render(component);

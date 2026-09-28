@@ -24,7 +24,7 @@ const postJson = (path, body) =>
   fetch(`${baseUrl}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
   });
 
 describe('e-commerce demo server', () => {
@@ -42,11 +42,20 @@ describe('e-commerce demo server', () => {
     const list = await fetch(`${baseUrl}/api/products`);
     expect(list.status).toBe(200);
     expect(list.headers.get('content-type')).toMatch(/^application\/json/);
-    expect((await list.json()).map((product) => product.id)).toEqual([1, 2, 3, 4, 5]);
+    expect((await list.json()).map((product) => product.id)).toEqual([
+      1, 2, 3, 4, 5,
+    ]);
 
-    const created = await postJson('/api/products', { name: 'Coherent Cap', price: 19 });
+    const created = await postJson('/api/products', {
+      name: 'Coherent Cap',
+      price: 19,
+    });
     expect(created.status).toBe(201);
-    expect((await created.json()).product).toMatchObject({ name: 'Coherent Cap', price: 19, inStock: true });
+    expect((await created.json()).product).toMatchObject({
+      name: 'Coherent Cap',
+      price: 19,
+      inStock: true,
+    });
 
     const invalid = await postJson('/api/products', { price: -1 });
     expect(invalid.status).toBe(400);
@@ -55,7 +64,10 @@ describe('e-commerce demo server', () => {
   it('adds catalog products to the cart by id', async () => {
     const added = await postJson('/api/cart/add', { id: 2 });
     expect(added.status).toBe(200);
-    expect(await added.json()).toMatchObject({ total: 14.99, items: [{ id: 2, quantity: 1 }] });
+    expect(await added.json()).toMatchObject({
+      total: 14.99,
+      items: [{ id: 2, quantity: 1 }],
+    });
 
     expect((await postJson('/api/cart/add', { id: 3 })).status).toBe(409); // out of stock
     expect((await postJson('/api/cart/add', { id: 999 })).status).toBe(404);
@@ -64,7 +76,9 @@ describe('e-commerce demo server', () => {
     expect(cart.items).toHaveLength(1);
 
     // The server-rendered page shows the cart
-    expect(await (await fetch(`${baseUrl}/`)).text()).toContain('Total: $14.99');
+    expect(await (await fetch(`${baseUrl}/`)).text()).toContain(
+      'Total: $14.99'
+    );
   });
 
   it('answers unknown pages with 404', async () => {

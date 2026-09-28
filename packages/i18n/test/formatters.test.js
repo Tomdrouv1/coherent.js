@@ -1,6 +1,6 @@
 /**
  * Tests for i18n - Formatters
- * 
+ *
  * Coverage areas:
  * - Number formatting
  * - Date/time formatting
@@ -9,11 +9,11 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { 
-  NumberFormatter, 
-  DateFormatter, 
-  CurrencyFormatter, 
-  ListFormatter
+import {
+  NumberFormatter,
+  DateFormatter,
+  CurrencyFormatter,
+  ListFormatter,
 } from '../src/formatters.js';
 
 // Create formatters wrapper that matches test expectations
@@ -66,10 +66,10 @@ const formatters = {
   },
   // Custom formatter registry
   _customFormatters: new Map(),
-  get: function(name) {
+  get: function (name) {
     return this._customFormatters.get(name);
   },
-  apply: function(name, value, options) {
+  apply: function (name, value, options) {
     const formatter = this._customFormatters.get(name);
     if (!formatter) return value;
     try {
@@ -78,12 +78,12 @@ const formatters = {
       return value; // Gracefully handle errors
     }
   },
-  chain: function(value, formatters) {
+  chain: function (value, formatters) {
     return formatters.reduce((val, name) => {
       const formatter = this._customFormatters.get(name);
       return formatter ? formatter(val) : val;
     }, value);
-  }
+  },
 };
 
 // Helper functions for custom formatters
@@ -95,12 +95,12 @@ const createFormatter = (locale = 'en-US', options = {}) => {
   return {
     locale,
     number: (value) => formatters.number(value, locale),
-    currency: (value, currency = options.currency || 'USD') => 
+    currency: (value, currency = options.currency || 'USD') =>
       formatters.currency(value, locale, currency),
     date: (value, opts = {}) => formatters.date(value, locale, opts),
-    withLocale: function(newLocale) {
+    withLocale: function (newLocale) {
       return createFormatter(newLocale, options);
-    }
+    },
   };
 };
 
@@ -178,8 +178,8 @@ describe('Formatters', () => {
     });
 
     it('should handle timezones', () => {
-      const result = formatters.date(testDate, 'en-US', { 
-        timeZone: 'America/New_York' 
+      const result = formatters.date(testDate, 'en-US', {
+        timeZone: 'America/New_York',
       });
       expect(result).toBeDefined();
     });
@@ -219,7 +219,7 @@ describe('Formatters', () => {
 
     it('should handle conjunctions', () => {
       const items = ['red', 'green', 'blue'];
-      
+
       const andList = formatters.list(items, 'en-US', { type: 'conjunction' });
       const orList = formatters.list(items, 'en-US', { type: 'disjunction' });
 
@@ -229,7 +229,7 @@ describe('Formatters', () => {
 
     it('should support different styles', () => {
       const items = ['Alice', 'Bob', 'Charlie'];
-      
+
       const long = formatters.list(items, 'en-US', { style: 'long' });
       const short = formatters.list(items, 'en-US', { style: 'short' });
 
@@ -274,7 +274,7 @@ describe('Formatters', () => {
 
     it('should chain formatters', () => {
       registerFormatter('double', (value) => value + value);
-      registerFormatter('exclaim', (value) => `${value  }!`);
+      registerFormatter('exclaim', (value) => `${value}!`);
 
       const result = formatters.chain('hello', ['double', 'exclaim']);
       expect(result).toBe('hellohello!');
@@ -308,7 +308,7 @@ describe('Formatters', () => {
     it('should create formatter with options', () => {
       const formatter = createFormatter('en-US', {
         currency: 'USD',
-        dateStyle: 'long'
+        dateStyle: 'long',
       });
 
       const result = formatter.currency(100);
@@ -319,9 +319,7 @@ describe('Formatters', () => {
     it('should support method chaining', () => {
       const formatter = createFormatter('en-US');
 
-      const result = formatter
-        .withLocale('fr-FR')
-        .number(1234.56);
+      const result = formatter.withLocale('fr-FR').number(1234.56);
 
       expect(result).toMatch(/1\s?234/);
     });
@@ -434,6 +432,8 @@ describe('DateFormatter#relative', () => {
 
   it('uses the formatter locale', () => {
     expect(new DateFormatter('fr').relative(NOW + DAY)).toBe('demain');
-    expect(new DateFormatter('fr').relative(NOW + 3 * DAY)).toBe('dans 3 jours');
+    expect(new DateFormatter('fr').relative(NOW + 3 * DAY)).toBe(
+      'dans 3 jours'
+    );
   });
 });

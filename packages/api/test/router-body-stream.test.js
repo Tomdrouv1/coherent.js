@@ -37,7 +37,7 @@ function streamReq(chunks, headers = {}) {
   const req = new Readable({
     read() {
       setImmediate(() => this.push(queue.length ? queue.shift() : null));
-    }
+    },
   });
   req.method = 'POST';
   req.url = '/echo';
@@ -65,7 +65,11 @@ describe('request body streaming', () => {
 
     const res = mockRes();
     await echoRouter(seen).handle(
-      streamReq([payload.subarray(0, cut), payload.subarray(cut, cut2), payload.subarray(cut2)]),
+      streamReq([
+        payload.subarray(0, cut),
+        payload.subarray(cut, cut2),
+        payload.subarray(cut2),
+      ]),
       res,
       { rateLimit: false }
     );
@@ -108,15 +112,17 @@ describe('request body streaming', () => {
       method: 'POST',
       url: '/echo',
       headers: { 'content-type': 'application/json' },
-      socket: { remoteAddress: '127.0.0.1' }
+      socket: { remoteAddress: '127.0.0.1' },
     });
     req.push('{"a":');
     setTimeout(() => req.destroy(), 20);
 
     const res = mockRes();
     const outcome = await Promise.race([
-      echoRouter(seen).handle(req, res, { rateLimit: false }).then(() => 'settled'),
-      new Promise((resolve) => setTimeout(() => resolve('pending'), 1000))
+      echoRouter(seen)
+        .handle(req, res, { rateLimit: false })
+        .then(() => 'settled'),
+      new Promise((resolve) => setTimeout(() => resolve('pending'), 1000)),
     ]);
 
     expect(outcome).toBe('settled');
@@ -137,7 +143,9 @@ describe('request body streaming', () => {
 
     await new Promise((resolve) => {
       const socket = net.connect(server.address().port, '127.0.0.1', () => {
-        socket.write('POST /echo HTTP/1.1\r\nHost: x\r\nContent-Type: application/json\r\nContent-Length: 100\r\n\r\n{"a":');
+        socket.write(
+          'POST /echo HTTP/1.1\r\nHost: x\r\nContent-Type: application/json\r\nContent-Length: 100\r\n\r\n{"a":'
+        );
         setTimeout(() => {
           socket.destroy();
           resolve();
@@ -152,7 +160,11 @@ describe('request body streaming', () => {
 
   it('rejects a declared oversized body with 413 before reading it', async () => {
     const res = mockRes();
-    await echoRouter([]).handle(streamReq([], { 'content-length': String(2 * 1024 * 1024) }), res, { rateLimit: false });
+    await echoRouter([]).handle(
+      streamReq([], { 'content-length': String(2 * 1024 * 1024) }),
+      res,
+      { rateLimit: false }
+    );
 
     expect(res.status).toBe(413);
   });
@@ -160,7 +172,10 @@ describe('request body streaming', () => {
   it('rejects an oversized streamed body with 413', async () => {
     const res = mockRes();
     const big = Buffer.alloc(600, 'a');
-    await echoRouter([]).handle(streamReq([big, big]), res, { rateLimit: false, maxBodySize: 1000 });
+    await echoRouter([]).handle(streamReq([big, big]), res, {
+      rateLimit: false,
+      maxBodySize: 1000,
+    });
 
     expect(res.status).toBe(413);
     expect(JSON.parse(res.body)).toEqual({ error: 'Request body too large' });

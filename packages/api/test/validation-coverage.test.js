@@ -4,7 +4,11 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { ValidationError } from '../src/errors.js';
-import { validateAgainstSchema, validateField, withValidation } from '../src/validation.js';
+import {
+  validateAgainstSchema,
+  validateField,
+  withValidation,
+} from '../src/validation.js';
 
 describe('API Validation Utilities', () => {
   describe('email format', () => {
@@ -89,7 +93,7 @@ describe('API Validation Utilities', () => {
     it('should validate required fields', () => {
       const schema = {
         type: 'object',
-        required: ['name', 'email']
+        required: ['name', 'email'],
       };
 
       // Missing required fields
@@ -115,7 +119,7 @@ describe('API Validation Utilities', () => {
     it('should validate multiple missing required fields', () => {
       const schema = {
         type: 'object',
-        required: ['name', 'email', 'age']
+        required: ['name', 'email', 'age'],
       };
 
       const data = {};
@@ -123,7 +127,11 @@ describe('API Validation Utilities', () => {
 
       expect(result.valid).toBe(false);
       expect(result.errors).toHaveLength(3);
-      expect(result.errors.map(e => e.field)).toEqual(['name', 'email', 'age']);
+      expect(result.errors.map((e) => e.field)).toEqual([
+        'name',
+        'email',
+        'age',
+      ]);
     });
 
     it('should validate object properties', () => {
@@ -132,14 +140,14 @@ describe('API Validation Utilities', () => {
         properties: {
           name: { type: 'string' },
           age: { type: 'number' },
-          active: { type: 'boolean' }
-        }
+          active: { type: 'boolean' },
+        },
       };
 
       const data = {
         name: 'John',
         age: 30,
-        active: true
+        active: true,
       };
 
       const result = validateAgainstSchema(schema, data);
@@ -160,12 +168,12 @@ describe('API Validation Utilities', () => {
                 type: 'object',
                 properties: {
                   email: { type: 'string' },
-                  phone: { type: 'string' }
-                }
-              }
-            }
-          }
-        }
+                  phone: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
       };
 
       const data = {
@@ -173,9 +181,9 @@ describe('API Validation Utilities', () => {
           name: 'John',
           contact: {
             email: 'john@example.com',
-            phone: '123-456-7890'
-          }
-        }
+            phone: '123-456-7890',
+          },
+        },
       };
 
       const result = validateAgainstSchema(schema, data);
@@ -191,13 +199,13 @@ describe('API Validation Utilities', () => {
         properties: {
           name: { type: 'string' },
           age: { type: 'number' },
-          email: { type: 'string' }
-        }
+          email: { type: 'string' },
+        },
       };
 
       const data = {
         name: 123, // wrong type
-        email: 456 // wrong type
+        email: 456, // wrong type
       };
 
       const result = validateAgainstSchema(schema, data);
@@ -285,7 +293,7 @@ describe('API Validation Utilities', () => {
     it('should validate string minimum length', () => {
       const schema = {
         type: 'string',
-        minLength: 5
+        minLength: 5,
       };
 
       const result = validateField(schema, 'hello');
@@ -297,7 +305,7 @@ describe('API Validation Utilities', () => {
     it('should reject string below minimum length', () => {
       const schema = {
         type: 'string',
-        minLength: 5
+        minLength: 5,
       };
 
       const result = validateField(schema, 'hi');
@@ -310,7 +318,7 @@ describe('API Validation Utilities', () => {
     it('should validate string maximum length', () => {
       const schema = {
         type: 'string',
-        maxLength: 10
+        maxLength: 10,
       };
 
       const result = validateField(schema, 'hello');
@@ -322,7 +330,7 @@ describe('API Validation Utilities', () => {
     it('should reject string above maximum length', () => {
       const schema = {
         type: 'string',
-        maxLength: 5
+        maxLength: 5,
       };
 
       const result = validateField(schema, 'too long string');
@@ -335,7 +343,7 @@ describe('API Validation Utilities', () => {
     it('should validate email format', () => {
       const schema = {
         type: 'string',
-        format: 'email'
+        format: 'email',
       };
 
       const result = validateField(schema, 'test@example.com');
@@ -347,7 +355,7 @@ describe('API Validation Utilities', () => {
     it('should reject invalid email format', () => {
       const schema = {
         type: 'string',
-        format: 'email'
+        format: 'email',
       };
 
       const result = validateField(schema, 'invalid-email');
@@ -360,7 +368,7 @@ describe('API Validation Utilities', () => {
     it('should validate number minimum value', () => {
       const schema = {
         type: 'number',
-        minimum: 10
+        minimum: 10,
       };
 
       const result = validateField(schema, 15);
@@ -372,7 +380,7 @@ describe('API Validation Utilities', () => {
     it('should reject number below minimum', () => {
       const schema = {
         type: 'number',
-        minimum: 10
+        minimum: 10,
       };
 
       const result = validateField(schema, 5);
@@ -385,7 +393,7 @@ describe('API Validation Utilities', () => {
     it('should validate number maximum value', () => {
       const schema = {
         type: 'number',
-        maximum: 100
+        maximum: 100,
       };
 
       const result = validateField(schema, 50);
@@ -397,7 +405,7 @@ describe('API Validation Utilities', () => {
     it('should reject number above maximum', () => {
       const schema = {
         type: 'number',
-        maximum: 100
+        maximum: 100,
       };
 
       const result = validateField(schema, 150);
@@ -420,7 +428,7 @@ describe('API Validation Utilities', () => {
     it('should handle empty string for length validation', () => {
       const schema = {
         type: 'string',
-        minLength: 1
+        minLength: 1,
       };
 
       const result = validateField(schema, '');
@@ -466,21 +474,21 @@ describe('API Validation Utilities', () => {
                 required: ['name'],
                 properties: {
                   name: { type: 'string' },
-                  email: { type: 'string', format: 'email' }
-                }
-              }
-            }
-          }
-        }
+                  email: { type: 'string', format: 'email' },
+                },
+              },
+            },
+          },
+        },
       };
 
       const data = {
         user: {
           profile: {
             name: 'John Doe',
-            email: 'john@example.com'
-          }
-        }
+            email: 'john@example.com',
+          },
+        },
       };
 
       const result = validateAgainstSchema(schema, data);
@@ -495,8 +503,8 @@ describe('API Validation Utilities', () => {
         required: ['name', 'email'],
         properties: {
           name: { type: 'string', minLength: 3 },
-          email: { type: 'string', format: 'email' }
-        }
+          email: { type: 'string', format: 'email' },
+        },
       };
 
       const mockReq = { body: { name: 'Jo', email: 'invalid' } };
@@ -526,7 +534,7 @@ describe('API Validation Utilities', () => {
     it('should handle empty string in email validation', () => {
       const schema = {
         type: 'string',
-        format: 'email'
+        format: 'email',
       };
 
       const result = validateField(schema, '');
@@ -538,7 +546,7 @@ describe('API Validation Utilities', () => {
     it('should handle zero in number validation', () => {
       const schema = {
         type: 'number',
-        minimum: 0
+        minimum: 0,
       };
 
       const result = validateField(schema, 0);
@@ -550,7 +558,7 @@ describe('API Validation Utilities', () => {
     it('should handle negative numbers', () => {
       const schema = {
         type: 'number',
-        minimum: -10
+        minimum: -10,
       };
 
       const result = validateField(schema, -5);

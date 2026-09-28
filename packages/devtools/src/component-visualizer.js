@@ -10,7 +10,7 @@
 import {
   isCoherentObject,
   hasChildren,
-  normalizeChildren
+  normalizeChildren,
 } from '@coherent.js/core';
 
 /**
@@ -24,7 +24,7 @@ export class ComponentVisualizer {
       showMetadata: options.showMetadata !== false,
       colorOutput: options.colorOutput !== false,
       compactMode: options.compactMode || false,
-      ...options
+      ...options,
     };
 
     this.stats = {
@@ -32,7 +32,7 @@ export class ComponentVisualizer {
       totalDepth: 0,
       staticComponents: 0,
       dynamicComponents: 0,
-      renderTime: 0
+      renderTime: 0,
     };
   }
 
@@ -41,7 +41,13 @@ export class ComponentVisualizer {
    */
   visualize(component, name = 'Root') {
     const startTime = performance.now();
-    this.stats = { totalComponents: 0, totalDepth: 0, staticComponents: 0, dynamicComponents: 0, renderTime: 0 };
+    this.stats = {
+      totalComponents: 0,
+      totalDepth: 0,
+      staticComponents: 0,
+      dynamicComponents: 0,
+      renderTime: 0,
+    };
 
     const tree = this.buildTree(component, name, 0);
     const visualization = this.renderTree(tree);
@@ -51,7 +57,7 @@ export class ComponentVisualizer {
     return {
       visualization,
       stats: { ...this.stats },
-      tree
+      tree,
     };
   }
 
@@ -65,7 +71,9 @@ export class ComponentVisualizer {
         type: 'warning',
         depth,
         children: [],
-        metadata: { message: `Maximum depth ${this.options.maxDepth} exceeded` }
+        metadata: {
+          message: `Maximum depth ${this.options.maxDepth} exceeded`,
+        },
       };
     }
 
@@ -76,7 +84,7 @@ export class ComponentVisualizer {
       name,
       depth,
       children: [],
-      metadata: {}
+      metadata: {},
     };
 
     // Handle different component types
@@ -123,7 +131,11 @@ export class ComponentVisualizer {
         if (hasChildren(props)) {
           const children = normalizeChildren(props.children);
           children.forEach((child, _index) => {
-            const childNode = this.buildTree(child, `${tagName}[${_index}]`, depth + 1);
+            const childNode = this.buildTree(
+              child,
+              `${tagName}[${_index}]`,
+              depth + 1
+            );
             node.children.push(childNode);
           });
         }
@@ -168,24 +180,24 @@ export class ComponentVisualizer {
         analyzed[key] = {
           type: 'function',
           name: value.name || 'anonymous',
-          isEvent: /^on[A-Z]/.test(key)
+          isEvent: /^on[A-Z]/.test(key),
         };
       } else if (typeof value === 'string') {
         analyzed[key] = {
           type: 'string',
           length: value.length,
-          preview: value.length > 50 ? `${value.substring(0, 47)}...` : value
+          preview: value.length > 50 ? `${value.substring(0, 47)}...` : value,
         };
       } else if (typeof value === 'object' && value !== null) {
         analyzed[key] = {
           type: 'object',
           keys: Object.keys(value),
-          constructor: value.constructor?.name || 'Object'
+          constructor: value.constructor?.name || 'Object',
         };
       } else {
         analyzed[key] = {
           type: typeof value,
-          value
+          value,
         };
       }
     });
@@ -200,7 +212,8 @@ export class ComponentVisualizer {
     if (typeof props === 'object' && props !== null) {
       for (const value of Object.values(props)) {
         if (typeof value === 'function') return true;
-        if (typeof value === 'object' && this.hasDynamicContent(value)) return true;
+        if (typeof value === 'object' && this.hasDynamicContent(value))
+          return true;
       }
     }
     return false;
@@ -278,7 +291,9 @@ export class ComponentVisualizer {
       Object.entries(node.props).forEach(([key, prop], _index) => {
         const isLastProp = _index === Object.keys(node.props).length - 1;
         const propConnector = isLastProp ? '└── ' : '├── ';
-        const _propPrefix = childPrefix + (isLastProp && node.children.length === 0 ? '    ' : '│   ');
+        const _propPrefix =
+          childPrefix +
+          (isLastProp && node.children.length === 0 ? '    ' : '│   ');
 
         let propLine = childPrefix + propConnector;
         if (this.options.colorOutput) {
@@ -287,7 +302,7 @@ export class ComponentVisualizer {
           propLine += key;
         }
 
-        propLine += `: ${  this.formatPropValue(prop)}`;
+        propLine += `: ${this.formatPropValue(prop)}`;
         lines.push(propLine);
       });
     }
@@ -313,7 +328,7 @@ export class ComponentVisualizer {
       boolean: '☑️ ',
       complex: '📦 ',
       unknown: '❓ ',
-      warning: '⚠️ '
+      warning: '⚠️ ',
     };
     return icons[type] || '📄 ';
   }
@@ -332,7 +347,7 @@ export class ComponentVisualizer {
       boolean: 'yellow',
       complex: 'red',
       unknown: 'red',
-      warning: 'red'
+      warning: 'red',
     };
     return colors[type] || 'white';
   }
@@ -365,7 +380,7 @@ export class ComponentVisualizer {
       magenta: '\x1b[35m',
       cyan: '\x1b[36m',
       white: '\x1b[37m',
-      gray: '\x1b[90m'
+      gray: '\x1b[90m',
     };
 
     const reset = '\x1b[0m';
@@ -397,7 +412,7 @@ export class ComponentVisualizer {
    * Generate DOT nodes
    */
   generateDOTNodes(node, lines, parentId) {
-    const nodeId = `${parentId  }_${  node.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+    const nodeId = `${parentId}_${node.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
     let label = node.name;
     if (node.type === 'element') {
@@ -444,5 +459,5 @@ export default {
   ComponentVisualizer,
   createComponentVisualizer,
   visualizeComponent,
-  logComponentTree
+  logComponentTree,
 };

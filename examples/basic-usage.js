@@ -7,76 +7,83 @@ import { fileURLToPath } from 'node:url';
 import { render } from '@coherent.js/core';
 
 export const Greeting = ({ name = 'World', mood = 'happy' }) => ({
-    div: {
-        className: `greeting greeting--${mood}`,
-        children: [
-            { h2: { text: `Hello, ${name}!` } },
-            { p: { text: `You seem ${mood} today` } },
-            mood === 'fantastic' ? {
-                div: {
-                    className: 'celebration',
-                    children: [
-                        { span: { text: '🎉 Amazing! 🎉' } }
-                    ]
-                }
-            } : null
-        ].filter(Boolean)
-    }
+  div: {
+    className: `greeting greeting--${mood}`,
+    children: [
+      { h2: { text: `Hello, ${name}!` } },
+      { p: { text: `You seem ${mood} today` } },
+      mood === 'fantastic'
+        ? {
+            div: {
+              className: 'celebration',
+              children: [{ span: { text: '🎉 Amazing! 🎉' } }],
+            },
+          }
+        : null,
+    ].filter(Boolean),
+  },
 });
 
 // User profile component with styling
 export const UserCard = ({ user }) => ({
-    div: {
-        className: 'user-card',
-        style: 'border: 1px solid #ccc; padding: 10px; margin: 10px;',
-        children: [
-            { h3: { text: user.name } },
-            { p: { text: `Email: ${user.email}` } },
-            { p: { text: `Role: ${user.role}` } }
-        ]
-    }
+  div: {
+    className: 'user-card',
+    style: 'border: 1px solid #ccc; padding: 10px; margin: 10px;',
+    children: [
+      { h3: { text: user.name } },
+      { p: { text: `Email: ${user.email}` } },
+      { p: { text: `Role: ${user.role}` } },
+    ],
+  },
 });
 
 // List component rendering multiple user cards
 export const UserList = ({ users = [] }) => ({
-    div: {
-        className: 'user-list',
-        children: [
-            { h2: { text: 'User List' } },
-            users.length > 0 ? {
-                ul: {
-                    children: users.map(user => ({
-                        li: {
-                            key: user.id,
-                            children: [UserCard({ user })]
-                        }
-                    }))
-                }
-            } : {
-                p: { text: 'No users found' }
-            }
-        ]
-    }
+  div: {
+    className: 'user-list',
+    children: [
+      { h2: { text: 'User List' } },
+      users.length > 0
+        ? {
+            ul: {
+              children: users.map((user) => ({
+                li: {
+                  key: user.id,
+                  children: [UserCard({ user })],
+                },
+              })),
+            },
+          }
+        : {
+            p: { text: 'No users found' },
+          },
+    ],
+  },
 });
 
 // Sample data for demonstration
 const sampleUsers = [
-    { id: 1, name: 'Alice', email: 'alice@example.com', role: 'Admin' },
-    { id: 2, name: 'Bob', email: 'bob@example.com', role: 'User' },
-    { id: 3, name: 'Charlie', email: 'charlie@example.com', role: 'User' }
+  { id: 1, name: 'Alice', email: 'alice@example.com', role: 'Admin' },
+  { id: 2, name: 'Bob', email: 'bob@example.com', role: 'User' },
+  { id: 3, name: 'Charlie', email: 'charlie@example.com', role: 'User' },
 ];
 
 // Demo component combining everything
 const Demo = () => ({
-    div: {
-        style: 'font-family: system-ui, sans-serif; max-width: 800px; padding: 20px;',
-        children: [
-            { h1: { text: 'Coherent Framework Demo' } },
-            { p: { text: 'This page demonstrates basic component usage, composition, and styling.' } },
-            Greeting({ name: 'Coherent User', mood: 'fantastic' }),
-            UserList({ users: sampleUsers })
-        ]
-    }
+  div: {
+    style:
+      'font-family: system-ui, sans-serif; max-width: 800px; padding: 20px;',
+    children: [
+      { h1: { text: 'Coherent Framework Demo' } },
+      {
+        p: {
+          text: 'This page demonstrates basic component usage, composition, and styling.',
+        },
+      },
+      Greeting({ name: 'Coherent User', mood: 'fantastic' }),
+      UserList({ users: sampleUsers }),
+    ],
+  },
 });
 
 // Export for playground preview
@@ -86,8 +93,9 @@ export default Demo();
 // or the playground runner, which feeds the file on stdin — but not when it is
 // imported. `import.meta.main` says so exactly from Node 22.18; before that,
 // compare against argv[1], which is empty when the program came on stdin.
-const isProgram = import.meta.main
-    ?? (!process.argv[1] || fileURLToPath(import.meta.url) === process.argv[1]);
+const isProgram =
+  import.meta.main ??
+  (!process.argv[1] || fileURLToPath(import.meta.url) === process.argv[1]);
 if (isProgram) {
-    console.log(render(Demo()));
+  console.log(render(Demo()));
 }

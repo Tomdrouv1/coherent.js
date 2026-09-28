@@ -126,14 +126,18 @@ export class ModuleTracker {
       invalidate(message) {
         const WS_OPEN = typeof WebSocket !== 'undefined' ? WebSocket.OPEN : 1;
         if (tracker.socket?.readyState === WS_OPEN) {
-          tracker.socket.send(JSON.stringify({
-            type: 'invalidate',
-            moduleId,
-            message,
-          }));
+          tracker.socket.send(
+            JSON.stringify({
+              type: 'invalidate',
+              moduleId,
+              message,
+            })
+          );
         }
         // Log for debugging
-        console.log(`[HMR] Module ${moduleId} invalidated${message ? `: ${message}` : ''}`);
+        console.log(
+          `[HMR] Module ${moduleId} invalidated${message ? `: ${message}` : ''}`
+        );
       },
     };
   }

@@ -13,7 +13,7 @@ import { SimpleRouter } from '../src/router.js';
 
 const modes = [
   ['compiled', {}],
-  ['uncompiled', { enableCompilation: false }]
+  ['uncompiled', { enableCompilation: false }],
 ];
 
 describe.each(modes)('route matching (%s)', (_mode, options) => {
@@ -45,8 +45,14 @@ describe.each(modes)('route matching (%s)', (_mode, options) => {
     r.get('/users/:id/*', () => ({}));
     r.get('/files/:bucket/**', () => ({}));
 
-    expect(r.testRoute('GET', '/users/42/avatar').params).toEqual({ id: '42', splat: 'avatar' });
-    expect(r.testRoute('GET', '/files/b1/a/b/c.txt').params).toEqual({ bucket: 'b1', splat: 'a/b/c.txt' });
+    expect(r.testRoute('GET', '/users/42/avatar').params).toEqual({
+      id: '42',
+      splat: 'avatar',
+    });
+    expect(r.testRoute('GET', '/files/b1/a/b/c.txt').params).toEqual({
+      bucket: 'b1',
+      splat: 'a/b/c.txt',
+    });
   });
 
   it('matches an optional parameter when it is absent', () => {
@@ -57,7 +63,10 @@ describe.each(modes)('route matching (%s)', (_mode, options) => {
     expect(r.testRoute('GET', '/opt').params).toEqual({});
     expect(r.testRoute('GET', '/opt/5').params).toEqual({ id: '5' });
     expect(r.testRoute('GET', '/search').params).toEqual({});
-    expect(r.testRoute('GET', '/search/cats/2').params).toEqual({ query: 'cats', page: '2' });
+    expect(r.testRoute('GET', '/search/cats/2').params).toEqual({
+      query: 'cats',
+      page: '2',
+    });
     expect(r.testRoute('GET', '/search/cats/two').matched).toBe(false);
   });
 
@@ -76,14 +85,19 @@ describe.each(modes)('route matching (%s)', (_mode, options) => {
     const r = router();
     r.get('/range/:from-:to', () => ({}));
 
-    expect(r.testRoute('GET', '/range/1-9').params).toEqual({ from: '1', to: '9' });
+    expect(r.testRoute('GET', '/range/1-9').params).toEqual({
+      from: '1',
+      to: '9',
+    });
   });
 
   it('URL-decodes parameters and keeps malformed escapes as sent', () => {
     const r = router();
     r.get('/p/:name', () => ({}));
 
-    expect(r.testRoute('GET', '/p/John%20Doe').params).toEqual({ name: 'John Doe' });
+    expect(r.testRoute('GET', '/p/John%20Doe').params).toEqual({
+      name: 'John Doe',
+    });
     expect(r.testRoute('GET', '/p/caf%C3%A9').params).toEqual({ name: 'café' });
     expect(r.testRoute('GET', '/p/a%2Fb').params).toEqual({ name: 'a/b' });
     expect(r.testRoute('GET', '/p/100%').params).toEqual({ name: '100%' });
@@ -94,8 +108,24 @@ describe.each(modes)('route matching (%s)', (_mode, options) => {
     r.get('/p/:name', (req) => ({ name: req.params.name }));
 
     let body;
-    const res = { setHeader() {}, getHeader() {}, writeHead() {}, end(data) { body = JSON.parse(data); } };
-    await r.handle({ method: 'GET', url: '/p/John%20Doe', headers: {}, socket: { remoteAddress: '::1' } }, res, { rateLimit: false });
+    const res = {
+      setHeader() {},
+      getHeader() {},
+      writeHead() {},
+      end(data) {
+        body = JSON.parse(data);
+      },
+    };
+    await r.handle(
+      {
+        method: 'GET',
+        url: '/p/John%20Doe',
+        headers: {},
+        socket: { remoteAddress: '::1' },
+      },
+      res,
+      { rateLimit: false }
+    );
 
     expect(body).toEqual({ name: 'John Doe' });
   });

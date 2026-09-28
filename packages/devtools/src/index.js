@@ -16,14 +16,14 @@ import {
   ComponentInspector,
   createInspector,
   inspect,
-  validateComponent
+  validateComponent,
 } from './inspector.js';
 
 import {
   PerformanceProfiler,
   createProfiler,
   measure,
-  profile
+  profile,
 } from './profiler.js';
 
 import {
@@ -31,32 +31,29 @@ import {
   LogLevel,
   createLogger,
   createComponentLogger,
-  createConsoleLogger
+  createConsoleLogger,
 } from './logger.js';
 
-import {
-  DevTools,
-  createDevTools
-} from './dev-tools.js';
+import { DevTools, createDevTools } from './dev-tools.js';
 
 // Import new enhanced developer experience tools
 import {
   ComponentVisualizer,
   createComponentVisualizer,
   visualizeComponent,
-  logComponentTree
+  logComponentTree,
 } from './component-visualizer.js';
 
 import {
   PerformanceDashboard,
   createPerformanceDashboard,
-  showPerformanceDashboard
+  showPerformanceDashboard,
 } from './performance-dashboard.js';
 
 import {
   EnhancedErrorHandler,
   createEnhancedErrorHandler,
-  handleEnhancedError
+  handleEnhancedError,
 } from './enhanced-errors.js';
 
 // Re-export everything as named exports for proper tree shaking
@@ -86,7 +83,7 @@ export {
   showPerformanceDashboard,
   EnhancedErrorHandler,
   createEnhancedErrorHandler,
-  handleEnhancedError
+  handleEnhancedError,
 };
 
 // Note: No default export to enable proper tree shaking

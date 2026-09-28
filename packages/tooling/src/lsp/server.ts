@@ -50,7 +50,9 @@ export function startServer(
   connection: Connection = createConnection(ProposedFeatures.all)
 ): LanguageServer {
   // Text document manager for syncing documents
-  const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
+  const documents: TextDocuments<TextDocument> = new TextDocuments(
+    TextDocument
+  );
 
   // Server capabilities
   let hasConfigurationCapability = false;
@@ -98,7 +100,10 @@ export function startServer(
     }
 
     // Log capabilities for debugging
-    console.error('[coherent-lsp] Initialized with capabilities:', JSON.stringify(result.capabilities, null, 2));
+    console.error(
+      '[coherent-lsp] Initialized with capabilities:',
+      JSON.stringify(result.capabilities, null, 2)
+    );
 
     return result;
   });
@@ -106,7 +111,10 @@ export function startServer(
   connection.onInitialized(() => {
     if (hasConfigurationCapability) {
       // Register for configuration changes
-      connection.client.register(DidChangeConfigurationNotification.type, undefined);
+      connection.client.register(
+        DidChangeConfigurationNotification.type,
+        undefined
+      );
     }
 
     if (hasWorkspaceFolderCapability) {

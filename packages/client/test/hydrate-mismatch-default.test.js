@@ -60,14 +60,21 @@ describe('hydrate() mismatch detection default', () => {
     hydrate(Mismatched, dom.mount('<p>Hello</p>'), { onMismatch });
 
     expect(warn).toHaveBeenCalledTimes(1);
-    expect(onMismatch).toHaveBeenCalledWith([expect.objectContaining({ type: 'tagName' })]);
-    expect(() => hydrate(Mismatched, dom.mount('<p>Hello</p>'), { strict: true })).toThrow('Hydration failed');
+    expect(onMismatch).toHaveBeenCalledWith([
+      expect.objectContaining({ type: 'tagName' }),
+    ]);
+    expect(() =>
+      hydrate(Mismatched, dom.mount('<p>Hello</p>'), { strict: true })
+    ).toThrow('Hydration failed');
   });
 
   it('stays off when disabled explicitly, even in development', () => {
     env.NODE_ENV = 'development';
 
-    hydrate(Mismatched, dom.mount('<p>Hello</p>'), { detectMismatch: false, onMismatch: vi.fn() });
+    hydrate(Mismatched, dom.mount('<p>Hello</p>'), {
+      detectMismatch: false,
+      onMismatch: vi.fn(),
+    });
 
     expect(warn).not.toHaveBeenCalled();
   });

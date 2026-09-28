@@ -38,7 +38,7 @@ class ApiError extends Error {
       error: this.name,
       message: this.message,
       statusCode: this.statusCode,
-      details: this.details
+      details: this.details,
     };
   }
 }
@@ -140,7 +140,10 @@ function withErrorHandling(handler) {
       }
 
       // Otherwise, wrap it as a generic server error
-      const wrapped = new ApiError(_error?.message || 'Internal server error', 500);
+      const wrapped = new ApiError(
+        _error?.message || 'Internal server error',
+        500
+      );
       wrapped.cause = _error;
       throw wrapped;
     }
@@ -179,9 +182,14 @@ function createErrorHandler(options = {}) {
     }
 
     const rawStatus = _error?.statusCode;
-    const statusCode = Number.isInteger(rawStatus) && rawStatus >= 400 && rawStatus <= 599 ? rawStatus : 500;
+    const statusCode =
+      Number.isInteger(rawStatus) && rawStatus >= 400 && rawStatus <= 599
+        ? rawStatus
+        : 500;
     const development = env.NODE_ENV === 'development';
-    const expose = statusCode < 500 || (typeof exposeErrors === 'boolean' ? exposeErrors : development);
+    const expose =
+      statusCode < 500 ||
+      (typeof exposeErrors === 'boolean' ? exposeErrors : development);
 
     let response;
     if (typeof transform === 'function') {
@@ -191,7 +199,7 @@ function createErrorHandler(options = {}) {
       response = {
         error: _error?.name || 'Error',
         message: _error?.message || 'An error occurred',
-        statusCode
+        statusCode,
       };
 
       // Add details if available
@@ -207,7 +215,7 @@ function createErrorHandler(options = {}) {
       response = {
         error: 'Error',
         message: STATUS_CODES[statusCode] || 'Internal Server Error',
-        statusCode
+        statusCode,
       };
     }
 
@@ -224,5 +232,5 @@ export {
   NotFoundError,
   ConflictError,
   withErrorHandling,
-  createErrorHandler
+  createErrorHandler,
 };

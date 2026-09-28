@@ -9,12 +9,12 @@ import { createQuery, executeQuery } from '../../src/query-builder.js';
 function createMockDb() {
   const calls = [];
   let mockReturnValue = { rows: [] };
-  
+
   const mockFn = async (sql, params) => {
     calls.push([sql, params]);
     return mockReturnValue;
   };
-  
+
   mockFn.calls = calls;
   mockFn.mockImplementation = (impl) => {
     mockFn.impl = impl;
@@ -24,10 +24,10 @@ function createMockDb() {
     mockReturnValue = value;
     return mockFn;
   };
-  
+
   return {
     query: mockFn,
-    getLastCall: () => calls[calls.length - 1] || []
+    getLastCall: () => calls[calls.length - 1] || [],
   };
 }
 
@@ -41,24 +41,24 @@ describe('QueryBuilder', { concurrency: false }, () => {
     it('should create a basic SELECT query configuration', () => {
       const query = createQuery({
         table: 'users',
-        select: ['id', 'name', 'email']
+        select: ['id', 'name', 'email'],
       });
 
       expect(query).toEqual({
         table: 'users',
-        select: ['id', 'name', 'email']
+        select: ['id', 'name', 'email'],
       });
     });
 
     it('should create an INSERT query configuration', () => {
       const query = createQuery({
         table: 'users',
-        insert: { name: 'John', email: 'john@example.com' }
+        insert: { name: 'John', email: 'john@example.com' },
       });
 
       expect(query).toEqual({
         table: 'users',
-        insert: { name: 'John', email: 'john@example.com' }
+        insert: { name: 'John', email: 'john@example.com' },
       });
     });
   });
@@ -74,12 +74,14 @@ describe('QueryBuilder', { concurrency: false }, () => {
         where: { active: true },
         orderBy: { name: 'ASC' },
         limit: 10,
-        offset: 5
+        offset: 5,
       });
       const result = await executeQuery(mockDb, query);
 
       const [sql, params] = mockDb.getLastCall();
-      expect(sql).toBe('SELECT id, name FROM users WHERE active = ? ORDER BY name ASC LIMIT 10 OFFSET 5');
+      expect(sql).toBe(
+        'SELECT id, name FROM users WHERE active = ? ORDER BY name ASC LIMIT 10 OFFSET 5'
+      );
       expect(params).toEqual([true]);
       expect(result).toEqual({ rows: mockRows });
     });
@@ -90,7 +92,7 @@ describe('QueryBuilder', { concurrency: false }, () => {
 
       const query = createQuery({
         table: 'users',
-        insert: { name: 'John', email: 'john@example.com' }
+        insert: { name: 'John', email: 'john@example.com' },
       });
       const result = await executeQuery(mockDb, query);
 
@@ -109,20 +111,19 @@ describe('QueryBuilder', { concurrency: false }, () => {
         where: {
           $or: [
             { name: 'John' },
-            { 
-              $and: [
-                { age: { '>': 25 } },
-                { age: { '<': 40 } }
-              ]
-            }
+            {
+              $and: [{ age: { '>': 25 } }, { age: { '<': 40 } }],
+            },
           ],
-          active: true
-        }
+          active: true,
+        },
       });
       await executeQuery(mockDb, query);
 
       const [sql, params] = mockDb.getLastCall();
-      expect(sql).toBe('SELECT * FROM users WHERE ((name = ?) OR (((age > ?) AND (age < ?)))) AND active = ?');
+      expect(sql).toBe(
+        'SELECT * FROM users WHERE ((name = ?) OR (((age > ?) AND (age < ?)))) AND active = ?'
+      );
       expect(params).toEqual(['John', 25, 40, true]);
     });
   });
@@ -141,7 +142,9 @@ describe('QueryBuilder', { concurrency: false }, () => {
     it('should reject queries without a table', async () => {
       const query = createQuery({ select: ['*'] });
 
-      await expect(executeQuery(mockDb, query)).rejects.toThrow('Query requires a table');
+      await expect(executeQuery(mockDb, query)).rejects.toThrow(
+        'Query requires a table'
+      );
       expect(mockDb.query.calls).toHaveLength(0);
     });
   });

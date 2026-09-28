@@ -1,8 +1,8 @@
 /**
  * Coherent.js Code Splitting
- * 
+ *
  * Dynamic imports and code splitting utilities
- * 
+ *
  * @module performance/code-splitting
  */
 
@@ -17,9 +17,9 @@ export class CodeSplitter {
       prefetch: [],
       timeout: 10000,
       retries: 3,
-      ...options
+      ...options,
     };
-    
+
     this.modules = new Map();
     this.loading = new Map();
     this.failed = new Set();
@@ -27,7 +27,7 @@ export class CodeSplitter {
 
   /**
    * Dynamically import a module
-   * 
+   *
    * @param {string} path - Module path
    * @param {Object} [options] - Import options
    * @returns {Promise} Module exports
@@ -65,31 +65,30 @@ export class CodeSplitter {
   async loadModule(path, options = {}) {
     const maxRetries = options.retries ?? this.options.retries;
     const timeout = options.timeout ?? this.options.timeout;
-    
+
     let lastError;
-    
+
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         // Add cache busting if retry
-        const importPath = attempt > 0 
-          ? `${path}?retry=${attempt}&t=${Date.now()}`
-          : path;
+        const importPath =
+          attempt > 0 ? `${path}?retry=${attempt}&t=${Date.now()}` : path;
 
         // Import with timeout
         const module = await Promise.race([
           import(importPath),
-          new Promise((_, reject) => 
+          new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Import timeout')), timeout)
-          )
+          ),
         ]);
 
         return module;
       } catch (error) {
         lastError = error;
-        
+
         if (attempt < maxRetries) {
           // Exponential backoff
-          await new Promise(resolve => 
+          await new Promise((resolve) =>
             setTimeout(resolve, Math.pow(2, attempt) * 1000)
           );
         }
@@ -104,12 +103,14 @@ export class CodeSplitter {
    */
   async preload(paths) {
     const pathArray = Array.isArray(paths) ? paths : [paths];
-    
+
     return Promise.all(
-      pathArray.map(path => this.import(path).catch(err => {
-        console.warn(`Failed to preload ${path}:`, err);
-        return null;
-      }))
+      pathArray.map((path) =>
+        this.import(path).catch((err) => {
+          console.warn(`Failed to preload ${path}:`, err);
+          return null;
+        })
+      )
     );
   }
 
@@ -118,16 +119,16 @@ export class CodeSplitter {
    */
   prefetch(paths) {
     const pathArray = Array.isArray(paths) ? paths : [paths];
-    
+
     if (typeof requestIdleCallback !== 'undefined') {
       requestIdleCallback(() => {
-        pathArray.forEach(path => {
+        pathArray.forEach((path) => {
           this.import(path).catch(() => {});
         });
       });
     } else {
       setTimeout(() => {
-        pathArray.forEach(path => {
+        pathArray.forEach((path) => {
           this.import(path).catch(() => {});
         });
       }, 0);
@@ -176,7 +177,7 @@ export class CodeSplitter {
       loaded: this.modules.size,
       loading: this.loading.size,
       failed: this.failed.size,
-      modules: Array.from(this.modules.keys())
+      modules: Array.from(this.modules.keys()),
     };
   }
 }
@@ -190,7 +191,7 @@ export function createCodeSplitter(options = {}) {
 
 /**
  * Lazy load a component
- * 
+ *
  * @param {Function} loader - Function that returns import promise
  * @param {Object} [options] - Lazy loading options
  * @returns {Function} Lazy component
@@ -210,28 +211,31 @@ export function lazy(loader, options = {}) {
     // If error occurred, show error
     if (error) {
       if (options.errorComponent) {
-        return options.errorComponent({ error, retry: () => {
-          error = null;
-          modulePromise = null;
-          return LazyComponent(props);
-        }});
+        return options.errorComponent({
+          error,
+          retry: () => {
+            error = null;
+            modulePromise = null;
+            return LazyComponent(props);
+          },
+        });
       }
       return {
         div: {
           className: 'lazy-error',
-          text: `Error loading component: ${error.message}`
-        }
+          text: `Error loading component: ${error.message}`,
+        },
       };
     }
 
     // Start loading if not already
     if (!modulePromise) {
       modulePromise = loader()
-        .then(mod => {
+        .then((mod) => {
           module = mod;
           return mod;
         })
-        .catch(err => {
+        .catch((err) => {
           error = err;
           throw err;
         });
@@ -245,8 +249,8 @@ export function lazy(loader, options = {}) {
     return {
       div: {
         className: 'lazy-loading',
-        text: options.loadingText || 'Loading...'
-      }
+        text: options.loadingText || 'Loading...',
+      },
     };
   };
 }
@@ -256,11 +260,8 @@ export function lazy(loader, options = {}) {
  */
 export function splitComponent(componentPath, options = {}) {
   const splitter = new CodeSplitter(options);
-  
-  return lazy(
-    () => splitter.import(componentPath),
-    options
-  );
+
+  return lazy(() => splitter.import(componentPath), options);
 }
 
 /**
@@ -275,14 +276,14 @@ export function createRouteSplitter(routes) {
     if (typeof config === 'string') {
       // Simple path to component
       routeMap.set(path, {
-        loader: () => splitter.import(config)
+        loader: () => splitter.import(config),
       });
     } else {
       // Full config
       routeMap.set(path, {
         loader: () => splitter.import(config.component),
         preload: config.preload || [],
-        ...config
+        ...config,
       });
     }
   }
@@ -328,7 +329,7 @@ export function createRouteSplitter(routes) {
      */
     getSplitter() {
       return splitter;
-    }
+    },
   };
 }
 
@@ -355,7 +356,9 @@ export class BundleAnalyzer {
   getStats() {
     const chunks = Array.from(this.chunks.entries());
     const totalSize = chunks.reduce((sum, [, chunk]) => sum + chunk.size, 0);
-    const avgLoadTime = chunks.reduce((sum, [, chunk]) => sum + chunk.loadTime, 0) / chunks.length;
+    const avgLoadTime =
+      chunks.reduce((sum, [, chunk]) => sum + chunk.loadTime, 0) /
+      chunks.length;
 
     return {
       totalChunks: chunks.length,
@@ -365,8 +368,8 @@ export class BundleAnalyzer {
         name,
         size: data.size,
         loadTime: data.loadTime,
-        percentage: (data.size / totalSize * 100).toFixed(2)
-      }))
+        percentage: ((data.size / totalSize) * 100).toFixed(2),
+      })),
     };
   }
 
@@ -397,5 +400,5 @@ export default {
   lazy,
   splitComponent,
   createRouteSplitter,
-  BundleAnalyzer
+  BundleAnalyzer,
 };

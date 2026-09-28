@@ -14,10 +14,10 @@ describe('API Edge Cases', () => {
           get: {
             handler: () => {
               throw new Error('Test error');
-            }
-          }
-        }
-      }
+            },
+          },
+        },
+      },
     };
 
     const router = createRouter(errorRoutes);
@@ -30,9 +30,9 @@ describe('API Edge Cases', () => {
       api: {
         malformed: {
           // Missing handler
-          get: {}
-        }
-      }
+          get: {},
+        },
+      },
     };
 
     expect(() => {
@@ -45,8 +45,8 @@ describe('API Edge Cases', () => {
       type: 'object',
       properties: {
         // Invalid property definition
-        name: 'invalid'
-      }
+        name: 'invalid',
+      },
     };
 
     expect(() => {
@@ -56,7 +56,7 @@ describe('API Edge Cases', () => {
 
   it('should handle empty routes object', () => {
     const emptyRoutes = {};
-    
+
     const router = createRouter(emptyRoutes);
     expect(typeof router).toBe('object');
   });

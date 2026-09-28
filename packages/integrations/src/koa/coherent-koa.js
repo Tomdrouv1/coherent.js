@@ -7,7 +7,7 @@ import {
   importPeerDependency,
   renderWithTemplate,
   renderComponentFactory,
-  isCoherentComponent
+  isCoherentComponent,
 } from '@coherent.js/core';
 
 /**
@@ -34,15 +34,17 @@ export function coherentKoaMiddleware(options = {}) {
   const {
     enablePerformanceMonitoring = false,
     template = '<!DOCTYPE html>\n{{content}}',
-    autoRender = false
+    autoRender = false,
   } = options;
 
   return async (ctx, next) => {
     // Explicit rendering: ctx.coherent(component, { template?, enablePerformanceMonitoring? })
     ctx.coherent = (component, renderOptions = {}) => {
       const finalHtml = renderWithTemplate(component, {
-        enablePerformanceMonitoring: renderOptions.enablePerformanceMonitoring ?? enablePerformanceMonitoring,
-        template: renderOptions.template ?? template
+        enablePerformanceMonitoring:
+          renderOptions.enablePerformanceMonitoring ??
+          enablePerformanceMonitoring,
+        template: renderOptions.template ?? template,
       });
       ctx.type = 'html';
       ctx.body = finalHtml;
@@ -55,7 +57,10 @@ export function coherentKoaMiddleware(options = {}) {
     if (autoRender && isCoherentComponent(ctx.body)) {
       try {
         // Use shared rendering utility
-        const finalHtml = renderWithTemplate(ctx.body, { enablePerformanceMonitoring, template });
+        const finalHtml = renderWithTemplate(ctx.body, {
+          enablePerformanceMonitoring,
+          template,
+        });
 
         // Set content type and body
         ctx.type = 'text/html';
@@ -129,7 +134,7 @@ export async function createKoaIntegration(options = {}) {
     // Verify Koa is available
     await importPeerDependency('koa', 'Koa.js');
 
-    return function(app) {
+    return function (app) {
       if (!app || typeof app.use !== 'function') {
         throw new Error('Invalid Koa app instance provided');
       }
@@ -147,5 +152,5 @@ export default {
   coherentKoaMiddleware,
   createHandler,
   setupCoherent,
-  createKoaIntegration
+  createKoaIntegration,
 };

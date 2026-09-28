@@ -9,4 +9,6 @@
 // precedent set by @coherent.js/cli's build-tools subpaths), we do not
 // emit a dist/ for the integration adapters. Each subpath import points
 // at the original JS source file.
-console.log('@coherent.js/integrations: src ships directly, no build required.');
+console.log(
+  '@coherent.js/integrations: src ships directly, no build required.'
+);

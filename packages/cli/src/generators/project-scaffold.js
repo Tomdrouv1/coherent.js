@@ -2,16 +2,35 @@
  * Project scaffolding generator
  */
 
-import { writeFileSync, mkdirSync, copyFileSync, constants, readFileSync, appendFileSync, existsSync } from 'node:fs';
+import {
+  writeFileSync,
+  mkdirSync,
+  copyFileSync,
+  constants,
+  readFileSync,
+  appendFileSync,
+  existsSync,
+} from 'node:fs';
 import { join, dirname } from 'node:path';
 import { execSync } from 'node:child_process';
 import { getCLIVersion, getDependencyRange } from '../utils/version.js';
-import { generateServerFile, getRuntimeDependencies, getRuntimeTypeDependencies } from './runtime-scaffold.js';
+import {
+  generateServerFile,
+  getRuntimeDependencies,
+  getRuntimeTypeDependencies,
+} from './runtime-scaffold.js';
 import { generateDatabaseScaffolding } from './database-scaffold.js';
 import { generateAuthScaffolding } from './auth-scaffold.js';
-import { generateDockerScaffolding, generateHealthCheck } from './docker-scaffold.js';
+import {
+  generateDockerScaffolding,
+  generateHealthCheck,
+} from './docker-scaffold.js';
 import { generatePackageScaffolding } from './package-scaffold.js';
-import { generateTsConfig, generateJsConfig, getTypeScriptDependencies } from './typescript-config.js';
+import {
+  generateTsConfig,
+  generateJsConfig,
+  getTypeScriptDependencies,
+} from './typescript-config.js';
 
 // Get current CLI version automatically
 const cliVersion = getCLIVersion();
@@ -27,7 +46,7 @@ export const SCAFFOLD_CHOICES = {
   auth: ['jwt', 'session'],
   language: ['javascript', 'typescript'],
   packageManager: ['npm', 'yarn', 'pnpm'],
-  packages: ['api', 'client', 'i18n', 'forms', 'devtools', 'seo', 'testing']
+  packages: ['api', 'client', 'i18n', 'forms', 'devtools', 'seo', 'testing'],
 };
 
 /**
@@ -42,11 +61,20 @@ export const SCAFFOLD_CHOICES = {
  *   itself only rejects unknown values.
  * @returns {string[]} Human-readable problems; empty when the options are valid.
  */
-export function validateScaffoldOptions(options = {}, { combinations = true } = {}) {
+export function validateScaffoldOptions(
+  options = {},
+  { combinations = true } = {}
+) {
   const problems = [];
   const check = (key, value) => {
-    if (value !== undefined && value !== null && !SCAFFOLD_CHOICES[key].includes(value)) {
-      problems.push(`Unknown ${key} "${value}". Choose one of: ${SCAFFOLD_CHOICES[key].join(', ')}`);
+    if (
+      value !== undefined &&
+      value !== null &&
+      !SCAFFOLD_CHOICES[key].includes(value)
+    ) {
+      problems.push(
+        `Unknown ${key} "${value}". Choose one of: ${SCAFFOLD_CHOICES[key].join(', ')}`
+      );
     }
   };
   check('runtime', options.runtime);
@@ -61,13 +89,23 @@ export function validateScaffoldOptions(options = {}, { combinations = true } = 
     return problems;
   }
   if (options.auth && !options.database) {
-    problems.push('Auth scaffolding requires a database (it generates login against the User model). Add --database sqlite|postgres|mysql.');
+    problems.push(
+      'Auth scaffolding requires a database (it generates login against the User model). Add --database sqlite|postgres|mysql.'
+    );
   }
   if (options.auth && options.database === 'mongodb') {
-    problems.push('Auth scaffolding requires a SQL database (sqlite, postgres, mysql); MongoDB auth is not supported yet.');
+    problems.push(
+      'Auth scaffolding requires a SQL database (sqlite, postgres, mysql); MongoDB auth is not supported yet.'
+    );
   }
-  if (options.auth === 'session' && options.runtime && options.runtime !== 'express') {
-    problems.push('Session auth scaffolding is only available for the express runtime. Use --auth jwt, or --runtime express.');
+  if (
+    options.auth === 'session' &&
+    options.runtime &&
+    options.runtime !== 'express'
+  ) {
+    problems.push(
+      'Session auth scaffolding is only available for the express runtime. Use --auth jwt, or --runtime express.'
+    );
   }
   return problems;
 }
@@ -87,7 +125,7 @@ export async function scaffoldProject(projectPath, options) {
     packages = [],
     language = 'javascript',
     packageManager = 'npm',
-    onProgress = () => {}
+    onProgress = () => {},
   } = options;
 
   const problems = validateScaffoldOptions(
@@ -108,7 +146,7 @@ export async function scaffoldProject(projectPath, options) {
     'src/pages',
     'src/utils',
     'public',
-    'tests'
+    'tests',
   ];
 
   // Add directories based on selections
@@ -130,25 +168,42 @@ export async function scaffoldProject(projectPath, options) {
     dirs.push('src/i18n', 'src/i18n/locales');
   }
 
-  dirs.forEach(dir => {
+  dirs.forEach((dir) => {
     mkdirSync(join(projectPath, dir), { recursive: true });
   });
 
   onProgress('Created project structure');
 
   // Generate package.json
-  const packageJson = generatePackageJson(name, { template, runtime, database, auth, packages, language, packageManager });
-  writeFileSync(join(projectPath, 'package.json'), JSON.stringify(packageJson, null, 2));
+  const packageJson = generatePackageJson(name, {
+    template,
+    runtime,
+    database,
+    auth,
+    packages,
+    language,
+    packageManager,
+  });
+  writeFileSync(
+    join(projectPath, 'package.json'),
+    JSON.stringify(packageJson, null, 2)
+  );
 
   onProgress('Generated package.json');
 
   // Generate TypeScript or JavaScript config
   if (isTypeScript) {
     const tsConfig = generateTsConfig();
-    writeFileSync(join(projectPath, 'tsconfig.json'), JSON.stringify(tsConfig, null, 2));
+    writeFileSync(
+      join(projectPath, 'tsconfig.json'),
+      JSON.stringify(tsConfig, null, 2)
+    );
   } else {
     const jsConfig = generateJsConfig();
-    writeFileSync(join(projectPath, 'jsconfig.json'), JSON.stringify(jsConfig, null, 2));
+    writeFileSync(
+      join(projectPath, 'jsconfig.json'),
+      JSON.stringify(jsConfig, null, 2)
+    );
   }
 
   onProgress('Created configuration files');
@@ -161,35 +216,64 @@ export async function scaffoldProject(projectPath, options) {
     hasApi: packages.includes('api'),
     hasDatabase: !!database,
     hasAuth: !!auth,
-    isTypeScript
+    isTypeScript,
   });
   writeFileSync(join(projectPath, `src/index${fileExtension}`), serverContent);
 
   onProgress('Set up server');
 
   // Generate HomePage component
-  await generateHomePageComponent(projectPath, name, isTypeScript, fileExtension);
+  await generateHomePageComponent(
+    projectPath,
+    name,
+    isTypeScript,
+    fileExtension
+  );
 
   onProgress('Created components');
 
   // Generate database scaffolding
   if (database) {
     const dbScaffolding = generateDatabaseScaffolding(database, language);
-    writeFileSync(join(projectPath, `src/db/config${fileExtension}`), dbScaffolding.config);
-    writeFileSync(join(projectPath, `src/db/index${fileExtension}`), dbScaffolding.init);
-    writeFileSync(join(projectPath, `src/db/models/User${fileExtension}`), dbScaffolding.model);
+    writeFileSync(
+      join(projectPath, `src/db/config${fileExtension}`),
+      dbScaffolding.config
+    );
+    writeFileSync(
+      join(projectPath, `src/db/index${fileExtension}`),
+      dbScaffolding.init
+    );
+    writeFileSync(
+      join(projectPath, `src/db/models/User${fileExtension}`),
+      dbScaffolding.model
+    );
 
     // Generate Docker configuration if requested
     if (options.dockerConfig && database !== 'sqlite') {
-      const dockerScaffolding = generateDockerScaffolding(database, options.dockerConfig);
+      const dockerScaffolding = generateDockerScaffolding(
+        database,
+        options.dockerConfig
+      );
 
       // Write Docker files
-      writeFileSync(join(projectPath, 'docker-compose.yml'), dockerScaffolding['docker-compose.yml']);
-      writeFileSync(join(projectPath, 'Dockerfile'), dockerScaffolding['Dockerfile']);
-      writeFileSync(join(projectPath, '.dockerignore'), dockerScaffolding['.dockerignore']);
+      writeFileSync(
+        join(projectPath, 'docker-compose.yml'),
+        dockerScaffolding['docker-compose.yml']
+      );
+      writeFileSync(
+        join(projectPath, 'Dockerfile'),
+        dockerScaffolding['Dockerfile']
+      );
+      writeFileSync(
+        join(projectPath, '.dockerignore'),
+        dockerScaffolding['.dockerignore']
+      );
 
       // Generate health check script
-      writeFileSync(join(projectPath, `healthcheck${fileExtension}`), generateHealthCheck());
+      writeFileSync(
+        join(projectPath, `healthcheck${fileExtension}`),
+        generateHealthCheck()
+      );
 
       // Update .env.example with Docker configuration
       let envContent = '';
@@ -202,12 +286,19 @@ export async function scaffoldProject(projectPath, options) {
     } else {
       // Generate or update .env.example without Docker
       const existingEnv = '';
-      writeFileSync(join(projectPath, '.env.example'), existingEnv + dbScaffolding.env);
+      writeFileSync(
+        join(projectPath, '.env.example'),
+        existingEnv + dbScaffolding.env
+      );
     }
 
     // Create .env from .env.example if it doesn't exist
     try {
-      copyFileSync(join(projectPath, '.env.example'), join(projectPath, '.env'), constants.COPYFILE_EXCL);
+      copyFileSync(
+        join(projectPath, '.env.example'),
+        join(projectPath, '.env'),
+        constants.COPYFILE_EXCL
+      );
     } catch {
       // Ignore if .env already exists
     }
@@ -221,14 +312,23 @@ export async function scaffoldProject(projectPath, options) {
 
     // Write auth middleware/plugin
     const authDir = runtime === 'fastify' ? 'plugins' : 'middleware';
-    writeFileSync(join(projectPath, `src/${authDir}/auth${fileExtension}`), authScaffolding.middleware);
+    writeFileSync(
+      join(projectPath, `src/${authDir}/auth${fileExtension}`),
+      authScaffolding.middleware
+    );
 
     // Write auth routes
-    writeFileSync(join(projectPath, `src/api/auth${fileExtension}`), authScaffolding.routes);
+    writeFileSync(
+      join(projectPath, `src/api/auth${fileExtension}`),
+      authScaffolding.routes
+    );
 
     // .env.example (committed) gets the variable names with empty values;
     // appended so the database settings written above are kept.
-    appendFileSync(join(projectPath, '.env.example'), authScaffolding.envExample);
+    appendFileSync(
+      join(projectPath, '.env.example'),
+      authScaffolding.envExample
+    );
 
     // .env (git-ignored) gets a freshly generated random secret, so the app
     // never runs with a value that is known to anyone else.
@@ -243,7 +343,9 @@ export async function scaffoldProject(projectPath, options) {
 
   // Generate optional package scaffolding
   if (packages.length > 0) {
-    const { files } = generatePackageScaffolding(packages, { projectName: name });
+    const { files } = generatePackageScaffolding(packages, {
+      projectName: name,
+    });
 
     Object.entries(files).forEach(([filePath, content]) => {
       const fullPath = join(projectPath, filePath);
@@ -256,7 +358,7 @@ export async function scaffoldProject(projectPath, options) {
   generateCommonFiles(projectPath, name, {
     fileExtension,
     packageManager,
-    hasApi: packages.includes('api') || !!auth
+    hasApi: packages.includes('api') || !!auth,
   });
 
   // Install dependencies
@@ -266,14 +368,14 @@ export async function scaffoldProject(projectPath, options) {
       const installCommands = {
         npm: 'npm install',
         yarn: 'yarn install',
-        pnpm: 'pnpm install'
+        pnpm: 'pnpm install',
       };
 
       const installCmd = installCommands[packageManager] || 'npm install';
 
       execSync(installCmd, {
         cwd: projectPath,
-        stdio: 'inherit'
+        stdio: 'inherit',
       });
     } catch {
       console.warn(`⚠️  Failed to install dependencies with ${packageManager}`);
@@ -285,7 +387,10 @@ export async function scaffoldProject(projectPath, options) {
     try {
       execSync('git init', { cwd: projectPath, stdio: 'pipe' });
       execSync('git add .', { cwd: projectPath, stdio: 'pipe' });
-      execSync('git commit -m "Initial commit"', { cwd: projectPath, stdio: 'pipe' });
+      execSync('git commit -m "Initial commit"', {
+        cwd: projectPath,
+        stdio: 'pipe',
+      });
     } catch {
       console.warn('⚠️  Failed to initialize git repository');
     }
@@ -296,7 +401,14 @@ export async function scaffoldProject(projectPath, options) {
  * Generate package.json based on options
  */
 function generatePackageJson(name, options) {
-  const { runtime = 'built-in', database = null, auth = null, packages = [], language = 'javascript', packageManager = 'npm' } = options;
+  const {
+    runtime = 'built-in',
+    database = null,
+    auth = null,
+    packages = [],
+    language = 'javascript',
+    packageManager = 'npm',
+  } = options;
 
   const isTypeScript = language === 'typescript';
   const fileExt = isTypeScript ? '.ts' : '.js';
@@ -309,30 +421,32 @@ function generatePackageJson(name, options) {
     main: isTypeScript ? 'dist/index.js' : `src/index${fileExt}`,
     // --env-file-if-exists loads .env (secrets, DB credentials) without a
     // dotenv dependency; `dev` restarts the server when a source file changes.
-    scripts: isTypeScript ? {
-      dev: 'tsx watch --env-file-if-exists=.env src/index.ts',
-      build: 'tsc',
-      start: 'node --env-file-if-exists=.env dist/index.js',
-      typecheck: 'tsc --noEmit',
-      test: 'vitest run'
-    } : {
-      dev: 'node --watch --env-file-if-exists=.env src/index.js',
-      build: 'coherent build',
-      start: 'node --env-file-if-exists=.env src/index.js',
-      test: 'vitest run'
-    },
+    scripts: isTypeScript
+      ? {
+          dev: 'tsx watch --env-file-if-exists=.env src/index.ts',
+          build: 'tsc',
+          start: 'node --env-file-if-exists=.env dist/index.js',
+          typecheck: 'tsc --noEmit',
+          test: 'vitest run',
+        }
+      : {
+          dev: 'node --watch --env-file-if-exists=.env src/index.js',
+          build: 'coherent build',
+          start: 'node --env-file-if-exists=.env src/index.js',
+          test: 'vitest run',
+        },
     // --env-file-if-exists needs Node >= 22.9; match the CLI's own floor.
     engines: {
-      node: '>=22.12.0'
+      node: '>=22.12.0',
     },
     dependencies: {
-      '@coherent.js/core': cliRange
+      '@coherent.js/core': cliRange,
     },
     devDependencies: {
       '@coherent.js/cli': cliRange,
       // Same major as the monorepo's own vitest.
-      vitest: '^5.0.0'
-    }
+      vitest: '^5.0.0',
+    },
   };
 
   // Add TypeScript dependencies
@@ -363,13 +477,20 @@ function generatePackageJson(name, options) {
 
   // Database dependencies
   if (database) {
-    const { dependencies: dbDeps } = generateDatabaseScaffolding(database, language);
+    const { dependencies: dbDeps } = generateDatabaseScaffolding(
+      database,
+      language
+    );
     Object.assign(base.dependencies, dbDeps);
   }
 
   // Auth dependencies
   if (auth) {
-    const { dependencies: authDeps } = generateAuthScaffolding(auth, runtime, language);
+    const { dependencies: authDeps } = generateAuthScaffolding(
+      auth,
+      runtime,
+      language
+    );
     Object.assign(base.dependencies, authDeps);
   }
 
@@ -385,8 +506,14 @@ function generatePackageJson(name, options) {
 /**
  * Generate HomePage component
  */
-async function generateHomePageComponent(projectPath, name, isTypeScript, fileExtension) {
-  const homePage = isTypeScript ? `/**
+async function generateHomePageComponent(
+  projectPath,
+  name,
+  isTypeScript,
+  fileExtension
+) {
+  const homePage = isTypeScript
+    ? `/**
  * HomePage Component
  */
 interface HomePageProps {
@@ -429,7 +556,8 @@ export function HomePage(props: HomePageProps = {}): object {
     }
   };
 }
-` : `/**
+`
+    : `/**
  * HomePage Component
  */
 export function HomePage(props = {}) {
@@ -469,10 +597,14 @@ export function HomePage(props = {}) {
 }
 `;
 
-  writeFileSync(join(projectPath, `src/components/HomePage${fileExtension}`), homePage);
+  writeFileSync(
+    join(projectPath, `src/components/HomePage${fileExtension}`),
+    homePage
+  );
 
   // Simple Button component example
-  const buttonComponent = isTypeScript ? `/**
+  const buttonComponent = isTypeScript
+    ? `/**
  * Button Component
  */
 interface ButtonProps {
@@ -492,7 +624,8 @@ export function Button(props: ButtonProps = {}): object {
     }
   };
 }
-` : `/**
+`
+    : `/**
  * Button Component
  */
 export function Button(props = {}) {
@@ -508,14 +641,21 @@ export function Button(props = {}) {
 }
 `;
 
-  writeFileSync(join(projectPath, `src/components/Button${fileExtension}`), buttonComponent);
+  writeFileSync(
+    join(projectPath, `src/components/Button${fileExtension}`),
+    buttonComponent
+  );
 }
 
 /**
  * Generate common files (README, gitignore, etc.)
  */
 function generateCommonFiles(projectPath, name, options = {}) {
-  const { fileExtension = '.js', packageManager = 'npm', hasApi = false } = options;
+  const {
+    fileExtension = '.js',
+    packageManager = 'npm',
+    hasApi = false,
+  } = options;
   const runCmd = packageManager === 'npm' ? 'npm run' : packageManager;
 
   // README.md
@@ -545,8 +685,12 @@ ${packageManager} test
 src/
   components/     # Reusable components
   pages/         # Page components
-${hasApi ? `  api/           # API routes
-` : ''}  utils/         # Utility functions
+${
+  hasApi
+    ? `  api/           # API routes
+`
+    : ''
+}  utils/         # Utility functions
   index${fileExtension}       # Main entry point
 public/          # Static assets
 tests/           # Test files
@@ -641,5 +785,8 @@ describe('Basic Component Rendering', () => {
   });
 });`;
 
-  writeFileSync(join(projectPath, `tests/basic.test${fileExtension}`), testFile);
+  writeFileSync(
+    join(projectPath, `tests/basic.test${fileExtension}`),
+    testFile
+  );
 }

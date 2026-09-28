@@ -14,7 +14,7 @@ import { startServer, request, jsonInit } from './helpers/http.js';
 const userSchema = {
   type: 'object',
   required: ['name'],
-  properties: { name: { type: 'string' } }
+  properties: { name: { type: 'string' } },
 };
 
 const tick = () => new Promise((resolve) => setTimeout(resolve, 20));
@@ -31,13 +31,19 @@ describe('middleware next() contract', () => {
     const router = createRouter({
       api: {
         users: {
-          POST: { validation: userSchema, handler: (req) => ({ created: req.body }) }
-        }
-      }
+          POST: {
+            validation: userSchema,
+            handler: (req) => ({ created: req.body }),
+          },
+        },
+      },
     });
     server = await startServer(router);
 
-    const res = await request(`${server.base}/api/users`, jsonInit('POST', { name: 'Ada' }));
+    const res = await request(
+      `${server.base}/api/users`,
+      jsonInit('POST', { name: 'Ada' })
+    );
 
     expect(res.status).toBe(200);
     expect(res.json).toEqual({ created: { name: 'Ada' } });
@@ -46,11 +52,14 @@ describe('middleware next() contract', () => {
   it('withValidation() as addRoute middleware accepts a valid body', async () => {
     const router = new SimpleRouter();
     router.post('/users', (req) => ({ created: req.body }), {
-      middleware: [withValidation(userSchema)]
+      middleware: [withValidation(userSchema)],
     });
     server = await startServer(router);
 
-    const res = await request(`${server.base}/users`, jsonInit('POST', { name: 'Ada' }));
+    const res = await request(
+      `${server.base}/users`,
+      jsonInit('POST', { name: 'Ada' })
+    );
 
     expect(res.status).toBe(200);
     expect(res.json).toEqual({ created: { name: 'Ada' } });
@@ -64,7 +73,9 @@ describe('middleware next() contract', () => {
       });
     };
     const router = new SimpleRouter();
-    router.get('/me', (req) => ({ user: req.user ?? null }), { middleware: [asyncAuth] });
+    router.get('/me', (req) => ({ user: req.user ?? null }), {
+      middleware: [asyncAuth],
+    });
     server = await startServer(router);
 
     const res = await request(`${server.base}/me`);
@@ -86,16 +97,25 @@ describe('middleware next() contract', () => {
     const expressStyle = (req, res, next) => asyncReject(req, res, next);
 
     const router = new SimpleRouter();
-    router.delete('/users/:id', () => ran.push('deleted'), { middleware: [expressStyle] });
+    router.delete('/users/:id', () => ran.push('deleted'), {
+      middleware: [expressStyle],
+    });
     const objectRouter = createRouter({
-      items: { DELETE: { middleware: [expressStyle], handler: () => ran.push('item deleted') } }
+      items: {
+        DELETE: {
+          middleware: [expressStyle],
+          handler: () => ran.push('item deleted'),
+        },
+      },
     });
     server = await startServer(router);
     const objectServer = await startServer(objectRouter);
 
     try {
       const res = await request(`${server.base}/users/1`, { method: 'DELETE' });
-      const objectRes = await request(`${objectServer.base}/items`, { method: 'DELETE' });
+      const objectRes = await request(`${objectServer.base}/items`, {
+        method: 'DELETE',
+      });
 
       expect(res.status).toBe(401);
       expect(objectRes.status).toBe(401);
@@ -129,7 +149,7 @@ describe('middleware next() contract', () => {
           req.tag = 'late';
           next();
         });
-      }
+      },
     });
     router.get('/tagged', (req) => ({ tag: req.tag ?? null }));
     server = await startServer(router);
@@ -142,10 +162,12 @@ describe('middleware next() contract', () => {
   it('toExpressRouter() runs Coherent-style middleware that never calls next', async () => {
     const router = new SimpleRouter();
     router.get('/x', (req) => ({ seen: req.seen }), {
-      middleware: [(req) => {
-        req.seen = 1;
-        return null;
-      }]
+      middleware: [
+        (req) => {
+          req.seen = 1;
+          return null;
+        },
+      ],
     });
 
     const registered = {};
@@ -153,16 +175,21 @@ describe('middleware next() contract', () => {
       Router: () => ({
         get: (path, handler) => {
           registered[path] = handler;
-        }
-      })
+        },
+      }),
     };
     router.toExpressRouter(fakeExpress);
 
     let sent;
-    const res = { headersSent: false, json: (body) => { sent = body; } };
+    const res = {
+      headersSent: false,
+      json: (body) => {
+        sent = body;
+      },
+    };
     await Promise.race([
       registered['/x']({}, res, () => {}),
-      new Promise((resolve) => setTimeout(resolve, 500))
+      new Promise((resolve) => setTimeout(resolve, 500)),
     ]);
 
     expect(sent).toEqual({ seen: 1 });

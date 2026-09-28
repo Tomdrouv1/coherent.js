@@ -39,7 +39,9 @@ describe('HMRClient updates', () => {
 
     await client.handleUpdate({ webPath: '/components/Plain.js' });
 
-    expect(client.importModule).toHaveBeenCalledWith(expect.stringMatching(/^\/components\/Plain\.js\?t=\d+$/));
+    expect(client.importModule).toHaveBeenCalledWith(
+      expect.stringMatching(/^\/components\/Plain\.js\?t=\d+$/)
+    );
     expect(client.reload).toHaveBeenCalledTimes(1);
   });
 
@@ -77,7 +79,11 @@ describe('HMRClient.disconnect()', () => {
       }
     }
     vi.stubGlobal('WebSocket', FakeWebSocket);
-    vi.stubGlobal('location', { protocol: 'http:', host: 'localhost:3000', reload: vi.fn() });
+    vi.stubGlobal('location', {
+      protocol: 'http:',
+      host: 'localhost:3000',
+      reload: vi.fn(),
+    });
 
     const client = new HMRClient();
     client.connect();
@@ -124,7 +130,10 @@ describe('StateCapturer', () => {
     const fresh = dom.mount(form('s'));
     capturer.restoreFormState();
 
-    const checked = fresh.querySelectorAll('input').filter((input) => input.checked).map((input) => input.value);
+    const checked = fresh
+      .querySelectorAll('input')
+      .filter((input) => input.checked)
+      .map((input) => input.value);
     expect(checked).toEqual(['m', 'bacon']);
   });
 });
@@ -132,10 +141,13 @@ describe('StateCapturer', () => {
 describe('CleanupTracker fetch', () => {
   it("keeps the caller's AbortSignal and still aborts on cleanup", async () => {
     const received = [];
-    vi.stubGlobal('fetch', vi.fn((_url, options) => {
-      received.push(options.signal);
-      return new Promise(() => {});
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((_url, options) => {
+        received.push(options.signal);
+        return new Promise(() => {});
+      })
+    );
     const tracker = new CleanupTracker();
     const ctx = tracker.createContext('mod');
 

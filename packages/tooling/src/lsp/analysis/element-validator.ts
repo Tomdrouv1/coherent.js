@@ -47,13 +47,20 @@ export interface AttributeValidationError {
  * @param element - The Coherent element to validate
  * @returns Array of validation errors
  */
-export function validateAttributes(element: CoherentElementInfo): AttributeValidationError[] {
+export function validateAttributes(
+  element: CoherentElementInfo
+): AttributeValidationError[] {
   const errors: AttributeValidationError[] = [];
   const tagName = element.tagName;
 
   for (const attr of element.attributes) {
     // Skip Coherent-specific properties that we handle separately
-    if (attr.name === 'children' || attr.name === 'text' || attr.name === 'html' || attr.name === 'key') {
+    if (
+      attr.name === 'children' ||
+      attr.name === 'text' ||
+      attr.name === 'html' ||
+      attr.name === 'key'
+    ) {
       // Check for children on void elements
       if (attr.name === 'children' && isVoidElement(tagName)) {
         errors.push({
@@ -109,7 +116,9 @@ export function validateAttributes(element: CoherentElementInfo): AttributeValid
  * @param elements - Array of Coherent elements to validate
  * @returns Array of all validation errors
  */
-export function validateAllAttributes(elements: CoherentElementInfo[]): AttributeValidationError[] {
+export function validateAllAttributes(
+  elements: CoherentElementInfo[]
+): AttributeValidationError[] {
   const errors: AttributeValidationError[] = [];
 
   for (const element of elements) {

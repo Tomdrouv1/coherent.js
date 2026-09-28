@@ -39,10 +39,17 @@ afterAll(async () => {
 
 async function runCli(...args) {
   try {
-    const { stdout, stderr } = await execFileAsync(process.execPath, [entry, ...args]);
+    const { stdout, stderr } = await execFileAsync(process.execPath, [
+      entry,
+      ...args,
+    ]);
     return { code: 0, stdout, stderr };
   } catch (error) {
-    return { code: error.code ?? 1, stdout: error.stdout ?? '', stderr: error.stderr ?? '' };
+    return {
+      code: error.code ?? 1,
+      stdout: error.stdout ?? '',
+      stderr: error.stderr ?? '',
+    };
   }
 }
 

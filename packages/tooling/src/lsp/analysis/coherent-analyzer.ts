@@ -60,7 +60,8 @@ export interface AttributeInfo {
  */
 export interface PositionContext {
   /** Type of context at the position */
-  type: 'tag-name' | 'attribute-name' | 'attribute-value' | 'children' | 'outside';
+  type:
+    'tag-name' | 'attribute-name' | 'attribute-value' | 'children' | 'outside';
 
   /** Current element (if inside one) */
   element?: CoherentElementInfo;
@@ -83,7 +84,11 @@ function tsPositionToLsp(sourceFile: ts.SourceFile, pos: number): Position {
 /**
  * Convert TypeScript range to LSP range.
  */
-function tsRangeToLsp(sourceFile: ts.SourceFile, start: number, end: number): Range {
+function tsRangeToLsp(
+  sourceFile: ts.SourceFile,
+  start: number,
+  end: number
+): Range {
   return {
     start: tsPositionToLsp(sourceFile, start),
     end: tsPositionToLsp(sourceFile, end),
@@ -93,8 +98,14 @@ function tsRangeToLsp(sourceFile: ts.SourceFile, start: number, end: number): Ra
 /**
  * Convert LSP position to TypeScript offset.
  */
-function lspPositionToTs(sourceFile: ts.SourceFile, position: Position): number {
-  return sourceFile.getPositionOfLineAndCharacter(position.line, position.character);
+function lspPositionToTs(
+  sourceFile: ts.SourceFile,
+  position: Position
+): number {
+  return sourceFile.getPositionOfLineAndCharacter(
+    position.line,
+    position.character
+  );
 }
 
 /**
@@ -104,10 +115,16 @@ function isPositionInRange(position: Position, range: Range): boolean {
   if (position.line < range.start.line || position.line > range.end.line) {
     return false;
   }
-  if (position.line === range.start.line && position.character < range.start.character) {
+  if (
+    position.line === range.start.line &&
+    position.character < range.start.character
+  ) {
     return false;
   }
-  if (position.line === range.end.line && position.character > range.end.character) {
+  if (
+    position.line === range.end.line &&
+    position.character > range.end.character
+  ) {
     return false;
   }
   return true;
@@ -119,7 +136,10 @@ function isPositionInRange(position: Position, range: Range): boolean {
  * A Coherent element is an object with a single property whose name is an HTML tag,
  * and whose value is an object containing attributes.
  */
-export function isCoherentElement(node: ts.Node, sourceFile: ts.SourceFile): node is ts.ObjectLiteralExpression {
+export function isCoherentElement(
+  node: ts.Node,
+  sourceFile: ts.SourceFile
+): node is ts.ObjectLiteralExpression {
   if (!ts.isObjectLiteralExpression(node)) {
     return false;
   }
@@ -172,7 +192,11 @@ function extractElementInfo(
   const elementInfo: CoherentElementInfo = {
     tagName,
     range: tsRangeToLsp(sourceFile, node.getStart(sourceFile), node.getEnd()),
-    tagNameRange: tsRangeToLsp(sourceFile, name.getStart(sourceFile), name.getEnd()),
+    tagNameRange: tsRangeToLsp(
+      sourceFile,
+      name.getStart(sourceFile),
+      name.getEnd()
+    ),
     attributes: [],
     parent,
     children: [],
@@ -195,8 +219,16 @@ function extractElementInfo(
           const attrInfo: AttributeInfo = {
             name: attrName,
             value: attrProp.initializer.getText(sourceFile),
-            range: tsRangeToLsp(sourceFile, attrProp.getStart(sourceFile), attrProp.getEnd()),
-            nameRange: tsRangeToLsp(sourceFile, attrProp.name.getStart(sourceFile), attrProp.name.getEnd()),
+            range: tsRangeToLsp(
+              sourceFile,
+              attrProp.getStart(sourceFile),
+              attrProp.getEnd()
+            ),
+            nameRange: tsRangeToLsp(
+              sourceFile,
+              attrProp.name.getStart(sourceFile),
+              attrProp.name.getEnd()
+            ),
             node: attrProp,
           };
           elementInfo.attributes.push(attrInfo);
@@ -211,8 +243,16 @@ function extractElementInfo(
         const attrInfo: AttributeInfo = {
           name: attrName,
           value: attrName, // Shorthand uses same name as value
-          range: tsRangeToLsp(sourceFile, attrProp.getStart(sourceFile), attrProp.getEnd()),
-          nameRange: tsRangeToLsp(sourceFile, attrProp.name.getStart(sourceFile), attrProp.name.getEnd()),
+          range: tsRangeToLsp(
+            sourceFile,
+            attrProp.getStart(sourceFile),
+            attrProp.getEnd()
+          ),
+          nameRange: tsRangeToLsp(
+            sourceFile,
+            attrProp.name.getStart(sourceFile),
+            attrProp.name.getEnd()
+          ),
           node: attrProp,
         };
         elementInfo.attributes.push(attrInfo);
@@ -252,11 +292,16 @@ function extractChildElements(
  * @param sourceFile - TypeScript source file to analyze
  * @returns Array of found Coherent element info
  */
-export function findCoherentElements(sourceFile: ts.SourceFile): CoherentElementInfo[] {
+export function findCoherentElements(
+  sourceFile: ts.SourceFile
+): CoherentElementInfo[] {
   const elements: CoherentElementInfo[] = [];
   const processed = new WeakSet<ts.Node>();
 
-  function visit(node: ts.Node, parent: CoherentElementInfo | null = null): void {
+  function visit(
+    node: ts.Node,
+    parent: CoherentElementInfo | null = null
+  ): void {
     if (isCoherentElement(node, sourceFile) && !processed.has(node)) {
       processed.add(node);
       const elementInfo = extractElementInfo(node, sourceFile, parent);
@@ -313,8 +358,14 @@ export function getElementAtPosition(
  * Check if range a is contained within range b.
  */
 function isRangeContained(a: Range, b: Range): boolean {
-  if (a.start.line > b.start.line || (a.start.line === b.start.line && a.start.character >= b.start.character)) {
-    if (a.end.line < b.end.line || (a.end.line === b.end.line && a.end.character <= b.end.character)) {
+  if (
+    a.start.line > b.start.line ||
+    (a.start.line === b.start.line && a.start.character >= b.start.character)
+  ) {
+    if (
+      a.end.line < b.end.line ||
+      (a.end.line === b.end.line && a.end.character <= b.end.character)
+    ) {
       return true;
     }
   }
@@ -349,7 +400,10 @@ export function getPositionContext(
     if (isPositionInRange(position, attr.nameRange)) {
       return { type: 'attribute-name', element, attribute: attr };
     }
-    if (isPositionInRange(position, attr.range) && !isPositionInRange(position, attr.nameRange)) {
+    if (
+      isPositionInRange(position, attr.range) &&
+      !isPositionInRange(position, attr.nameRange)
+    ) {
       return { type: 'attribute-value', element, attribute: attr };
     }
   }
@@ -360,7 +414,13 @@ export function getPositionContext(
 
   // Look backward from position to see context
   let i = offset - 1;
-  while (i >= 0 && (text[i] === ' ' || text[i] === '\n' || text[i] === '\r' || text[i] === '\t')) {
+  while (
+    i >= 0 &&
+    (text[i] === ' ' ||
+      text[i] === '\n' ||
+      text[i] === '\r' ||
+      text[i] === '\t')
+  ) {
     i--;
   }
 
@@ -368,7 +428,9 @@ export function getPositionContext(
     // Check if we're right after [ or { in a children context
     if (text[i] === '[' || text[i] === '{' || text[i] === ',') {
       // Check if this is within a children attribute
-      const childrenAttr = element.attributes.find(a => a.name === 'children');
+      const childrenAttr = element.attributes.find(
+        (a) => a.name === 'children'
+      );
       if (childrenAttr && isPositionInRange(position, childrenAttr.range)) {
         return { type: 'children', element };
       }
@@ -387,7 +449,10 @@ export function getPositionContext(
  * @param fileName - File name for the source file
  * @returns TypeScript SourceFile
  */
-export function createSourceFile(content: string, fileName: string): ts.SourceFile {
+export function createSourceFile(
+  content: string,
+  fileName: string
+): ts.SourceFile {
   return ts.createSourceFile(
     fileName,
     content,

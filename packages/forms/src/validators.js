@@ -16,7 +16,7 @@ import {
   validateField,
   validateForm,
   registerValidator,
-  composeValidators
+  composeValidators,
 } from './rules.js';
 import { createValidator } from './validation.js';
 
@@ -26,7 +26,7 @@ export {
   validateForm,
   createValidator,
   registerValidator,
-  composeValidators
+  composeValidators,
 };
 
 export default {
@@ -35,5 +35,5 @@ export default {
   validateForm,
   createValidator,
   registerValidator,
-  composeValidators
+  composeValidators,
 };

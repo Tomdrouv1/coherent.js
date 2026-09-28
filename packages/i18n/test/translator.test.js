@@ -1,6 +1,6 @@
 /**
  * Tests for i18n - Translator
- * 
+ *
  * Coverage areas:
  * - Basic translation
  * - Variable interpolation
@@ -24,13 +24,13 @@ describe('Translator', () => {
         items: {
           zero: 'No items',
           one: 'One item',
-          other: '{{count}} items'
+          other: '{{count}} items',
         },
         nested: {
           deep: {
-            key: 'Deep value'
-          }
-        }
+            key: 'Deep value',
+          },
+        },
       },
       fr: {
         hello: 'Bonjour',
@@ -38,20 +38,20 @@ describe('Translator', () => {
         items: {
           zero: 'Aucun élément',
           one: 'Un élément',
-          other: '{{count}} éléments'
-        }
+          other: '{{count}} éléments',
+        },
       },
       es: {
         hello: 'Hola',
-        welcome: 'Bienvenido, {{name}}!'
-      }
+        welcome: 'Bienvenido, {{name}}!',
+      },
     };
 
     translator = createTranslator({
       defaultLocale: 'en',
-      fallbackLocale: 'en'
+      fallbackLocale: 'en',
     });
-    
+
     // Load translations
     translator.addTranslations('en', translations.en);
     translator.addTranslations('fr', translations.fr);
@@ -81,10 +81,10 @@ describe('Translator', () => {
 
     it('should support multiple languages', () => {
       expect(translator.t('hello')).toBe('Hello');
-      
+
       translator.setLocale('fr');
       expect(translator.t('hello')).toBe('Bonjour');
-      
+
       translator.setLocale('es');
       expect(translator.t('hello')).toBe('Hola');
     });
@@ -102,19 +102,31 @@ describe('Translator', () => {
 
   describe('Variable Interpolation', () => {
     it('should handle multiple variables', () => {
-      translator.addTranslations('en', { greeting: 'Hello {{firstName}} {{lastName}}!' });
-      const result = translator.t('greeting', { firstName: 'John', lastName: 'Doe' });
+      translator.addTranslations('en', {
+        greeting: 'Hello {{firstName}} {{lastName}}!',
+      });
+      const result = translator.t('greeting', {
+        firstName: 'John',
+        lastName: 'Doe',
+      });
       expect(result).toBe('Hello John Doe!');
     });
 
     it('should handle nested variables', () => {
-      translator.addTranslations('en', { user: 'User: {{user.name}} ({{user.id}})' });
-      const result = translator.t('user', { 'user.name': 'Alice', 'user.id': 123 });
+      translator.addTranslations('en', {
+        user: 'User: {{user.name}} ({{user.id}})',
+      });
+      const result = translator.t('user', {
+        'user.name': 'Alice',
+        'user.id': 123,
+      });
       expect(result).toContain('Alice');
     });
 
     it('should handle special characters in variables', () => {
-      const result = translator.t('welcome', { name: '<script>alert("xss")</script>' });
+      const result = translator.t('welcome', {
+        name: '<script>alert("xss")</script>',
+      });
       expect(result).toContain('<script>'); // No escaping by default
     });
 
@@ -142,15 +154,24 @@ describe('Translator', () => {
     });
 
     it('supports a custom prefix and suffix containing regex metacharacters', () => {
-      const custom = createTranslator({ interpolation: { prefix: '%(', suffix: ')s' } });
-      custom.addTranslations('en', { hi: 'Hello %(name)s, you have %(count)s messages' });
-      expect(custom.t('hi', { name: 'Ada', count: 3 })).toBe('Hello Ada, you have 3 messages');
+      const custom = createTranslator({
+        interpolation: { prefix: '%(', suffix: ')s' },
+      });
+      custom.addTranslations('en', {
+        hi: 'Hello %(name)s, you have %(count)s messages',
+      });
+      expect(custom.t('hi', { name: 'Ada', count: 3 })).toBe(
+        'Hello Ada, you have 3 messages'
+      );
     });
 
     it('keeps the default suffix when only the prefix is overridden', () => {
       const custom = createTranslator({ interpolation: { prefix: '[[' } });
       custom.addTranslations('en', { hi: 'Hello [[name}}' });
-      expect(custom.options.interpolation).toEqual({ prefix: '[[', suffix: '}}' });
+      expect(custom.options.interpolation).toEqual({
+        prefix: '[[',
+        suffix: '}}',
+      });
       expect(custom.t('hi', { name: 'Ada' })).toBe('Hello Ada');
     });
   });
@@ -187,7 +208,9 @@ describe('Translator', () => {
     it('still falls back to the fallback locale when no parent is loaded', () => {
       translator.setLocale('de-AT');
       expect(translator.getLocale()).toBe('en');
-      expect(console.warn).toHaveBeenCalledWith('Locale de-AT not loaded, using fallback');
+      expect(console.warn).toHaveBeenCalledWith(
+        'Locale de-AT not loaded, using fallback'
+      );
     });
 
     it('resolves a per-call locale override the same way', () => {
@@ -199,7 +222,9 @@ describe('Translator', () => {
     it('falls back per key from a regional locale to its language, then the fallback locale', () => {
       translator.addTranslations('fr-CA', { hello: 'Allô' });
       expect(translator.t('hello', {}, 'fr-CA')).toBe('Allô');
-      expect(translator.t('welcome', { name: 'Ada' }, 'fr-CA')).toBe('Bienvenue, Ada!');
+      expect(translator.t('welcome', { name: 'Ada' }, 'fr-CA')).toBe(
+        'Bienvenue, Ada!'
+      );
       expect(translator.t('nested.deep.key', {}, 'fr-CA')).toBe('Deep value');
     });
 
@@ -214,10 +239,17 @@ describe('Translator', () => {
 
   describe('Plural rules of the message locale', () => {
     beforeEach(() => {
-      translator.addTranslations('en', { apples: { one: '{{count}} apple', other: '{{count}} apples' } });
+      translator.addTranslations('en', {
+        apples: { one: '{{count}} apple', other: '{{count}} apples' },
+      });
       translator.addTranslations('ru', {
         hello: 'Привет',
-        files: { one: '{{count}} файл', few: '{{count}} файла', many: '{{count}} файлов', other: '{{count}} файла' }
+        files: {
+          one: '{{count}} файл',
+          few: '{{count}} файла',
+          many: '{{count}} файлов',
+          other: '{{count}} файла',
+        },
       });
     });
 
@@ -237,15 +269,21 @@ describe('Translator', () => {
     });
 
     it('keeps the regional plural rules when the message comes from the parent language', () => {
-      translator.addTranslations('pt', { tickets: { one: '{{count}} bilhete', other: '{{count}} bilhetes' } });
+      translator.addTranslations('pt', {
+        tickets: { one: '{{count}} bilhete', other: '{{count}} bilhetes' },
+      });
       // pt (Brazil) puts 0 in "one"; pt-PT puts it in "other".
       expect(translator.t('tickets', { count: 0 }, 'pt')).toBe('0 bilhete');
       expect(translator.t('tickets', { count: 0 }, 'pt-PT')).toBe('0 bilhetes');
     });
 
     it('does not throw for a locale Intl.PluralRules rejects', () => {
-      expect(translator.selectPlural({ one: 'one', other: 'other' }, 1, 'en_US')).toBe('one');
-      expect(translator.selectPlural({ one: 'one', other: 'other' }, 2, 'en_US')).toBe('other');
+      expect(
+        translator.selectPlural({ one: 'one', other: 'other' }, 1, 'en_US')
+      ).toBe('one');
+      expect(
+        translator.selectPlural({ one: 'one', other: 'other' }, 2, 'en_US')
+      ).toBe('other');
     });
   });
 
@@ -279,13 +317,17 @@ describe('Translator', () => {
     });
 
     it('falls back per key to the fallback locale', () => {
-      expect(translator.forLocale('es').t('nested.deep.key')).toBe('Deep value');
+      expect(translator.forLocale('es').t('nested.deep.key')).toBe(
+        'Deep value'
+      );
     });
 
     it('accepts per-call options and a translator-wide escape default', () => {
       const fr = translator.forLocale('fr', { escape: true });
       expect(fr.t('welcome', { name: '<b>' })).toBe('Bienvenue, &lt;b&gt;!');
-      expect(fr.t('welcome', { name: '<b>' }, { escape: false })).toBe('Bienvenue, <b>!');
+      expect(fr.t('welcome', { name: '<b>' }, { escape: false })).toBe(
+        'Bienvenue, <b>!'
+      );
       expect(fr.t('welcome', { name: 'Ada' }, 'es')).toBe('Bienvenido, Ada!');
     });
 
@@ -296,7 +338,7 @@ describe('Translator', () => {
     });
 
     it('keeps concurrent requests on one shared translator in their own locales', async () => {
-      const tick = () => new Promise(resolve => setTimeout(resolve, 0));
+      const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 
       // Each simulated request renders in several steps, yielding in between,
       // while another request (and some client-style setLocale() call) runs.
@@ -319,59 +361,75 @@ describe('Translator', () => {
           translator.setLocale('es');
           return renderRequest('es', 'Cy');
         })(),
-        renderRequest('fr', 'Dee')
+        renderRequest('fr', 'Dee'),
       ]);
 
       expect(results).toEqual([
         'Bonjour | Bienvenue, Ada! | Un élément',
         'Hello | Welcome, Bob! | One item',
         'Hola | Bienvenido, Cy! | One item',
-        'Bonjour | Bienvenue, Dee! | Un élément'
+        'Bonjour | Bienvenue, Dee! | Un élément',
       ]);
     });
   });
 
   describe('HTML escaping of params', () => {
     const XSS = '<img src=x onerror="alert(\'x\')">&';
-    const ESCAPED = '&lt;img src=x onerror=&quot;alert(&#39;x&#39;)&quot;&gt;&amp;';
+    const ESCAPED =
+      '&lt;img src=x onerror=&quot;alert(&#39;x&#39;)&quot;&gt;&amp;';
 
     beforeEach(() => {
-      translator.addTranslations('en', { rich: '<strong>{{name}}</strong> joined' });
+      translator.addTranslations('en', {
+        rich: '<strong>{{name}}</strong> joined',
+      });
     });
 
     it('does not escape by default (backward compatible)', () => {
-      expect(translator.t('rich', { name: XSS })).toBe(`<strong>${XSS}</strong> joined`);
+      expect(translator.t('rich', { name: XSS })).toBe(
+        `<strong>${XSS}</strong> joined`
+      );
     });
 
     it('escapes params, not the template, when escape is passed per call', () => {
-      expect(translator.t('rich', { name: XSS }, { escape: true }))
-        .toBe(`<strong>${ESCAPED}</strong> joined`);
+      expect(translator.t('rich', { name: XSS }, { escape: true })).toBe(
+        `<strong>${ESCAPED}</strong> joined`
+      );
     });
 
     it('accepts a locale alongside escape in the options object', () => {
       translator.addTranslations('fr', { rich: '<em>{{name}}</em> a rejoint' });
-      expect(translator.t('rich', { name: '<b>' }, { locale: 'fr', escape: true }))
-        .toBe('<em>&lt;b&gt;</em> a rejoint');
+      expect(
+        translator.t('rich', { name: '<b>' }, { locale: 'fr', escape: true })
+      ).toBe('<em>&lt;b&gt;</em> a rejoint');
       expect(translator.getLocale()).toBe('en');
     });
 
     it('escapes params for every call when the translator is created with escape: true', () => {
       const safe = createTranslator({ escape: true });
-      safe.addTranslations('en', { rich: '<strong>{{name}}</strong> has {{count}} items' });
-      expect(safe.t('rich', { name: XSS, count: 2 })).toBe(`<strong>${ESCAPED}</strong> has 2 items`);
+      safe.addTranslations('en', {
+        rich: '<strong>{{name}}</strong> has {{count}} items',
+      });
+      expect(safe.t('rich', { name: XSS, count: 2 })).toBe(
+        `<strong>${ESCAPED}</strong> has 2 items`
+      );
       expect(safe.interpolate('{{v}}', { v: '<i>' })).toBe('&lt;i&gt;');
       // A per-call escape: false opts back out.
-      expect(safe.t('rich', { name: '<i>', count: 1 }, { escape: false }))
-        .toBe('<strong><i></strong> has 1 items');
+      expect(safe.t('rich', { name: '<i>', count: 1 }, { escape: false })).toBe(
+        '<strong><i></strong> has 1 items'
+      );
     });
 
     it('keeps the escaped output safe when rendered through core html:', () => {
-      const html = render({ p: { html: translator.t('rich', { name: XSS }, { escape: true }) } });
+      const html = render({
+        p: { html: translator.t('rich', { name: XSS }, { escape: true }) },
+      });
       expect(html).toBe(`<p><strong>${ESCAPED}</strong> joined</p>`);
     });
 
     it('is not needed for text:, which core escapes already', () => {
-      const html = render({ p: { text: translator.t('welcome', { name: '<b>' }) } });
+      const html = render({
+        p: { text: translator.t('welcome', { name: '<b>' }) },
+      });
       expect(html).toBe('<p>Welcome, &lt;b&gt;!</p>');
     });
   });
@@ -389,11 +447,16 @@ describe('Translator', () => {
       expect(translator.t('nested.constructor')).toBe('nested.constructor');
       expect(translator.t('nested.deep.valueOf')).toBe('nested.deep.valueOf');
       expect(translator.t('hello.length')).toBe('hello.length');
-      expect(translator.getTranslation('nested.deep.constructor', 'en')).toBeNull();
+      expect(
+        translator.getTranslation('nested.deep.constructor', 'en')
+      ).toBeNull();
     });
 
     it('still resolves an own key named like a prototype member', () => {
-      translator.addTranslations('en', { toString: 'custom', group: { constructor: 'built' } });
+      translator.addTranslations('en', {
+        toString: 'custom',
+        group: { constructor: 'built' },
+      });
       expect(translator.t('toString')).toBe('custom');
       expect(translator.t('group.constructor')).toBe('built');
     });
@@ -404,7 +467,7 @@ describe('Translator', () => {
       const result0 = translator.t('items', { count: 0 });
       const result1 = translator.t('items', { count: 1 });
       const result5 = translator.t('items', { count: 5 });
-      
+
       // Intl.PluralRules may return 'other' for 0
       expect(['No items', '0 items']).toContain(result0);
       expect(result1).toBe('One item');
@@ -434,7 +497,7 @@ describe('Translator', () => {
       const result0 = translator.t('items', { count: 0 });
       const result1 = translator.t('items', { count: 1 });
       const result5 = translator.t('items', { count: 5 });
-      
+
       // Either 'No items' or '0 items' depending on Intl.PluralRules
       expect(['No items', '0 items']).toContain(result0);
       expect(result1).toBe('One item');
@@ -447,8 +510,8 @@ describe('Translator', () => {
       translator.addTranslations('en', {
         read: {
           past: 'I read a book yesterday',
-          present: 'I read books every day'
-        }
+          present: 'I read books every day',
+        },
       });
 
       expect(translator.t('read.past')).toBe('I read a book yesterday');
@@ -460,14 +523,16 @@ describe('Translator', () => {
         welcome_user: {
           male: 'Welcome, Mr. {{name}}',
           female: 'Welcome, Ms. {{name}}',
-          other: 'Welcome, {{name}}'
-        }
+          other: 'Welcome, {{name}}',
+        },
       });
 
-      expect(translator.t('welcome_user.male', { name: 'John' }))
-        .toBe('Welcome, Mr. John');
-      expect(translator.t('welcome_user.female', { name: 'Jane' }))
-        .toBe('Welcome, Ms. Jane');
+      expect(translator.t('welcome_user.male', { name: 'John' })).toBe(
+        'Welcome, Mr. John'
+      );
+      expect(translator.t('welcome_user.female', { name: 'Jane' })).toBe(
+        'Welcome, Ms. Jane'
+      );
     });
 
     it('should support regional variants', () => {
@@ -485,7 +550,7 @@ describe('Translator', () => {
   describe('Loading and Management', () => {
     it('should load translation files', () => {
       const newTranslations = {
-        goodbye: 'Goodbye'
+        goodbye: 'Goodbye',
       };
 
       translator.addTranslations('en', newTranslations);
@@ -495,7 +560,7 @@ describe('Translator', () => {
 
     it('should merge translation dictionaries', () => {
       translator.addTranslations('en', {
-        new_key: 'New value'
+        new_key: 'New value',
       });
 
       expect(translator.t('hello')).toBe('Hello'); // Existing
@@ -504,7 +569,7 @@ describe('Translator', () => {
 
     it('should handle dynamic loading', () => {
       const newTranslations = {
-        async_key: 'Async value'
+        async_key: 'Async value',
       };
 
       translator.addTranslations('en', newTranslations);
@@ -514,7 +579,7 @@ describe('Translator', () => {
 
     it('should persist translations', () => {
       translator.addTranslations('en', { cached: 'Cached value' });
-      
+
       // Translations persist
       expect(translator.t('cached')).toBe('Cached value');
       expect(translator.t('cached')).toBe('Cached value');
@@ -591,7 +656,9 @@ describe('Translator', () => {
     });
 
     it('should handle malformed translation data', () => {
-      expect(() => translator.addTranslations('en', { bad: null })).not.toThrow();
+      expect(() =>
+        translator.addTranslations('en', { bad: null })
+      ).not.toThrow();
     });
   });
 });

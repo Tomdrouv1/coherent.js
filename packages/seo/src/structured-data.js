@@ -1,8 +1,8 @@
 /**
  * Coherent.js Structured Data
- * 
+ *
  * Generate JSON-LD structured data for SEO
- * 
+ *
  * @module seo/structured-data
  */
 
@@ -13,7 +13,7 @@ const SCRIPT_ESCAPES = {
   '>': '\\u003e',
   '&': '\\u0026',
   '\u2028': '\\u2028',
-  '\u2029': '\\u2029'
+  '\u2029': '\\u2029',
 };
 
 /**
@@ -31,7 +31,9 @@ const SCRIPT_ESCAPES = {
 function serializeJsonLd(data) {
   const json = JSON.stringify(data, null, 2);
   // JSON.stringify(undefined) is undefined; keep returning that as before.
-  return json === undefined ? json : json.replace(SCRIPT_UNSAFE, (char) => SCRIPT_ESCAPES[char]);
+  return json === undefined
+    ? json
+    : json.replace(SCRIPT_UNSAFE, (char) => SCRIPT_ESCAPES[char]);
 }
 
 /**
@@ -63,7 +65,7 @@ export class StructuredDataBuilder {
       logo: data.logo,
       description: data.description,
       contactPoint: data.contactPoint,
-      sameAs: data.socialLinks
+      sameAs: data.socialLinks,
     });
   }
 
@@ -77,11 +79,15 @@ export class StructuredDataBuilder {
       name: data.name,
       url: data.url,
       description: data.description,
-      potentialAction: data.searchAction ? {
-        '@type': 'SearchAction',
-        target: data.searchAction.target,
-        'query-input': data.searchAction.queryInput || 'required name=search_term_string'
-      } : undefined
+      potentialAction: data.searchAction
+        ? {
+            '@type': 'SearchAction',
+            target: data.searchAction.target,
+            'query-input':
+              data.searchAction.queryInput ||
+              'required name=search_term_string',
+          }
+        : undefined,
     });
   }
 
@@ -95,21 +101,27 @@ export class StructuredDataBuilder {
       headline: data.headline,
       description: data.description,
       image: data.image,
-      author: data.author ? {
-        '@type': 'Person',
-        name: data.author.name,
-        url: data.author.url
-      } : undefined,
-      publisher: data.publisher ? {
-        '@type': 'Organization',
-        name: data.publisher.name,
-        logo: data.publisher.logo ? {
-          '@type': 'ImageObject',
-          url: data.publisher.logo
-        } : undefined
-      } : undefined,
+      author: data.author
+        ? {
+            '@type': 'Person',
+            name: data.author.name,
+            url: data.author.url,
+          }
+        : undefined,
+      publisher: data.publisher
+        ? {
+            '@type': 'Organization',
+            name: data.publisher.name,
+            logo: data.publisher.logo
+              ? {
+                  '@type': 'ImageObject',
+                  url: data.publisher.logo,
+                }
+              : undefined,
+          }
+        : undefined,
       datePublished: data.datePublished,
-      dateModified: data.dateModified
+      dateModified: data.dateModified,
     });
   }
 
@@ -123,22 +135,29 @@ export class StructuredDataBuilder {
       name: data.name,
       description: data.description,
       image: data.image,
-      brand: data.brand ? {
-        '@type': 'Brand',
-        name: data.brand
-      } : undefined,
-      offers: data.offers ? {
-        '@type': 'Offer',
-        price: data.offers.price,
-        priceCurrency: data.offers.currency || 'USD',
-        availability: data.offers.availability || 'https://schema.org/InStock',
-        url: data.offers.url
-      } : undefined,
-      aggregateRating: data.rating ? {
-        '@type': 'AggregateRating',
-        ratingValue: data.rating.value,
-        reviewCount: data.rating.count
-      } : undefined
+      brand: data.brand
+        ? {
+            '@type': 'Brand',
+            name: data.brand,
+          }
+        : undefined,
+      offers: data.offers
+        ? {
+            '@type': 'Offer',
+            price: data.offers.price,
+            priceCurrency: data.offers.currency || 'USD',
+            availability:
+              data.offers.availability || 'https://schema.org/InStock',
+            url: data.offers.url,
+          }
+        : undefined,
+      aggregateRating: data.rating
+        ? {
+            '@type': 'AggregateRating',
+            ratingValue: data.rating.value,
+            reviewCount: data.rating.count,
+          }
+        : undefined,
     });
   }
 
@@ -153,8 +172,8 @@ export class StructuredDataBuilder {
         '@type': 'ListItem',
         position: index + 1,
         name: item.name,
-        item: item.url
-      }))
+        item: item.url,
+      })),
     });
   }
 
@@ -165,14 +184,14 @@ export class StructuredDataBuilder {
     return this.add({
       '@context': 'https://schema.org',
       '@type': 'FAQPage',
-      mainEntity: questions.map(q => ({
+      mainEntity: questions.map((q) => ({
         '@type': 'Question',
         name: q.question,
         acceptedAnswer: {
           '@type': 'Answer',
-          text: q.answer
-        }
-      }))
+          text: q.answer,
+        },
+      })),
     });
   }
 
@@ -187,11 +206,13 @@ export class StructuredDataBuilder {
       url: data.url,
       image: data.image,
       jobTitle: data.jobTitle,
-      worksFor: data.organization ? {
-        '@type': 'Organization',
-        name: data.organization
-      } : undefined,
-      sameAs: data.socialLinks
+      worksFor: data.organization
+        ? {
+            '@type': 'Organization',
+            name: data.organization,
+          }
+        : undefined,
+      sameAs: data.socialLinks,
     });
   }
 
@@ -208,8 +229,8 @@ export class StructuredDataBuilder {
     return {
       script: {
         type: 'application/ld+json',
-        text: serializeJsonLd(data)
-      }
+        text: serializeJsonLd(data),
+      },
     };
   }
 
@@ -243,7 +264,7 @@ export function createStructuredData() {
  */
 export function generateStructuredData(type, data) {
   const builder = new StructuredDataBuilder();
-  
+
   switch (type) {
     case 'organization':
       builder.organization(data);
@@ -269,12 +290,12 @@ export function generateStructuredData(type, data) {
     default:
       builder.add(data);
   }
-  
+
   return builder.build();
 }
 
 export default {
   StructuredDataBuilder,
   createStructuredData,
-  generateStructuredData
+  generateStructuredData,
 };

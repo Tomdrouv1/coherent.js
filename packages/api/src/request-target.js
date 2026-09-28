@@ -29,7 +29,10 @@ export function parseRequestTarget(target) {
   const hash = target.indexOf('#');
   const beforeHash = hash === -1 ? target : target.slice(0, hash);
   const q = beforeHash.indexOf('?');
-  let pathname = (q === -1 ? beforeHash : beforeHash.slice(0, q)).replace(/\\/g, '/');
+  let pathname = (q === -1 ? beforeHash : beforeHash.slice(0, q)).replace(
+    /\\/g,
+    '/'
+  );
   const authority = /^[a-z][a-z0-9+.-]*:\/\/[^/]*/i.exec(pathname);
   if (authority) pathname = pathname.slice(authority[0].length) || '/';
   return {

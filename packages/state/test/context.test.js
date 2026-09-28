@@ -6,7 +6,7 @@ import {
   provideContext,
   restoreContext,
   runWithContext,
-  globalStateManager
+  globalStateManager,
 } from '../src/state-manager.js';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import http from 'node:http';
@@ -21,8 +21,8 @@ const inRequest = (fn) => () => runWithContext(fn);
 const themedButton = () => ({
   button: {
     className: () => `btn-${useContext('theme') || 'default'}`,
-    text: 'Click me'
-  }
+    text: 'Click me',
+  },
 });
 
 /**
@@ -54,7 +54,11 @@ describe('createContextProvider with core render()', () => {
   // string and escaped it: the whole subtree came out as `&lt;button ...`.
   it('renders its children as markup, escaped once', () => {
     const html = render(
-      { div: { children: [createContextProvider('theme', 'dark', themedButton())] } },
+      {
+        div: {
+          children: [createContextProvider('theme', 'dark', themedButton())],
+        },
+      },
       { enableCache: false }
     );
 
@@ -68,9 +72,9 @@ describe('createContextProvider with core render()', () => {
           children: [
             themedButton(),
             createContextProvider('theme', 'dark', themedButton()),
-            themedButton()
-          ]
-        }
+            themedButton(),
+          ],
+        },
       },
       { enableCache: false }
     );
@@ -94,14 +98,14 @@ describe('createContextProvider with core render()', () => {
               children: [
                 themedButton(),
                 createContextProvider('theme', 'light', {
-                  div: { children: [themedButton()] }
+                  div: { children: [themedButton()] },
                 }),
-                themedButton()
-              ]
-            }
-          })
-        ]
-      }
+                themedButton(),
+              ],
+            },
+          }),
+        ],
+      },
     };
 
     expect(render(app, { enableCache: false })).toBe(
@@ -116,10 +120,18 @@ describe('createContextProvider with core render()', () => {
   it('can be rendered more than once', () => {
     const provider = createContextProvider('theme', 'dark', themedButton());
 
-    const first = render({ main: { children: [provider] } }, { enableCache: false });
-    const second = render({ main: { children: [provider] } }, { enableCache: false });
+    const first = render(
+      { main: { children: [provider] } },
+      { enableCache: false }
+    );
+    const second = render(
+      { main: { children: [provider] } },
+      { enableCache: false }
+    );
 
-    expect(first).toBe('<main><button class="btn-dark">Click me</button></main>');
+    expect(first).toBe(
+      '<main><button class="btn-dark">Click me</button></main>'
+    );
     expect(second).toBe(first);
   });
 });
@@ -137,32 +149,38 @@ describe('context isolation between concurrent requests', () => {
         return useContext('user');
       });
 
-    const seen = await Promise.all([handleRequest('alice', 1), handleRequest('bob', 5)]);
+    const seen = await Promise.all([
+      handleRequest('alice', 1),
+      handleRequest('bob', 5),
+    ]);
 
     expect(seen).toEqual(['alice', 'bob']);
   });
 
-  it('isolates runWithContext scopes from each other and from the caller', inRequest(async () => {
-    provideContext('user', 'outer');
+  it(
+    'isolates runWithContext scopes from each other and from the caller',
+    inRequest(async () => {
+      provideContext('user', 'outer');
 
-    const seen = await Promise.all(
-      ['alice', 'bob'].map((user, i) =>
-        runWithContext(async () => {
-          const before = useContext('user');
-          provideContext('user', user);
-          await tick(i === 0 ? 5 : 1);
-          return [before, useContext('user')];
-        })
-      )
-    );
+      const seen = await Promise.all(
+        ['alice', 'bob'].map((user, i) =>
+          runWithContext(async () => {
+            const before = useContext('user');
+            provideContext('user', user);
+            await tick(i === 0 ? 5 : 1);
+            return [before, useContext('user')];
+          })
+        )
+      );
 
-    expect(seen).toEqual([
-      [undefined, 'alice'],
-      [undefined, 'bob']
-    ]);
-    expect(useContext('user')).toBe('outer');
-    restoreContext('user');
-  }));
+      expect(seen).toEqual([
+        [undefined, 'alice'],
+        [undefined, 'bob'],
+      ]);
+      expect(useContext('user')).toBe('outer');
+      restoreContext('user');
+    })
+  );
 
   it('seeds runWithContext with initial values', () => {
     const seen = runWithContext(() => useContext('locale'), { locale: 'fr' });
@@ -176,16 +194,16 @@ describe('context isolation between concurrent requests', () => {
       main: {
         children: [
           createContextProvider('theme', theme, {
-            div: { children: [themedButton(), themedButton()] }
+            div: { children: [themedButton(), themedButton()] },
           }),
-          themedButton()
-        ]
-      }
+          themedButton(),
+        ],
+      },
     });
 
     const [red, blue] = await Promise.all([
       runWithContext(() => renderAsync(page('red'))),
-      runWithContext(() => renderAsync(page('blue')))
+      runWithContext(() => renderAsync(page('blue'))),
     ]);
 
     const expected = (theme) =>
@@ -229,7 +247,9 @@ describe('context without AsyncLocalStorage (browsers)', () => {
   it('scopes providers during a synchronous render', async () => {
     const ctx = await import('../src/state-manager.js');
     const button = () => ({
-      button: { className: () => `btn-${ctx.useContext('theme') || 'default'}` }
+      button: {
+        className: () => `btn-${ctx.useContext('theme') || 'default'}`,
+      },
     });
 
     const html = render(
@@ -237,11 +257,16 @@ describe('context without AsyncLocalStorage (browsers)', () => {
         div: {
           children: [
             ctx.createContextProvider('theme', 'dark', {
-              p: { children: [button(), ctx.createContextProvider('theme', 'light', button())] }
+              p: {
+                children: [
+                  button(),
+                  ctx.createContextProvider('theme', 'light', button()),
+                ],
+              },
             }),
-            button()
-          ]
-        }
+            button(),
+          ],
+        },
       },
       { enableCache: false }
     );
@@ -257,14 +282,15 @@ describe('context without AsyncLocalStorage (browsers)', () => {
     const ctx = await import('../src/state-manager.js');
     ctx.provideContext('theme', 'dark');
 
-    expect(ctx.runWithContext(() => ctx.useContext('theme'), { theme: 'light' })).toBe('light');
+    expect(
+      ctx.runWithContext(() => ctx.useContext('theme'), { theme: 'light' })
+    ).toBe('light');
     expect(ctx.useContext('theme')).toBe('dark');
 
     ctx.clearAllContexts();
     expect(ctx.useContext('theme')).toBeUndefined();
   });
 });
-
 
 /**
  * Regression: clearAllContexts() cleared only the undo stacks, never the
@@ -278,78 +304,98 @@ describe('clearAllContexts', () => {
     globalStateManager.clear();
   });
 
-  it('removes provided contexts', inRequest(() => {
-    provideContext('currentUser', { id: 42 });
-    expect(useContext('currentUser')).toEqual({ id: 42 });
+  it(
+    'removes provided contexts',
+    inRequest(() => {
+      provideContext('currentUser', { id: 42 });
+      expect(useContext('currentUser')).toEqual({ id: 42 });
 
-    clearAllContexts();
+      clearAllContexts();
 
-    expect(useContext('currentUser')).toBeUndefined();
-  }));
+      expect(useContext('currentUser')).toBeUndefined();
+    })
+  );
 
-  it('does not leak a context into the next render', inRequest(() => {
-    // Render one: an authenticated request.
-    provideContext('currentUser', { id: 42, email: 'alice@example.com' });
-    clearAllContexts();
+  it(
+    'does not leak a context into the next render',
+    inRequest(() => {
+      // Render one: an authenticated request.
+      provideContext('currentUser', { id: 42, email: 'alice@example.com' });
+      clearAllContexts();
 
-    // Render two: a different, anonymous visitor.
-    expect(useContext('currentUser')).toBeUndefined();
-  }));
+      // Render two: a different, anonymous visitor.
+      expect(useContext('currentUser')).toBeUndefined();
+    })
+  );
 
-  it('clears every provided key, not just the most recent', inRequest(() => {
-    provideContext('theme', 'dark');
-    provideContext('locale', 'fr');
-    provideContext('currentUser', { id: 7 });
+  it(
+    'clears every provided key, not just the most recent',
+    inRequest(() => {
+      provideContext('theme', 'dark');
+      provideContext('locale', 'fr');
+      provideContext('currentUser', { id: 7 });
 
-    clearAllContexts();
+      clearAllContexts();
 
-    expect(useContext('theme')).toBeUndefined();
-    expect(useContext('locale')).toBeUndefined();
-    expect(useContext('currentUser')).toBeUndefined();
-  }));
+      expect(useContext('theme')).toBeUndefined();
+      expect(useContext('locale')).toBeUndefined();
+      expect(useContext('currentUser')).toBeUndefined();
+    })
+  );
 
-  it('clears nested providers of the same key', inRequest(() => {
-    provideContext('theme', 'dark');
-    provideContext('theme', 'light');
+  it(
+    'clears nested providers of the same key',
+    inRequest(() => {
+      provideContext('theme', 'dark');
+      provideContext('theme', 'light');
 
-    clearAllContexts();
+      clearAllContexts();
 
-    expect(useContext('theme')).toBeUndefined();
-  }));
+      expect(useContext('theme')).toBeUndefined();
+    })
+  );
 
   // What the previous implementation was trying to protect by clearing
   // nothing: globalState holds more than contexts.
-  it('leaves unrelated global state alone', inRequest(() => {
-    globalStateManager.set('requestId', 'abc-123');
-    provideContext('theme', 'dark');
+  it(
+    'leaves unrelated global state alone',
+    inRequest(() => {
+      globalStateManager.set('requestId', 'abc-123');
+      provideContext('theme', 'dark');
 
-    clearAllContexts();
+      clearAllContexts();
 
-    expect(globalStateManager.get('requestId')).toBe('abc-123');
-    expect(useContext('theme')).toBeUndefined();
-  }));
+      expect(globalStateManager.get('requestId')).toBe('abc-123');
+      expect(useContext('theme')).toBeUndefined();
+    })
+  );
 
-  it('restores a pre-existing value rather than deleting the key', inRequest(() => {
-    globalStateManager.set('theme', 'system');
-    provideContext('theme', 'dark');
-    expect(useContext('theme')).toBe('dark');
+  it(
+    'restores a pre-existing value rather than deleting the key',
+    inRequest(() => {
+      globalStateManager.set('theme', 'system');
+      provideContext('theme', 'dark');
+      expect(useContext('theme')).toBe('dark');
 
-    clearAllContexts();
+      clearAllContexts();
 
-    expect(useContext('theme')).toBe('system');
-  }));
+      expect(useContext('theme')).toBe('system');
+    })
+  );
 
-  it('leaves restoreContext harmless afterwards', inRequest(() => {
-    provideContext('theme', 'dark');
-    clearAllContexts();
+  it(
+    'leaves restoreContext harmless afterwards',
+    inRequest(() => {
+      provideContext('theme', 'dark');
+      clearAllContexts();
 
-    // The stack is gone, so this is a no-op rather than resurrecting a value.
-    restoreContext('theme');
+      // The stack is gone, so this is a no-op rather than resurrecting a value.
+      restoreContext('theme');
 
-    expect(useContext('theme')).toBeUndefined();
-  }));
+      expect(useContext('theme')).toBeUndefined();
+    })
+  );
 });
-
 
 /**
  * Regression: outside runWithContext() provideContext() used
@@ -381,11 +427,14 @@ describe('context outside runWithContext() on the server', () => {
     const get = (path) =>
       new Promise((resolve, reject) => {
         http
-          .get({ host: '127.0.0.1', port: server.address().port, path, agent }, (res) => {
-            let body = '';
-            res.on('data', (chunk) => (body += chunk));
-            res.on('end', () => resolve(body));
-          })
+          .get(
+            { host: '127.0.0.1', port: server.address().port, path, agent },
+            (res) => {
+              let body = '';
+              res.on('data', (chunk) => (body += chunk));
+              res.on('end', () => resolve(body));
+            }
+          )
           .on('error', reject);
       });
 
@@ -415,32 +464,50 @@ describe('createContextProvider with a throwing child', () => {
     throw new Error('boom');
   };
 
-  it('restores the outer value when rendering fails', inRequest(() => {
-    expect(() =>
-      render({ div: { children: [createContextProvider('user', 'alice', failing)] } })
-    ).toThrow(/boom/);
+  it(
+    'restores the outer value when rendering fails',
+    inRequest(() => {
+      expect(() =>
+        render({
+          div: { children: [createContextProvider('user', 'alice', failing)] },
+        })
+      ).toThrow(/boom/);
 
-    expect(useContext('user')).toBeUndefined();
-  }));
+      expect(useContext('user')).toBeUndefined();
+    })
+  );
 
   it('restores the outer value outside runWithContext()', () => {
     expect(() =>
-      render({ div: { children: [createContextProvider('user', 'alice', { p: { children: [failing] } })] } })
+      render({
+        div: {
+          children: [
+            createContextProvider('user', 'alice', {
+              p: { children: [failing] },
+            }),
+          ],
+        },
+      })
     ).toThrow(/boom/);
 
     expect(useContext('user')).toBeUndefined();
   });
 
-  it('keeps nested providers balanced when an inner child fails', inRequest(() => {
-    provideContext('theme', 'outer');
-    const tree = createContextProvider('theme', 'dark', {
-      section: { children: [createContextProvider('theme', 'light', failing)] }
-    });
+  it(
+    'keeps nested providers balanced when an inner child fails',
+    inRequest(() => {
+      provideContext('theme', 'outer');
+      const tree = createContextProvider('theme', 'dark', {
+        section: {
+          children: [createContextProvider('theme', 'light', failing)],
+        },
+      });
 
-    expect(() => render({ main: { children: [tree] } })).toThrow(/boom/);
+      expect(() => render({ main: { children: [tree] } })).toThrow(/boom/);
 
-    expect(useContext('theme')).toBe('outer');
-  }));
+      expect(useContext('theme')).toBe('outer');
+    })
+  );
 });
 
 describe('createContextProvider subtree evaluation', () => {
@@ -450,8 +517,8 @@ describe('createContextProvider subtree evaluation', () => {
         p: {
           title: () => useContext('theme'),
           text: () => `text-${useContext('theme')}`,
-          children: [{ span: { html: () => `<b>${useContext('theme')}</b>` } }]
-        }
+          children: [{ span: { html: () => `<b>${useContext('theme')}</b>` } }],
+        },
       })
     );
 
@@ -460,7 +527,11 @@ describe('createContextProvider subtree evaluation', () => {
 
   it('never calls event handlers', () => {
     const onclick = vi.fn();
-    const html = render(createContextProvider('theme', 'dark', { button: { onclick, text: 'Go' } }));
+    const html = render(
+      createContextProvider('theme', 'dark', {
+        button: { onclick, text: 'Go' },
+      })
+    );
 
     expect(onclick).not.toHaveBeenCalled();
     expect(html).toBe('<button>Go</button>');
@@ -469,7 +540,9 @@ describe('createContextProvider subtree evaluation', () => {
   it('keeps trusted content markers usable', async () => {
     const { dangerouslySetInnerContent } = await import('@coherent.js/core');
     const html = render(
-      createContextProvider('theme', 'dark', { div: { children: [dangerouslySetInnerContent('<i>raw</i>')] } })
+      createContextProvider('theme', 'dark', {
+        div: { children: [dangerouslySetInnerContent('<i>raw</i>')] },
+      })
     );
 
     expect(html).toBe('<div><i>raw</i></div>');

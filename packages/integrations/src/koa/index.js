@@ -13,7 +13,7 @@ export {
   coherentKoaMiddleware,
   createHandler,
   setupCoherent,
-  createKoaIntegration
+  createKoaIntegration,
 } from './coherent-koa.js';
 
 export { default } from './coherent-koa.js';

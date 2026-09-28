@@ -45,8 +45,20 @@ describe('hydrate() binds handlers to the element that rendered them', () => {
       div: {
         children: [
           null,
-          { button: { id: 'del', text: 'Delete', onClick: () => calls.push('delete') } },
-          { button: { id: 'save', text: 'Save', onClick: () => calls.push('save') } },
+          {
+            button: {
+              id: 'del',
+              text: 'Delete',
+              onClick: () => calls.push('delete'),
+            },
+          },
+          {
+            button: {
+              id: 'save',
+              text: 'Save',
+              onClick: () => calls.push('save'),
+            },
+          },
         ],
       },
     });
@@ -64,7 +76,12 @@ describe('hydrate() binds handlers to the element that rendered them', () => {
         children: [
           undefined,
           [{ li: { id: 'a', text: 'A', onClick: () => calls.push('a') } }],
-          [[undefined, { li: { id: 'b', text: 'B', onClick: () => calls.push('b') } }]],
+          [
+            [
+              undefined,
+              { li: { id: 'b', text: 'B', onClick: () => calls.push('b') } },
+            ],
+          ],
         ],
       },
     });
@@ -83,9 +100,21 @@ describe('hydrate() binds handlers to the element that rendered them', () => {
           'Total: ',
           3,
           ' items',
-          { button: { id: 'more', text: 'More', onClick: () => calls.push('more') } },
+          {
+            button: {
+              id: 'more',
+              text: 'More',
+              onClick: () => calls.push('more'),
+            },
+          },
           ' and ',
-          { button: { id: 'less', text: 'Less', onClick: () => calls.push('less') } },
+          {
+            button: {
+              id: 'less',
+              text: 'Less',
+              onClick: () => calls.push('less'),
+            },
+          },
         ],
       },
     });
@@ -101,7 +130,9 @@ describe('hydrate() binds handlers to the element that rendered them', () => {
     const App = () => ({
       section: {
         text: 'Heading',
-        children: [{ button: { id: 'go', text: 'Go', onClick: () => calls.push('go') } }],
+        children: [
+          { button: { id: 'go', text: 'Go', onClick: () => calls.push('go') } },
+        ],
       },
     });
 
@@ -127,7 +158,9 @@ describe('hydrate() binds handlers to the element that rendered them', () => {
     clickAll(container, ['ok']);
 
     expect(calls).toEqual(['ok']);
-    expect(container.querySelector('#badge').getAttribute('data-coherent-click')).toBeNull();
+    expect(
+      container.querySelector('#badge').getAttribute('data-coherent-click')
+    ).toBeNull();
   });
 
   it('binds elements after raw HTML by counting from the end', () => {
@@ -136,7 +169,13 @@ describe('hydrate() binds handlers to the element that rendered them', () => {
       article: {
         children: [
           dangerouslySetInnerContent('<b>bold</b><i>italic</i>'),
-          { button: { id: 'like', text: 'Like', onClick: () => calls.push('like') } },
+          {
+            button: {
+              id: 'like',
+              text: 'Like',
+              onClick: () => calls.push('like'),
+            },
+          },
         ],
       },
     });
@@ -145,7 +184,9 @@ describe('hydrate() binds handlers to the element that rendered them', () => {
     clickAll(container, ['like']);
 
     expect(calls).toEqual(['like']);
-    expect(container.querySelector('i').getAttribute('data-coherent-click')).toBeNull();
+    expect(
+      container.querySelector('i').getAttribute('data-coherent-click')
+    ).toBeNull();
   });
 
   it('skips whitespace-only text between server-rendered elements', () => {
@@ -153,8 +194,12 @@ describe('hydrate() binds handlers to the element that rendered them', () => {
     const App = () => ({
       div: {
         children: [
-          { button: { id: 'one', text: '1', onClick: () => calls.push('one') } },
-          { button: { id: 'two', text: '2', onClick: () => calls.push('two') } },
+          {
+            button: { id: 'one', text: '1', onClick: () => calls.push('one') },
+          },
+          {
+            button: { id: 'two', text: '2', onClick: () => calls.push('two') },
+          },
         ],
       },
     });
@@ -170,7 +215,8 @@ describe('hydrate() binds handlers to the element that rendered them', () => {
 });
 
 describe('detectMismatch() compares children as the server rendered them', () => {
-  const mismatchesFor = (vNode, html = ssr(vNode)) => detectMismatch(dom.mount(html), vNode);
+  const mismatchesFor = (vNode, html = ssr(vNode)) =>
+    detectMismatch(dom.mount(html), vNode);
 
   it('reports nothing for identical output with null children and merged text', () => {
     const vNode = {
@@ -192,7 +238,9 @@ describe('detectMismatch() compares children as the server rendered them', () =>
   });
 
   it('reports nothing for `text` plus `children`', () => {
-    const vNode = { h2: { text: 'Title ', children: [{ small: { text: 'sub' } }] } };
+    const vNode = {
+      h2: { text: 'Title ', children: [{ small: { text: 'sub' } }] },
+    };
 
     expect(mismatchesFor(vNode)).toEqual([]);
   });
@@ -206,7 +254,9 @@ describe('detectMismatch() compares children as the server rendered them', () =>
   });
 
   it('expects no attribute for a null or false value', () => {
-    const vNode = { input: { id: null, disabled: false, value: () => 'computed' } };
+    const vNode = {
+      input: { id: null, disabled: false, value: () => 'computed' },
+    };
 
     expect(mismatchesFor(vNode, '<input value="computed">')).toEqual([]);
   });
@@ -216,7 +266,10 @@ describe('detectMismatch() compares children as the server rendered them', () =>
       div: { children: [null, 'Hello ', 'world', { span: { text: 'x' } }] },
     };
 
-    const mismatches = mismatchesFor(vNode, '<div>Hello there<span>x</span></div>');
+    const mismatches = mismatchesFor(
+      vNode,
+      '<div>Hello there<span>x</span></div>'
+    );
 
     expect(mismatches).toEqual([
       expect.objectContaining({
@@ -235,9 +288,21 @@ describe('detectMismatch() compares children as the server rendered them', () =>
 
     const mismatches = mismatchesFor(vNode, '<ul><li>a</li></ul>');
 
-    expect(mismatches.map(({ type, path, expected, actual }) => ({ type, path, expected, actual }))).toEqual([
+    expect(
+      mismatches.map(({ type, path, expected, actual }) => ({
+        type,
+        path,
+        expected,
+        actual,
+      }))
+    ).toEqual([
       { type: 'children_count', path: 'children', expected: 2, actual: 1 },
-      { type: 'missing_dom_child', path: 'children[1]', expected: '<li>', actual: null },
+      {
+        type: 'missing_dom_child',
+        path: 'children[1]',
+        expected: '<li>',
+        actual: null,
+      },
     ]);
   });
 });

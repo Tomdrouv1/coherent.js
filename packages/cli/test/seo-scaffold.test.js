@@ -18,21 +18,27 @@ afterAll(async () => {
   if (dir) await rm(dir, { recursive: true, force: true });
 });
 
-const locs = (xml) => [...xml.matchAll(/<loc>([^<]*)<\/loc>/g)].map((match) => match[1]);
+const locs = (xml) =>
+  [...xml.matchAll(/<loc>([^<]*)<\/loc>/g)].map((match) => match[1]);
 
 describe('generated seo helper', () => {
   it('builds a sitemap of absolute URLs on BASE_URL, with a placeholder fallback', async () => {
     dir = await mkdtemp(join(tmpdir(), 'coherent-seo-scaffold-'));
     const scaffolding = generateSeoScaffolding('Shop');
     await mkdir(join(dir, 'src/utils'), { recursive: true });
-    await writeFile(join(dir, 'src/utils/seo.js'), scaffolding['src/utils/seo.js']);
-    const { getSitemap, getPageMeta } = await import(pathToFileURL(join(dir, 'src/utils/seo.js')).href);
+    await writeFile(
+      join(dir, 'src/utils/seo.js'),
+      scaffolding['src/utils/seo.js']
+    );
+    const { getSitemap, getPageMeta } = await import(
+      pathToFileURL(join(dir, 'src/utils/seo.js')).href
+    );
 
     delete process.env.BASE_URL;
     expect(locs(getSitemap())).toEqual([
       'https://example.com/',
       'https://example.com/about',
-      'https://example.com/contact'
+      'https://example.com/contact',
     ]);
 
     process.env.BASE_URL = 'https://shop.example.org/';
@@ -41,11 +47,13 @@ describe('generated seo helper', () => {
     expect(locs(xml)).toEqual([
       'https://shop.example.org/',
       'https://shop.example.org/about',
-      'https://shop.example.org/contact'
+      'https://shop.example.org/contact',
     ]);
     expect(xml).toContain('<priority>0.8</priority>');
 
     // The meta helper uses the same origin
-    expect(JSON.stringify(getPageMeta('about'))).toContain('https://shop.example.org/about');
+    expect(JSON.stringify(getPageMeta('about'))).toContain(
+      'https://shop.example.org/about'
+    );
   });
 });

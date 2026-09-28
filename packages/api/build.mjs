@@ -8,7 +8,7 @@ await buildPackage({
     middleware: 'src/middleware.js',
     security: 'src/security.js',
     validation: 'src/validation.js',
-    serialization: 'src/serialization.js'
+    serialization: 'src/serialization.js',
   },
-  external: ['@coherent.js/core']
+  external: ['@coherent.js/core'],
 });

@@ -13,7 +13,10 @@ let packageVersion = null;
 function getPackageVersion() {
   if (packageVersion === null) {
     try {
-      packageVersion = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')).version ?? 'unknown';
+      packageVersion =
+        JSON.parse(
+          readFileSync(new URL('../../package.json', import.meta.url), 'utf8')
+        ).version ?? 'unknown';
     } catch {
       packageVersion = 'unknown';
     }
@@ -30,7 +33,7 @@ export function generateManifest(components) {
   return {
     components: Object.keys(components),
     version: getPackageVersion(),
-    build: Date.now()
+    build: Date.now(),
   };
 }
 

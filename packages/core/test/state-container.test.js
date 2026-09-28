@@ -13,7 +13,10 @@ function makeTestComponent() {
 
 describe('State Container', () => {
   it('withState does not leak a global "initialized" variable', () => {
-    const before = Object.prototype.hasOwnProperty.call(globalThis, 'initialized');
+    const before = Object.prototype.hasOwnProperty.call(
+      globalThis,
+      'initialized'
+    );
 
     const Comp = makeTestComponent();
     // Invoke component function (no renderer needed for this check)
@@ -21,7 +24,10 @@ describe('State Container', () => {
 
     expect(result && typeof result === 'object').toBe(true); // component should return an element object
 
-    const after = Object.prototype.hasOwnProperty.call(globalThis, 'initialized');
+    const after = Object.prototype.hasOwnProperty.call(
+      globalThis,
+      'initialized'
+    );
     expect(before).toBe(after); // globalThis should not gain an "initialized" property
     expect(globalThis.initialized).toBe(undefined); // globalThis.initialized should be undefined
   });
@@ -39,8 +45,14 @@ describe('withStateUtils.shared', () => {
   it('shares one container between components with the same key', async () => {
     const { withStateUtils, render } = await import('../src/index.js');
     const key = `shared-${Date.now()}`;
-    const A = withStateUtils.shared({ theme: 'light' }, key)(({ state }) => ({ p: { text: `A:${state.theme}` } }));
-    const B = withStateUtils.shared({ theme: 'ignored' }, key)(({ state }) => ({ p: { text: `B:${state.theme}` } }));
+    const A = withStateUtils.shared(
+      { theme: 'light' },
+      key
+    )(({ state }) => ({ p: { text: `A:${state.theme}` } }));
+    const B = withStateUtils.shared(
+      { theme: 'ignored' },
+      key
+    )(({ state }) => ({ p: { text: `B:${state.theme}` } }));
 
     // It threw "middleware is not iterable" before rendering anything.
     expect(render(A())).toBe('<p>A:light</p>');

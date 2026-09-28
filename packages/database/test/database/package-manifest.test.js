@@ -9,17 +9,23 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const packageDir = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const manifest = JSON.parse(readFileSync(join(packageDir, 'package.json'), 'utf8'));
+const manifest = JSON.parse(
+  readFileSync(join(packageDir, 'package.json'), 'utf8')
+);
 
 function dynamicallyImportedPackages() {
   const adaptersDir = join(packageDir, 'src', 'adapters');
   const names = new Set();
   for (const file of readdirSync(adaptersDir)) {
     const source = readFileSync(join(adaptersDir, file), 'utf8');
-    for (const [, specifier] of source.matchAll(/import\(\s*'([^'.][^']*)'\s*\)/g)) {
+    for (const [, specifier] of source.matchAll(
+      /import\(\s*'([^'.][^']*)'\s*\)/g
+    )) {
       // mysql2/promise -> mysql2, @scope/name/sub -> @scope/name
       const parts = specifier.split('/');
-      names.add(specifier.startsWith('@') ? parts.slice(0, 2).join('/') : parts[0]);
+      names.add(
+        specifier.startsWith('@') ? parts.slice(0, 2).join('/') : parts[0]
+      );
     }
   }
   return [...names].sort();
@@ -32,7 +38,9 @@ describe('package manifest', () => {
 
     for (const driver of drivers) {
       expect(manifest.peerDependencies, driver).toHaveProperty(driver);
-      expect(manifest.peerDependenciesMeta?.[driver], driver).toEqual({ optional: true });
+      expect(manifest.peerDependenciesMeta?.[driver], driver).toEqual({
+        optional: true,
+      });
       expect(manifest.dependencies?.[driver], driver).toBeUndefined();
     }
   });
@@ -42,7 +50,7 @@ describe('package manifest', () => {
       mongodb: '>=5.0.0 <7.0.0',
       mysql2: '>=3.23.1 <4.0.0',
       pg: '>=8.8.0 <9.0.0',
-      sqlite3: '>=5.1.0 <6.0.0'
+      sqlite3: '>=5.1.0 <6.0.0',
     });
   });
 });

@@ -83,7 +83,17 @@ describe('Koa: ctx.coherent renders explicitly', () => {
     app.use(errorBoundary);
     app.use(coherentKoaMiddleware());
     app.use(async (ctx) => {
-      ctx.coherent({ div: { children: [{ get span() { throw new Error('boom'); } }] } });
+      ctx.coherent({
+        div: {
+          children: [
+            {
+              get span() {
+                throw new Error('boom');
+              },
+            },
+          ],
+        },
+      });
     });
     server = await serve(app);
 

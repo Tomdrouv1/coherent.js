@@ -5,10 +5,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  escapeHtml,
-  formatCodeFrame
-} from '../../src/hmr/overlay.js';
+import { escapeHtml, formatCodeFrame } from '../../src/hmr/overlay.js';
 
 describe('escapeHtml', () => {
   it('escapes ampersand', () => {
@@ -28,8 +25,9 @@ describe('escapeHtml', () => {
   });
 
   it('escapes multiple special characters', () => {
-    expect(escapeHtml('<div class="test">&</div>'))
-      .toBe('&lt;div class=&quot;test&quot;&gt;&amp;&lt;/div&gt;');
+    expect(escapeHtml('<div class="test">&</div>')).toBe(
+      '&lt;div class=&quot;test&quot;&gt;&amp;&lt;/div&gt;'
+    );
   });
 
   it('handles empty string', () => {
@@ -155,7 +153,7 @@ describe('ErrorOverlay', () => {
           delete listeners[event];
         }
       }),
-      click: vi.fn(function() {
+      click: vi.fn(function () {
         if (listeners.click) listeners.click({ target: el });
       }),
       appendChild: vi.fn((child) => {
@@ -169,7 +167,7 @@ describe('ErrorOverlay', () => {
         child.parentNode = null;
         return child;
       }),
-      remove: vi.fn(function() {
+      remove: vi.fn(function () {
         el.parentNode = null;
       }),
       querySelector: vi.fn((selector) => mockElements.get(selector)),
@@ -178,7 +176,7 @@ describe('ErrorOverlay', () => {
         return found ? [found] : [];
       }),
       attachShadow: vi.fn(() => mockShadow),
-      _listeners: listeners
+      _listeners: listeners,
     };
     return el;
   }
@@ -195,7 +193,7 @@ describe('ErrorOverlay', () => {
       querySelectorAll: vi.fn((selector) => {
         const el = mockElements.get(selector);
         return el ? [el] : [];
-      })
+      }),
     };
 
     // Create mock body
@@ -205,9 +203,15 @@ describe('ErrorOverlay', () => {
     mockLocalStorage = {
       store: {},
       getItem: vi.fn((key) => mockLocalStorage.store[key] || null),
-      setItem: vi.fn((key, value) => { mockLocalStorage.store[key] = value; }),
-      removeItem: vi.fn((key) => { delete mockLocalStorage.store[key]; }),
-      clear: vi.fn(() => { mockLocalStorage.store = {}; })
+      setItem: vi.fn((key, value) => {
+        mockLocalStorage.store[key] = value;
+      }),
+      removeItem: vi.fn((key) => {
+        delete mockLocalStorage.store[key];
+      }),
+      clear: vi.fn(() => {
+        mockLocalStorage.store = {};
+      }),
     };
 
     // Setup global mocks
@@ -235,7 +239,7 @@ describe('ErrorOverlay', () => {
         if (event.type === 'keydown' && keydownHandler) {
           keydownHandler(event);
         }
-      })
+      }),
     };
 
     // Dynamically import ErrorOverlay after mocks are set up
@@ -306,7 +310,10 @@ describe('ErrorOverlay', () => {
     it('adds keydown listener for Escape key', () => {
       overlay.show({ message: 'Test error' });
 
-      expect(global.document.addEventListener).toHaveBeenCalledWith('keydown', expect.any(Function));
+      expect(global.document.addEventListener).toHaveBeenCalledWith(
+        'keydown',
+        expect.any(Function)
+      );
       expect(overlay.escapeHandler).toBeTruthy();
     });
 
@@ -333,7 +340,10 @@ describe('ErrorOverlay', () => {
 
       overlay.hide();
 
-      expect(global.document.removeEventListener).toHaveBeenCalledWith('keydown', expect.any(Function));
+      expect(global.document.removeEventListener).toHaveBeenCalledWith(
+        'keydown',
+        expect.any(Function)
+      );
       expect(overlay.escapeHandler).toBeNull();
     });
 
@@ -386,7 +396,10 @@ describe('ErrorOverlay', () => {
     it('stores editor preference in localStorage', () => {
       overlay.setEditor('cursor');
 
-      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('coherent-editor', 'cursor');
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
+        'coherent-editor',
+        'cursor'
+      );
     });
 
     it('updates instance editor property', () => {
@@ -400,14 +413,20 @@ describe('ErrorOverlay', () => {
     it('opens vscode URL by default', () => {
       overlay.openInEditor('/src/app.js', 10);
 
-      expect(global.window.open).toHaveBeenCalledWith('vscode://file//src/app.js:10', '_self');
+      expect(global.window.open).toHaveBeenCalledWith(
+        'vscode://file//src/app.js:10',
+        '_self'
+      );
     });
 
     it('opens cursor URL when editor is cursor', () => {
       overlay.setEditor('cursor');
       overlay.openInEditor('/src/app.js', 15);
 
-      expect(global.window.open).toHaveBeenCalledWith('cursor://file//src/app.js:15', '_self');
+      expect(global.window.open).toHaveBeenCalledWith(
+        'cursor://file//src/app.js:15',
+        '_self'
+      );
     });
 
     it('opens atom URL with correct format', () => {
@@ -463,14 +482,20 @@ describe('ErrorOverlay', () => {
     it('uses line 1 as default', () => {
       overlay.openInEditor('/src/app.js');
 
-      expect(global.window.open).toHaveBeenCalledWith('vscode://file//src/app.js:1', '_self');
+      expect(global.window.open).toHaveBeenCalledWith(
+        'vscode://file//src/app.js:1',
+        '_self'
+      );
     });
 
     it('falls back to vscode for unknown editor', () => {
       overlay.setEditor('unknown-editor');
       overlay.openInEditor('/src/app.js', 5);
 
-      expect(global.window.open).toHaveBeenCalledWith('vscode://file//src/app.js:5', '_self');
+      expect(global.window.open).toHaveBeenCalledWith(
+        'vscode://file//src/app.js:5',
+        '_self'
+      );
     });
   });
 });
@@ -479,7 +504,7 @@ describe('errorOverlay singleton', () => {
   beforeEach(() => {
     global.localStorage = {
       getItem: vi.fn(() => null),
-      setItem: vi.fn()
+      setItem: vi.fn(),
     };
   });
 
@@ -488,7 +513,8 @@ describe('errorOverlay singleton', () => {
   });
 
   it('is exported', async () => {
-    const { errorOverlay, ErrorOverlay } = await import('../../src/hmr/overlay.js');
+    const { errorOverlay, ErrorOverlay } =
+      await import('../../src/hmr/overlay.js');
     expect(errorOverlay).toBeInstanceOf(ErrorOverlay);
   });
 });

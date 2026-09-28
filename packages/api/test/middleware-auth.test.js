@@ -56,8 +56,17 @@ describe('middleware withAuth(verifyToken)', () => {
   });
 
   it('answers 401 for falsy and rejected async verifiers', async () => {
-    for (const verifier of [async () => null, async () => undefined, () => false, async () => { throw new Error('bad'); }]) {
-      const { res, next } = await run(withAuth(verifier), { headers: { authorization: 'Bearer x' } });
+    for (const verifier of [
+      async () => null,
+      async () => undefined,
+      () => false,
+      async () => {
+        throw new Error('bad');
+      },
+    ]) {
+      const { res, next } = await run(withAuth(verifier), {
+        headers: { authorization: 'Bearer x' },
+      });
       expect(res.statusCode).toBe(401);
       expect(next).not.toHaveBeenCalled();
     }
@@ -88,14 +97,18 @@ describe('middleware withAuth(verifyToken)', () => {
     );
     server = await startServer(router);
 
-    const missing = await request(`${server.base}/users/1`, { method: 'DELETE' });
+    const missing = await request(`${server.base}/users/1`, {
+      method: 'DELETE',
+    });
     const invalid = await request(`${server.base}/users/1`, {
       method: 'DELETE',
-      headers: { authorization: 'Bearer forged.token.here' }
+      headers: { authorization: 'Bearer forged.token.here' },
     });
     const valid = await request(`${server.base}/users/1`, {
       method: 'DELETE',
-      headers: { authorization: `Bearer ${generateJWT({ sub: 9 }, '1h', SECRET)}` }
+      headers: {
+        authorization: `Bearer ${generateJWT({ sub: 9 }, '1h', SECRET)}`,
+      },
     });
 
     expect(missing.status).toBe(401);
@@ -116,13 +129,22 @@ describe('middleware withAuth(verifyToken)', () => {
         (req) => {
           if (req.headers['x-role']) req.user = { role: req.headers['x-role'] };
         },
-        withPermission((user) => user.role === 'admin')
-      ]
+        withPermission((user) => user.role === 'admin'),
+      ],
     });
     server = await startServer(router);
 
     expect((await request(`${server.base}/admin`)).status).toBe(401);
-    expect((await request(`${server.base}/admin`, { headers: { 'x-role': 'user' } })).status).toBe(403);
-    expect((await request(`${server.base}/admin`, { headers: { 'x-role': 'admin' } })).status).toBe(200);
+    expect(
+      (await request(`${server.base}/admin`, { headers: { 'x-role': 'user' } }))
+        .status
+    ).toBe(403);
+    expect(
+      (
+        await request(`${server.base}/admin`, {
+          headers: { 'x-role': 'admin' },
+        })
+      ).status
+    ).toBe(200);
   });
 });

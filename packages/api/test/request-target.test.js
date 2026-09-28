@@ -28,14 +28,22 @@ describe('parseRequestTarget', () => {
     ['http://host', '/'],
     ['http://host?x=1', '/'],
     ['*', '*'],
-    ['', null]
+    ['', null],
   ])('reads the pathname of %j as %j', (target, pathname) => {
     expect(parseRequestTarget(target).pathname).toBe(pathname);
   });
 
   it('parses the query as querystring does', () => {
-    const { query } = parseRequestTarget('/s?q=a+b&tag=x&tag=y&empty=&flag&x=\\#h');
-    expect({ ...query }).toEqual({ q: 'a b', tag: ['x', 'y'], empty: '', flag: '', x: '\\' });
+    const { query } = parseRequestTarget(
+      '/s?q=a+b&tag=x&tag=y&empty=&flag&x=\\#h'
+    );
+    expect({ ...query }).toEqual({
+      q: 'a b',
+      tag: ['x', 'y'],
+      empty: '',
+      flag: '',
+      x: '\\',
+    });
   });
 
   it('gives the query no prototype, so keys cannot reach Object.prototype', () => {
@@ -53,7 +61,7 @@ describe('parseRequestTarget', () => {
 
 const modes = [
   ['compiled', {}],
-  ['uncompiled', { enableCompilation: false }]
+  ['uncompiled', { enableCompilation: false }],
 ];
 
 describe.each(modes)('router request targets (%s)', (_mode, options) => {
@@ -63,10 +71,18 @@ describe.each(modes)('router request targets (%s)', (_mode, options) => {
     const res = {
       setHeader() {},
       getHeader() {},
-      writeHead(code) { status = code; },
-      end(data) { body = data === undefined ? undefined : JSON.parse(data); }
+      writeHead(code) {
+        status = code;
+      },
+      end(data) {
+        body = data === undefined ? undefined : JSON.parse(data);
+      },
     };
-    await router.handle({ method: 'GET', url, headers: {}, socket: { remoteAddress: '::1' } }, res, { rateLimit: false });
+    await router.handle(
+      { method: 'GET', url, headers: {}, socket: { remoteAddress: '::1' } },
+      res,
+      { rateLimit: false }
+    );
     return { status, body };
   };
 
@@ -110,7 +126,11 @@ describe('deprecation', () => {
       await r.handle({ method: 'GET', url: '/s?q=1', headers: {}, socket: { remoteAddress: '::1' } }, res, { rateLimit: false });
       process.stdout.write(body);
     `;
-    const out = execFileSync(process.execPath, ['--throw-deprecation', '--input-type=module', '-e', script], { encoding: 'utf8' });
+    const out = execFileSync(
+      process.execPath,
+      ['--throw-deprecation', '--input-type=module', '-e', script],
+      { encoding: 'utf8' }
+    );
     expect(JSON.parse(out)).toEqual({ q: '1' });
   });
 });

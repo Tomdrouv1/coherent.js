@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   createElement,
   createTextNode,
-  h
+  h,
 } from '../src/core/object-factory.js';
 
 describe('Object Factory', () => {
@@ -26,7 +26,7 @@ describe('Object Factory', () => {
       const props = {
         className: 'test-class',
         id: 'test-id',
-        text: 'Hello World'
+        text: 'Hello World',
       };
       const result = createElement('div', props);
 
@@ -50,7 +50,9 @@ describe('Object Factory', () => {
     });
 
     it('should throw error for invalid HTML element', () => {
-      expect(() => createElement('invalid-tag')).toThrow('Invalid HTML element: invalid-tag');
+      expect(() => createElement('invalid-tag')).toThrow(
+        'Invalid HTML element: invalid-tag'
+      );
     });
 
     it('should throw error for null/undefined tag', () => {
@@ -59,9 +61,19 @@ describe('Object Factory', () => {
     });
 
     it('should handle various valid HTML elements', () => {
-      const elements = ['div', 'span', 'p', 'h1', 'a', 'img', 'button', 'input', 'form'];
+      const elements = [
+        'div',
+        'span',
+        'p',
+        'h1',
+        'a',
+        'img',
+        'button',
+        'input',
+        'form',
+      ];
 
-      elements.forEach(tag => {
+      elements.forEach((tag) => {
         const result = createElement(tag);
         expect(result).toHaveProperty(tag);
         expect(result[tag]).toHaveProperty('_type', 'coherent-element');
@@ -75,11 +87,11 @@ describe('Object Factory', () => {
         disabled: true,
         'data-testid': 'test',
         style: 'color: red;',
-        text: 'Content'
+        text: 'Content',
       };
       const result = createElement('div', props);
 
-      Object.keys(props).forEach(key => {
+      Object.keys(props).forEach((key) => {
         expect(result.div[key]).toBe(props[key]);
       });
       expect(result.div._type).toBe('coherent-element');
@@ -89,7 +101,7 @@ describe('Object Factory', () => {
       const props = {
         disabled: true,
         readonly: false,
-        required: true
+        required: true,
       };
       const result = createElement('input', props);
 
@@ -103,7 +115,7 @@ describe('Object Factory', () => {
       const props = {
         tabindex: 1,
         maxlength: 100,
-        size: 20
+        size: 20,
       };
       const result = createElement('input', props);
 
@@ -116,7 +128,7 @@ describe('Object Factory', () => {
     it('should handle array properties', () => {
       const props = {
         className: ['class1', 'class2'],
-        dataset: { key: 'value' }
+        dataset: { key: 'value' },
       };
       const result = createElement('div', props);
 
@@ -132,7 +144,7 @@ describe('Object Factory', () => {
 
       expect(result).toEqual({
         text: 'Hello World',
-        _type: 'coherent-object'
+        _type: 'coherent-object',
       });
     });
 
@@ -141,7 +153,7 @@ describe('Object Factory', () => {
 
       expect(result).toEqual({
         text: '42',
-        _type: 'coherent-object'
+        _type: 'coherent-object',
       });
     });
 
@@ -150,7 +162,7 @@ describe('Object Factory', () => {
 
       expect(result).toEqual({
         text: 'true',
-        _type: 'coherent-object'
+        _type: 'coherent-object',
       });
     });
 
@@ -159,7 +171,7 @@ describe('Object Factory', () => {
 
       expect(result).toEqual({
         text: '',
-        _type: 'coherent-object'
+        _type: 'coherent-object',
       });
     });
 
@@ -169,11 +181,11 @@ describe('Object Factory', () => {
 
       expect(result1).toEqual({
         text: 'null',
-        _type: 'coherent-object'
+        _type: 'coherent-object',
       });
       expect(result2).toEqual({
         text: 'undefined',
-        _type: 'coherent-object'
+        _type: 'coherent-object',
       });
     });
 
@@ -183,7 +195,7 @@ describe('Object Factory', () => {
 
       expect(result).toEqual({
         text: '[object Object]',
-        _type: 'coherent-object'
+        _type: 'coherent-object',
       });
     });
 
@@ -193,7 +205,7 @@ describe('Object Factory', () => {
 
       expect(result).toEqual({
         text: '1,2,3',
-        _type: 'coherent-object'
+        _type: 'coherent-object',
       });
     });
   });
@@ -201,12 +213,30 @@ describe('Object Factory', () => {
   describe('h helper object', () => {
     it('should contain common HTML element creators', () => {
       const expectedElements = [
-        'div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-        'a', 'img', 'button', 'input', 'form', 'ul', 'ol', 'li',
-        'table', 'tr', 'td', 'th'
+        'div',
+        'span',
+        'p',
+        'h1',
+        'h2',
+        'h3',
+        'h4',
+        'h5',
+        'h6',
+        'a',
+        'img',
+        'button',
+        'input',
+        'form',
+        'ul',
+        'ol',
+        'li',
+        'table',
+        'tr',
+        'td',
+        'th',
       ];
 
-      expectedElements.forEach(element => {
+      expectedElements.forEach((element) => {
         expect(h).toHaveProperty(element);
         expect(typeof h[element]).toBe('function');
       });
@@ -233,7 +263,7 @@ describe('Object Factory', () => {
     it('should create heading elements correctly', () => {
       const headings = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
 
-      headings.forEach(heading => {
+      headings.forEach((heading) => {
         const props = { text: `Heading ${heading}` };
         const result = h[heading](props);
 
@@ -336,8 +366,8 @@ describe('Object Factory', () => {
         children: [
           h.h1({ text: 'Title' }),
           h.p({ text: 'Paragraph' }),
-          h.button({ text: 'Click me' })
-        ]
+          h.button({ text: 'Click me' }),
+        ],
       });
 
       expect(divElement).toHaveProperty('div');
@@ -349,7 +379,7 @@ describe('Object Factory', () => {
       const textNode = createTextNode('Hello World');
       const container = createElement('div', {
         className: 'wrapper',
-        children: [textNode]
+        children: [textNode],
       });
 
       expect(container).toHaveProperty('div');
@@ -367,11 +397,11 @@ describe('Object Factory', () => {
             className: 'form-group',
             children: [
               h.span({ text: 'Name:' }),
-              h.input({ type: 'text', name: 'name' })
-            ]
+              h.input({ type: 'text', name: 'name' }),
+            ],
           }),
-          h.button({ type: 'submit', text: 'Submit' })
-        ]
+          h.button({ type: 'submit', text: 'Submit' }),
+        ],
       });
 
       expect(form).toHaveProperty('form');

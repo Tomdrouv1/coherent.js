@@ -9,7 +9,12 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { PerformanceProfiler, createProfiler, measure, profile } from '../src/profiler.js';
+import {
+  PerformanceProfiler,
+  createProfiler,
+  measure,
+  profile,
+} from '../src/profiler.js';
 
 describe('PerformanceProfiler', () => {
   let profiler;
@@ -18,7 +23,7 @@ describe('PerformanceProfiler', () => {
     profiler = new PerformanceProfiler({
       enabled: true,
       sampleRate: 1,
-      maxSamples: 1000
+      maxSamples: 1000,
     });
   });
 
@@ -45,7 +50,7 @@ describe('PerformanceProfiler', () => {
     it('should measure operation duration', async () => {
       const sessionId = profiler.start('async-operation');
 
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       const result = profiler.stop(sessionId);
 
@@ -225,7 +230,7 @@ describe('PerformanceProfiler', () => {
       const sessionId = profiler.start('api-call');
 
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 20));
+      await new Promise((resolve) => setTimeout(resolve, 20));
 
       const result = profiler.stop(sessionId);
 
@@ -246,7 +251,7 @@ describe('PerformanceProfiler', () => {
 
     it('should use standalone measure function', async () => {
       const result = await measure('test-operation', async () => {
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
         return 'result';
       });
 
@@ -270,7 +275,7 @@ describe('PerformanceProfiler', () => {
     // never promised.
     it('should handle async functions with measure', async () => {
       const result = await measure('async-test', async () => {
-        await new Promise(resolve => setTimeout(resolve, 25));
+        await new Promise((resolve) => setTimeout(resolve, 25));
         return 'async-result';
       });
 
@@ -290,7 +295,10 @@ describe('PerformanceProfiler', () => {
     });
 
     it('should respect sample rate', () => {
-      const sampledProfiler = new PerformanceProfiler({ enabled: true, sampleRate: 0.5 });
+      const sampledProfiler = new PerformanceProfiler({
+        enabled: true,
+        sampleRate: 0.5,
+      });
 
       let profiledCount = 0;
       for (let i = 0; i < 100; i++) {
@@ -305,7 +313,10 @@ describe('PerformanceProfiler', () => {
     });
 
     it('should limit max samples', () => {
-      const limitedProfiler = new PerformanceProfiler({ enabled: true, maxSamples: 10 });
+      const limitedProfiler = new PerformanceProfiler({
+        enabled: true,
+        maxSamples: 10,
+      });
 
       for (let i = 0; i < 20; i++) {
         const sessionId = limitedProfiler.start(`operation-${i}`);

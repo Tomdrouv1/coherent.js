@@ -8,27 +8,13 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "paths": {
-      "@coherent.js/core": [
-        "../core/dist"
-      ],
-      "@coherent.js/client": [
-        "../client/dist"
-      ],
-      "@coherent.js/integrations": [
-        "./dist"
-      ]
+      "@coherent.js/core": ["../core/dist"],
+      "@coherent.js/client": ["../client/dist"],
+      "@coherent.js/integrations": ["./dist"]
     }
   },
-  "include": [
-    "src/**/*",
-    "types/**/*.d.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "test",
-    "**/*.test.js"
-  ],
+  "include": ["src/**/*", "types/**/*.d.ts"],
+  "exclude": ["node_modules", "dist", "test", "**/*.test.js"],
   "references": [
     {
       "path": "../core/tsconfig.json"

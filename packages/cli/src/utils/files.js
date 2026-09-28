@@ -18,8 +18,12 @@ export function writeGeneratedFiles(files, { force = false } = {}) {
   if (!force) {
     const existing = files.filter((file) => existsSync(file.path));
     if (existing.length > 0) {
-      const list = existing.map((file) => relative(process.cwd(), file.path) || file.path).join(', ');
-      throw new Error(`Refusing to overwrite existing file(s): ${list}. Re-run with --force to overwrite.`);
+      const list = existing
+        .map((file) => relative(process.cwd(), file.path) || file.path)
+        .join(', ');
+      throw new Error(
+        `Refusing to overwrite existing file(s): ${list}. Re-run with --force to overwrite.`
+      );
     }
   }
 

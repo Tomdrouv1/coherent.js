@@ -26,7 +26,7 @@ const DEPENDENCY_FIELDS = [
   'dependencies',
   'devDependencies',
   'peerDependencies',
-  'optionalDependencies'
+  'optionalDependencies',
 ];
 
 /** Read and parse a package.json, or null when absent/unreadable. */
@@ -74,11 +74,15 @@ export function hasCoherentDependency(startDir) {
     if (manifest) {
       for (const field of DEPENDENCY_FIELDS) {
         const deps = manifest[field];
-        if (deps && COHERENT_PACKAGES.some(name => deps[name])) return true;
+        if (deps && COHERENT_PACKAGES.some((name) => deps[name])) return true;
       }
     }
 
-    if (COHERENT_PACKAGES.some(name => existsSync(join(dir, 'node_modules', name)))) {
+    if (
+      COHERENT_PACKAGES.some((name) =>
+        existsSync(join(dir, 'node_modules', name))
+      )
+    ) {
       return true;
     }
   }
@@ -115,7 +119,9 @@ export function detectPackageManager(startDir) {
 
 /** True when a build script would re-enter this command. */
 export function isSelfReferential(script) {
-  return typeof script === 'string' && /(^|[\s&|;])coherent\s+build\b/.test(script);
+  return (
+    typeof script === 'string' && /(^|[\s&|;])coherent\s+build\b/.test(script)
+  );
 }
 
 export const buildCommand = new Command('build')
@@ -131,7 +137,11 @@ export const buildCommand = new Command('build')
     // Check if we're in a Coherent.js project
     const packageJsonPath = join(process.cwd(), 'package.json');
     if (!existsSync(packageJsonPath)) {
-      console.error(picocolors.red('❌ No package.json found. Are you in a project directory?'));
+      console.error(
+        picocolors.red(
+          '❌ No package.json found. Are you in a project directory?'
+        )
+      );
       process.exit(1);
     }
 
@@ -145,7 +155,9 @@ export const buildCommand = new Command('build')
 
     // Check for Coherent.js dependencies (including hoisted workspace deps)
     if (!hasCoherentDependency(process.cwd())) {
-      console.error(picocolors.red('❌ This doesn\'t appear to be a Coherent.js project'));
+      console.error(
+        picocolors.red("❌ This doesn't appear to be a Coherent.js project")
+      );
       console.error(picocolors.gray('   Missing @coherent.js/core dependency'));
       process.exit(1);
     }
@@ -166,11 +178,13 @@ export const buildCommand = new Command('build')
         execSync(`${packageManager} run build`, {
           stdio: options.watch ? 'inherit' : 'pipe',
           cwd: process.cwd(),
-          shell: true
+          shell: true,
         });
       } else {
         if (buildScript) {
-          spinner.warn('Build script runs "coherent build" — using the default pipeline to avoid recursion.');
+          spinner.warn(
+            'Build script runs "coherent build" — using the default pipeline to avoid recursion.'
+          );
           spinner.start();
         }
 
@@ -182,19 +196,19 @@ export const buildCommand = new Command('build')
           execSync('npx vite build', {
             stdio: options.watch ? 'inherit' : 'pipe',
             cwd: process.cwd(),
-            shell: true
+            shell: true,
           });
         } else if (existsSync('webpack.config.js')) {
           execSync('npx webpack --mode production', {
             stdio: options.watch ? 'inherit' : 'pipe',
             cwd: process.cwd(),
-            shell: true
+            shell: true,
           });
         } else if (existsSync('rollup.config.js')) {
           execSync('npx rollup -c', {
             stdio: options.watch ? 'inherit' : 'pipe',
             cwd: process.cwd(),
-            shell: true
+            shell: true,
           });
         } else {
           // Use esbuild as fallback
@@ -202,7 +216,7 @@ export const buildCommand = new Command('build')
           execSync(ESBUILD_FALLBACK_COMMAND, {
             stdio: options.watch ? 'inherit' : 'pipe',
             cwd: process.cwd(),
-            shell: true
+            shell: true,
           });
         }
       }
@@ -210,17 +224,21 @@ export const buildCommand = new Command('build')
       // Bundle analysis
       if (options.analyze) {
         spinner.text = 'Analyzing bundle...';
-        
+
         try {
           // Try to run bundle analyzer if available
           execSync('npx webpack-bundle-analyzer dist/stats.json', {
             stdio: 'inherit',
             cwd: process.cwd(),
-            shell: true
+            shell: true,
           });
         } catch {
           console.log(picocolors.yellow('⚠️  Bundle analyzer not available'));
-          console.log(picocolors.gray('   Install webpack-bundle-analyzer for detailed analysis'));
+          console.log(
+            picocolors.gray(
+              '   Install webpack-bundle-analyzer for detailed analysis'
+            )
+          );
         }
       }
 
@@ -229,11 +247,13 @@ export const buildCommand = new Command('build')
       // Show build info
       console.log();
       console.log(picocolors.green('✅ Build completed!'));
-      
+
       // Check if dist directory exists and show size info
       if (existsSync('dist')) {
         try {
-          const distSize = execSync('du -sh dist', { encoding: 'utf-8' }).trim().split('\t')[0];
+          const distSize = execSync('du -sh dist', { encoding: 'utf-8' })
+            .trim()
+            .split('\t')[0];
           console.log(picocolors.gray('📦 Output size:'), distSize);
         } catch {
           // Ignore size calculation errors
@@ -242,22 +262,27 @@ export const buildCommand = new Command('build')
 
       console.log();
       console.log(picocolors.cyan('Next steps:'));
-      console.log(picocolors.gray('  Deploy your dist/ directory to your hosting provider'));
-      console.log(picocolors.gray(`  Or run: ${packageManager} run start (if available)`));
+      console.log(
+        picocolors.gray(
+          '  Deploy your dist/ directory to your hosting provider'
+        )
+      );
+      console.log(
+        picocolors.gray(`  Or run: ${packageManager} run start (if available)`)
+      );
       console.log();
-
     } catch (error) {
       spinner.fail('Build failed');
       console.error(picocolors.red('❌ Build error:'));
       console.error(error.message);
-      
+
       // Show helpful error messages
       if (error.message.includes('command not found')) {
         console.log();
         console.log(picocolors.yellow('💡 Try installing dependencies:'));
         console.log(picocolors.gray(`   ${packageManager} install`));
       }
-      
+
       process.exit(1);
     }
   });

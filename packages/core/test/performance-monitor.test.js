@@ -62,10 +62,10 @@ describe('Enhanced Performance Monitor', () => {
             'api-calls': {
               type: 'counter',
               unit: 'requests',
-              threshold: 100
-            }
-          }
-        }
+              threshold: 100,
+            },
+          },
+        },
       });
 
       customMonitor.recordMetric('api-calls', 1);
@@ -87,10 +87,10 @@ describe('Enhanced Performance Monitor', () => {
             'response-time': {
               type: 'histogram',
               unit: 'ms',
-              threshold: 1000
-            }
-          }
-        }
+              threshold: 1000,
+            },
+          },
+        },
       });
 
       customMonitor.recordMetric('response-time', 100);
@@ -115,10 +115,10 @@ describe('Enhanced Performance Monitor', () => {
             'cpu-usage': {
               type: 'gauge',
               unit: '%',
-              threshold: 80
-            }
-          }
-        }
+              threshold: 80,
+            },
+          },
+        },
       });
 
       customMonitor.recordMetric('cpu-usage', 50);
@@ -136,7 +136,7 @@ describe('Enhanced Performance Monitor', () => {
     it('should dynamically add metrics', () => {
       monitor.addMetric('dynamic-metric', {
         type: 'counter',
-        unit: 'count'
+        unit: 'count',
       });
 
       monitor.recordMetric('dynamic-metric', 5);
@@ -153,8 +153,8 @@ describe('Enhanced Performance Monitor', () => {
         enabled: true,
         sampling: {
           enabled: false,
-          rate: 0.5
-        }
+          rate: 0.5,
+        },
       });
 
       for (let i = 0; i < 100; i++) {
@@ -173,8 +173,8 @@ describe('Enhanced Performance Monitor', () => {
         sampling: {
           enabled: true,
           rate: 0.5,
-          strategy: 'random'
-        }
+          strategy: 'random',
+        },
       });
 
       for (let i = 0; i < 1000; i++) {
@@ -195,8 +195,8 @@ describe('Enhanced Performance Monitor', () => {
         sampling: {
           enabled: true,
           rate: 0.5,
-          strategy: 'deterministic'
-        }
+          strategy: 'deterministic',
+        },
       });
 
       for (let i = 0; i < 100; i++) {
@@ -216,8 +216,8 @@ describe('Enhanced Performance Monitor', () => {
         sampling: {
           enabled: true,
           rate: 0.1,
-          strategy: 'adaptive'
-        }
+          strategy: 'adaptive',
+        },
       });
 
       // First record some fast renders to establish baseline
@@ -254,10 +254,10 @@ describe('Enhanced Performance Monitor', () => {
               metric: 'renderTime',
               condition: 'exceeds',
               threshold: 16,
-              action: alertFn
-            }
-          ]
-        }
+              action: alertFn,
+            },
+          ],
+        },
       });
 
       alertMonitor.recordMetric('renderTime', 10); // No alert
@@ -284,10 +284,10 @@ describe('Enhanced Performance Monitor', () => {
               metric: 'renderTime',
               condition: 'below',
               threshold: 5,
-              action: alertFn
-            }
-          ]
-        }
+              action: alertFn,
+            },
+          ],
+        },
       });
 
       alertMonitor.recordMetric('renderTime', 3); // Alert
@@ -310,10 +310,10 @@ describe('Enhanced Performance Monitor', () => {
               metric: 'componentCount',
               condition: 'equals',
               threshold: 10,
-              action: alertFn
-            }
-          ]
-        }
+              action: alertFn,
+            },
+          ],
+        },
       });
 
       alertMonitor.recordMetric('componentCount', 10); // Alert
@@ -337,10 +337,10 @@ describe('Enhanced Performance Monitor', () => {
               metric: 'renderTime',
               condition: 'exceeds',
               threshold: 16,
-              action: alertFn
-            }
-          ]
-        }
+              action: alertFn,
+            },
+          ],
+        },
       });
 
       // Trigger multiple times quickly
@@ -352,7 +352,7 @@ describe('Enhanced Performance Monitor', () => {
       expect(alertFn).toHaveBeenCalledTimes(1);
 
       // Wait for debounce period
-      await new Promise(resolve => setTimeout(resolve, 1100));
+      await new Promise((resolve) => setTimeout(resolve, 1100));
 
       // Should trigger again after debounce
       alertMonitor.recordMetric('renderTime', 20);
@@ -368,7 +368,7 @@ describe('Enhanced Performance Monitor', () => {
         metric: 'renderTime',
         condition: 'exceeds',
         threshold: 100,
-        action: alertFn
+        action: alertFn,
       });
 
       monitor.recordMetric('renderTime', 150);
@@ -386,18 +386,18 @@ describe('Enhanced Performance Monitor', () => {
         reporting: {
           enabled: true,
           interval: 100,
-          onReport: reportFn
-        }
+          onReport: reportFn,
+        },
       });
 
-      await new Promise(resolve => setTimeout(resolve, 250));
+      await new Promise((resolve) => setTimeout(resolve, 250));
 
       // Should have generated 2 reports
       expect(reportFn).toHaveBeenCalledTimes(2);
       expect(reportFn).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'report',
-          data: expect.any(Object)
+          data: expect.any(Object),
         })
       );
 
@@ -415,10 +415,10 @@ describe('Enhanced Performance Monitor', () => {
           batch: {
             enabled: true,
             maxSize: 5,
-            flushInterval: 5000
+            flushInterval: 5000,
           },
-          onReport: reportFn
-        }
+          onReport: reportFn,
+        },
       });
 
       // Record metrics
@@ -434,9 +434,9 @@ describe('Enhanced Performance Monitor', () => {
           data: expect.arrayContaining([
             expect.objectContaining({
               metric: 'renderTime',
-              value: 10
-            })
-          ])
+              value: 10,
+            }),
+          ]),
         })
       );
 
@@ -454,15 +454,15 @@ describe('Enhanced Performance Monitor', () => {
           batch: {
             enabled: true,
             maxSize: 100,
-            flushInterval: 100
+            flushInterval: 100,
           },
-          onReport: reportFn
-        }
+          onReport: reportFn,
+        },
       });
 
       batchMonitor.recordMetric('renderTime', 10);
 
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise((resolve) => setTimeout(resolve, 150));
 
       // Should have flushed batch
       expect(reportFn).toHaveBeenCalled();
@@ -481,10 +481,10 @@ describe('Enhanced Performance Monitor', () => {
           batch: {
             enabled: true,
             maxSize: 100,
-            flushInterval: 5000
+            flushInterval: 5000,
           },
-          onReport: reportFn
-        }
+          onReport: reportFn,
+        },
       });
 
       batchMonitor.recordMetric('renderTime', 10);
@@ -517,7 +517,7 @@ describe('Enhanced Performance Monitor', () => {
     it('should measure async function execution', async () => {
       const outerStart = performance.now();
       const result = await monitor.measureAsync('asyncFunction', async () => {
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
         return 'done';
       });
       const outerElapsed = performance.now() - outerStart;
@@ -530,7 +530,9 @@ describe('Enhanced Performance Monitor', () => {
       // fire it arbitrarily late: bound the measurement by the time that
       // actually elapsed around the call rather than by a fixed ceiling.
       expect(report.metrics.renderTime.avg).toBeGreaterThanOrEqual(8);
-      expect(report.metrics.renderTime.avg).toBeLessThanOrEqual(outerElapsed + 1);
+      expect(report.metrics.renderTime.avg).toBeLessThanOrEqual(
+        outerElapsed + 1
+      );
     });
 
     it('should record errors during measurement', () => {
@@ -576,7 +578,7 @@ describe('Enhanced Performance Monitor', () => {
 
     it('should calculate percentiles correctly', () => {
       const values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-      values.forEach(v => monitor.recordMetric('renderTime', v));
+      values.forEach((v) => monitor.recordMetric('renderTime', v));
 
       const report = monitor.generateReport();
 
@@ -597,10 +599,10 @@ describe('Enhanced Performance Monitor', () => {
               metric: 'renderTime',
               condition: 'exceeds',
               threshold: 16,
-              action: alertFn
-            }
-          ]
-        }
+              action: alertFn,
+            },
+          ],
+        },
       });
 
       alertMonitor.recordMetric('renderTime', 20);
@@ -630,11 +632,11 @@ describe('Enhanced Performance Monitor', () => {
         resources: {
           enabled: true,
           track: ['memory'],
-          interval: 50
-        }
+          interval: 50,
+        },
       });
 
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise((resolve) => setTimeout(resolve, 150));
 
       const report = resourceMonitor.generateReport();
       expect(report.resources).toBeDefined();
@@ -647,11 +649,11 @@ describe('Enhanced Performance Monitor', () => {
       const resourceMonitor = createPerformanceMonitor({
         enabled: true,
         resources: {
-          enabled: false
-        }
+          enabled: false,
+        },
       });
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const report = resourceMonitor.generateReport();
       expect(report.resources).toBeUndefined();

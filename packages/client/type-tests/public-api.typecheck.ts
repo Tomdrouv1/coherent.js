@@ -113,12 +113,18 @@ expectTypeOf(control.getState()).toMatchTypeOf<SerializableState>();
 
 // State serialization
 expectTypeOf(serializeState({ count: 1 })).toEqualTypeOf<string | null>();
-expectTypeOf(deserializeState('e30=')).toEqualTypeOf<SerializableState | null>();
+expectTypeOf(
+  deserializeState('e30=')
+).toEqualTypeOf<SerializableState | null>();
 expectTypeOf(extractState(container)).toEqualTypeOf<SerializableState | null>();
-expectTypeOf(serializeStateWithWarning({ count: 1 }, 'Counter')).toEqualTypeOf<string | null>();
+expectTypeOf(serializeStateWithWarning({ count: 1 }, 'Counter')).toEqualTypeOf<
+  string | null
+>();
 
 // Mismatch detection
-expectTypeOf(detectMismatch(container, node)).toEqualTypeOf<HydrationMismatch[]>();
+expectTypeOf(detectMismatch(container, node)).toEqualTypeOf<
+  HydrationMismatch[]
+>();
 reportMismatches([], { componentName: 'Test', strict: true });
 expectTypeOf(formatPath(['children[0]', '@class'])).toBeString();
 
@@ -127,7 +133,9 @@ expectTypeOf(formatPath(['children[0]', '@class'])).toBeString();
 // ============================================================================
 
 expectTypeOf(eventDelegation).toMatchTypeOf<EventDelegation>();
-expectTypeOf(new EventDelegation(new HandlerRegistry())).toMatchTypeOf<EventDelegation>();
+expectTypeOf(
+  new EventDelegation(new HandlerRegistry())
+).toMatchTypeOf<EventDelegation>();
 eventDelegation.initialize(document);
 eventDelegation.listen('dblclick');
 expectTypeOf(eventDelegation.isInitialized()).toBeBoolean();
@@ -136,7 +144,10 @@ expectTypeOf(handlerRegistry).toMatchTypeOf<HandlerRegistry>();
 const handler: StateAwareHandler<{ count: number }> = (event) => {
   event.setState?.({ count: 1 });
 };
-handlerRegistry.register('id', handler, { getState: () => ({}), setState: () => {} });
+handlerRegistry.register('id', handler, {
+  getState: () => ({}),
+  setState: () => {},
+});
 expectTypeOf(handlerRegistry.size).toBeNumber();
 expectTypeOf(handlerRegistry.getByComponent(null)).toEqualTypeOf<string[]>();
 
@@ -160,7 +171,10 @@ const routerWithOpts = createRouter({
   mode: 'history',
   base: '/app',
   prefetch: { enabled: true, strategy: 'hover', delay: 100, maxConcurrent: 3 },
-  transitions: { enabled: true, default: { enter: 'fade-in', leave: 'fade-out', duration: 300 } },
+  transitions: {
+    enabled: true,
+    default: { enter: 'fade-in', leave: 'fade-out', duration: 300 },
+  },
   codeSplitting: { enabled: true, strategy: 'route', preload: ['/home'] },
   scrollBehavior: { enabled: true, behavior: 'smooth', position: 'top' },
 });
@@ -175,13 +189,17 @@ myRouter.addRoute('/users/:id', userRoute);
 expectTypeOf(myRouter.push('/about')).toEqualTypeOf<Promise<boolean>>();
 expectTypeOf(myRouter.replace('/home')).toEqualTypeOf<Promise<boolean>>();
 expectTypeOf(myRouter.start()).toEqualTypeOf<Promise<boolean>>();
-expectTypeOf(myRouter.start({ interceptLinks: false })).toEqualTypeOf<Promise<boolean>>();
+expectTypeOf(myRouter.start({ interceptLinks: false })).toEqualTypeOf<
+  Promise<boolean>
+>();
 myRouter.stop();
 myRouter.back();
 myRouter.forward();
 
 expectTypeOf(myRouter.getCurrentRoute()).toEqualTypeOf<Route | null>();
-expectTypeOf<Route['params']>().toEqualTypeOf<Record<string, string> | undefined>();
+expectTypeOf<Route['params']>().toEqualTypeOf<
+  Record<string, string> | undefined
+>();
 expectTypeOf(myRouter.getStats()).toEqualTypeOf<RouterStats>();
 expectTypeOf(router).toEqualTypeOf<RouterFromModule>();
 
@@ -195,7 +213,9 @@ hmrClient.initialize();
 hmrClient.connect();
 hmrClient.disconnect();
 expectTypeOf(hmrClient.isConnected()).toBeBoolean();
-expectTypeOf(hmrClient.handleUpdate({ webPath: '/a.js' })).toEqualTypeOf<Promise<void>>();
+expectTypeOf(hmrClient.handleUpdate({ webPath: '/a.js' })).toEqualTypeOf<
+  Promise<void>
+>();
 hmrClient.reload();
 
 expectTypeOf(moduleTracker).toEqualTypeOf<ModuleTracker>();
@@ -216,14 +236,20 @@ expectTypeOf(hot.data).toEqualTypeOf<Record<string, any>>();
 expectTypeOf(cleanupTracker).toEqualTypeOf<CleanupTracker>();
 const moduleContext = new CleanupTracker().createContext('/a.js');
 expectTypeOf(moduleContext).toEqualTypeOf<HMRModuleContext>();
-expectTypeOf(moduleContext.fetch('/api', { signal: new AbortController().signal })).toEqualTypeOf<Promise<Response>>();
+expectTypeOf(
+  moduleContext.fetch('/api', { signal: new AbortController().signal })
+).toEqualTypeOf<Promise<Response>>();
 
 expectTypeOf(stateCapturer).toEqualTypeOf<StateCapturer>();
 new StateCapturer().captureAll();
 stateCapturer.restoreAll();
 
 expectTypeOf(errorOverlay).toEqualTypeOf<ErrorOverlay>();
-new ErrorOverlay().show({ message: 'Error occurred', file: 'module.js', line: 42 });
+new ErrorOverlay().show({
+  message: 'Error occurred',
+  file: 'module.js',
+  line: 42,
+});
 errorOverlay.hide();
 
 expectTypeOf(connectionIndicator).toEqualTypeOf<ConnectionIndicator>();
@@ -240,7 +266,9 @@ cleanupTracker.trackTimer;
 // ============================================================================
 
 expectTypeOf(hmrEntry.hmrClient).toEqualTypeOf<HMRClient>();
-expectTypeOf(hmrEntry.createHotContext).toEqualTypeOf<typeof createHotContext>();
+expectTypeOf(hmrEntry.createHotContext).toEqualTypeOf<
+  typeof createHotContext
+>();
 expectTypeOf(hmrEntry.escapeHtml('<b>')).toBeString();
 expectTypeOf(hmrEntry.formatCodeFrame('const a = 1;', 1)).toBeString();
 
@@ -249,14 +277,16 @@ expectTypeOf(hmrEntry.formatCodeFrame('const a = 1;', 1)).toBeString();
 // ============================================================================
 
 type Assert<T extends true> = T;
-type IsEqual<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2)
-  ? true
-  : false;
+type IsEqual<A, B> =
+  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
+    ? true
+    : false;
 
-type _hydrate_returns_object = Assert<IsEqual<ReturnType<typeof hydrate> extends object ? true : false, true>>;
-type _createRouter_returns_router = Assert<IsEqual<ReturnType<typeof createRouter>, RouterFromModule>>;
+type _hydrate_returns_object = Assert<
+  IsEqual<ReturnType<typeof hydrate> extends object ? true : false, true>
+>;
+type _createRouter_returns_router = Assert<
+  IsEqual<ReturnType<typeof createRouter>, RouterFromModule>
+>;
 
-export type {
-  _hydrate_returns_object,
-  _createRouter_returns_router,
-};
+export type { _hydrate_returns_object, _createRouter_returns_router };

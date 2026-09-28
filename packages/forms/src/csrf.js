@@ -31,21 +31,27 @@ import { Buffer } from 'node:buffer';
 /** Default name of the hidden field the form builder renders. */
 export const CSRF_FIELD_NAME = '_csrf';
 
-const TOKEN_PATTERN = /^([0-9a-z]{1,13})\.([A-Za-z0-9_-]{16,64})\.([A-Za-z0-9_-]{43})$/;
+const TOKEN_PATTERN =
+  /^([0-9a-z]{1,13})\.([A-Za-z0-9_-]{16,64})\.([A-Za-z0-9_-]{43})$/;
 
 const CLOCK_SKEW_MS = 60_000;
 
 function assertSecret(secret) {
-  const usable = (typeof secret === 'string' && secret.length > 0) ||
+  const usable =
+    (typeof secret === 'string' && secret.length > 0) ||
     (secret instanceof Uint8Array && secret.length > 0);
   if (!usable) {
-    throw new TypeError('A CSRF secret (non-empty string or Buffer) is required');
+    throw new TypeError(
+      'A CSRF secret (non-empty string or Buffer) is required'
+    );
   }
 }
 
 function assertSessionId(sessionId) {
   if (typeof sessionId !== 'string' || sessionId.length === 0) {
-    throw new TypeError('A CSRF token must be bound to a non-empty session id string');
+    throw new TypeError(
+      'A CSRF token must be bound to a non-empty session id string'
+    );
   }
 }
 
@@ -109,5 +115,5 @@ export function verifyCsrfToken(token, secret, sessionId, options = {}) {
 export default {
   CSRF_FIELD_NAME,
   createCsrfToken,
-  verifyCsrfToken
+  verifyCsrfToken,
 };

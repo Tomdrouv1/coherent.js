@@ -8,7 +8,9 @@ mkdirSync('dist', { recursive: true });
 mkdirSync('dist/lsp/data', { recursive: true });
 
 console.log('Extracting HTML element attributes...');
-execFileSync('pnpm', ['exec', 'tsx', 'scripts/extract-attributes.ts'], { stdio: 'inherit' });
+execFileSync('pnpm', ['exec', 'tsx', 'scripts/extract-attributes.ts'], {
+  stdio: 'inherit',
+});
 
 console.log('Compiling LSP (TypeScript)...');
 execFileSync('pnpm', ['exec', 'tsc'], { stdio: 'inherit' });

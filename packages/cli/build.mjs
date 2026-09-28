@@ -28,18 +28,32 @@ const buildConfig = {
   format: 'esm',
   external: [
     // Node.js built-ins
-    'fs', 'path', 'url', 'child_process', 'os', 'util', 'stream', 'events',
+    'fs',
+    'path',
+    'url',
+    'child_process',
+    'os',
+    'util',
+    'stream',
+    'events',
     // Dependencies that should remain external
-    'commander', 'inquirer', 'chalk', 'ora', 'fs-extra', 'picocolors', 'prompts',
+    'commander',
+    'inquirer',
+    'chalk',
+    'ora',
+    'fs-extra',
+    'picocolors',
+    'prompts',
     // Wave 4a HMR dev-server deps — kept external so they don't inflate dist/index.js
-    'ws', 'chokidar',
+    'ws',
+    'chokidar',
     // Optional, not a dependency: `coherent dev --open` imports it at runtime
     // and explains how to install it when it is missing
-    'open'
+    'open',
   ],
   define: {
-    'process.env.NODE_ENV': '"production"'
-  }
+    'process.env.NODE_ENV': '"production"',
+  },
 };
 
 async function build() {
@@ -50,7 +64,7 @@ async function build() {
     await esbuild.build({
       ...buildConfig,
       outfile: join(distDir, 'index.js'),
-      format: 'esm'
+      format: 'esm',
     });
 
     // Copy TypeScript declarations if they exist
@@ -90,7 +104,6 @@ export declare const devCommand: any;
     console.log(`📦 Built files:`);
     console.log(`   - dist/index.js (ESM)`);
     console.log(`   - dist/index.d.ts (TypeScript definitions)`);
-
   } catch (error) {
     console.error('❌ Build failed:', error);
     process.exit(1);

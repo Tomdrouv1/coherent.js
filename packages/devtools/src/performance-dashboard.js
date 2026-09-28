@@ -17,7 +17,7 @@ export class PerformanceDashboard {
       enableAlerts: options.enableAlerts !== false,
       enableRecommendations: options.enableRecommendations !== false,
       colorOutput: options.colorOutput !== false,
-      ...options
+      ...options,
     };
 
     this.metrics = {
@@ -28,7 +28,7 @@ export class PerformanceDashboard {
         cacheMisses: 0,
         staticRoutes: 0,
         dynamicRoutes: 0,
-        history: []
+        history: [],
       },
       components: {
         renders: 0,
@@ -38,15 +38,15 @@ export class PerformanceDashboard {
         staticComponents: 0,
         dynamicComponents: 0,
         memoryUsage: 0,
-        history: []
+        history: [],
       },
       fullstack: {
         totalRequests: 0,
         averageTime: 0,
         errors: 0,
         bottlenecks: [],
-        history: []
-      }
+        history: [],
+      },
     };
 
     this.alerts = [];
@@ -105,14 +105,19 @@ export class PerformanceDashboard {
       timestamp: Date.now(),
       duration,
       routeType,
-      cacheHit
+      cacheHit,
     });
   }
 
   /**
    * Record component render metrics
    */
-  recordComponentRender(duration, componentType, cacheHit = false, memoryDelta = 0) {
+  recordComponentRender(
+    duration,
+    componentType,
+    cacheHit = false,
+    memoryDelta = 0
+  ) {
     this.metrics.components.renders++;
     this.metrics.components.averageTime = this.updateAverage(
       this.metrics.components.averageTime,
@@ -139,7 +144,7 @@ export class PerformanceDashboard {
       duration,
       componentType,
       cacheHit,
-      memoryDelta
+      memoryDelta,
     });
   }
 
@@ -164,7 +169,7 @@ export class PerformanceDashboard {
       timestamp: Date.now(),
       duration,
       error,
-      bottlenecks
+      bottlenecks,
     });
   }
 
@@ -180,13 +185,14 @@ export class PerformanceDashboard {
     // Calculate rates
     const apiRate = this.metrics.api.requests / (uptime / 1000);
     const componentRate = this.metrics.components.renders / (uptime / 1000);
-    const fullStackRate = this.metrics.fullstack.totalRequests / (uptime / 1000);
+    const fullStackRate =
+      this.metrics.fullstack.totalRequests / (uptime / 1000);
 
     return {
       apiRate,
       componentRate,
       fullStackRate,
-      uptime
+      uptime,
     };
   }
 
@@ -203,7 +209,7 @@ export class PerformanceDashboard {
         category: 'api',
         message: `API response time is high: ${this.metrics.api.averageTime.toFixed(2)}ms`,
         threshold: 50,
-        current: this.metrics.api.averageTime
+        current: this.metrics.api.averageTime,
       });
     }
 
@@ -214,7 +220,7 @@ export class PerformanceDashboard {
         category: 'api',
         message: `API cache hit rate is low: ${apiCacheHitRate.toFixed(1)}%`,
         threshold: 80,
-        current: apiCacheHitRate
+        current: apiCacheHitRate,
       });
     }
 
@@ -225,7 +231,7 @@ export class PerformanceDashboard {
         category: 'components',
         message: `Component render time is high: ${this.metrics.components.averageTime.toFixed(2)}ms`,
         threshold: 20,
-        current: this.metrics.components.averageTime
+        current: this.metrics.components.averageTime,
       });
     }
 
@@ -236,7 +242,7 @@ export class PerformanceDashboard {
         category: 'components',
         message: `Component cache hit rate is low: ${componentCacheHitRate.toFixed(1)}%`,
         threshold: 90,
-        current: componentCacheHitRate
+        current: componentCacheHitRate,
       });
     }
 
@@ -247,7 +253,7 @@ export class PerformanceDashboard {
         category: 'fullstack',
         message: `${this.metrics.fullstack.errors} errors detected`,
         threshold: 0,
-        current: this.metrics.fullstack.errors
+        current: this.metrics.fullstack.errors,
       });
     }
   }
@@ -259,14 +265,16 @@ export class PerformanceDashboard {
     this.recommendations = [];
 
     // API recommendations
-    const staticRouteRatio = this.metrics.api.staticRoutes / Math.max(this.metrics.api.requests, 1);
+    const staticRouteRatio =
+      this.metrics.api.staticRoutes / Math.max(this.metrics.api.requests, 1);
     if (staticRouteRatio < 0.7) {
       this.recommendations.push({
         type: 'optimization',
         category: 'api',
-        message: 'Consider adding more static routes to improve smart routing efficiency',
+        message:
+          'Consider adding more static routes to improve smart routing efficiency',
         impact: 'high',
-        effort: 'low'
+        effort: 'low',
       });
     }
 
@@ -277,30 +285,35 @@ export class PerformanceDashboard {
         category: 'api',
         message: 'Increase API cache size or TTL to improve cache hit rate',
         impact: 'medium',
-        effort: 'low'
+        effort: 'low',
       });
     }
 
     // Component recommendations
-    const staticComponentRatio = this.metrics.components.staticComponents / Math.max(this.metrics.components.renders, 1);
+    const staticComponentRatio =
+      this.metrics.components.staticComponents /
+      Math.max(this.metrics.components.renders, 1);
     if (staticComponentRatio < 0.8) {
       this.recommendations.push({
         type: 'optimization',
         category: 'components',
-        message: 'More components could be optimized as static for better caching',
+        message:
+          'More components could be optimized as static for better caching',
         impact: 'high',
-        effort: 'medium'
+        effort: 'medium',
       });
     }
 
     // Memory recommendations
-    if (this.metrics.components.memoryUsage > 100 * 1024 * 1024) { // 100MB
+    if (this.metrics.components.memoryUsage > 100 * 1024 * 1024) {
+      // 100MB
       this.recommendations.push({
         type: 'optimization',
         category: 'memory',
-        message: 'Memory usage is high. Consider reducing cache size or implementing memory cleanup',
+        message:
+          'Memory usage is high. Consider reducing cache size or implementing memory cleanup',
         impact: 'medium',
-        effort: 'medium'
+        effort: 'medium',
       });
     }
   }
@@ -320,7 +333,7 @@ export class PerformanceDashboard {
    * Update running average
    */
   updateAverage(current, newValue, count) {
-    return ((current * (count - 1)) + newValue) / count;
+    return (current * (count - 1) + newValue) / count;
   }
 
   /**
@@ -335,7 +348,9 @@ export class PerformanceDashboard {
 
     // Limit history size
     if (this.metrics[category].history.length > this.options.maxHistoryPoints) {
-      this.metrics[category].history = this.metrics[category].history.slice(-this.options.maxHistoryPoints);
+      this.metrics[category].history = this.metrics[category].history.slice(
+        -this.options.maxHistoryPoints
+      );
     }
   }
 
@@ -361,28 +376,44 @@ export class PerformanceDashboard {
     lines.push('🚀 API Performance');
     lines.push('─'.repeat(20));
     const apiCacheHitRate = this.getCacheHitRate('api');
-    lines.push(`   Requests: ${this.metrics.api.requests} (${(this.metrics.api.requests / uptime).toFixed(1)} req/s)`);
+    lines.push(
+      `   Requests: ${this.metrics.api.requests} (${(this.metrics.api.requests / uptime).toFixed(1)} req/s)`
+    );
     lines.push(`   Avg Time: ${this.metrics.api.averageTime.toFixed(2)}ms`);
     lines.push(`   Cache Hit Rate: ${apiCacheHitRate.toFixed(1)}%`);
-    lines.push(`   Static Routes: ${this.metrics.api.staticRoutes}/${this.metrics.api.requests} (${((this.metrics.api.staticRoutes / Math.max(this.metrics.api.requests, 1)) * 100).toFixed(1)}%)`);
+    lines.push(
+      `   Static Routes: ${this.metrics.api.staticRoutes}/${this.metrics.api.requests} (${((this.metrics.api.staticRoutes / Math.max(this.metrics.api.requests, 1)) * 100).toFixed(1)}%)`
+    );
     lines.push('');
 
     // Component Performance Section
     lines.push('🏗️  Component Performance');
     lines.push('─'.repeat(25));
     const componentCacheHitRate = this.getCacheHitRate('components');
-    lines.push(`   Renders: ${this.metrics.components.renders} (${(this.metrics.components.renders / uptime).toFixed(1)} renders/s)`);
-    lines.push(`   Avg Time: ${this.metrics.components.averageTime.toFixed(2)}ms`);
+    lines.push(
+      `   Renders: ${this.metrics.components.renders} (${(this.metrics.components.renders / uptime).toFixed(1)} renders/s)`
+    );
+    lines.push(
+      `   Avg Time: ${this.metrics.components.averageTime.toFixed(2)}ms`
+    );
     lines.push(`   Cache Hit Rate: ${componentCacheHitRate.toFixed(1)}%`);
-    lines.push(`   Static Components: ${this.metrics.components.staticComponents}/${this.metrics.components.renders} (${((this.metrics.components.staticComponents / Math.max(this.metrics.components.renders, 1)) * 100).toFixed(1)}%)`);
-    lines.push(`   Memory Usage: ${(this.metrics.components.memoryUsage / 1024 / 1024).toFixed(1)}MB`);
+    lines.push(
+      `   Static Components: ${this.metrics.components.staticComponents}/${this.metrics.components.renders} (${((this.metrics.components.staticComponents / Math.max(this.metrics.components.renders, 1)) * 100).toFixed(1)}%)`
+    );
+    lines.push(
+      `   Memory Usage: ${(this.metrics.components.memoryUsage / 1024 / 1024).toFixed(1)}MB`
+    );
     lines.push('');
 
     // Full-Stack Performance Section
     lines.push('🌐 Full-Stack Performance');
     lines.push('─'.repeat(26));
-    lines.push(`   Total Requests: ${this.metrics.fullstack.totalRequests} (${(this.metrics.fullstack.totalRequests / uptime).toFixed(1)} req/s)`);
-    lines.push(`   Avg Time: ${this.metrics.fullstack.averageTime.toFixed(2)}ms`);
+    lines.push(
+      `   Total Requests: ${this.metrics.fullstack.totalRequests} (${(this.metrics.fullstack.totalRequests / uptime).toFixed(1)} req/s)`
+    );
+    lines.push(
+      `   Avg Time: ${this.metrics.fullstack.averageTime.toFixed(2)}ms`
+    );
     lines.push(`   Errors: ${this.metrics.fullstack.errors}`);
     lines.push('');
 
@@ -390,7 +421,7 @@ export class PerformanceDashboard {
     if (this.alerts.length > 0) {
       lines.push('⚠️  Performance Alerts');
       lines.push('─'.repeat(22));
-      this.alerts.forEach(alert => {
+      this.alerts.forEach((alert) => {
         const icon = alert.type === 'error' ? '❌' : '⚠️';
         lines.push(`   ${icon} ${alert.message}`);
       });
@@ -401,8 +432,9 @@ export class PerformanceDashboard {
     if (this.recommendations.length > 0) {
       lines.push('💡 Optimization Recommendations');
       lines.push('─'.repeat(30));
-      this.recommendations.forEach(rec => {
-        const impact = rec.impact === 'high' ? '🔥' : rec.impact === 'medium' ? '⚡' : '💤';
+      this.recommendations.forEach((rec) => {
+        const impact =
+          rec.impact === 'high' ? '🔥' : rec.impact === 'medium' ? '⚡' : '💤';
         lines.push(`   ${impact} ${rec.message} (${rec.effort} effort)`);
       });
       lines.push('');
@@ -411,7 +443,9 @@ export class PerformanceDashboard {
     // Performance Score
     const score = this.calculatePerformanceScore();
     const scoreColor = score >= 90 ? 'green' : score >= 70 ? 'yellow' : 'red';
-    lines.push(`Performance Score: ${this.colorize(`${score.toFixed(1)}/100`, scoreColor)}`);
+    lines.push(
+      `Performance Score: ${this.colorize(`${score.toFixed(1)}/100`, scoreColor)}`
+    );
 
     return lines.join('\n');
   }
@@ -433,7 +467,8 @@ export class PerformanceDashboard {
     if (this.getCacheHitRate('components') < 95) score -= 10;
 
     // Error penalty
-    if (this.metrics.fullstack.errors > 0) score -= Math.min(20, this.metrics.fullstack.errors * 5);
+    if (this.metrics.fullstack.errors > 0)
+      score -= Math.min(20, this.metrics.fullstack.errors * 5);
 
     return Math.max(0, score);
   }
@@ -453,7 +488,7 @@ export class PerformanceDashboard {
       magenta: '\x1b[35m',
       cyan: '\x1b[36m',
       white: '\x1b[37m',
-      gray: '\x1b[90m'
+      gray: '\x1b[90m',
     };
 
     const reset = '\x1b[0m';
@@ -470,7 +505,7 @@ export class PerformanceDashboard {
       metrics: { ...this.metrics },
       alerts: [...this.alerts],
       recommendations: [...this.recommendations],
-      performanceScore: this.calculatePerformanceScore()
+      performanceScore: this.calculatePerformanceScore(),
     };
   }
 
@@ -479,9 +514,32 @@ export class PerformanceDashboard {
    */
   reset() {
     this.metrics = {
-      api: { requests: 0, averageTime: 0, cacheHits: 0, cacheMisses: 0, staticRoutes: 0, dynamicRoutes: 0, history: [] },
-      components: { renders: 0, averageTime: 0, cacheHits: 0, cacheMisses: 0, staticComponents: 0, dynamicComponents: 0, memoryUsage: 0, history: [] },
-      fullstack: { totalRequests: 0, averageTime: 0, errors: 0, bottlenecks: [], history: [] }
+      api: {
+        requests: 0,
+        averageTime: 0,
+        cacheHits: 0,
+        cacheMisses: 0,
+        staticRoutes: 0,
+        dynamicRoutes: 0,
+        history: [],
+      },
+      components: {
+        renders: 0,
+        averageTime: 0,
+        cacheHits: 0,
+        cacheMisses: 0,
+        staticComponents: 0,
+        dynamicComponents: 0,
+        memoryUsage: 0,
+        history: [],
+      },
+      fullstack: {
+        totalRequests: 0,
+        averageTime: 0,
+        errors: 0,
+        bottlenecks: [],
+        history: [],
+      },
     };
     this.alerts = [];
     this.recommendations = [];
@@ -508,5 +566,5 @@ export function showPerformanceDashboard(dashboard) {
 export default {
   PerformanceDashboard,
   createPerformanceDashboard,
-  showPerformanceDashboard
+  showPerformanceDashboard,
 };

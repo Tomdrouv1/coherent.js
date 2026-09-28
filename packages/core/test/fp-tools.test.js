@@ -5,21 +5,25 @@ describe('Functional Programming Tools', () => {
   describe('HOCs', () => {
     it('withProps adds props to component', () => {
       const Button = ({ text, className }) => ({
-        button: { className, text }
+        button: { className, text },
       });
 
       const PrimaryButton = hoc.withProps({ className: 'btn-primary' })(Button);
       const html = render(PrimaryButton({ text: 'Click me' }));
-      
+
       expect(html).toContain('class="btn-primary"');
       expect(html).toContain('Click me');
     });
 
     it('withCondition renders based on condition', () => {
       const Secret = () => ({ div: { text: 'Secret' } });
-      const ConditionalSecret = hoc.withCondition(props => props.isLoggedIn)(Secret);
+      const ConditionalSecret = hoc.withCondition((props) => props.isLoggedIn)(
+        Secret
+      );
 
-      expect(render(ConditionalSecret({ isLoggedIn: true }))).toContain('Secret');
+      expect(render(ConditionalSecret({ isLoggedIn: true }))).toContain(
+        'Secret'
+      );
       expect(render(ConditionalSecret({ isLoggedIn: false }))).toBe('');
     });
   });
@@ -27,8 +31,10 @@ describe('Functional Programming Tools', () => {
   describe('Composition', () => {
     it('pipe applies transformations in order', () => {
       const Base = () => ({ div: { text: 'Base' } });
-      
-      const wrapInSpan = (Comp) => (props) => ({ span: { children: [Comp(props)] } });
+
+      const wrapInSpan = (Comp) => (props) => ({
+        span: { children: [Comp(props)] },
+      });
       const addClass = (className) => (Comp) => (props) => {
         const result = Comp(props);
         const tag = Object.keys(result)[0];
@@ -36,10 +42,7 @@ describe('Functional Programming Tools', () => {
         return result;
       };
 
-      const Enhanced = compose.pipe(
-        wrapInSpan,
-        addClass('wrapped')
-      )(Base);
+      const Enhanced = compose.pipe(wrapInSpan, addClass('wrapped'))(Base);
 
       const html = render(Enhanced());
       expect(html).toBe('<span class="wrapped"><div>Base</div></span>');
@@ -50,11 +53,11 @@ describe('Functional Programming Tools', () => {
     it('map transforms array into components', () => {
       const items = ['a', 'b', 'c'];
       const Item = (text) => ({ li: { text } });
-      
+
       const list = {
         ul: {
-          children: fp.map(Item)(items)
-        }
+          children: fp.map(Item)(items),
+        },
       };
 
       const html = render(list);

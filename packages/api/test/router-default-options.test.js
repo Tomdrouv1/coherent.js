@@ -25,20 +25,23 @@ function request(method, url, body) {
     read() {
       this.push(body ?? null);
       if (body) this.push(null);
-    }
+    },
   });
   Object.assign(req, {
     method,
     url,
     headers: { 'content-type': 'application/json' },
-    socket: { remoteAddress: '10.1.1.1' }
+    socket: { remoteAddress: '10.1.1.1' },
   });
   return req;
 }
 
 describe('router-level options apply to direct handle() calls', () => {
   it('uses the router rateLimit', async () => {
-    const router = createRouter({ ping: { GET: () => ({ ok: 1 }) } }, { rateLimit: { windowMs: 60_000, maxRequests: 1 } });
+    const router = createRouter(
+      { ping: { GET: () => ({ ok: 1 }) } },
+      { rateLimit: { windowMs: 60_000, maxRequests: 1 } }
+    );
 
     const first = mockRes();
     const second = mockRes();
@@ -50,10 +53,16 @@ describe('router-level options apply to direct handle() calls', () => {
   });
 
   it('uses the router maxBodySize', async () => {
-    const router = createRouter({ echo: { POST: (req) => ({ body: req.body }) } }, { maxBodySize: 10 });
+    const router = createRouter(
+      { echo: { POST: (req) => ({ body: req.body }) } },
+      { maxBodySize: 10 }
+    );
 
     const res = mockRes();
-    await router.handle(request('POST', '/echo', JSON.stringify({ text: 'x'.repeat(50) })), res);
+    await router.handle(
+      request('POST', '/echo', JSON.stringify({ text: 'x'.repeat(50) })),
+      res
+    );
 
     expect(res.status).toBe(413);
   });
@@ -64,17 +73,22 @@ describe('router-level options apply to direct handle() calls', () => {
       boom: {
         GET: () => {
           throw new Error('db-primary.internal refused');
-        }
-      }
+        },
+      },
     });
 
     const hidden = mockRes();
     const shown = mockRes();
     await router.handle(request('GET', '/boom'), hidden, { rateLimit: false });
-    await router.handle(request('GET', '/boom'), shown, { rateLimit: false, exposeErrors: true });
+    await router.handle(request('GET', '/boom'), shown, {
+      rateLimit: false,
+      exposeErrors: true,
+    });
 
     expect(JSON.parse(hidden.body)).toEqual({ error: 'Internal Server Error' });
-    expect(JSON.parse(shown.body)).toEqual({ error: 'db-primary.internal refused' });
+    expect(JSON.parse(shown.body)).toEqual({
+      error: 'db-primary.internal refused',
+    });
     vi.restoreAllMocks();
   });
 });

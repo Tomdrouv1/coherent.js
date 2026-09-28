@@ -14,7 +14,7 @@ export async function analyzeComponent(options = {}) {
     summary: {},
     components: [],
     issues: [],
-    recommendations: []
+    recommendations: [],
   };
 
   try {
@@ -33,30 +33,31 @@ export async function analyzeComponent(options = {}) {
         analysis.issues.push({
           type: 'not-found',
           message: `Component "${options.componentName}" not found`,
-          suggestion: 'Check component name spelling or file location'
+          suggestion: 'Check component name spelling or file location',
         });
       }
     } else {
       // Analyze all components in project
       const componentFiles = await findAllComponents();
       analysis.components = await Promise.all(
-        componentFiles.map(file => analyzeComponentFile(file, options))
+        componentFiles.map((file) => analyzeComponentFile(file, options))
       );
     }
 
     // Generate summary
     analysis.summary = generateComponentSummary(analysis.components);
-    
-    // Generate recommendations
-    analysis.recommendations = generateComponentRecommendations(analysis.components);
 
+    // Generate recommendations
+    analysis.recommendations = generateComponentRecommendations(
+      analysis.components
+    );
   } catch (error) {
     analysis.summary.status = 'error';
     analysis.summary.error = error.message;
     analysis.issues.push({
       type: 'analysis-error',
       message: `Failed to analyze components: ${error.message}`,
-      suggestion: 'Check that component files are valid JavaScript'
+      suggestion: 'Check that component files are valid JavaScript',
     });
   }
 
@@ -66,17 +67,19 @@ export async function analyzeComponent(options = {}) {
 async function findAllComponents() {
   const patterns = [
     'src/**/*.component.js',
-    'src/**/*Component.js', 
+    'src/**/*Component.js',
     'src/components/**/*.js',
     'components/**/*.js',
     'src/**/*.jsx', // In case they're using JSX syntax
-    'components/**/*.jsx'
+    'components/**/*.jsx',
   ];
 
   const files = [];
   for (const pattern of patterns) {
     try {
-      const matches = await glob(pattern, { ignore: ['**/node_modules/**', '**/test/**', '**/*.test.*'] });
+      const matches = await glob(pattern, {
+        ignore: ['**/node_modules/**', '**/test/**', '**/*.test.*'],
+      });
       files.push(...matches);
     } catch {
       // Continue if pattern fails
@@ -93,7 +96,7 @@ async function findComponentByName(componentName) {
     `components/${componentName}.js`,
     `components/${componentName}/${componentName}.js`,
     `src/${componentName}.component.js`,
-    `src/${componentName}Component.js`
+    `src/${componentName}Component.js`,
   ];
 
   for (const file of possibleFiles) {
@@ -106,7 +109,7 @@ async function findComponentByName(componentName) {
   const patterns = [
     `**/${componentName}.js`,
     `**/${componentName}*.js`,
-    `**/*${componentName}*.js`
+    `**/*${componentName}*.js`,
   ];
 
   for (const pattern of patterns) {
@@ -132,14 +135,14 @@ async function analyzeComponentFile(filePath, _options = {}) {
     complexity: 'unknown',
     issues: [],
     metrics: {},
-    suggestions: []
+    suggestions: [],
   };
 
   try {
     if (!existsSync(resolve(filePath))) {
       analysis.issues.push({
         type: 'file-not-found',
-        message: `File not found: ${filePath}`
+        message: `File not found: ${filePath}`,
       });
       return analysis;
     }
@@ -168,11 +171,10 @@ async function analyzeComponentFile(filePath, _options = {}) {
     const structureAnalysis = validateComponentStructure(content);
     analysis.issues.push(...structureAnalysis.issues);
     analysis.suggestions.push(...structureAnalysis.suggestions);
-
   } catch (error) {
     analysis.issues.push({
       type: 'analysis-error',
-      message: `Failed to analyze ${filePath}: ${error.message}`
+      message: `Failed to analyze ${filePath}: ${error.message}`,
     });
   }
 
@@ -181,11 +183,12 @@ async function analyzeComponentFile(filePath, _options = {}) {
 
 function extractComponentName(filePath) {
   const fileName = filePath.split('/').pop().split('.')[0];
-  return fileName
-    .replace(/component$/i, '')
-    .replace(/Component$/, '')
-    .replace(/[-_]/g, '')
-    || 'UnknownComponent';
+  return (
+    fileName
+      .replace(/component$/i, '')
+      .replace(/Component$/, '')
+      .replace(/[-_]/g, '') || 'UnknownComponent'
+  );
 }
 
 function analyzeSyntax(content, _filePath) {
@@ -194,21 +197,24 @@ function analyzeSyntax(content, _filePath) {
     exports: 0,
     imports: 0,
     hasDefaultExport: false,
-    usesModernSyntax: false
+    usesModernSyntax: false,
   };
 
   // Count functions
-  metrics.functions = (content.match(/function\s+\w+|const\s+\w+\s*=\s*\(/g) || []).length;
-  
+  metrics.functions = (
+    content.match(/function\s+\w+|const\s+\w+\s*=\s*\(/g) || []
+  ).length;
+
   // Count exports
   metrics.exports = (content.match(/export\s+(default\s+)?/g) || []).length;
   metrics.hasDefaultExport = /export\s+default/.test(content);
-  
+
   // Count imports
   metrics.imports = (content.match(/import\s+.*from/g) || []).length;
-  
+
   // Check for modern syntax
-  metrics.usesModernSyntax = /const\s+|let\s+|arrow functions|\.\.\.|async\s+|await\s+/.test(content);
+  metrics.usesModernSyntax =
+    /const\s+|let\s+|arrow functions|\.\.\.|async\s+|await\s+/.test(content);
 
   // Check for Coherent.js patterns
   metrics.usesCoherentPatterns = /render|withState|memo/.test(content);
@@ -229,8 +235,8 @@ function calculateComplexity(content) {
   ];
 
   let totalComplexity = 1; // Base complexity
-  
-  complexityPatterns.forEach(pattern => {
+
+  complexityPatterns.forEach((pattern) => {
     const matches = content.match(pattern);
     if (matches) {
       totalComplexity += matches.length;
@@ -245,41 +251,50 @@ function calculateComplexity(content) {
 
 function analyzePerformancePatterns(content) {
   const suggestions = [];
-  
+
   // Check for expensive operations
   if (/JSON\.(parse|stringify)/g.test(content)) {
     suggestions.push({
       type: 'performance',
       priority: 'medium',
-      message: 'JSON operations detected. Consider memoization for expensive serialization.'
+      message:
+        'JSON operations detected. Consider memoization for expensive serialization.',
     });
   }
-  
+
   // Check for large data structures
   if (/new Array\(\d{4,}\)|\.length\s*>\s*\d{4,}/.test(content)) {
     suggestions.push({
-      type: 'performance', 
+      type: 'performance',
       priority: 'high',
-      message: 'Large arrays detected. Consider pagination or virtualization.'
+      message: 'Large arrays detected. Consider pagination or virtualization.',
     });
   }
-  
+
   // Check for nested loops
-  const nestedLoops = content.match(/for\s*\([^}]*for\s*\(|while\s*\([^}]*while\s*\(/g);
+  const nestedLoops = content.match(
+    /for\s*\([^}]*for\s*\(|while\s*\([^}]*while\s*\(/g
+  );
   if (nestedLoops && nestedLoops.length > 0) {
     suggestions.push({
       type: 'performance',
-      priority: 'high', 
-      message: 'Nested loops detected. Consider optimizing algorithm complexity.'
+      priority: 'high',
+      message:
+        'Nested loops detected. Consider optimizing algorithm complexity.',
     });
   }
 
   // Check for missing memoization
-  if (!/memo\(/.test(content) && content.includes('function') && content.length > 500) {
+  if (
+    !/memo\(/.test(content) &&
+    content.includes('function') &&
+    content.length > 500
+  ) {
     suggestions.push({
       type: 'performance',
       priority: 'medium',
-      message: 'Large component without memoization. Consider using memo() wrapper.'
+      message:
+        'Large component without memoization. Consider using memo() wrapper.',
     });
   }
 
@@ -294,7 +309,7 @@ function checkBestPractices(content, filePath) {
   if (content.includes('try') && !content.includes('catch')) {
     issues.push({
       type: 'best-practice',
-      message: 'Try block found without catch. Add proper error handling.'
+      message: 'Try block found without catch. Add proper error handling.',
     });
   }
 
@@ -304,7 +319,7 @@ function checkBestPractices(content, filePath) {
     suggestions.push({
       type: 'best-practice',
       priority: 'low',
-      message: `${consoleLogs.length} console.log statements found. Remove before production.`
+      message: `${consoleLogs.length} console.log statements found. Remove before production.`,
     });
   }
 
@@ -314,7 +329,7 @@ function checkBestPractices(content, filePath) {
     suggestions.push({
       type: 'best-practice',
       priority: 'low',
-      message: 'Component name should use PascalCase convention.'
+      message: 'Component name should use PascalCase convention.',
     });
   }
 
@@ -324,7 +339,8 @@ function checkBestPractices(content, filePath) {
     suggestions.push({
       type: 'best-practice',
       priority: 'medium',
-      message: 'Many inline styles detected. Consider using CSS classes or styled components.'
+      message:
+        'Many inline styles detected. Consider using CSS classes or styled components.',
     });
   }
 
@@ -333,7 +349,7 @@ function checkBestPractices(content, filePath) {
     suggestions.push({
       type: 'best-practice',
       priority: 'medium',
-      message: 'Consider adding prop type validation for better debugging.'
+      message: 'Consider adding prop type validation for better debugging.',
     });
   }
 
@@ -349,21 +365,38 @@ function validateComponentStructure(content) {
   if (!hasValidReturn && content.includes('function')) {
     issues.push({
       type: 'structure',
-      message: 'Component should return a valid object structure.'
+      message: 'Component should return a valid object structure.',
     });
   }
 
   // Check for proper HTML tag usage
   const htmlTags = content.match(/['"]\w+['"]:\s*\{/g);
   if (htmlTags) {
-    const validTags = ['div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'a', 'button', 'input', 'form', 'ul', 'li', 'img'];
-    htmlTags.forEach(tag => {
+    const validTags = [
+      'div',
+      'span',
+      'p',
+      'h1',
+      'h2',
+      'h3',
+      'h4',
+      'h5',
+      'h6',
+      'a',
+      'button',
+      'input',
+      'form',
+      'ul',
+      'li',
+      'img',
+    ];
+    htmlTags.forEach((tag) => {
       const tagName = tag.match(/['"'](\w+)['"']/)[1];
       if (!validTags.includes(tagName) && !tagName.match(/^[A-Z]/)) {
         suggestions.push({
           type: 'structure',
           priority: 'low',
-          message: `Consider using standard HTML tags. Found: ${tagName}`
+          message: `Consider using standard HTML tags. Found: ${tagName}`,
         });
       }
     });
@@ -374,7 +407,8 @@ function validateComponentStructure(content) {
     suggestions.push({
       type: 'structure',
       priority: 'medium',
-      message: 'Consider validating children prop type (should handle arrays and single elements).'
+      message:
+        'Consider validating children prop type (should handle arrays and single elements).',
     });
   }
 
@@ -389,7 +423,7 @@ function generateComponentSummary(components) {
     averageLines: 0,
     complexityDistribution: { low: 0, medium: 0, high: 0, 'very-high': 0 },
     totalIssues: 0,
-    totalSuggestions: 0
+    totalSuggestions: 0,
   };
 
   if (components.length === 0) {
@@ -401,12 +435,12 @@ function generateComponentSummary(components) {
   // Calculate averages
   const totalSize = components.reduce((sum, c) => sum + c.size, 0);
   const totalLines = components.reduce((sum, c) => sum + c.lines, 0);
-  
+
   summary.averageSize = Math.round(totalSize / components.length);
   summary.averageLines = Math.round(totalLines / components.length);
 
   // Count complexity distribution
-  components.forEach(c => {
+  components.forEach((c) => {
     summary.complexityDistribution[c.complexity]++;
     summary.totalIssues += c.issues.length;
     summary.totalSuggestions += c.suggestions.length;
@@ -426,36 +460,38 @@ function generateComponentSummary(components) {
 
 function generateComponentRecommendations(components) {
   const recommendations = [];
-  
+
   // Large component recommendation
-  const largeComponents = components.filter(c => c.size > 10000); // 10KB+
+  const largeComponents = components.filter((c) => c.size > 10000); // 10KB+
   if (largeComponents.length > 0) {
     recommendations.push({
       type: 'optimization',
       priority: 'medium',
-      message: `${largeComponents.length} components are larger than 10KB. Consider splitting into smaller components.`
+      message: `${largeComponents.length} components are larger than 10KB. Consider splitting into smaller components.`,
     });
   }
 
-  // High complexity recommendation  
-  const complexComponents = components.filter(c => c.complexity === 'high' || c.complexity === 'very-high');
+  // High complexity recommendation
+  const complexComponents = components.filter(
+    (c) => c.complexity === 'high' || c.complexity === 'very-high'
+  );
   if (complexComponents.length > 0) {
     recommendations.push({
       type: 'refactoring',
       priority: 'high',
-      message: `${complexComponents.length} components have high complexity. Consider refactoring for maintainability.`
+      message: `${complexComponents.length} components have high complexity. Consider refactoring for maintainability.`,
     });
   }
 
   // Performance recommendations
-  const componentsWithoutMemo = components.filter(c => 
-    c.size > 5000 && !c.metrics.usesCoherentPatterns
+  const componentsWithoutMemo = components.filter(
+    (c) => c.size > 5000 && !c.metrics.usesCoherentPatterns
   );
   if (componentsWithoutMemo.length > 0) {
     recommendations.push({
       type: 'performance',
       priority: 'medium',
-      message: `${componentsWithoutMemo.length} large components could benefit from memoization.`
+      message: `${componentsWithoutMemo.length} large components could benefit from memoization.`,
     });
   }
 
@@ -465,7 +501,7 @@ function generateComponentRecommendations(components) {
     recommendations.push({
       type: 'best-practices',
       priority: 'medium',
-      message: `${totalIssues} best practice violations found. Review component implementations.`
+      message: `${totalIssues} best practice violations found. Review component implementations.`,
     });
   }
 

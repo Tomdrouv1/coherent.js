@@ -60,8 +60,13 @@ export class DatabaseManager extends EventEmitter {
     // Health check interval (config.healthCheckInterval, in milliseconds)
     this.healthCheckInterval = null;
     this.healthCheckFrequency = this.config.healthCheckInterval ?? 30000;
-    if (!Number.isFinite(this.healthCheckFrequency) || this.healthCheckFrequency <= 0) {
-      throw new Error(`healthCheckInterval must be a positive number of milliseconds, got ${this.healthCheckFrequency}`);
+    if (
+      !Number.isFinite(this.healthCheckFrequency) ||
+      this.healthCheckFrequency <= 0
+    ) {
+      throw new Error(
+        `healthCheckInterval must be a positive number of milliseconds, got ${this.healthCheckFrequency}`
+      );
     }
 
     // Connection statistics
@@ -71,7 +76,7 @@ export class DatabaseManager extends EventEmitter {
       failedConnections: 0,
       queriesExecuted: 0,
       averageQueryTime: 0,
-      lastHealthCheck: null
+      lastHealthCheck: null,
     };
   }
 
@@ -90,9 +95,13 @@ export class DatabaseManager extends EventEmitter {
 
     // New adapter-based configuration
     if (config.adapter) {
-      if (typeof config.adapter !== 'object' ||
-          typeof config.adapter.createPool !== 'function') {
-        throw new Error('Invalid adapter provided. Adapter must be an object with a createPool method');
+      if (
+        typeof config.adapter !== 'object' ||
+        typeof config.adapter.createPool !== 'function'
+      ) {
+        throw new Error(
+          'Invalid adapter provided. Adapter must be an object with a createPool method'
+        );
       }
 
       // Set default store config if not provided
@@ -112,9 +121,17 @@ export class DatabaseManager extends EventEmitter {
       throw new Error('Either database type or adapter is required');
     }
 
-    const supportedTypes = ['postgresql', 'mysql', 'sqlite', 'mongodb', 'memory'];
+    const supportedTypes = [
+      'postgresql',
+      'mysql',
+      'sqlite',
+      'mongodb',
+      'memory',
+    ];
     if (!supportedTypes.includes(type)) {
-      throw new Error(`Unsupported database type: ${type}. Supported types: ${supportedTypes.join(', ')}`);
+      throw new Error(
+        `Unsupported database type: ${type}. Supported types: ${supportedTypes.join(', ')}`
+      );
     }
 
     if (!database && type !== 'memory') {
@@ -127,7 +144,7 @@ export class DatabaseManager extends EventEmitter {
       mysql: 3306,
       mongodb: 27017,
       sqlite: null,
-      memory: null
+      memory: null,
     };
 
     return {
@@ -143,8 +160,8 @@ export class DatabaseManager extends EventEmitter {
         idleTimeoutMillis: 30000,
         reapIntervalMillis: 1000,
         createRetryIntervalMillis: 200,
-        ...config.pool
-      }
+        ...config.pool,
+      },
     };
   }
 
@@ -173,7 +190,9 @@ export class DatabaseManager extends EventEmitter {
       } else if (typeof this.adapter.connect === 'function') {
         this.pool = await this.adapter.connect(this.config);
       } else {
-        throw new Error('Adapter must have either createPool or connect method');
+        throw new Error(
+          'Adapter must have either createPool or connect method'
+        );
       }
 
       // Test connection
@@ -183,8 +202,11 @@ export class DatabaseManager extends EventEmitter {
       this.connectionAttempts = 0;
 
       // Start health checks if the adapter can test its connection
-      if (this.config.healthCheck !== false &&
-          (typeof this.adapter.testConnection === 'function' || typeof this.adapter.ping === 'function')) {
+      if (
+        this.config.healthCheck !== false &&
+        (typeof this.adapter.testConnection === 'function' ||
+          typeof this.adapter.ping === 'function')
+      ) {
         this.startHealthCheck();
       }
 
@@ -200,12 +222,16 @@ export class DatabaseManager extends EventEmitter {
       if (this.listenerCount('error') > 0) this.emit('error', _error);
 
       if (this.connectionAttempts < this.maxRetries) {
-        console.warn(`Connection attempt ${this.connectionAttempts} failed. Retrying in ${this.retryDelay}ms...`);
-        await new Promise(resolve => setTimeout(resolve, this.retryDelay));
+        console.warn(
+          `Connection attempt ${this.connectionAttempts} failed. Retrying in ${this.retryDelay}ms...`
+        );
+        await new Promise((resolve) => setTimeout(resolve, this.retryDelay));
         return this.connect();
       }
 
-      throw new Error(`Failed to connect to database after ${this.connectionAttempts} attempts: ${_error.message}`);
+      throw new Error(
+        `Failed to connect to database after ${this.connectionAttempts} attempts: ${_error.message}`
+      );
     }
   }
 
@@ -233,7 +259,10 @@ export class DatabaseManager extends EventEmitter {
       }
     } catch (closeError) {
       if (this.config.debug) {
-        console.error('Failed to close pool after a failed connection attempt:', closeError.message);
+        console.error(
+          'Failed to close pool after a failed connection attempt:',
+          closeError.message
+        );
       }
     }
   }
@@ -257,19 +286,23 @@ export class DatabaseManager extends EventEmitter {
       mysql: createMySQLAdapter,
       sqlite: createSQLiteAdapter,
       mongodb: createMongoDBAdapter,
-      memory: () => new MemoryAdapter()
+      memory: () => new MemoryAdapter(),
     };
 
     const adapterFactory = adapterFactories[type];
     if (!adapterFactory) {
-      return Promise.reject(new Error(`No adapter found for database type: ${type}`));
+      return Promise.reject(
+        new Error(`No adapter found for database type: ${type}`)
+      );
     }
 
     try {
       const adapter = adapterFactory();
       return Promise.resolve(adapter);
     } catch (_error) {
-      return Promise.reject(new Error(`Failed to load ${type} adapter: ${_error.message}`));
+      return Promise.reject(
+        new Error(`Failed to load ${type} adapter: ${_error.message}`)
+      );
     }
   }
 
@@ -287,7 +320,7 @@ export class DatabaseManager extends EventEmitter {
         await this.adapter.testConnection(this.pool);
       } else if (typeof this.adapter.ping === 'function') {
         // Adapters whose ping() reports failure as `false` instead of throwing
-        if (await this.adapter.ping() === false) {
+        if ((await this.adapter.ping()) === false) {
           throw new Error('ping failed');
         }
       }
@@ -296,7 +329,6 @@ export class DatabaseManager extends EventEmitter {
       const duration = Date.now() - startTime;
       this.stats.lastHealthCheck = new Date();
       this.emit('connect:test', { duration });
-
     } catch (_error) {
       if (this.listenerCount('error') > 0) this.emit('error', _error);
       throw new Error(`Database connection test failed: ${_error.message}`);
@@ -339,10 +371,10 @@ export class DatabaseManager extends EventEmitter {
       // Update statistics
       const duration = Date.now() - startTime;
       this.stats.queriesExecuted++;
-      this.stats.averageQueryTime = (
-        (this.stats.averageQueryTime * (this.stats.queriesExecuted - 1) + duration) /
-        this.stats.queriesExecuted
-      );
+      this.stats.averageQueryTime =
+        (this.stats.averageQueryTime * (this.stats.queriesExecuted - 1) +
+          duration) /
+        this.stats.queriesExecuted;
 
       if (this.config.debug) {
         console.log(`Query executed in ${duration}ms: ${operation}`, params);
@@ -351,10 +383,14 @@ export class DatabaseManager extends EventEmitter {
       this.emit('query', { operation, params, duration });
 
       return result;
-
     } catch (_error) {
       const duration = Date.now() - startTime;
-      this.emit('queryError', { operation, params, duration, error: _error.message });
+      this.emit('queryError', {
+        operation,
+        params,
+        duration,
+        error: _error.message,
+      });
 
       throw new Error(`Query failed: ${_error.message}`);
     }
@@ -380,7 +416,9 @@ export class DatabaseManager extends EventEmitter {
       return this.pool.collection(name);
     }
 
-    throw new Error(`collection() is not supported by the '${this.config.type}' adapter — it is only available for document databases (mongodb)`);
+    throw new Error(
+      `collection() is not supported by the '${this.config.type}' adapter — it is only available for document databases (mongodb)`
+    );
   }
 
   /**
@@ -419,7 +457,9 @@ export class DatabaseManager extends EventEmitter {
     }
 
     if (typeof this.adapter.transaction !== 'function') {
-      throw new Error(`The ${this.config.type || 'configured'} adapter does not support transactions`);
+      throw new Error(
+        `The ${this.config.type || 'configured'} adapter does not support transactions`
+      );
     }
 
     if (typeof callbackOrOptions !== 'function') {
@@ -463,7 +503,11 @@ export class DatabaseManager extends EventEmitter {
         await this.testConnection();
         this.emit('healthCheck', { status: 'healthy', timestamp: new Date() });
       } catch (_error) {
-        this.emit('healthCheck', { status: 'unhealthy', error: _error.message, timestamp: new Date() });
+        this.emit('healthCheck', {
+          status: 'unhealthy',
+          error: _error.message,
+          timestamp: new Date(),
+        });
 
         if (this.config.debug) {
           console.error('Database health check failed:', _error.message);
@@ -482,9 +526,10 @@ export class DatabaseManager extends EventEmitter {
     return {
       ...this.stats,
       isConnected: this.isConnected,
-      poolStats: this.pool && typeof this.adapter?.getPoolStats === 'function'
-        ? this.adapter.getPoolStats(this.pool)
-        : null
+      poolStats:
+        this.pool && typeof this.adapter?.getPoolStats === 'function'
+          ? this.adapter.getPoolStats(this.pool)
+          : null,
     };
   }
 

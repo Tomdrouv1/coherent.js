@@ -4,7 +4,7 @@ const entries = [
   'src/index.js',
   'src/translator.js',
   'src/formatters.js',
-  'src/locale.js'
+  'src/locale.js',
 ];
 
 for (const entry of entries) {
@@ -18,7 +18,7 @@ for (const entry of entries) {
     outfile,
     external: ['@coherent.js/core'],
     minify: false,
-    sourcemap: true
+    sourcemap: true,
   });
 }
 

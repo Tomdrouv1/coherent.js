@@ -3,7 +3,12 @@ import { render } from '../src/index.js';
 
 describe('function event handlers on the server', () => {
   const Button = (label) => ({
-    button: { className: 'btn', onClick: () => label, onmouseover: () => {}, text: label }
+    button: {
+      className: 'btn',
+      onClick: () => label,
+      onmouseover: () => {},
+      text: label,
+    },
   });
 
   it('render no attribute', () => {
@@ -23,7 +28,8 @@ describe('function event handlers on the server', () => {
   });
 
   it('keep inline string handlers', () => {
-    expect(render({ button: { onclick: 'history.back()', text: 'Back' } }))
-      .toBe('<button onclick="history.back()">Back</button>');
+    expect(
+      render({ button: { onclick: 'history.back()', text: 'Back' } })
+    ).toBe('<button onclick="history.back()">Back</button>');
   });
 });

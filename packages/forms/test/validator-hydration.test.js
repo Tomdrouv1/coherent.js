@@ -9,12 +9,20 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render } from '@coherent.js/core';
-import { createFormBuilder, hydrateForm, validators, registerValidator } from '../src/index.js';
+import {
+  createFormBuilder,
+  hydrateForm,
+  validators,
+  registerValidator,
+} from '../src/index.js';
 
 /** The control node the builder renders for `name`. */
 function control(builder, name) {
-  const field = builder.buildForm().form.children
-    .find(child => child.div && child.div['data-field'] === name);
+  const field = builder
+    .buildForm()
+    .form.children.find(
+      (child) => child.div && child.div['data-field'] === name
+    );
   const [, node] = field.div.children;
   return node.input || node.textarea || node.select;
 }
@@ -43,23 +51,26 @@ function hydrateInput(name, validatorsAttribute) {
     name,
     type: 'text',
     value: '',
-    dataset: validatorsAttribute === null ? {} : { validators: validatorsAttribute },
+    dataset:
+      validatorsAttribute === null ? {} : { validators: validatorsAttribute },
     attributes: { name },
     style: {},
     classList: { add() {}, remove() {} },
-    getAttribute: attr => input.attributes[attr] ?? null,
-    setAttribute: (attr, value) => { input.attributes[attr] = String(value); },
-    hasAttribute: attr => attr in input.attributes,
+    getAttribute: (attr) => input.attributes[attr] ?? null,
+    setAttribute: (attr, value) => {
+      input.attributes[attr] = String(value);
+    },
+    hasAttribute: (attr) => attr in input.attributes,
     addEventListener() {},
     removeEventListener() {},
     closest: () => null,
-    parentElement: { appendChild: child => child }
+    parentElement: { appendChild: (child) => child },
   };
   const form = {
-    querySelectorAll: selector => (selector === '[name]' ? [input] : []),
+    querySelectorAll: (selector) => (selector === '[name]' ? [input] : []),
     querySelector: () => null,
     addEventListener() {},
-    removeEventListener() {}
+    removeEventListener() {},
   };
   return hydrateForm(form);
 }
@@ -68,7 +79,7 @@ beforeEach(() => {
   global.document = {
     createElement: () => ({ style: {}, setAttribute() {} }),
     getElementById: () => null,
-    querySelector: () => null
+    querySelector: () => null,
   };
 });
 
@@ -79,40 +90,60 @@ afterEach(() => {
 describe('data-validators', () => {
   it('describes a factory-built validator by name and arguments', () => {
     const builder = createFormBuilder({
-      fields: [{ name: 'password', type: 'password', validators: [validators.minLength(8)] }]
+      fields: [
+        {
+          name: 'password',
+          type: 'password',
+          validators: [validators.minLength(8)],
+        },
+      ],
     });
 
-    expect(control(builder, 'password')['data-validators']).toBe('[{"name":"minLength","args":[8]}]');
+    expect(control(builder, 'password')['data-validators']).toBe(
+      '[{"name":"minLength","args":[8]}]'
+    );
   });
 
   it('keeps custom messages and rebuilds regular expressions', () => {
     const builder = createFormBuilder({
-      fields: [{
-        name: 'code',
-        validators: [validators.required('Code please'), validators.pattern(/^[A-Z]{3}$/i, 'Three letters')]
-      }]
+      fields: [
+        {
+          name: 'code',
+          validators: [
+            validators.required('Code please'),
+            validators.pattern(/^[A-Z]{3}$/i, 'Three letters'),
+          ],
+        },
+      ],
     });
 
     expect(control(builder, 'code')['data-validators']).toBe(
       '[{"name":"required","args":["Code please"]},' +
-      '{"name":"pattern","args":[{"$regexp":["^[A-Z]{3}$","i"]},"Three letters"]}]'
+        '{"name":"pattern","args":[{"$regexp":["^[A-Z]{3}$","i"]},"Three letters"]}]'
     );
   });
 
   it('describes a built-in listed without calling it', () => {
     const builder = createFormBuilder({
-      fields: [{ name: 'email', validators: [validators.email] }]
+      fields: [{ name: 'email', validators: [validators.email] }],
     });
 
-    expect(control(builder, 'email')['data-validators']).toBe('[{"name":"email","args":[]}]');
+    expect(control(builder, 'email')['data-validators']).toBe(
+      '[{"name":"email","args":[]}]'
+    );
   });
 
   it('omits validators the client cannot rebuild instead of calling them "custom"', () => {
     const builder = createFormBuilder({
-      fields: [{
-        name: 'handle',
-        validators: [value => (value === 'admin' ? 'Reserved' : null), validators.custom(v => v !== 'root')]
-      }]
+      fields: [
+        {
+          name: 'handle',
+          validators: [
+            (value) => (value === 'admin' ? 'Reserved' : null),
+            validators.custom((v) => v !== 'root'),
+          ],
+        },
+      ],
     });
 
     expect(control(builder, 'handle')['data-validators']).toBeUndefined();
@@ -122,11 +153,12 @@ describe('data-validators', () => {
   });
 
   it('describes a registered validator by its registered name', () => {
-    const noShouting = value => (value && value === value.toUpperCase() ? 'Please stop shouting' : null);
+    const noShouting = (value) =>
+      value && value === value.toUpperCase() ? 'Please stop shouting' : null;
     registerValidator('noShoutingRoundTrip', noShouting);
     try {
       const builder = createFormBuilder({
-        fields: [{ name: 'bio', validators: [validators.noShoutingRoundTrip] }]
+        fields: [{ name: 'bio', validators: [validators.noShoutingRoundTrip] }],
       });
 
       const attribute = renderedAttribute(builder, 'bio');
@@ -143,7 +175,7 @@ describe('data-validators', () => {
 
   it('escapes the JSON inside the rendered attribute', () => {
     const builder = createFormBuilder({
-      fields: [{ name: 'password', validators: [validators.minLength(8)] }]
+      fields: [{ name: 'password', validators: [validators.minLength(8)] }],
     });
 
     expect(render(builder.buildForm())).toContain(
@@ -155,9 +187,12 @@ describe('data-validators', () => {
 describe('client enforces what the server rendered', () => {
   it('rejects a value the server-side minLength(8) rejects', () => {
     const builder = createFormBuilder({
-      fields: [{ name: 'password', validators: [validators.minLength(8)] }]
+      fields: [{ name: 'password', validators: [validators.minLength(8)] }],
     });
-    const controller = hydrateInput('password', renderedAttribute(builder, 'password'));
+    const controller = hydrateInput(
+      'password',
+      renderedAttribute(builder, 'password')
+    );
 
     controller.setFieldValue('password', 'short');
     expect(controller.validateField('password')).toBe(false);
@@ -169,7 +204,12 @@ describe('client enforces what the server rendered', () => {
 
   it('rebuilds the pattern and its message', () => {
     const builder = createFormBuilder({
-      fields: [{ name: 'code', validators: [validators.pattern(/^[A-Z]{3}$/i, 'Three letters')] }]
+      fields: [
+        {
+          name: 'code',
+          validators: [validators.pattern(/^[A-Z]{3}$/i, 'Three letters')],
+        },
+      ],
     });
     const controller = hydrateInput('code', renderedAttribute(builder, 'code'));
 
@@ -182,22 +222,34 @@ describe('client enforces what the server rendered', () => {
   });
 
   it('gives the same verdicts as the server for every emitted rule', () => {
-    const fieldValidators = [validators.email(), validators.maxLength(12, 'Too long'), validators.alpha];
-    const builder = createFormBuilder({ fields: [{ name: 'handle', validators: fieldValidators }] });
-    const controller = hydrateInput('handle', renderedAttribute(builder, 'handle'));
+    const fieldValidators = [
+      validators.email(),
+      validators.maxLength(12, 'Too long'),
+      validators.alpha,
+    ];
+    const builder = createFormBuilder({
+      fields: [{ name: 'handle', validators: fieldValidators }],
+    });
+    const controller = hydrateInput(
+      'handle',
+      renderedAttribute(builder, 'handle')
+    );
 
     const verdicts = [];
     for (const value of ['nope', 'a@b.co', 'someone@example.com']) {
       builder.setValues({ handle: value });
       controller.setFieldValue('handle', value);
       controller.validateField('handle');
-      verdicts.push([builder.validateField('handle'), controller.getError('handle')]);
+      verdicts.push([
+        builder.validateField('handle'),
+        controller.getError('handle'),
+      ]);
     }
 
     expect(verdicts).toEqual([
       ['Invalid email address', 'Invalid email address'],
       ['Must contain only letters', 'Must contain only letters'],
-      ['Too long', 'Too long']
+      ['Too long', 'Too long'],
     ]);
   });
 
@@ -210,7 +262,10 @@ describe('client enforces what the server rendered', () => {
   });
 
   it('ignores unknown names and helpers', () => {
-    const controller = hydrateInput('x', '[{"name":"constructor"},{"name":"chain"},{"name":"nope"}]');
+    const controller = hydrateInput(
+      'x',
+      '[{"name":"constructor"},{"name":"chain"},{"name":"nope"}]'
+    );
 
     controller.setFieldValue('x', 'anything');
     expect(controller.validateField('x')).toBe(true);

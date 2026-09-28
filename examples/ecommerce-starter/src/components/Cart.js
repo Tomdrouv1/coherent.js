@@ -25,13 +25,23 @@ export const Cart = ({ items = [], products = [] }) => {
                           className: 'cart-item',
                           children: [
                             { span: { text: `${item.name} x${item.qty}` } },
-                            { span: { className: 'price', text: `$${(item.price * item.qty).toFixed(2)}` } },
+                            {
+                              span: {
+                                className: 'price',
+                                text: `$${(item.price * item.qty).toFixed(2)}`,
+                              },
+                            },
                           ],
                         },
                       })),
                     },
                   },
-                  { p: { className: 'cart-total', text: `Total: $${total.toFixed(2)}` } },
+                  {
+                    p: {
+                      className: 'cart-total',
+                      text: `Total: $${total.toFixed(2)}`,
+                    },
+                  },
                 ],
               },
             },

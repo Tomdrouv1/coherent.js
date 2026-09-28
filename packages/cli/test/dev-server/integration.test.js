@@ -22,7 +22,10 @@ describe('startDevServer (integration)', () => {
   beforeEach(() => {
     root = mkdtempSync(join(tmpdir(), 'coherent-devsrv-'));
     mkdirSync(join(root, 'src'));
-    writeFileSync(join(root, 'index.html'), '<!doctype html><html><body><h1>hi</h1></body></html>');
+    writeFileSync(
+      join(root, 'index.html'),
+      '<!doctype html><html><body><h1>hi</h1></body></html>'
+    );
     writeFileSync(join(root, 'src', 'app.js'), 'export const v = 1;');
   });
 
@@ -32,7 +35,13 @@ describe('startDevServer (integration)', () => {
   });
 
   test('serves index.html with the HMR script injected', async () => {
-    server = await startDevServer({ root, port: 0, host: '127.0.0.1', open: false, log: false });
+    server = await startDevServer({
+      root,
+      port: 0,
+      host: '127.0.0.1',
+      open: false,
+      log: false,
+    });
     const res = await fetch(`http://127.0.0.1:${server.port}/`);
     const text = await res.text();
     expect(res.status).toBe(200);
@@ -40,7 +49,13 @@ describe('startDevServer (integration)', () => {
   });
 
   test('broadcasts hmr-update when a watched file changes', async () => {
-    server = await startDevServer({ root, port: 0, host: '127.0.0.1', open: false, log: false });
+    server = await startDevServer({
+      root,
+      port: 0,
+      host: '127.0.0.1',
+      open: false,
+      log: false,
+    });
 
     const client = new WebSocket(`ws://127.0.0.1:${server.port}`);
     // Subscribe before awaiting anything: the `connected` ack can land in the
@@ -65,7 +80,13 @@ describe('startDevServer (integration)', () => {
   });
 
   test('close() shuts down HTTP, WS, and watcher cleanly', async () => {
-    server = await startDevServer({ root, port: 0, host: '127.0.0.1', open: false, log: false });
+    server = await startDevServer({
+      root,
+      port: 0,
+      host: '127.0.0.1',
+      open: false,
+      log: false,
+    });
     const port = server.port;
     await server.close();
     server = null;
@@ -73,7 +94,9 @@ describe('startDevServer (integration)', () => {
     // Subsequent fetch should fail (connection refused).
     let errored = false;
     try {
-      await fetch(`http://127.0.0.1:${port}/`, { signal: AbortSignal.timeout(500) });
+      await fetch(`http://127.0.0.1:${port}/`, {
+        signal: AbortSignal.timeout(500),
+      });
     } catch {
       errored = true;
     }
@@ -81,7 +104,14 @@ describe('startDevServer (integration)', () => {
   });
 
   test('honors hmr:false — no WS, no script injection, 404 on bootstrap path', async () => {
-    server = await startDevServer({ root, port: 0, host: '127.0.0.1', open: false, log: false, hmr: false });
+    server = await startDevServer({
+      root,
+      port: 0,
+      host: '127.0.0.1',
+      open: false,
+      log: false,
+      hmr: false,
+    });
 
     // HTML is served clean (no script injection)
     const htmlRes = await fetch(`http://127.0.0.1:${server.port}/`);
@@ -90,7 +120,9 @@ describe('startDevServer (integration)', () => {
     expect(html).not.toContain('__coherent_hmr_client');
 
     // Bootstrap path is 404
-    const bootRes = await fetch(`http://127.0.0.1:${server.port}/__coherent_hmr_client.js`);
+    const bootRes = await fetch(
+      `http://127.0.0.1:${server.port}/__coherent_hmr_client.js`
+    );
     expect(bootRes.status).toBe(404);
 
     // WebSocket upgrade attempts should fail (no WS server attached)
@@ -103,7 +135,11 @@ describe('startDevServer (integration)', () => {
       setTimeout(() => resolve('timeout'), 500);
     });
     expect(['errored', 'closed', 'timeout']).toContain(result);
-    try { ws.close(); } catch { /* ignore */ }
+    try {
+      ws.close();
+    } catch {
+      /* ignore */
+    }
   });
 
   // Regression: close() closed WebSocket clients with a closing handshake
@@ -119,11 +155,17 @@ describe('startDevServer (integration)', () => {
     const closesWithin = (ms) =>
       Promise.race([
         server.close().then(() => 'closed'),
-        new Promise((resolve) => setTimeout(() => resolve('still open'), ms))
+        new Promise((resolve) => setTimeout(() => resolve('still open'), ms)),
       ]);
 
     test('does not wait for a WebSocket client that never answers the close frame', async () => {
-      server = await startDevServer({ root, port: 0, host: '127.0.0.1', open: false, log: false });
+      server = await startDevServer({
+        root,
+        port: 0,
+        host: '127.0.0.1',
+        open: false,
+        log: false,
+      });
       const socket = await connect(server.port);
       socket.write(
         'GET / HTTP/1.1\r\n' +
@@ -132,7 +174,9 @@ describe('startDevServer (integration)', () => {
           'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n' +
           `Origin: http://localhost:${server.port}\r\n\r\n`
       );
-      const response = await new Promise((resolve) => socket.once('data', (data) => resolve(String(data))));
+      const response = await new Promise((resolve) =>
+        socket.once('data', (data) => resolve(String(data)))
+      );
       expect(response).toMatch(/^HTTP\/1\.1 101/);
 
       try {
@@ -144,7 +188,13 @@ describe('startDevServer (integration)', () => {
     });
 
     test('does not wait for a request that is still in flight', async () => {
-      server = await startDevServer({ root, port: 0, host: '127.0.0.1', open: false, log: false });
+      server = await startDevServer({
+        root,
+        port: 0,
+        host: '127.0.0.1',
+        open: false,
+        log: false,
+      });
       const socket = await connect(server.port);
       socket.write('GET /index.html HTTP/1.1\r\nHost: localhost\r\n');
 

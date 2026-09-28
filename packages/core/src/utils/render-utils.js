@@ -9,7 +9,7 @@ import { performanceMonitor } from '../performance/monitor.js';
 /**
  * Render a component with optional performance monitoring
  * This is the canonical rendering function used by all framework integrations
- * 
+ *
  * @param {Object} component - Coherent.js component to render
  * @param {Object} options - Rendering options
  * @param {boolean} options.enablePerformanceMonitoring - Enable performance tracking
@@ -17,9 +17,7 @@ import { performanceMonitor } from '../performance/monitor.js';
  * @returns {string} Rendered HTML
  */
 export function renderWithMonitoring(component, options = {}) {
-  const {
-    enablePerformanceMonitoring = false
-  } = options;
+  const { enablePerformanceMonitoring = false } = options;
 
   let html;
 
@@ -36,7 +34,7 @@ export function renderWithMonitoring(component, options = {}) {
 
 /**
  * Render a component and apply an HTML template
- * 
+ *
  * @param {Object} component - Coherent.js component to render
  * @param {Object} options - Rendering options
  * @param {boolean} options.enablePerformanceMonitoring - Enable performance tracking
@@ -44,9 +42,7 @@ export function renderWithMonitoring(component, options = {}) {
  * @returns {string} Final HTML with template applied
  */
 export function renderWithTemplate(component, options = {}) {
-  const {
-    template = '<!DOCTYPE html>\n{{content}}'
-  } = options;
+  const { template = '<!DOCTYPE html>\n{{content}}' } = options;
 
   const html = renderWithMonitoring(component, options);
   // Replacer function, not string: a string replacement expands `$&`, `$'`,
@@ -58,18 +54,20 @@ export function renderWithTemplate(component, options = {}) {
 /**
  * Create a component factory handler for framework integrations
  * Handles component creation, rendering, and error handling
- * 
+ *
  * @param {Function} componentFactory - Function that creates a component
  * @param {Object} factoryArgs - Arguments to pass to the component factory
  * @param {Object} options - Rendering options
  * @returns {Promise<string>} Rendered HTML
  * @throws {Error} If component factory returns null/undefined or rendering fails
  */
-export async function renderComponentFactory(componentFactory, factoryArgs, options = {}) {
+export async function renderComponentFactory(
+  componentFactory,
+  factoryArgs,
+  options = {}
+) {
   // Create component with provided arguments
-  const component = await Promise.resolve(
-    componentFactory(...factoryArgs)
-  );
+  const component = await Promise.resolve(componentFactory(...factoryArgs));
 
   if (!component) {
     throw new Error('Component factory returned null/undefined');
@@ -109,7 +107,7 @@ export function isCoherentComponent(obj) {
 
 /**
  * Create a standardized error response for framework integrations
- * 
+ *
  * @param {Error} error - The error that occurred
  * @param {string} context - Context where the error occurred
  * @returns {Object} Error response object
@@ -119,6 +117,6 @@ export function createErrorResponse(error, context = 'rendering') {
     error: 'Internal Server Error',
     message: error.message,
     context,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
 }

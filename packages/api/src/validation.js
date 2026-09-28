@@ -43,7 +43,8 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
 const EMAIL_MAX_LENGTH = 254;
 
 /** @private */
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Digits, optionally led by '+', with common separators; 7-15 digits. @private */
 const PHONE_PATTERN = /^\+?[0-9][0-9 ().-]{5,24}$/;
@@ -67,7 +68,10 @@ function isUrl(value) {
   if (typeof value !== 'string' || value.length > 2048) return false;
   try {
     const url = new URL(value);
-    return Boolean(url.protocol && (url.host || url.protocol === 'mailto:' || url.protocol === 'urn:'));
+    return Boolean(
+      url.protocol &&
+      (url.host || url.protocol === 'mailto:' || url.protocol === 'urn:')
+    );
   } catch {
     return false;
   }
@@ -82,7 +86,8 @@ function isPhone(value) {
 
 /** Card number: 12-19 digits (spaces/dashes allowed) passing the Luhn check. @private */
 function isCreditCard(value) {
-  if (typeof value !== 'string' || !/^[0-9 -]{12,30}$/.test(value)) return false;
+  if (typeof value !== 'string' || !/^[0-9 -]{12,30}$/.test(value))
+    return false;
   const digits = value.replace(/[ -]/g, '');
   if (digits.length < 12 || digits.length > 19) return false;
   let sum = 0;
@@ -100,7 +105,11 @@ function isCreditCard(value) {
 /** @private */
 function isDateLike(value) {
   if (value instanceof Date) return !Number.isNaN(value.getTime());
-  return typeof value === 'string' && value.length <= 64 && !Number.isNaN(Date.parse(value));
+  return (
+    typeof value === 'string' &&
+    value.length <= 64 &&
+    !Number.isNaN(Date.parse(value))
+  );
 }
 
 /**
@@ -111,16 +120,20 @@ const FORMATS = {
   email: { test: isEmailShaped, message: 'Invalid email format' },
   url: { test: isUrl, message: 'Invalid URL format' },
   uri: { test: isUrl, message: 'Invalid URL format' },
-  uuid: { test: (value) => typeof value === 'string' && UUID_PATTERN.test(value), message: 'Invalid UUID format' },
+  uuid: {
+    test: (value) => typeof value === 'string' && UUID_PATTERN.test(value),
+    message: 'Invalid UUID format',
+  },
   phone: { test: isPhone, message: 'Invalid phone number format' },
   'credit-card': { test: isCreditCard, message: 'Invalid credit card number' },
   date: { test: isDateLike, message: 'Invalid date' },
-  'date-time': { test: isDateLike, message: 'Invalid date-time' }
+  'date-time': { test: isDateLike, message: 'Invalid date-time' },
 };
 
 /** @private */
 function isPlainObject(value) {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
+  if (value === null || typeof value !== 'object' || Array.isArray(value))
+    return false;
   const proto = Object.getPrototypeOf(value);
   return proto === Object.prototype || proto === null;
 }
@@ -142,8 +155,12 @@ function describe(value) {
  * @private
  */
 const RULE_KEYWORDS = {
-  type: (v) => typeof v === 'string' || (Array.isArray(v) && v.every((t) => typeof t === 'string')),
-  required: (v) => typeof v === 'boolean' || (Array.isArray(v) && v.every((f) => typeof f === 'string')),
+  type: (v) =>
+    typeof v === 'string' ||
+    (Array.isArray(v) && v.every((t) => typeof t === 'string')),
+  required: (v) =>
+    typeof v === 'boolean' ||
+    (Array.isArray(v) && v.every((f) => typeof f === 'string')),
   nullable: (v) => typeof v === 'boolean',
   enum: Array.isArray,
   const: () => true,
@@ -168,7 +185,7 @@ const RULE_KEYWORDS = {
   transform: (v) => typeof v === 'function',
   message: (v) => typeof v === 'string',
   trim: (v) => typeof v === 'boolean',
-  default: () => true
+  default: () => true,
 };
 
 /**
@@ -219,7 +236,12 @@ function toRule(node) {
  * @private
  */
 function setOwn(target, key, value) {
-  Object.defineProperty(target, key, { value, enumerable: true, writable: true, configurable: true });
+  Object.defineProperty(target, key, {
+    value,
+    enumerable: true,
+    writable: true,
+    configurable: true,
+  });
 }
 
 /** @private */
@@ -231,7 +253,8 @@ function joinPath(base, key) {
 /** Compare for enum/const: primitives by identity, others structurally. @private */
 function sameValue(a, b) {
   if (a === b) return true;
-  if (typeof a === 'number' && typeof b === 'number') return Number.isNaN(a) && Number.isNaN(b);
+  if (typeof a === 'number' && typeof b === 'number')
+    return Number.isNaN(a) && Number.isNaN(b);
   if (a && b && typeof a === 'object' && typeof b === 'object') {
     try {
       return JSON.stringify(a) === JSON.stringify(b);
@@ -257,7 +280,8 @@ function compilePattern(pattern) {
   let regex = patternCache.get(pattern);
   if (!regex) {
     regex = new RegExp(pattern);
-    if (patternCache.size >= 500) patternCache.delete(patternCache.keys().next().value);
+    if (patternCache.size >= 500)
+      patternCache.delete(patternCache.keys().next().value);
     patternCache.set(pattern, regex);
   }
   return regex;
@@ -270,10 +294,17 @@ function compilePattern(pattern) {
 function coerce(value, types) {
   if (typeof value !== 'string') return value;
   const trimmed = value.trim();
-  if ((types.includes('number') || types.includes('integer')) && trimmed !== '' && Number.isFinite(Number(trimmed))) {
+  if (
+    (types.includes('number') || types.includes('integer')) &&
+    trimmed !== '' &&
+    Number.isFinite(Number(trimmed))
+  ) {
     return Number(trimmed);
   }
-  if (types.includes('boolean') && (trimmed === 'true' || trimmed === 'false')) {
+  if (
+    types.includes('boolean') &&
+    (trimmed === 'true' || trimmed === 'false')
+  ) {
     return trimmed === 'true';
   }
   return value;
@@ -296,13 +327,16 @@ function matchesType(type, value) {
     case 'array':
       return Array.isArray(value);
     case 'object':
-      return typeof value === 'object' && value !== null && !Array.isArray(value);
+      return (
+        typeof value === 'object' && value !== null && !Array.isArray(value)
+      );
     case 'null':
       return value === null;
     case 'date':
       return isDateLike(value);
     default:
-      if (FORMATS[type]) return typeof value === 'string' && FORMATS[type].test(value);
+      if (FORMATS[type])
+        return typeof value === 'string' && FORMATS[type].test(value);
       return true; // Unknown type names are not enforced
   }
 }
@@ -325,14 +359,21 @@ function validateNode(rule, value, field, ctx) {
   const types = typesOf(rule);
 
   if (typeof value === 'string' && rule.trim === true) value = value.trim();
-  if (typeof rule.transform === 'function' && value !== undefined) value = rule.transform(value);
+  if (typeof rule.transform === 'function' && value !== undefined)
+    value = rule.transform(value);
   if (ctx.coerceTypes && types.length > 0) value = coerce(value, types);
 
   // Handle null/undefined values
   if (value === null || value === undefined) {
-    const allowed = types.length === 0 || types.includes('null') || (value === null && rule.nullable === true);
+    const allowed =
+      types.length === 0 ||
+      types.includes('null') ||
+      (value === null && rule.nullable === true);
     if (!allowed) {
-      fail('type', `Expected ${types.join(' or ')}, got ${value === null ? 'null' : 'undefined'}`);
+      fail(
+        'type',
+        `Expected ${types.join(' or ')}, got ${value === null ? 'null' : 'undefined'}`
+      );
     }
     return value;
   }
@@ -349,7 +390,10 @@ function validateNode(rule, value, field, ctx) {
   }
 
   if (rule.enum && !rule.enum.some((option) => sameValue(option, value))) {
-    fail('enum', `Must be one of: ${rule.enum.map((option) => JSON.stringify(option)).join(', ')}`);
+    fail(
+      'enum',
+      `Must be one of: ${rule.enum.map((option) => JSON.stringify(option)).join(', ')}`
+    );
   }
 
   if ('const' in rule && !sameValue(rule.const, value)) {
@@ -374,7 +418,8 @@ function validateNode(rule, value, field, ctx) {
       regex.lastIndex = 0; // A global/sticky RegExp keeps state between calls
       if (!regex.test(value)) fail('pattern', 'Invalid format');
     }
-    const format = typeof rule.format === 'string' ? FORMATS[rule.format] : undefined;
+    const format =
+      typeof rule.format === 'string' ? FORMATS[rule.format] : undefined;
     if (format && !format.test(value)) fail('format', format.message);
   }
 
@@ -385,11 +430,23 @@ function validateNode(rule, value, field, ctx) {
     if (typeof rule.maximum === 'number' && value > rule.maximum) {
       fail('maximum', `Number must be at most ${rule.maximum}`);
     }
-    if (typeof rule.exclusiveMinimum === 'number' && value <= rule.exclusiveMinimum) {
-      fail('exclusiveMinimum', `Number must be greater than ${rule.exclusiveMinimum}`);
+    if (
+      typeof rule.exclusiveMinimum === 'number' &&
+      value <= rule.exclusiveMinimum
+    ) {
+      fail(
+        'exclusiveMinimum',
+        `Number must be greater than ${rule.exclusiveMinimum}`
+      );
     }
-    if (typeof rule.exclusiveMaximum === 'number' && value >= rule.exclusiveMaximum) {
-      fail('exclusiveMaximum', `Number must be less than ${rule.exclusiveMaximum}`);
+    if (
+      typeof rule.exclusiveMaximum === 'number' &&
+      value >= rule.exclusiveMaximum
+    ) {
+      fail(
+        'exclusiveMaximum',
+        `Number must be less than ${rule.exclusiveMaximum}`
+      );
     }
     if (typeof rule.min === 'number' && value < rule.min) {
       fail('min', `Number must be at least ${rule.min}`);
@@ -400,17 +457,27 @@ function validateNode(rule, value, field, ctx) {
   }
 
   if (Array.isArray(value)) {
-    const minItems = typeof rule.minItems === 'number' ? rule.minItems : rule.min;
-    const maxItems = typeof rule.maxItems === 'number' ? rule.maxItems : rule.max;
+    const minItems =
+      typeof rule.minItems === 'number' ? rule.minItems : rule.min;
+    const maxItems =
+      typeof rule.maxItems === 'number' ? rule.maxItems : rule.max;
     if (typeof minItems === 'number' && value.length < minItems) {
-      fail(rule.minItems === undefined ? 'min' : 'minItems', `Array must contain at least ${minItems} items`);
+      fail(
+        rule.minItems === undefined ? 'min' : 'minItems',
+        `Array must contain at least ${minItems} items`
+      );
     }
     if (typeof maxItems === 'number' && value.length > maxItems) {
-      fail(rule.maxItems === undefined ? 'max' : 'maxItems', `Array must contain at most ${maxItems} items`);
+      fail(
+        rule.maxItems === undefined ? 'max' : 'maxItems',
+        `Array must contain at most ${maxItems} items`
+      );
     }
     if (isPlainObject(rule.items)) {
       const itemRule = toRule(rule.items);
-      value = value.map((item, index) => validateNode(itemRule, item, joinPath(field, index), ctx));
+      value = value.map((item, index) =>
+        validateNode(itemRule, item, joinPath(field, index), ctx)
+      );
     }
   } else if (typeof value === 'object') {
     const output = validateObject(rule, value, field, ctx, fail);
@@ -421,7 +488,8 @@ function validateNode(rule, value, field, ctx) {
   if (typeof rule.custom === 'function' && !(ctx.abort && errors.length > 0)) {
     const verdict = rule.custom(value, field, ctx.root, ctx.context);
     if (verdict === false) fail('custom', `${field || 'Value'} is invalid`);
-    else if (typeof verdict === 'string') errors.push({ field, message: verdict, rule: 'custom' });
+    else if (typeof verdict === 'string')
+      errors.push({ field, message: verdict, rule: 'custom' });
   }
 
   return value;
@@ -442,7 +510,11 @@ function validateObject(rule, value, field, ctx, fail) {
       const property = properties[name];
       const hasDefault = isPlainObject(property) && 'default' in property;
       if (!hasDefault) {
-        ctx.errors.push({ field: joinPath(field, name), message: `Required field '${name}' is missing`, rule: 'required' });
+        ctx.errors.push({
+          field: joinPath(field, name),
+          message: `Required field '${name}' is missing`,
+          rule: 'required',
+        });
       }
     }
   }
@@ -456,15 +528,24 @@ function validateObject(rule, value, field, ctx, fail) {
     let propertyValue = Object.hasOwn(value, name) ? value[name] : undefined;
 
     if (propertyValue === undefined && 'default' in propertyRule) {
-      propertyValue = typeof propertyRule.default === 'function' ? propertyRule.default() : propertyRule.default;
+      propertyValue =
+        typeof propertyRule.default === 'function'
+          ? propertyRule.default()
+          : propertyRule.default;
     }
 
     const missing =
       propertyValue === undefined ||
-      (propertyValue === null && propertyRule.nullable !== true && !typesOf(propertyRule).includes('null')) ||
+      (propertyValue === null &&
+        propertyRule.nullable !== true &&
+        !typesOf(propertyRule).includes('null')) ||
       propertyValue === '';
     if (propertyRule.required === true && missing) {
-      ctx.errors.push({ field: path, message: propertyRule.message || `Required field '${name}' is missing`, rule: 'required' });
+      ctx.errors.push({
+        field: path,
+        message: propertyRule.message || `Required field '${name}' is missing`,
+        rule: 'required',
+      });
       if (propertyValue !== undefined) setOwn(output, name, propertyValue);
       continue;
     }
@@ -480,19 +561,40 @@ function validateObject(rule, value, field, ctx, fail) {
     if (known.has(name)) continue;
     if (additional === false || ctx.allowUnknown === false) {
       if (ctx.stripUnknown) continue;
-      ctx.errors.push({ field: joinPath(field, name), message: `Unknown field '${name}'`, rule: 'additionalProperties' });
+      ctx.errors.push({
+        field: joinPath(field, name),
+        message: `Unknown field '${name}'`,
+        rule: 'additionalProperties',
+      });
       continue;
     }
     if (ctx.stripUnknown && known.size > 0) continue;
-    setOwn(output, name, isPlainObject(additional) ? validateNode(toRule(additional), value[name], joinPath(field, name), ctx) : value[name]);
+    setOwn(
+      output,
+      name,
+      isPlainObject(additional)
+        ? validateNode(
+            toRule(additional),
+            value[name],
+            joinPath(field, name),
+            ctx
+          )
+        : value[name]
+    );
   }
 
   const count = Object.keys(value).length;
   if (typeof rule.minProperties === 'number' && count < rule.minProperties) {
-    fail('minProperties', `Object must have at least ${rule.minProperties} properties`);
+    fail(
+      'minProperties',
+      `Object must have at least ${rule.minProperties} properties`
+    );
   }
   if (typeof rule.maxProperties === 'number' && count > rule.maxProperties) {
-    fail('maxProperties', `Object must have at most ${rule.maxProperties} properties`);
+    fail(
+      'maxProperties',
+      `Object must have at most ${rule.maxProperties} properties`
+    );
   }
 
   return output;
@@ -507,7 +609,7 @@ function createContext(data, options = {}) {
     stripUnknown: options.stripUnknown === true,
     allowUnknown: options.allowUnknown,
     coerceTypes: options.coerceTypes === true,
-    context: options.context
+    context: options.context,
   };
 }
 
@@ -527,7 +629,7 @@ function validateAgainstSchema(schema, data, options = {}) {
   return {
     valid: errors.length === 0,
     errors,
-    data: output
+    data: output,
   };
 }
 
@@ -614,5 +716,5 @@ export {
   validateField,
   withValidation,
   withQueryValidation,
-  withParamsValidation
+  withParamsValidation,
 };

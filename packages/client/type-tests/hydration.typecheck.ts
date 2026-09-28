@@ -168,7 +168,9 @@ const asyncHandler: EventHandler = async () => {
 expectTypeOf(asyncHandler).returns.toMatchTypeOf<void | Promise<void>>();
 
 // StateAwareHandler: state and setState come on the event
-const counterHandler: StateAwareHandler<{ count: number }, MouseEvent> = (event) => {
+const counterHandler: StateAwareHandler<{ count: number }, MouseEvent> = (
+  event
+) => {
   expectTypeOf(event.state).toEqualTypeOf<{ count: number } | null>();
   expectTypeOf(event.props).toMatchTypeOf<Record<string, any> | null>();
   event.setState?.({ count: (event.state?.count ?? 0) + 1 });
@@ -192,7 +194,9 @@ expectTypeOf(decoded).toEqualTypeOf<SerializableState | null>();
 const extracted = extractState(container);
 expectTypeOf(extracted).toEqualTypeOf<SerializableState | null>();
 
-expectTypeOf(serializeStateWithWarning({ count: 42 }, 'Counter')).toEqualTypeOf<string | null>();
+expectTypeOf(serializeStateWithWarning({ count: 42 }, 'Counter')).toEqualTypeOf<
+  string | null
+>();
 
 // ============================================================================
 // Test: Mismatch detection functions
@@ -206,7 +210,12 @@ declare const mismatch: HydrationMismatch;
 expectTypeOf(mismatch.path).toBeString();
 expectTypeOf(mismatch.domPath).toBeString();
 expectTypeOf(mismatch.type).toEqualTypeOf<
-  'text' | 'tagName' | 'attribute' | 'children_count' | 'missing_dom_child' | 'extra_dom_child'
+  | 'text'
+  | 'tagName'
+  | 'attribute'
+  | 'children_count'
+  | 'missing_dom_child'
+  | 'extra_dom_child'
 >();
 
 reportMismatches(mismatches);
@@ -230,7 +239,9 @@ const wrapped = wrapEvent<{ count: number }, MouseEvent>(nativeClick, button, {
   state: { count: 1 },
   setState: () => {},
 });
-expectTypeOf(wrapped).toEqualTypeOf<CoherentEvent<{ count: number }, MouseEvent>>();
+expectTypeOf(wrapped).toEqualTypeOf<
+  CoherentEvent<{ count: number }, MouseEvent>
+>();
 expectTypeOf(wrapped.originalEvent).toEqualTypeOf<MouseEvent>();
 
 // ============================================================================
@@ -243,7 +254,9 @@ const componentFunction: CoherentComponent = () => ({
     children: [{ span: { text: 'Hello' } }],
   },
 });
-expectTypeOf(hydrate(componentFunction, container)).toMatchTypeOf<HydrateControl>();
+expectTypeOf(
+  hydrate(componentFunction, container)
+).toMatchTypeOf<HydrateControl>();
 
 export {
   withTimeout,

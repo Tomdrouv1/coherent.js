@@ -50,14 +50,16 @@ export function formatCodeFrame(frame, highlightLine, startLine = 1) {
   const firstLine = toPositiveInt(startLine) ?? 1;
 
   const lines = frame.split('\n');
-  return lines.map((content, i) => {
-    const lineNum = firstLine + i;
-    const isHighlight = lineNum === highlightLine;
-    return `<div class="line${isHighlight ? ' highlight' : ''}">
+  return lines
+    .map((content, i) => {
+      const lineNum = firstLine + i;
+      const isHighlight = lineNum === highlightLine;
+      return `<div class="line${isHighlight ? ' highlight' : ''}">
       <span class="line-number">${lineNum}</span>
       <span class="line-content">${escapeHtml(content)}</span>
     </div>`;
-  }).join('');
+    })
+    .join('');
 }
 
 /**
@@ -70,7 +72,7 @@ const EDITOR_URLS = {
   atom: (file, line) => `atom://core/open/file?filename=${file}&line=${line}`,
   sublime: (file, line) => `subl://open?url=file://${file}&line=${line}`,
   webstorm: (file, line) => `webstorm://open?file=${file}&line=${line}`,
-  idea: (file, line) => `idea://open?file=${file}&line=${line}`
+  idea: (file, line) => `idea://open?file=${file}&line=${line}`,
 };
 
 /**
@@ -290,17 +292,29 @@ export class ErrorOverlay {
         </div>
         <div class="content">
           <div class="message">${escapeHtml(error.message || 'Unknown error')}</div>
-          ${error.file ? `
+          ${
+            error.file
+              ? `
             <div class="file" data-file="${escapeHtml(error.file)}" data-line="${line || 1}">
               ${escapeHtml(error.file)}${line ? `:${line}` : ''}${column ? `:${column}` : ''}
             </div>
-          ` : ''}
-          ${error.frame ? `
+          `
+              : ''
+          }
+          ${
+            error.frame
+              ? `
             <div class="code-frame">${formatCodeFrame(error.frame, line, startLine)}</div>
-          ` : ''}
-          ${error.stack ? `
+          `
+              : ''
+          }
+          ${
+            error.stack
+              ? `
             <div class="stack">${escapeHtml(error.stack)}</div>
-          ` : ''}
+          `
+              : ''
+          }
           <div class="tip">
             Press <strong>Escape</strong> or click the X to dismiss.
             ${error.file ? ` Click the file path to open in ${escapeHtml(this.editor)}.` : ''}

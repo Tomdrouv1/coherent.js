@@ -1,8 +1,8 @@
 /**
  * Coherent.js Testing Utilities
- * 
+ *
  * Complete testing solution for Coherent.js applications
- * 
+ *
  * @module testing
  */
 
@@ -13,7 +13,7 @@ export {
   createTestRenderer,
   shallowRender,
   TestRenderer,
-  TestRendererResult
+  TestRendererResult,
 } from './test-renderer.js';
 
 // Export test utilities
@@ -28,22 +28,18 @@ export {
   cleanup,
   within,
   screen,
-  userEvent
+  userEvent,
 } from './test-utils.js';
 
 // Export matchers
-export {
-  customMatchers,
-  extendExpect,
-  assertions
-} from './matchers.js';
+export { customMatchers, extendExpect, assertions } from './matchers.js';
 
 // Re-import for default export
 import {
   renderComponent as _renderComponent,
   renderComponentAsync as _renderComponentAsync,
   createTestRenderer as _createTestRenderer,
-  shallowRender as _shallowRender
+  shallowRender as _shallowRender,
 } from './test-renderer.js';
 
 import {
@@ -57,13 +53,13 @@ import {
   cleanup as _cleanup,
   within as _within,
   screen as _screen,
-  userEvent as _userEvent
+  userEvent as _userEvent,
 } from './test-utils.js';
 
 import {
   customMatchers as _customMatchers,
   extendExpect as _extendExpect,
-  assertions as _assertions
+  assertions as _assertions,
 } from './matchers.js';
 
 // Default export with all utilities
@@ -90,5 +86,5 @@ export default {
   // Matchers
   customMatchers: _customMatchers,
   extendExpect: _extendExpect,
-  assertions: _assertions
+  assertions: _assertions,
 };

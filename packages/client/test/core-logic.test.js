@@ -22,10 +22,10 @@ describe('HMR Core Logic', () => {
       { type: 'hmr-update', filePath: '/test.js', webPath: '/test.js' },
       { type: 'hmr-full-reload' },
       { type: 'connected' },
-      { type: 'preview-update' }
+      { type: 'preview-update' },
     ];
 
-    testMessages.forEach(message => {
+    testMessages.forEach((message) => {
       // Test that we can parse and categorize messages correctly
       expect(message.type).toBeDefined();
 
@@ -43,7 +43,7 @@ describe('HMR Core Logic', () => {
     // Test the WebSocket URL construction logic from HMR
     const testCases = [
       { protocol: 'https:', expected: 'wss' },
-      { protocol: 'http:', expected: 'ws' }
+      { protocol: 'http:', expected: 'ws' },
     ];
 
     testCases.forEach(({ protocol, expected }) => {

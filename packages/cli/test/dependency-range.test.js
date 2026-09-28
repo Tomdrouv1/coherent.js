@@ -48,16 +48,18 @@ describe('scaffolded package.json', () => {
       template: 'basic',
       runtime: 'express',
       skipInstall: true,
-      skipGit: true
+      skipGit: true,
     });
 
-    const manifest = JSON.parse(await readFile(join(dir, 'package.json'), 'utf-8'));
+    const manifest = JSON.parse(
+      await readFile(join(dir, 'package.json'), 'utf-8')
+    );
     const version = getCLIVersion();
     const expected = getDependencyRange(version);
 
     const coherentDeps = Object.entries({
       ...manifest.dependencies,
-      ...manifest.devDependencies
+      ...manifest.devDependencies,
     }).filter(([name]) => name.startsWith('@coherent.js/'));
 
     expect(coherentDeps.length).toBeGreaterThan(0);
@@ -67,7 +69,9 @@ describe('scaffolded package.json', () => {
 
       if (version.includes('-')) {
         // `^1.0.0-rc.6` would also match the eventual stable 1.0.0.
-        expect(range, `${name} must not caret a prerelease`).not.toMatch(/^\^.*-/);
+        expect(range, `${name} must not caret a prerelease`).not.toMatch(
+          /^\^.*-/
+        );
       }
     }
   });

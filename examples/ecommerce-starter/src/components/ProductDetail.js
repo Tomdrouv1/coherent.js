@@ -6,7 +6,11 @@ export const ProductDetail = ({ product }) => {
     description: product.description,
     image: product.image,
     brand: product.brand,
-    offers: { price: product.price, priceCurrency: 'USD', availability: product.inStock ? 'InStock' : 'OutOfStock' },
+    offers: {
+      price: product.price,
+      priceCurrency: 'USD',
+      availability: product.inStock ? 'InStock' : 'OutOfStock',
+    },
   });
 
   return {
@@ -23,7 +27,12 @@ export const ProductDetail = ({ product }) => {
                   children: [
                     { h1: { text: product.name } },
                     { p: { text: product.description } },
-                    { p: { className: 'price', text: `$${product.price.toFixed(2)}` } },
+                    {
+                      p: {
+                        className: 'price',
+                        text: `$${product.price.toFixed(2)}`,
+                      },
+                    },
                     { p: { text: `Brand: ${product.brand}` } },
                     product.inStock
                       ? {
@@ -31,12 +40,29 @@ export const ProductDetail = ({ product }) => {
                             method: 'POST',
                             action: '/cart/add',
                             children: [
-                              { input: { type: 'hidden', name: 'productId', value: product.id } },
-                              { button: { className: 'btn btn-primary', type: 'submit', text: 'Add to Cart' } },
+                              {
+                                input: {
+                                  type: 'hidden',
+                                  name: 'productId',
+                                  value: product.id,
+                                },
+                              },
+                              {
+                                button: {
+                                  className: 'btn btn-primary',
+                                  type: 'submit',
+                                  text: 'Add to Cart',
+                                },
+                              },
                             ],
                           },
                         }
-                      : { span: { className: 'badge-out', text: 'Out of stock' } },
+                      : {
+                          span: {
+                            className: 'badge-out',
+                            text: 'Out of stock',
+                          },
+                        },
                   ],
                 },
               },

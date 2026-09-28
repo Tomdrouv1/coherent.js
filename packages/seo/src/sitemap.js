@@ -7,7 +7,15 @@
  */
 
 /** The `<changefreq>` values the sitemap protocol allows. */
-const CHANGEFREQ_VALUES = ['always', 'hourly', 'daily', 'weekly', 'monthly', 'yearly', 'never'];
+const CHANGEFREQ_VALUES = [
+  'always',
+  'hourly',
+  'daily',
+  'weekly',
+  'monthly',
+  'yearly',
+  'never',
+];
 
 /** A URL that starts with a scheme (`https:`, `mailto:`, `javascript:` …). */
 const SCHEME_RE = /^[a-z][a-z\d+.-]*:/i;
@@ -31,7 +39,9 @@ function escapeXml(str) {
  * @param {unknown} value
  */
 function isOmitted(value) {
-  return value === undefined || value === null || value === false || value === '';
+  return (
+    value === undefined || value === null || value === false || value === ''
+  );
 }
 
 /**
@@ -45,7 +55,9 @@ function toHttpHref(url) {
   try {
     parsed = new URL(url);
   } catch {
-    throw new TypeError(`Sitemap URL is not a valid URL: ${JSON.stringify(url)}`);
+    throw new TypeError(
+      `Sitemap URL is not a valid URL: ${JSON.stringify(url)}`
+    );
   }
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
     throw new TypeError(
@@ -74,8 +86,14 @@ function validateChangefreq(value) {
  * @returns {number}
  */
 function validatePriority(value) {
-  const number = typeof value === 'string' && value.trim() !== '' ? Number(value) : value;
-  if (typeof number !== 'number' || !Number.isFinite(number) || number < 0 || number > 1) {
+  const number =
+    typeof value === 'string' && value.trim() !== '' ? Number(value) : value;
+  if (
+    typeof number !== 'number' ||
+    !Number.isFinite(number) ||
+    number < 0 ||
+    number > 1
+  ) {
     throw new RangeError(
       `Invalid sitemap priority ${JSON.stringify(value)}; expected a number from 0.0 to 1.0`
     );
@@ -92,7 +110,7 @@ export class SitemapGenerator {
     this.options = {
       hostname: '',
       xmlns: 'http://www.sitemaps.org/schemas/sitemap/0.9',
-      ...options
+      ...options,
     };
 
     this.urls = [];
@@ -113,9 +131,12 @@ export class SitemapGenerator {
     const entry = {
       ...rest,
       loc: this.normalizeUrl(url),
-      lastmod: lastmod === undefined ? new Date().toISOString().split('T')[0] : lastmod,
+      lastmod:
+        lastmod === undefined
+          ? new Date().toISOString().split('T')[0]
+          : lastmod,
       changefreq: changefreq === undefined ? 'weekly' : changefreq,
-      priority: priority === undefined ? 0.5 : priority
+      priority: priority === undefined ? 0.5 : priority,
     };
 
     if (!isOmitted(entry.changefreq)) {
@@ -134,7 +155,7 @@ export class SitemapGenerator {
    * Add multiple URLs
    */
   addMultiple(urls) {
-    urls.forEach(url => {
+    urls.forEach((url) => {
       if (typeof url === 'string') {
         this.add(url);
       } else {
@@ -155,7 +176,9 @@ export class SitemapGenerator {
    */
   normalizeUrl(url) {
     if (typeof url !== 'string') {
-      throw new TypeError(`Sitemap URL must be a string, got ${url === null ? 'null' : typeof url}`);
+      throw new TypeError(
+        `Sitemap URL must be a string, got ${url === null ? 'null' : typeof url}`
+      );
     }
 
     if (SCHEME_RE.test(url)) {
@@ -178,23 +201,29 @@ export class SitemapGenerator {
    * Generate XML sitemap
    */
   generate() {
-    const urlEntries = this.urls.map(url => {
-      const entries = [`    <loc>${this.escapeXml(url.loc)}</loc>`];
+    const urlEntries = this.urls
+      .map((url) => {
+        const entries = [`    <loc>${this.escapeXml(url.loc)}</loc>`];
 
-      if (!isOmitted(url.lastmod)) {
-        entries.push(`    <lastmod>${this.escapeXml(url.lastmod)}</lastmod>`);
-      }
+        if (!isOmitted(url.lastmod)) {
+          entries.push(`    <lastmod>${this.escapeXml(url.lastmod)}</lastmod>`);
+        }
 
-      if (!isOmitted(url.changefreq)) {
-        entries.push(`    <changefreq>${this.escapeXml(url.changefreq)}</changefreq>`);
-      }
+        if (!isOmitted(url.changefreq)) {
+          entries.push(
+            `    <changefreq>${this.escapeXml(url.changefreq)}</changefreq>`
+          );
+        }
 
-      if (!isOmitted(url.priority)) {
-        entries.push(`    <priority>${this.escapeXml(url.priority)}</priority>`);
-      }
+        if (!isOmitted(url.priority)) {
+          entries.push(
+            `    <priority>${this.escapeXml(url.priority)}</priority>`
+          );
+        }
 
-      return `  <url>\n${entries.join('\n')}\n  </url>`;
-    }).join('\n');
+        return `  <url>\n${entries.join('\n')}\n  </url>`;
+      })
+      .join('\n');
 
     return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="${this.escapeXml(this.options.xmlns)}">
@@ -244,5 +273,5 @@ export function generateSitemap(urls, options = {}) {
 export default {
   SitemapGenerator,
   createSitemapGenerator,
-  generateSitemap
+  generateSitemap,
 };

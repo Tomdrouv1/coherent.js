@@ -22,8 +22,8 @@ export function Counter({ count = 0 } = {}) {
         {
           p: {
             text: `Count: ${count}`,
-            className: 'count-display'
-          }
+            className: 'count-display',
+          },
         },
         {
           div: {
@@ -33,27 +33,27 @@ export function Counter({ count = 0 } = {}) {
                 button: {
                   text: '−',
                   className: 'btn',
-                  onClick: step((value) => value - 1)
-                }
+                  onClick: step((value) => value - 1),
+                },
               },
               {
                 button: {
                   text: 'Reset',
                   className: 'btn btn-secondary',
-                  onClick: step(() => 0)
-                }
+                  onClick: step(() => 0),
+                },
               },
               {
                 button: {
                   text: '+',
                   className: 'btn',
-                  onClick: step((value) => value + 1)
-                }
-              }
-            ]
-          }
-        }
-      ]
-    }
+                  onClick: step((value) => value + 1),
+                },
+              },
+            ],
+          },
+        },
+      ],
+    },
   };
 }

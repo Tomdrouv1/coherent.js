@@ -20,13 +20,20 @@ function mergeSignals(controller, callerSignal) {
   if (!callerSignal) {
     return controller.signal;
   }
-  if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.any === 'function') {
+  if (
+    typeof AbortSignal !== 'undefined' &&
+    typeof AbortSignal.any === 'function'
+  ) {
     return AbortSignal.any([controller.signal, callerSignal]);
   }
   if (callerSignal.aborted) {
     controller.abort(callerSignal.reason);
   } else {
-    callerSignal.addEventListener('abort', () => controller.abort(callerSignal.reason), { once: true });
+    callerSignal.addEventListener(
+      'abort',
+      () => controller.abort(callerSignal.reason),
+      { once: true }
+    );
   }
   return controller.signal;
 }
@@ -235,7 +242,9 @@ export class CleanupTracker {
     }
 
     if (warnings.length > 0) {
-      console.warn(`[HMR] Potential leak in module ${moduleId}: ${warnings.join(', ')}`);
+      console.warn(
+        `[HMR] Potential leak in module ${moduleId}: ${warnings.join(', ')}`
+      );
     }
   }
 

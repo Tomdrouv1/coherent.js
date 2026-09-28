@@ -34,7 +34,11 @@ export async function createCLI() {
 
   program
     .name('coherent')
-    .description(picocolors.cyan('🚀 Coherent.js CLI - Build modern web applications with pure JavaScript objects'))
+    .description(
+      picocolors.cyan(
+        '🚀 Coherent.js CLI - Build modern web applications with pure JavaScript objects'
+      )
+    )
     .version(version, '-v, --version', 'display version number')
     // Point at --help on a bad command/option instead of leaving a bare error.
     .showHelpAfterError('(run "coherent --help" to see available commands)');
@@ -69,7 +73,7 @@ ${picocolors.gray('Examples:')}
   ${picocolors.green('coherent debug performance')}       Profile application performance
 
 ${picocolors.gray('Learn more:')} ${picocolors.blue('https://github.com/Tomdrouv1/coherent.js')}
-`
+`,
   });
 
   // Handle no command
@@ -89,4 +93,10 @@ ${picocolors.gray('Learn more:')} ${picocolors.blue('https://github.com/Tomdrouv
 }
 
 // Export for direct usage
-export { createCommand, generateCommand, buildCommand, devCommand, debugCommand };
+export {
+  createCommand,
+  generateCommand,
+  buildCommand,
+  devCommand,
+  debugCommand,
+};

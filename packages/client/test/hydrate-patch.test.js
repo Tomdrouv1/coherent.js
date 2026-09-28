@@ -28,14 +28,22 @@ afterEach(() => {
  * Mount server output — `html`, or `component(state)` rendered by core — and
  * hydrate it.
  */
-function setup(component, state = {}, html = render(component(state), { enableCache: false })) {
+function setup(
+  component,
+  state = {},
+  html = render(component(state), { enableCache: false })
+) {
   const container = dom.mount(html);
-  const app = hydrate(component, container, { initialState: state, detectMismatch: false });
+  const app = hydrate(component, container, {
+    initialState: state,
+    detectMismatch: false,
+  });
   return { container, app };
 }
 
 /** outerHTML without hydrate()'s own marker attribute. */
-const markup = (element) => element.outerHTML.replace(' data-coherent-hydrated="true"', '');
+const markup = (element) =>
+  element.outerHTML.replace(' data-coherent-hydrated="true"', '');
 
 describe('patching children', () => {
   const List = ({ items }) => ({
@@ -74,7 +82,9 @@ describe('patching children', () => {
 
     app.setState({ editing: true, label: 'Grace' });
 
-    expect(markup(container)).toBe('<div>Name: Grace<input value="Grace"></div>');
+    expect(markup(container)).toBe(
+      '<div>Name: Grace<input value="Grace"></div>'
+    );
   });
 
   it('matches keyed children by key, keeping their DOM nodes', () => {
@@ -86,7 +96,9 @@ describe('patching children', () => {
 
     app.setState({ ids: ['c', 'a'] });
 
-    expect(markup(container)).toBe('<ul><li id="c">c</li><li id="a">a</li></ul>');
+    expect(markup(container)).toBe(
+      '<ul><li id="c">c</li><li id="a">a</li></ul>'
+    );
     expect(container.children[0]).toBe(c);
     expect(container.children[1]).toBe(a);
     expect(b.parentNode).toBeNull();
@@ -104,7 +116,9 @@ describe('patching children', () => {
 
 describe('patching attributes', () => {
   it('serialises style objects like the server', () => {
-    const Box = ({ color }) => ({ div: { style: { color, fontSize: '12px' } } });
+    const Box = ({ color }) => ({
+      div: { style: { color, fontSize: '12px' } },
+    });
     const { container, app } = setup(Box, { color: 'blue' });
 
     app.setState({ color: 'red' });
@@ -114,18 +128,28 @@ describe('patching attributes', () => {
 
   it('evaluates function values instead of writing their source', () => {
     const Toggle = ({ active }) => ({
-      button: { className: () => (active ? 'on' : 'off'), 'aria-pressed': () => String(active) },
+      button: {
+        className: () => (active ? 'on' : 'off'),
+        'aria-pressed': () => String(active),
+      },
     });
     const { container, app } = setup(Toggle, { active: false });
 
     app.setState({ active: true });
 
-    expect(markup(container)).toBe('<button class="on" aria-pressed="true"></button>');
+    expect(markup(container)).toBe(
+      '<button class="on" aria-pressed="true"></button>'
+    );
   });
 
   it('never renders key, and removes attributes whose value went away', () => {
     const Item = ({ busy }) => ({
-      button: { key: 'save', title: busy ? 'Saving' : undefined, disabled: busy, text: 'Save' },
+      button: {
+        key: 'save',
+        title: busy ? 'Saving' : undefined,
+        disabled: busy,
+        text: 'Save',
+      },
     });
     const { container, app } = setup(Item, { busy: true });
 
@@ -166,13 +190,20 @@ describe('handlers across re-renders', () => {
     div: {
       children: [
         { span: { id: 'count', text: String(count) } },
-        { button: { id: 'inc', text: '+', onClick: (e) => e.setState({ count: e.state.count + 1 }) } },
+        {
+          button: {
+            id: 'inc',
+            text: '+',
+            onClick: (e) => e.setState({ count: e.state.count + 1 }),
+          },
+        },
       ],
     },
   });
 
   it('keeps one registry entry per handler however often it re-renders', () => {
-    const html = '<div><span id="count">0</span><button id="inc">+</button></div>';
+    const html =
+      '<div><span id="count">0</span><button id="inc">+</button></div>';
     const { container, app } = setup(Counter, { count: 0 }, html);
 
     for (let i = 1; i <= 1000; i++) app.setState({ count: i });
@@ -183,10 +214,14 @@ describe('handlers across re-renders', () => {
   });
 
   it('replaces the previous hydration when a container is hydrated twice', () => {
-    const html = '<div><span id="count">0</span><button id="inc">+</button></div>';
+    const html =
+      '<div><span id="count">0</span><button id="inc">+</button></div>';
     const { container } = setup(Counter, { count: 0 }, html);
 
-    hydrate(Counter, container, { initialState: { count: 0 }, detectMismatch: false });
+    hydrate(Counter, container, {
+      initialState: { count: 0 },
+      detectMismatch: false,
+    });
     dom.fire(container.querySelector('#inc'), 'click');
 
     expect(handlerRegistry.size).toBe(1);
@@ -195,7 +230,10 @@ describe('handlers across re-renders', () => {
 
   it('removes the delegation attribute of a handler that went away', () => {
     const Once = ({ done }) => ({
-      button: { text: done ? 'Done' : 'Go', onClick: done ? undefined : (e) => e.setState({ done: true }) },
+      button: {
+        text: done ? 'Done' : 'Go',
+        onClick: done ? undefined : (e) => e.setState({ done: true }),
+      },
     });
     const { container } = setup(Once, { done: false }, '<button>Go</button>');
     expect(container.getAttribute('data-coherent-click')).not.toBeNull();
@@ -217,7 +255,11 @@ describe('handlers across re-renders', () => {
       };
     }
     const container = dom.mount('<button>Hi Ada</button>');
-    hydrate(Greeter, container, { initialState: { count: 2 }, props: { name: 'Ada' }, detectMismatch: false });
+    hydrate(Greeter, container, {
+      initialState: { count: 2 },
+      props: { name: 'Ada' },
+      detectMismatch: false,
+    });
 
     dom.fire(container, 'click');
 
@@ -228,9 +270,16 @@ describe('handlers across re-renders', () => {
 describe('unmount()', () => {
   it('is terminal: later setState() neither patches nor re-registers handlers', () => {
     const Counter = ({ count }) => ({
-      button: { text: String(count), onClick: (e) => e.setState({ count: count + 1 }) },
+      button: {
+        text: String(count),
+        onClick: (e) => e.setState({ count: count + 1 }),
+      },
     });
-    const { container, app } = setup(Counter, { count: 0 }, '<button>0</button>');
+    const { container, app } = setup(
+      Counter,
+      { count: 0 },
+      '<button>0</button>'
+    );
 
     app.unmount();
     app.setState({ count: 5 });

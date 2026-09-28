@@ -26,14 +26,14 @@ const StreamingList = ({ itemCount = 100, title = 'Streaming List' }) => ({
               class: 'list-item',
               children: [
                 { span: { text: `Item ${i + 1}` } },
-                { small: { text: ` (Batch ${Math.floor(i / 10) + 1})` } }
-              ]
-            }
-          }))
-        }
-      }
-    ]
-  }
+                { small: { text: ` (Batch ${Math.floor(i / 10) + 1})` } },
+              ],
+            },
+          })),
+        },
+      },
+    ],
+  },
 });
 
 // Streaming data table component
@@ -47,9 +47,9 @@ const StreamingDataTable = ({ rows = [], showProgress = false }) => ({
           class: 'progress-info',
           children: [
             { p: { text: `Streaming ${rows.length} records` } },
-            { div: { class: 'progress-bar', text: '████████████ 100%' } }
-          ]
-        }
+            { div: { class: 'progress-bar', text: '████████████ 100%' } },
+          ],
+        },
       },
       {
         table: {
@@ -57,21 +57,23 @@ const StreamingDataTable = ({ rows = [], showProgress = false }) => ({
           children: [
             {
               thead: {
-                children: [{
-                  tr: {
-                    children: [
-                      { th: { text: 'ID' } },
-                      { th: { text: 'Name' } },
-                      { th: { text: 'Department' } },
-                      { th: { text: 'Status' } }
-                    ]
-                  }
-                }]
-              }
+                children: [
+                  {
+                    tr: {
+                      children: [
+                        { th: { text: 'ID' } },
+                        { th: { text: 'Name' } },
+                        { th: { text: 'Department' } },
+                        { th: { text: 'Status' } },
+                      ],
+                    },
+                  },
+                ],
+              },
             },
             {
               tbody: {
-                children: rows.map(row => ({
+                children: rows.map((row) => ({
                   tr: {
                     key: row.id,
                     class: row.status === 'active' ? 'active-row' : '',
@@ -79,17 +81,19 @@ const StreamingDataTable = ({ rows = [], showProgress = false }) => ({
                       { td: { text: row.id } },
                       { td: { text: row.name } },
                       { td: { text: row.department } },
-                      { td: { text: row.status, class: `status-${row.status}` } }
-                    ]
-                  }
-                }))
-              }
-            }
-          ]
-        }
-      }
-    ].filter(Boolean)
-  }
+                      {
+                        td: { text: row.status, class: `status-${row.status}` },
+                      },
+                    ],
+                  },
+                })),
+              },
+            },
+          ],
+        },
+      },
+    ].filter(Boolean),
+  },
 });
 
 // Progressive content streaming component
@@ -109,42 +113,45 @@ const ProgressiveContent = ({ sections = [] }) => ({
             section.highlight && {
               div: {
                 class: 'highlight',
-                text: section.highlight
-              }
-            }
-          ].filter(Boolean)
-        }
-      }))
-    ]
-  }
+                text: section.highlight,
+              },
+            },
+          ].filter(Boolean),
+        },
+      })),
+    ],
+  },
 });
 
 // Generate sample data for streaming demos
-const generateStreamingData = (count = 50) => 
+const generateStreamingData = (count = 50) =>
   Array.from({ length: count }, (_, i) => ({
     id: i + 1,
     name: `Employee ${i + 1}`,
     department: ['Engineering', 'Marketing', 'Sales', 'Support'][i % 4],
-    status: ['active', 'pending', 'inactive'][i % 3]
+    status: ['active', 'pending', 'inactive'][i % 3],
   }));
 
 // Generate progressive content sections
 const generateContentSections = () => [
   {
     title: 'Introduction',
-    content: 'This section introduces the streaming capabilities of Coherent.js.',
-    highlight: 'Streams render content progressively for better performance.'
+    content:
+      'This section introduces the streaming capabilities of Coherent.js.',
+    highlight: 'Streams render content progressively for better performance.',
   },
   {
     title: 'Benefits',
-    content: 'Streaming provides improved perceived performance and reduced memory usage.',
-    highlight: 'Large datasets can be processed without blocking the main thread.'
+    content:
+      'Streaming provides improved perceived performance and reduced memory usage.',
+    highlight:
+      'Large datasets can be processed without blocking the main thread.',
   },
   {
     title: 'Implementation',
     content: 'Use renderToStream() to enable streaming for any component.',
-    highlight: 'Works seamlessly with existing component architecture.'
-  }
+    highlight: 'Works seamlessly with existing component architecture.',
+  },
 ];
 
 // Real-time streaming feed component
@@ -157,29 +164,34 @@ const StreamingFeed = ({ items = [], isLive = false }) => ({
         div: {
           class: 'feed-status',
           children: [
-            { span: { text: isLive ? '🟢 Live' : '🔴 Offline', class: 'status-indicator' } },
-            { span: { text: `${items.length} items` } }
-          ]
-        }
+            {
+              span: {
+                text: isLive ? '🟢 Live' : '🔴 Offline',
+                class: 'status-indicator',
+              },
+            },
+            { span: { text: `${items.length} items` } },
+          ],
+        },
       },
       {
         div: {
           class: 'feed-container',
-          children: items.map(item => ({
+          children: items.map((item) => ({
             div: {
               key: item.id,
               class: 'feed-item',
               children: [
                 { h6: { text: item.title } },
                 { p: { text: item.content } },
-                { small: { text: `${item.timestamp}ms ago` } }
-              ]
-            }
-          }))
-        }
-      }
-    ]
-  }
+                { small: { text: `${item.timestamp}ms ago` } },
+              ],
+            },
+          })),
+        },
+      },
+    ],
+  },
 });
 
 // Streaming utilities
@@ -187,18 +199,19 @@ const createStreamingDemo = async (component, options = {}) => {
   const { delay = 0 } = options;
   const stream = renderToStream(component);
   const chunks = [];
-  
+
   for await (const chunk of stream) {
     chunks.push(chunk);
     if (delay > 0) {
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
-  
+
   return {
     totalChunks: chunks.length,
     totalSize: chunks.join('').length,
-    averageChunkSize: chunks.reduce((sum, chunk) => sum + chunk.length, 0) / chunks.length
+    averageChunkSize:
+      chunks.reduce((sum, chunk) => sum + chunk.length, 0) / chunks.length,
   };
 };
 
@@ -232,15 +245,30 @@ const StreamingDemo = () => {
     .api-example { background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0; }
     .api-example pre { background: #263238; color: #eee; padding: 10px; border-radius: 3px; overflow-x: auto; }
   `;
-  
+
   const sampleData = generateStreamingData(25);
   const contentSections = generateContentSections();
   const feedItems = [
-    { id: 1, title: 'System Update', content: 'New streaming features deployed', timestamp: 1200 },
-    { id: 2, title: 'Performance Alert', content: 'Render time improved by 40%', timestamp: 800 },
-    { id: 3, title: 'Cache Status', content: 'Cache hit rate: 95%', timestamp: 400 }
+    {
+      id: 1,
+      title: 'System Update',
+      content: 'New streaming features deployed',
+      timestamp: 1200,
+    },
+    {
+      id: 2,
+      title: 'Performance Alert',
+      content: 'Render time improved by 40%',
+      timestamp: 800,
+    },
+    {
+      id: 3,
+      title: 'Cache Status',
+      content: 'Cache hit rate: 95%',
+      timestamp: 400,
+    },
   ];
-  
+
   return {
     html: {
       children: [
@@ -248,9 +276,9 @@ const StreamingDemo = () => {
           head: {
             children: [
               { title: { text: 'Streaming Rendering Demo' } },
-              { style: { text: styles } }
-            ]
-          }
+              { style: { text: styles } },
+            ],
+          },
         },
         {
           body: {
@@ -265,18 +293,28 @@ const StreamingDemo = () => {
                         class: 'section',
                         children: [
                           { h3: { text: 'Live Streaming Examples' } },
-                          { p: { text: 'These components demonstrate progressive rendering and real-time data streaming:' } },
+                          {
+                            p: {
+                              text: 'These components demonstrate progressive rendering and real-time data streaming:',
+                            },
+                          },
                           {
                             div: {
                               class: 'grid',
                               children: [
-                                StreamingList({ itemCount: 1000, title: 'Progressive List' }),
-                                StreamingDataTable({ rows: sampleData.slice(0, 15), showProgress: true })
-                              ]
-                            }
-                          }
-                        ]
-                      }
+                                StreamingList({
+                                  itemCount: 1000,
+                                  title: 'Progressive List',
+                                }),
+                                StreamingDataTable({
+                                  rows: sampleData.slice(0, 15),
+                                  showProgress: true,
+                                }),
+                              ],
+                            },
+                          },
+                        ],
+                      },
                     },
                     {
                       div: {
@@ -287,13 +325,18 @@ const StreamingDemo = () => {
                             div: {
                               class: 'grid',
                               children: [
-                                ProgressiveContent({ sections: contentSections }),
-                                StreamingFeed({ items: feedItems, isLive: true })
-                              ]
-                            }
-                          }
-                        ]
-                      }
+                                ProgressiveContent({
+                                  sections: contentSections,
+                                }),
+                                StreamingFeed({
+                                  items: feedItems,
+                                  isLive: true,
+                                }),
+                              ],
+                            },
+                          },
+                        ],
+                      },
                     },
                     {
                       div: {
@@ -303,15 +346,33 @@ const StreamingDemo = () => {
                           {
                             ul: {
                               children: [
-                                { li: { text: 'Use renderToStream() for progressive rendering' } },
-                                { li: { text: 'Automatic chunking for optimal performance' } },
-                                { li: { text: 'Compatible with Express, Fastify, and Node.js HTTP' } },
-                                { li: { text: 'Real-time updates with WebSocket integration' } }
-                              ]
-                            }
+                                {
+                                  li: {
+                                    text: 'Use renderToStream() for progressive rendering',
+                                  },
+                                },
+                                {
+                                  li: {
+                                    text: 'Automatic chunking for optimal performance',
+                                  },
+                                },
+                                {
+                                  li: {
+                                    text: 'Compatible with Express, Fastify, and Node.js HTTP',
+                                  },
+                                },
+                                {
+                                  li: {
+                                    text: 'Real-time updates with WebSocket integration',
+                                  },
+                                },
+                              ],
+                            },
                           },
                           { h4: { text: 'Example Implementation:' } },
-                          { pre: { text: `import { renderToStream } from '@coherent.js/core';
+                          {
+                            pre: {
+                              text: `import { renderToStream } from '@coherent.js/core';
 
 // Express route with streaming
 app.get('/data', async (req, res) => {
@@ -322,31 +383,42 @@ app.get('/data', async (req, res) => {
     res.write(chunk);
   }
   res.end();
-});` } }
-                        ]
-                      }
-                    }
-                  ]
-                }
-              }
-            ]
-          }
-        }
-      ]
-    }
+});`,
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      ],
+    },
   };
 };
 
 export default StreamingDemo;
-export { StreamingList, StreamingDataTable, ProgressiveContent, StreamingFeed, generateStreamingData, createStreamingDemo };
+export {
+  StreamingList,
+  StreamingDataTable,
+  ProgressiveContent,
+  StreamingFeed,
+  generateStreamingData,
+  createStreamingDemo,
+};
 
 // Stream the page to stdout when this file is the program being run — `node examples/streaming.js`,
 // or the playground runner, which feeds the file on stdin — but not when it is
 // imported. `import.meta.main` says so exactly from Node 22.18; before that,
 // compare against argv[1], which is empty when the program came on stdin.
-const isProgram = import.meta.main
-  ?? (!process.argv[1] || fileURLToPath(import.meta.url) === process.argv[1]);
+const isProgram =
+  import.meta.main ??
+  (!process.argv[1] || fileURLToPath(import.meta.url) === process.argv[1]);
 if (isProgram) {
-  for await (const chunk of renderToStream(StreamingDemo())) process.stdout.write(chunk);
+  for await (const chunk of renderToStream(StreamingDemo()))
+    process.stdout.write(chunk);
   process.stdout.write('\n');
 }

@@ -3,10 +3,14 @@ import { memo, render } from '../src/index.js';
 
 describe('memo', () => {
   it('gives every memoized component its own cache', () => {
-    const AdminPanel = memo(({ id }) => ({ div: { text: `ADMIN secrets for ${id}` } }));
+    const AdminPanel = memo(({ id }) => ({
+      div: { text: `ADMIN secrets for ${id}` },
+    }));
     const UserCard = memo(({ id }) => ({ div: { text: `user card ${id}` } }));
 
-    expect(render(AdminPanel({ id: 1 }))).toBe('<div>ADMIN secrets for 1</div>');
+    expect(render(AdminPanel({ id: 1 }))).toBe(
+      '<div>ADMIN secrets for 1</div>'
+    );
     expect(render(UserCard({ id: 1 }))).toBe('<div>user card 1</div>');
   });
 
@@ -73,7 +77,7 @@ describe('memo', () => {
     }
   });
 
-  it('keys the weak strategy on the first argument\'s identity', () => {
+  it("keys the weak strategy on the first argument's identity", () => {
     const impl = vi.fn((user) => ({ span: { text: user.name } }));
     const byUser = memo(impl, { strategy: 'weak' });
     const ada = { name: 'Ada' };
@@ -98,5 +102,4 @@ describe('memo', () => {
     expect(f(circular)).toBe('ok');
     expect(impl).toHaveBeenCalledTimes(2);
   });
-
 });

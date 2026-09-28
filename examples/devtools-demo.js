@@ -11,7 +11,7 @@ import {
   createProfiler,
   measure,
   createLogger,
-  LogLevel
+  LogLevel,
 } from '@coherent.js/devtools';
 
 console.log('\n=== Coherent.js DevTools Demo ===\n');
@@ -25,23 +25,23 @@ const testComponent = {
     id: 'main',
     children: [
       { h1: { text: 'Hello World' } },
-      { 
-        p: { 
+      {
+        p: {
           className: 'description',
-          text: 'This is a test component' 
-        } 
+          text: 'This is a test component',
+        },
       },
       {
         ul: {
           children: [
             { li: { text: 'Item 1' } },
             { li: { text: 'Item 2' } },
-            { li: { text: 'Item 3' } }
-          ]
-        }
-      }
-    ]
-  }
+            { li: { text: 'Item 3' } },
+          ],
+        },
+      },
+    ],
+  },
 };
 
 const inspector = createInspector({ verbose: true });
@@ -59,12 +59,14 @@ console.log(`- Has Classes: ${inspection.stats.hasClasses}`);
 
 if (inspection.analysis.issues.length > 0) {
   console.log('\nIssues:');
-  inspection.analysis.issues.forEach(issue => console.log(`  - ${issue}`));
+  inspection.analysis.issues.forEach((issue) => console.log(`  - ${issue}`));
 }
 
 if (inspection.analysis.warnings.length > 0) {
   console.log('\nWarnings:');
-  inspection.analysis.warnings.forEach(warning => console.log(`  - ${warning}`));
+  inspection.analysis.warnings.forEach((warning) =>
+    console.log(`  - ${warning}`)
+  );
 }
 
 // Example 2: Component Validation
@@ -72,16 +74,14 @@ console.log('\n--- Example 2: Component Validation ---\n');
 
 const validComponent = {
   div: {
-    children: [
-      { h1: { text: 'Valid' } }
-    ]
-  }
+    children: [{ h1: { text: 'Valid' } }],
+  },
 };
 
 const invalidComponent = {
   div: {
-    children: 'Should be array' // Invalid!
-  }
+    children: 'Should be array', // Invalid!
+  },
 };
 
 console.log('Validating valid component:');
@@ -101,7 +101,7 @@ console.log('\n--- Example 3: Performance Profiler ---\n');
 const profiler = createProfiler({
   enabled: true,
   slowThreshold: 10,
-  trackMemory: true
+  trackMemory: true,
 });
 
 const sessionId = profiler.start('demo-session');
@@ -110,13 +110,13 @@ console.log(`Started profiling session: ${sessionId}`);
 // Simulate some renders
 for (let i = 0; i < 5; i++) {
   const measureId = profiler.startRender(`Component${i}`);
-  
+
   // Simulate work
   const start = Date.now();
   while (Date.now() - start < Math.random() * 20) {
     // Busy wait
   }
-  
+
   profiler.endRender(measureId);
 }
 
@@ -135,14 +135,16 @@ console.log(`- Slow %: ${sessionAnalysis.analysis.slowPercentage.toFixed(1)}%`);
 
 console.log('\nBy Component:');
 Object.entries(sessionAnalysis.byComponent).forEach(([name, stats]) => {
-  console.log(`  ${name}: ${stats.count} renders, avg ${stats.average.toFixed(2)}ms`);
+  console.log(
+    `  ${name}: ${stats.count} renders, avg ${stats.average.toFixed(2)}ms`
+  );
 });
 
 // Example 4: Measure Function
 console.log('\n--- Example 4: Measure Function ---\n');
 
 const slowFunction = async () => {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     setTimeout(() => resolve('Done'), 50);
   });
 };
@@ -161,7 +163,7 @@ const logger = createLogger({
   level: LogLevel.DEBUG,
   prefix: '[Demo]',
   timestamp: true,
-  colors: true
+  colors: true,
 });
 
 logger.debug('Debug message', { detail: 'This is debug info' });
@@ -188,7 +190,7 @@ logger.groupEnd();
 console.log('\n--- Example 7: Log Filtering ---\n');
 
 const filteredLogger = createLogger({
-  level: LogLevel.WARN // Only warnings and errors
+  level: LogLevel.WARN, // Only warnings and errors
 });
 
 filteredLogger.debug('This will not be logged');
@@ -250,11 +252,8 @@ console.log('\n--- Example 11: Component Comparison ---\n');
 
 const componentA = {
   div: {
-    children: [
-      { h1: { text: 'Title' } },
-      { p: { text: 'Content' } }
-    ]
-  }
+    children: [{ h1: { text: 'Title' } }, { p: { text: 'Content' } }],
+  },
 };
 
 const componentB = {
@@ -262,14 +261,16 @@ const componentB = {
     children: [
       { h1: { text: 'Title' } },
       { p: { text: 'Content' } },
-      { footer: { text: 'Footer' } }
-    ]
-  }
+      { footer: { text: 'Footer' } },
+    ],
+  },
 };
 
 const comparison = inspector.compare(componentA, componentB);
 console.log('Component Comparison:');
-console.log(`- Element Count Diff: ${comparison.statsComparison.elementCount.diff}`);
+console.log(
+  `- Element Count Diff: ${comparison.statsComparison.elementCount.diff}`
+);
 console.log(`- Depth Diff: ${comparison.statsComparison.depth.diff}`);
 console.log(`- Structure Match: ${comparison.structureMatch}`);
 
@@ -278,7 +279,7 @@ console.log('\n--- Example 12: Search Components ---\n');
 
 const searchResults = inspector.search({
   minElements: 2,
-  hasWarnings: false
+  hasWarnings: false,
 });
 
 console.log(`Found ${searchResults.length} components matching criteria`);

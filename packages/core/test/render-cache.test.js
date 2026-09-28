@@ -22,11 +22,12 @@ describe('render cache', () => {
         html: {
           children: [
             { head: { children: [{ title: 'My page' }] } },
-            { body: { children: [{ h1: { text: 'Hi' } }] } }
-          ]
-        }
+            { body: { children: [{ h1: { text: 'Hi' } }] } },
+          ],
+        },
       };
-      const expected = '<html><head><title>My page</title></head><body><h1>Hi</h1></body></html>';
+      const expected =
+        '<html><head><title>My page</title></head><body><h1>Hi</h1></body></html>';
 
       expect(render(page)).toBe(expected);
       expect(render(page)).toBe(expected);
@@ -41,13 +42,22 @@ describe('render cache', () => {
   });
 
   describe('enableCache: true', () => {
-    it('never serves one element\'s HTML for another', () => {
+    it("never serves one element's HTML for another", () => {
       // Props whose names fail the tag-name pattern (data_id, x-on:click,
       // @click) used to drop out of the key, so these all collided.
       const pairs = [
-        [{ div: { data_id: '1', text: 'secret-for-user-1' } }, { div: { data_id: '2', text: 'user-2' } }],
-        [{ div: { 'x-on:click': 'go', text: 'Hello Alice' } }, { div: { 'x-on:click': 'go', text: 'Hello Bob' } }],
-        [{ button: { '@click': 'go', text: 'A' } }, { button: { '@click': 'go', text: 'B' } }]
+        [
+          { div: { data_id: '1', text: 'secret-for-user-1' } },
+          { div: { data_id: '2', text: 'user-2' } },
+        ],
+        [
+          { div: { 'x-on:click': 'go', text: 'Hello Alice' } },
+          { div: { 'x-on:click': 'go', text: 'Hello Bob' } },
+        ],
+        [
+          { button: { '@click': 'go', text: 'A' } },
+          { button: { '@click': 'go', text: 'B' } },
+        ],
       ];
 
       for (const [first, second] of pairs) {
@@ -63,7 +73,10 @@ describe('render cache', () => {
       const cases = [
         [{ p: { text: date } }, { p: { text: date.toISOString() } }],
         [{ p: { text: NaN } }, { p: { text: null } }],
-        [{ p: { text: dangerouslySetInnerContent('<b>x</b>') } }, { p: { text: { __trusted: true, __html: '<b>x</b>' } } }]
+        [
+          { p: { text: dangerouslySetInnerContent('<b>x</b>') } },
+          { p: { text: { __trusted: true, __html: '<b>x</b>' } } },
+        ],
       ];
 
       for (const [first, second] of cases) {
@@ -73,20 +86,30 @@ describe('render cache', () => {
     });
 
     it('serves identical trees from the cache', () => {
-      const tree = { ul: { children: [1, 2, 3].map((n) => ({ li: { text: `item ${n}` } })) } };
+      const tree = {
+        ul: { children: [1, 2, 3].map((n) => ({ li: { text: `item ${n}` } })) },
+      };
       const first = render(tree, { enableCache: true });
       const before = getCache().getStats().hits;
 
-      expect(render(JSON.parse(JSON.stringify(tree)), { enableCache: true })).toBe(first);
+      expect(
+        render(JSON.parse(JSON.stringify(tree)), { enableCache: true })
+      ).toBe(first);
       expect(getCache().getStats().hits).toBe(before + 1);
     });
 
     it('does not cache trees whose output depends on functions', () => {
       let n = 0;
-      const tree = () => ({ div: { children: [() => ({ span: { text: String(++n) } })] } });
+      const tree = () => ({
+        div: { children: [() => ({ span: { text: String(++n) } })] },
+      });
 
-      expect(render(tree(), { enableCache: true })).toBe('<div><span>1</span></div>');
-      expect(render(tree(), { enableCache: true })).toBe('<div><span>2</span></div>');
+      expect(render(tree(), { enableCache: true })).toBe(
+        '<div><span>1</span></div>'
+      );
+      expect(render(tree(), { enableCache: true })).toBe(
+        '<div><span>2</span></div>'
+      );
       expect(getCache().getStats().entries).toBe(0);
     });
 
@@ -132,7 +155,12 @@ describe('createCacheManager', () => {
       cache.get(`key-${i}`, `not-a-type-${i}`);
     }
 
-    expect(Object.keys(cache.getStats().accessCount)).toEqual(['static', 'component', 'template', 'data']);
+    expect(Object.keys(cache.getStats().accessCount)).toEqual([
+      'static',
+      'component',
+      'template',
+      'data',
+    ]);
   });
 
   it('honours a per-entry TTL', async () => {

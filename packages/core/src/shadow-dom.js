@@ -7,9 +7,11 @@
 export function isShadowDOMSupported() {
   if (typeof window === 'undefined') return false;
   if (typeof window.Element === 'undefined') return false;
-  
-  return 'attachShadow' in window.Element.prototype && 
-         'getRootNode' in window.Element.prototype;
+
+  return (
+    'attachShadow' in window.Element.prototype &&
+    'getRootNode' in window.Element.prototype
+  );
 }
 
 // Create a Shadow DOM component
@@ -17,12 +19,12 @@ export function createShadowComponent(element, componentDef, options = {}) {
   if (!isShadowDOMSupported()) {
     throw new Error('Shadow DOM is not supported in this environment');
   }
-  
-  const shadowRoot = element.attachShadow({ 
+
+  const shadowRoot = element.attachShadow({
     mode: options.mode || 'closed',
-    delegatesFocus: options.delegatesFocus || false
+    delegatesFocus: options.delegatesFocus || false,
   });
-  
+
   // Extract and inject styles
   const styles = extractStyles(componentDef);
   if (styles && typeof window !== 'undefined' && window.document) {
@@ -30,29 +32,29 @@ export function createShadowComponent(element, componentDef, options = {}) {
     styleElement.textContent = styles;
     shadowRoot.appendChild(styleElement);
   }
-  
+
   // Render component content
   const content = renderToShadowDOM(componentDef);
   shadowRoot.innerHTML += content;
-  
+
   return shadowRoot;
 }
 
 // Extract CSS from component definition
 function extractStyles(componentDef) {
   let allStyles = '';
-  
+
   function extractFromElement(element) {
     if (!element || typeof element !== 'object') return;
-    
+
     if (Array.isArray(element)) {
       element.forEach(extractFromElement);
       return;
     }
-    
+
     for (const [tagName, props] of Object.entries(element)) {
       if (tagName === 'style' && typeof props === 'object' && props.text) {
-        allStyles += `${props.text  }\n`;
+        allStyles += `${props.text}\n`;
       } else if (typeof props === 'object' && props !== null) {
         if (props.children) {
           extractFromElement(props.children);
@@ -60,7 +62,7 @@ function extractStyles(componentDef) {
       }
     }
   }
-  
+
   extractFromElement(componentDef);
   return allStyles;
 }
@@ -69,16 +71,16 @@ function extractStyles(componentDef) {
 function renderToShadowDOM(componentDef) {
   function stripStyles(element) {
     if (!element || typeof element !== 'object') return element;
-    
+
     if (Array.isArray(element)) {
       return element.map(stripStyles);
     }
-    
+
     const result = {};
     for (const [tagName, props] of Object.entries(element)) {
       // Skip style elements - they're handled separately
       if (tagName === 'style') continue;
-      
+
       if (typeof props === 'object' && props !== null) {
         const cleanProps = { ...props };
         if (cleanProps.children) {
@@ -89,12 +91,12 @@ function renderToShadowDOM(componentDef) {
         result[tagName] = props;
       }
     }
-    
+
     return result;
   }
-  
+
   const cleanComponent = stripStyles(componentDef);
-  
+
   // Import renderRaw from main module (avoiding circular deps)
   // This would need to be properly imported in real usage
   return renderComponentContent(cleanComponent);
@@ -109,7 +111,7 @@ function renderComponentContent(obj) {
   if (Array.isArray(obj)) {
     return obj.map(renderComponentContent).join('');
   }
-  
+
   if (typeof obj !== 'object') return escapeHTML(String(obj));
 
   // Handle text content
@@ -121,17 +123,20 @@ function renderComponentContent(obj) {
   for (const [tagName, props] of Object.entries(obj)) {
     if (typeof props === 'object' && props !== null) {
       const { children, text, ...attributes } = props;
-      
+
       // Build attributes string
       const attrsStr = Object.entries(attributes)
-        .filter(([, value]) => value !== null && value !== undefined && value !== false)
+        .filter(
+          ([, value]) =>
+            value !== null && value !== undefined && value !== false
+        )
         .map(([key, value]) => {
           const attrName = key === 'className' ? 'class' : key;
           if (value === true) return attrName;
           return `${attrName}="${escapeHTML(String(value))}"`;
         })
         .join(' ');
-      
+
       // Built directly rather than via openTag.replace('>', ' />'), which
       // rewrites the first '>' in the string — an attribute value carrying
       // one would be corrupted instead of the tag being closed.
@@ -139,18 +144,34 @@ function renderComponentContent(obj) {
       const openTag = `<${tagName}${attrsPart}>`;
 
       // Handle void elements
-      if (['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
-           'link', 'meta', 'param', 'source', 'track', 'wbr'].includes(tagName)) {
+      if (
+        [
+          'area',
+          'base',
+          'br',
+          'col',
+          'embed',
+          'hr',
+          'img',
+          'input',
+          'link',
+          'meta',
+          'param',
+          'source',
+          'track',
+          'wbr',
+        ].includes(tagName)
+      ) {
         return `<${tagName}${attrsPart} />`;
       }
-      
+
       let content = '';
       if (text !== undefined) {
         content = escapeHTML(String(text));
       } else if (children) {
         content = renderComponentContent(children);
       }
-      
+
       return `${openTag}${content}</${tagName}>`;
     } else if (typeof props === 'string') {
       const content = escapeHTML(props);
@@ -177,7 +198,10 @@ function escapeHTML(text) {
 }
 
 // Hybrid rendering: Shadow DOM on client, scoped on server
-export function renderWithBestEncapsulation(componentDef, containerElement = null) {
+export function renderWithBestEncapsulation(
+  componentDef,
+  containerElement = null
+) {
   if (isShadowDOMSupported() && containerElement) {
     // Use Shadow DOM for true isolation
     return createShadowComponent(containerElement, componentDef);
@@ -192,5 +216,5 @@ export function renderWithBestEncapsulation(componentDef, containerElement = nul
 export default {
   isShadowDOMSupported,
   createShadowComponent,
-  renderWithBestEncapsulation
+  renderWithBestEncapsulation,
 };

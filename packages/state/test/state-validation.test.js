@@ -24,8 +24,8 @@ describe('State Validation', () => {
       const schema = {
         type: 'object',
         properties: {
-          count: { type: 'number', minimum: 0 }
-        }
+          count: { type: 'number', minimum: 0 },
+        },
       };
 
       const state = createValidatedState({ count: 0 }, { schema });
@@ -45,11 +45,14 @@ describe('State Validation', () => {
       const schema = {
         type: 'object',
         properties: {
-          count: { type: 'number' }
-        }
+          count: { type: 'number' },
+        },
       };
 
-      const state = createValidatedState({ count: 0 }, { schema, strict: true });
+      const state = createValidatedState(
+        { count: 0 },
+        { schema, strict: true }
+      );
 
       expect(() => {
         state.setState({ count: 'invalid' });
@@ -61,14 +64,17 @@ describe('State Validation', () => {
         type: 'object',
         properties: {
           count: { type: 'number' },
-          name: { type: 'string' }
-        }
+          name: { type: 'string' },
+        },
       };
 
-      const state = createValidatedState({ count: 0, name: '' }, {
-        schema,
-        coerce: true
-      });
+      const state = createValidatedState(
+        { count: 0, name: '' },
+        {
+          schema,
+          coerce: true,
+        }
+      );
 
       state.setState({ count: '42', name: 123 });
       expect(state.getState('count')).toBe(42);
@@ -80,8 +86,8 @@ describe('State Validation', () => {
       const schema = {
         type: 'object',
         properties: {
-          count: { type: 'number' }
-        }
+          count: { type: 'number' },
+        },
       };
 
       const state = createValidatedState({ count: 0 }, { schema, onError });
@@ -95,11 +101,14 @@ describe('State Validation', () => {
         return value > 0 ? true : 'Must be positive';
       };
 
-      const state = createValidatedState({ count: 0 }, {
-        validators: {
-          count: positiveNumber
+      const state = createValidatedState(
+        { count: 0 },
+        {
+          validators: {
+            count: positiveNumber,
+          },
         }
-      });
+      );
 
       state.setState({ count: 5 });
       expect(state.getState('count')).toBe(5);
@@ -110,23 +119,28 @@ describe('State Validation', () => {
     });
 
     it('should validate required fields', () => {
-      const state = createValidatedState({ name: 'John' }, {
-        required: ['name', 'email']
-      });
+      const state = createValidatedState(
+        { name: 'John' },
+        {
+          required: ['name', 'email'],
+        }
+      );
 
       // Missing email should fail validation
       expect(state.isValid()).toBe(false);
       const errors = state.getErrors();
       expect(errors.length).toBeGreaterThan(0);
-      expect(errors.some(e => e.type === 'required' && e.path === 'email')).toBe(true);
+      expect(
+        errors.some((e) => e.type === 'required' && e.path === 'email')
+      ).toBe(true);
     });
 
     it('should check if state is valid', () => {
       const schema = {
         type: 'object',
         properties: {
-          count: { type: 'number', minimum: 0 }
-        }
+          count: { type: 'number', minimum: 0 },
+        },
       };
 
       const state = createValidatedState({ count: 5 }, { schema });
@@ -137,8 +151,8 @@ describe('State Validation', () => {
       const schema = {
         type: 'object',
         properties: {
-          email: { type: 'string', format: 'email' }
-        }
+          email: { type: 'string', format: 'email' },
+        },
       };
 
       const state = createValidatedState({ email: '' }, { schema });
@@ -180,8 +194,8 @@ describe('State Validation', () => {
       const schema = {
         type: 'object',
         properties: {
-          name: { type: 'string', minLength: 2, maxLength: 10 }
-        }
+          name: { type: 'string', minLength: 2, maxLength: 10 },
+        },
       };
 
       const state = createValidatedState({ name: '' }, { schema });
@@ -197,8 +211,8 @@ describe('State Validation', () => {
       const schema = {
         type: 'object',
         properties: {
-          age: { type: 'number', minimum: 0, maximum: 120 }
-        }
+          age: { type: 'number', minimum: 0, maximum: 120 },
+        },
       };
 
       const state = createValidatedState({ age: 25 }, { schema });
@@ -214,8 +228,8 @@ describe('State Validation', () => {
       const schema = {
         type: 'object',
         properties: {
-          status: { type: 'string', enum: ['active', 'inactive', 'pending'] }
-        }
+          status: { type: 'string', enum: ['active', 'inactive', 'pending'] },
+        },
       };
 
       const state = createValidatedState({ status: 'active' }, { schema });
@@ -235,9 +249,9 @@ describe('State Validation', () => {
             type: 'array',
             minItems: 1,
             maxItems: 5,
-            items: { type: 'string' }
-          }
-        }
+            items: { type: 'string' },
+          },
+        },
       };
 
       const state = createValidatedState({ tags: [] }, { schema });
@@ -256,9 +270,9 @@ describe('State Validation', () => {
           ids: {
             type: 'array',
             uniqueItems: true,
-            items: { type: 'number' }
-          }
-        }
+            items: { type: 'number' },
+          },
+        },
       };
 
       const state = createValidatedState({ ids: [] }, { schema });
@@ -278,14 +292,17 @@ describe('State Validation', () => {
             type: 'object',
             properties: {
               name: { type: 'string' },
-              age: { type: 'number', minimum: 0 }
+              age: { type: 'number', minimum: 0 },
             },
-            required: ['name']
-          }
-        }
+            required: ['name'],
+          },
+        },
       };
 
-      const state = createValidatedState({ user: { name: '', age: 0 } }, { schema });
+      const state = createValidatedState(
+        { user: { name: '', age: 0 } },
+        { schema }
+      );
 
       state.setState({ user: { name: 'John', age: 30 } });
       expect(state.getState('user').name).toBe('John');
@@ -298,8 +315,8 @@ describe('State Validation', () => {
       const schema = {
         type: 'object',
         properties: {
-          username: { type: 'string', pattern: '^[a-z0-9_]+$' }
-        }
+          username: { type: 'string', pattern: '^[a-z0-9_]+$' },
+        },
       };
 
       const state = createValidatedState({ username: '' }, { schema });
@@ -316,8 +333,8 @@ describe('State Validation', () => {
         type: 'object',
         properties: {
           email: { type: 'string', format: 'email' },
-          url: { type: 'string', format: 'url' }
-        }
+          url: { type: 'string', format: 'url' },
+        },
       };
 
       const state = createValidatedState({ email: '', url: '' }, { schema });
@@ -333,8 +350,8 @@ describe('State Validation', () => {
       const schema = {
         type: 'object',
         properties: {
-          count: { type: 'integer' }
-        }
+          count: { type: 'integer' },
+        },
       };
 
       const state = createValidatedState({ count: 0 }, { schema });
@@ -350,8 +367,8 @@ describe('State Validation', () => {
       const schema = {
         type: 'object',
         properties: {
-          value: { type: ['string', 'number'] }
-        }
+          value: { type: ['string', 'number'] },
+        },
       };
 
       const state = createValidatedState({ value: '' }, { schema });
@@ -370,8 +387,8 @@ describe('State Validation', () => {
       const schema = {
         type: 'object',
         properties: {
-          count: { type: 'number', multipleOf: 5 }
-        }
+          count: { type: 'number', multipleOf: 5 },
+        },
       };
 
       const state = createValidatedState({ count: 0 }, { schema });
@@ -393,9 +410,9 @@ describe('State Validation', () => {
               if (value.length < 8) return 'Password too short';
               if (!/[A-Z]/.test(value)) return 'Must contain uppercase';
               return true;
-            }
-          }
-        }
+            },
+          },
+        },
       };
 
       const state = createValidatedState({ password: '' }, { schema });
@@ -470,11 +487,14 @@ describe('State Validation', () => {
       const schema = {
         type: 'object',
         properties: {
-          count: { type: 'number' }
-        }
+          count: { type: 'number' },
+        },
       };
 
-      const state = createValidatedState({ count: 0 }, { schema, coerce: true });
+      const state = createValidatedState(
+        { count: 0 },
+        { schema, coerce: true }
+      );
 
       state.setState({ count: '42' });
       expect(state.getState('count')).toBe(42);
@@ -484,11 +504,14 @@ describe('State Validation', () => {
       const schema = {
         type: 'object',
         properties: {
-          text: { type: 'string' }
-        }
+          text: { type: 'string' },
+        },
       };
 
-      const state = createValidatedState({ text: '' }, { schema, coerce: true });
+      const state = createValidatedState(
+        { text: '' },
+        { schema, coerce: true }
+      );
 
       state.setState({ text: 123 });
       expect(state.getState('text')).toBe('123');
@@ -498,11 +521,14 @@ describe('State Validation', () => {
       const schema = {
         type: 'object',
         properties: {
-          active: { type: 'boolean' }
-        }
+          active: { type: 'boolean' },
+        },
       };
 
-      const state = createValidatedState({ active: false }, { schema, coerce: true });
+      const state = createValidatedState(
+        { active: false },
+        { schema, coerce: true }
+      );
 
       state.setState({ active: 1 });
       expect(state.getState('active')).toBe(true);
@@ -515,11 +541,14 @@ describe('State Validation', () => {
       const schema = {
         type: 'object',
         properties: {
-          count: { type: 'number' }
-        }
+          count: { type: 'number' },
+        },
       };
 
-      const state = createValidatedState({ count: 0 }, { schema, coerce: true });
+      const state = createValidatedState(
+        { count: 0 },
+        { schema, coerce: true }
+      );
 
       state.setState({ count: 'not-a-number' });
       expect(state.getErrors().length).toBeGreaterThan(0);
@@ -531,8 +560,8 @@ describe('State Validation', () => {
       const schema = {
         type: 'object',
         properties: {
-          name: { type: 'string' }
-        }
+          name: { type: 'string' },
+        },
       };
 
       const state = createValidatedState({ name: '' }, { schema });
@@ -545,16 +574,19 @@ describe('State Validation', () => {
       const schema = {
         type: 'object',
         properties: {
-          name: { type: 'string' }
+          name: { type: 'string' },
         },
-        additionalProperties: false
+        additionalProperties: false,
       };
 
-      const state = createValidatedState({ name: '' }, { schema, allowUnknown: false });
+      const state = createValidatedState(
+        { name: '' },
+        { schema, allowUnknown: false }
+      );
 
       state.setState({ name: 'John', extra: 'value' });
       const errors = state.getErrors();
-      expect(errors.some(e => e.type === 'additionalProperties')).toBe(true);
+      expect(errors.some((e) => e.type === 'additionalProperties')).toBe(true);
     });
   });
 });

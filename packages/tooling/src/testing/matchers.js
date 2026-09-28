@@ -21,21 +21,42 @@
 
 /** Elements that never have a closing tag. */
 const VOID_ELEMENTS = new Set([
-  'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'keygen',
-  'link', 'meta', 'param', 'source', 'track', 'wbr'
+  'area',
+  'base',
+  'br',
+  'col',
+  'embed',
+  'hr',
+  'img',
+  'input',
+  'keygen',
+  'link',
+  'meta',
+  'param',
+  'source',
+  'track',
+  'wbr',
 ]);
 
 /** Elements whose content is raw text, not markup. */
 const RAW_TEXT_ELEMENTS = new Set(['script', 'style', 'textarea', 'title']);
 
-const NAMED_ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
+const NAMED_ENTITIES = {
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  nbsp: ' ',
+};
 
 function decodeEntities(text) {
   return text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (entity, body) => {
     if (body[0] === '#') {
-      const codePoint = body[1] === 'x' || body[1] === 'X'
-        ? Number.parseInt(body.slice(2), 16)
-        : Number.parseInt(body.slice(1), 10);
+      const codePoint =
+        body[1] === 'x' || body[1] === 'X'
+          ? Number.parseInt(body.slice(2), 16)
+          : Number.parseInt(body.slice(1), 10);
       return codePoint <= 0x10ffff ? String.fromCodePoint(codePoint) : entity;
     }
     return NAMED_ENTITIES[body.toLowerCase()] ?? entity;
@@ -54,7 +75,11 @@ function htmlOf(received) {
  * Entities are decoded, so assertions use the text a reader sees.
  */
 function textOf(received) {
-  if (received && typeof received === 'object' && typeof received.text === 'string') {
+  if (
+    received &&
+    typeof received === 'object' &&
+    typeof received.text === 'string'
+  ) {
     return decodeEntities(received.text);
   }
   const html = htmlOf(received);
@@ -81,7 +106,8 @@ function stripTags(html) {
   return out + html.slice(cursor);
 }
 
-const isSpace = (ch) => ch === ' ' || ch === '\n' || ch === '\t' || ch === '\r' || ch === '\f';
+const isSpace = (ch) =>
+  ch === ' ' || ch === '\n' || ch === '\t' || ch === '\r' || ch === '\f';
 
 /**
  * Parse the first opening tag in `html` into its name and attributes.
@@ -107,7 +133,13 @@ function parseOpeningTag(html) {
     }
 
     let name = '';
-    while (i < html.length && !isSpace(html[i]) && html[i] !== '=' && html[i] !== '>' && html[i] !== '/') {
+    while (
+      i < html.length &&
+      !isSpace(html[i]) &&
+      html[i] !== '=' &&
+      html[i] !== '>' &&
+      html[i] !== '/'
+    ) {
       name += html[i++];
     }
     while (i < html.length && isSpace(html[i])) i++;
@@ -123,7 +155,8 @@ function parseOpeningTag(html) {
         value = html.slice(i + 1, end);
         i = end + 1;
       } else {
-        while (i < html.length && !isSpace(html[i]) && html[i] !== '>') value += html[i++];
+        while (i < html.length && !isSpace(html[i]) && html[i] !== '>')
+          value += html[i++];
       }
     }
     if (name) attributes.set(name.toLowerCase(), decodeEntities(value));
@@ -137,7 +170,8 @@ function classesOf(received) {
   const html = htmlOf(received);
   const tag = html === null ? null : parseOpeningTag(html);
   let value = tag?.attributes.get('class');
-  if (value === undefined && typeof received?.className === 'string') value = received.className;
+  if (value === undefined && typeof received?.className === 'string')
+    value = received.className;
   return value === undefined ? null : value.split(/\s+/).filter(Boolean);
 }
 
@@ -173,7 +207,10 @@ function findHTMLError(html) {
     if (match[1]) {
       if (VOID_ELEMENTS.has(name)) return `</${name}> closes a void element`;
       const open = stack.pop();
-      if (open !== name) return open ? `</${name}> does not close <${open}>` : `</${name}> has no opening tag`;
+      if (open !== name)
+        return open
+          ? `</${name}> does not close <${open}>`
+          : `</${name}> has no opening tag`;
     } else if (!VOID_ELEMENTS.has(name) && !tag.endsWith('/')) {
       stack.push(name);
       if (RAW_TEXT_ELEMENTS.has(name)) {
@@ -185,10 +222,13 @@ function findHTMLError(html) {
     }
   }
 
-  return stack.length > 0 ? `<${stack[stack.length - 1]}> is never closed` : null;
+  return stack.length > 0
+    ? `<${stack[stack.length - 1]}> is never closed`
+    : null;
 }
 
-const show = (value) => (value === null || value === undefined ? 'nothing' : JSON.stringify(value));
+const show = (value) =>
+  value === null || value === undefined ? 'nothing' : JSON.stringify(value);
 
 /**
  * Custom matchers for Coherent.js testing
@@ -203,9 +243,10 @@ export const customMatchers = {
 
     return {
       pass,
-      message: () => pass
-        ? `Expected element not to have text "${expected}"`
-        : `Expected element to have text "${expected}", but got ${show(text)}`
+      message: () =>
+        pass
+          ? `Expected element not to have text "${expected}"`
+          : `Expected element to have text "${expected}", but got ${show(text)}`,
     };
   },
 
@@ -218,9 +259,10 @@ export const customMatchers = {
 
     return {
       pass,
-      message: () => pass
-        ? `Expected element not to contain text "${expected}"`
-        : `Expected element to contain text "${expected}", but got ${show(text)}`
+      message: () =>
+        pass
+          ? `Expected element not to contain text "${expected}"`
+          : `Expected element to contain text "${expected}", but got ${show(text)}`,
     };
   },
 
@@ -231,13 +273,15 @@ export const customMatchers = {
   toHaveClass(received, expected) {
     const classes = classesOf(received) ?? [];
     const wanted = String(expected).split(/\s+/).filter(Boolean);
-    const pass = wanted.length > 0 && wanted.every((name) => classes.includes(name));
+    const pass =
+      wanted.length > 0 && wanted.every((name) => classes.includes(name));
 
     return {
       pass,
-      message: () => pass
-        ? `Expected element not to have class "${expected}"`
-        : `Expected element to have class "${expected}", but its classes are ${show(classes.join(' '))}`
+      message: () =>
+        pass
+          ? `Expected element not to have class "${expected}"`
+          : `Expected element to have class "${expected}", but its classes are ${show(classes.join(' '))}`,
     };
   },
 
@@ -249,9 +293,10 @@ export const customMatchers = {
 
     return {
       pass,
-      message: () => pass
-        ? 'Expected element not to be in the document'
-        : 'Expected element to be in the document'
+      message: () =>
+        pass
+          ? 'Expected element not to be in the document'
+          : 'Expected element to be in the document',
     };
   },
 
@@ -264,9 +309,10 @@ export const customMatchers = {
 
     return {
       pass,
-      message: () => pass
-        ? 'Expected element not to be visible'
-        : 'Expected element to be visible (have text content)'
+      message: () =>
+        pass
+          ? 'Expected element not to be visible'
+          : 'Expected element to be visible (have text content)',
     };
   },
 
@@ -279,9 +325,10 @@ export const customMatchers = {
 
     return {
       pass,
-      message: () => pass
-        ? 'Expected element not to be empty'
-        : `Expected element to be empty, but it has text ${show(text)}`
+      message: () =>
+        pass
+          ? 'Expected element not to be empty'
+          : `Expected element to be empty, but it has text ${show(text)}`,
     };
   },
 
@@ -294,9 +341,10 @@ export const customMatchers = {
 
     return {
       pass,
-      message: () => pass
-        ? `Expected HTML not to contain "${expected}"`
-        : `Expected HTML to contain "${expected}"`
+      message: () =>
+        pass
+          ? `Expected HTML not to contain "${expected}"`
+          : `Expected HTML to contain "${expected}"`,
     };
   },
 
@@ -322,7 +370,7 @@ export const customMatchers = {
         return pass
           ? `Expected element not to have attribute ${attribute}`
           : `Expected element to have attribute ${attribute}`;
-      }
+      },
     };
   },
 
@@ -336,9 +384,10 @@ export const customMatchers = {
 
     return {
       pass,
-      message: () => pass
-        ? `Expected element not to have tag name "${tagName}"`
-        : `Expected element to have tag name "${tagName}", but got ${show(tag?.tagName)}`
+      message: () =>
+        pass
+          ? `Expected element not to have tag name "${tagName}"`
+          : `Expected element to have tag name "${tagName}", but got ${show(tag?.tagName)}`,
     };
   },
 
@@ -348,13 +397,17 @@ export const customMatchers = {
   toContainElement(received, element) {
     const html = htmlOf(received);
     const elementHtml = htmlOf(element);
-    const pass = typeof html === 'string' && typeof elementHtml === 'string' && html.includes(elementHtml);
+    const pass =
+      typeof html === 'string' &&
+      typeof elementHtml === 'string' &&
+      html.includes(elementHtml);
 
     return {
       pass,
-      message: () => pass
-        ? 'Expected not to contain element'
-        : 'Expected to contain element'
+      message: () =>
+        pass
+          ? 'Expected not to contain element'
+          : 'Expected to contain element',
     };
   },
 
@@ -367,9 +420,10 @@ export const customMatchers = {
 
     return {
       pass,
-      message: () => pass
-        ? 'Expected component not to render successfully'
-        : 'Expected component to render successfully'
+      message: () =>
+        pass
+          ? 'Expected component not to render successfully'
+          : 'Expected component to render successfully',
     };
   },
 
@@ -379,16 +433,18 @@ export const customMatchers = {
    */
   toBeValidHTML(received) {
     const html = htmlOf(received);
-    const error = typeof html === 'string' ? findHTMLError(html) : 'received no HTML';
+    const error =
+      typeof html === 'string' ? findHTMLError(html) : 'received no HTML';
     const pass = error === null;
 
     return {
       pass,
-      message: () => pass
-        ? 'Expected HTML not to be valid'
-        : `Expected HTML to be valid, but ${error}`
+      message: () =>
+        pass
+          ? 'Expected HTML not to be valid'
+          : `Expected HTML to be valid, but ${error}`,
     };
-  }
+  },
 };
 
 /**
@@ -423,7 +479,9 @@ export const assertions = {
   assertHasText(element, text) {
     const actual = textOf(element);
     if (actual !== text) {
-      throw new Error(`Expected element to have text "${text}", but got ${show(actual)}`);
+      throw new Error(
+        `Expected element to have text "${text}", but got ${show(actual)}`
+      );
     }
   },
 
@@ -462,7 +520,7 @@ export const assertions = {
     if (!result || !result.html || result.html.length === 0) {
       throw new Error('Expected component to render');
     }
-  }
+  },
 };
 
 /**
@@ -471,5 +529,5 @@ export const assertions = {
 export default {
   customMatchers,
   extendExpect,
-  assertions
+  assertions,
 };

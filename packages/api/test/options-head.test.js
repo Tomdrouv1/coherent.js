@@ -20,7 +20,9 @@ describe('OPTIONS and HEAD', () => {
     router.options('/cors-custom', () => ({ custom: true }));
     server = await startServer(router);
 
-    const res = await request(`${server.base}/cors-custom`, { method: 'OPTIONS' });
+    const res = await request(`${server.base}/cors-custom`, {
+      method: 'OPTIONS',
+    });
 
     expect(res.status).toBe(200);
     expect(res.json).toEqual({ custom: true });
@@ -33,11 +35,16 @@ describe('OPTIONS and HEAD', () => {
 
     const res = await request(`${server.base}/data`, {
       method: 'OPTIONS',
-      headers: { origin: 'https://app.example', 'access-control-request-method': 'GET' }
+      headers: {
+        origin: 'https://app.example',
+        'access-control-request-method': 'GET',
+      },
     });
 
     expect(res.status).toBe(204);
-    expect(res.headers.get('access-control-allow-origin')).toBe('https://app.example');
+    expect(res.headers.get('access-control-allow-origin')).toBe(
+      'https://app.example'
+    );
   });
 
   it('serves HEAD from the GET route, without a body', async () => {
@@ -77,6 +84,8 @@ describe('OPTIONS and HEAD', () => {
     router.get('/x', () => ({}));
     server = await startServer(router);
 
-    expect((await request(`${server.base}/nope`, { method: 'HEAD' })).status).toBe(404);
+    expect(
+      (await request(`${server.base}/nope`, { method: 'HEAD' })).status
+    ).toBe(404);
   });
 });

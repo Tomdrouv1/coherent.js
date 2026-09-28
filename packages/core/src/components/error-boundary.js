@@ -1,9 +1,9 @@
 /**
  * Coherent.js Error Boundary
- * 
+ *
  * Catches rendering errors and provides fallback UI.
  * Similar to React's Error Boundaries but for Coherent.js.
- * 
+ *
  * @module components/error-boundary
  */
 
@@ -49,7 +49,12 @@ function resolveNestedComponents(node, depth = 0) {
 
     const tag = keys[0];
     const props = node[tag];
-    if (props && typeof props === 'object' && !Array.isArray(props) && props.children !== undefined) {
+    if (
+      props &&
+      typeof props === 'object' &&
+      !Array.isArray(props) &&
+      props.children !== undefined
+    ) {
       const children = resolveNestedComponents(props.children, depth + 1);
       if (children !== props.children) {
         return { [tag]: { ...props, children } };
@@ -89,7 +94,7 @@ class ErrorBoundaryState {
 
 /**
  * Create an error boundary
- * 
+ *
  * @param {Object} options - Error boundary options
  * @param {Object|Function} options.fallback - Fallback component or function
  * @param {Function} [options.onError] - Error callback
@@ -99,25 +104,27 @@ class ErrorBoundaryState {
  * @param {number} [options.maxErrors] - Maximum errors before permanent fallback
  * @param {number} [options.resetTimeout] - Auto-reset timeout in ms
  * @returns {Function} Error boundary wrapper function
- * 
+ *
  * @example
  * const boundary = createErrorBoundary({
  *   fallback: { div: { text: 'Something went wrong' } },
  *   onError: (error, errorInfo) => console.error(error),
  *   resetKeys: ['userId']
  * });
- * 
+ *
  * const SafeComponent = boundary(MyComponent);
  */
 export function createErrorBoundary(options = {}) {
   const {
-    fallback = { div: { className: 'error-boundary', text: 'An error occurred' } },
+    fallback = {
+      div: { className: 'error-boundary', text: 'An error occurred' },
+    },
     onError = null,
     onReset = null,
     resetKeys = [],
     resetOnPropsChange = false,
     maxErrors = Infinity,
-    resetTimeout = null
+    resetTimeout = null,
   } = options;
 
   const sharedState = new ErrorBoundaryState();
@@ -134,7 +141,11 @@ export function createErrorBoundary(options = {}) {
 
       try {
         // Check if we should reset based on props
-        if (persistent && resetOnPropsChange && shouldReset(props, previousProps, resetKeys)) {
+        if (
+          persistent &&
+          resetOnPropsChange &&
+          shouldReset(props, previousProps, resetKeys)
+        ) {
           state.reset();
           if (onReset) {
             onReset();
@@ -155,34 +166,33 @@ export function createErrorBoundary(options = {}) {
           }
 
           // Return fallback with reset option
-          const fallbackComponent = typeof fallback === 'function'
-            ? fallback(state.error, state.errorInfo, {
-                reset: () => {
-                  state.reset();
-                  if (onReset) {
-                    onReset();
-                  }
-                },
-                errorCount: state.errorCount
-              })
-            : fallback;
+          const fallbackComponent =
+            typeof fallback === 'function'
+              ? fallback(state.error, state.errorInfo, {
+                  reset: () => {
+                    state.reset();
+                    if (onReset) {
+                      onReset();
+                    }
+                  },
+                  errorCount: state.errorCount,
+                })
+              : fallback;
 
           return fallbackComponent;
         }
 
         // Try to render the component, nested function components included
-        const result = typeof component === 'function'
-          ? component(props)
-          : component;
+        const result =
+          typeof component === 'function' ? component(props) : component;
 
         return resolveNestedComponents(result);
-
       } catch (error) {
         // Capture error
         const errorInfo = {
           componentStack: error.stack,
           props,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
 
         state.setError(error, errorInfo);
@@ -220,7 +230,7 @@ export function createErrorBoundary(options = {}) {
                   onReset();
                 }
               },
-              errorCount: state.errorCount
+              errorCount: state.errorCount,
             })
           : fallback;
       }
@@ -236,12 +246,12 @@ function shouldReset(newProps, oldProps, resetKeys) {
     return false;
   }
 
-  return resetKeys.some(key => newProps[key] !== oldProps[key]);
+  return resetKeys.some((key) => newProps[key] !== oldProps[key]);
 }
 
 /**
  * Create a default error fallback component
- * 
+ *
  * @param {Object} options - Fallback options
  * @returns {Function} Fallback component function
  */
@@ -252,7 +262,7 @@ export function createErrorFallback(options = {}) {
     showStack = false,
     showReset = true,
     className = 'error-boundary-fallback',
-    style = {}
+    style = {},
   } = options;
 
   return function errorFallback(error, errorInfo, context = {}) {
@@ -260,17 +270,17 @@ export function createErrorFallback(options = {}) {
       {
         h2: {
           className: 'error-title',
-          text: title
-        }
-      }
+          text: title,
+        },
+      },
     ];
 
     if (showError && error) {
       children.push({
         p: {
           className: 'error-message',
-          text: error.message || 'Unknown error'
-        }
+          text: error.message || 'Unknown error',
+        },
       });
     }
 
@@ -278,8 +288,8 @@ export function createErrorFallback(options = {}) {
       children.push({
         pre: {
           className: 'error-stack',
-          text: error.stack
-        }
+          text: error.stack,
+        },
       });
     }
 
@@ -288,8 +298,8 @@ export function createErrorFallback(options = {}) {
         button: {
           className: 'error-reset-button',
           text: 'Try Again',
-          onclick: context.reset
-        }
+          onclick: context.reset,
+        },
       });
     }
 
@@ -297,8 +307,8 @@ export function createErrorFallback(options = {}) {
       children.push({
         p: {
           className: 'error-count',
-          text: `Error occurred ${context.errorCount} times`
-        }
+          text: `Error occurred ${context.errorCount} times`,
+        },
       });
     }
 
@@ -311,21 +321,21 @@ export function createErrorFallback(options = {}) {
           borderRadius: '4px',
           backgroundColor: '#ffebee',
           color: '#c62828',
-          ...style
+          ...style,
         },
-        children
-      }
+        children,
+      },
     };
   };
 }
 
 /**
  * Wrap multiple components with the same error boundary
- * 
+ *
  * @param {Object} options - Error boundary options
  * @param {Object} components - Components to wrap
  * @returns {Object} Wrapped components
- * 
+ *
  * @example
  * const safeComponents = withErrorBoundary(
  *   { fallback: ErrorFallback },
@@ -345,7 +355,7 @@ export function withErrorBoundary(options, components) {
 
 /**
  * Error boundary for async components
- * 
+ *
  * @param {Object} options - Error boundary options
  * @returns {Function} Async error boundary wrapper
  */
@@ -354,7 +364,7 @@ export function createAsyncErrorBoundary(options = {}) {
     fallback = { div: { text: 'Loading...' } },
     errorFallback = { div: { text: 'Failed to load' } },
     onError = null,
-    timeout = 10000
+    timeout = 10000,
   } = options;
 
   return function asyncBoundaryWrapper(asyncComponent) {
@@ -364,7 +374,10 @@ export function createAsyncErrorBoundary(options = {}) {
         // Set timeout (cleared below: a pending timer per call kept the
         // process alive for `timeout` ms after every render)
         const timeoutPromise = new Promise((_, reject) => {
-          timer = setTimeout(() => reject(new Error('Component load timeout')), timeout);
+          timer = setTimeout(
+            () => reject(new Error('Component load timeout')),
+            timeout
+          );
         });
 
         // Race between component load and timeout
@@ -372,7 +385,7 @@ export function createAsyncErrorBoundary(options = {}) {
           typeof asyncComponent === 'function'
             ? asyncComponent(props)
             : asyncComponent,
-          timeoutPromise
+          timeoutPromise,
         ]);
 
         return result ?? fallback;
@@ -413,7 +426,7 @@ export class GlobalErrorHandler {
       error,
       context,
       timestamp: Date.now(),
-      stack: error.stack
+      stack: error.stack,
     };
 
     this.errors.push(errorEntry);
@@ -454,7 +467,7 @@ export class GlobalErrorHandler {
     return {
       totalErrors: this.errors.length,
       enabled: this.enabled,
-      maxErrors: this.maxErrors
+      maxErrors: this.maxErrors,
     };
   }
 
@@ -489,5 +502,5 @@ export default {
   withErrorBoundary,
   createAsyncErrorBoundary,
   GlobalErrorHandler,
-  createGlobalErrorHandler
+  createGlobalErrorHandler,
 };

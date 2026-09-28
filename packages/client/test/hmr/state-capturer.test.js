@@ -243,7 +243,9 @@ describe('StateCapturer', () => {
       capturer.captureFormState();
 
       expect(capturer.capturedInputs.has('#email')).toBe(true);
-      expect(capturer.capturedInputs.get('#email').value).toBe('test@example.com');
+      expect(capturer.capturedInputs.get('#email').value).toBe(
+        'test@example.com'
+      );
     });
 
     it('captures selection for text inputs', () => {

@@ -11,10 +11,7 @@
  */
 
 import fp from 'fastify-plugin';
-import {
-  renderWithTemplate,
-  renderComponentFactory
-} from '@coherent.js/core';
+import { renderWithTemplate, renderComponentFactory } from '@coherent.js/core';
 
 /**
  * Fastify plugin implementation. Not exported directly — use the fp-wrapped
@@ -32,14 +29,14 @@ function coherentFastifyImpl(fastify, options = {}, done) {
   if (typeof done !== 'function') {
     throw new TypeError(
       'coherentFastify/setupCoherent is a Fastify plugin and cannot be called directly: ' +
-      'use `await fastify.register(setupCoherent, options)`.'
+        'use `await fastify.register(setupCoherent, options)`.'
     );
   }
 
   const {
     enablePerformanceMonitoring = false,
     template = '<!DOCTYPE html>\n{{content}}',
-    autoRender = false
+    autoRender = false,
   } = options;
 
   // Add decorator to check if an object is a Coherent.js component
@@ -52,17 +49,18 @@ function coherentFastifyImpl(fastify, options = {}, done) {
   });
 
   // Add decorator for explicit rendering: reply.coherent(component, opts?)
-  fastify.decorateReply('coherent', function(component, renderOptions = {}) {
+  fastify.decorateReply('coherent', function (component, renderOptions = {}) {
     const {
-      enablePerformanceMonitoring: renderPerformanceMonitoring = enablePerformanceMonitoring,
-      template: renderTemplate = template
+      enablePerformanceMonitoring:
+        renderPerformanceMonitoring = enablePerformanceMonitoring,
+      template: renderTemplate = template,
     } = renderOptions;
 
     let finalHtml;
     try {
       finalHtml = renderWithTemplate(component, {
         enablePerformanceMonitoring: renderPerformanceMonitoring,
-        template: renderTemplate
+        template: renderTemplate,
       });
     } catch (_error) {
       // Sending an Error runs Fastify's error pipeline (onError hooks, the
@@ -91,7 +89,10 @@ function coherentFastifyImpl(fastify, options = {}, done) {
   if (autoRender) {
     fastify.addHook('preSerialization', async (request, reply, payload) => {
       if (reply.isCoherentObject?.(payload)) {
-        const finalHtml = renderWithTemplate(payload, { enablePerformanceMonitoring, template });
+        const finalHtml = renderWithTemplate(payload, {
+          enablePerformanceMonitoring,
+          template,
+        });
         reply.header('Content-Type', 'text/html; charset=utf-8');
         reply.serializer((p) => p);
         return finalHtml;
@@ -117,7 +118,7 @@ function coherentFastifyImpl(fastify, options = {}, done) {
  */
 export const coherentFastify = fp(coherentFastifyImpl, {
   name: 'coherent-fastify',
-  fastify: '>=4.0.0'
+  fastify: '>=4.0.0',
 });
 
 /**

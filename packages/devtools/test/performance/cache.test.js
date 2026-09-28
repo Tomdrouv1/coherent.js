@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { LRUCache, MemoryCache, MemoCache, RenderCache, createCache, memoize } from '../../src/performance/cache.js';
+import {
+  LRUCache,
+  MemoryCache,
+  MemoCache,
+  RenderCache,
+  createCache,
+  memoize,
+} from '../../src/performance/cache.js';
 
 describe('LRUCache', () => {
   let cache;
@@ -196,7 +203,7 @@ describe('MemoCache', () => {
   it('supports custom key generator', () => {
     const memo = new MemoCache({
       maxSize: 10,
-      keyGenerator: (obj) => obj.id
+      keyGenerator: (obj) => obj.id,
     });
     const fn = vi.fn((obj) => obj.name);
     const memoized = memo.memoize(fn);

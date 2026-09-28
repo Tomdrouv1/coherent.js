@@ -64,7 +64,11 @@ describe('createHmrServer', () => {
       bMsgs.next((d) => d.type === 'connected'),
     ]);
 
-    const update = { type: 'hmr-update', filePath: '/abs/x.js', webPath: '/x.js' };
+    const update = {
+      type: 'hmr-update',
+      filePath: '/abs/x.js',
+      webPath: '/x.js',
+    };
     const [recvA, recvB] = await Promise.all([
       aMsgs.next((d) => d.type === 'hmr-update'),
       bMsgs.next((d) => d.type === 'hmr-update'),
@@ -96,11 +100,21 @@ describe('createHmrServer', () => {
       setTimeout(() => resolve('timeout'), 500);
     });
     expect(['errored', 'closed', 'timeout']).toContain(result);
-    try { b.close(); } catch { /* ignore */ }
+    try {
+      b.close();
+    } catch {
+      /* ignore */
+    }
   });
 
   test('broadcast() to zero clients is a no-op', () => {
-    expect(() => server.hmr.broadcast({ type: 'hmr-update', filePath: '/x', webPath: '/x' })).not.toThrow();
+    expect(() =>
+      server.hmr.broadcast({
+        type: 'hmr-update',
+        filePath: '/x',
+        webPath: '/x',
+      })
+    ).not.toThrow();
   });
 
   test('malformed broadcast still serializes (sanity)', () => {

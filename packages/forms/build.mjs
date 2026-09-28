@@ -7,7 +7,7 @@ const entries = [
   'src/validation.js',
   'src/validators.js',
   // Server-only (node:crypto); never imported by the entries above.
-  'src/csrf.js'
+  'src/csrf.js',
 ];
 
 for (const entry of entries) {
@@ -21,7 +21,7 @@ for (const entry of entries) {
     outfile,
     external: ['@coherent.js/core', '@coherent.js/state'],
     minify: false,
-    sourcemap: true
+    sourcemap: true,
   });
 }
 

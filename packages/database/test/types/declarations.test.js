@@ -14,15 +14,33 @@ import { fileURLToPath } from 'node:url';
 import * as runtime from '../../src/index.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const tsc = join(dirname(createRequire(import.meta.url).resolve('typescript/package.json')), 'bin', 'tsc');
+const tsc = join(
+  dirname(createRequire(import.meta.url).resolve('typescript/package.json')),
+  'bin',
+  'tsc'
+);
 
 function typecheck(...files) {
   try {
-    execFileSync(process.execPath, [
-      tsc, '--ignoreConfig', '--noEmit', '--strict', '--skipLibCheck', 'false',
-      '--target', 'es2022', '--module', 'es2022', '--moduleResolution', 'bundler',
-      ...files.map(file => join(here, file))
-    ], { stdio: 'pipe', timeout: 60000 });
+    execFileSync(
+      process.execPath,
+      [
+        tsc,
+        '--ignoreConfig',
+        '--noEmit',
+        '--strict',
+        '--skipLibCheck',
+        'false',
+        '--target',
+        'es2022',
+        '--module',
+        'es2022',
+        '--moduleResolution',
+        'bundler',
+        ...files.map((file) => join(here, file)),
+      ],
+      { stdio: 'pipe', timeout: 60000 }
+    );
     return '';
   } catch (error) {
     return `${error.stdout}${error.stderr}` || error.message;
@@ -40,6 +58,8 @@ describe('type declarations', () => {
 
   it('do not declare a default export, which does not exist at runtime', () => {
     expect(runtime.default).toBeUndefined();
-    expect(readFileSync(join(here, '../../types/index.d.ts'), 'utf8')).not.toMatch(/^export default/m);
+    expect(
+      readFileSync(join(here, '../../types/index.d.ts'), 'utf8')
+    ).not.toMatch(/^export default/m);
   });
 });

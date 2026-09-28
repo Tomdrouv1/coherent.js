@@ -7,11 +7,11 @@ import { mkdtemp, rm, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { 
-  validateProjectName, 
-  validateComponentName, 
-  validatePath, 
-  validateTemplate 
+import {
+  validateProjectName,
+  validateComponentName,
+  validatePath,
+  validateTemplate,
 } from '../src/utils/validation.js';
 
 // Test utilities
@@ -33,9 +33,9 @@ describe('Validation and Error Handling', () => {
       'my.app',
       'coherent-js-app',
       'react-component',
-      'app2'
+      'app2',
     ];
-    
+
     for (const name of validNames) {
       const result = validateProjectName(name);
       expect(result).toBe(true);
@@ -47,21 +47,53 @@ describe('Validation and Error Handling', () => {
       { name: '', expectedError: 'Project name is required' },
       { name: '.', expectedError: 'Project name cannot start with a dot' },
       { name: '..', expectedError: 'Project name cannot be ".." or "."' },
-      { name: 'My App', expectedError: 'Project name can only contain letters, numbers, hyphens, underscores, dots, and slashes' },
-      { name: 'my app', expectedError: 'Project name can only contain letters, numbers, hyphens, underscores, dots, and slashes' },
-      { name: 'node_modules', expectedError: 'Project name "node_modules" is reserved' },
-      { name: 'package.json', expectedError: 'Project name "package.json" is reserved' },
+      {
+        name: 'My App',
+        expectedError:
+          'Project name can only contain letters, numbers, hyphens, underscores, dots, and slashes',
+      },
+      {
+        name: 'my app',
+        expectedError:
+          'Project name can only contain letters, numbers, hyphens, underscores, dots, and slashes',
+      },
+      {
+        name: 'node_modules',
+        expectedError: 'Project name "node_modules" is reserved',
+      },
+      {
+        name: 'package.json',
+        expectedError: 'Project name "package.json" is reserved',
+      },
       { name: 'con', expectedError: 'Project name "con" is reserved' },
       // The name is a directory under cwd and the package.json name
-      { name: 'foo/../../x', expectedError: 'Project name cannot contain path separators' },
-      { name: '../escape', expectedError: 'Project name cannot contain path separators' },
-      { name: 'a\\b', expectedError: 'Project name cannot contain path separators' },
-      { name: '@scope/package-name', expectedError: 'Project name cannot contain path separators' },
+      {
+        name: 'foo/../../x',
+        expectedError: 'Project name cannot contain path separators',
+      },
+      {
+        name: '../escape',
+        expectedError: 'Project name cannot contain path separators',
+      },
+      {
+        name: 'a\\b',
+        expectedError: 'Project name cannot contain path separators',
+      },
+      {
+        name: '@scope/package-name',
+        expectedError: 'Project name cannot contain path separators',
+      },
       { name: 'MyApp', expectedError: 'Project name must be lowercase' },
-      { name: 'my@app', expectedError: 'Project name must start with a letter or number' },
-      { name: '-flag', expectedError: 'Project name must start with a letter or number' }
+      {
+        name: 'my@app',
+        expectedError: 'Project name must start with a letter or number',
+      },
+      {
+        name: '-flag',
+        expectedError: 'Project name must start with a letter or number',
+      },
     ];
-    
+
     for (const { name, expectedError } of invalidCases) {
       const result = validateProjectName(name);
       expect(result, name).not.toBe(true);
@@ -75,14 +107,14 @@ describe('Validation and Error Handling', () => {
   it('should detect existing directories', async () => {
     const tempDir = await createTempDir();
     const originalCwd = process.cwd();
-    
+
     try {
       process.chdir(tempDir);
-      
+
       // Create a directory
       const existingDir = 'existing-app';
       await mkdir(existingDir);
-      
+
       const result = validateProjectName(existingDir);
       expect(result).not.toBe(true);
       expect(result).toContain('already exists');
@@ -99,9 +131,9 @@ describe('Validation and Error Handling', () => {
       'NavBar',
       'API_Component',
       'Component123',
-      'VeryLongComponentNameThatIsStillValid'
+      'VeryLongComponentNameThatIsStillValid',
     ];
-    
+
     for (const name of validNames) {
       const result = validateComponentName(name);
       expect(result).toBe(true);
@@ -111,14 +143,31 @@ describe('Validation and Error Handling', () => {
   it('should reject invalid component names', () => {
     const invalidCases = [
       { name: '', expectedError: 'Name is required' },
-      { name: 'button', expectedError: 'Name should start with a capital letter' },
-      { name: 'my_component', expectedError: 'Name should start with a capital letter' },
-      { name: 'my-component', expectedError: 'Name should start with a capital letter' },
+      {
+        name: 'button',
+        expectedError: 'Name should start with a capital letter',
+      },
+      {
+        name: 'my_component',
+        expectedError: 'Name should start with a capital letter',
+      },
+      {
+        name: 'my-component',
+        expectedError: 'Name should start with a capital letter',
+      },
       { name: '123Component', expectedError: 'Name must start with a letter' },
-      { name: 'My Component', expectedError: 'Name must start with a letter and contain only letters, numbers, hyphens, and underscores' },
-      { name: 'My@Component', expectedError: 'Name must start with a letter and contain only letters, numbers, hyphens, and underscores' }
+      {
+        name: 'My Component',
+        expectedError:
+          'Name must start with a letter and contain only letters, numbers, hyphens, and underscores',
+      },
+      {
+        name: 'My@Component',
+        expectedError:
+          'Name must start with a letter and contain only letters, numbers, hyphens, and underscores',
+      },
     ];
-    
+
     for (const { name } of invalidCases) {
       const result = validateComponentName(name);
       expect(result).not.toBe(true);
@@ -133,9 +182,9 @@ describe('Validation and Error Handling', () => {
       'components',
       'src/pages/admin',
       'api/v1/routes',
-      ''  // Empty path should be valid (optional)
+      '', // Empty path should be valid (optional)
     ];
-    
+
     for (const path of validPaths) {
       const result = validatePath(path);
       expect(result).toBe(true);
@@ -144,12 +193,12 @@ describe('Validation and Error Handling', () => {
 
   it('should reject invalid paths', () => {
     const invalidPaths = [
-      '/src/components',  // Absolute path
-      'src\\components',  // Windows-style path
-      'src/comp@nents',   // Invalid characters
-      'src/comp onents'   // Spaces
+      '/src/components', // Absolute path
+      'src\\components', // Windows-style path
+      'src/comp@nents', // Invalid characters
+      'src/comp onents', // Spaces
     ];
-    
+
     for (const path of invalidPaths) {
       const result = validatePath(path);
       expect(result).not.toBe(true);
@@ -164,9 +213,9 @@ describe('Validation and Error Handling', () => {
       'express',
       'fastify',
       'components',
-      'nextjs'
+      'nextjs',
     ];
-    
+
     for (const template of validTemplates) {
       const result = validateTemplate(template);
       expect(result).toBe(true);
@@ -179,9 +228,9 @@ describe('Validation and Error Handling', () => {
       'react',
       'vue',
       'angular',
-      'unknown-template'
+      'unknown-template',
     ];
-    
+
     for (const template of invalidTemplates) {
       const result = validateTemplate(template);
       expect(result).not.toBe(true);
@@ -200,12 +249,12 @@ describe('Validation and Error Handling', () => {
 
   it('should be consistent across multiple calls', () => {
     const testName = 'TestComponent';
-    
+
     // Should return the same result multiple times
     for (let i = 0; i < 10; i++) {
       expect(validateComponentName(testName)).toBe(true);
     }
-    
+
     const invalidName = 'invalid-name';
     for (let i = 0; i < 10; i++) {
       expect(validateComponentName(invalidName)).not.toBe(true);
@@ -215,16 +264,23 @@ describe('Validation and Error Handling', () => {
   it('should reject all reserved words', () => {
     // Test actual reserved words
     const reservedWords = [
-      'node_modules', 'package.json', 'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml',
-      'con', 'prn', 'aux', 'nul'
+      'node_modules',
+      'package.json',
+      'package-lock.json',
+      'yarn.lock',
+      'pnpm-lock.yaml',
+      'con',
+      'prn',
+      'aux',
+      'nul',
     ];
-    
+
     for (const word of reservedWords) {
       const result = validateProjectName(word);
       expect(result).not.toBe(true);
       expect(result).toContain('reserved');
     }
-    
+
     // Case insensitive check
     const result = validateProjectName('NODE_MODULES');
     expect(result).not.toBe(true);

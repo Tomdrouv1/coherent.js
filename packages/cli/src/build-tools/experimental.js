@@ -17,6 +17,6 @@ export function warnExperimental(integration, options = {}) {
   warned.add(integration);
   console.warn(
     `[@coherent.js/cli] ${integration}() is experimental and currently a pass-through: ` +
-    'it does not transform Coherent.js components. Pass { silent: true } to hide this notice.'
+      'it does not transform Coherent.js components. Pass { silent: true } to hide this notice.'
   );
 }

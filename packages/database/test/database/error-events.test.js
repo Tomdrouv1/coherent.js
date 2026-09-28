@@ -8,7 +8,8 @@ vi.mock('pg', async () => {
   return { default: { Pool } };
 });
 
-const { createPostgreSQLAdapter } = await import('../../src/adapters/postgresql.js');
+const { createPostgreSQLAdapter } =
+  await import('../../src/adapters/postgresql.js');
 
 describe('error events', () => {
   it('listens for idle-client errors on the pg pool', async () => {
@@ -17,7 +18,15 @@ describe('error events', () => {
 
     expect(pool.listenerCount('error')).toBe(1);
     expect(pool.listenerCount('_error')).toBe(0);
-    expect(() => pool.emit('error', new Error('terminating connection due to administrator command'))).not.toThrow();
-    expect(spy).toHaveBeenCalledWith('PostgreSQL pool error:', expect.any(Error));
+    expect(() =>
+      pool.emit(
+        'error',
+        new Error('terminating connection due to administrator command')
+      )
+    ).not.toThrow();
+    expect(spy).toHaveBeenCalledWith(
+      'PostgreSQL pool error:',
+      expect.any(Error)
+    );
   });
 });

@@ -10,7 +10,7 @@ import { describe, it, expect } from 'vitest';
 import {
   coherentMiddleware,
   createCoherentHandler,
-  setupCoherent
+  setupCoherent,
 } from '../../src/express/coherent-express.js';
 import { render } from '@coherent.js/core';
 
@@ -23,7 +23,7 @@ describe('Express.js Integration', () => {
   it('should create coherentMiddleware with options', () => {
     const middleware = coherentMiddleware({
       enablePerformanceMonitoring: true,
-      template: '<html><body>{{content}}</body></html>'
+      template: '<html><body>{{content}}</body></html>',
     });
     expect(typeof middleware).toBe('function');
   });
@@ -38,7 +38,7 @@ describe('Express.js Integration', () => {
     const mockApp = {
       engine: () => {},
       set: () => {},
-      use: () => {}
+      use: () => {},
     };
 
     expect(() => {
@@ -50,8 +50,8 @@ describe('Express.js Integration', () => {
     const testComponent = {
       div: {
         className: 'test',
-        text: 'Hello Coherent.js!'
-      }
+        text: 'Hello Coherent.js!',
+      },
     };
 
     const html = render(testComponent);

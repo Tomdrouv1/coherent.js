@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { detectMismatch, reportMismatches, formatPath } from '../src/hydration/index.js';
+import {
+  detectMismatch,
+  reportMismatches,
+  formatPath,
+} from '../src/hydration/index.js';
 
 // Helper to create mock DOM element
 function createMockElement(tagName, attrs = {}, children = []) {
@@ -11,16 +15,16 @@ function createMockElement(tagName, attrs = {}, children = []) {
     id: attrs.id || '',
     textContent: '',
     childNodes: [],
-    parentElement: null
+    parentElement: null,
   };
 
   // Process children
-  children.forEach(child => {
+  children.forEach((child) => {
     if (typeof child === 'string') {
       const textNode = {
         nodeType: 3,
         textContent: child,
-        parentElement: element
+        parentElement: element,
       };
       element.childNodes.push(textNode);
       element.textContent += child;
@@ -87,63 +91,73 @@ describe('detectMismatch', () => {
 
     const mismatches = detectMismatch(dom, vdom);
     expect(mismatches.length).toBeGreaterThan(0);
-    expect(mismatches.some(m => m.type === 'text')).toBe(true);
+    expect(mismatches.some((m) => m.type === 'text')).toBe(true);
   });
 
   it('detects missing DOM child', () => {
     const dom = createMockElement('div');
     const vdom = {
       div: {
-        children: [{ span: { text: 'Child' } }]
-      }
+        children: [{ span: { text: 'Child' } }],
+      },
     };
 
     const mismatches = detectMismatch(dom, vdom);
     expect(mismatches.length).toBeGreaterThan(0);
-    expect(mismatches.some(m => m.type === 'children_count' || m.type === 'missing_dom_child')).toBe(true);
+    expect(
+      mismatches.some(
+        (m) => m.type === 'children_count' || m.type === 'missing_dom_child'
+      )
+    ).toBe(true);
   });
 
   it('detects extra DOM child', () => {
     const dom = createMockElement('div', {}, [
       createMockElement('span', {}, ['Child 1']),
-      createMockElement('span', {}, ['Child 2'])
+      createMockElement('span', {}, ['Child 2']),
     ]);
     const vdom = {
       div: {
-        children: [{ span: { text: 'Child 1' } }]
-      }
+        children: [{ span: { text: 'Child 1' } }],
+      },
     };
 
     const mismatches = detectMismatch(dom, vdom);
     expect(mismatches.length).toBeGreaterThan(0);
-    expect(mismatches.some(m => m.type === 'children_count' || m.type === 'extra_dom_child')).toBe(true);
+    expect(
+      mismatches.some(
+        (m) => m.type === 'children_count' || m.type === 'extra_dom_child'
+      )
+    ).toBe(true);
   });
 
   it('handles nested structure comparison', () => {
     const dom = createMockElement('div', {}, [
       createMockElement('ul', {}, [
         createMockElement('li', {}, ['Item 1']),
-        createMockElement('li', {}, ['Wrong Item 2'])
-      ])
+        createMockElement('li', {}, ['Wrong Item 2']),
+      ]),
     ]);
 
     const vdom = {
       div: {
-        children: [{
-          ul: {
-            children: [
-              { li: { text: 'Item 1' } },
-              { li: { text: 'Item 2' } }
-            ]
-          }
-        }]
-      }
+        children: [
+          {
+            ul: {
+              children: [
+                { li: { text: 'Item 1' } },
+                { li: { text: 'Item 2' } },
+              ],
+            },
+          },
+        ],
+      },
     };
 
     const mismatches = detectMismatch(dom, vdom);
     expect(mismatches.length).toBeGreaterThan(0);
     // Should find mismatch in nested li
-    expect(mismatches.some(m => m.path.includes('children'))).toBe(true);
+    expect(mismatches.some((m) => m.path.includes('children'))).toBe(true);
   });
 
   it('handles null/undefined virtual node', () => {
@@ -167,7 +181,7 @@ describe('detectMismatch', () => {
 
     const mismatches = detectMismatch(dom, vdom);
     expect(mismatches.length).toBeGreaterThan(0);
-    expect(mismatches.some(m => m.path.includes('@disabled'))).toBe(true);
+    expect(mismatches.some((m) => m.path.includes('@disabled'))).toBe(true);
   });
 
   it('detects id attribute mismatch', () => {
@@ -184,7 +198,7 @@ describe('detectMismatch', () => {
     const textNode = {
       nodeType: 3,
       textContent: 'Hello World',
-      parentElement: null
+      parentElement: null,
     };
 
     const mismatches = detectMismatch(textNode, 'Hello World');
@@ -198,13 +212,10 @@ describe('detectMismatch', () => {
   it('handles array virtual nodes', () => {
     const dom = createMockElement('div', {}, [
       createMockElement('span', {}, ['One']),
-      createMockElement('span', {}, ['Two'])
+      createMockElement('span', {}, ['Two']),
     ]);
 
-    const vdom = [
-      { span: { text: 'One' } },
-      { span: { text: 'Two' } }
-    ];
+    const vdom = [{ span: { text: 'One' } }, { span: { text: 'Two' } }];
 
     const mismatches = detectMismatch(dom, vdom);
     expect(mismatches).toEqual([]);
@@ -234,13 +245,15 @@ describe('reportMismatches', () => {
   });
 
   it('logs detailed warning for mismatches', () => {
-    const mismatches = [{
-      path: 'children[0].@class',
-      type: 'attribute',
-      expected: 'expected',
-      actual: 'actual',
-      domPath: 'div > span'
-    }];
+    const mismatches = [
+      {
+        path: 'children[0].@class',
+        type: 'attribute',
+        expected: 'expected',
+        actual: 'actual',
+        domPath: 'div > span',
+      },
+    ];
 
     reportMismatches(mismatches, { componentName: 'TestComponent' });
 
@@ -253,13 +266,15 @@ describe('reportMismatches', () => {
   });
 
   it('throws in strict mode', () => {
-    const mismatches = [{
-      path: 'root',
-      type: 'tagName',
-      expected: 'div',
-      actual: 'span',
-      domPath: 'span'
-    }];
+    const mismatches = [
+      {
+        path: 'root',
+        type: 'tagName',
+        expected: 'div',
+        actual: 'span',
+        domPath: 'span',
+      },
+    ];
 
     expect(() => {
       reportMismatches(mismatches, { strict: true });
@@ -267,13 +282,15 @@ describe('reportMismatches', () => {
   });
 
   it('includes debugging advice in warning', () => {
-    const mismatches = [{
-      path: 'root',
-      type: 'text',
-      expected: 'a',
-      actual: 'b',
-      domPath: 'div'
-    }];
+    const mismatches = [
+      {
+        path: 'root',
+        type: 'text',
+        expected: 'a',
+        actual: 'b',
+        domPath: 'div',
+      },
+    ];
 
     reportMismatches(mismatches);
 
@@ -286,7 +303,7 @@ describe('reportMismatches', () => {
     const mismatches = [
       { path: 'a', type: 'text', expected: '1', actual: '2', domPath: 'div' },
       { path: 'b', type: 'text', expected: '3', actual: '4', domPath: 'div' },
-      { path: 'c', type: 'text', expected: '5', actual: '6', domPath: 'div' }
+      { path: 'c', type: 'text', expected: '5', actual: '6', domPath: 'div' },
     ];
 
     reportMismatches(mismatches, { componentName: 'MyComponent' });
@@ -297,13 +314,15 @@ describe('reportMismatches', () => {
   });
 
   it('uses default component name when not provided', () => {
-    const mismatches = [{
-      path: 'root',
-      type: 'text',
-      expected: 'a',
-      actual: 'b',
-      domPath: 'div'
-    }];
+    const mismatches = [
+      {
+        path: 'root',
+        type: 'text',
+        expected: 'a',
+        actual: 'b',
+        domPath: 'div',
+      },
+    ];
 
     reportMismatches(mismatches);
 

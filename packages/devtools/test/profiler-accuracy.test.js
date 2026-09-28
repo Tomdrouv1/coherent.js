@@ -9,20 +9,29 @@
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { PerformanceProfiler, createProfiler, measure, profile } from '../src/profiler.js';
+import {
+  PerformanceProfiler,
+  createProfiler,
+  measure,
+  profile,
+} from '../src/profiler.js';
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
 const coherentEntries = () =>
-  performance.getEntries().filter((entry) => entry.name.startsWith('coherent-'));
+  performance
+    .getEntries()
+    .filter((entry) => entry.name.startsWith('coherent-'));
 
 describe('PerformanceProfiler', () => {
   it('is disabled until enabled', () => {
     expect(new PerformanceProfiler().start('x')).toBeNull();
     expect(createProfiler().startRender('X')).toBeNull();
-    expect(createProfiler({ enabled: true }).startRender('X')).toEqual(expect.any(String));
+    expect(createProfiler({ enabled: true }).startRender('X')).toEqual(
+      expect.any(String)
+    );
   });
 
   it('times renders with sub-millisecond resolution', () => {
@@ -81,16 +90,24 @@ describe('profile()', () => {
 
   it('uses a given profiler and name, and handles async and throwing functions', async () => {
     const profiler = createProfiler({ enabled: true });
-    const slow = profile(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 20));
-      return 'done';
-    }, { profiler, name: 'Slow' });
-    const broken = profile(() => { throw new Error('boom'); }, profiler);
+    const slow = profile(
+      async () => {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        return 'done';
+      },
+      { profiler, name: 'Slow' }
+    );
+    const broken = profile(() => {
+      throw new Error('boom');
+    }, profiler);
 
     await expect(slow()).resolves.toBe('done');
     expect(() => broken()).toThrow('boom');
 
-    expect(profiler.measurements.map((m) => m.componentName)).toEqual(['Slow', 'anonymous']);
+    expect(profiler.measurements.map((m) => m.componentName)).toEqual([
+      'Slow',
+      'anonymous',
+    ]);
     expect(profiler.measurements[0].duration).toBeGreaterThanOrEqual(15);
     expect(profiler.measurements[1].result).toEqual({ error: true });
   });
@@ -98,14 +115,18 @@ describe('profile()', () => {
 
 describe('measure()', () => {
   it('rejects with the Error the function threw, carrying the duration', async () => {
-    const error = await measure('x', () => { throw new Error('inner'); }).catch((e) => e);
+    const error = await measure('x', () => {
+      throw new Error('inner');
+    }).catch((e) => e);
     expect(error).toBeInstanceOf(Error);
     expect(error.message).toBe('inner');
     expect(error.duration).toBeGreaterThanOrEqual(0);
   });
 
   it('wraps a non-Error throw in an Error with the value as cause', async () => {
-    const error = await measure('x', () => { throw 'plain string'; }).catch((e) => e);
+    const error = await measure('x', () => {
+      throw 'plain string';
+    }).catch((e) => e);
     expect(error).toBeInstanceOf(Error);
     expect(error.message).toBe('x failed: plain string');
     expect(error.cause).toBe('plain string');

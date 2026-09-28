@@ -41,11 +41,17 @@ import { isHostAllowed, isOriginAllowed } from './access.js';
  * @returns {HmrServer}
  */
 export function createHmrServer(httpServer, options = {}) {
-  const hostOptions = { host: options.host, allowedHosts: options.allowedHosts ?? [] };
+  const hostOptions = {
+    host: options.host,
+    allowedHosts: options.allowedHosts ?? [],
+  };
   const wss = new WebSocketServer({
     server: httpServer,
     verifyClient: ({ origin, req }, done) => {
-      if (isHostAllowed(req.headers.host, hostOptions) && isOriginAllowed(origin, hostOptions)) {
+      if (
+        isHostAllowed(req.headers.host, hostOptions) &&
+        isOriginAllowed(origin, hostOptions)
+      ) {
         done(true);
       } else {
         done(false, 403, 'Forbidden');
@@ -92,7 +98,11 @@ export function createHmrServer(httpServer, options = {}) {
       // answer the closing handshake, and a tab that doesn't (busy, or
       // already reconnecting) held the dev server's shutdown that long.
       for (const client of wss.clients) {
-        try { client.terminate(); } catch { /* ignore */ }
+        try {
+          client.terminate();
+        } catch {
+          /* ignore */
+        }
       }
       wss.close();
     },

@@ -6,8 +6,8 @@ import path from 'node:path';
 // Mock fs module
 vi.mock('node:fs/promises', () => ({
   default: {
-    readFile: vi.fn()
-  }
+    readFile: vi.fn(),
+  },
 }));
 
 describe('CSSManager', () => {
@@ -35,7 +35,7 @@ describe('CSSManager', () => {
         basePath: '/custom/path',
         minify: true,
         cache: false,
-        autoprefixer: true
+        autoprefixer: true,
       };
 
       const customManager = new CSSManager(customOptions);
@@ -138,7 +138,8 @@ describe('CSSManager', () => {
           font-size: 24px;
         }
       `;
-      const expectedMinified = 'body {margin: 0;padding: 0} h1 {color: #ff0000;font-size: 24px}';
+      const expectedMinified =
+        'body {margin: 0;padding: 0} h1 {color: #ff0000;font-size: 24px}';
       mockFs.readFile.mockResolvedValue(unminifiedCSS);
 
       const result = await minifyingManager.loadCSSFile('styles.css');
@@ -229,13 +230,17 @@ describe('CSSManager', () => {
       const filePaths = ['https://cdn.example.com/styles.css'];
       const result = cssManager.generateCSSLinks(filePaths);
 
-      expect(result).toContain('<link rel="stylesheet" href="https://cdn.example.com/styles.css" />');
+      expect(result).toContain(
+        '<link rel="stylesheet" href="https://cdn.example.com/styles.css" />'
+      );
     });
 
     it('should normalize multiple slashes in URLs', () => {
       const result = cssManager.generateCSSLinks(['styles.css'], '//base//');
 
-      expect(result).toContain('<link rel="stylesheet" href="/base/styles.css" />');
+      expect(result).toContain(
+        '<link rel="stylesheet" href="/base/styles.css" />'
+      );
     });
   });
 
@@ -244,7 +249,9 @@ describe('CSSManager', () => {
       const cssContent = 'body { margin: 0; }';
       const result = cssManager.generateInlineStyles(cssContent);
 
-      expect(result).toBe('<style type="text/css">\nbody { margin: 0; }\n</style>');
+      expect(result).toBe(
+        '<style type="text/css">\nbody { margin: 0; }\n</style>'
+      );
     });
 
     it('should handle empty CSS content', () => {
@@ -264,20 +271,30 @@ describe('CSSManager', () => {
       const result = cssManager.generateCSSLinks(filePaths);
 
       // Attribute values are HTML-escaped; the browser decodes &amp; back to &
-      expect(result).toContain('<link rel="stylesheet" href="/file&amp;name.css" />');
+      expect(result).toContain(
+        '<link rel="stylesheet" href="/file&amp;name.css" />'
+      );
     });
 
     it('should not let a URL break out of the href attribute', () => {
-      const result = cssManager.generateCSSLinks(['"><script>alert(1)</script>']);
+      const result = cssManager.generateCSSLinks([
+        '"><script>alert(1)</script>',
+      ]);
 
       expect(result).not.toContain('<script>');
-      expect(result).toContain('href="/&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;"');
+      expect(result).toContain(
+        'href="/&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;"'
+      );
     });
 
     it('should not let inline CSS close the style element', () => {
-      const result = cssManager.generateInlineStyles('a{} </style><script>x</script>');
+      const result = cssManager.generateInlineStyles(
+        'a{} </style><script>x</script>'
+      );
 
-      expect(result).toBe('<style type="text/css">\na{} <\\/style><script>x</script>\n</style>');
+      expect(result).toBe(
+        '<style type="text/css">\na{} <\\/style><script>x</script>\n</style>'
+      );
     });
   });
 

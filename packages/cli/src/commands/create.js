@@ -9,7 +9,10 @@ import picocolors from 'picocolors';
 import { existsSync, mkdirSync, rmSync } from 'fs';
 import { resolve } from 'path';
 import { spawn } from 'child_process';
-import { scaffoldProject, validateScaffoldOptions } from '../generators/project-scaffold.js';
+import {
+  scaffoldProject,
+  validateScaffoldOptions,
+} from '../generators/project-scaffold.js';
 import { validateProjectName } from '../utils/validation.js';
 import { isInteractive, requireInteractive } from '../utils/interactive.js';
 
@@ -18,7 +21,7 @@ function getDefaultDockerPort(database) {
   const ports = {
     postgres: 5432,
     mysql: 3306,
-    mongodb: 27017
+    mongodb: 27017,
   };
   return ports[database] || 5432;
 }
@@ -36,7 +39,9 @@ export function runAttached(command, cwd) {
   return new Promise((resolveExit, rejectExit) => {
     const child = spawn(command, [], { cwd, stdio: 'inherit', shell: true });
     child.once('error', rejectExit);
-    child.once('exit', (exitCode, signal) => resolveExit(signal ? 0 : exitCode ?? 0));
+    child.once('exit', (exitCode, signal) =>
+      resolveExit(signal ? 0 : (exitCode ?? 0))
+    );
   });
 }
 
@@ -74,7 +79,7 @@ export const createCommand = new Command('create')
         name: 'name',
         message: 'What is your project name?',
         initial: 'my-coherent-app',
-        validate: validateProjectName
+        validate: validateProjectName,
       });
 
       if (!response.name) {
@@ -96,7 +101,10 @@ export const createCommand = new Command('create')
 
     // Check if directory exists
     if (existsSync(projectPath)) {
-      console.error(picocolors.red('❌ Directory already exists:'), projectName);
+      console.error(
+        picocolors.red('❌ Directory already exists:'),
+        projectName
+      );
       process.exit(1);
     }
 
@@ -115,10 +123,18 @@ export const createCommand = new Command('create')
           name: 'template',
           message: 'Which template would you like to use?',
           choices: [
-            { title: '🏃‍♂️ Basic App', value: 'basic', description: 'Simple SSR app with routing' },
-            { title: '🌐 Full Stack', value: 'fullstack', description: 'API + SSR with database and auth options' }
+            {
+              title: '🏃‍♂️ Basic App',
+              value: 'basic',
+              description: 'Simple SSR app with routing',
+            },
+            {
+              title: '🌐 Full Stack',
+              value: 'fullstack',
+              description: 'API + SSR with database and auth options',
+            },
           ],
-          initial: 0
+          initial: 0,
         });
 
         if (!response.template) {
@@ -144,10 +160,18 @@ export const createCommand = new Command('create')
         name: 'language',
         message: 'Would you like to use TypeScript or JavaScript?',
         choices: [
-          { title: '📘 JavaScript', value: 'javascript', description: 'JavaScript with JSDoc type hints (recommended)' },
-          { title: '📕 TypeScript', value: 'typescript', description: 'Full TypeScript with static type checking' }
+          {
+            title: '📘 JavaScript',
+            value: 'javascript',
+            description: 'JavaScript with JSDoc type hints (recommended)',
+          },
+          {
+            title: '📕 TypeScript',
+            value: 'typescript',
+            description: 'Full TypeScript with static type checking',
+          },
         ],
-        initial: 0
+        initial: 0,
       });
 
       if (!languageResponse.language) {
@@ -159,18 +183,37 @@ export const createCommand = new Command('create')
     }
 
     // Runtime selection for applicable templates
-    if ((template === 'basic' || template === 'fullstack') && !options.skipPrompts) {
+    if (
+      (template === 'basic' || template === 'fullstack') &&
+      !options.skipPrompts
+    ) {
       const runtimeResponse = await prompts({
         type: 'select',
         name: 'runtime',
         message: 'Which server runtime would you like to use?',
         choices: [
-          { title: '🔧 Built-in HTTP Server', value: 'built-in', description: 'Node.js http module (no dependencies)' },
-          { title: '⚡ Express', value: 'express', description: 'Popular Node.js web framework' },
-          { title: '🚀 Fastify', value: 'fastify', description: 'Fast and low overhead web framework' },
-          { title: '🎯 Koa', value: 'koa', description: 'Next generation web framework' }
+          {
+            title: '🔧 Built-in HTTP Server',
+            value: 'built-in',
+            description: 'Node.js http module (no dependencies)',
+          },
+          {
+            title: '⚡ Express',
+            value: 'express',
+            description: 'Popular Node.js web framework',
+          },
+          {
+            title: '🚀 Fastify',
+            value: 'fastify',
+            description: 'Fast and low overhead web framework',
+          },
+          {
+            title: '🎯 Koa',
+            value: 'koa',
+            description: 'Next generation web framework',
+          },
         ],
-        initial: 0
+        initial: 0,
       });
 
       if (!runtimeResponse.runtime) {
@@ -190,13 +233,33 @@ export const createCommand = new Command('create')
           name: 'database',
           message: 'Which database would you like to use?',
           choices: [
-            { title: '🐘 PostgreSQL', value: 'postgres', description: 'Powerful, open source relational database' },
-            { title: '🐬 MySQL', value: 'mysql', description: 'Popular open source relational database' },
-            { title: '📦 SQLite', value: 'sqlite', description: 'Lightweight, file-based database' },
-            { title: '🍃 MongoDB', value: 'mongodb', description: 'NoSQL document database' },
-            { title: '❌ None', value: 'none', description: 'Skip database setup' }
+            {
+              title: '🐘 PostgreSQL',
+              value: 'postgres',
+              description: 'Powerful, open source relational database',
+            },
+            {
+              title: '🐬 MySQL',
+              value: 'mysql',
+              description: 'Popular open source relational database',
+            },
+            {
+              title: '📦 SQLite',
+              value: 'sqlite',
+              description: 'Lightweight, file-based database',
+            },
+            {
+              title: '🍃 MongoDB',
+              value: 'mongodb',
+              description: 'NoSQL document database',
+            },
+            {
+              title: '❌ None',
+              value: 'none',
+              description: 'Skip database setup',
+            },
           ],
-          initial: 0
+          initial: 0,
         });
 
         if (!dbResponse.database) {
@@ -215,16 +278,46 @@ export const createCommand = new Command('create')
         const pkgResponse = await prompts({
           type: 'multiselect',
           name: 'packages',
-          message: 'Select optional packages (space to select, enter to confirm):',
+          message:
+            'Select optional packages (space to select, enter to confirm):',
           choices: [
-            { title: '@coherent.js/api', value: 'api', description: 'API framework with validation & OpenAPI', selected: template === 'fullstack' },
-            { title: '@coherent.js/client', value: 'client', description: 'Client-side hydration & progressive enhancement' },
-            { title: '@coherent.js/i18n', value: 'i18n', description: 'Internationalization utilities' },
-            { title: '@coherent.js/forms', value: 'forms', description: 'Form handling utilities' },
-            { title: '@coherent.js/devtools', value: 'devtools', description: 'Development tools & debugging' },
-            { title: '@coherent.js/seo', value: 'seo', description: 'SEO optimization utilities' },
-            { title: '@coherent.js/tooling (testing)', value: 'testing', description: 'Testing utilities & helpers (subpath of tooling)' }
-          ]
+            {
+              title: '@coherent.js/api',
+              value: 'api',
+              description: 'API framework with validation & OpenAPI',
+              selected: template === 'fullstack',
+            },
+            {
+              title: '@coherent.js/client',
+              value: 'client',
+              description: 'Client-side hydration & progressive enhancement',
+            },
+            {
+              title: '@coherent.js/i18n',
+              value: 'i18n',
+              description: 'Internationalization utilities',
+            },
+            {
+              title: '@coherent.js/forms',
+              value: 'forms',
+              description: 'Form handling utilities',
+            },
+            {
+              title: '@coherent.js/devtools',
+              value: 'devtools',
+              description: 'Development tools & debugging',
+            },
+            {
+              title: '@coherent.js/seo',
+              value: 'seo',
+              description: 'SEO optimization utilities',
+            },
+            {
+              title: '@coherent.js/tooling (testing)',
+              value: 'testing',
+              description: 'Testing utilities & helpers (subpath of tooling)',
+            },
+          ],
         });
 
         packages = pkgResponse.packages || [];
@@ -237,18 +330,32 @@ export const createCommand = new Command('create')
       // database; session routes are only generated for express.
       if (!options.skipPrompts && database && database !== 'mongodb') {
         const authChoices = [
-          { title: '🔑 JWT Authentication', value: 'jwt', description: 'Token-based auth with jsonwebtoken' },
+          {
+            title: '🔑 JWT Authentication',
+            value: 'jwt',
+            description: 'Token-based auth with jsonwebtoken',
+          },
           ...(runtime === 'express'
-            ? [{ title: '🍪 Session Authentication', value: 'session', description: 'Cookie-based session auth' }]
+            ? [
+                {
+                  title: '🍪 Session Authentication',
+                  value: 'session',
+                  description: 'Cookie-based session auth',
+                },
+              ]
             : []),
-          { title: '❌ None', value: 'none', description: 'Skip authentication setup' }
+          {
+            title: '❌ None',
+            value: 'none',
+            description: 'Skip authentication setup',
+          },
         ];
         const authResponse = await prompts({
           type: 'select',
           name: 'auth',
           message: 'Would you like to include authentication scaffolding?',
           choices: authChoices,
-          initial: 0
+          initial: 0,
         });
 
         auth = authResponse.auth === 'none' ? null : authResponse.auth;
@@ -258,20 +365,43 @@ export const createCommand = new Command('create')
       const pkgResponse = await prompts({
         type: 'multiselect',
         name: 'packages',
-        message: 'Select optional packages (space to select, enter to confirm):',
+        message:
+          'Select optional packages (space to select, enter to confirm):',
         choices: [
-          { title: '@coherent.js/client', value: 'client', description: 'Client-side hydration' },
-          { title: '@coherent.js/i18n', value: 'i18n', description: 'Internationalization' },
-          { title: '@coherent.js/forms', value: 'forms', description: 'Form handling' },
-          { title: '@coherent.js/seo', value: 'seo', description: 'SEO utilities' }
-        ]
+          {
+            title: '@coherent.js/client',
+            value: 'client',
+            description: 'Client-side hydration',
+          },
+          {
+            title: '@coherent.js/i18n',
+            value: 'i18n',
+            description: 'Internationalization',
+          },
+          {
+            title: '@coherent.js/forms',
+            value: 'forms',
+            description: 'Form handling',
+          },
+          {
+            title: '@coherent.js/seo',
+            value: 'seo',
+            description: 'SEO utilities',
+          },
+        ],
       });
 
       packages = pkgResponse.packages || [];
     }
 
     // Validate every option before anything is created on disk
-    const problems = validateScaffoldOptions({ runtime, database, auth, packages, language });
+    const problems = validateScaffoldOptions({
+      runtime,
+      database,
+      auth,
+      packages,
+      language,
+    });
     if (problems.length > 0) {
       for (const problem of problems) {
         console.error(picocolors.red(`✖ ${problem}`));
@@ -287,11 +417,23 @@ export const createCommand = new Command('create')
         name: 'packageManager',
         message: 'Which package manager would you like to use?',
         choices: [
-          { title: '📦 pnpm (recommended)', value: 'pnpm', description: 'Fast, disk space efficient package manager' },
-          { title: '📦 npm', value: 'npm', description: 'Node.js default package manager' },
-          { title: '📦 yarn', value: 'yarn', description: 'Fast, reliable package manager' }
+          {
+            title: '📦 pnpm (recommended)',
+            value: 'pnpm',
+            description: 'Fast, disk space efficient package manager',
+          },
+          {
+            title: '📦 npm',
+            value: 'npm',
+            description: 'Node.js default package manager',
+          },
+          {
+            title: '📦 yarn',
+            value: 'yarn',
+            description: 'Fast, reliable package manager',
+          },
         ],
-        initial: 0
+        initial: 0,
       });
 
       if (!pmResponse.packageManager) {
@@ -308,8 +450,9 @@ export const createCommand = new Command('create')
       const dockerResponse = await prompts({
         type: 'confirm',
         name: 'useDocker',
-        message: 'Would you like to include Docker configuration for the database?',
-        initial: true
+        message:
+          'Would you like to include Docker configuration for the database?',
+        initial: true,
       });
 
       if (dockerResponse.useDocker) {
@@ -319,33 +462,33 @@ export const createCommand = new Command('create')
             type: 'number',
             name: 'dbPort',
             message: 'What port should the database use?',
-            initial: getDefaultDockerPort(database)
+            initial: getDefaultDockerPort(database),
           },
           {
             type: 'text',
             name: 'dbName',
             message: 'What should the database be named?',
-            initial: 'coherent_db'
+            initial: 'coherent_db',
           },
           {
             type: 'text',
             name: 'dbUser',
             message: 'What should the database user be?',
-            initial: 'coherent_user'
+            initial: 'coherent_user',
           },
           {
             type: 'text',
             name: 'dbPassword',
             message: 'What should the database password be?',
-            initial: 'coherent_pass'
-          }
+            initial: 'coherent_pass',
+          },
         ]);
 
         dockerConfig = {
           port: dockerDetailsResponse.dbPort || getDefaultDockerPort(database),
           name: dockerDetailsResponse.dbName,
           user: dockerDetailsResponse.dbUser,
-          password: dockerDetailsResponse.dbPassword
+          password: dockerDetailsResponse.dbPassword,
         };
       }
     } else if (database && database !== 'sqlite' && options.useDocker) {
@@ -354,7 +497,7 @@ export const createCommand = new Command('create')
         port: options.dockerDbPort || getDefaultDockerPort(database),
         name: options.dockerDbName || 'coherent_db',
         user: options.dockerDbUser || 'coherent_user',
-        password: options.dockerDbPassword || 'coherent_pass'
+        password: options.dockerDbPassword || 'coherent_pass',
       };
     }
 
@@ -379,7 +522,9 @@ export const createCommand = new Command('create')
         dockerConfig,
         skipInstall: options.skipInstall,
         skipGit: options.skipGit,
-        onProgress: (msg) => { spinner.text = msg; }
+        onProgress: (msg) => {
+          spinner.text = msg;
+        },
       });
 
       createdProjectDir = false; // scaffolded: keep it from here on
@@ -392,18 +537,34 @@ export const createCommand = new Command('create')
 
       // Show configuration summary
       console.log(picocolors.cyan('Configuration:'));
-      console.log(picocolors.gray('  Template:'), picocolors.white(template === 'fullstack' ? 'Full Stack' : 'Basic'));
-      console.log(picocolors.gray('  Language:'), picocolors.white(language === 'typescript' ? 'TypeScript' : 'JavaScript'));
+      console.log(
+        picocolors.gray('  Template:'),
+        picocolors.white(template === 'fullstack' ? 'Full Stack' : 'Basic')
+      );
+      console.log(
+        picocolors.gray('  Language:'),
+        picocolors.white(
+          language === 'typescript' ? 'TypeScript' : 'JavaScript'
+        )
+      );
       console.log(picocolors.gray('  Runtime:'), picocolors.white(runtime));
       if (database) {
         console.log(picocolors.gray('  Database:'), picocolors.white(database));
       }
       if (auth) {
-        console.log(picocolors.gray('  Auth:'), picocolors.white(auth.toUpperCase()));
+        console.log(
+          picocolors.gray('  Auth:'),
+          picocolors.white(auth.toUpperCase())
+        );
       }
       if (packages.length > 0) {
-        const formattedPackages = packages.map(p => `@coherent.js/${p}`).join(', ');
-        console.log(picocolors.gray('  Packages:'), picocolors.white(formattedPackages));
+        const formattedPackages = packages
+          .map((p) => `@coherent.js/${p}`)
+          .join(', ');
+        console.log(
+          picocolors.gray('  Packages:'),
+          picocolors.white(formattedPackages)
+        );
       }
       console.log();
 
@@ -423,7 +584,10 @@ export const createCommand = new Command('create')
       console.log(picocolors.gray(`    public/`));
       console.log(picocolors.gray(`    package.json`));
       if (database) {
-        console.log(picocolors.gray(`    .env.example`), picocolors.yellow('<-- Configure this!'));
+        console.log(
+          picocolors.gray(`    .env.example`),
+          picocolors.yellow('<-- Configure this!')
+        );
       }
       console.log();
 
@@ -434,7 +598,13 @@ export const createCommand = new Command('create')
         if (database === 'mongodb') {
           envVars.push('MONGODB_URI');
         } else {
-          envVars.push('DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASSWORD');
+          envVars.push(
+            'DB_HOST',
+            'DB_PORT',
+            'DB_NAME',
+            'DB_USER',
+            'DB_PASSWORD'
+          );
         }
       }
       if (auth === 'jwt') {
@@ -446,18 +616,24 @@ export const createCommand = new Command('create')
 
       if (envVars.length > 0) {
         console.log(picocolors.yellow('Environment variables to configure:'));
-        envVars.forEach(v => console.log(picocolors.gray(`  ${v}`)));
+        envVars.forEach((v) => console.log(picocolors.gray(`  ${v}`)));
         console.log();
       }
 
       // Numbered next steps
       console.log(picocolors.cyan('Next steps:'));
       let stepNum = 1;
-      console.log(picocolors.white(`  ${stepNum}.`), picocolors.gray(`cd ${projectName}`));
+      console.log(
+        picocolors.white(`  ${stepNum}.`),
+        picocolors.gray(`cd ${projectName}`)
+      );
       stepNum++;
 
       if (needsEnvConfig) {
-        console.log(picocolors.white(`  ${stepNum}.`), picocolors.gray('Edit .env with your database credentials'));
+        console.log(
+          picocolors.white(`  ${stepNum}.`),
+          picocolors.gray('Edit .env with your database credentials')
+        );
         stepNum++;
       }
 
@@ -465,16 +641,22 @@ export const createCommand = new Command('create')
       const pmCommands = {
         npm: { install: 'npm install', dev: 'npm run dev' },
         yarn: { install: 'yarn install', dev: 'yarn dev' },
-        pnpm: { install: 'pnpm install', dev: 'pnpm dev' }
+        pnpm: { install: 'pnpm install', dev: 'pnpm dev' },
       };
 
       const commands = pmCommands[packageManager] || pmCommands.npm;
 
       if (options.skipInstall) {
-        console.log(picocolors.white(`  ${stepNum}.`), picocolors.gray(commands.install));
+        console.log(
+          picocolors.white(`  ${stepNum}.`),
+          picocolors.gray(commands.install)
+        );
         stepNum++;
       }
-      console.log(picocolors.white(`  ${stepNum}.`), picocolors.gray(commands.dev));
+      console.log(
+        picocolors.white(`  ${stepNum}.`),
+        picocolors.gray(commands.dev)
+      );
 
       console.log();
 
@@ -484,7 +666,7 @@ export const createCommand = new Command('create')
           type: 'confirm',
           name: 'startDev',
           message: 'Start development server now?',
-          initial: true
+          initial: true,
         });
 
         if (startResponse.startDev) {
@@ -496,15 +678,22 @@ export const createCommand = new Command('create')
           try {
             process.exit(await runAttached(commands.dev, projectPath));
           } catch {
-            console.log(picocolors.yellow('Could not start development server automatically.'));
-            console.log(picocolors.gray(`  Run manually: cd ${projectName} && ${commands.dev}`));
+            console.log(
+              picocolors.yellow(
+                'Could not start development server automatically.'
+              )
+            );
+            console.log(
+              picocolors.gray(
+                `  Run manually: cd ${projectName} && ${commands.dev}`
+              )
+            );
             console.log();
           }
         }
       }
 
       console.log(picocolors.gray('Happy coding!'));
-
     } catch (_error) {
       spinner.fail('Failed to create project');
       console.error(picocolors.red('❌ Error:'), _error.message);

@@ -1,8 +1,8 @@
 /**
  * Coherent.js Form Builder
- * 
+ *
  * Utilities for building forms with Coherent.js
- * 
+ *
  * @module forms/form-builder
  */
 
@@ -25,7 +25,7 @@ export const DEFAULT_CLASS_NAMES = {
   invalid: 'error',
   /** The error message element */
   error: 'error-message',
-  submit: 'submit-button'
+  submit: 'submit-button',
 };
 
 /**
@@ -49,13 +49,15 @@ function safeAttributes(attributes) {
   const safe = {};
   for (const [name, value] of Object.entries(attributes)) {
     if (!VALID_ATTRIBUTE_NAME.test(name)) {
-      console.warn(`[coherent.js/forms] Ignoring invalid attribute name: ${JSON.stringify(name)}`);
+      console.warn(
+        `[coherent.js/forms] Ignoring invalid attribute name: ${JSON.stringify(name)}`
+      );
       continue;
     }
     if (EVENT_HANDLER_NAME.test(name)) {
       console.warn(
         `[coherent.js/forms] Ignoring inline event handler "${name}". ` +
-        'Attach handlers with hydrateForm instead.'
+          'Attach handlers with hydrateForm instead.'
       );
       continue;
     }
@@ -84,9 +86,9 @@ export class FormBuilder {
       validateOnChange: true,
       validateOnBlur: true,
       name: options.name || 'form',
-      ...options
+      ...options,
     };
-    
+
     this.fields = new Map();
     this.groups = new Map();
     this.values = {};
@@ -119,9 +121,9 @@ export class FormBuilder {
       required: config.required || false,
       visible: config.visible !== false,
       showWhen: config.showWhen,
-      ...config
+      ...config,
     };
-    
+
     this.fields.set(name, fieldConfig);
 
     // Set default value
@@ -170,12 +172,12 @@ export class FormBuilder {
       name,
       label: config.label || name,
       fields: config.fields || [],
-      ...config
+      ...config,
     });
 
     // Add fields in the group
     if (config.fields) {
-      config.fields.forEach(fieldConfig => {
+      config.fields.forEach((fieldConfig) => {
         this.addField(fieldConfig.name, fieldConfig);
       });
     }
@@ -251,7 +253,7 @@ export class FormBuilder {
    * Check if form is dirty (values changed from initial)
    */
   isDirty() {
-    return Object.keys(this.values).some(key => {
+    return Object.keys(this.values).some((key) => {
       return this.values[key] !== this.initialValues[key];
     });
   }
@@ -279,9 +281,12 @@ export class FormBuilder {
     }
 
     const value = this.values[name];
-    
+
     // Check required
-    if (field.required && (value === undefined || value === null || value === '')) {
+    if (
+      field.required &&
+      (value === undefined || value === null || value === '')
+    ) {
       const error = 'This field is required';
       this.errors[name] = error;
       return error;
@@ -383,7 +388,7 @@ export class FormBuilder {
    */
   async submit() {
     const errors = this.validate();
-    
+
     if (Object.keys(errors).length > 0) {
       return { success: false, errors };
     }
@@ -468,21 +473,33 @@ export class FormBuilder {
   resolveRenderState(options = {}) {
     const { values, errors, touched } = options;
     if (values === undefined && errors === undefined && touched === undefined) {
-      return { values: this.values, errors: this.errors, touched: this.touched };
+      return {
+        values: this.values,
+        errors: this.errors,
+        touched: this.touched,
+      };
     }
 
     const renderErrors = errors || {};
     return {
       values: { ...this.initialValues, ...values },
       errors: renderErrors,
-      touched: touched || Object.fromEntries(Object.keys(renderErrors).map(name => [name, true]))
+      touched:
+        touched ||
+        Object.fromEntries(
+          Object.keys(renderErrors).map((name) => [name, true])
+        ),
     };
   }
 
   /**
    * Build input component with validation metadata for hydration
    */
-  buildInput(name, classNames = this.resolveClassNames(), state = this.resolveRenderState()) {
+  buildInput(
+    name,
+    classNames = this.resolveClassNames(),
+    state = this.resolveRenderState()
+  ) {
     const field = this.fields.get(name);
     if (!field) return null;
 
@@ -513,7 +530,7 @@ export class FormBuilder {
       id: field.name,
       value: value,
       'aria-invalid': error ? 'true' : 'false',
-      'aria-describedby': error ? `${name}-error` : undefined
+      'aria-describedby': error ? `${name}-error` : undefined,
     };
 
     if (field.placeholder) inputProps.placeholder = field.placeholder;
@@ -549,24 +566,26 @@ export class FormBuilder {
       return {
         select: {
           ...selectProps,
-          children: (field.options ?? []).map(option => {
+          children: (field.options ?? []).map((option) => {
             const { value: optionValue, label = optionValue } =
-              typeof option === 'object' && option !== null ? option : { value: option };
+              typeof option === 'object' && option !== null
+                ? option
+                : { value: option };
 
             return {
               option: {
                 value: optionValue,
                 selected: String(optionValue) === String(value) || undefined,
-                text: String(label)
-              }
+                text: String(label),
+              },
             };
-          })
-        }
+          }),
+        },
       };
     }
 
     return {
-      input: inputProps
+      input: inputProps,
     };
   }
 
@@ -586,7 +605,11 @@ export class FormBuilder {
   /**
    * Build error component
    */
-  buildError(name, classNames = this.resolveClassNames(), state = this.resolveRenderState()) {
+  buildError(
+    name,
+    classNames = this.resolveClassNames(),
+    state = this.resolveRenderState()
+  ) {
     const error = state.errors[name];
     const isTouched = state.touched[name];
 
@@ -608,13 +631,17 @@ export class FormBuilder {
   /**
    * Build complete field component
    */
-  buildField(name, classNames = this.resolveClassNames(), state = this.resolveRenderState()) {
+  buildField(
+    name,
+    classNames = this.resolveClassNames(),
+    state = this.resolveRenderState()
+  ) {
     const field = this.fields.get(name);
     if (!field) return null;
 
     const children = [
       this.buildLabel(name, classNames),
-      this.buildInput(name, classNames, state)
+      this.buildInput(name, classNames, state),
     ];
 
     const error = this.buildError(name, classNames, state);
@@ -640,19 +667,28 @@ export class FormBuilder {
    * `@coherent.js/forms/csrf`.
    */
   buildForm(options = {}) {
-    const { values: _values, errors: _errors, touched: _touched, ...formOptions } = options;
+    const {
+      values: _values,
+      errors: _errors,
+      touched: _touched,
+      ...formOptions
+    } = options;
     const settings = { ...this.options, ...formOptions };
     const classNames = this.resolveClassNames(options.classNames);
     const state = this.resolveRenderState(options);
     const fields = [];
 
-    if (settings.csrfToken !== undefined && settings.csrfToken !== null && settings.csrfToken !== '') {
+    if (
+      settings.csrfToken !== undefined &&
+      settings.csrfToken !== null &&
+      settings.csrfToken !== ''
+    ) {
       fields.push({
         input: {
           type: 'hidden',
           name: settings.csrfFieldName || DEFAULT_CSRF_FIELD_NAME,
-          value: String(settings.csrfToken)
-        }
+          value: String(settings.csrfToken),
+        },
       });
     }
 
@@ -683,9 +719,10 @@ export class FormBuilder {
     // listener, so it never needed the inline handler this used to emit — and
     // an inline handler breaks under a strict CSP besides.
     if (settings.enhance) {
-      form.onsubmit = typeof settings.enhance === 'string'
-        ? settings.enhance
-        : 'handleSubmit(event)';
+      form.onsubmit =
+        typeof settings.enhance === 'string'
+          ? settings.enhance
+          : 'handleSubmit(event)';
     }
 
     if (settings.novalidate === true) form.novalidate = true;
@@ -787,7 +824,7 @@ export function createFormBuilder(options = {}) {
 
   // Add fields if provided
   if (options.fields) {
-    options.fields.forEach(fieldConfig => {
+    options.fields.forEach((fieldConfig) => {
       form.addField(fieldConfig.name, fieldConfig);
     });
   }
@@ -809,7 +846,9 @@ export function createFormBuilder(options = {}) {
  * @returns {Object} A Coherent.js component
  */
 export function buildForm(config = {}) {
-  const { fields = [], ...options } = Array.isArray(config) ? { fields: config } : config;
+  const { fields = [], ...options } = Array.isArray(config)
+    ? { fields: config }
+    : config;
   const builder = new FormBuilder(options);
 
   if (Array.isArray(fields)) {
@@ -828,5 +867,5 @@ export function buildForm(config = {}) {
 export default {
   FormBuilder,
   createFormBuilder,
-  buildForm
+  buildForm,
 };

@@ -117,12 +117,18 @@ expectTypeOf(render).toBeCallableWith(42);
 // renderWithMonitoring returns string
 expectTypeOf(renderWithMonitoring).returns.toBeString();
 expectTypeOf(renderWithMonitoring).parameter(0).toMatchTypeOf<CoherentNode>();
-expectTypeOf(renderWithMonitoring).toBeCallableWith({ div: {} }, { enablePerformanceMonitoring: true });
+expectTypeOf(renderWithMonitoring).toBeCallableWith(
+  { div: {} },
+  { enablePerformanceMonitoring: true }
+);
 
 // renderWithTemplate returns string
 expectTypeOf(renderWithTemplate).returns.toBeString();
 expectTypeOf(renderWithTemplate).parameter(0).toMatchTypeOf<CoherentNode>();
-expectTypeOf(renderWithTemplate).toBeCallableWith({ div: {} }, { template: '<html>{{content}}</html>' });
+expectTypeOf(renderWithTemplate).toBeCallableWith(
+  { div: {} },
+  { template: '<html>{{content}}</html>' }
+);
 
 // renderComponentFactory returns Promise<string>
 expectTypeOf(renderComponentFactory).returns.resolves.toBeString();
@@ -217,7 +223,11 @@ expectTypeOf(importPeerDependency).returns.resolves.toMatchTypeOf<unknown>();
 
 // createLazyIntegration
 expectTypeOf(createLazyIntegration).returns.toBeFunction();
-const lazyIntegration = createLazyIntegration('test-pkg', 'TestIntegration', (mod) => () => mod);
+const lazyIntegration = createLazyIntegration(
+  'test-pkg',
+  'TestIntegration',
+  (mod) => () => mod
+);
 expectTypeOf(lazyIntegration).returns.resolves.toMatchTypeOf<unknown>();
 
 // checkPeerDependencies
@@ -241,12 +251,18 @@ const registeredComponent = registerComponent('TestComponent', {
 expectTypeOf(registeredComponent).toMatchTypeOf<CoherentComponent>();
 
 // getComponent returns component or undefined
-expectTypeOf(getComponent).returns.toMatchTypeOf<CoherentComponent | undefined>();
+expectTypeOf(getComponent).returns.toMatchTypeOf<
+  CoherentComponent | undefined
+>();
 const retrievedComponent = getComponent('TestComponent');
-expectTypeOf(retrievedComponent).toMatchTypeOf<CoherentComponent<ComponentProps> | undefined>();
+expectTypeOf(retrievedComponent).toMatchTypeOf<
+  CoherentComponent<ComponentProps> | undefined
+>();
 
 // getRegisteredComponents returns Map
-expectTypeOf(getRegisteredComponents).returns.toMatchTypeOf<Map<string, CoherentComponent>>();
+expectTypeOf(getRegisteredComponents).returns.toMatchTypeOf<
+  Map<string, CoherentComponent>
+>();
 const allComponents = getRegisteredComponents();
 expectTypeOf(allComponents).toMatchTypeOf<Map<string, CoherentComponent>>();
 
@@ -349,8 +365,12 @@ expectTypeOf(performanceMonitor.addMetric).toBeFunction();
 expectTypeOf(performanceMonitor.measure).toBeFunction();
 expectTypeOf(performanceMonitor.measureAsync).toBeFunction();
 expectTypeOf(performanceMonitor.addAlertRule).toBeFunction();
-expectTypeOf(performanceMonitor.generateReport).returns.toMatchTypeOf<Record<string, unknown>>();
-expectTypeOf(performanceMonitor.getStats).returns.toMatchTypeOf<Record<string, unknown>>();
+expectTypeOf(performanceMonitor.generateReport).returns.toMatchTypeOf<
+  Record<string, unknown>
+>();
+expectTypeOf(performanceMonitor.getStats).returns.toMatchTypeOf<
+  Record<string, unknown>
+>();
 expectTypeOf(performanceMonitor.reset).toBeFunction();
 expectTypeOf(performanceMonitor.start).toBeFunction();
 expectTypeOf(performanceMonitor.stop).toBeFunction();
@@ -383,7 +403,9 @@ expectTypeOf(isLazy(lazyData)).toBeBoolean();
 // ============================================================================
 
 // StrictCoherentElement is compatible with render
-const strictDiv: StrictCoherentElement = { div: { text: 'strict', className: 'test' } };
+const strictDiv: StrictCoherentElement = {
+  div: { text: 'strict', className: 'test' },
+};
 const renderedStrict = render(strictDiv);
 expectTypeOf(renderedStrict).toBeString();
 
@@ -397,7 +419,8 @@ expectTypeOf(renderWithMonitoring(strictDiv)).toBeString();
 expectTypeOf(renderWithMonitoring(permissiveDiv)).toBeString();
 
 // Component function returning StrictCoherentElement
-const StrictComponent: CoherentComponent = () => ({ div: { text: 'strict' } } as StrictCoherentElement);
+const StrictComponent: CoherentComponent = () =>
+  ({ div: { text: 'strict' } }) as StrictCoherentElement;
 expectTypeOf(render(StrictComponent())).toBeString();
 
 // Suppress unused variable warnings
@@ -436,6 +459,6 @@ render({
   button: {
     className: ['btn', false, null, { 'btn--active': true }],
     onClick: (event: unknown) => void event,
-    text: 'Save'
-  }
+    text: 'Save',
+  },
 });

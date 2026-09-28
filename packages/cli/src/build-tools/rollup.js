@@ -16,6 +16,6 @@ import { warnExperimental } from './experimental.js';
 export function createRollupPlugin(options = {}) {
   warnExperimental('createRollupPlugin', options);
   return {
-    name: 'coherent'
+    name: 'coherent',
   };
 }

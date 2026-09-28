@@ -29,9 +29,7 @@
   },
   "Coherent Text": {
     "prefix": "ctext",
-    "body": [
-      "{ ${1:p}: { text: '${2:content}' }}"
-    ],
+    "body": ["{ ${1:p}: { text: '${2:content}' }}"],
     "description": "Create a text element"
   },
   "Coherent Link": {
@@ -102,23 +100,17 @@
   },
   "Coherent Conditional": {
     "prefix": "cif",
-    "body": [
-      "${1:condition} ? { ${2:div}: { text: '${3:shown}' }} : null"
-    ],
+    "body": ["${1:condition} ? { ${2:div}: { text: '${3:shown}' }} : null"],
     "description": "Conditional rendering pattern"
   },
   "Coherent Event Handler": {
     "prefix": "cevent",
-    "body": [
-      "on${1|Click,Change,Submit,Focus,Blur|}: '${2:handlerName}'"
-    ],
+    "body": ["on${1|Click,Change,Submit,Focus,Blur|}: '${2:handlerName}'"],
     "description": "Add an event handler"
   },
   "Coherent Data Attributes": {
     "prefix": "cdata",
-    "body": [
-      "'data-${1:name}': '${2:value}'"
-    ],
+    "body": ["'data-${1:name}': '${2:value}'"],
     "description": "Add a data attribute"
   },
   "Coherent Page Layout": {

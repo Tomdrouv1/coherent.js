@@ -8,8 +8,16 @@
  */
 
 import { eventDelegation, handlerRegistry } from './events/index.js';
-import { extractState, detectMismatch, reportMismatches } from './hydration/index.js';
-import { isElementVNode, readElement, pairElementChildren } from './hydration/vnode.js';
+import {
+  extractState,
+  detectMismatch,
+  reportMismatches,
+} from './hydration/index.js';
+import {
+  isElementVNode,
+  readElement,
+  pairElementChildren,
+} from './hydration/vnode.js';
 import { patchRoot } from './hydration/patch.js';
 
 /**
@@ -69,7 +77,8 @@ export function hydrate(component, container, options = {}) {
 
   // Mismatch detection walks the whole DOM: only when asked for, implied by
   // `strict` or `onMismatch`, or in development
-  const shouldDetectMismatch = options.detectMismatch ??
+  const shouldDetectMismatch =
+    options.detectMismatch ??
     (strict || typeof onMismatch === 'function' || isDevelopment());
 
   // Extract state from DOM data-state attribute, or use provided initial state
@@ -127,7 +136,13 @@ export function hydrate(component, container, options = {}) {
   }
 
   // Walk virtual DOM and register event handlers
-  registerEventHandlers(root, virtualDOM, componentRef, registeredHandlerIds, boundAttributes);
+  registerEventHandlers(
+    root,
+    virtualDOM,
+    componentRef,
+    registeredHandlerIds,
+    boundAttributes
+  );
 
   /**
    * Re-render the component with current state
@@ -154,7 +169,13 @@ export function hydrate(component, container, options = {}) {
     const previousAttributes = boundAttributes;
     registeredHandlerIds = new Set();
     boundAttributes = [];
-    registerEventHandlers(root, virtualDOM, componentRef, registeredHandlerIds, boundAttributes);
+    registerEventHandlers(
+      root,
+      virtualDOM,
+      componentRef,
+      registeredHandlerIds,
+      boundAttributes
+    );
     releaseHandlers(previousIds, previousAttributes);
   }
 
@@ -246,7 +267,11 @@ function isDevelopment() {
  */
 function renderComponent(component, props) {
   let vNode = component(props);
-  for (let guard = 0; typeof vNode === 'function' && vNode.length === 0 && guard < 100; guard++) {
+  for (
+    let guard = 0;
+    typeof vNode === 'function' && vNode.length === 0 && guard < 100;
+    guard++
+  ) {
     vNode = vNode();
   }
   return vNode;
@@ -286,7 +311,13 @@ function toEventType(propName) {
  * Walk virtual DOM tree and register event handlers
  * @private
  */
-function registerEventHandlers(domElement, vNode, componentRef, handlerIds, boundAttributes) {
+function registerEventHandlers(
+  domElement,
+  vNode,
+  componentRef,
+  handlerIds,
+  boundAttributes
+) {
   if (!domElement || !isElementVNode(vNode)) {
     return;
   }
@@ -322,8 +353,18 @@ function registerEventHandlers(domElement, vNode, componentRef, handlerIds, boun
 
   // Pair element children the way the server rendered them: null, booleans,
   // nested arrays and text never shift which element a child binds to.
-  for (const [childVNode, childElement] of pairElementChildren(tagName, props, domElement)) {
-    registerEventHandlers(childElement, childVNode, componentRef, handlerIds, boundAttributes);
+  for (const [childVNode, childElement] of pairElementChildren(
+    tagName,
+    props,
+    domElement
+  )) {
+    registerEventHandlers(
+      childElement,
+      childVNode,
+      componentRef,
+      handlerIds,
+      boundAttributes
+    );
   }
 }
 

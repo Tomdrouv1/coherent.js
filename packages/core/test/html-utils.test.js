@@ -5,7 +5,7 @@ import {
   isVoidElement,
   formatAttributes,
   minifyHtml,
-  voidElements
+  voidElements,
 } from '../src/core/html-utils.js';
 
 describe('HTML Utils', () => {
@@ -27,7 +27,9 @@ describe('HTML Utils', () => {
 
   describe('escapeHtml', () => {
     it('should escape HTML entities', () => {
-      expect(escapeHtml('<div>Hello & "world"</div>')).toBe('&lt;div&gt;Hello &amp; &quot;world&quot;&lt;/div&gt;');
+      expect(escapeHtml('<div>Hello & "world"</div>')).toBe(
+        '&lt;div&gt;Hello &amp; &quot;world&quot;&lt;/div&gt;'
+      );
     });
 
     it('should escape single quotes', () => {
@@ -35,7 +37,9 @@ describe('HTML Utils', () => {
     });
 
     it('should handle multiple special characters', () => {
-      expect(escapeHtml('<script>alert("XSS")</script>')).toBe('&lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt;');
+      expect(escapeHtml('<script>alert("XSS")</script>')).toBe(
+        '&lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt;'
+      );
     });
 
     it('should handle empty strings', () => {
@@ -61,7 +65,9 @@ describe('HTML Utils', () => {
 
   describe('unescapeHtml', () => {
     it('should unescape HTML entities', () => {
-      expect(unescapeHtml('&lt;div&gt;Hello &amp; &quot;world&quot;&lt;/div&gt;')).toBe('<div>Hello & "world"</div>');
+      expect(
+        unescapeHtml('&lt;div&gt;Hello &amp; &quot;world&quot;&lt;/div&gt;')
+      ).toBe('<div>Hello & "world"</div>');
     });
 
     it('should unescape single quotes', () => {
@@ -69,7 +75,9 @@ describe('HTML Utils', () => {
     });
 
     it('should handle multiple special characters', () => {
-      expect(unescapeHtml('&lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt;')).toBe('<script>alert("XSS")</script>');
+      expect(
+        unescapeHtml('&lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt;')
+      ).toBe('<script>alert("XSS")</script>');
     });
 
     it('should handle empty strings', () => {
@@ -205,7 +213,9 @@ describe('HTML Utils', () => {
       const props = { alt: 'Image with & and < > characters' };
       const result = formatAttributes(props);
 
-      expect(result).toContain('alt="Image with &amp; and &lt; &gt; characters"');
+      expect(result).toContain(
+        'alt="Image with &amp; and &lt; &gt; characters"'
+      );
     });
 
     it('should handle data attributes', () => {
@@ -217,7 +227,7 @@ describe('HTML Utils', () => {
     });
 
     it('should handle aria attributes', () => {
-      const props = { 'aria-label': 'Close', 'role': 'button' };
+      const props = { 'aria-label': 'Close', role: 'button' };
       const result = formatAttributes(props);
 
       expect(result).toContain('aria-label="Close"');
@@ -245,7 +255,7 @@ describe('HTML Utils', () => {
         expect.stringContaining('Error executing function for attribute'),
         expect.objectContaining({
           error: 'Function execution failed',
-          attributeKey: 'value'
+          attributeKey: 'value',
         })
       );
       consoleSpy.mockRestore();
@@ -258,7 +268,7 @@ describe('HTML Utils', () => {
         onSubmit: vi.fn(),
         onMouseOver: vi.fn(),
         onFocus: vi.fn(),
-        onBlur: vi.fn()
+        onBlur: vi.fn(),
       };
 
       expect(formatAttributes(handlers)).toBe('');
@@ -286,7 +296,6 @@ describe('HTML Utils', () => {
       expect(result).toContain('placeholder=""');
       expect(result).toContain('count="0"');
     });
-
   });
 
   describe('minifyHtml', () => {
@@ -340,7 +349,9 @@ describe('HTML Utils', () => {
       `;
       const result = minifyHtml(html, { minify: true });
 
-      expect(result).toBe('<html><head><title> Test </title></head><body><div class="container"><p> Content here </p></div></body></html>');
+      expect(result).toBe(
+        '<html><head><title> Test </title></head><body><div class="container"><p> Content here </p></div></body></html>'
+      );
     });
 
     it('should handle empty HTML', () => {
@@ -355,10 +366,13 @@ describe('HTML Utils', () => {
     });
 
     it('should preserve script and style content when minifying', () => {
-      const html = '<script>  var x = 1;  </script><style>  .test { color: red; }  </style>';
+      const html =
+        '<script>  var x = 1;  </script><style>  .test { color: red; }  </style>';
       const result = minifyHtml(html, { minify: true });
 
-      expect(result).toBe('<script> var x = 1; </script><style> .test { color: red; } </style>');
+      expect(result).toBe(
+        '<script> var x = 1; </script><style> .test { color: red; } </style>'
+      );
     });
 
     it('should handle multiline comments', () => {
@@ -376,11 +390,23 @@ describe('HTML Utils', () => {
 
     it('should contain all expected void elements', () => {
       const expectedElements = [
-        'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
-        'link', 'meta', 'param', 'source', 'track', 'wbr'
+        'area',
+        'base',
+        'br',
+        'col',
+        'embed',
+        'hr',
+        'img',
+        'input',
+        'link',
+        'meta',
+        'param',
+        'source',
+        'track',
+        'wbr',
       ];
 
-      expectedElements.forEach(element => {
+      expectedElements.forEach((element) => {
         expect(voidElements.has(element)).toBe(true);
       });
     });
@@ -400,7 +426,7 @@ describe('HTML Utils', () => {
         disabled: true,
         'data-count': 5,
         onClick: () => {},
-        title: 'Test "title" with & symbols'
+        title: 'Test "title" with & symbols',
       };
 
       expect(formatAttributes(props)).toBe(
@@ -417,10 +443,13 @@ describe('HTML Utils', () => {
     });
 
     it('should handle complete HTML processing pipeline', () => {
-      const html = '<div class="container">  <p>  Content & "text"  </p>  </div>';
+      const html =
+        '<div class="container">  <p>  Content & "text"  </p>  </div>';
       const minified = minifyHtml(html, { minify: true });
 
-      expect(minified).toBe('<div class="container"><p> Content & "text" </p></div>');
+      expect(minified).toBe(
+        '<div class="container"><p> Content & "text" </p></div>'
+      );
     });
   });
 });

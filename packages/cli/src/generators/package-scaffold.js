@@ -103,8 +103,8 @@ export default router;
   return {
     'src/api/routes.js': routes,
     dependencies: {
-      '@coherent.js/api': cliRange
-    }
+      '@coherent.js/api': cliRange,
+    },
   };
 }
 
@@ -197,8 +197,8 @@ export function hydrateCounter(element) {
     'public/js/hydration.js': hydration,
     'src/components/InteractiveCounter.js': interactiveExample,
     dependencies: {
-      '@coherent.js/client': cliRange
-    }
+      '@coherent.js/client': cliRange,
+    },
   };
 }
 
@@ -228,44 +228,56 @@ for (const locale of ['en', 'fr', 'es']) {
 //   translator.setLocale('fr')
 `;
 
-  const enLocale = JSON.stringify({
-    common: {
-      welcome: 'Welcome',
-      hello: 'Hello, {{name}}!',
-      loading: 'Loading...'
+  const enLocale = JSON.stringify(
+    {
+      common: {
+        welcome: 'Welcome',
+        hello: 'Hello, {{name}}!',
+        loading: 'Loading...',
+      },
+      nav: {
+        home: 'Home',
+        about: 'About',
+        contact: 'Contact',
+      },
     },
-    nav: {
-      home: 'Home',
-      about: 'About',
-      contact: 'Contact'
-    }
-  }, null, 2);
+    null,
+    2
+  );
 
-  const frLocale = JSON.stringify({
-    common: {
-      welcome: 'Bienvenue',
-      hello: 'Bonjour, {{name}}!',
-      loading: 'Chargement...'
+  const frLocale = JSON.stringify(
+    {
+      common: {
+        welcome: 'Bienvenue',
+        hello: 'Bonjour, {{name}}!',
+        loading: 'Chargement...',
+      },
+      nav: {
+        home: 'Accueil',
+        about: 'À propos',
+        contact: 'Contact',
+      },
     },
-    nav: {
-      home: 'Accueil',
-      about: 'À propos',
-      contact: 'Contact'
-    }
-  }, null, 2);
+    null,
+    2
+  );
 
-  const esLocale = JSON.stringify({
-    common: {
-      welcome: 'Bienvenido',
-      hello: '¡Hola, {{name}}!',
-      loading: 'Cargando...'
+  const esLocale = JSON.stringify(
+    {
+      common: {
+        welcome: 'Bienvenido',
+        hello: '¡Hola, {{name}}!',
+        loading: 'Cargando...',
+      },
+      nav: {
+        home: 'Inicio',
+        about: 'Acerca de',
+        contact: 'Contacto',
+      },
     },
-    nav: {
-      home: 'Inicio',
-      about: 'Acerca de',
-      contact: 'Contacto'
-    }
-  }, null, 2);
+    null,
+    2
+  );
 
   return {
     'src/i18n/config.js': config,
@@ -273,8 +285,8 @@ for (const locale of ['en', 'fr', 'es']) {
     'src/i18n/locales/fr.json': frLocale,
     'src/i18n/locales/es.json': esLocale,
     dependencies: {
-      '@coherent.js/i18n': cliRange
-    }
+      '@coherent.js/i18n': cliRange,
+    },
   };
 }
 
@@ -301,8 +313,8 @@ export function ContactForm() {
   return {
     'src/components/ContactForm.js': exampleForm,
     dependencies: {
-      '@coherent.js/forms': cliRange
-    }
+      '@coherent.js/forms': cliRange,
+    },
   };
 }
 
@@ -331,8 +343,8 @@ export function inspectComponent(component) {
   return {
     'src/utils/devtools.js': config,
     dependencies: {
-      '@coherent.js/devtools': cliRange
-    }
+      '@coherent.js/devtools': cliRange,
+    },
   };
 }
 
@@ -391,8 +403,8 @@ export function getSitemap() {
   return {
     'src/utils/seo.js': metaHelper,
     dependencies: {
-      '@coherent.js/seo': cliRange
-    }
+      '@coherent.js/seo': cliRange,
+    },
   };
 }
 
@@ -440,8 +452,8 @@ describe('HomePage', () => {
     'tests/helpers/testing.js': testHelper,
     'tests/components/HomePage.test.js': exampleTest,
     dependencies: {
-      '@coherent.js/tooling': cliRange
-    }
+      '@coherent.js/tooling': cliRange,
+    },
   };
 }
 
@@ -456,7 +468,7 @@ export function getPackageDependencies(packageName) {
     forms: generateFormsScaffolding(),
     devtools: generateDevtoolsScaffolding(),
     seo: generateSeoScaffolding(),
-    testing: generateTestingScaffolding()
+    testing: generateTestingScaffolding(),
   };
 
   return scaffolding[packageName]?.dependencies || {};
@@ -470,7 +482,7 @@ export function generatePackageScaffolding(packages, options = {}) {
   const files = {};
   const dependencies = {};
 
-  packages.forEach(pkg => {
+  packages.forEach((pkg) => {
     let scaffolding;
 
     switch (pkg) {

@@ -71,4 +71,6 @@ try {
   rmSync(dataDir, { recursive: true, force: true });
 }
 
-console.log('Build complete: extension bundled to dist/, language server bundled to server/server.js');
+console.log(
+  'Build complete: extension bundled to dist/, language server bundled to server/server.js'
+);

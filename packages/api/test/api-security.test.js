@@ -3,15 +3,15 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { 
-  withAuth, 
-  withRole, 
-  withInputValidation, 
-  generateToken, 
+import {
+  withAuth,
+  withRole,
+  withInputValidation,
+  generateToken,
   generateJWT,
   verifyToken,
-  hashPassword, 
-  verifyPassword
+  hashPassword,
+  verifyPassword,
 } from '../src/security.js';
 
 describe('API Security Functions', () => {
@@ -24,10 +24,10 @@ describe('API Security Functions', () => {
   it('should generate and verify JWT tokens', () => {
     const jwtPayload = { userId: 123, role: 'user' };
     const jwtToken = generateJWT(jwtPayload, '1h', 'test-secret');
-    
+
     expect(typeof jwtToken).toBe('string');
     expect(jwtToken.split('.').length).toBe(3);
-    
+
     const decoded = verifyToken(jwtToken, 'test-secret');
     expect(decoded).not.toBeNull();
     expect(decoded.userId).toBe(123);
@@ -43,13 +43,13 @@ describe('API Security Functions', () => {
   it('should hash and verify passwords', async () => {
     const password = 'testPassword123';
     const hashedPassword = await hashPassword(password);
-    
+
     expect(typeof hashedPassword).toBe('string');
     expect(hashedPassword).not.toBe(password);
-    
+
     const isValid = await verifyPassword(password, hashedPassword);
     expect(isValid).toBe(true);
-    
+
     const isInvalid = await verifyPassword('wrongPassword', hashedPassword);
     expect(isInvalid).toBe(false);
   });
@@ -68,9 +68,9 @@ describe('API Security Functions', () => {
     const schema = {
       type: 'object',
       properties: {
-        name: { type: 'string', minLength: 1 }
+        name: { type: 'string', minLength: 1 },
       },
-      required: ['name']
+      required: ['name'],
     };
 
     const validationMiddleware = withInputValidation(schema);

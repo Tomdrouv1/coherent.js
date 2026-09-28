@@ -27,11 +27,11 @@ describe('Enhanced Router', () => {
 
     it('should register routes', () => {
       router.addRoute('/home', {
-        component: () => ({ div: { text: 'Home' } })
+        component: () => ({ div: { text: 'Home' } }),
       });
 
       router.addRoute('/about', {
-        component: () => ({ div: { text: 'About' } })
+        component: () => ({ div: { text: 'About' } }),
       });
 
       const routes = router.getRoutes();
@@ -43,7 +43,7 @@ describe('Enhanced Router', () => {
     it('should get route by path', () => {
       router.addRoute('/home', {
         component: () => ({ div: { text: 'Home' } }),
-        meta: { title: 'Home Page' }
+        meta: { title: 'Home Page' },
       });
 
       const route = router.getRoute('/home');
@@ -54,7 +54,7 @@ describe('Enhanced Router', () => {
 
     it('should navigate to routes', async () => {
       router.addRoute('/home', {
-        component: () => ({ div: { text: 'Home' } })
+        component: () => ({ div: { text: 'Home' } }),
       });
 
       const result = await router.push('/home');
@@ -68,7 +68,7 @@ describe('Enhanced Router', () => {
 
     it('should track navigation statistics', async () => {
       router.addRoute('/home', {
-        component: () => ({ div: { text: 'Home' } })
+        component: () => ({ div: { text: 'Home' } }),
       });
 
       await router.push('/home');
@@ -85,8 +85,8 @@ describe('Enhanced Router', () => {
         prefetch: {
           enabled: true,
           strategy: 'manual',
-          maxConcurrent: 3
-        }
+          maxConcurrent: 3,
+        },
       });
 
       let loadCalled = false;
@@ -94,13 +94,13 @@ describe('Enhanced Router', () => {
         component: async () => {
           loadCalled = true;
           return { div: { text: 'Home' } };
-        }
+        },
       });
 
       await prefetchRouter.prefetchRoute('/home');
 
       // Wait for prefetch to complete
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       expect(loadCalled).toBe(true);
 
@@ -111,8 +111,8 @@ describe('Enhanced Router', () => {
     it('should not prefetch when disabled', async () => {
       const noPrefetchRouter = createRouter({
         prefetch: {
-          enabled: false
-        }
+          enabled: false,
+        },
       });
 
       let loadCalled = false;
@@ -120,7 +120,7 @@ describe('Enhanced Router', () => {
         component: async () => {
           loadCalled = true;
           return { div: { text: 'Home' } };
-        }
+        },
       });
 
       await noPrefetchRouter.prefetchRoute('/home');
@@ -133,8 +133,8 @@ describe('Enhanced Router', () => {
         prefetch: {
           enabled: true,
           strategy: 'manual',
-          maxConcurrent: 5
-        }
+          maxConcurrent: 5,
+        },
       });
 
       const loadedRoutes = [];
@@ -143,27 +143,27 @@ describe('Enhanced Router', () => {
         component: async () => {
           loadedRoutes.push('/home');
           return { div: { text: 'Home' } };
-        }
+        },
       });
 
       prefetchRouter.addRoute('/about', {
         component: async () => {
           loadedRoutes.push('/about');
           return { div: { text: 'About' } };
-        }
+        },
       });
 
       prefetchRouter.addRoute('/contact', {
         component: async () => {
           loadedRoutes.push('/contact');
           return { div: { text: 'Contact' } };
-        }
+        },
       });
 
       prefetchRouter.prefetchRoutes(['/home', '/about', '/contact']);
 
       // Wait for prefetches to complete
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       expect(loadedRoutes).toContain('/home');
       expect(loadedRoutes).toContain('/about');
@@ -175,8 +175,8 @@ describe('Enhanced Router', () => {
         prefetch: {
           enabled: true,
           strategy: 'manual',
-          maxConcurrent: 1
-        }
+          maxConcurrent: 1,
+        },
       });
 
       const loadTimes = [];
@@ -185,16 +185,16 @@ describe('Enhanced Router', () => {
         prefetchRouter.addRoute(`/route${i}`, {
           component: async () => {
             loadTimes.push(Date.now());
-            await new Promise(resolve => setTimeout(resolve, 10));
+            await new Promise((resolve) => setTimeout(resolve, 10));
             return { div: { text: `Route ${i}` } };
-          }
+          },
         });
       }
 
       prefetchRouter.prefetchRoutes(['/route0', '/route1', '/route2']);
 
       // Wait for all prefetches
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // With maxConcurrent: 1, routes should load sequentially
       expect(loadTimes.length).toBe(3);
@@ -210,9 +210,9 @@ describe('Enhanced Router', () => {
             critical: 100,
             high: 50,
             normal: 0,
-            low: -50
-            }
-        }
+            low: -50,
+          },
+        },
       });
 
       const loadOrder = [];
@@ -221,32 +221,32 @@ describe('Enhanced Router', () => {
         component: async () => {
           loadOrder.push('low');
           return { div: { text: 'Low' } };
-        }
+        },
       });
 
       prefetchRouter.addRoute('/high', {
         component: async () => {
           loadOrder.push('high');
           return { div: { text: 'High' } };
-        }
+        },
       });
 
       prefetchRouter.addRoute('/critical', {
         component: async () => {
           loadOrder.push('critical');
           return { div: { text: 'Critical' } };
-        }
+        },
       });
 
       // Prefetch all at once (queue them before processing)
       prefetchRouter.prefetchRoute('/low', -50);
-      await new Promise(resolve => setTimeout(resolve, 1)); // Let queue add
+      await new Promise((resolve) => setTimeout(resolve, 1)); // Let queue add
       prefetchRouter.prefetchRoute('/high', 50);
-      await new Promise(resolve => setTimeout(resolve, 1)); // Let queue add
+      await new Promise((resolve) => setTimeout(resolve, 1)); // Let queue add
       prefetchRouter.prefetchRoute('/critical', 100);
 
       // Wait for all prefetches to complete
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise((resolve) => setTimeout(resolve, 150));
 
       // With maxConcurrent: 1, they process one at a time
       // The queue is sorted by priority, so should be: critical, high, low
@@ -265,8 +265,8 @@ describe('Enhanced Router', () => {
       const codeSplitRouter = createRouter({
         codeSplitting: {
           enabled: true,
-          strategy: 'route'
-        }
+          strategy: 'route',
+        },
       });
 
       let loadCalled = false;
@@ -274,7 +274,7 @@ describe('Enhanced Router', () => {
         component: async () => {
           loadCalled = true;
           return { div: { text: 'Home' } };
-        }
+        },
       });
 
       const route = codeSplitRouter.getRoute('/home');
@@ -290,12 +290,12 @@ describe('Enhanced Router', () => {
       const codeSplitRouter = createRouter({
         codeSplitting: {
           enabled: true,
-          strategy: 'route'
-        }
+          strategy: 'route',
+        },
       });
 
       codeSplitRouter.addRoute('/home', {
-        component: async () => ({ div: { text: 'Home' } })
+        component: async () => ({ div: { text: 'Home' } }),
       });
 
       await codeSplitRouter.push('/home');
@@ -312,12 +312,12 @@ describe('Enhanced Router', () => {
         codeSplitting: {
           enabled: true,
           strategy: 'route',
-          onLoad: onLoadFn
-        }
+          onLoad: onLoadFn,
+        },
       });
 
       codeSplitRouter.addRoute('/home', {
-        component: async () => ({ div: { text: 'Home' } })
+        component: async () => ({ div: { text: 'Home' } }),
       });
 
       await codeSplitRouter.push('/home');
@@ -334,14 +334,14 @@ describe('Enhanced Router', () => {
       const codeSplitRouter = createRouter({
         codeSplitting: {
           enabled: true,
-          preload: ['/home']
-        }
+          preload: ['/home'],
+        },
       });
 
       const loadFn = vi.fn().mockResolvedValue({ div: { text: 'Home' } });
 
       codeSplitRouter.addRoute('/home', {
-        component: loadFn
+        component: loadFn,
       });
 
       // Preload should be called during addRoute
@@ -351,8 +351,8 @@ describe('Enhanced Router', () => {
     it('should not reload already loaded components', async () => {
       const codeSplitRouter = createRouter({
         codeSplitting: {
-          enabled: true
-        }
+          enabled: true,
+        },
       });
 
       let loadCount = 0;
@@ -360,7 +360,7 @@ describe('Enhanced Router', () => {
         component: async () => {
           loadCount++;
           return { div: { text: 'Home' } };
-        }
+        },
       });
 
       await codeSplitRouter.push('/home');
@@ -373,11 +373,11 @@ describe('Enhanced Router', () => {
   describe('Navigation History', () => {
     it('should maintain navigation history', async () => {
       router.addRoute('/home', {
-        component: () => ({ div: { text: 'Home' } })
+        component: () => ({ div: { text: 'Home' } }),
       });
 
       router.addRoute('/about', {
-        component: () => ({ div: { text: 'About' } })
+        component: () => ({ div: { text: 'About' } }),
       });
 
       await router.push('/home');
@@ -389,11 +389,11 @@ describe('Enhanced Router', () => {
 
     it('should go back in history', async () => {
       router.addRoute('/home', {
-        component: () => ({ div: { text: 'Home' } })
+        component: () => ({ div: { text: 'Home' } }),
       });
 
       router.addRoute('/about', {
-        component: () => ({ div: { text: 'About' } })
+        component: () => ({ div: { text: 'About' } }),
       });
 
       await router.push('/home');
@@ -403,22 +403,22 @@ describe('Enhanced Router', () => {
 
       router.back();
 
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       expect(router.getCurrentRoute().path).toBe('/home');
     });
 
     it('should replace current route', async () => {
       router.addRoute('/home', {
-        component: () => ({ div: { text: 'Home' } })
+        component: () => ({ div: { text: 'Home' } }),
       });
 
       router.addRoute('/about', {
-        component: () => ({ div: { text: 'About' } })
+        component: () => ({ div: { text: 'About' } }),
       });
 
       router.addRoute('/contact', {
-        component: () => ({ div: { text: 'Contact' } })
+        component: () => ({ div: { text: 'Contact' } }),
       });
 
       await router.push('/home');
@@ -437,8 +437,8 @@ describe('Enhanced Router', () => {
         component: () => ({ div: { text: 'Home' } }),
         meta: {
           title: 'Home Page',
-          requiresAuth: false
-        }
+          requiresAuth: false,
+        },
       });
 
       const route = router.getRoute('/home');
@@ -450,8 +450,8 @@ describe('Enhanced Router', () => {
       router.addRoute('/home', {
         component: () => ({ div: { text: 'Home' } }),
         meta: {
-          title: 'Home Page'
-        }
+          title: 'Home Page',
+        },
       });
 
       await router.push('/home');
@@ -466,15 +466,15 @@ describe('Enhanced Router', () => {
       const prefetchRouter = createRouter({
         prefetch: {
           enabled: true,
-          strategy: 'manual'
+          strategy: 'manual',
         },
         codeSplitting: {
-          enabled: true
-        }
+          enabled: true,
+        },
       });
 
       prefetchRouter.addRoute('/home', {
-        component: async () => ({ div: { text: 'Home' } })
+        component: async () => ({ div: { text: 'Home' } }),
       });
 
       await prefetchRouter.push('/home');
@@ -494,26 +494,26 @@ describe('Enhanced Router', () => {
       const prefetchRouter = createRouter({
         prefetch: {
           enabled: true,
-          strategy: 'manual'
+          strategy: 'manual',
         },
         codeSplitting: {
-          enabled: true
-        }
+          enabled: true,
+        },
       });
 
       prefetchRouter.addRoute('/home', {
-        component: async () => ({ div: { text: 'Home' } })
+        component: async () => ({ div: { text: 'Home' } }),
       });
 
       prefetchRouter.addRoute('/about', {
-        component: async () => ({ div: { text: 'About' } })
+        component: async () => ({ div: { text: 'About' } }),
       });
 
       await prefetchRouter.push('/home');
       await prefetchRouter.prefetchRoute('/about');
 
       // Wait for prefetch
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       const stats = prefetchRouter.getStats();
 
@@ -536,7 +536,7 @@ describe('Enhanced Router', () => {
       router.addRoute('/error', {
         component: async () => {
           throw new Error('Load failed');
-        }
+        },
       });
 
       const result = await router.push('/error');
@@ -549,18 +549,18 @@ describe('Enhanced Router', () => {
         prefetch: {
           enabled: true,
           strategy: 'manual',
-          maxConcurrent: 1
-        }
+          maxConcurrent: 1,
+        },
       });
 
       prefetchRouter.addRoute('/error', {
         component: async () => {
           throw new Error('Load failed');
-        }
+        },
       });
 
       prefetchRouter.addRoute('/success', {
-        component: async () => ({ div: { text: 'Success' } })
+        component: async () => ({ div: { text: 'Success' } }),
       });
 
       // Prefetch both
@@ -568,7 +568,7 @@ describe('Enhanced Router', () => {
       await prefetchRouter.prefetchRoute('/success');
 
       // Wait for prefetches
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Success route should still load despite error
       const successRoute = prefetchRouter.getRoute('/success');

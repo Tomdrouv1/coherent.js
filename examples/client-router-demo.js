@@ -22,13 +22,25 @@ function HomePage() {
           nav: {
             children: [
               { a: { href: '/about', text: 'About', className: 'nav-link' } },
-              { a: { href: '/products', text: 'Products', className: 'nav-link' } },
-              { a: { href: '/users/123', text: 'User Profile', className: 'nav-link' } }
-            ]
-          }
-        }
-      ]
-    }
+              {
+                a: {
+                  href: '/products',
+                  text: 'Products',
+                  className: 'nav-link',
+                },
+              },
+              {
+                a: {
+                  href: '/users/123',
+                  text: 'User Profile',
+                  className: 'nav-link',
+                },
+              },
+            ],
+          },
+        },
+      ],
+    },
   };
 }
 
@@ -39,9 +51,9 @@ function AboutPage() {
       children: [
         { h1: { text: 'About Us' } },
         { p: { text: 'Learn more about our application' } },
-        { a: { href: '/', text: '← Back to Home' } }
-      ]
-    }
+        { a: { href: '/', text: '← Back to Home' } },
+      ],
+    },
   };
 }
 
@@ -49,7 +61,7 @@ function ProductsPage() {
   const products = [
     { id: 1, name: 'Product A', price: 29.99 },
     { id: 2, name: 'Product B', price: 39.99 },
-    { id: 3, name: 'Product C', price: 49.99 }
+    { id: 3, name: 'Product C', price: 49.99 },
   ];
 
   return {
@@ -59,23 +71,23 @@ function ProductsPage() {
         { h1: { text: 'Products' } },
         {
           ul: {
-            children: products.map(product => ({
+            children: products.map((product) => ({
               li: {
                 children: [
                   {
                     a: {
                       href: `/products/${product.id}`,
-                      text: `${product.name} - $${product.price}`
-                    }
-                  }
-                ]
-              }
-            }))
-          }
+                      text: `${product.name} - $${product.price}`,
+                    },
+                  },
+                ],
+              },
+            })),
+          },
         },
-        { a: { href: '/', text: '← Back to Home' } }
-      ]
-    }
+        { a: { href: '/', text: '← Back to Home' } },
+      ],
+    },
   };
 }
 
@@ -88,9 +100,9 @@ function ProductDetailPage({ params }) {
       children: [
         { h1: { text: `Product #${productId}` } },
         { p: { text: `Details for product ${productId}` } },
-        { a: { href: '/products', text: '← Back to Products' } }
-      ]
-    }
+        { a: { href: '/products', text: '← Back to Products' } },
+      ],
+    },
   };
 }
 
@@ -103,9 +115,9 @@ function UserProfilePage({ params }) {
       children: [
         { h1: { text: `User Profile` } },
         { p: { text: `User ID: ${userId}` } },
-        { a: { href: '/', text: '← Back to Home' } }
-      ]
-    }
+        { a: { href: '/', text: '← Back to Home' } },
+      ],
+    },
   };
 }
 
@@ -116,9 +128,9 @@ function NotFoundPage() {
       children: [
         { h1: { text: '404 - Not Found' } },
         { p: { text: 'The page you are looking for does not exist.' } },
-        { a: { href: '/', text: '← Back to Home' } }
-      ]
-    }
+        { a: { href: '/', text: '← Back to Home' } },
+      ],
+    },
   };
 }
 
@@ -138,16 +150,21 @@ let loggedIn = true;
 // `component` is a loader, called once on first navigation: return the
 // component, or use `() => import('./pages/About.js')` to code-split.
 router.addRoute('/', { component: () => HomePage });
-router.addRoute('/about', { component: () => AboutPage, meta: { title: 'About Us' } });
+router.addRoute('/about', {
+  component: () => AboutPage,
+  meta: { title: 'About Us' },
+});
 router.addRoute('/products', { component: () => ProductsPage });
 router.addRoute('/products/:id', { component: () => ProductDetailPage });
 router.addRoute('/users/:id', {
   component: () => UserProfilePage,
   // Guards may be async; returning false cancels the navigation.
   beforeEnter: (to) => {
-    console.log(`🔒 Checking access to user ${to.params.id}: ${loggedIn ? 'granted' : 'denied'}`);
+    console.log(
+      `🔒 Checking access to user ${to.params.id}: ${loggedIn ? 'granted' : 'denied'}`
+    );
     return loggedIn;
-  }
+  },
 });
 router.addRoute('*', { component: () => NotFoundPage });
 
@@ -157,9 +174,13 @@ router.addRoute('*', { component: () => NotFoundPage });
 
 function describe(result) {
   const route = router.getCurrentRoute();
-  const html = route?.component ? render(route.component({ params: route.params, query: route.query })) : '';
+  const html = route?.component
+    ? render(route.component({ params: route.params, query: route.query }))
+    : '';
   console.log(`   navigated: ${result} → ${route?.fullPath}`);
-  console.log(`   params: ${JSON.stringify(route?.params)} query: ${JSON.stringify(route?.query)}`);
+  console.log(
+    `   params: ${JSON.stringify(route?.params)} query: ${JSON.stringify(route?.query)}`
+  );
   console.log(`   html: ${html.slice(0, 80)}${html.length > 80 ? '…' : ''}`);
 }
 
@@ -179,7 +200,9 @@ async function main() {
 
   console.log('\nExample 4: A guard cancelling a navigation');
   loggedIn = false;
-  console.log(`   navigated: ${await router.push('/users/789')} (still on ${router.getCurrentRoute().fullPath})`);
+  console.log(
+    `   navigated: ${await router.push('/users/789')} (still on ${router.getCurrentRoute().fullPath})`
+  );
   loggedIn = true;
 
   console.log('\nExample 5: Back and forward');
@@ -197,8 +220,13 @@ async function main() {
   describe(await router.push('/does/not/exist'));
 
   console.log('\nExample 8: The last navigation wins');
-  const [slow, fast] = await Promise.all([router.push('/about'), router.push('/')]);
-  console.log(`   /about → ${slow}, / → ${fast}, current: ${router.getCurrentRoute().fullPath}`);
+  const [slow, fast] = await Promise.all([
+    router.push('/about'),
+    router.push('/'),
+  ]);
+  console.log(
+    `   /about → ${slow}, / → ${fast}, current: ${router.getCurrentRoute().fullPath}`
+  );
 
   console.log('\n📊 Stats:', JSON.stringify(router.getStats()));
 }

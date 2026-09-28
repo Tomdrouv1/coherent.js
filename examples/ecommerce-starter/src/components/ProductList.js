@@ -7,7 +7,13 @@ const ProductCard = (product) => ({
         div: {
           className: 'product-card-body',
           children: [
-            { h3: { children: [{ a: { href: `/product/${product.id}`, text: product.name } }] } },
+            {
+              h3: {
+                children: [
+                  { a: { href: `/product/${product.id}`, text: product.name } },
+                ],
+              },
+            },
             { p: { className: 'price', text: `$${product.price.toFixed(2)}` } },
             !product.inStock
               ? { span: { className: 'badge-out', text: 'Out of stock' } }

@@ -18,12 +18,12 @@ describe('Smart Route Matching Optimization', () => {
     return new Promise((resolve, reject) => {
       const req = http.get(`http://localhost:${port}${path}`, (res) => {
         let data = '';
-        res.on('data', chunk => data += chunk);
+        res.on('data', (chunk) => (data += chunk));
         res.on('end', () => {
           resolve({
             statusCode: res.statusCode,
             headers: res.headers,
-            body: data
+            body: data,
           });
         });
       });
@@ -63,7 +63,7 @@ describe('Smart Route Matching Optimization', () => {
       expect(router.routes.length).toBe(3);
 
       // Check that dynamic routes are marked correctly
-      const dynamicRoutes = router.routes.filter(route => !route.isStatic);
+      const dynamicRoutes = router.routes.filter((route) => !route.isStatic);
       expect(dynamicRoutes.length).toBe(3);
     });
 
@@ -71,11 +71,11 @@ describe('Smart Route Matching Optimization', () => {
       const router = createRouter();
 
       // Mix of static and dynamic routes
-      router.get('/', () => 'home');                    // static
-      router.get('/users/:id', () => 'user');           // dynamic
-      router.get('/health', () => 'ok');                // static
-      router.get('/posts/:id', () => 'post');           // dynamic
-      router.get('/api/status', () => 'status');        // static
+      router.get('/', () => 'home'); // static
+      router.get('/users/:id', () => 'user'); // dynamic
+      router.get('/health', () => 'ok'); // static
+      router.get('/posts/:id', () => 'post'); // dynamic
+      router.get('/api/status', () => 'status'); // static
 
       expect(router.staticRoutes.size).toBe(3);
       expect(router.routes.length).toBe(5);
@@ -86,7 +86,7 @@ describe('Smart Route Matching Optimization', () => {
       expect(router.staticRoutes.has('GET:/api/status')).toBe(true);
 
       // Verify dynamic routes
-      const dynamicRoutes = router.routes.filter(route => !route.isStatic);
+      const dynamicRoutes = router.routes.filter((route) => !route.isStatic);
       expect(dynamicRoutes.length).toBe(2);
       expect(dynamicRoutes[0].path).toBe('/users/:id');
       expect(dynamicRoutes[1].path).toBe('/posts/:id');
@@ -108,7 +108,7 @@ describe('Smart Route Matching Optimization', () => {
       const router = createRouter(null, {
         enableSmartRouting: true,
         enableRouteMetrics: true,
-        enableMetrics: true
+        enableMetrics: true,
       });
       expect(router.enableSmartRouting).toBe(true);
       expect(router.enableRouteMetrics).toBe(true);
@@ -120,7 +120,7 @@ describe('Smart Route Matching Optimization', () => {
       router = createRouter(null, {
         enableSecurityHeaders: false,
         enableCORS: false,
-        enableSmartRouting: true
+        enableSmartRouting: true,
       });
 
       // Add static routes
@@ -178,18 +178,18 @@ describe('Smart Route Matching Optimization', () => {
       router = createRouter(null, {
         enableSecurityHeaders: false,
         enableCORS: false,
-        enableSmartRouting: true
+        enableSmartRouting: true,
       });
 
       // Add dynamic routes
       router.get('/users/:id', (req, _res) => ({
         userId: req.params.id,
-        type: 'dynamic'
+        type: 'dynamic',
       }));
       router.get('/posts/:postId/comments/:commentId', (req, _res) => ({
         postId: req.params.postId,
         commentId: req.params.commentId,
-        type: 'dynamic'
+        type: 'dynamic',
       }));
 
       server = http.createServer(async (_req, _res) => {
@@ -219,7 +219,9 @@ describe('Smart Route Matching Optimization', () => {
       const response = await makeRequest(3104, '/posts/45/comments/78');
 
       expect(response.statusCode).toBe(200);
-      expect(response.body).toBe('{"postId":"45","commentId":"78","type":"dynamic"}');
+      expect(response.body).toBe(
+        '{"postId":"45","commentId":"78","type":"dynamic"}'
+      );
     });
   });
 
@@ -228,7 +230,7 @@ describe('Smart Route Matching Optimization', () => {
       router = createRouter(null, {
         enableSecurityHeaders: false,
         enableCORS: false,
-        enableSmartRouting: true
+        enableSmartRouting: true,
       });
 
       // Mix of static and dynamic routes
@@ -275,7 +277,7 @@ describe('Smart Route Matching Optimization', () => {
       const router = createRouter(null, {
         enableSecurityHeaders: false,
         enableCORS: false,
-        enableSmartRouting: false // Disable smart routing
+        enableSmartRouting: false, // Disable smart routing
       });
 
       router.get('/', () => '<h1>Home</h1>');
@@ -311,7 +313,7 @@ describe('Smart Route Matching Optimization', () => {
       const router = createRouter(null, {
         enableSecurityHeaders: false,
         enableCORS: false,
-        enableSmartRouting: true
+        enableSmartRouting: true,
       });
 
       // Test all HTTP methods
@@ -361,7 +363,7 @@ describe('Smart Route Matching Optimization', () => {
         enableCORS: false,
         enableSmartRouting: true,
         enableRouteMetrics: true,
-        enableMetrics: true
+        enableMetrics: true,
       });
 
       router.get('/', () => 'static');
@@ -397,7 +399,7 @@ describe('Smart Route Matching Optimization', () => {
         enableCORS: false,
         enableSmartRouting: true,
         enableRouteMetrics: false,
-        enableMetrics: false
+        enableMetrics: false,
       });
 
       router.get('/', () => 'static');

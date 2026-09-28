@@ -13,16 +13,28 @@ export async function validateProject(_options = {}) {
     summary: {},
     checks: [],
     issues: [],
-    recommendations: []
+    recommendations: [],
   };
 
   try {
     // Check essential files
     const essentialFiles = [
-      { file: 'package.json', required: true, description: 'Project configuration' },
-      { file: 'coherent.config.js', required: false, description: 'Coherent.js configuration' },
+      {
+        file: 'package.json',
+        required: true,
+        description: 'Project configuration',
+      },
+      {
+        file: 'coherent.config.js',
+        required: false,
+        description: 'Coherent.js configuration',
+      },
       { file: 'src/', required: false, description: 'Source directory' },
-      { file: 'README.md', required: false, description: 'Project documentation' }
+      {
+        file: 'README.md',
+        required: false,
+        description: 'Project documentation',
+      },
     ];
 
     essentialFiles.forEach(({ file, required, description }) => {
@@ -31,17 +43,20 @@ export async function validateProject(_options = {}) {
         name: file,
         description,
         required,
-        status: exists ? 'pass' : (required ? 'fail' : 'warning'),
-        exists
+        status: exists ? 'pass' : required ? 'fail' : 'warning',
+        exists,
       };
-      
+
       validation.checks.push(check);
-      
+
       if (required && !exists) {
         validation.issues.push({
           type: 'missing-file',
           message: `Required file missing: ${file}`,
-          suggestion: file === 'package.json' ? 'Run npm init to create package.json' : `Create ${file}`
+          suggestion:
+            file === 'package.json'
+              ? 'Run npm init to create package.json'
+              : `Create ${file}`,
         });
       }
     });
@@ -60,19 +75,27 @@ export async function validateProject(_options = {}) {
     validation.recommendations.push(...structureValidation.recommendations);
 
     // Generate summary
-    const passedChecks = validation.checks.filter(c => c.status === 'pass').length;
+    const passedChecks = validation.checks.filter(
+      (c) => c.status === 'pass'
+    ).length;
     const totalChecks = validation.checks.length;
-    const failedChecks = validation.checks.filter(c => c.status === 'fail').length;
+    const failedChecks = validation.checks.filter(
+      (c) => c.status === 'fail'
+    ).length;
 
     validation.summary = {
-      status: failedChecks === 0 ? (validation.issues.length === 0 ? 'excellent' : 'good') : 'needs-attention',
+      status:
+        failedChecks === 0
+          ? validation.issues.length === 0
+            ? 'excellent'
+            : 'good'
+          : 'needs-attention',
       passedChecks,
       totalChecks,
       failedChecks,
       issuesFound: validation.issues.length,
-      score: Math.round((passedChecks / totalChecks) * 100)
+      score: Math.round((passedChecks / totalChecks) * 100),
     };
-
   } catch (error) {
     validation.summary.status = 'error';
     validation.summary.error = error.message;
@@ -91,57 +114,63 @@ function validatePackageJson() {
 
     // Check basic fields
     const requiredFields = ['name', 'version', 'description'];
-    requiredFields.forEach(field => {
+    requiredFields.forEach((field) => {
       const hasField = packageJson[field];
       checks.push({
         name: `package.json.${field}`,
         description: `Package ${field} is defined`,
         required: true,
         status: hasField ? 'pass' : 'fail',
-        value: hasField ? packageJson[field] : 'missing'
+        value: hasField ? packageJson[field] : 'missing',
       });
 
       if (!hasField) {
         issues.push({
           type: 'package-field',
           message: `package.json missing required field: ${field}`,
-          suggestion: `Add "${field}" field to package.json`
+          suggestion: `Add "${field}" field to package.json`,
         });
       }
     });
 
     // Check for Coherent.js dependencies
-    const dependencies = { ...packageJson.dependencies, ...packageJson.devDependencies };
-    const hasCoherentDeps = Object.keys(dependencies).some(dep => dep.startsWith('@coherent.js/'));
-    
+    const dependencies = {
+      ...packageJson.dependencies,
+      ...packageJson.devDependencies,
+    };
+    const hasCoherentDeps = Object.keys(dependencies).some((dep) =>
+      dep.startsWith('@coherent.js/')
+    );
+
     checks.push({
       name: 'coherent-dependencies',
       description: 'Coherent.js dependencies present',
       required: false,
       status: hasCoherentDeps ? 'pass' : 'warning',
-      value: hasCoherentDeps ? 'found' : 'missing'
+      value: hasCoherentDeps ? 'found' : 'missing',
     });
 
     if (!hasCoherentDeps) {
       recommendations.push({
         type: 'dependencies',
         priority: 'medium',
-        message: 'No Coherent.js dependencies found. Install with: npm install @coherent.js/core'
+        message:
+          'No Coherent.js dependencies found. Install with: npm install @coherent.js/core',
       });
     }
 
     // Check scripts
     const recommendedScripts = ['dev', 'build', 'start', 'test'];
     const hasScripts = packageJson.scripts || {};
-    
-    recommendedScripts.forEach(script => {
+
+    recommendedScripts.forEach((script) => {
       const hasScript = hasScripts[script];
       checks.push({
         name: `script.${script}`,
         description: `${script} script defined`,
         required: false,
         status: hasScript ? 'pass' : 'warning',
-        value: hasScript ? hasScripts[script] : 'missing'
+        value: hasScript ? hasScripts[script] : 'missing',
       });
     });
 
@@ -149,15 +178,14 @@ function validatePackageJson() {
       recommendations.push({
         type: 'scripts',
         priority: 'medium',
-        message: 'Add dev/start scripts for easier development workflow'
+        message: 'Add dev/start scripts for easier development workflow',
       });
     }
-
   } catch (error) {
     issues.push({
       type: 'package-validation',
       message: `Invalid package.json: ${error.message}`,
-      suggestion: 'Check package.json syntax and formatting'
+      suggestion: 'Check package.json syntax and formatting',
     });
   }
 
@@ -175,7 +203,7 @@ function validateProjectStructure() {
     { name: 'src/pages', description: 'Pages directory' },
     { name: 'public', description: 'Static assets directory' },
     { name: 'test', description: 'Test directory' },
-    { name: 'dist', description: 'Build output directory' }
+    { name: 'dist', description: 'Build output directory' },
   ];
 
   directories.forEach(({ name, description }) => {
@@ -185,7 +213,7 @@ function validateProjectStructure() {
       description,
       required: false,
       status: exists ? 'pass' : 'info',
-      exists
+      exists,
     });
   });
 
@@ -195,17 +223,17 @@ function validateProjectStructure() {
     'eslint.config.js',
     '.eslintrc.js',
     'prettier.config.js',
-    '.gitignore'
+    '.gitignore',
   ];
 
-  configFiles.forEach(file => {
+  configFiles.forEach((file) => {
     const exists = existsSync(resolve(file));
     checks.push({
       name: `config.${file}`,
       description: `${file} configuration`,
       required: false,
       status: exists ? 'pass' : 'info',
-      exists
+      exists,
     });
   });
 
@@ -214,7 +242,8 @@ function validateProjectStructure() {
     recommendations.push({
       type: 'structure',
       priority: 'medium',
-      message: 'Consider creating a "src" directory to organize your source code'
+      message:
+        'Consider creating a "src" directory to organize your source code',
     });
   }
 
@@ -222,7 +251,7 @@ function validateProjectStructure() {
     recommendations.push({
       type: 'structure',
       priority: 'low',
-      message: 'Create "src/components" directory to organize your components'
+      message: 'Create "src/components" directory to organize your components',
     });
   }
 
@@ -230,7 +259,8 @@ function validateProjectStructure() {
     recommendations.push({
       type: 'version-control',
       priority: 'medium',
-      message: 'Add .gitignore file to exclude node_modules and build files from version control'
+      message:
+        'Add .gitignore file to exclude node_modules and build files from version control',
     });
   }
 
@@ -238,7 +268,7 @@ function validateProjectStructure() {
     recommendations.push({
       type: 'documentation',
       priority: 'low',
-      message: 'Add README.md to document your project setup and usage'
+      message: 'Add README.md to document your project setup and usage',
     });
   }
 

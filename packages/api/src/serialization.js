@@ -37,7 +37,7 @@ function serializeMap(map) {
   if (!(map instanceof Map)) {
     throw new Error('Expected Map object');
   }
-  
+
   const obj = {};
   for (const [key, value] of map) {
     obj[key] = value;
@@ -54,7 +54,7 @@ function deserializeMap(obj) {
   if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) {
     throw new Error('Expected plain object');
   }
-  
+
   return new Map(Object.entries(obj));
 }
 
@@ -67,7 +67,7 @@ function serializeSet(set) {
   if (!(set instanceof Set)) {
     throw new Error('Expected Set object');
   }
-  
+
   return Array.from(set);
 }
 
@@ -80,7 +80,7 @@ function deserializeSet(arr) {
   if (!Array.isArray(arr)) {
     throw new Error('Expected array');
   }
-  
+
   return new Set(arr);
 }
 
@@ -104,7 +104,7 @@ function withSerialization(options = {}) {
     enableDate = true,
     enableMap = true,
     enableSet = true,
-    custom = {}
+    custom = {},
   } = options;
 
   return (req, res, next) => {
@@ -138,19 +138,19 @@ function serializeForJSON(data) {
   if (data instanceof Date) {
     return serializeDate(data);
   }
-  
+
   if (data instanceof Map) {
     return serializeMap(data);
   }
-  
+
   if (data instanceof Set) {
     return serializeSet(data);
   }
-  
+
   if (Array.isArray(data)) {
-    return data.map(item => serializeForJSON(item));
+    return data.map((item) => serializeForJSON(item));
   }
-  
+
   if (typeof data === 'object' && data !== null) {
     const serialized = {};
     for (const [key, value] of Object.entries(data)) {
@@ -158,7 +158,7 @@ function serializeForJSON(data) {
     }
     return serialized;
   }
-  
+
   return data;
 }
 
@@ -171,7 +171,7 @@ export {
   serializeSet,
   deserializeSet,
   withSerialization,
-  serializeForJSON
+  serializeForJSON,
 };
 
 export default {
@@ -182,5 +182,5 @@ export default {
   serializeSet,
   deserializeSet,
   withSerialization,
-  serializeForJSON
+  serializeForJSON,
 };

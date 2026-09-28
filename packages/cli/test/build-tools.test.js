@@ -7,7 +7,15 @@
  * generateManifest() hard-coding version '1.1.1'.
  */
 
-import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  afterEach,
+  vi,
+} from 'vitest';
 import { mkdtemp, rm, mkdir, writeFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -18,7 +26,7 @@ import {
   createVitePlugin,
   createWebpackPlugin,
   coherentLoader,
-  generateManifest
+  generateManifest,
 } from '../src/build-tools/index.js';
 
 let project;
@@ -49,15 +57,24 @@ describe('createRollupPlugin', () => {
     const bundle = await rollup({
       input: join(project, 'src', 'main.js'),
       plugins: [createRollupPlugin({ silent: true })],
-      logLevel: 'silent'
+      logLevel: 'silent',
     });
-    const { output } = await bundle.generate({ format: 'esm', sourcemap: true });
+    const { output } = await bundle.generate({
+      format: 'esm',
+      sourcemap: true,
+    });
     await bundle.close();
 
-    expect(output[0].moduleIds).toContain(join(project, 'src', 'components', 'Button.coherent.js'));
+    expect(output[0].moduleIds).toContain(
+      join(project, 'src', 'components', 'Button.coherent.js')
+    );
     expect(output[0].code).toContain("className: 'btn'");
     // A pass-through must not break the source map chain
-    expect(output[0].map.sources.some((source) => source.endsWith('Button.coherent.js'))).toBe(true);
+    expect(
+      output[0].map.sources.some((source) =>
+        source.endsWith('Button.coherent.js')
+      )
+    ).toBe(true);
   });
 });
 
@@ -68,13 +85,19 @@ describe('experimental integrations', () => {
     createVitePlugin();
     createWebpackPlugin({ silent: true });
     expect(warn).toHaveBeenCalledTimes(1);
-    expect(warn.mock.calls[0][0]).toMatch(/createVitePlugin\(\) is experimental/);
+    expect(warn.mock.calls[0][0]).toMatch(
+      /createVitePlugin\(\) is experimental/
+    );
   });
 
   it('the loader passes source and source map through unchanged', () => {
     const callback = vi.fn();
     const map = { version: 3, sources: ['x.coherent.js'], mappings: '' };
-    const result = coherentLoader.call({ callback, getOptions: () => ({ silent: true }) }, 'export const x = 1;', map);
+    const result = coherentLoader.call(
+      { callback, getOptions: () => ({ silent: true }) },
+      'export const x = 1;',
+      map
+    );
     expect(result).toBeUndefined();
     expect(callback).toHaveBeenCalledWith(null, 'export const x = 1;', map);
   });
@@ -82,7 +105,9 @@ describe('experimental integrations', () => {
 
 describe('generateManifest', () => {
   it('records the installed package version', () => {
-    const { version } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+    const { version } = JSON.parse(
+      readFileSync(new URL('../package.json', import.meta.url), 'utf8')
+    );
     const manifest = generateManifest({ Button: {}, Card: {} });
     expect(manifest.version).toBe(version);
     expect(manifest.components).toEqual(['Button', 'Card']);

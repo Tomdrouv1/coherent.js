@@ -8,7 +8,7 @@ import {
   render,
   importPeerDependency,
   renderWithTemplate,
-  isCoherentComponent
+  isCoherentComponent,
 } from '@coherent.js/core';
 
 const DEFAULT_TEMPLATE = '<!DOCTYPE html>\n{{content}}';
@@ -37,7 +37,7 @@ export function coherentMiddleware(options = {}) {
   const {
     enablePerformanceMonitoring = false,
     template = DEFAULT_TEMPLATE,
-    autoRender = false
+    autoRender = false,
   } = options;
 
   return (req, res, next) => {
@@ -49,8 +49,10 @@ export function coherentMiddleware(options = {}) {
       let finalHtml;
       try {
         finalHtml = renderWithTemplate(component, {
-          enablePerformanceMonitoring: renderOptions.enablePerformanceMonitoring ?? enablePerformanceMonitoring,
-          template: renderOptions.template ?? template
+          enablePerformanceMonitoring:
+            renderOptions.enablePerformanceMonitoring ??
+            enablePerformanceMonitoring,
+          template: renderOptions.template ?? template,
         });
       } catch (_error) {
         // Same contract as res.render(): hand the error to the app's error
@@ -66,12 +68,15 @@ export function coherentMiddleware(options = {}) {
 
     if (autoRender) {
       // Override send method to handle Coherent.js objects
-      res.send = function(data) {
+      res.send = function (data) {
         // If data looks like a Coherent.js object (plain object with a single key), render it
         if (isCoherentComponent(data)) {
           try {
             // Use shared rendering utility
-            const finalHtml = renderWithTemplate(data, { enablePerformanceMonitoring, template });
+            const finalHtml = renderWithTemplate(data, {
+              enablePerformanceMonitoring,
+              template,
+            });
 
             // Set content type and send HTML
             res.set('Content-Type', 'text/html');
@@ -214,7 +219,7 @@ export function setupCoherent(app, options = {}) {
     engineName = 'coherent',
     enablePerformanceMonitoring = false,
     template,
-    autoRender = false
+    autoRender = false,
   } = options;
 
   // Register the view engine (opt-in); never override an existing default engine
@@ -227,7 +232,9 @@ export function setupCoherent(app, options = {}) {
 
   // Install the middleware (res.coherent, plus res.send auto-rendering when opted in)
   if (useMiddleware) {
-    app.use(coherentMiddleware({ enablePerformanceMonitoring, template, autoRender }));
+    app.use(
+      coherentMiddleware({ enablePerformanceMonitoring, template, autoRender })
+    );
   }
 }
 
@@ -243,7 +250,7 @@ export async function createExpressIntegration(options = {}) {
     // Verify Express is available
     await importPeerDependency('express', 'Express.js');
 
-    return function(app) {
+    return function (app) {
       if (!app || typeof app.use !== 'function') {
         throw new Error('Invalid Express app instance provided');
       }
@@ -262,5 +269,5 @@ export default {
   createCoherentHandler,
   enhancedExpressEngine,
   setupCoherent,
-  createExpressIntegration
+  createExpressIntegration,
 };

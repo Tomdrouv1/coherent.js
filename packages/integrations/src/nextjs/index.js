@@ -15,7 +15,7 @@ export {
   createCoherentAppRouterHandler,
   createCoherentServerComponent,
   createCoherentClientComponent,
-  createNextIntegration
+  createNextIntegration,
 } from './coherent-nextjs.js';
 
 export { default } from './coherent-nextjs.js';

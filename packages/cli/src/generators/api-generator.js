@@ -15,7 +15,12 @@ import { writeGeneratedFiles } from '../utils/files.js';
  * Generate a new API route
  */
 export async function generateAPI(name, options = {}) {
-  const { path = 'src/api', template = 'rest', skipTest = false, force = false } = options;
+  const {
+    path = 'src/api',
+    template = 'rest',
+    skipTest = false,
+    force = false,
+  } = options;
 
   // Ensure API name is in lowercase with hyphens
   const apiName = toKebabCase(name);
@@ -23,7 +28,7 @@ export async function generateAPI(name, options = {}) {
   const names = {
     apiName,
     className: toPascalCase(name),
-    camelName: toCamelCase(apiName)
+    camelName: toCamelCase(apiName),
   };
   const isRpc = template === 'rpc';
   const routerName = `${names.camelName}${isRpc ? 'RPC' : 'API'}`;
@@ -32,20 +37,33 @@ export async function generateAPI(name, options = {}) {
   const nextSteps = [];
 
   // API and test files
-  const toWrite = [{ path: join(outputDir, `${fileName}.js`), content: generateAPIContent(names, template) }];
+  const toWrite = [
+    {
+      path: join(outputDir, `${fileName}.js`),
+      content: generateAPIContent(names, template),
+    },
+  ];
   if (!skipTest) {
     toWrite.push({
       path: join(outputDir, `${fileName}.test.js`),
-      content: isRpc ? generateRPCTestContent(names) : generateRESTTestContent(names)
+      content: isRpc
+        ? generateRPCTestContent(names)
+        : generateRESTTestContent(names),
     });
   }
   const files = writeGeneratedFiles(toWrite, { force });
 
   // Add next steps
   const endpoint = isRpc ? `/rpc/${apiName}` : `/${apiName}`;
-  nextSteps.push(`Import the API: import ${routerName}, { ${names.camelName}Routes } from './${path}/${fileName}.js'`);
-  nextSteps.push(`Serve it on its own: ${routerName}.createServer().listen(3000)`);
-  nextSteps.push(`Or add its routes to your app's API router: router.addRoutes(${names.camelName}Routes)`);
+  nextSteps.push(
+    `Import the API: import ${routerName}, { ${names.camelName}Routes } from './${path}/${fileName}.js'`
+  );
+  nextSteps.push(
+    `Serve it on its own: ${routerName}.createServer().listen(3000)`
+  );
+  nextSteps.push(
+    `Or add its routes to your app's API router: router.addRoutes(${names.camelName}Routes)`
+  );
   nextSteps.push(
     isRpc
       ? `Test the API: curl -X POST http://localhost:3000${endpoint} -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","method":"${apiName}.list","id":1}'`
@@ -678,7 +696,7 @@ function toKebabCase(str) {
  */
 function toCamelCase(str) {
   return str
-    .replace(/[-_\s]+(.)?/g, (_, c) => c ? c.toUpperCase() : '')
+    .replace(/[-_\s]+(.)?/g, (_, c) => (c ? c.toUpperCase() : ''))
     .replace(/^(.)/, (_, c) => c.toLowerCase());
 }
 
@@ -687,6 +705,6 @@ function toCamelCase(str) {
  */
 function toPascalCase(str) {
   return str
-    .replace(/[-_\s]+(.)?/g, (_, c) => c ? c.toUpperCase() : '')
+    .replace(/[-_\s]+(.)?/g, (_, c) => (c ? c.toUpperCase() : ''))
     .replace(/^(.)/, (_, c) => c.toUpperCase());
 }

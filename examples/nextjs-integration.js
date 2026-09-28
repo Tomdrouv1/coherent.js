@@ -7,7 +7,10 @@
 import { createCoherentNextHandler } from '@coherent.js/integrations/nextjs';
 
 // Enhanced Next.js home page component
-export const NextHomePage = ({ name = 'World', timestamp = new Date().toISOString() }) => ({
+export const NextHomePage = ({
+  name = 'World',
+  timestamp = new Date().toISOString(),
+}) => ({
   html: {
     children: [
       {
@@ -91,11 +94,11 @@ export const NextHomePage = ({ name = 'World', timestamp = new Date().toISOStrin
                   color: #718096; 
                   font-size: 0.9em; 
                 }
-                `
-              }
-            }
-          ]
-        }
+                `,
+              },
+            },
+          ],
+        },
       },
       {
         body: {
@@ -109,9 +112,13 @@ export const NextHomePage = ({ name = 'World', timestamp = new Date().toISOStrin
                       className: 'header',
                       children: [
                         { h1: { text: 'Coherent.js + Next.js' } },
-                        { p: { text: `Welcome, ${name}! Experience seamless Next.js integration with server-side rendering.` } }
-                      ]
-                    }
+                        {
+                          p: {
+                            text: `Welcome, ${name}! Experience seamless Next.js integration with server-side rendering.`,
+                          },
+                        },
+                      ],
+                    },
                   },
                   {
                     div: {
@@ -126,40 +133,60 @@ export const NextHomePage = ({ name = 'World', timestamp = new Date().toISOStrin
                                 div: {
                                   className: 'feature-card',
                                   children: [
-                                    { h3: { text: '🚀 API Route Integration' } },
-                                    { p: { text: 'Seamless integration with Next.js API routes for server-side rendering.' } }
-                                  ]
-                                }
+                                    {
+                                      h3: { text: '🚀 API Route Integration' },
+                                    },
+                                    {
+                                      p: {
+                                        text: 'Seamless integration with Next.js API routes for server-side rendering.',
+                                      },
+                                    },
+                                  ],
+                                },
                               },
                               {
                                 div: {
                                   className: 'feature-card',
                                   children: [
-                                    { h3: { text: '📊 Performance Monitoring' } },
-                                    { p: { text: 'Built-in performance tracking and optimization for Next.js applications.' } }
-                                  ]
-                                }
+                                    {
+                                      h3: { text: '📊 Performance Monitoring' },
+                                    },
+                                    {
+                                      p: {
+                                        text: 'Built-in performance tracking and optimization for Next.js applications.',
+                                      },
+                                    },
+                                  ],
+                                },
                               },
                               {
                                 div: {
                                   className: 'feature-card',
                                   children: [
                                     { h3: { text: '🔧 Zero Configuration' } },
-                                    { p: { text: 'Drop-in integration with existing Next.js projects without configuration.' } }
-                                  ]
-                                }
+                                    {
+                                      p: {
+                                        text: 'Drop-in integration with existing Next.js projects without configuration.',
+                                      },
+                                    },
+                                  ],
+                                },
                               },
                               {
                                 div: {
                                   className: 'feature-card',
                                   children: [
                                     { h3: { text: '⚡ Static Generation' } },
-                                    { p: { text: 'Compatible with Next.js static generation and incremental static regeneration.' } }
-                                  ]
-                                }
-                              }
-                            ]
-                          }
+                                    {
+                                      p: {
+                                        text: 'Compatible with Next.js static generation and incremental static regeneration.',
+                                      },
+                                    },
+                                  ],
+                                },
+                              },
+                            ],
+                          },
                         },
                         {
                           div: {
@@ -171,50 +198,68 @@ export const NextHomePage = ({ name = 'World', timestamp = new Date().toISOStrin
                                   className: 'info-item',
                                   children: [
                                     { strong: { text: 'Rendered At: ' } },
-                                    { span: { text: new Date(timestamp).toLocaleString() } }
-                                  ]
-                                }
+                                    {
+                                      span: {
+                                        text: new Date(
+                                          timestamp
+                                        ).toLocaleString(),
+                                      },
+                                    },
+                                  ],
+                                },
                               },
                               {
                                 div: {
                                   className: 'info-item',
                                   children: [
                                     { strong: { text: 'Framework: ' } },
-                                    { span: { text: 'Next.js with Coherent.js' } }
-                                  ]
-                                }
+                                    {
+                                      span: {
+                                        text: 'Next.js with Coherent.js',
+                                      },
+                                    },
+                                  ],
+                                },
                               },
                               {
                                 div: {
                                   className: 'info-item',
                                   children: [
                                     { strong: { text: 'Rendering: ' } },
-                                    { span: { text: 'Server-Side Rendering (SSR)' } }
-                                  ]
-                                }
-                              }
-                            ]
-                          }
-                        }
-                      ]
-                    }
+                                    {
+                                      span: {
+                                        text: 'Server-Side Rendering (SSR)',
+                                      },
+                                    },
+                                  ],
+                                },
+                              },
+                            ],
+                          },
+                        },
+                      ],
+                    },
                   },
                   {
                     div: {
                       className: 'footer',
                       children: [
-                        { p: { text: 'Powered by Coherent.js and Next.js • Built for modern web applications' } }
-                      ]
-                    }
-                  }
-                ]
-              }
-            }
-          ]
-        }
-      }
-    ]
-  }
+                        {
+                          p: {
+                            text: 'Powered by Coherent.js and Next.js • Built for modern web applications',
+                          },
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    ],
+  },
 });
 
 // Enhanced user profile component for Next.js integration
@@ -223,14 +268,18 @@ export async function getServerSideProps(_context) {
   const userAgent = _context.req.headers['user-agent'] || 'Unknown';
   const timestamp = new Date().toLocaleString();
   const method = _context.req.method || 'GET';
-  
+
   return {
     html: {
       children: [
         {
           head: {
             children: [
-              { title: { text: `${username}'s Profile - Next.js + Coherent.js` } },
+              {
+                title: {
+                  text: `${username}'s Profile - Next.js + Coherent.js`,
+                },
+              },
               {
                 style: {
                   text: `
@@ -283,11 +332,11 @@ export async function getServerSideProps(_context) {
                     font-size: 0.8em;
                     margin-left: 10px;
                   }
-                  `
-                }
-              }
-            ]
-          }
+                  `,
+                },
+              },
+            ],
+          },
         },
         {
           body: {
@@ -304,13 +353,22 @@ export async function getServerSideProps(_context) {
                             h1: {
                               children: [
                                 { span: { text: `👤 ${username}'s Profile` } },
-                                { span: { text: 'Next.js', className: 'next-badge' } }
-                              ]
-                            }
+                                {
+                                  span: {
+                                    text: 'Next.js',
+                                    className: 'next-badge',
+                                  },
+                                },
+                              ],
+                            },
                           },
-                          { p: { text: 'User profile rendered with Next.js API routes and Coherent.js integration' } }
-                        ]
-                      }
+                          {
+                            p: {
+                              text: 'User profile rendered with Next.js API routes and Coherent.js integration',
+                            },
+                          },
+                        ],
+                      },
                     },
                     {
                       div: {
@@ -322,92 +380,110 @@ export async function getServerSideProps(_context) {
                               className: 'info-item',
                               children: [
                                 { strong: { text: 'Username: ' } },
-                                { span: { text: username } }
-                              ]
-                            }
+                                { span: { text: username } },
+                              ],
+                            },
                           },
                           {
                             div: {
                               className: 'info-item',
                               children: [
                                 { strong: { text: 'Request Method: ' } },
-                                { span: { text: method } }
-                              ]
-                            }
+                                { span: { text: method } },
+                              ],
+                            },
                           },
                           {
                             div: {
                               className: 'info-item',
                               children: [
                                 { strong: { text: 'Request Path: ' } },
-                                { span: { text: _context.req.url || '/api/user/[username]' } }
-                              ]
-                            }
+                                {
+                                  span: {
+                                    text:
+                                      _context.req.url ||
+                                      '/api/user/[username]',
+                                  },
+                                },
+                              ],
+                            },
                           },
                           {
                             div: {
                               className: 'info-item',
                               children: [
                                 { strong: { text: 'User Agent: ' } },
-                                { span: { text: userAgent.substring(0, 100) + (userAgent.length > 100 ? '...' : '') } }
-                              ]
-                            }
+                                {
+                                  span: {
+                                    text:
+                                      userAgent.substring(0, 100) +
+                                      (userAgent.length > 100 ? '...' : ''),
+                                  },
+                                },
+                              ],
+                            },
                           },
                           {
                             div: {
                               className: 'info-item',
                               children: [
                                 { strong: { text: 'Rendered At: ' } },
-                                { span: { text: timestamp } }
-                              ]
-                            }
+                                { span: { text: timestamp } },
+                              ],
+                            },
                           },
                           {
                             div: {
                               className: 'info-item',
                               children: [
                                 { strong: { text: 'Framework: ' } },
-                                { span: { text: 'Next.js + Coherent.js' } }
-                              ]
-                            }
-                          }
-                        ]
-                      }
+                                { span: { text: 'Next.js + Coherent.js' } },
+                              ],
+                            },
+                          },
+                        ],
+                      },
                     },
                     {
                       a: {
                         href: '/api/home',
                         text: '← Back to Home',
-                        className: 'back-link'
-                      }
-                    }
-                  ]
-                }
-              }
-            ]
-          }
-        }
-      ]
-    }
+                        className: 'back-link',
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      ],
+    },
   };
-};
+}
 
 // Create optimized Next.js API route handlers
-export const homeHandler = createCoherentNextHandler(() => {
-  return NextHomePage({ 
-    name: 'Next.js Developer',
-    timestamp: new Date().toISOString()
-  });
-}, {
-  enablePerformanceMonitoring: true,
-  cacheComponents: true
-});
+export const homeHandler = createCoherentNextHandler(
+  () => {
+    return NextHomePage({
+      name: 'Next.js Developer',
+      timestamp: new Date().toISOString(),
+    });
+  },
+  {
+    enablePerformanceMonitoring: true,
+    cacheComponents: true,
+  }
+);
 
-export const userHandler = createCoherentNextHandler((req) => {
-  return NextUserPage(req);
-}, {
-  enablePerformanceMonitoring: true
-});
+export const userHandler = createCoherentNextHandler(
+  (req) => {
+    return NextUserPage(req);
+  },
+  {
+    enablePerformanceMonitoring: true,
+  }
+);
 
 // API status handler for health checks
 export const statusHandler = createCoherentNextHandler((req, res) => {
@@ -416,7 +492,7 @@ export const statusHandler = createCoherentNextHandler((req, res) => {
     status: 'ok',
     framework: 'Next.js + Coherent.js',
     timestamp: new Date().toISOString(),
-    version: '1.0.0'
+    version: '1.0.0',
   });
 });
 
@@ -427,21 +503,21 @@ export default function handler(_req, _res) {
     status: 'ok',
     framework: 'Next.js + Coherent.js',
     timestamp: new Date().toISOString(),
-    version: '1.0.0'
+    version: '1.0.0',
   });
 }
 
 /**
  * Usage Instructions:
- * 
+ *
  * To use these handlers in your Next.js application:
- * 
+ *
  * 1. Create pages/api/home.js:
  *    export { homeHandler as default } from '../../examples/nextjs-integration.js';
- * 
+ *
  * 2. Create pages/api/user/[username].js:
  *    export { userHandler as default } from '../../../examples/nextjs-integration.js';
- * 
+ *
  * 3. Create pages/api/status.js:
  *    export { statusHandler as default } from '../../examples/nextjs-integration.js';
  */

@@ -7,7 +7,7 @@
 export {
   coherentFastify,
   createHandler,
-  setupCoherent
+  setupCoherent,
 } from './coherent-fastify.js';
 
 export { default } from './coherent-fastify.js';

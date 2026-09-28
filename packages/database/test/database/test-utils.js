@@ -2,7 +2,7 @@
  * Test Utilities and Mocks for Database Testing
  */
 
-import { vi } from "vitest";
+import { vi } from 'vitest';
 
 /**
  * Mock Database Adapter
@@ -17,7 +17,7 @@ export class MockAdapter {
     this.errors = options.errors || {};
     // Simple in-memory storage for testing
     this.data = {
-      coherent_migrations: []
+      coherent_migrations: [],
     };
   }
 
@@ -78,25 +78,30 @@ export class MockAdapter {
         this.data.coherent_migrations.push({
           migration,
           batch: batch || 1,
-          executed_at: new Date()
+          executed_at: new Date(),
         });
         return {
           rows: [{ id: this.data.coherent_migrations.length }],
-          rowCount: 1
+          rowCount: 1,
         };
       } else if (sql.includes('SELECT')) {
         if (sql.includes('MAX(batch)')) {
           // Return max batch number
-          const maxBatch = Math.max(...this.data.coherent_migrations.map(m => m.batch), 0);
+          const maxBatch = Math.max(
+            ...this.data.coherent_migrations.map((m) => m.batch),
+            0
+          );
           return {
             rows: [{ max_batch: maxBatch }],
-            rowCount: 1
+            rowCount: 1,
           };
         } else if (sql.includes('migration FROM')) {
           // Return applied migrations
           return {
-            rows: this.data.coherent_migrations.map(m => ({ migration: m.migration })),
-            rowCount: this.data.coherent_migrations.length
+            rows: this.data.coherent_migrations.map((m) => ({
+              migration: m.migration,
+            })),
+            rowCount: this.data.coherent_migrations.length,
           };
         }
       }
@@ -106,18 +111,18 @@ export class MockAdapter {
     if (sql.includes('SELECT')) {
       return {
         rows: options.mockRows || [{ id: 1, name: 'Test' }],
-        rowCount: options.mockRows?.length || 1
+        rowCount: options.mockRows?.length || 1,
       };
     } else if (sql.includes('INSERT')) {
       return {
         rows: [{ id: options.insertId || 1 }],
         rowCount: 1,
-        insertId: options.insertId || 1
+        insertId: options.insertId || 1,
       };
     } else if (sql.includes('UPDATE') || sql.includes('DELETE')) {
       return {
         rows: [],
-        rowCount: options.affectedRows || 1
+        rowCount: options.affectedRows || 1,
       };
     }
 
@@ -181,7 +186,9 @@ export class MockPool {
       throw new Error('Pool has been destroyed');
     }
 
-    const connection = new MockConnection(`conn-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+    const connection = new MockConnection(
+      `conn-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    );
     this.acquired.push({ connection, timestamp: Date.now() });
     return connection;
   }
@@ -192,7 +199,9 @@ export class MockPool {
 
   async destroy(connection) {
     // Remove from acquired list
-    const index = this.acquired.findIndex(item => item.connection === connection);
+    const index = this.acquired.findIndex(
+      (item) => item.connection === connection
+    );
     if (index !== -1) {
       this.acquired.splice(index, 1);
     }
@@ -203,23 +212,23 @@ export class MockPool {
     if (this.adapter && typeof this.adapter.query === 'function') {
       return await this.adapter.query(null, sql, params, options);
     }
-    
+
     // Fallback mock response
     if (sql.includes('SELECT')) {
       return {
         rows: options.mockRows || [{ id: 1, name: 'Test' }],
-        rowCount: options.mockRows?.length || 1
+        rowCount: options.mockRows?.length || 1,
       };
     } else if (sql.includes('INSERT')) {
       return {
         rows: [{ id: options.insertId || 1 }],
         rowCount: 1,
-        insertId: options.insertId || 1
+        insertId: options.insertId || 1,
       };
     } else if (sql.includes('UPDATE') || sql.includes('DELETE')) {
       return {
         rows: [],
-        rowCount: options.affectedRows || 1
+        rowCount: options.affectedRows || 1,
       };
     }
 
@@ -241,7 +250,7 @@ export class MockPool {
       invalid: 0,
       pending: 0,
       max: this.maxConnections,
-      min: this.minConnections
+      min: this.minConnections,
     };
   }
 }
@@ -294,12 +303,12 @@ export class MockTransaction {
           data: {
             migration,
             batch: batch || 1,
-            executed_at: new Date()
-          }
+            executed_at: new Date(),
+          },
         });
         return {
           rows: [{ id: 1 }],
-          rowCount: 1
+          rowCount: 1,
         };
       } else if (sql.includes('SELECT')) {
         // Read current data (including pending if committed)
@@ -313,7 +322,7 @@ export class MockTransaction {
     if (sql.includes('SELECT')) {
       return {
         rows: options.mockRows || [{ id: 1, name: 'Test' }],
-        rowCount: options.mockRows?.length || 1
+        rowCount: options.mockRows?.length || 1,
       };
     }
 
@@ -324,16 +333,19 @@ export class MockTransaction {
     if (this.isCommitted || this.isRolledBack) {
       throw new Error('Transaction has already been finalized');
     }
-    
+
     // Apply pending data to adapter
     if (this.adapter) {
       for (const change of this.pendingData) {
-        if (change.type === 'insert' && change.table === 'coherent_migrations') {
+        if (
+          change.type === 'insert' &&
+          change.table === 'coherent_migrations'
+        ) {
           this.adapter.data.coherent_migrations.push(change.data);
         }
       }
     }
-    
+
     this.isCommitted = true;
   }
 
@@ -410,20 +422,20 @@ export const fixtures = {
   users: [
     { id: 1, name: 'John Doe', email: 'john@example.com', active: true },
     { id: 2, name: 'Jane Smith', email: 'jane@example.com', active: false },
-    { id: 3, name: 'Bob Johnson', email: 'bob@example.com', active: true }
+    { id: 3, name: 'Bob Johnson', email: 'bob@example.com', active: true },
   ],
 
   posts: [
     { id: 1, title: 'First Post', content: 'Hello World', user_id: 1 },
     { id: 2, title: 'Second Post', content: 'Another post', user_id: 1 },
-    { id: 3, title: 'Third Post', content: 'Yet another', user_id: 2 }
+    { id: 3, title: 'Third Post', content: 'Yet another', user_id: 2 },
   ],
 
   comments: [
     { id: 1, content: 'Great post!', post_id: 1, user_id: 2 },
     { id: 2, content: 'Thanks!', post_id: 1, user_id: 1 },
-    { id: 3, content: 'Interesting', post_id: 2, user_id: 3 }
-  ]
+    { id: 3, content: 'Interesting', post_id: 2, user_id: 3 },
+  ],
 };
 
 /**
@@ -432,13 +444,13 @@ export const fixtures = {
 export const testConfig = {
   adapter: 'sqlite',
   connection: {
-    filename: ':memory:'
+    filename: ':memory:',
   },
   pool: {
     min: 1,
-    max: 5
+    max: 5,
   },
-  debug: false
+  debug: false,
 };
 
 /**
@@ -452,7 +464,7 @@ export function createMockRequest(overrides = {}) {
     headers: {},
     method: 'GET',
     url: '/',
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -465,7 +477,7 @@ export function createMockResponse() {
     send: () => res,
     end: () => res,
     setHeader: () => res,
-    on: () => res
+    on: () => res,
   };
   return res;
 }
@@ -498,7 +510,7 @@ export class DatabaseTestHelper {
       const columns = Object.keys(row);
       const values = Object.values(row);
       const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ');
-      
+
       const sql = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${placeholders})`;
       await this.adapter.query(null, sql, values);
     }
@@ -525,8 +537,13 @@ export class DatabaseTestHelper {
     if (!query.sql.includes(sql)) {
       throw new Error(`Expected query to contain '${sql}', got '${query.sql}'`);
     }
-    if (params !== null && JSON.stringify(query.params) !== JSON.stringify(params)) {
-      throw new Error(`Expected params ${JSON.stringify(params)}, got ${JSON.stringify(query.params)}`);
+    if (
+      params !== null &&
+      JSON.stringify(query.params) !== JSON.stringify(params)
+    ) {
+      throw new Error(
+        `Expected params ${JSON.stringify(params)}, got ${JSON.stringify(query.params)}`
+      );
     }
   }
 
@@ -538,7 +555,9 @@ export class DatabaseTestHelper {
 
   expectQueryCount(count) {
     if (this.getQueries().length !== count) {
-      throw new Error(`Expected ${count} queries, got ${this.getQueries().length}`);
+      throw new Error(
+        `Expected ${count} queries, got ${this.getQueries().length}`
+      );
     }
   }
 }
@@ -551,20 +570,34 @@ export function createMockMigration(name, version = Date.now()) {
     name,
     version,
     up: async () => {},
-    down: async () => {}
+    down: async () => {},
   };
 }
 
 export function createMockSchemaBuilder() {
   return {
-    createTable: function() { return this; },
-    dropTable: function() { return this; },
-    alterTable: function() { return this; },
-    addColumn: function() { return this; },
-    dropColumn: function() { return this; },
-    addIndex: function() { return this; },
-    dropIndex: function() { return this; },
-    execute: async () => {}
+    createTable: function () {
+      return this;
+    },
+    dropTable: function () {
+      return this;
+    },
+    alterTable: function () {
+      return this;
+    },
+    addColumn: function () {
+      return this;
+    },
+    dropColumn: function () {
+      return this;
+    },
+    addIndex: function () {
+      return this;
+    },
+    dropIndex: function () {
+      return this;
+    },
+    execute: async () => {},
   };
 }
 
@@ -597,7 +630,9 @@ export function expectModelAttributes(model, expected) {
   for (const [key, value] of Object.entries(expected)) {
     const actual = model.get(key);
     if (JSON.stringify(actual) !== JSON.stringify(value)) {
-      throw new Error(`Expected ${key} to be ${JSON.stringify(value)}, got ${JSON.stringify(actual)}`);
+      throw new Error(
+        `Expected ${key} to be ${JSON.stringify(value)}, got ${JSON.stringify(actual)}`
+      );
     }
   }
 }
@@ -614,20 +649,20 @@ export class PerformanceTestHelper {
     const start = performance.now();
     const result = await fn();
     const end = performance.now();
-    
+
     this.measurements.push({
       name,
       duration: end - start,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
-    
+
     return result;
   }
 
   getAverageDuration(name) {
-    const measurements = this.measurements.filter(m => m.name === name);
+    const measurements = this.measurements.filter((m) => m.name === name);
     if (measurements.length === 0) return 0;
-    
+
     const total = measurements.reduce((sum, m) => sum + m.duration, 0);
     return total / measurements.length;
   }
@@ -635,7 +670,9 @@ export class PerformanceTestHelper {
   expectPerformance(name, maxDuration) {
     const avg = this.getAverageDuration(name);
     if (avg >= maxDuration) {
-      throw new Error(`Expected average duration for '${name}' to be less than ${maxDuration}ms, got ${avg}ms`);
+      throw new Error(
+        `Expected average duration for '${name}' to be less than ${maxDuration}ms, got ${avg}ms`
+      );
     }
   }
 
@@ -661,5 +698,5 @@ export default {
   expectValidationError,
   expectDatabaseError,
   expectModelAttributes,
-  PerformanceTestHelper
+  PerformanceTestHelper,
 };

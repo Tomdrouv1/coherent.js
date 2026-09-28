@@ -19,12 +19,24 @@ const inTree: CoherentNode = { div: { children: [provider] } };
 const asNode: CoherentNode = provider;
 
 const rendered: string = provider((children) => JSON.stringify(children));
-const pending: Promise<string | undefined> = provider(async () => useContext<string>('theme'));
+const pending: Promise<string | undefined> = provider(async () =>
+  useContext<string>('theme')
+);
 
 const syncResult: number = runWithContext(() => 1);
-const asyncResult: Promise<string> = runWithContext(async () => 'done', { user: 'alice' });
+const asyncResult: Promise<string> = runWithContext(async () => 'done', {
+  user: 'alice',
+});
 
 // @ts-expect-error runWithContext requires a function
 runWithContext('not a function');
 
-export { asProvider, inTree, asNode, rendered, pending, syncResult, asyncResult };
+export {
+  asProvider,
+  inTree,
+  asNode,
+  rendered,
+  pending,
+  syncResult,
+  asyncResult,
+};

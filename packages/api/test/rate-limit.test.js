@@ -12,8 +12,20 @@ const LIMIT = { windowMs: 60_000, maxRequests: 3 };
 
 /** Minimal request/response pair for driving handle() directly. */
 function mockExchange(address, headers = {}) {
-  const req = { method: 'GET', url: '/', headers, socket: { remoteAddress: address }, on() {} };
-  const res = { statusCode: 0, headers: {}, setHeader() {}, getHeader() {}, end() {} };
+  const req = {
+    method: 'GET',
+    url: '/',
+    headers,
+    socket: { remoteAddress: address },
+    on() {},
+  };
+  const res = {
+    statusCode: 0,
+    headers: {},
+    setHeader() {},
+    getHeader() {},
+    end() {},
+  };
   res.writeHead = (status, extra) => {
     res.statusCode = status;
     Object.assign(res.headers, extra);
@@ -21,7 +33,13 @@ function mockExchange(address, headers = {}) {
   return { req, res };
 }
 
-async function statuses(router, count, headersFor, address = '10.0.0.1', options = { rateLimit: LIMIT }) {
+async function statuses(
+  router,
+  count,
+  headersFor,
+  address = '10.0.0.1',
+  options = { rateLimit: LIMIT }
+) {
   const seen = [];
   for (let i = 0; i < count; i++) {
     const { req, res } = mockExchange(address, headersFor(i));
@@ -47,7 +65,9 @@ describe('router rate limiting', () => {
 
     const seen = [];
     for (let i = 0; i < 5; i++) {
-      const res = await request(`${server.base}/login`, { headers: { 'x-forwarded-for': `1.2.3.${i}` } });
+      const res = await request(`${server.base}/login`, {
+        headers: { 'x-forwarded-for': `1.2.3.${i}` },
+      });
       seen.push(res.status);
     }
 
@@ -83,7 +103,12 @@ describe('router rate limiting', () => {
     const router = new SimpleRouter();
     router.get('/', () => ({ ok: 1 }));
     for (let i = 0; i < 500; i++) {
-      await statuses(router, 1, () => ({}), `10.0.${Math.floor(i / 250)}.${i % 250}`);
+      await statuses(
+        router,
+        1,
+        () => ({}),
+        `10.0.${Math.floor(i / 250)}.${i % 250}`
+      );
     }
     expect(router.rateLimiter.size).toBe(500);
 
@@ -99,8 +124,22 @@ describe('router rate limiting', () => {
     const proxy = '10.0.0.254';
 
     // Two real clients behind one proxy get separate budgets...
-    expect(await statuses(router, 3, () => ({ 'x-forwarded-for': '203.0.113.1' }), proxy)).toEqual([200, 200, 200]);
-    expect(await statuses(router, 1, () => ({ 'x-forwarded-for': '203.0.113.2' }), proxy)).toEqual([200]);
+    expect(
+      await statuses(
+        router,
+        3,
+        () => ({ 'x-forwarded-for': '203.0.113.1' }),
+        proxy
+      )
+    ).toEqual([200, 200, 200]);
+    expect(
+      await statuses(
+        router,
+        1,
+        () => ({ 'x-forwarded-for': '203.0.113.2' }),
+        proxy
+      )
+    ).toEqual([200]);
 
     // ...and a client cannot escape by prepending spoofed hops: the proxy
     // appends the address it saw, which is what gets counted.
@@ -118,7 +157,9 @@ describe('router rate limiting', () => {
     const router = new SimpleRouter();
     router.get('/', () => ({ ok: 1 }));
 
-    const seen = await statuses(router, 5, () => ({}), '10.0.0.1', { rateLimit: false });
+    const seen = await statuses(router, 5, () => ({}), '10.0.0.1', {
+      rateLimit: false,
+    });
 
     expect(seen).toEqual([200, 200, 200, 200, 200]);
   });

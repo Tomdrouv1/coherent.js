@@ -24,7 +24,18 @@ app.get('/', (_req, res) => {
 // Product detail
 app.get('/product/:id', (req, res) => {
   const product = getProduct(req.params.id);
-  if (!product) return res.status(404).type('html').send(render(Layout({ title: 'Not Found', children: [{ p: { text: 'Product not found.' } }] })));
+  if (!product)
+    return res
+      .status(404)
+      .type('html')
+      .send(
+        render(
+          Layout({
+            title: 'Not Found',
+            children: [{ p: { text: 'Product not found.' } }],
+          })
+        )
+      );
   const page = Layout({
     title: product.name,
     children: [ProductDetail({ product })],

@@ -1,4 +1,3 @@
-
 import { describe, it, expect } from 'vitest';
 import { renderToStream } from '../src/rendering/html-renderer.js';
 
@@ -15,11 +14,8 @@ describe('Streaming Rendering', () => {
   it('renders components with children to stream', async () => {
     const component = {
       div: {
-        children: [
-          { h1: { text: 'Title' } },
-          { p: { text: 'Content' } }
-        ]
-      }
+        children: [{ h1: { text: 'Title' } }, { p: { text: 'Content' } }],
+      },
     };
     const chunks = [];
     for await (const chunk of renderToStream(component)) {
@@ -43,13 +39,11 @@ describe('Streaming Rendering', () => {
         children: [
           {
             div: {
-              children: [
-                { span: { text: 'Deep' } }
-              ]
-            }
-          }
-        ]
-      }
+              children: [{ span: { text: 'Deep' } }],
+            },
+          },
+        ],
+      },
     };
     const chunks = [];
     for await (const chunk of renderToStream(component)) {
@@ -61,7 +55,7 @@ describe('Streaming Rendering', () => {
   it('handles withState components in stream', async () => {
     const { withState } = await import('../src/components/component-system.js');
     const Counter = withState({ count: 10 })(({ state }) => ({
-      div: { text: `Count: ${state.count}` }
+      div: { text: `Count: ${state.count}` },
     }));
 
     const chunks = [];
@@ -87,7 +81,7 @@ describe('Streaming Rendering', () => {
   it('handles multiple elements in one object in stream', async () => {
     const component = {
       h1: { text: 'Title' },
-      p: { text: 'Paragraph' }
+      p: { text: 'Paragraph' },
     };
     const chunks = [];
     for await (const chunk of renderToStream(component)) {
@@ -97,12 +91,16 @@ describe('Streaming Rendering', () => {
   });
 
   it('handles style objects in stream', async () => {
-    const component = { div: { style: { color: 'red', fontSize: '16px' }, text: 'Styled' } };
+    const component = {
+      div: { style: { color: 'red', fontSize: '16px' }, text: 'Styled' },
+    };
     const chunks = [];
     for await (const chunk of renderToStream(component)) {
       chunks.push(chunk);
     }
-    expect(chunks.join('')).toBe('<div style="color: red; font-size: 16px">Styled</div>');
+    expect(chunks.join('')).toBe(
+      '<div style="color: red; font-size: 16px">Styled</div>'
+    );
   });
 
   it('handles null props in stream', async () => {
@@ -116,7 +114,9 @@ describe('Streaming Rendering', () => {
 
   it('rejects empty objects in stream, like render()', async () => {
     const consume = async () => {
-      for await (const _chunk of renderToStream({})) { /* drain */ }
+      for await (const _chunk of renderToStream({})) {
+        /* drain */
+      }
     };
     await expect(consume()).rejects.toThrow('Invalid component structure');
   });

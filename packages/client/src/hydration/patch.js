@@ -78,7 +78,8 @@ function nodesFromHTML(html, doc) {
  */
 function createNodes(item, doc, namespace) {
   if (item.type === 'text') return [doc.createTextNode(item.text)];
-  if (item.type === 'element') return [createElement(item.vNode, doc, namespace)];
+  if (item.type === 'element')
+    return [createElement(item.vNode, doc, namespace)];
   // A component taking arguments cannot be run here; it renders nothing.
   return item.html === undefined ? [] : nodesFromHTML(item.html, doc);
 }
@@ -93,22 +94,27 @@ function createNodes(item, doc, namespace) {
 export function createElement(vNode, doc = document, namespace = null) {
   const { tagName, props } = readElement(vNode);
   const ns = tagName.toLowerCase() === 'svg' ? SVG_NS : namespace;
-  const element = ns && typeof doc.createElementNS === 'function'
-    ? doc.createElementNS(ns, tagName)
-    : doc.createElement(tagName);
+  const element =
+    ns && typeof doc.createElementNS === 'function'
+      ? doc.createElementNS(ns, tagName)
+      : doc.createElement(tagName);
 
   setAttributes(element, new Map(), renderedAttributes(props));
   applyLiveProperties(element, props);
 
   const childNs = tagName.toLowerCase() === 'foreignobject' ? null : ns;
   for (const item of getRenderedChildren(tagName, props)) {
-    for (const node of createNodes(item, doc, childNs)) element.appendChild(node);
+    for (const node of createNodes(item, doc, childNs))
+      element.appendChild(node);
   }
   return element;
 }
 
 function namespaceOf(element) {
-  return element.namespaceURI === SVG_NS && element.localName !== 'foreignObject' ? SVG_NS : null;
+  return element.namespaceURI === SVG_NS &&
+    element.localName !== 'foreignObject'
+    ? SVG_NS
+    : null;
 }
 
 function keyOf(item) {
@@ -133,7 +139,10 @@ function sameTag(a, b) {
 }
 
 function isInsignificant(node) {
-  return node.nodeType === 8 || (node.nodeType === 3 && node.textContent.trim() === '');
+  return (
+    node.nodeType === 8 ||
+    (node.nodeType === 3 && node.textContent.trim() === '')
+  );
 }
 
 /** The first sibling from `node` on that is an element or non-blank text. */
@@ -150,9 +159,14 @@ function significantFrom(node) {
 function placeInOrder(parent, nodes) {
   let previous = null;
   for (const node of nodes) {
-    const expected = significantFrom(previous ? previous.nextSibling : parent.firstChild);
+    const expected = significantFrom(
+      previous ? previous.nextSibling : parent.firstChild
+    );
     if (node !== expected) {
-      parent.insertBefore(node, previous ? previous.nextSibling : parent.firstChild);
+      parent.insertBefore(
+        node,
+        previous ? previous.nextSibling : parent.firstChild
+      );
     }
     previous = node;
   }
@@ -191,10 +205,17 @@ function patchChildren(element, previousProps, nextProps, tagName) {
   const namespace = namespaceOf(element);
 
   // Raw HTML: set it when it changed, leave it alone otherwise.
-  const previousHTML = previousList.length === 1 && previousList[0].type === 'opaque' ? previousList[0].html : undefined;
-  const nextHTML = nextList.length === 1 && nextList[0].type === 'opaque' ? nextList[0].html : undefined;
+  const previousHTML =
+    previousList.length === 1 && previousList[0].type === 'opaque'
+      ? previousList[0].html
+      : undefined;
+  const nextHTML =
+    nextList.length === 1 && nextList[0].type === 'opaque'
+      ? nextList[0].html
+      : undefined;
   if (nextProps.html !== undefined && nextHTML !== undefined) {
-    if (previousProps.html === undefined || previousHTML !== nextHTML) setRawHTML(element, nextHTML);
+    if (previousProps.html === undefined || previousHTML !== nextHTML)
+      setRawHTML(element, nextHTML);
     return;
   }
 
@@ -207,16 +228,21 @@ function patchChildren(element, previousProps, nextProps, tagName) {
 
   if (!reliable) {
     // Text-only content needs no node creation
-    if (nextList.length === 0 || (nextList.length === 1 && nextList[0].type === 'text')) {
+    if (
+      nextList.length === 0 ||
+      (nextList.length === 1 && nextList[0].type === 'text')
+    ) {
       const text = nextList.length === 0 ? '' : nextList[0].text;
       if (element.textContent !== text || domList.length !== nextList.length) {
         element.textContent = text;
       }
       return;
     }
-    for (const node of Array.from(element.childNodes)) element.removeChild(node);
+    for (const node of Array.from(element.childNodes))
+      element.removeChild(node);
     for (const item of nextList) {
-      for (const node of createNodes(item, doc, namespace)) element.appendChild(node);
+      for (const node of createNodes(item, doc, namespace))
+        element.appendChild(node);
     }
     return;
   }
@@ -224,7 +250,9 @@ function patchChildren(element, previousProps, nextProps, tagName) {
   const nextNodes = [];
 
   if (allKeyed(previousList) && allKeyed(nextList)) {
-    const byKey = new Map(previousList.map((item, i) => [keyOf(item), { item, node: domList[i] }]));
+    const byKey = new Map(
+      previousList.map((item, i) => [keyOf(item), { item, node: domList[i] }])
+    );
     for (const item of nextList) {
       const match = byKey.get(keyOf(item));
       if (match && sameTag(match.item.vNode, item.vNode)) {
@@ -239,11 +267,17 @@ function patchChildren(element, previousProps, nextProps, tagName) {
   } else {
     const common = Math.min(previousList.length, nextList.length);
     for (let i = 0; i < common; i++) {
-      const nodes = patchChild(element, domList[i], previousList[i], nextList[i]);
+      const nodes = patchChild(
+        element,
+        domList[i],
+        previousList[i],
+        nextList[i]
+      );
       if (nodes[0] !== domList[i]) element.removeChild(domList[i]);
       nextNodes.push(...nodes);
     }
-    for (let i = common; i < domList.length; i++) element.removeChild(domList[i]);
+    for (let i = common; i < domList.length; i++)
+      element.removeChild(domList[i]);
     for (let i = common; i < nextList.length; i++) {
       nextNodes.push(...createNodes(nextList[i], doc, namespace));
     }
@@ -263,7 +297,11 @@ export function patchElement(element, previousVNode, nextVNode) {
   const previous = readElement(previousVNode);
   const next = readElement(nextVNode);
 
-  setAttributes(element, renderedAttributes(previous.props), renderedAttributes(next.props));
+  setAttributes(
+    element,
+    renderedAttributes(previous.props),
+    renderedAttributes(next.props)
+  );
   applyLiveProperties(element, next.props);
   patchChildren(element, previous.props, next.props, next.tagName);
 }
@@ -288,7 +326,11 @@ export function patchRoot(element, previousVNode, nextVNode) {
     return element;
   }
 
-  const replacement = createElement(nextVNode, element.ownerDocument ?? document, namespaceOf(element.parentNode ?? element));
+  const replacement = createElement(
+    nextVNode,
+    element.ownerDocument ?? document,
+    namespaceOf(element.parentNode ?? element)
+  );
   element.parentNode?.replaceChild(replacement, element);
   return replacement;
 }

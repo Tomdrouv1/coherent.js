@@ -18,13 +18,13 @@ const UserModel = {
     name: { type: 'string', required: true },
     email: { type: 'string', required: true },
     age: { type: 'number' },
-    active: { type: 'boolean' }
+    active: { type: 'boolean' },
   },
   methods: {
-    getDisplayName: function() {
+    getDisplayName: function () {
       return this.name || this.email;
-    }
-  }
+    },
+  },
 };
 
 const PostModel = {
@@ -33,8 +33,8 @@ const PostModel = {
   attributes: {
     id: { type: 'number', autoIncrement: true, primaryKey: true },
     title: { type: 'string', required: true },
-    published: { type: 'boolean' }
-  }
+    published: { type: 'boolean' },
+  },
 };
 
 describe('pure object model system', () => {
@@ -44,8 +44,12 @@ describe('pure object model system', () => {
   beforeEach(async () => {
     dbManager = new DatabaseManager({ type: 'sqlite', database: ':memory:' });
     await dbManager.connect();
-    await dbManager.query('CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT, age INTEGER, active BOOLEAN)');
-    await dbManager.query('CREATE TABLE posts (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, published BOOLEAN)');
+    await dbManager.query(
+      'CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT, age INTEGER, active BOOLEAN)'
+    );
+    await dbManager.query(
+      'CREATE TABLE posts (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, published BOOLEAN)'
+    );
     statements = [];
     dbManager.on('query', ({ operation }) => statements.push(operation));
   });
@@ -57,23 +61,44 @@ describe('pure object model system', () => {
   it('writes to the model table and reads the created row back', async () => {
     const User = createModel(dbManager).registerModel('User', UserModel);
 
-    const user = await User.create({ name: 'John Doe', email: 'john@example.com' });
+    const user = await User.create({
+      name: 'John Doe',
+      email: 'john@example.com',
+    });
 
     expect(statements[0]).toBe('INSERT INTO users (name, email) VALUES (?, ?)');
-    expect(user).toMatchObject({ id: 1, name: 'John Doe', email: 'john@example.com' });
+    expect(user).toMatchObject({
+      id: 1,
+      name: 'John Doe',
+      email: 'john@example.com',
+    });
     expect(typeof user.save).toBe('function');
     expect(typeof user.delete).toBe('function');
   });
 
   it('queries, finds, updates and deletes through the model table', async () => {
     const User = createModel(dbManager).registerModel('User', UserModel);
-    await User.create({ name: 'John Doe', email: 'john@example.com', active: true });
-    await User.create({ name: 'Jane', email: 'jane@example.com', active: false });
+    await User.create({
+      name: 'John Doe',
+      email: 'john@example.com',
+      active: true,
+    });
+    await User.create({
+      name: 'Jane',
+      email: 'jane@example.com',
+      active: false,
+    });
 
-    expect((await User.all()).map(user => user.name)).toEqual(['John Doe', 'Jane']);
+    expect((await User.all()).map((user) => user.name)).toEqual([
+      'John Doe',
+      'Jane',
+    ]);
 
-    const activeUsers = await User.where({ select: '*', where: { active: true } });
-    expect(activeUsers.map(user => user.name)).toEqual(['John Doe']);
+    const activeUsers = await User.where({
+      select: '*',
+      where: { active: true },
+    });
+    expect(activeUsers.map((user) => user.name)).toEqual(['John Doe']);
 
     expect((await User.find(2)).name).toBe('Jane');
     expect(await User.find(424242)).toBe(null);
@@ -83,7 +108,7 @@ describe('pure object model system', () => {
     expect((await User.find(1)).age).toBe(30);
 
     expect(await User.deleteWhere({ name: 'John Doe' })).toBe(1);
-    expect((await User.all()).map(user => user.name)).toEqual(['Jane']);
+    expect((await User.all()).map((user) => user.name)).toEqual(['Jane']);
   });
 
   it('does not mutate the query config it is given', async () => {
@@ -97,12 +122,17 @@ describe('pure object model system', () => {
 
   it('saves instances without sending their methods as columns', async () => {
     const User = createModel(dbManager).registerModel('User', UserModel);
-    const user = await User.create({ name: 'John Doe', email: 'john@example.com' });
+    const user = await User.create({
+      name: 'John Doe',
+      email: 'john@example.com',
+    });
 
     user.age = 41;
     await user.save();
 
-    expect(statements.at(-1)).toBe('UPDATE users SET name = ?, email = ?, age = ?, active = ? WHERE id = ?');
+    expect(statements.at(-1)).toBe(
+      'UPDATE users SET name = ?, email = ?, age = ?, active = ? WHERE id = ?'
+    );
     expect((await User.find(user.id)).age).toBe(41);
 
     expect(await user.delete()).toBe(1);
@@ -111,7 +141,10 @@ describe('pure object model system', () => {
 
   it('runs instance methods on the loaded row', async () => {
     const User = createModel(dbManager).registerModel('User', UserModel);
-    const user = await User.create({ name: 'John Doe', email: 'john@example.com' });
+    const user = await User.create({
+      name: 'John Doe',
+      email: 'john@example.com',
+    });
 
     expect(user.getDisplayName()).toBe('John Doe');
   });
@@ -120,28 +153,37 @@ describe('pure object model system', () => {
     const models = createModel(dbManager);
     const User = models.registerModel('User', UserModel);
     const Post = models.registerModel('Post', PostModel);
-    await User.create({ name: 'John Doe', email: 'john@example.com', active: true });
+    await User.create({
+      name: 'John Doe',
+      email: 'john@example.com',
+      active: true,
+    });
     await Post.create({ title: 'Draft', published: false });
     await Post.create({ title: 'Live', published: true });
 
     const results = await models.execute({
       User: { select: '*', where: { active: true } },
-      Post: { select: ['id', 'title'], where: { published: true } }
+      Post: { select: ['id', 'title'], where: { published: true } },
     });
 
-    expect(results.User.map(user => user.name)).toEqual(['John Doe']);
-    expect(results.Post.map(post => ({ id: post.id, title: post.title }))).toEqual([{ id: 2, title: 'Live' }]);
+    expect(results.User.map((user) => user.name)).toEqual(['John Doe']);
+    expect(
+      results.Post.map((post) => ({ id: post.id, title: post.title }))
+    ).toEqual([{ id: 2, title: 'Live' }]);
   });
 
   it('executes object queries through the manager', async () => {
-    await dbManager.query('INSERT INTO users (name, email, active) VALUES (?, ?, ?)', ['a', 'a@example.com', 1]);
+    await dbManager.query(
+      'INSERT INTO users (name, email, active) VALUES (?, ?, ?)',
+      ['a', 'a@example.com', 1]
+    );
 
     const result = await executeQuery(dbManager, {
       select: ['id', 'name', 'email'],
       from: 'users',
       where: { active: true },
       orderBy: { id: 'DESC' },
-      limit: 10
+      limit: 10,
     });
 
     expect(result.rows).toEqual([{ id: 1, name: 'a', email: 'a@example.com' }]);

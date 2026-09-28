@@ -19,7 +19,8 @@ let originalHandle;
 beforeEach(() => {
   reported = [];
   originalHandle = globalErrorHandler.handle;
-  globalErrorHandler.handle = (error, context) => reported.push({ error, context });
+  globalErrorHandler.handle = (error, context) =>
+    reported.push({ error, context });
 });
 
 afterEach(() => {
@@ -33,11 +34,18 @@ describe('watching a getter expression', () => {
     const state = createReactiveState({ a: 1 });
     const seen = [];
 
-    state.watch(() => state.get('a') * 2, (value, old) => seen.push([value, old]));
+    state.watch(
+      () => state.get('a') * 2,
+      (value, old) => seen.push([value, old])
+    );
     state.set('a', 2);
     state.set('a', 3);
 
-    expect(seen).toEqual([[2, undefined], [4, 2], [6, 4]]);
+    expect(seen).toEqual([
+      [2, undefined],
+      [4, 2],
+      [6, 4],
+    ]);
   });
 
   it('notifies a watched computed without anyone reading it', () => {
@@ -123,7 +131,10 @@ describe('delete() and clear()', () => {
   it('notify watchers of a computed that reads a cleared key', () => {
     const state = createReactiveState({ items: [1, 2] });
     const seen = [];
-    state.watch(() => (state.get('items') ?? []).length, (count) => seen.push(count));
+    state.watch(
+      () => (state.get('items') ?? []).length,
+      (count) => seen.push(count)
+    );
 
     state.clear();
     state.set('items', [1, 2, 3]);
@@ -138,9 +149,13 @@ describe('batching', () => {
   it('runs each watcher once, after every update, with the final values', () => {
     const state = createReactiveState({ a: 0, b: 0 });
     const snapshots = [];
-    state.subscribe(['a', 'b'], ({ key, state: snapshot }) => snapshots.push([key, snapshot]), {
-      immediate: false,
-    });
+    state.subscribe(
+      ['a', 'b'],
+      ({ key, state: snapshot }) => snapshots.push([key, snapshot]),
+      {
+        immediate: false,
+      }
+    );
 
     state.batch({ a: 1, b: 1 });
 
@@ -234,7 +249,10 @@ describe('equality and update loops', () => {
     name.value = 'grace';
 
     expect(name.value).toBe('GRACE');
-    expect(calls.mock.calls.map(([value]) => value)).toEqual(['grace', 'GRACE']);
+    expect(calls.mock.calls.map(([value]) => value)).toEqual([
+      'grace',
+      'GRACE',
+    ]);
     expect(reported).toEqual([]);
   });
 
@@ -270,16 +288,21 @@ describe('errors', () => {
     const n = observable(1);
     const double = computed(() => n.value * 2);
     const seen = [];
-    double.watch(() => {
-      throw new Error('boom');
-    }, { immediate: false });
+    double.watch(
+      () => {
+        throw new Error('boom');
+      },
+      { immediate: false }
+    );
     double.watch((value) => seen.push(value), { immediate: false });
 
     n.value = 2;
     n.value = 3;
 
     expect(seen).toEqual([4, 6]);
-    expect(reported.map(({ error, context }) => [error.message, context.type])).toEqual([
+    expect(
+      reported.map(({ error, context }) => [error.message, context.type])
+    ).toEqual([
       ['boom', 'watcher-error'],
       ['boom', 'watcher-error'],
     ]);
@@ -288,15 +311,23 @@ describe('errors', () => {
   it('routes watcher errors to the onError option', () => {
     const onError = vi.fn();
     const state = createReactiveState({ a: 1 }, { onError });
-    state.watch('a', () => {
-      throw new Error('bad watcher');
-    }, { immediate: false });
+    state.watch(
+      'a',
+      () => {
+        throw new Error('bad watcher');
+      },
+      { immediate: false }
+    );
 
     state.set('a', 2);
 
     expect(onError).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'bad watcher' }),
-      expect.objectContaining({ type: 'watcher-error', newValue: 2, oldValue: 1 })
+      expect.objectContaining({
+        type: 'watcher-error',
+        newValue: 2,
+        oldValue: 1,
+      })
     );
     expect(reported).toEqual([]);
   });
@@ -317,8 +348,14 @@ describe('dot paths', () => {
     const state = createReactiveState({ user: { name: 'Ada', age: 36 } });
     const before = state.get('user');
     const seen = [];
-    state.watch('user.name', (value, old) => seen.push(['user.name', value, old]), { immediate: false });
-    state.watch('user', (value) => seen.push(['user', value]), { immediate: false });
+    state.watch(
+      'user.name',
+      (value, old) => seen.push(['user.name', value, old]),
+      { immediate: false }
+    );
+    state.watch('user', (value) => seen.push(['user', value]), {
+      immediate: false,
+    });
 
     state.set('user.name', 'John');
 

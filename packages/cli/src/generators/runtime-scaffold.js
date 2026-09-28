@@ -13,17 +13,24 @@ const cliRange = getDependencyRange(cliVersion);
  * Generate built-in HTTP server setup
  */
 export function generateBuiltInServer(options = {}) {
-  const { port = 3000, hasApi = false, hasDatabase = false, hasAuth = false, isTypeScript = false } = options;
+  const {
+    port = 3000,
+    hasApi = false,
+    hasDatabase = false,
+    hasAuth = false,
+    isTypeScript = false,
+  } = options;
 
   const imports = [
     `import http from 'node:http';`,
     `import fs from 'node:fs';`,
     `import path from 'node:path';`,
-    `import { render } from '@coherent.js/core';`
+    `import { render } from '@coherent.js/core';`,
   ];
 
   if (hasApi) imports.push(`import { setupRoutes } from './api/routes.js';`);
-  if (hasDatabase) imports.push(`import { initDatabase } from './db/index.js';`);
+  if (hasDatabase)
+    imports.push(`import { initDatabase } from './db/index.js';`);
   if (hasAuth) imports.push(`import { setupAuthRoutes } from './api/auth.js';`);
 
   const server = `
@@ -32,17 +39,31 @@ import { HomePage } from './components/HomePage.js';
 
 const PORT = Number(process.env.PORT) || ${port};
 
-${hasDatabase ? `// Initialize database
+${
+  hasDatabase
+    ? `// Initialize database
 await initDatabase();
-` : ''}${hasApi ? `// Setup API routes
+`
+    : ''
+}${
+    hasApi
+      ? `// Setup API routes
 const apiRoutes = setupRoutes();
-` : ''}${hasAuth ? `// Setup auth routes
+`
+      : ''
+  }${
+    hasAuth
+      ? `// Setup auth routes
 const authRoutes = setupAuthRoutes();
-` : ''}
+`
+      : ''
+  }
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || '/', \`http://\${req.headers.host}\`);
 
-${hasApi || hasAuth ? `  // Handle API routes
+${
+  hasApi || hasAuth
+    ? `  // Handle API routes
   if (url.pathname.startsWith('/api')) {
     const allRoutes = [...${hasApi ? 'apiRoutes' : '[]'}, ...${hasAuth ? 'authRoutes' : '[]'}];
     for (const route of allRoutes) {
@@ -54,7 +75,9 @@ ${hasApi || hasAuth ? `  // Handle API routes
     }
   }
 
-` : ''}  // Serve components for hydration
+`
+    : ''
+}  // Serve components for hydration
   if (url.pathname.startsWith('/components/')) {
     const filePath = path.join(process.cwd(), 'src', url.pathname);
     try {
@@ -114,7 +137,9 @@ ${hasApi || hasAuth ? `  // Handle API routes
   }
 });
 
-${hasApi || hasAuth ? `// Route matching helper
+${
+  hasApi || hasAuth
+    ? `// Route matching helper
 function matchRoute(routePattern${isTypeScript ? ': string' : ''}, urlPath${isTypeScript ? ': string' : ''}, requestMethod${isTypeScript ? ': string | undefined' : ''}, routeMethod${isTypeScript ? ': string' : ''}) {
   // Check HTTP method
   if (requestMethod !== routeMethod) {
@@ -154,7 +179,9 @@ function matchRoute(routePattern${isTypeScript ? ': string' : ''}, urlPath${isTy
   return { params };
 }
 
-` : ''}server.listen(PORT, () => {
+`
+    : ''
+}server.listen(PORT, () => {
   console.log(\`Server running at http://localhost:\${PORT}\`);
 });
 `;
@@ -166,15 +193,22 @@ function matchRoute(routePattern${isTypeScript ? ': string' : ''}, urlPath${isTy
  * Generate Express server setup
  */
 export function generateExpressServer(options = {}) {
-  const { port = 3000, hasApi = false, hasDatabase = false, hasAuth = false, isTypeScript = false } = options;
+  const {
+    port = 3000,
+    hasApi = false,
+    hasDatabase = false,
+    hasAuth = false,
+    isTypeScript = false,
+  } = options;
 
   const imports = [
     `import express from 'express';`,
-    `import { setupCoherent } from '@coherent.js/integrations/express';`
+    `import { setupCoherent } from '@coherent.js/integrations/express';`,
   ];
 
   if (hasApi) imports.push(`import apiRoutes from './api/routes.js';`);
-  if (hasDatabase) imports.push(`import { initDatabase } from './db/index.js';`);
+  if (hasDatabase)
+    imports.push(`import { initDatabase } from './db/index.js';`);
   if (hasAuth) {
     imports.push(`import authRoutes from './api/auth.js';`);
     imports.push(`import { authMiddleware } from './middleware/auth.js';`);
@@ -210,26 +244,40 @@ app.use(express.static('public'));
 // into APP_HTML_TEMPLATE and sends it as HTML
 setupCoherent(app, { template: APP_HTML_TEMPLATE });
 
-${hasDatabase ? `// Initialize database
+${
+  hasDatabase
+    ? `// Initialize database
 await initDatabase();
-` : ''}${hasAuth ? `// Public auth routes (register/login; /me protects itself with authMiddleware)
+`
+    : ''
+}${
+    hasAuth
+      ? `// Public auth routes (register/login; /me protects itself with authMiddleware)
 app.use('/api/auth', authRoutes);
 // Protect anything under /api/protected/* with the JWT middleware.
 // Add new protected routes here, not as a top-level app.use().
 app.use('/api/protected', authMiddleware);
-` : ''}
-${hasApi ? `// API routes - convert Coherent.js router to Express middleware
+`
+      : ''
+  }
+${
+  hasApi
+    ? `// API routes - convert Coherent.js router to Express middleware
 app.use('/api', apiRoutes.toExpressRouter(express));
-` : ''}
+`
+    : ''
+}
 // Main route - render the Coherent.js component into APP_HTML_TEMPLATE
 app.get('/', (_req, res) => {
   res.coherent(HomePage({}));
 });
 
 // Error handling (Express identifies error middleware by its 4-parameter signature)
-app.use((${isTypeScript
-    ? 'err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction'
-    : 'err, _req, res, _next'}) => {
+app.use((${
+    isTypeScript
+      ? 'err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction'
+      : 'err, _req, res, _next'
+  }) => {
   console.error(err.stack);
   res.status(500).send('Something broke!');
 });
@@ -246,15 +294,21 @@ app.listen(PORT, () => {
  * Generate Fastify server setup
  */
 export function generateFastifyServer(options = {}) {
-  const { port = 3000, hasApi = false, hasDatabase = false, hasAuth = false } = options;
+  const {
+    port = 3000,
+    hasApi = false,
+    hasDatabase = false,
+    hasAuth = false,
+  } = options;
 
   const imports = [
     `import Fastify from 'fastify';`,
-    `import { setupCoherent } from '@coherent.js/integrations/fastify';`
+    `import { setupCoherent } from '@coherent.js/integrations/fastify';`,
   ];
 
   if (hasApi) imports.push(`import apiRoutes from './api/routes.js';`);
-  if (hasDatabase) imports.push(`import { initDatabase } from './db/index.js';`);
+  if (hasDatabase)
+    imports.push(`import { initDatabase } from './db/index.js';`);
   if (hasAuth) {
     imports.push(`import { authPlugin } from './plugins/auth.js';`);
     imports.push(`import authRoutes from './api/auth.js';`);
@@ -282,11 +336,19 @@ const APP_HTML_TEMPLATE = \`<!DOCTYPE html>
 </body>
 </html>\`;
 
-${hasDatabase ? `// Initialize database
+${
+  hasDatabase
+    ? `// Initialize database
 await initDatabase();
-` : ''}${hasAuth ? `// Register auth plugin
+`
+    : ''
+}${
+    hasAuth
+      ? `// Register auth plugin
 await fastify.register(authPlugin);
-` : ''}
+`
+      : ''
+  }
 // Setup Coherent.js (registers as a plugin; setupCoherent forwards avvio's done callback)
 await fastify.register(setupCoherent, { template: APP_HTML_TEMPLATE });
 
@@ -296,9 +358,15 @@ await fastify.register(import('@fastify/static'), {
   prefix: '/public/'
 });
 
-${hasAuth ? `// Auth routes (prefix /api/auth → /register, /login, /me)
+${
+  hasAuth
+    ? `// Auth routes (prefix /api/auth → /register, /login, /me)
 await fastify.register(authRoutes, { prefix: '/api/auth' });
-` : ''}${hasApi ? `// API routes — delegate /api/* to the Coherent.js object router.
+`
+    : ''
+}${
+    hasApi
+      ? `// API routes — delegate /api/* to the Coherent.js object router.
 // The passthrough content parser leaves the request stream intact so the
 // router can parse the body itself; hijack() hands the response over too.
 await fastify.register(async (scope) => {
@@ -310,7 +378,9 @@ await fastify.register(async (scope) => {
     return apiRoutes.handle(request.raw, reply.raw);
   });
 }, { prefix: '/api' });
-` : ''}
+`
+      : ''
+  }
 // Main route - render the Coherent.js component into APP_HTML_TEMPLATE
 fastify.get('/', async (_request, reply) => {
   return reply.coherent(HomePage({}));
@@ -332,18 +402,25 @@ try {
  * Generate Koa server setup
  */
 export function generateKoaServer(options = {}) {
-  const { port = 3000, hasApi = false, hasDatabase = false, hasAuth = false, isTypeScript = false } = options;
+  const {
+    port = 3000,
+    hasApi = false,
+    hasDatabase = false,
+    hasAuth = false,
+    isTypeScript = false,
+  } = options;
 
   const imports = [
     `import Koa from 'koa';`,
     `import Router from '@koa/router';`,
     `import { koaBody } from 'koa-body';`,
     `import serve from 'koa-static';`,
-    `import { setupCoherent } from '@coherent.js/integrations/koa';`
+    `import { setupCoherent } from '@coherent.js/integrations/koa';`,
   ];
 
   if (hasApi) imports.push(`import apiRoutes from './api/routes.js';`);
-  if (hasDatabase) imports.push(`import { initDatabase } from './db/index.js';`);
+  if (hasDatabase)
+    imports.push(`import { initDatabase } from './db/index.js';`);
   if (hasAuth) {
     imports.push(`import authRouter from './api/auth.js';`);
     imports.push(`import { authMiddleware } from './middleware/auth.js';`);
@@ -372,19 +449,29 @@ const APP_HTML_TEMPLATE = \`<!DOCTYPE html>
 </body>
 </html>\`;
 
-${hasDatabase ? `// Initialize database
+${
+  hasDatabase
+    ? `// Initialize database
 await initDatabase();
-` : ''}
-${hasApi ? `// API routes — delegate /api/* to the Coherent.js object router.
+`
+    : ''
+}
+${
+  hasApi
+    ? `// API routes — delegate /api/* to the Coherent.js object router.
 // Mounted before koaBody() so the router can parse the request body itself;
 // ctx.respond = false hands the raw response over to the router.
-${hasAuth ? `// /api/auth and /api/protected are served by the Koa router below, so they
+${
+  hasAuth
+    ? `// /api/auth and /api/protected are served by the Koa router below, so they
 // are left to Koa instead of being answered (with a 404) by the object router.
 const KOA_API_PREFIXES = ['/api/auth', '/api/protected'];
 const isKoaApiPath = (path${isTypeScript ? ': string' : ''}) =>
   KOA_API_PREFIXES.some((prefix) => path === prefix || path.startsWith(prefix + '/'));
 
-` : ''}app.use(async (ctx, next) => {
+`
+    : ''
+}app.use(async (ctx, next) => {
   if (ctx.path.startsWith('/api')${hasAuth ? ' && !isKoaApiPath(ctx.path)' : ''}) {
     ctx.respond = false;
     ctx.req.url = (ctx.req.url || '').replace(/^\\/api/, '') || '/';
@@ -394,7 +481,9 @@ const isKoaApiPath = (path${isTypeScript ? ': string' : ''}) =>
   await next();
 });
 
-` : ''}// Middleware
+`
+    : ''
+}// Middleware
 app.use(koaBody());
 app.use(serve('./public'));
 
@@ -402,12 +491,16 @@ app.use(serve('./public'));
 // into APP_HTML_TEMPLATE and sets it as the HTML response body
 setupCoherent(app, { template: APP_HTML_TEMPLATE });
 
-${hasAuth ? `// Auth routes (public). Mount before the protected scope.
+${
+  hasAuth
+    ? `// Auth routes (public). Mount before the protected scope.
 router.use('/api/auth', authRouter.routes(), authRouter.allowedMethods());
 // Protected routes — anything declared under /api/protected/* requires a valid token.
 // Add new protected routes here, not as a top-level app.use().
 router.use('/api/protected', authMiddleware);
-` : ''}
+`
+    : ''
+}
 // Main route - render the Coherent.js component into APP_HTML_TEMPLATE
 router.get('/', async (ctx) => {
   ctx.coherent(HomePage({}));
@@ -437,20 +530,20 @@ export function getRuntimeDependencies(runtime) {
     'built-in': {},
     express: {
       express: '^5.0.0',
-      '@coherent.js/integrations': cliRange
+      '@coherent.js/integrations': cliRange,
     },
     fastify: {
       fastify: '^5.0.0',
       '@fastify/static': '^8.0.0',
-      '@coherent.js/integrations': cliRange
+      '@coherent.js/integrations': cliRange,
     },
     koa: {
       koa: '^2.15.3',
       '@koa/router': '^13.0.1',
       'koa-body': '^6.0.1',
       'koa-static': '^5.0.0',
-      '@coherent.js/integrations': cliRange
-    }
+      '@coherent.js/integrations': cliRange,
+    },
   };
 
   return deps[runtime] || {};
@@ -464,14 +557,14 @@ export function getRuntimeTypeDependencies(runtime) {
   const typeDeps = {
     'built-in': {},
     express: {
-      '@types/express': '^5.0.0'
+      '@types/express': '^5.0.0',
     },
     fastify: {},
     koa: {
       '@types/koa': '^2.15.0',
       '@types/koa-static': '^4.0.4',
-      '@types/koa__router': '^12.0.4'
-    }
+      '@types/koa__router': '^12.0.4',
+    },
   };
 
   return typeDeps[runtime] || {};

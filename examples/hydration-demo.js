@@ -10,11 +10,15 @@ import { withState, render } from '@coherent.js/core';
 
 // Interactive counter with hydration support
 // Create a simple counter component that works with hydration
-const CounterComponent = withState({ count: 0, step: 1 })(({ state, props = {} }) => {
+const CounterComponent = withState({ count: 0, step: 1 })(({
+  state,
+  props = {},
+}) => {
   // Extract initial values from props with defaults
-  const initialCount = props.initialCount !== undefined ? props.initialCount : 0;
+  const initialCount =
+    props.initialCount !== undefined ? props.initialCount : 0;
   const initialStep = props.initialStep !== undefined ? props.initialStep : 1;
-  
+
   // Initialize state with initial values if not already set
   if (state.count === undefined) {
     state.count = initialCount;
@@ -22,7 +26,7 @@ const CounterComponent = withState({ count: 0, step: 1 })(({ state, props = {} }
   if (state.step === undefined) {
     state.step = initialStep;
   }
-  
+
   return {
     div: {
       class: 'counter-widget',
@@ -31,17 +35,29 @@ const CounterComponent = withState({ count: 0, step: 1 })(({ state, props = {} }
         {
           h4: {
             text: 'Interactive Counter',
-            class: 'widget-title'
-          }
+            class: 'widget-title',
+          },
         },
         {
           div: {
             class: 'counter-display',
             children: [
-              { span: { text: `Count: ${state.count}`, class: 'count-value', 'data-ref': 'count' } },
-              { span: { text: `Step: ${state.step}`, class: 'step-value', 'data-ref': 'step' } }
-            ]
-          }
+              {
+                span: {
+                  text: `Count: ${state.count}`,
+                  class: 'count-value',
+                  'data-ref': 'count',
+                },
+              },
+              {
+                span: {
+                  text: `Step: ${state.step}`,
+                  class: 'step-value',
+                  'data-ref': 'step',
+                },
+              },
+            ],
+          },
         },
         {
           div: {
@@ -51,25 +67,28 @@ const CounterComponent = withState({ count: 0, step: 1 })(({ state, props = {} }
                 button: {
                   text: '-',
                   class: 'btn btn-secondary',
-                  onclick: (event, state, setState) => setState({ count: state.count - state.step })
-                }
+                  onclick: (event, state, setState) =>
+                    setState({ count: state.count - state.step }),
+                },
               },
               {
                 button: {
                   text: '+',
                   class: 'btn btn-primary',
-                  onclick: (event, state, setState) => setState({ count: state.count + state.step })
-                }
+                  onclick: (event, state, setState) =>
+                    setState({ count: state.count + state.step }),
+                },
               },
               {
                 button: {
                   text: 'Reset Test',
                   class: 'btn btn-outline',
-                  onclick: (event, state, setState) => setState({ count: initialCount })
-                }
-              }
-            ]
-          }
+                  onclick: (event, state, setState) =>
+                    setState({ count: initialCount }),
+                },
+              },
+            ],
+          },
         },
         {
           div: {
@@ -83,14 +102,15 @@ const CounterComponent = withState({ count: 0, step: 1 })(({ state, props = {} }
                   min: 1,
                   max: 10,
                   class: 'step-input',
-                  oninput: (event, state, setState) => setState({ step: parseInt(event.target.value) || 1 })
-                }
-              }
-            ]
-          }
-        }
-      ]
-    }
+                  oninput: (event, state, setState) =>
+                    setState({ step: parseInt(event.target.value) || 1 }),
+                },
+              },
+            ],
+          },
+        },
+      ],
+    },
   };
 });
 
@@ -100,195 +120,224 @@ const HydratableCounter = CounterComponent;
 // Interactive todo list with hydration support
 // Interactive user profile form with hydration support
 const HydratableUserProfile = withState({
-    firstName: 'John',
-    lastName: 'Doe',
-    age: 30,
-    email: 'john.doe@example.com',
-    bio: 'Software developer passionate about web technologies.',
-    newsletter: true
-  })(({ state }) => {
-    return {
-      div: {
-        class: 'profile-widget',
-        'data-coherent-component': 'user-profile',
-        children: [
-          {
-            h4: {
-              text: 'Interactive User Profile',
-              class: 'widget-title'
-            }
+  firstName: 'John',
+  lastName: 'Doe',
+  age: 30,
+  email: 'john.doe@example.com',
+  bio: 'Software developer passionate about web technologies.',
+  newsletter: true,
+})(({ state }) => {
+  return {
+    div: {
+      class: 'profile-widget',
+      'data-coherent-component': 'user-profile',
+      children: [
+        {
+          h4: {
+            text: 'Interactive User Profile',
+            class: 'widget-title',
           },
-          {
-            div: {
-              class: 'profile-display',
-              children: [
-                { p: { text: `Name: ${state.firstName} ${state.lastName}`, class: 'profile-info' } },
-                { p: { text: `Age: ${state.age}`, class: 'profile-info' } },
-                { p: { text: `Email: ${state.email}`, class: 'profile-info' } },
-                { p: { 
+        },
+        {
+          div: {
+            class: 'profile-display',
+            children: [
+              {
+                p: {
+                  text: `Name: ${state.firstName} ${state.lastName}`,
+                  class: 'profile-info',
+                },
+              },
+              { p: { text: `Age: ${state.age}`, class: 'profile-info' } },
+              { p: { text: `Email: ${state.email}`, class: 'profile-info' } },
+              {
+                p: {
                   text: `Status: ${state.age >= 18 ? 'Adult' : 'Minor'}`,
-                  class: `profile-status ${state.age >= 18 ? 'adult' : 'minor'}`
-                }},
-                { p: { text: `Newsletter: ${state.newsletter ? 'Subscribed' : 'Not subscribed'}`, class: 'profile-info' } }
-              ]
-            }
+                  class: `profile-status ${state.age >= 18 ? 'adult' : 'minor'}`,
+                },
+              },
+              {
+                p: {
+                  text: `Newsletter: ${state.newsletter ? 'Subscribed' : 'Not subscribed'}`,
+                  class: 'profile-info',
+                },
+              },
+            ],
           },
-          {
-            div: {
-              class: 'profile-form',
-              children: [
-                {
-                  div: {
-                    class: 'form-row',
-                    children: [
-                      {
-                        input: {
-                          type: 'text',
-                          placeholder: 'First Name',
-                          value: state.firstName,
-                          class: 'form-input',
-                          oninput: (event, state, setState) => setState({ firstName: event.target.value })
-                        }
+        },
+        {
+          div: {
+            class: 'profile-form',
+            children: [
+              {
+                div: {
+                  class: 'form-row',
+                  children: [
+                    {
+                      input: {
+                        type: 'text',
+                        placeholder: 'First Name',
+                        value: state.firstName,
+                        class: 'form-input',
+                        oninput: (event, state, setState) =>
+                          setState({ firstName: event.target.value }),
                       },
-                      {
-                        input: {
-                          type: 'text',
-                          placeholder: 'Last Name',
-                          value: state.lastName,
-                          class: 'form-input',
-                          oninput: (event, state, setState) => setState({ lastName: event.target.value })
-                        }
-                      }
-                    ]
-                  }
-                },
-                {
-                  div: {
-                    class: 'form-row',
-                    children: [
-                      {
-                        input: {
-                          type: 'number',
-                          placeholder: 'Age',
-                          value: state.age,
-                          min: 1,
-                          max: 120,
-                          class: 'form-input',
-                          oninput: (event, state, setState) => setState({ age: parseInt(event.target.value) || 0 })
-                        }
+                    },
+                    {
+                      input: {
+                        type: 'text',
+                        placeholder: 'Last Name',
+                        value: state.lastName,
+                        class: 'form-input',
+                        oninput: (event, state, setState) =>
+                          setState({ lastName: event.target.value }),
                       },
-                      {
-                        input: {
-                          type: 'email',
-                          placeholder: 'Email',
-                          value: state.email,
-                          class: 'form-input',
-                          oninput: (event, state, setState) => setState({ email: event.target.value })
-                        }
-                      }
-                    ]
-                  }
+                    },
+                  ],
                 },
-                {
-                  div: {
-                    class: 'form-row full-width',
-                    children: [
-                      {
-                        textarea: {
-                          placeholder: 'Bio',
-                          value: state.bio,
-                          class: 'form-textarea',
-                          rows: 3,
-                          oninput: (event, state, setState) => setState({ bio: event.target.value })
-                        }
-                      }
-                    ]
-                  }
+              },
+              {
+                div: {
+                  class: 'form-row',
+                  children: [
+                    {
+                      input: {
+                        type: 'number',
+                        placeholder: 'Age',
+                        value: state.age,
+                        min: 1,
+                        max: 120,
+                        class: 'form-input',
+                        oninput: (event, state, setState) =>
+                          setState({ age: parseInt(event.target.value) || 0 }),
+                      },
+                    },
+                    {
+                      input: {
+                        type: 'email',
+                        placeholder: 'Email',
+                        value: state.email,
+                        class: 'form-input',
+                        oninput: (event, state, setState) =>
+                          setState({ email: event.target.value }),
+                      },
+                    },
+                  ],
                 },
-                {
-                  div: {
-                    class: 'form-row checkbox-row',
-                    children: [
-                      {
-                        label: {
-                          class: 'checkbox-label',
-                          children: [
-                            {
-                              input: {
-                                type: 'checkbox',
-                                checked: state.newsletter,
-                                class: 'form-checkbox',
-                                onchange: (event, state, setState) => setState({ newsletter: event.target.checked })
-                              }
+              },
+              {
+                div: {
+                  class: 'form-row full-width',
+                  children: [
+                    {
+                      textarea: {
+                        placeholder: 'Bio',
+                        value: state.bio,
+                        class: 'form-textarea',
+                        rows: 3,
+                        oninput: (event, state, setState) =>
+                          setState({ bio: event.target.value }),
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                div: {
+                  class: 'form-row checkbox-row',
+                  children: [
+                    {
+                      label: {
+                        class: 'checkbox-label',
+                        children: [
+                          {
+                            input: {
+                              type: 'checkbox',
+                              checked: state.newsletter,
+                              class: 'form-checkbox',
+                              onchange: (event, state, setState) =>
+                                setState({ newsletter: event.target.checked }),
                             },
-                            { span: { text: 'Subscribe to newsletter', class: 'checkbox-text' } }
-                          ]
-                        }
-                      }
-                    ]
-                  }
+                          },
+                          {
+                            span: {
+                              text: 'Subscribe to newsletter',
+                              class: 'checkbox-text',
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  ],
                 },
-                {
-                  div: {
-                    class: 'form-actions',
-                    children: [
-                      {
-                        button: {
-                          text: 'Reset Profile',
-                          class: 'btn btn-outline',
-                          onclick: (event, state, setState) => setState({
+              },
+              {
+                div: {
+                  class: 'form-actions',
+                  children: [
+                    {
+                      button: {
+                        text: 'Reset Profile',
+                        class: 'btn btn-outline',
+                        onclick: (event, state, setState) =>
+                          setState({
                             firstName: 'John',
                             lastName: 'Doe',
                             age: 30,
                             email: 'john.doe@example.com',
                             bio: 'Software developer passionate about web technologies.',
-                            newsletter: true
-                          })
-                        }
-                      }
-                    ]
-                  }
-                }
-              ]
-            }
-          }
-        ]
-      }
-    };
-  });
+                            newsletter: true,
+                          }),
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      ],
+    },
+  };
+});
 
-const HydratableTodoList = withState({ todos: [], newTodo: '', filter: 'all' })(({ state }) => {
+const HydratableTodoList = withState({ todos: [], newTodo: '', filter: 'all' })(
+  ({ state }) => {
     // Define functions that accept setState as parameter for hydration compatibility
     const addTodo = (event, state, setState) => {
       if (state.newTodo.trim()) {
         setState({
-          todos: [...state.todos, {
-            id: Date.now(),
-            text: state.newTodo.trim(),
-            completed: false
-          }],
-          newTodo: ''
+          todos: [
+            ...state.todos,
+            {
+              id: Date.now(),
+              text: state.newTodo.trim(),
+              completed: false,
+            },
+          ],
+          newTodo: '',
         });
       }
     };
 
     const toggleTodo = (id) => (event, state, setState) => {
       setState({
-        todos: state.todos.map(todo => 
+        todos: state.todos.map((todo) =>
           todo.id === id ? { ...todo, completed: !todo.completed } : todo
-        )
+        ),
       });
     };
 
     const removeTodo = (id) => (event, state, setState) => {
       setState({
-        todos: state.todos.filter(todo => todo.id !== id)
+        todos: state.todos.filter((todo) => todo.id !== id),
       });
     };
 
-    const setFilter = (filter) => (event, state, setState) => setState({ filter });
+    const setFilter = (filter) => (event, state, setState) =>
+      setState({ filter });
 
-    const filteredTodos = state.todos.filter(todo => {
+    const filteredTodos = state.todos.filter((todo) => {
       if (state.filter === 'active') return !todo.completed;
       if (state.filter === 'completed') return todo.completed;
       return true;
@@ -296,8 +345,8 @@ const HydratableTodoList = withState({ todos: [], newTodo: '', filter: 'all' })(
 
     const stats = {
       total: state.todos.length,
-      completed: state.todos.filter(t => t.completed).length,
-      active: state.todos.filter(t => !t.completed).length
+      completed: state.todos.filter((t) => t.completed).length,
+      active: state.todos.filter((t) => !t.completed).length,
     };
 
     return {
@@ -308,18 +357,25 @@ const HydratableTodoList = withState({ todos: [], newTodo: '', filter: 'all' })(
           {
             h4: {
               text: 'Interactive Todo List',
-              class: 'widget-title'
-            }
+              class: 'widget-title',
+            },
           },
           {
             div: {
               class: 'todo-stats',
               children: [
                 { span: { text: `Total: ${stats.total}`, class: 'stat-item' } },
-                { span: { text: `Active: ${stats.active}`, class: 'stat-item' } },
-                { span: { text: `Completed: ${stats.completed}`, class: 'stat-item' } }
-              ]
-            }
+                {
+                  span: { text: `Active: ${stats.active}`, class: 'stat-item' },
+                },
+                {
+                  span: {
+                    text: `Completed: ${stats.completed}`,
+                    class: 'stat-item',
+                  },
+                },
+              ],
+            },
           },
           {
             div: {
@@ -331,21 +387,22 @@ const HydratableTodoList = withState({ todos: [], newTodo: '', filter: 'all' })(
                     value: state.newTodo,
                     placeholder: 'Add new todo...',
                     class: 'todo-input-field',
-                    oninput: (e, state, setState) => setState({ newTodo: e.target.value }),
+                    oninput: (e, state, setState) =>
+                      setState({ newTodo: e.target.value }),
                     onkeypress: (e, state, setState) => {
                       if (e.key === 'Enter') addTodo(e, state, setState);
-                    }
-                  }
+                    },
+                  },
                 },
                 {
                   button: {
                     text: 'Add',
                     class: 'btn btn-primary',
-                    onclick: addTodo
-                  }
-                }
-              ]
-            }
+                    onclick: addTodo,
+                  },
+                },
+              ],
+            },
           },
           {
             div: {
@@ -355,30 +412,30 @@ const HydratableTodoList = withState({ todos: [], newTodo: '', filter: 'all' })(
                   button: {
                     text: 'All',
                     class: `filter-btn ${state.filter === 'all' ? 'active' : ''}`,
-                    onclick: setFilter('all')
-                  }
+                    onclick: setFilter('all'),
+                  },
                 },
                 {
                   button: {
                     text: 'Active',
                     class: `filter-btn ${state.filter === 'active' ? 'active' : ''}`,
-                    onclick: setFilter('active')
-                  }
+                    onclick: setFilter('active'),
+                  },
                 },
                 {
                   button: {
                     text: 'Completed',
                     class: `filter-btn ${state.filter === 'completed' ? 'active' : ''}`,
-                    onclick: setFilter('completed')
-                  }
-                }
-              ]
-            }
+                    onclick: setFilter('completed'),
+                  },
+                },
+              ],
+            },
           },
           {
             ul: {
               class: 'todo-list',
-              children: filteredTodos.map(todo => ({
+              children: filteredTodos.map((todo) => ({
                 li: {
                   key: todo.id,
                   class: `todo-item ${todo.completed ? 'completed' : ''}`,
@@ -388,31 +445,32 @@ const HydratableTodoList = withState({ todos: [], newTodo: '', filter: 'all' })(
                         type: 'checkbox',
                         checked: todo.completed,
                         class: 'todo-checkbox',
-                        onchange: toggleTodo(todo.id)
-                      }
+                        onchange: toggleTodo(todo.id),
+                      },
                     },
                     {
                       span: {
                         text: todo.text,
-                        class: 'todo-text'
-                      }
+                        class: 'todo-text',
+                      },
                     },
                     {
                       button: {
                         text: '×',
                         class: 'btn btn-danger btn-small',
-                        onclick: removeTodo(todo.id)
-                      }
-                    }
-                  ]
-                }
-              }))
-            }
-          }
-        ]
-      }
+                        onclick: removeTodo(todo.id),
+                      },
+                    },
+                  ],
+                },
+              })),
+            },
+          },
+        ],
+      },
     };
-  });
+  }
+);
 
 // Complete hydration demo page
 export const hydrationDemo = {
@@ -766,11 +824,11 @@ export const hydrationDemo = {
                   margin: 0;
                   line-height: 1.6;
                 }
-                `
-              }
-            }
-          ]
-        }
+                `,
+              },
+            },
+          ],
+        },
       },
       {
         body: {
@@ -784,9 +842,13 @@ export const hydrationDemo = {
                       class: 'demo-header',
                       children: [
                         { h1: { text: 'Hydration Demo' } },
-                        { p: { text: 'Interactive components with server-side rendering and client-side hydration' } }
-                      ]
-                    }
+                        {
+                          p: {
+                            text: 'Interactive components with server-side rendering and client-side hydration',
+                          },
+                        },
+                      ],
+                    },
                   },
                   {
                     div: {
@@ -796,61 +858,86 @@ export const hydrationDemo = {
                           div: {
                             class: 'demo-section',
                             children: [
-                              { h2: { text: 'Interactive Counter', class: 'section-title' } },
-                              { p: { 
-                                text: 'A stateful counter with step control. State is preserved during hydration and updates are reactive.',
-                                class: 'section-description'
-                              }},
-                              HydratableCounter({ initialCount: 5 })
-                            ]
-                          }
+                              {
+                                h2: {
+                                  text: 'Interactive Counter',
+                                  class: 'section-title',
+                                },
+                              },
+                              {
+                                p: {
+                                  text: 'A stateful counter with step control. State is preserved during hydration and updates are reactive.',
+                                  class: 'section-description',
+                                },
+                              },
+                              HydratableCounter({ initialCount: 5 }),
+                            ],
+                          },
                         },
                         {
                           div: {
                             class: 'demo-section',
                             children: [
-                              { h2: { text: 'Interactive User Profile', class: 'section-title' } },
-                              { p: { 
-                                text: 'A form component with various input types, computed properties, and real-time validation.',
-                                class: 'section-description'
-                              }},
-                              HydratableUserProfile()
-                            ]
-                          }
+                              {
+                                h2: {
+                                  text: 'Interactive User Profile',
+                                  class: 'section-title',
+                                },
+                              },
+                              {
+                                p: {
+                                  text: 'A form component with various input types, computed properties, and real-time validation.',
+                                  class: 'section-description',
+                                },
+                              },
+                              HydratableUserProfile(),
+                            ],
+                          },
                         },
                         {
                           div: {
                             class: 'demo-section',
                             children: [
-                              { h2: { text: 'Interactive Todo List', class: 'section-title' } },
-                              { p: { 
-                                text: 'A complex stateful component with filtering, statistics, and real-time interactions.',
-                                class: 'section-description'
-                              }},
-                              HydratableTodoList()
-                            ]
-                          }
+                              {
+                                h2: {
+                                  text: 'Interactive Todo List',
+                                  class: 'section-title',
+                                },
+                              },
+                              {
+                                p: {
+                                  text: 'A complex stateful component with filtering, statistics, and real-time interactions.',
+                                  class: 'section-description',
+                                },
+                              },
+                              HydratableTodoList(),
+                            ],
+                          },
                         },
                         {
                           div: {
                             class: 'hydration-info',
                             children: [
                               { h3: { text: 'About Hydration' } },
-                              { p: { text: 'This page demonstrates client-side hydration where server-rendered HTML becomes interactive on the client. Components maintain their state and event handlers are attached seamlessly.' } }
-                            ]
-                          }
-                        }
-                      ]
-                    }
-                  }
-                ]
-              }
-            }
-          ]
-        }
-      }
-    ]
-  }
+                              {
+                                p: {
+                                  text: 'This page demonstrates client-side hydration where server-rendered HTML becomes interactive on the client. Components maintain their state and event handlers are attached seamlessly.',
+                                },
+                              },
+                            ],
+                          },
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    ],
+  },
 };
 
 const HydrationDemoPage = () => hydrationDemo;
@@ -861,14 +948,15 @@ if (typeof window !== 'undefined') {
   const roots = {
     counter: [HydratableCounter, { initialCount: 5 }],
     'user-profile': [HydratableUserProfile, {}],
-    'todo-list': [HydratableTodoList, {}]
+    'todo-list': [HydratableTodoList, {}],
   };
   for (const [name, [Component, props]] of Object.entries(roots)) {
-    const element = document.querySelector(`[data-coherent-component="${name}"]`);
+    const element = document.querySelector(
+      `[data-coherent-component="${name}"]`
+    );
     if (element) hydrate(Component, element, { props });
   }
 }
-
 
 // Export the demo page as default for live preview
 export default HydrationDemoPage;
@@ -877,8 +965,9 @@ export default HydrationDemoPage;
 // or the playground runner, which feeds the file on stdin — but not when it is
 // imported. `import.meta.main` says so exactly from Node 22.18; before that,
 // compare against argv[1], which is empty when the program came on stdin.
-const isProgram = import.meta.main
-  ?? (!process.argv[1] || fileURLToPath(import.meta.url) === process.argv[1]);
+const isProgram =
+  import.meta.main ??
+  (!process.argv[1] || fileURLToPath(import.meta.url) === process.argv[1]);
 if (isProgram) {
   console.log(render(HydrationDemoPage()));
 }

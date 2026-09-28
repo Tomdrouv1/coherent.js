@@ -9,7 +9,13 @@ import { writeGeneratedFiles } from '../utils/files.js';
  * Generate a new component
  */
 export async function generateComponent(name, options = {}) {
-  const { path = 'src/components', template = 'basic', skipTest = false, skipStory = false, force = false } = options;
+  const {
+    path = 'src/components',
+    template = 'basic',
+    skipTest = false,
+    skipStory = false,
+    force = false,
+  } = options;
 
   // Ensure component name is PascalCase
   const componentName = toPascalCase(name);
@@ -19,17 +25,30 @@ export async function generateComponent(name, options = {}) {
   const nextSteps = [];
 
   // Component, test, and story (for Storybook) files
-  const toWrite = [{ path: join(outputDir, `${fileName}.js`), content: generateComponentContent(componentName, template) }];
+  const toWrite = [
+    {
+      path: join(outputDir, `${fileName}.js`),
+      content: generateComponentContent(componentName, template),
+    },
+  ];
   if (!skipTest) {
-    toWrite.push({ path: join(outputDir, `${fileName}.test.js`), content: generateTestContent(componentName) });
+    toWrite.push({
+      path: join(outputDir, `${fileName}.test.js`),
+      content: generateTestContent(componentName),
+    });
   }
   if (!skipStory) {
-    toWrite.push({ path: join(outputDir, `${fileName}.stories.js`), content: generateStoryContent(componentName) });
+    toWrite.push({
+      path: join(outputDir, `${fileName}.stories.js`),
+      content: generateStoryContent(componentName),
+    });
   }
   const files = writeGeneratedFiles(toWrite, { force });
 
   // Add next steps
-  nextSteps.push(`Import the component: import { ${componentName} } from '${path}/${fileName}.js'`);
+  nextSteps.push(
+    `Import the component: import { ${componentName} } from '${path}/${fileName}.js'`
+  );
   nextSteps.push(`Use the component: ${componentName}({ /* props */ })`);
 
   if (!skipTest) {
@@ -419,6 +438,6 @@ export const WithChildren = {
  */
 function toPascalCase(str) {
   return str
-    .replace(/[-_\s]+(.)?/g, (_, c) => c ? c.toUpperCase() : '')
+    .replace(/[-_\s]+(.)?/g, (_, c) => (c ? c.toUpperCase() : ''))
     .replace(/^(.)/, (_, c) => c.toUpperCase());
 }

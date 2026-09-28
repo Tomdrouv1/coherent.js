@@ -15,13 +15,17 @@ import {
   createConnection,
   createMessageConnection,
   StreamMessageReader,
-  StreamMessageWriter
+  StreamMessageWriter,
 } from 'vscode-languageserver/node';
 
 const TOOLING_DIR = fileURLToPath(new URL('../..', import.meta.url));
 const BIN = fileURLToPath(new URL('../../src/lsp/bin.ts', import.meta.url));
 
-const INITIALIZE_PARAMS = { processId: process.pid, rootUri: null, capabilities: {} };
+const INITIALIZE_PARAMS = {
+  processId: process.pid,
+  rootUri: null,
+  capabilities: {},
+};
 
 const children = [];
 afterEach(() => {
@@ -37,23 +41,37 @@ function lspClient(child) {
     for (;;) {
       const headerEnd = buffer.indexOf('\r\n\r\n');
       if (headerEnd === -1) return;
-      const length = Number(/Content-Length: (\d+)/i.exec(buffer.subarray(0, headerEnd).toString())[1]);
+      const length = Number(
+        /Content-Length: (\d+)/i.exec(
+          buffer.subarray(0, headerEnd).toString()
+        )[1]
+      );
       if (buffer.length < headerEnd + 4 + length) return;
-      const message = JSON.parse(buffer.subarray(headerEnd + 4, headerEnd + 4 + length).toString());
+      const message = JSON.parse(
+        buffer.subarray(headerEnd + 4, headerEnd + 4 + length).toString()
+      );
       buffer = buffer.subarray(headerEnd + 4 + length);
       waiters.get(message.id)?.(message);
     }
   });
   return {
     request(id, method, params) {
-      const body = Buffer.from(JSON.stringify({ jsonrpc: '2.0', id, method, params }));
+      const body = Buffer.from(
+        JSON.stringify({ jsonrpc: '2.0', id, method, params })
+      );
       child.stdin.write(`Content-Length: ${body.length}\r\n\r\n`);
       child.stdin.write(body);
       return new Promise((resolve, reject) => {
-        const timer = setTimeout(() => reject(new Error(`no response to ${method}`)), 15_000);
-        waiters.set(id, (message) => { clearTimeout(timer); resolve(message); });
+        const timer = setTimeout(
+          () => reject(new Error(`no response to ${method}`)),
+          15_000
+        );
+        waiters.set(id, (message) => {
+          clearTimeout(timer);
+          resolve(message);
+        });
       });
-    }
+    },
   };
 }
 
@@ -70,15 +88,23 @@ describe('@coherent.js/tooling/lsp', () => {
     const toClient = new PassThrough();
 
     const { connection } = startServer(
-      createConnection(new StreamMessageReader(toServer), new StreamMessageWriter(toClient))
+      createConnection(
+        new StreamMessageReader(toServer),
+        new StreamMessageWriter(toClient)
+      )
     );
-    const client = createMessageConnection(new StreamMessageReader(toClient), new StreamMessageWriter(toServer));
+    const client = createMessageConnection(
+      new StreamMessageReader(toClient),
+      new StreamMessageWriter(toServer)
+    );
     client.listen();
 
     try {
       const result = await client.sendRequest('initialize', INITIALIZE_PARAMS);
       expect(result.capabilities.hoverProvider).toBe(true);
-      expect(result.capabilities.completionProvider.triggerCharacters).toContain('{');
+      expect(
+        result.capabilities.completionProvider.triggerCharacters
+      ).toContain('{');
     } finally {
       client.dispose();
       connection.dispose();
@@ -88,16 +114,20 @@ describe('@coherent.js/tooling/lsp', () => {
   it('the coherent-language-server binary answers initialize over --stdio', async () => {
     const child = spawn(process.execPath, ['--import', 'tsx', BIN, '--stdio'], {
       cwd: TOOLING_DIR,
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
     children.push(child);
     let stderr = '';
-    child.stderr.on('data', (d) => { stderr += d; });
+    child.stderr.on('data', (d) => {
+      stderr += d;
+    });
 
     const client = lspClient(child);
-    const response = await client.request(1, 'initialize', INITIALIZE_PARAMS).catch((error) => {
-      throw new Error(`${error.message}\n${stderr}`);
-    });
+    const response = await client
+      .request(1, 'initialize', INITIALIZE_PARAMS)
+      .catch((error) => {
+        throw new Error(`${error.message}\n${stderr}`);
+      });
     expect(response.error).toBeUndefined();
     expect(response.result.capabilities.hoverProvider).toBe(true);
   }, 30_000);

@@ -305,9 +305,9 @@ describe('hydrate() API', () => {
       const component = () => ({ span: { text: 'Hello' } });
       const container = createMockElement('div', { textContent: 'Hello' });
 
-      expect(() =>
-        hydrate(component, container, { strict: true })
-      ).toThrow('Hydration failed');
+      expect(() => hydrate(component, container, { strict: true })).toThrow(
+        'Hydration failed'
+      );
     });
 
     it('calls onMismatch callback when provided', () => {
@@ -439,20 +439,16 @@ describe('hydrate() edge cases', () => {
     const component = () => ({
       div: {
         className: 'container',
-        children: [
-          { span: { text: 'Hello' } },
-          { span: { text: 'World' } },
-        ],
+        children: [{ span: { text: 'Hello' } }, { span: { text: 'World' } }],
       },
     });
 
     const child1 = createMockElement('span', { textContent: 'Hello' });
     const child2 = createMockElement('span', { textContent: 'World' });
-    const container = createMockElement(
-      'div',
-      { class: 'container' },
-      [child1, child2]
-    );
+    const container = createMockElement('div', { class: 'container' }, [
+      child1,
+      child2,
+    ]);
 
     const result = hydrate(component, container, { detectMismatch: false });
     expect(result).toBeDefined();

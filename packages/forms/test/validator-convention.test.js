@@ -15,7 +15,14 @@ import * as root from '../src/index.js';
 import * as validatorsEntry from '../src/validators.js';
 import * as validationEntry from '../src/validation.js';
 
-const { validators, validateForm, validateField, createValidator, FormValidator, createFormBuilder } = root;
+const {
+  validators,
+  validateForm,
+  validateField,
+  createValidator,
+  FormValidator,
+  createFormBuilder,
+} = root;
 
 describe('one validators registry', () => {
   it('is the same object from the root, /validators and /validation', () => {
@@ -29,33 +36,44 @@ describe('one validators registry', () => {
 
 describe('validateForm and validateField', () => {
   it('accept a built-in listed without calling it', () => {
-    expect(validateForm({ name: 'Ada' }, { name: [validators.required] })).toBeNull();
-    expect(validateForm({ name: '' }, { name: [validators.required] }))
-      .toEqual({ name: 'This field is required' });
+    expect(
+      validateForm({ name: 'Ada' }, { name: [validators.required] })
+    ).toBeNull();
+    expect(validateForm({ name: '' }, { name: [validators.required] })).toEqual(
+      { name: 'This field is required' }
+    );
   });
 
   it('accept factory-built validators', () => {
-    expect(validateForm(
-      { name: '', email: 'nope', password: 'short' },
-      {
-        name: [validators.required('Name please')],
-        email: [validators.email()],
-        password: [validators.minLength(8)]
-      }
-    )).toEqual({
+    expect(
+      validateForm(
+        { name: '', email: 'nope', password: 'short' },
+        {
+          name: [validators.required('Name please')],
+          email: [validators.email()],
+          password: [validators.minLength(8)],
+        }
+      )
+    ).toEqual({
       name: 'Name please',
       email: 'Invalid email address',
-      password: 'Minimum length is 8'
+      password: 'Minimum length is 8',
     });
   });
 
   it('do not read a form field called `message` as the error text', () => {
-    expect(validateForm({ name: '', message: 'hello' }, { name: [validators.required] }))
-      .toEqual({ name: 'This field is required' });
+    expect(
+      validateForm(
+        { name: '', message: 'hello' },
+        { name: [validators.required] }
+      )
+    ).toEqual({ name: 'This field is required' });
   });
 
   it('accept a single validator instead of a list', () => {
-    expect(validateField('', validators.required)).toBe('This field is required');
+    expect(validateField('', validators.required)).toBe(
+      'This field is required'
+    );
   });
 });
 
@@ -70,11 +88,17 @@ describe('built-ins', () => {
 
   it('give the same answer called as a factory or directly', () => {
     expect(validators.minLength(8)('short')).toBe('Minimum length is 8');
-    expect(validators.minLength('short', { min: 8 })).toBe('Minimum length is 8');
+    expect(validators.minLength('short', { min: 8 })).toBe(
+      'Minimum length is 8'
+    );
     expect(validators.max(10, 'Too many')(11)).toBe('Too many');
-    expect(validators.max(11, { max: 10, message: 'Too many' })).toBe('Too many');
+    expect(validators.max(11, { max: 10, message: 'Too many' })).toBe(
+      'Too many'
+    );
     expect(validators.pattern(/^\d+$/)('12a')).toBe('Invalid format');
-    expect(validators.pattern('12a', { pattern: /^\d+$/ })).toBe('Invalid format');
+    expect(validators.pattern('12a', { pattern: /^\d+$/ })).toBe(
+      'Invalid format'
+    );
   });
 
   it('treat a missing factory message as the default, not as a value', () => {
@@ -91,7 +115,10 @@ describe('built-ins', () => {
   });
 
   it('are usable in compose() uncalled', () => {
-    const composed = validators.compose([validators.required, validators.email]);
+    const composed = validators.compose([
+      validators.required,
+      validators.email,
+    ]);
     expect(composed('')).toBe('This field is required');
     expect(composed('nope')).toBe('Invalid email address');
     expect(composed('a@b.co')).toBeNull();
@@ -100,30 +127,41 @@ describe('built-ins', () => {
 
 describe('createValidator', () => {
   it('returns a FormValidator for a schema', () => {
-    const validator = createValidator({ email: [validators.required, validators.email()] });
+    const validator = createValidator({
+      email: [validators.required, validators.email()],
+    });
     expect(validator).toBeInstanceOf(FormValidator);
     expect(validator.validate({ email: 'x' })).toEqual({
       isValid: false,
-      errors: { email: 'Invalid email address' }
+      errors: { email: 'Invalid email address' },
     });
   });
 
   it('wraps a check function', () => {
-    const noSpaces = createValidator(value => /\s/.test(value), 'No spaces');
+    const noSpaces = createValidator((value) => /\s/.test(value), 'No spaces');
     expect(noSpaces('a b')).toBe('No spaces');
     expect(noSpaces('ab')).toBeNull();
-    expect(validateForm({ user: 'a b' }, { user: [noSpaces] })).toEqual({ user: 'No spaces' });
+    expect(validateForm({ user: 'a b' }, { user: [noSpaces] })).toEqual({
+      user: 'No spaces',
+    });
   });
 });
 
 describe('FormBuilder field validators', () => {
   it('accept a built-in listed without calling it', () => {
     const form = createFormBuilder({
-      fields: [{ name: 'code', validators: [validators.alphanumeric, validators.maxLength(4)] }]
+      fields: [
+        {
+          name: 'code',
+          validators: [validators.alphanumeric, validators.maxLength(4)],
+        },
+      ],
     });
 
     form.setValues({ code: 'ab-1' });
-    expect(form.validate()).toEqual({ code: 'Must contain only letters and numbers' });
+    expect(form.validate()).toEqual({
+      code: 'Must contain only letters and numbers',
+    });
 
     form.setValues({ code: 'abc12' });
     expect(form.validate()).toEqual({ code: 'Maximum length is 4' });

@@ -7,7 +7,7 @@ await buildPackage({
     model: 'src/model.js',
     migration: 'src/migration.js',
     'connection-manager': 'src/connection-manager.js',
-    middleware: 'src/middleware.js'
+    middleware: 'src/middleware.js',
   },
-  external: ['@coherent.js/core', 'sqlite3', 'mysql2', 'pg', 'mongodb']
+  external: ['@coherent.js/core', 'sqlite3', 'mysql2', 'pg', 'mongodb'],
 });

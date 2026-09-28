@@ -10,7 +10,10 @@ const round = (ms) => Math.round(ms * 10) / 10;
 
 function percentile(sorted, p) {
   if (sorted.length === 0) return 0;
-  const index = Math.min(sorted.length - 1, Math.ceil((p / 100) * sorted.length) - 1);
+  const index = Math.min(
+    sorted.length - 1,
+    Math.ceil((p / 100) * sorted.length) - 1
+  );
   return sorted[Math.max(0, index)];
 }
 
@@ -30,7 +33,7 @@ export async function analyzePerformance(options = {}) {
     type: 'performance-analysis',
     summary: { url },
     details: {},
-    recommendations: []
+    recommendations: [],
   };
 
   if (options.component || options.memory) {
@@ -52,10 +55,15 @@ export async function analyzePerformance(options = {}) {
   let bytes = null;
   const started = performance.now();
 
-  while (durations.length + failures < maxSamples && performance.now() - started < maxMs) {
+  while (
+    durations.length + failures < maxSamples &&
+    performance.now() - started < maxMs
+  ) {
     const t0 = performance.now();
     try {
-      const response = await globalThis.fetch(url, { signal: globalThis.AbortSignal.timeout(timeoutMs) });
+      const response = await globalThis.fetch(url, {
+        signal: globalThis.AbortSignal.timeout(timeoutMs),
+      });
       const body = await response.arrayBuffer();
       durations.push(performance.now() - t0);
       statusCodes[response.status] = (statusCodes[response.status] || 0) + 1;
@@ -80,7 +88,8 @@ export async function analyzePerformance(options = {}) {
     .filter(([code]) => !code.startsWith('2'))
     .reduce((sum, [, count]) => sum + count, 0);
 
-  analysis.summary.status = failures === 0 && non2xx === 0 ? 'success' : 'warning';
+  analysis.summary.status =
+    failures === 0 && non2xx === 0 ? 'success' : 'warning';
   analysis.summary.requests = durations.length;
   analysis.summary.failedRequests = failures;
   analysis.summary.meanResponseTime = `${round(mean)}ms`;
@@ -93,21 +102,21 @@ export async function analyzePerformance(options = {}) {
     p95Ms: round(percentile(sorted, 95)),
     maxMs: round(sorted[sorted.length - 1]),
     responseBytes: bytes,
-    statusCodes
+    statusCodes,
   };
 
   if (non2xx > 0) {
     analysis.recommendations.push({
       type: 'errors',
       priority: 'high',
-      message: `${non2xx} of ${durations.length} responses were not 2xx (${JSON.stringify(statusCodes)}).`
+      message: `${non2xx} of ${durations.length} responses were not 2xx (${JSON.stringify(statusCodes)}).`,
     });
   }
   if (failures > 0) {
     analysis.recommendations.push({
       type: 'errors',
       priority: 'high',
-      message: `${failures} request(s) failed: ${lastError}.`
+      message: `${failures} request(s) failed: ${lastError}.`,
     });
   }
 
