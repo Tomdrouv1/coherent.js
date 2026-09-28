@@ -1,0 +1,6 @@
+# Commits that only reformat code. GitHub's blame view skips these
+# automatically; for the command line, run once:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# style: format packages and examples with prettier
+ada08cd9ee642cf3802482e73c4702f2ccc554eb
