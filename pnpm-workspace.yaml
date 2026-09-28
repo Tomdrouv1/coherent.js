@@ -60,6 +60,10 @@ overrides:
   # through astro, whose own `^1.6.0` range already admits the fix; pnpm was
   # simply holding the 1.6.1 it first resolved.
   'smol-toml@<1.7.1': '^1.7.1'
+  # devalue (Svelte) DoS via malformed input — fixed in 5.9.1.
+  # Reached only through astro, whose `^5.8.1` range already admits the fix.
+  # Held on the 5.x line; 6.x is a major the astro range does not accept.
+  'devalue@<5.9.1': '^5.9.1'
   # form-data CRLF injection — fixed in 4.0.6 (via @vscode/vsce).
   'form-data@>=4.0.0 <4.0.6': '^4.0.6'
   # ws memory-exhaustion DoS from tiny fragments — fixed in 8.21.0.
