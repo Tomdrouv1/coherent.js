@@ -115,8 +115,21 @@ overrides:
   # sharp inherited libvips/libheif CVEs — 0.35.4, reached via astro and next.
   'sharp@<0.35.4': '^0.35.4'
   # next App Router proxy bypass, SSRFs, DoS and cache confusion, then two
-  # further critical advisories — all fixed in 16.3.3.
-  'next@>=16.0.0 <16.3.3': '^16.3.3'
+  # further critical advisories — all fixed in 16.3.3. Then Image Optimization
+  # SSRF, SSG/ISR cache poisoning, and Draft Mode leaking through `use cache` —
+  # fixed in 16.3.8.
+  'next@>=16.0.0 <16.3.8': '^16.3.8'
   # SvelteKit prototype pollution and remote form payload DoS — fixed in 2.69.1,
   # then O(n^2) ReDoS in Accept-header content negotiation — fixed in 2.70.2.
   '@sveltejs/kit@<2.70.2': '^2.70.2'
+  # shell-quote command injection in `quote()` via a line terminator after a
+  # `{ comment }` token — fixed in 1.11.0. Reached through @changesets/cli >
+  # launch-editor, whose `^1.8.4` range already admits the fix.
+  'shell-quote@<1.11.0': '^1.11.0'
+  # http-cache-semantics max-stale handling can serve one user's cached
+  # response to another — fixed in 4.3.0. Reached through astro (`^4.2.0`) and
+  # sqlite3 > node-gyp > make-fetch-happen (`^4.1.0`); both admit the fix.
+  'http-cache-semantics@<4.3.0': '^4.3.0'
+  # source-map-js event-loop DoS via indexed source-map section offsets —
+  # fixed in 1.2.2. Reached through postcss, css-tree and magicast, all `^1.x`.
+  'source-map-js@<1.2.2': '^1.2.2'
