@@ -14,14 +14,14 @@
     "validate": "node scripts/validate-production.js"
   },
   "dependencies": {
+    "@coherent.js/api": "workspace:*",
     "@coherent.js/core": "workspace:*",
-    "@coherent.js/state": "workspace:*",
-    "@coherent.js/api": "workspace:*"
+    "@coherent.js/state": "workspace:*"
   },
   "devDependencies": {
-    "@coherent.js/devtools": "workspace:*",
     "@coherent.js/cli": "workspace:*",
-    "vite": "^8.3.1",
+    "@coherent.js/devtools": "workspace:*",
+    "vite": "^8.3.4",
     "vitest": "^5.0.3"
   },
   "coherent": {
