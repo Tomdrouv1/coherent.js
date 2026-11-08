@@ -22,7 +22,7 @@
     "@coherent.js/cli": "workspace:*",
     "@coherent.js/devtools": "workspace:*",
     "vite": "^8.3.5",
-    "vitest": "^5.0.5"
+    "vitest": "^5.1.0"
   },
   "coherent": {
     "enableTreeShaking": true,
